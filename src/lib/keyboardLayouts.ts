@@ -3,6 +3,7 @@ export interface KeyDef {
   key: string;
   width?: number;
   modifier?: boolean;
+  shiftLabel?: string;
 }
 
 export interface PhysicalKeyState {
@@ -116,6 +117,19 @@ export function resolveLetterCase(
   return upper ? key.toLocaleUpperCase("el") : key.toLocaleLowerCase("el");
 }
 
+export function resolveKeyOutput(
+  keyDef: KeyDef,
+  capsLock: boolean,
+  shift: boolean,
+): string {
+  if (keyDef.modifier || keyDef.key.length > 1) return keyDef.key;
+  if (isLetterKey(keyDef.key)) {
+    return resolveLetterCase(keyDef.key, capsLock, shift);
+  }
+  if (shift && keyDef.shiftLabel) return keyDef.shiftLabel;
+  return keyDef.key;
+}
+
 export function displayLabel(
   keyDef: KeyDef,
   capsLock: boolean,
@@ -125,24 +139,25 @@ export function displayLabel(
   if (isLetterKey(keyDef.key)) {
     return resolveLetterCase(keyDef.key, capsLock, shift);
   }
+  if (shift && keyDef.shiftLabel) return keyDef.shiftLabel;
   return keyDef.label;
 }
 
 export const QWERTY_ROWS: KeyDef[][] = [
   [
-    { label: "`", key: "`" },
-    { label: "1", key: "1" },
-    { label: "2", key: "2" },
-    { label: "3", key: "3" },
-    { label: "4", key: "4" },
-    { label: "5", key: "5" },
-    { label: "6", key: "6" },
-    { label: "7", key: "7" },
-    { label: "8", key: "8" },
-    { label: "9", key: "9" },
-    { label: "0", key: "0" },
-    { label: "-", key: "-" },
-    { label: "=", key: "=" },
+    { label: "`", key: "`", shiftLabel: "~" },
+    { label: "1", key: "1", shiftLabel: "!" },
+    { label: "2", key: "2", shiftLabel: "@" },
+    { label: "3", key: "3", shiftLabel: "#" },
+    { label: "4", key: "4", shiftLabel: "$" },
+    { label: "5", key: "5", shiftLabel: "%" },
+    { label: "6", key: "6", shiftLabel: "^" },
+    { label: "7", key: "7", shiftLabel: "&" },
+    { label: "8", key: "8", shiftLabel: "*" },
+    { label: "9", key: "9", shiftLabel: "(" },
+    { label: "0", key: "0", shiftLabel: ")" },
+    { label: "-", key: "-", shiftLabel: "_" },
+    { label: "=", key: "=", shiftLabel: "+" },
     { label: "Back", key: "backspace", width: 1.5 },
   ],
   [
@@ -157,9 +172,9 @@ export const QWERTY_ROWS: KeyDef[][] = [
     { label: "i", key: "i" },
     { label: "o", key: "o" },
     { label: "p", key: "p" },
-    { label: "[", key: "[" },
-    { label: "]", key: "]" },
-    { label: "\\", key: "\\", width: 1.2 },
+    { label: "[", key: "[", shiftLabel: "{" },
+    { label: "]", key: "]", shiftLabel: "}" },
+    { label: "\\", key: "\\", shiftLabel: "|", width: 1.2 },
   ],
   [
     { label: "Caps", key: "capslock", width: 1.5, modifier: true },
@@ -172,8 +187,8 @@ export const QWERTY_ROWS: KeyDef[][] = [
     { label: "j", key: "j" },
     { label: "k", key: "k" },
     { label: "l", key: "l" },
-    { label: ";", key: ";" },
-    { label: "'", key: "'" },
+    { label: ";", key: ";", shiftLabel: ":" },
+    { label: "'", key: "'", shiftLabel: '"' },
     { label: "Enter", key: "enter", width: 1.7 },
   ],
   [
@@ -185,9 +200,9 @@ export const QWERTY_ROWS: KeyDef[][] = [
     { label: "b", key: "b" },
     { label: "n", key: "n" },
     { label: "m", key: "m" },
-    { label: ",", key: "," },
-    { label: ".", key: "." },
-    { label: "/", key: "/" },
+    { label: ",", key: ",", shiftLabel: "<" },
+    { label: ".", key: ".", shiftLabel: ">" },
+    { label: "/", key: "/", shiftLabel: "?" },
     { label: "Shift", key: "shift", width: 1.8, modifier: true },
   ],
   [

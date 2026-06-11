@@ -40,4 +40,16 @@ export const en = {
   dismiss: "Dismiss",
   validationHint:
     "Validation: typing works in Notepad, Chrome, Word, Teams, Explorer. Elevated apps may block injection.",
+  appearance: "Appearance",
+  appBackgroundColor: "App background",
+  headerColor: "Header bar",
+  keyboardBackgroundColor: "Keyboard background",
+  keyColor: "Key color",
+  keyTextColor: "Key text color",
+  mousePanelColor: "Mouse panel",
+  chooseBackgroundImage: "Choose background image",
+  removeBackgroundImage: "Remove background image",
+  backgroundImageOpacity: "Background image visibility",
+  newProfileFileName: "New profile file name",
+  createProfile: "Create profile file",
 } as const;

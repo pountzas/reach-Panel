@@ -2,6 +2,7 @@ mod db;
 mod input;
 mod macros;
 mod prediction;
+mod profiles;
 mod tts;
 mod window;
 
@@ -19,10 +20,12 @@ use std::sync::Mutex;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use tts::{list_voices, speak_text, stop_speaking, TtsSettings};
+use profiles::{pick_image_file, ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{list_monitors, MonitorInfo};
 
 struct AppState {
     db: Database,
+    profiles: ProfileStore,
     last_error: Mutex<Option<String>>,
 }
 
@@ -273,6 +276,49 @@ fn cmd_get_profiles(state: State<AppState>) -> Result<Vec<Profile>, String> {
 }
 
 #[tauri::command]
+fn cmd_list_profile_files(state: State<AppState>) -> Result<Vec<ProfileFileInfo>, String> {
+    state.profiles.list_profile_files().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_get_active_profile_file(state: State<AppState>) -> Result<String, String> {
+    state.profiles.active_filename().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_load_profile_file(filename: String, state: State<AppState>) -> Result<(), String> {
+    state
+        .profiles
+        .load_profile_file(&state.db, &filename)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_save_active_profile_file(state: State<AppState>) -> Result<(), String> {
+    state
+        .profiles
+        .save_active_profile(&state.db)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_create_profile_file(
+    filename: String,
+    name: String,
+    state: State<AppState>,
+) -> Result<(), String> {
+    state
+        .profiles
+        .create_profile_file(&state.db, &filename, &name)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_pick_background_image() -> Result<Option<String>, String> {
+    pick_image_file().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn cmd_update_profile_settings(
     profile_id: String,
     settings_json: String,
@@ -281,7 +327,14 @@ fn cmd_update_profile_settings(
     state
         .db
         .update_profile_settings(&profile_id, &settings_json)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    if profile_id == INTERNAL_PROFILE_ID {
+        state
+            .profiles
+            .save_active_profile(&state.db)
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -500,9 +553,15 @@ pub fn run() {
                 .path()
                 .app_data_dir()
                 .expect("failed to resolve app data dir");
-            let db = Database::new(app_data_dir).expect("failed to initialize database");
+            let db = Database::new(app_data_dir.clone()).expect("failed to initialize database");
+            let profiles =
+                ProfileStore::new(&app_data_dir).expect("failed to initialize profile store");
+            profiles
+                .ensure_default_profile_file(&db)
+                .expect("failed to load default profile file");
             app.manage(AppState {
                 db,
+                profiles,
                 last_error: Mutex::new(None),
             });
 
@@ -534,6 +593,12 @@ pub fn run() {
             cmd_set_window_focusable,
             cmd_set_collapsed,
             cmd_get_profiles,
+            cmd_list_profile_files,
+            cmd_get_active_profile_file,
+            cmd_load_profile_file,
+            cmd_save_active_profile_file,
+            cmd_create_profile_file,
+            cmd_pick_background_image,
             cmd_update_profile_settings,
             cmd_get_quick_actions,
             cmd_save_quick_action,

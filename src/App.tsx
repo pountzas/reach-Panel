@@ -4,12 +4,12 @@ import { AppShell } from "./components/layout/AppShell";
 import { useAppStore } from "./stores/appStore";
 
 function App() {
-  const { loadProfiles, loadMonitors, loadKeyboardLayout, pollKeyboardState } =
+  const { loadProfileFiles, loadMonitors, loadKeyboardLayout, pollKeyboardState } =
     useAppStore();
 
   useEffect(() => {
     const init = async () => {
-      await loadProfiles();
+      await loadProfileFiles();
       await loadMonitors();
       await loadKeyboardLayout();
       await pollKeyboardState();
@@ -17,7 +17,7 @@ function App() {
       await invoke("cmd_set_window_focusable", { focusable: false });
     };
     init();
-  }, [loadProfiles, loadMonitors, loadKeyboardLayout, pollKeyboardState]);
+  }, [loadProfileFiles, loadMonitors, loadKeyboardLayout, pollKeyboardState]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
