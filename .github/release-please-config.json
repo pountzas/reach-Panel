@@ -4,6 +4,8 @@
   "packages": {
     ".": {
       "release-type": "node",
+      "include-component-in-tag": false,
+      "pull-request-title-pattern": "chore(main): release ${version}",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
