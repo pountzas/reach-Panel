@@ -4,7 +4,20 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 0.2.x   | :white_check_mark: |
 | 0.1.x   | :white_check_mark: |
+
+## Known upstream dependency alerts
+
+### `glib` (RUSTSEC-2024-0429 / GHSA-wrw7-89jp-8q8g)
+
+Dependabot may report a medium-severity alert for `glib` in `src-tauri/Cargo.lock`.
+
+This crate is a **transitive Linux-only dependency** pulled in by Tauri’s GTK/WebKit stack (`gtk` 0.18 → `glib` 0.18). It is not used by the Windows build path, which is the primary distribution target for this project.
+
+Patched versions require `glib` ≥ 0.20, but the unmaintained GTK3 bindings used by Tauri 2 still require `glib` 0.18. There is no safe in-repo version bump until Tauri upstream migrates that stack ([tauri#12048](https://github.com/tauri-apps/tauri/issues/12048)).
+
+We track Tauri releases for a proper fix and dismiss this alert as an accepted upstream risk until then.
 
 ## Reporting a vulnerability
 
