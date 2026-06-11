@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest an idea or improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem you want solved and how it helps accessibility users.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What need does this address?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: personas
+    attributes:
+      label: Affected personas
+      description: Who benefits most from this change?
+      options:
+        - label: Child (primary user)
+        - label: Adult
+        - label: Therapist / Caregiver
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like this to work?
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you thought about?
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
