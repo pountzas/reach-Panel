@@ -2,20 +2,20 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { v4 as uuidv4 } from "../../lib/uuid";
 import { useAppStore } from "../../stores/appStore";
-import type { QuickAction } from "../../lib/types";
+import { INTERNAL_PROFILE_ID, type QuickAction } from "../../lib/types";
 
 export function QuickActionEditor() {
-  const { activeProfileId, quickActions, loadQuickActions } = useAppStore();
+  const { quickActions, loadQuickActions, saveActiveProfile } = useAppStore();
   const [label, setLabel] = useState("");
   const [target, setTarget] = useState("");
   const [actionType, setActionType] = useState<"app" | "url">("url");
   const [category, setCategory] = useState("Utilities");
 
   const save = async () => {
-    if (!activeProfileId || !label || !target) return;
+    if (!label || !target) return;
     const action: QuickAction = {
       id: uuidv4(),
-      profile_id: activeProfileId,
+      profile_id: INTERNAL_PROFILE_ID,
       label,
       target,
       action_type: actionType,
@@ -26,11 +26,13 @@ export function QuickActionEditor() {
     setLabel("");
     setTarget("");
     await loadQuickActions();
+    await saveActiveProfile();
   };
 
   const remove = async (id: string) => {
     await invoke("cmd_delete_quick_action", { id });
     await loadQuickActions();
+    await saveActiveProfile();
   };
 
   return (
