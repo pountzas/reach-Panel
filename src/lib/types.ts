@@ -13,6 +13,13 @@ export interface AppSettings {
   keyboardFontSize?: number;
   keyboardBgColor?: string;
   keyboardKeyColor?: string;
+  keyTextColor?: string;
+  appBgColor?: string;
+  headerBgColor?: string;
+  headerTextColor?: string;
+  mousePanelBgColor?: string;
+  backgroundImagePath?: string;
+  backgroundImageOpacity?: number;
   mouseSpeed: MouseSpeed;
   mouseCustomSpeed?: number;
   precisionMode: boolean;
@@ -26,6 +33,13 @@ export interface AppSettings {
   headTrackingEnabled: boolean;
   mouseAutoHide?: boolean;
 }
+
+export interface ProfileFileInfo {
+  filename: string;
+  name: string;
+}
+
+export const INTERNAL_PROFILE_ID = "active";
 
 export interface Profile {
   id: string;
@@ -110,6 +124,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   keyboardFontSize: 18,
   keyboardBgColor: "#e8edf2",
   keyboardKeyColor: "#ffffff",
+  keyTextColor: "#1e293b",
+  appBgColor: "#f1f5f9",
+  headerBgColor: "#1e293b",
+  headerTextColor: "#ffffff",
+  mousePanelBgColor: "#f8fafc",
+  backgroundImageOpacity: 0.35,
   mouseSpeed: "medium",
   precisionMode: false,
   predictionEnabled: true,
@@ -122,3 +142,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   headTrackingEnabled: false,
   mouseAutoHide: false,
 };
+
+export const MAX_KEYBOARD_KEY_SIZE = 80;

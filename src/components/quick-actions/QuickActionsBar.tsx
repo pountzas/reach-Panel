@@ -9,7 +9,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function QuickActionsBar() {
-  const { quickActions, loadQuickActions, activeProfileId } = useAppStore();
+  const { quickActions, loadQuickActions } = useAppStore();
 
   const launch = async (actionType: string, target: string) => {
     await invoke("cmd_launch_quick_action", { actionType, target });
@@ -27,15 +27,13 @@ export function QuickActionsBar() {
           {action.label}
         </button>
       ))}
-      {activeProfileId && (
-        <button
-          type="button"
-          className="rounded-xl border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500"
-          onClick={() => loadQuickActions()}
-        >
-          Refresh
-        </button>
-      )}
+      <button
+        type="button"
+        className="rounded-xl border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500"
+        onClick={() => loadQuickActions()}
+      >
+        Refresh
+      </button>
     </div>
   );
 }

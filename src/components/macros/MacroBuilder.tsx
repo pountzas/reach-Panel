@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { v4 as uuidv4 } from "../../lib/uuid";
 import { useAppStore, getMacroSteps } from "../../stores/appStore";
-import type { MacroDef, MacroStep } from "../../lib/types";
+import { INTERNAL_PROFILE_ID, type MacroDef, type MacroStep } from "../../lib/types";
 
 export function MacroBuilder() {
   const {
     macros,
-    activeProfileId,
     loadMacros,
+    saveActiveProfile,
     setShowMacroBuilder,
   } = useAppStore();
   const [name, setName] = useState("Open YouTube");
@@ -30,7 +30,7 @@ export function MacroBuilder() {
   };
 
   const addStep = (actionType: string, payload: Record<string, unknown>) => {
-    if (!activeProfileId || macros.length === 0) return;
+    if (macros.length === 0) return;
     const macroId = macros[0]?.id ?? uuidv4();
     setSteps((prev) => [
       ...prev,
@@ -45,16 +45,16 @@ export function MacroBuilder() {
   };
 
   const save = async () => {
-    if (!activeProfileId) return;
     const macroDef: MacroDef = {
       id: macros[0]?.id ?? uuidv4(),
-      profile_id: activeProfileId,
+      profile_id: INTERNAL_PROFILE_ID,
       name,
     };
     await invoke("cmd_save_macro", {
       payload: { macroDef, steps },
     });
     await loadMacros();
+    await saveActiveProfile();
   };
 
   const run = async () => {

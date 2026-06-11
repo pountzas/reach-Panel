@@ -4,11 +4,12 @@ import {
   displayLabel,
   getLayoutRows,
   isKeyActive,
-  isLetterKey,
   isShiftActive,
+  KeyDef,
   languageSwitchLabel,
-  resolveLetterCase,
+  resolveKeyOutput,
 } from "../../lib/keyboardLayouts";
+import { MAX_KEYBOARD_KEY_SIZE } from "../../lib/types";
 import { KeyButton } from "./KeyButton";
 
 export function Keyboard() {
@@ -31,8 +32,12 @@ export function Keyboard() {
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const activeModifiers = stickyModifiers.filter((m) => m !== "capslock");
   const rows = getLayoutRows(keyboardLayout, settings.language);
+  const fullWidth =
+    !settings.mouseVisible && settings.keyboardKeySize >= MAX_KEYBOARD_KEY_SIZE;
 
-  const handleKey = async (key: string, isModifier?: boolean) => {
+  const handleKey = async (keyDef: KeyDef) => {
+    const key = keyDef.key;
+
     if (key === "capslock") {
       await invoke("cmd_press_key", {
         request: { key: "capslock", modifiers: [] },
@@ -48,7 +53,7 @@ export function Keyboard() {
       return;
     }
 
-    if (isModifier) {
+    if (keyDef.modifier) {
       toggleSticky(key);
       return;
     }
@@ -83,11 +88,8 @@ export function Keyboard() {
       return;
     }
 
-    const output =
-      key.length === 1 && isLetterKey(key)
-        ? resolveLetterCase(key, physicalKeyState.capsLock, shiftActive)
-        : key;
-    if (key.length === 1) appendTyped(output);
+    const output = resolveKeyOutput(keyDef, physicalKeyState.capsLock, shiftActive);
+    if (output.length === 1) appendTyped(output);
     await invoke("cmd_press_key", {
       request: { key: output, modifiers: [...activeModifiers] },
     });
@@ -98,33 +100,31 @@ export function Keyboard() {
 
   return (
     <div
-      className="flex flex-col rounded-xl p-2"
+      className={`flex flex-col rounded-xl p-2 ${fullWidth ? "w-full" : ""}`}
       style={{
         backgroundColor: settings.keyboardBgColor ?? "#e8edf2",
         opacity: settings.opacity,
       }}
     >
       {rows.map((row, ri) => (
-        <div key={ri} className="flex">
+        <div key={ri} className={`flex ${fullWidth ? "w-full" : ""}`}>
           {row.map((k, ci) => (
             <KeyButton
-              key={`${ri}-${k.key}-${k.label}`}
+              key={`${ri}-${k.key}-${k.label}-${ci}`}
               label={
                 k.key === "langswitch"
                   ? languageSwitchLabel(settings.language)
-                  : displayLabel(
-                      k,
-                      physicalKeyState.capsLock,
-                      shiftActive,
-                    )
+                  : displayLabel(k, physicalKeyState.capsLock, shiftActive)
               }
               width={k.width}
               size={settings.keyboardKeySize}
               spacing={settings.keyboardSpacing}
               fontSize={settings.keyboardFontSize ?? 18}
               bgColor={settings.keyboardKeyColor ?? "#ffffff"}
+              textColor={settings.keyTextColor ?? "#1e293b"}
+              stretch={fullWidth}
               active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
-              onPress={() => handleKey(k.key, k.modifier)}
+              onPress={() => handleKey(k)}
             />
           ))}
         </div>

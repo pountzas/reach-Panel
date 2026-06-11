@@ -7,18 +7,19 @@ import {
 import {
   AppSettings,
   DEFAULT_SETTINGS,
+  INTERNAL_PROFILE_ID,
   MacroDef,
   MacroStep,
   MonitorInfo,
   Phrase,
   PhraseCategory,
-  Profile,
+  ProfileFileInfo,
   QuickAction,
 } from "../lib/types";
 
 interface AppStore {
-  profiles: Profile[];
-  activeProfileId: string | null;
+  profileFiles: ProfileFileInfo[];
+  activeProfileFile: string | null;
   settings: AppSettings;
   monitors: MonitorInfo[];
   quickActions: QuickAction[];
@@ -34,8 +35,9 @@ interface AppStore {
   showMacroBuilder: boolean;
   showHeadTrackingWizard: boolean;
   keyboardLayout: string;
-  loadProfiles: () => Promise<void>;
-  setActiveProfile: (id: string) => Promise<void>;
+  loadProfileFiles: () => Promise<void>;
+  setProfileFile: (filename: string) => Promise<void>;
+  createProfileFile: (filename: string, name: string) => Promise<void>;
   updateSettings: (
     partial: Partial<AppSettings>,
     options?: { syncToSystem?: boolean },
@@ -45,6 +47,8 @@ interface AppStore {
   loadQuickActions: () => Promise<void>;
   loadPhrases: () => Promise<void>;
   loadMacros: () => Promise<void>;
+  saveActiveProfile: () => Promise<void>;
+  pickBackgroundImage: () => Promise<void>;
   setTypedBuffer: (text: string) => void;
   appendTyped: (ch: string) => void;
   backspaceTyped: () => void;
@@ -80,9 +84,28 @@ function buildDefaultSettings(monitors: MonitorInfo[]): AppSettings {
   };
 }
 
+async function loadProfileData(
+  set: (partial: Partial<AppStore>) => void,
+  get: () => AppStore,
+) {
+  const profiles = await invoke<{ id: string; settings_json: string }[]>(
+    "cmd_get_profiles",
+  );
+  const active = profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ?? profiles[0];
+  const settings = active
+    ? parseSettings(active.settings_json)
+    : DEFAULT_SETTINGS;
+  set({ settings });
+  await invoke("cmd_set_system_language", { language: settings.language });
+  await get().pollKeyboardState();
+  await get().loadQuickActions();
+  await get().loadPhrases();
+  await get().loadMacros();
+}
+
 export const useAppStore = create<AppStore>((set, get) => ({
-  profiles: [],
-  activeProfileId: null,
+  profileFiles: [],
+  activeProfileFile: null,
   settings: DEFAULT_SETTINGS,
   monitors: [],
   quickActions: [],
@@ -99,43 +122,47 @@ export const useAppStore = create<AppStore>((set, get) => ({
   showHeadTrackingWizard: false,
   keyboardLayout: "QWERTY",
 
-  loadProfiles: async () => {
-    const profiles = await invoke<Profile[]>("cmd_get_profiles");
-    const active = profiles[0]?.id ?? null;
-    const settings = active
-      ? parseSettings(profiles.find((p) => p.id === active)?.settings_json ?? "{}")
-      : DEFAULT_SETTINGS;
-    set({ profiles, activeProfileId: active, settings });
-    if (active) {
-      await invoke("cmd_set_system_language", { language: settings.language });
-      await get().pollKeyboardState();
-      await get().loadQuickActions();
-      await get().loadPhrases();
-      await get().loadMacros();
-    }
+  loadProfileFiles: async () => {
+    const [profileFiles, activeProfileFile] = await Promise.all([
+      invoke<ProfileFileInfo[]>("cmd_list_profile_files"),
+      invoke<string>("cmd_get_active_profile_file"),
+    ]);
+    set({
+      profileFiles,
+      activeProfileFile: activeProfileFile || profileFiles[0]?.filename || null,
+    });
+    await loadProfileData(set, get);
   },
 
-  setActiveProfile: async (id) => {
-    const profile = get().profiles.find((p) => p.id === id);
-    if (!profile) return;
-    const settings = parseSettings(profile.settings_json);
+  setProfileFile: async (filename) => {
+    await invoke("cmd_load_profile_file", { filename });
     set({
-      activeProfileId: id,
-      settings,
+      activeProfileFile: filename,
       typedBuffer: "",
       stickyModifiers: [],
     });
-    await invoke("cmd_set_system_language", { language: settings.language });
-    await get().pollKeyboardState();
-    await get().loadQuickActions();
-    await get().loadPhrases();
-    await get().loadMacros();
+    await loadProfileData(set, get);
     await get().loadSuggestions();
   },
 
+  createProfileFile: async (filename, name) => {
+    await invoke("cmd_create_profile_file", { filename, name });
+    await get().loadProfileFiles();
+  },
+
+  saveActiveProfile: async () => {
+    await invoke("cmd_save_active_profile_file");
+  },
+
+  pickBackgroundImage: async () => {
+    const path = await invoke<string | null>("cmd_pick_background_image");
+    if (path) {
+      await get().updateSettings({ backgroundImagePath: path });
+    }
+  },
+
   updateSettings: async (partial, options) => {
-    const { activeProfileId, settings } = get();
-    if (!activeProfileId) return;
+    const { settings } = get();
     const syncToSystem = options?.syncToSystem ?? true;
     const languageChanged =
       partial.language !== undefined && partial.language !== settings.language;
@@ -145,7 +172,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await invoke("cmd_set_system_language", { language: partial.language! });
     }
     await invoke("cmd_update_profile_settings", {
-      profileId: activeProfileId,
+      profileId: INTERNAL_PROFILE_ID,
       settingsJson: JSON.stringify(next),
     });
     if (languageChanged) {
@@ -164,8 +191,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   resetSettingsToDefaults: async () => {
-    const { monitors, activeProfileId } = get();
-    if (!activeProfileId) return;
+    const { monitors } = get();
     await get().updateSettings(buildDefaultSettings(monitors));
   },
 
@@ -175,34 +201,29 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   loadQuickActions: async () => {
-    const { activeProfileId } = get();
-    if (!activeProfileId) return;
     const quickActions = await invoke<QuickAction[]>("cmd_get_quick_actions", {
-      profileId: activeProfileId,
+      profileId: INTERNAL_PROFILE_ID,
     });
     set({ quickActions });
   },
 
   loadPhrases: async () => {
-    const { activeProfileId, settings } = get();
-    if (!activeProfileId) return;
+    const { settings } = get();
     const [phrases, phraseCategories] = await Promise.all([
       invoke<Phrase[]>("cmd_get_phrases", {
-        profileId: activeProfileId,
+        profileId: INTERNAL_PROFILE_ID,
         language: settings.language,
       }),
       invoke<PhraseCategory[]>("cmd_get_phrase_categories", {
-        profileId: activeProfileId,
+        profileId: INTERNAL_PROFILE_ID,
       }),
     ]);
     set({ phrases, phraseCategories });
   },
 
   loadMacros: async () => {
-    const { activeProfileId } = get();
-    if (!activeProfileId) return;
     const macros = await invoke<MacroDef[]>("cmd_get_macros", {
-      profileId: activeProfileId,
+      profileId: INTERNAL_PROFILE_ID,
     });
     set({ macros });
   },
@@ -247,13 +268,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     });
 
     if (!languageUnchanged) {
-      const { activeProfileId } = get();
-      if (activeProfileId) {
-        await invoke("cmd_update_profile_settings", {
-          profileId: activeProfileId,
-          settingsJson: JSON.stringify(get().settings),
-        });
-      }
+      await invoke("cmd_update_profile_settings", {
+        profileId: INTERNAL_PROFILE_ID,
+        settingsJson: JSON.stringify(get().settings),
+      });
       set({ typedBuffer: "", suggestions: [] });
       await get().loadPhrases();
       await get().loadSuggestions();
@@ -271,8 +289,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   clearSticky: () => set({ stickyModifiers: [] }),
 
   loadSuggestions: async () => {
-    const { activeProfileId, settings, typedBuffer } = get();
-    if (!activeProfileId || !settings.predictionEnabled) {
+    const { settings, typedBuffer } = get();
+    if (!settings.predictionEnabled) {
       set({ suggestions: [] });
       return;
     }
@@ -283,7 +301,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
     const results = await invoke<{ word: string }[]>("cmd_get_suggestions", {
-      profileId: activeProfileId,
+      profileId: INTERNAL_PROFILE_ID,
       prefix,
       language: settings.language,
     });
@@ -291,19 +309,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applySuggestion: async (word) => {
-    const { activeProfileId, settings, typedBuffer } = get();
+    const { settings, typedBuffer } = get();
     const parts = typedBuffer.split(/\s+/);
     parts[parts.length - 1] = word;
     const next = parts.join(" ") + " ";
     set({ typedBuffer: next });
     await invoke("cmd_type_text", { text: word + " " });
-    if (activeProfileId) {
-      await invoke("cmd_record_word", {
-        profileId: activeProfileId,
-        word,
-        language: settings.language,
-      });
-    }
+    await invoke("cmd_record_word", {
+      profileId: INTERNAL_PROFILE_ID,
+      word,
+      language: settings.language,
+    });
     await get().loadSuggestions();
   },
 

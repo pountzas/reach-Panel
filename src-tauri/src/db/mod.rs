@@ -49,6 +49,18 @@ pub struct Phrase {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PhraseWithLanguage {
+    pub id: String,
+    pub profile_id: String,
+    pub category_id: String,
+    pub text: String,
+    pub action: String,
+    pub is_favorite: bool,
+    pub is_emergency: bool,
+    pub language: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MacroDef {
     pub id: String,
     pub profile_id: String,
@@ -244,75 +256,7 @@ impl Database {
         if count > 0 {
             return Ok(());
         }
-
-        let default_settings = serde_json::json!({
-            "theme": "light",
-            "opacity": 0.95,
-            "language": "en",
-            "mouseSide": "right",
-            "mousePanelWidth": 280,
-            "keyboardKeySize": 56,
-            "keyboardSpacing": 6,
-            "mouseSpeed": "medium",
-            "precisionMode": false,
-            "predictionEnabled": true,
-            "emergencyVisible": true,
-            "accessibilityMonitorId": 0,
-            "collapsed": false,
-            "headTrackingEnabled": false
-        });
-
-        let profiles = [
-            ("Child", default_settings.clone()),
-            (
-                "Parent",
-                serde_json::json!({
-                    "theme": "light",
-                    "opacity": 1.0,
-                    "language": "en",
-                    "mouseSide": "right",
-                    "mousePanelWidth": 240,
-                    "keyboardKeySize": 44,
-                    "keyboardSpacing": 4,
-                    "mouseSpeed": "fast",
-                    "precisionMode": false,
-                    "predictionEnabled": true,
-                    "emergencyVisible": true,
-                    "accessibilityMonitorId": 0,
-                    "collapsed": false,
-                    "headTrackingEnabled": false
-                }),
-            ),
-            (
-                "Therapist",
-                serde_json::json!({
-                    "theme": "dark",
-                    "opacity": 0.9,
-                    "language": "en",
-                    "mouseSide": "left",
-                    "mousePanelWidth": 260,
-                    "keyboardKeySize": 48,
-                    "keyboardSpacing": 5,
-                    "mouseSpeed": "medium",
-                    "precisionMode": false,
-                    "predictionEnabled": false,
-                    "emergencyVisible": true,
-                    "accessibilityMonitorId": 0,
-                    "collapsed": false,
-                    "headTrackingEnabled": false
-                }),
-            ),
-        ];
-
-        for (name, settings) in profiles {
-            let id = Uuid::new_v4().to_string();
-            let now = Utc::now().to_rfc3339();
-            conn.execute(
-                "INSERT INTO profiles (id, name, settings_json, created_at) VALUES (?1, ?2, ?3, ?4)",
-                params![id, name, settings.to_string(), now],
-            )?;
-            self.seed_profile_data(&conn, &id)?;
-        }
+        // Profile content is loaded from file-based profiles on startup.
         Ok(())
     }
 
@@ -441,6 +385,184 @@ impl Database {
         Ok(())
     }
 
+    pub fn ensure_internal_profile(&self, id: &str, name: &str) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let exists: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM profiles WHERE id = ?1",
+            [id],
+            |r| r.get(0),
+        )?;
+        if exists == 0 {
+            let now = Utc::now().to_rfc3339();
+            let settings = serde_json::json!({
+                "theme": "light",
+                "opacity": 0.95,
+                "language": "en",
+                "mouseSide": "right",
+                "mouseVisible": true,
+                "mousePanelWidth": 280,
+                "keyboardKeySize": 56,
+                "keyboardSpacing": 6,
+                "mouseSpeed": "medium",
+                "precisionMode": false,
+                "predictionEnabled": true,
+                "quickActionsVisible": true,
+                "phrasesVisible": true,
+                "suggestionsVisible": true,
+                "emergencyVisible": true,
+                "accessibilityMonitorId": 0,
+                "collapsed": false,
+                "headTrackingEnabled": false
+            });
+            conn.execute(
+                "INSERT INTO profiles (id, name, settings_json, created_at) VALUES (?1, ?2, ?3, ?4)",
+                params![id, name, settings.to_string(), now],
+            )?;
+            self.seed_profile_data(&conn, id)?;
+        } else {
+            conn.execute(
+                "UPDATE profiles SET name = ?1 WHERE id = ?2",
+                params![name, id],
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn reset_profile_to_defaults(&self, profile_id: &str, name: &str) -> Result<()> {
+        self.clear_profile_data(profile_id)?;
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let settings = serde_json::json!({
+            "theme": "light",
+            "opacity": 0.95,
+            "language": "en",
+            "mouseSide": "right",
+            "mouseVisible": true,
+            "mousePanelWidth": 280,
+            "keyboardKeySize": 56,
+            "keyboardSpacing": 6,
+            "mouseSpeed": "medium",
+            "precisionMode": false,
+            "predictionEnabled": true,
+            "quickActionsVisible": true,
+            "phrasesVisible": true,
+            "suggestionsVisible": true,
+            "emergencyVisible": true,
+            "accessibilityMonitorId": 0,
+            "collapsed": false,
+            "headTrackingEnabled": false
+        });
+        conn.execute(
+            "UPDATE profiles SET name = ?1, settings_json = ?2 WHERE id = ?3",
+            params![name, settings.to_string(), profile_id],
+        )?;
+        self.seed_profile_data(&conn, profile_id)?;
+        Ok(())
+    }
+
+    pub fn clear_profile_data(&self, profile_id: &str) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let macro_ids: Vec<String> = conn
+            .prepare("SELECT id FROM macros WHERE profile_id = ?1")?
+            .query_map([profile_id], |row| row.get(0))?
+            .filter_map(Result::ok)
+            .collect();
+        for macro_id in macro_ids {
+            conn.execute("DELETE FROM macro_steps WHERE macro_id = ?1", params![macro_id])?;
+        }
+        conn.execute("DELETE FROM quick_actions WHERE profile_id = ?1", params![profile_id])?;
+        conn.execute("DELETE FROM phrases WHERE profile_id = ?1", params![profile_id])?;
+        conn.execute(
+            "DELETE FROM phrase_categories WHERE profile_id = ?1",
+            params![profile_id],
+        )?;
+        conn.execute("DELETE FROM macros WHERE profile_id = ?1", params![profile_id])?;
+        conn.execute("DELETE FROM predictions WHERE profile_id = ?1", params![profile_id])?;
+        conn.execute(
+            "DELETE FROM head_tracking_profiles WHERE profile_id = ?1",
+            params![profile_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_profile_by_id(&self, id: &str) -> Result<Option<Profile>> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let mut stmt =
+            conn.prepare("SELECT id, name, settings_json, created_at FROM profiles WHERE id = ?1")?;
+        let mut rows = stmt.query([id])?;
+        if let Some(row) = rows.next()? {
+            Ok(Some(Profile {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                settings_json: row.get(2)?,
+                created_at: row.get(3)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn get_all_phrases(&self, profile_id: &str) -> Result<Vec<PhraseWithLanguage>> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let mut stmt = conn.prepare(
+            "SELECT id, profile_id, category_id, text, action, is_favorite, is_emergency, language FROM phrases WHERE profile_id = ?1",
+        )?;
+        let rows = stmt.query_map([profile_id], |row| {
+            Ok(PhraseWithLanguage {
+                id: row.get(0)?,
+                profile_id: row.get(1)?,
+                category_id: row.get(2)?,
+                text: row.get(3)?,
+                action: row.get(4)?,
+                is_favorite: row.get::<_, i32>(5)? != 0,
+                is_emergency: row.get::<_, i32>(6)? != 0,
+                language: row.get(7)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn get_all_predictions(&self, profile_id: &str) -> Result<Vec<PredictionEntry>> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let mut stmt = conn.prepare(
+            "SELECT word, language, frequency FROM predictions WHERE profile_id = ?1 ORDER BY frequency DESC",
+        )?;
+        let rows = stmt.query_map([profile_id], |row| {
+            Ok(PredictionEntry {
+                word: row.get(0)?,
+                language: row.get(1)?,
+                frequency: row.get(2)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn insert_phrase_with_language(&self, phrase: &PhraseWithLanguage) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        conn.execute(
+            "INSERT INTO phrases (id, profile_id, category_id, text, action, is_favorite, is_emergency, language) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
+            params![
+                phrase.id,
+                phrase.profile_id,
+                phrase.category_id,
+                phrase.text,
+                phrase.action,
+                phrase.is_favorite as i32,
+                phrase.is_emergency as i32,
+                phrase.language
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn insert_prediction(&self, profile_id: &str, entry: &PredictionEntry) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        conn.execute(
+            "INSERT INTO predictions (profile_id, word, language, frequency) VALUES (?1,?2,?3,?4)",
+            params![profile_id, entry.word, entry.language, entry.frequency],
+        )?;
+        Ok(())
+    }
+
     pub fn get_profiles(&self) -> Result<Vec<Profile>> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
         let mut stmt = conn.prepare("SELECT id, name, settings_json, created_at FROM profiles ORDER BY created_at")?;
@@ -515,6 +637,15 @@ impl Database {
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn save_phrase_category(&self, category: &PhraseCategory) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        conn.execute(
+            "INSERT OR REPLACE INTO phrase_categories (id, profile_id, name, sort_order) VALUES (?1,?2,?3,?4)",
+            params![category.id, category.profile_id, category.name, category.sort_order],
+        )?;
+        Ok(())
     }
 
     pub fn get_phrase_categories(&self, profile_id: &str) -> Result<Vec<PhraseCategory>> {

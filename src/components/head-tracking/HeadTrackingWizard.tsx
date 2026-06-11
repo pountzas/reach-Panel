@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useHeadTracking } from "../../hooks/useHeadTracking";
 import { useAppStore } from "../../stores/appStore";
-import type { HeadTrackingSettings } from "../../lib/types";
+import { INTERNAL_PROFILE_ID, type HeadTrackingSettings } from "../../lib/types";
 
 const DEFAULT_HT: HeadTrackingSettings = {
   sensitivity: 5,
@@ -13,7 +13,7 @@ const DEFAULT_HT: HeadTrackingSettings = {
 };
 
 export function HeadTrackingWizard() {
-  const { activeProfileId, settings, updateSettings, setShowHeadTrackingWizard } =
+  const { settings, updateSettings, saveActiveProfile, setShowHeadTrackingWizard } =
     useAppStore();
   const [htSettings, setHtSettings] = useState<HeadTrackingSettings>(DEFAULT_HT);
   const [mode, setMode] = useState<"touch" | "head">(
@@ -27,18 +27,17 @@ export function HeadTrackingWizard() {
   );
 
   useEffect(() => {
-    if (!activeProfileId) return;
-    invoke<string>("cmd_get_head_tracking_settings", { profileId: activeProfileId })
+    invoke<string>("cmd_get_head_tracking_settings", { profileId: INTERNAL_PROFILE_ID })
       .then((json) => setHtSettings({ ...DEFAULT_HT, ...JSON.parse(json) }))
       .catch(() => {});
-  }, [activeProfileId]);
+  }, []);
 
   const save = async () => {
-    if (!activeProfileId) return;
     await invoke("cmd_save_head_tracking_settings", {
-      profileId: activeProfileId,
+      profileId: INTERNAL_PROFILE_ID,
       settingsJson: JSON.stringify({ ...htSettings, calibrated }),
     });
+    await saveActiveProfile();
     await updateSettings({ headTrackingEnabled: mode === "head" });
     setShowHeadTrackingWizard(false);
   };

@@ -6,8 +6,12 @@ export function MousePanel() {
 
   return (
     <div
-      className="flex h-full flex-col rounded-xl border border-slate-300 bg-slate-50 p-2"
-      style={{ width: settings.mousePanelWidth, minWidth: 180 }}
+      className="flex h-full min-h-0 flex-col self-stretch rounded-xl border border-slate-300 p-2"
+      style={{
+        width: settings.mousePanelWidth,
+        minWidth: 180,
+        backgroundColor: settings.mousePanelBgColor ?? "#f8fafc",
+      }}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-semibold text-slate-700">Mouse</span>

@@ -7,7 +7,9 @@ interface KeyButtonProps {
   spacing: number;
   fontSize: number;
   bgColor: string;
+  textColor?: string;
   active?: boolean;
+  stretch?: boolean;
   onPress: () => void;
 }
 
@@ -18,7 +20,9 @@ export function KeyButton({
   spacing,
   fontSize,
   bgColor,
+  textColor = "#1e293b",
   active,
+  stretch,
   onPress,
 }: KeyButtonProps) {
   const [localPressed, setLocalPressed] = useState(false);
@@ -27,15 +31,29 @@ export function KeyButton({
   return (
     <button
       type="button"
-      className={`rounded-lg border border-slate-300 font-semibold text-slate-800 shadow-sm transition active:scale-95 ${active ? "sticky-active" : ""} ${pressed ? "key-pressed" : ""}`}
-      style={{
-        width: size * width + spacing * (width - 1),
-        height: size,
-        fontSize,
-        backgroundColor: bgColor,
-        marginRight: spacing,
-        marginBottom: spacing,
-      }}
+      className={`rounded-lg border border-slate-300 font-semibold shadow-sm transition active:scale-95 ${active ? "sticky-active" : ""} ${pressed ? "key-pressed" : ""}`}
+      style={
+        stretch
+          ? {
+              flex: `${width} 1 0`,
+              minWidth: 0,
+              height: size,
+              fontSize,
+              color: textColor,
+              backgroundColor: bgColor,
+              marginRight: spacing,
+              marginBottom: spacing,
+            }
+          : {
+              width: size * width + spacing * (width - 1),
+              height: size,
+              fontSize,
+              color: textColor,
+              backgroundColor: bgColor,
+              marginRight: spacing,
+              marginBottom: spacing,
+            }
+      }
       onPointerDown={() => setLocalPressed(true)}
       onPointerUp={() => setLocalPressed(false)}
       onPointerLeave={() => setLocalPressed(false)}
