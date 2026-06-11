@@ -88,6 +88,10 @@ Installers and executables are written to:
 src-tauri/target/release/bundle/
 ```
 
+## Releases
+
+Windows installers are published automatically when a [release-please](https://github.com/googleapis/release-please) Release PR is merged on `main`. Development happens on `dev`; merging `dev` → `main` opens the Release PR. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full branch and versioning workflow.
+
 ## Architecture
 
 | Path | Responsibility |
