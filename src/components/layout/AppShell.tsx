@@ -114,14 +114,11 @@ export function AppShell() {
         {settings.quickActionsVisible && <QuickActionsBar />}
 
         <div className="flex min-h-0 flex-1 flex-col p-2">
-          <div className="min-h-0 flex-1 overflow-auto">
-            <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
-              {settings.phrasesVisible && <PhrasePanel />}
-              <div className="rounded-xl border border-slate-200 bg-white/90 p-2 text-xs text-slate-500">
-                {t("validationHint")}
-              </div>
+          {settings.phrasesVisible && (
+            <div className="min-h-0 flex-1 overflow-auto">
+              <PhrasePanel />
             </div>
-          </div>
+          )}
 
           <div className="mt-auto shrink-0 space-y-2 pt-2">
             {settings.suggestionsVisible && <SuggestionsBar />}

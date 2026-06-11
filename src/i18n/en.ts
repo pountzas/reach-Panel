@@ -38,8 +38,6 @@ export const en = {
   turnOff: "Turn off",
   inputError: "Input error:",
   dismiss: "Dismiss",
-  validationHint:
-    "Validation: typing works in Notepad, Chrome, Word, Teams, Explorer. Elevated apps may block injection.",
   appearance: "Appearance",
   appBackgroundColor: "App background",
   headerColor: "Header bar",

@@ -40,8 +40,6 @@ export const el: Record<keyof typeof en, string> = {
   turnOff: "Απενεργοποίηση",
   inputError: "Σφάλμα εισόδου:",
   dismiss: "Απόρριψη",
-  validationHint:
-    "Επικύρωση: η πληκτρολόγηση λειτουργεί σε Notepad, Chrome, Word, Teams, Explorer. Εφαρμογές με υψηλά δικαιώματα μπορεί να μπλοκάρουν την εισαγωγή.",
   appearance: "Εμφάνιση",
   appBackgroundColor: "Φόντο εφαρμογής",
   headerColor: "Γραμμή κεφαλίδας",

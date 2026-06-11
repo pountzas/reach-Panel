@@ -527,23 +527,6 @@ fn cmd_head_tracking_move(dx: i32, dy: i32, state: State<AppState>) -> CommandRe
     }
 }
 
-#[tauri::command]
-fn cmd_validation_status() -> serde_json::Value {
-    serde_json::json!({
-        "apps": [
-            { "name": "Notepad", "type": true, "combos": true, "special": true },
-            { "name": "Chrome", "type": true, "combos": true, "special": true },
-            { "name": "Word", "type": true, "combos": true, "special": true },
-            { "name": "Teams", "type": true, "combos": true, "special": true },
-            { "name": "Explorer", "type": true, "combos": true, "special": true }
-        ],
-        "limitations": [
-            "Elevated/admin applications may block input injection",
-            "UAC prompts require physical confirmation"
-        ]
-    })
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -623,7 +606,6 @@ pub fn run() {
             cmd_get_head_tracking_settings,
             cmd_save_head_tracking_settings,
             cmd_head_tracking_move,
-            cmd_validation_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
