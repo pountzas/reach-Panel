@@ -84,10 +84,10 @@ pub fn mouse_click(_button: &str) -> Result<()> {
     unsupported()
 }
 
-pub fn mouse_double_click(_button: &str) -> Result<()> {
+pub fn mouse_double_click() -> Result<()> {
     unsupported()
 }
 
-pub fn mouse_scroll(_delta: i32) -> Result<()> {
+pub fn mouse_scroll(_delta: i32, _horizontal: bool) -> Result<()> {
     unsupported()
 }
