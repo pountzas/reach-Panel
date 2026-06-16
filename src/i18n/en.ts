@@ -50,4 +50,6 @@ export const en = {
   backgroundImageOpacity: "Background image visibility",
   newProfileFileName: "New profile file name",
   createProfile: "Create profile file",
+  resizeSection: "Resize",
+  resizeDone: "Done",
 } as const;

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
+import { Group, Panel } from "react-resizable-panels";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { Keyboard } from "../keyboard/Keyboard";
 import { MousePanel } from "../mouse/MousePanel";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
@@ -9,6 +9,9 @@ import { ErrorBanner } from "../common/ErrorBanner";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import { MacroBuilder } from "../macros/MacroBuilder";
 import { HeadTrackingWizard } from "../head-tracking/HeadTrackingWizard";
+import { Keyboard } from "../keyboard/Keyboard";
+import { LayoutResizeProvider, SectionPanel } from "./SectionPanel";
+import { SectionResizeHandle } from "./SectionResizeHandle";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 
@@ -63,14 +66,6 @@ export function AppShell() {
     shellStyle.backgroundRepeat = "no-repeat";
   }
 
-  const inputRow = (
-    <div className="flex shrink-0 items-stretch gap-2">
-      {showMouse && settings.mouseSide === "left" && mousePanel}
-      {keyboardPanel}
-      {showMouse && settings.mouseSide === "right" && mousePanel}
-    </div>
-  );
-
   return (
     <div className="relative flex h-screen flex-col" style={shellStyle}>
       {settings.backgroundImagePath && (
@@ -111,20 +106,56 @@ export function AppShell() {
         </div>
 
         <ErrorBanner />
-        {settings.quickActionsVisible && <QuickActionsBar />}
 
-        <div className="flex min-h-0 flex-1 flex-col p-2">
-          {settings.phrasesVisible && (
-            <div className="min-h-0 flex-1 overflow-auto">
-              <PhrasePanel />
-            </div>
-          )}
+        <LayoutResizeProvider>
+          <Group orientation="vertical" className="flex min-h-0 flex-1 flex-col p-2">
+            {settings.quickActionsVisible && (
+              <>
+                <Panel defaultSize={12} minSize={6} id="quick-actions">
+                  <SectionPanel>
+                    <QuickActionsBar />
+                  </SectionPanel>
+                </Panel>
+                <SectionResizeHandle />
+              </>
+            )}
 
-          <div className="mt-auto shrink-0 space-y-2 pt-2">
-            {settings.suggestionsVisible && <SuggestionsBar />}
-            {inputRow}
-          </div>
-        </div>
+            {settings.phrasesVisible && (
+              <>
+                <Panel defaultSize={40} minSize={15} id="phrases">
+                  <SectionPanel>
+                    <PhrasePanel />
+                  </SectionPanel>
+                </Panel>
+                <SectionResizeHandle />
+              </>
+            )}
+
+            <Panel defaultSize={48} minSize={25} id="input-area">
+              <Group orientation="vertical" className="flex h-full flex-col">
+                {settings.suggestionsVisible && (
+                  <>
+                    <Panel defaultSize={15} minSize={8} id="suggestions">
+                      <SectionPanel>
+                        <SuggestionsBar />
+                      </SectionPanel>
+                    </Panel>
+                    <SectionResizeHandle />
+                  </>
+                )}
+                <Panel defaultSize={85} minSize={40} id="keyboard-mouse">
+                  <SectionPanel className="pt-0">
+                    <div className="flex h-full items-stretch gap-2 pt-6">
+                      {showMouse && settings.mouseSide === "left" && mousePanel}
+                      {keyboardPanel}
+                      {showMouse && settings.mouseSide === "right" && mousePanel}
+                    </div>
+                  </SectionPanel>
+                </Panel>
+              </Group>
+            </Panel>
+          </Group>
+        </LayoutResizeProvider>
 
         {showMouse && settings.mouseSide === "floating" && (
           <div className="fixed bottom-4 right-4 z-40 h-64 w-72 shadow-2xl">

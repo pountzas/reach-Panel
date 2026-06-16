@@ -52,4 +52,6 @@ export const el: Record<keyof typeof en, string> = {
   backgroundImageOpacity: "Ορατότητα εικόνας φόντου",
   newProfileFileName: "Όνομα νέου αρχείου προφίλ",
   createProfile: "Δημιουργία αρχείου προφίλ",
+  resizeSection: "Αλλαγή μεγέθους",
+  resizeDone: "Τέλος",
 };
