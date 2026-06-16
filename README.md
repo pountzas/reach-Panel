@@ -4,19 +4,19 @@ Assistive virtual keyboard and mouse for Windows — built for users with severe
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-lightgrey)]()
-[![Build](https://github.com/nik/accessibility-keyboard/actions/workflows/build.yml/badge.svg)](https://github.com/nik/accessibility-keyboard/actions/workflows/build.yml)
+[![Build](https://github.com/pountzas/accessibility-keyboard/actions/workflows/build.yml/badge.svg)](https://github.com/pountzas/accessibility-keyboard/actions/workflows/build.yml)
 
 Built with Tauri, React, Rust, and SQLite.
 
 ## Download (Windows)
 
-Pre-built installers are on the [Releases](https://github.com/nik/accessibility-keyboard/releases) page.
+Pre-built installers are on the [Releases](https://github.com/pountzas/accessibility-keyboard/releases) page.
 
 1. Download the latest `.msi` or `.exe` installer for Windows.
 2. Run the installer. On older Windows builds, you may need the [WebView2 runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
 3. Open the app on your accessibility monitor (wheelchair-mounted touchscreen), select a profile in Settings, and position the window on the correct display.
 
-> **macOS is not supported yet.** The input and speech backends use Windows APIs (`SendInput`, SAPI/WinRT). See [Roadmap](#roadmap).
+> **macOS builds are experimental.** CI produces `.dmg` bundles, but input injection and TTS still require Windows APIs for full functionality. See [Roadmap](#roadmap).
 
 ## Screenshots
 
@@ -32,6 +32,9 @@ _Replace with captures from your release build when ready — see [docs/images/R
 
 - System-wide keyboard injection with sticky modifiers
 - Adjustable on-screen keyboard (size, spacing, colors, opacity)
+- Optional function keys row (F1–F12) via Settings
+- Keyboard / synthesizer mode toggle with two-octave piano keyboard
+- Language switch key with country flag icons (EN ↔ EL)
 - Predictive text (English + Greek) with disable toggle
 - Macro builder with JSON import/export
 
@@ -39,6 +42,7 @@ _Replace with captures from your release build when ready — see [docs/images/R
 
 - Virtual trackpad with left/right/floating placement
 - Move, click, scroll from the accessibility touchscreen
+- Toggle between trackpad and on-screen numeric keypad
 
 ### Communication
 
@@ -55,7 +59,9 @@ _Replace with captures from your release build when ready — see [docs/images/R
 
 ## Requirements
 
-**Platform: Windows 10 or 11 only.**
+**Full assistive functionality: Windows 10 or 11.**
+
+macOS builds run the UI for development and testing; system-wide keyboard, mouse, and speech features are not yet implemented on macOS.
 
 For development:
 
@@ -90,16 +96,16 @@ src-tauri/target/release/bundle/
 
 ## Releases
 
-Windows installers are published automatically when a [release-please](https://github.com/googleapis/release-please) Release PR is merged on `main`. Development happens on `dev`; merging `dev` → `main` opens the Release PR. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full branch and versioning workflow.
+Windows and macOS bundles are built in CI. Windows installers are published automatically when a [release-please](https://github.com/googleapis/release-please) Release PR is merged on `main`. Development happens on `dev`; merging `dev` → `main` opens the Release PR. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full branch and versioning workflow.
 
 ## Architecture
 
 | Path | Responsibility |
 |------|----------------|
 | `src/` | React frontend (keyboard, mouse, phrases, settings, head tracking) |
-| `src-tauri/src/input/` | Windows `SendInput` keyboard/mouse injection |
-| `src-tauri/src/window/` | Multi-monitor enumeration and positioning |
-| `src-tauri/src/tts/` | Windows SAPI / WinRT text-to-speech |
+| `src-tauri/src/input/` | Platform keyboard/mouse injection (Windows `SendInput`; macOS stubs) |
+| `src-tauri/src/window/` | Monitor enumeration (Windows APIs; macOS stub) |
+| `src-tauri/src/tts/` | Text-to-speech (Windows SAPI / WinRT; macOS stub) |
 | `src-tauri/src/db/` | SQLite persistence (profiles, phrases, macros) |
 | `src-tauri/src/prediction/` | Predictive text suggestions |
 | `docs/accessibility-requirements.md` | Personas and acceptance criteria |
@@ -108,12 +114,12 @@ Windows installers are published automatically when a [release-please](https://g
 
 - Eye tracking support
 - AutoHotkey macro import
-- macOS port (CGEvent input, AVSpeechSynthesizer, monitor APIs)
+- macOS port: CGEvent input, AVSpeechSynthesizer, native monitor APIs (experimental CI builds in progress)
 
 ## Known limitations
 
 - Input injection does not work into elevated (admin) applications or UAC prompts
-- macOS builds are not available yet
+- macOS bundles lack system-wide input and TTS until the native backends land
 
 ## Contributing
 

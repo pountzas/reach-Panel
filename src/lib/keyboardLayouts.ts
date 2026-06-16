@@ -71,6 +71,7 @@ export function isKeyActive(
   col: number,
   physical: PhysicalKeyState,
   stickyModifiers: string[],
+  options?: { functionKeysEnabled?: boolean },
 ): boolean {
   const pressed = new Set(physical.pressedVks);
   switch (keyDef.key) {
@@ -87,7 +88,16 @@ export function isKeyActive(
     case "langswitch":
       return false;
     default: {
-      const vk = vkForLayoutKey(row, col);
+      if (/^F\d{1,2}$/i.test(keyDef.key)) {
+        const num = Number.parseInt(keyDef.key.slice(1), 10);
+        if (num >= 1 && num <= 24) {
+          return pressed.has(0x70 + num - 1);
+        }
+        return false;
+      }
+      const layoutRow =
+        options?.functionKeysEnabled && row > 0 ? row - 1 : row;
+      const vk = vkForLayoutKey(layoutRow, col);
       return vk !== null && pressed.has(vk);
     }
   }
@@ -142,6 +152,21 @@ export function displayLabel(
   if (shift && keyDef.shiftLabel) return keyDef.shiftLabel;
   return keyDef.label;
 }
+
+export const FUNCTION_KEY_ROW: KeyDef[] = [
+  { label: "F1", key: "F1" },
+  { label: "F2", key: "F2" },
+  { label: "F3", key: "F3" },
+  { label: "F4", key: "F4" },
+  { label: "F5", key: "F5" },
+  { label: "F6", key: "F6" },
+  { label: "F7", key: "F7" },
+  { label: "F8", key: "F8" },
+  { label: "F9", key: "F9" },
+  { label: "F10", key: "F10" },
+  { label: "F11", key: "F11" },
+  { label: "F12", key: "F12" },
+];
 
 export const QWERTY_ROWS: KeyDef[][] = [
   [
@@ -303,18 +328,31 @@ export function languageSwitchLabel(current: string): string {
   return nextLanguage(current) === "el" ? "EL" : "EN";
 }
 
-export function getLayoutRows(layoutName: string, language: string): KeyDef[][] {
-  if (language === "el") return GREEK_ROWS;
-  if (layoutName === "AZERTY") {
-    return QWERTY_ROWS.map((row) =>
-      row.map((k) => {
-        const azertyMap: Record<string, string> = {
-          q: "a", w: "z", a: "q", z: "w",
-        };
-        const mapped = azertyMap[k.key.toLowerCase()];
-        return mapped ? { ...k, key: mapped, label: mapped } : k;
-      }),
-    );
+export function getLayoutRows(
+  layoutName: string,
+  language: string,
+  options?: { functionKeysEnabled?: boolean },
+): KeyDef[][] {
+  const base =
+    language === "el"
+      ? GREEK_ROWS
+      : layoutName === "AZERTY"
+        ? QWERTY_ROWS.map((row) =>
+            row.map((k) => {
+              const azertyMap: Record<string, string> = {
+                q: "a",
+                w: "z",
+                a: "q",
+                z: "w",
+              };
+              const mapped = azertyMap[k.key.toLowerCase()];
+              return mapped ? { ...k, key: mapped, label: mapped } : k;
+            }),
+          )
+        : QWERTY_ROWS;
+
+  if (options?.functionKeysEnabled) {
+    return [FUNCTION_KEY_ROW, ...base];
   }
-  return QWERTY_ROWS;
+  return base;
 }
