@@ -6,11 +6,11 @@ import {
   isKeyActive,
   isShiftActive,
   KeyDef,
-  languageSwitchLabel,
   resolveKeyOutput,
 } from "../../lib/keyboardLayouts";
 import { MAX_KEYBOARD_KEY_SIZE } from "../../lib/types";
 import { KeyButton } from "./KeyButton";
+import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
 
 export function Keyboard() {
   const {
@@ -31,7 +31,9 @@ export function Keyboard() {
 
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const activeModifiers = stickyModifiers.filter((m) => m !== "capslock");
-  const rows = getLayoutRows(keyboardLayout, settings.language);
+  const rows = getLayoutRows(keyboardLayout, settings.language, {
+    functionKeysEnabled: settings.functionKeysEnabled,
+  });
   const fullWidth =
     !settings.mouseVisible && settings.keyboardKeySize >= MAX_KEYBOARD_KEY_SIZE;
 
@@ -112,9 +114,14 @@ export function Keyboard() {
             <KeyButton
               key={`${ri}-${k.key}-${k.label}-${ci}`}
               label={
-                k.key === "langswitch"
-                  ? languageSwitchLabel(settings.language)
-                  : displayLabel(k, physicalKeyState.capsLock, shiftActive)
+                k.key === "langswitch" ? (
+                  <LanguageSwitchLabel
+                    currentLanguage={settings.language}
+                    fontSize={settings.keyboardFontSize ?? 18}
+                  />
+                ) : (
+                  displayLabel(k, physicalKeyState.capsLock, shiftActive)
+                )
               }
               width={k.width}
               size={settings.keyboardKeySize}
@@ -123,7 +130,14 @@ export function Keyboard() {
               bgColor={settings.keyboardKeyColor ?? "#ffffff"}
               textColor={settings.keyTextColor ?? "#1e293b"}
               stretch={fullWidth}
-              active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
+              active={isKeyActive(
+                k,
+                ri,
+                ci,
+                physicalKeyState,
+                stickyModifiers,
+                { functionKeysEnabled: settings.functionKeysEnabled },
+              )}
               onPress={() => handleKey(k)}
             />
           ))}

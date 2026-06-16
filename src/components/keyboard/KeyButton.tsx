@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 interface KeyButtonProps {
-  label: string;
+  label: ReactNode;
   width?: number;
   size: number;
   spacing: number;
