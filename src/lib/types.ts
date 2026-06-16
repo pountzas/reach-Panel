@@ -1,5 +1,6 @@
 export type MouseSide = "right" | "left" | "floating";
 export type MouseSpeed = "slow" | "medium" | "fast" | "custom";
+export type MousePanelMode = "mouse" | "numpad";
 
 export interface AppSettings {
   theme: string;
@@ -7,6 +8,7 @@ export interface AppSettings {
   language: string;
   mouseSide: MouseSide;
   mouseVisible: boolean;
+  mousePanelMode: MousePanelMode;
   mousePanelWidth: number;
   keyboardKeySize: number;
   keyboardSpacing: number;
@@ -118,6 +120,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: "en",
   mouseSide: "right",
   mouseVisible: true,
+  mousePanelMode: "mouse",
   mousePanelWidth: 280,
   keyboardKeySize: 56,
   keyboardSpacing: 6,
