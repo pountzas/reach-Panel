@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
-use tts::{list_voices, speak_text, stop_speaking, TtsSettings};
+use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use profiles::{pick_image_file, ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{list_monitors, MonitorInfo};
 
@@ -438,6 +438,16 @@ fn cmd_list_voices() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
+fn cmd_get_tts_status() -> Result<String, String> {
+    get_tts_status().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_validate_tts() -> Result<(), String> {
+    validate_tts().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn cmd_get_suggestions(
     profile_id: String,
     prefix: String,
@@ -593,6 +603,8 @@ pub fn run() {
             cmd_speak,
             cmd_stop_speaking,
             cmd_list_voices,
+            cmd_get_tts_status,
+            cmd_validate_tts,
             cmd_get_suggestions,
             cmd_record_word,
             cmd_get_languages,
