@@ -6,11 +6,11 @@ import {
   isKeyActive,
   isShiftActive,
   KeyDef,
-  languageSwitchLabel,
   resolveKeyOutput,
 } from "../../lib/keyboardLayouts";
 import { MAX_KEYBOARD_KEY_SIZE } from "../../lib/types";
 import { KeyButton } from "./KeyButton";
+import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
 
 export function Keyboard() {
   const {
@@ -114,9 +114,14 @@ export function Keyboard() {
             <KeyButton
               key={`${ri}-${k.key}-${k.label}-${ci}`}
               label={
-                k.key === "langswitch"
-                  ? languageSwitchLabel(settings.language)
-                  : displayLabel(k, physicalKeyState.capsLock, shiftActive)
+                k.key === "langswitch" ? (
+                  <LanguageSwitchLabel
+                    currentLanguage={settings.language}
+                    fontSize={settings.keyboardFontSize ?? 18}
+                  />
+                ) : (
+                  displayLabel(k, physicalKeyState.capsLock, shiftActive)
+                )
               }
               width={k.width}
               size={settings.keyboardKeySize}
