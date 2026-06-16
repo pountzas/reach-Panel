@@ -1,3 +1,5 @@
+import type { SectionLayouts } from "./sectionLayouts";
+
 export type MouseSide = "right" | "left" | "floating";
 export type MouseSpeed = "slow" | "medium" | "fast" | "custom";
 
@@ -32,6 +34,7 @@ export interface AppSettings {
   collapsed: boolean;
   headTrackingEnabled: boolean;
   mouseAutoHide?: boolean;
+  sectionLayouts?: SectionLayouts;
 }
 
 export interface ProfileFileInfo {
