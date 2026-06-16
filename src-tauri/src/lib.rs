@@ -10,10 +10,12 @@ use db::{
     Database, MacroDef, MacroStep, Phrase, Profile, QuickAction,
 };
 use input::{
-    focus_target, get_keyboard_layout, get_keyboard_state, get_cursor_position, mouse_click,
+    get_keyboard_layout, get_keyboard_state, get_cursor_position, mouse_click,
     mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
     press_key, press_media_key, set_system_language, type_text, KeyPressRequest, KeyboardState,
 };
+#[cfg(target_os = "windows")]
+use input::focus_target;
 use prediction::{get_installed_languages, get_suggestions, record_usage};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
@@ -242,6 +244,7 @@ async fn cmd_set_window_focusable(app: tauri::AppHandle, focusable: bool) -> Res
     if let Some(window) = app.get_webview_window("main") {
         window.set_focusable(focusable).map_err(|e| e.to_string())?;
         if !focusable {
+            #[cfg(target_os = "windows")]
             focus_target::remember_current_if_external();
         }
     }
@@ -561,6 +564,7 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
+                #[cfg(target_os = "windows")]
                 focus_target::init();
             }
             Ok(())
