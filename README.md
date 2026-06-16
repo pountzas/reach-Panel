@@ -4,13 +4,13 @@ Assistive virtual keyboard and mouse for Windows — built for users with severe
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-lightgrey)]()
-[![Build](https://github.com/nik/accessibility-keyboard/actions/workflows/build.yml/badge.svg)](https://github.com/nik/accessibility-keyboard/actions/workflows/build.yml)
+[![Build](https://github.com/pountzas/accessibility-keyboard/actions/workflows/build.yml/badge.svg)](https://github.com/pountzas/accessibility-keyboard/actions/workflows/build.yml)
 
 Built with Tauri, React, Rust, and SQLite.
 
 ## Download (Windows)
 
-Pre-built installers are on the [Releases](https://github.com/nik/accessibility-keyboard/releases) page.
+Pre-built installers are on the [Releases](https://github.com/pountzas/accessibility-keyboard/releases) page.
 
 1. Download the latest `.msi` or `.exe` installer for Windows.
 2. Run the installer. On older Windows builds, you may need the [WebView2 runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
