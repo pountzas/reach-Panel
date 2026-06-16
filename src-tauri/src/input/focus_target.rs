@@ -29,7 +29,8 @@ fn install_hook() {
                 WINEVENT_OUTOFCONTEXT,
             );
             if !hook.is_invalid() {
-                std::mem::forget(hook);
+                // HWINEVENTHOOK is Copy and has no Drop impl; keep hook registered for app lifetime.
+                let _ = hook;
             }
         }
     });
