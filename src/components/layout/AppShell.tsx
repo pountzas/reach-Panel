@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { Keyboard } from "../keyboard/Keyboard";
+import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
@@ -48,7 +48,7 @@ export function AppShell() {
   const mousePanel = showMouse ? <MousePanel /> : null;
   const keyboardPanel = (
     <div className="min-w-0 flex-1">
-      <Keyboard />
+      <KeyboardSection />
     </div>
   );
 
