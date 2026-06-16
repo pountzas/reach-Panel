@@ -8,7 +8,6 @@ use windows::Media::Core::MediaSource;
 use windows::Media::Playback::{MediaPlaybackState, MediaPlayer, MediaPlayerAudioCategory};
 use windows::Media::SpeechSynthesis::{SpeechSynthesizer, VoiceInformation};
 use windows::Win32::System::WinRT::{RoInitialize, RO_INIT_MULTITHREADED};
-use windows_future::IAsyncOperation;
 
 fn ensure_winrt() -> Result<()> {
     unsafe {

@@ -193,6 +193,45 @@ export function SettingsPanel() {
         </section>
 
         <section className="mb-4">
+          <h3 className="mb-2 font-semibold">{t("keyboard")}</h3>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={settings.functionKeysEnabled}
+              onChange={(e) => updateSettings({ functionKeysEnabled: e.target.checked })}
+            />
+            {t("showFunctionKeys")}
+          </label>
+          <label className="mt-2 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={settings.keyboardModeToggleVisible}
+              onChange={(e) =>
+                updateSettings({ keyboardModeToggleVisible: e.target.checked })
+              }
+            />
+            {t("showKeyboardModeToggle")}
+          </label>
+          {!settings.keyboardModeToggleVisible && (
+            <label className="mt-2 block text-sm">
+              {t("keyboardSectionMode")}
+              <select
+                className="mt-1 w-full rounded border px-2 py-1"
+                value={settings.keyboardSectionMode}
+                onChange={(e) =>
+                  updateSettings({
+                    keyboardSectionMode: e.target.value as "keyboard" | "synthesizer",
+                  })
+                }
+              >
+                <option value="keyboard">{t("keyboard")}</option>
+                <option value="synthesizer">{t("synthesizer")}</option>
+              </select>
+            </label>
+          )}
+        </section>
+
+        <section className="mb-4">
           <h3 className="mb-2 font-semibold">{t("mouse")}</h3>
           <label className="flex items-center gap-2 text-sm">
             <input

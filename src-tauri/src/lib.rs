@@ -10,16 +10,18 @@ use db::{
     Database, MacroDef, MacroStep, Phrase, Profile, QuickAction,
 };
 use input::{
-    focus_target, get_keyboard_layout, get_keyboard_state, get_cursor_position, mouse_click,
+    get_keyboard_layout, get_keyboard_state, get_cursor_position, mouse_click,
     mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
     press_key, press_media_key, set_system_language, type_text, KeyPressRequest, KeyboardState,
 };
+#[cfg(target_os = "windows")]
+use input::focus_target;
 use prediction::{get_installed_languages, get_suggestions, record_usage};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
-use tts::{list_voices, speak_text, stop_speaking, TtsSettings};
+use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use profiles::{pick_image_file, ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{list_monitors, MonitorInfo};
 
@@ -242,6 +244,7 @@ async fn cmd_set_window_focusable(app: tauri::AppHandle, focusable: bool) -> Res
     if let Some(window) = app.get_webview_window("main") {
         window.set_focusable(focusable).map_err(|e| e.to_string())?;
         if !focusable {
+            #[cfg(target_os = "windows")]
             focus_target::remember_current_if_external();
         }
     }
@@ -438,6 +441,16 @@ fn cmd_list_voices() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
+fn cmd_get_tts_status() -> Result<String, String> {
+    get_tts_status().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_validate_tts() -> Result<(), String> {
+    validate_tts().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn cmd_get_suggestions(
     profile_id: String,
     prefix: String,
@@ -551,6 +564,7 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
+                #[cfg(target_os = "windows")]
                 focus_target::init();
             }
             Ok(())
@@ -593,6 +607,8 @@ pub fn run() {
             cmd_speak,
             cmd_stop_speaking,
             cmd_list_voices,
+            cmd_get_tts_status,
+            cmd_validate_tts,
             cmd_get_suggestions,
             cmd_record_word,
             cmd_get_languages,

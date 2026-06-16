@@ -58,3 +58,46 @@ jobs:
             src-tauri/target/release/bundle/msi/*.msi `
             src-tauri/target/release/bundle/nsis/*.exe `
             --clobber
+
+  build-macos:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri app (macOS)
+        run: npm run tauri build
+
+      - name: Upload macOS installers to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s nullglob
+          files=(src-tauri/target/release/bundle/dmg/*.dmg src-tauri/target/release/bundle/macos/*.app)
+          if [ ${#files[@]} -gt 0 ]; then
+            gh release upload "${{ needs.release-please.outputs.tag_name }}" "${files[@]}" --clobber
+          else
+            echo "No macOS bundle artifacts found"
+            exit 1
+          fi
+        shell: bash
