@@ -1,5 +1,6 @@
 export type MouseSide = "right" | "left" | "floating";
 export type MouseSpeed = "slow" | "medium" | "fast" | "custom";
+export type KeyboardSectionMode = "keyboard" | "synthesizer";
 
 export interface AppSettings {
   theme: string;
@@ -32,6 +33,8 @@ export interface AppSettings {
   collapsed: boolean;
   headTrackingEnabled: boolean;
   mouseAutoHide?: boolean;
+  keyboardSectionMode: KeyboardSectionMode;
+  keyboardModeToggleVisible: boolean;
 }
 
 export interface ProfileFileInfo {
@@ -141,6 +144,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   collapsed: false,
   headTrackingEnabled: false,
   mouseAutoHide: false,
+  keyboardSectionMode: "keyboard",
+  keyboardModeToggleVisible: true,
 };
 
 export const MAX_KEYBOARD_KEY_SIZE = 80;
