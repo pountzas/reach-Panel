@@ -12,6 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated documentation links from `nik/accessibility-keyboard` to `pountzas/accessibility-keyboard` in README, CONTRIBUTING, CHANGELOG, and SECURITY.
 - README: documented numpad toggle, function keys, synthesizer mode, flag icons, and experimental macOS CI builds.
 
+## 0.2.0 (2026-06-11)
+
+## What's Changed
+* feat: accessibility improvements by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/1
+* chore: merge dev into main by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/2
+* fix: align release-please tags with existing v{version} format by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/3
+* Dev by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/4
+
+## New Contributors
+* @pountzas made their first contribution in https://github.com/pountzas/accessibility-keyboard/pull/1
+
+**Full Changelog**: https://github.com/pountzas/accessibility-keyboard/compare/v0.1.0...v0.2.0
+
 ## [0.1.0] - 2026-06-10
 
 ### Added
