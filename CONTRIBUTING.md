@@ -12,7 +12,7 @@ Thank you for helping improve Accessibility Keyboard.
 ## Getting started
 
 ```bash
-git clone https://github.com/nik/accessibility-keyboard.git
+git clone https://github.com/pountzas/accessibility-keyboard.git
 cd accessibility-keyboard
 npm install
 npm run tauri dev
@@ -58,7 +58,7 @@ Releases are automated with [release-please](https://github.com/googleapis/relea
 
 1. Merge `dev` into `main` via pull request.
 2. Release-please opens or updates a **Release PR** on `main` (e.g. `chore(main): release 0.1.1`) that bumps version files and `CHANGELOG.md`.
-3. Merge the Release PR. GitHub Actions builds the Windows `.exe` and `.msi` installers and attaches them to the [Releases](https://github.com/nik/accessibility-keyboard/releases) page.
+3. Merge the Release PR. GitHub Actions builds Windows `.exe`/`.msi` and macOS `.dmg` bundles and attaches them to the [Releases](https://github.com/pountzas/accessibility-keyboard/releases) page.
 
 Version is kept in sync across `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`.
 
