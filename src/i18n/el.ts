@@ -51,6 +51,8 @@ export const el: Record<keyof typeof en, string> = {
   appBackgroundColor: "Φόντο εφαρμογής",
   headerColor: "Γραμμή κεφαλίδας",
   keyboardBackgroundColor: "Φόντο πληκτρολογίου",
+  keyboard: "Πληκτρολόγιο",
+  showFunctionKeys: "Εμφάνιση πλήκτρων λειτουργίας (F1–F12)",
   keyColor: "Χρώμα πλήκτρων",
   keyTextColor: "Χρώμα κειμένου πλήκτρων",
   mousePanelColor: "Πάνελ ποντικιού",

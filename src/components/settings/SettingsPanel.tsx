@@ -193,6 +193,18 @@ export function SettingsPanel() {
         </section>
 
         <section className="mb-4">
+          <h3 className="mb-2 font-semibold">{t("keyboard")}</h3>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={settings.functionKeysEnabled}
+              onChange={(e) => updateSettings({ functionKeysEnabled: e.target.checked })}
+            />
+            {t("showFunctionKeys")}
+          </label>
+        </section>
+
+        <section className="mb-4">
           <h3 className="mb-2 font-semibold">{t("mouse")}</h3>
           <label className="flex items-center gap-2 text-sm">
             <input

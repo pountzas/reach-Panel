@@ -34,6 +34,7 @@ export interface AppSettings {
   collapsed: boolean;
   headTrackingEnabled: boolean;
   mouseAutoHide?: boolean;
+  functionKeysEnabled: boolean;
 }
 
 export interface ProfileFileInfo {
@@ -144,6 +145,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   collapsed: false,
   headTrackingEnabled: false,
   mouseAutoHide: false,
+  functionKeysEnabled: false,
 };
 
 export const MAX_KEYBOARD_KEY_SIZE = 80;

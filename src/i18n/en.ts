@@ -49,6 +49,8 @@ export const en = {
   appBackgroundColor: "App background",
   headerColor: "Header bar",
   keyboardBackgroundColor: "Keyboard background",
+  keyboard: "Keyboard",
+  showFunctionKeys: "Show function keys (F1–F12)",
   keyColor: "Key color",
   keyTextColor: "Key text color",
   mousePanelColor: "Mouse panel",
