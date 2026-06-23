@@ -20,7 +20,7 @@ type PianoKey = {
   label: string;
   freq: number;
   isBlack: boolean;
-  left?: number;
+  leftRatio?: number;
 };
 
 function noteToMidi(note: string, octave: number): number {
@@ -45,10 +45,7 @@ function midiToFreq(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
-function buildPianoKeys(
-  whiteKeyWidth: number,
-  blackKeyWidth: number,
-): { whiteKeys: PianoKey[]; blackKeys: PianoKey[] } {
+function buildPianoKeys(): { whiteKeys: PianoKey[]; blackKeys: PianoKey[] } {
   const whiteKeys: PianoKey[] = [];
   const blackKeys: PianoKey[] = [];
 
@@ -71,10 +68,7 @@ function buildPianoKeys(
           label: blackNote,
           freq: midiToFreq(noteToMidi(blackNote, octave)),
           isBlack: true,
-          left:
-            (globalWhiteIndex + 1) * whiteKeyWidth -
-            blackKeyWidth / 2 -
-            whiteKeyWidth * 0.12,
+          leftRatio: (globalWhiteIndex + 1) / (OCTAVE_COUNT * 7 + 1),
         });
       }
     }
@@ -91,6 +85,16 @@ function buildPianoKeys(
   return { whiteKeys, blackKeys };
 }
 
+function computePianoMetrics(containerHeight: number, hintHeight: number) {
+  if (containerHeight <= 0) {
+    return { whiteKeyHeight: 80, blackKeyHeightRatio: 0.62 };
+  }
+  const padding = 16;
+  const available = containerHeight - padding - hintHeight;
+  const whiteKeyHeight = Math.max(28, Math.floor(available));
+  return { whiteKeyHeight, blackKeyHeightRatio: 0.62 };
+}
+
 type ActiveVoice = {
   oscillator: OscillatorNode;
   gain: GainNode;
@@ -99,25 +103,18 @@ type ActiveVoice = {
 export function Synthesizer() {
   const { settings } = useAppStore();
   const { t } = useTranslation();
-  const { ref, width, height } = useContainerSize<HTMLDivElement>();
+  const { ref, height } = useContainerSize<HTMLDivElement>();
   const audioRef = useRef<AudioContext | null>(null);
   const activeVoices = useRef<Map<string, ActiveVoice>>(new Map());
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set());
 
   const whiteKeyCount = OCTAVE_COUNT * 7 + 1;
-  const hintHeight = 28;
-  const padding = 16;
-  const availableHeight = Math.max(80, height - hintHeight - padding);
-  const availableWidth = Math.max(200, width - padding);
-  const whiteKeyWidth = Math.max(20, Math.min(availableWidth / whiteKeyCount, 56));
-  const whiteKeyHeight = Math.max(80, Math.min(availableHeight, whiteKeyWidth * 4.4));
-  const blackKeyWidth = whiteKeyWidth * 0.58;
-  const blackKeyHeight = whiteKeyHeight * 0.62;
+  const hintHeight = 36;
+  const { whiteKeyHeight, blackKeyHeightRatio } = computePianoMetrics(height, hintHeight);
+  const blackKeyWidthRatio = (100 / whiteKeyCount) * 0.58;
+  const blackKeyHeight = whiteKeyHeight * blackKeyHeightRatio;
 
-  const { whiteKeys, blackKeys } = useMemo(
-    () => buildPianoKeys(whiteKeyWidth, blackKeyWidth),
-    [whiteKeyWidth, blackKeyWidth],
-  );
+  const { whiteKeys, blackKeys } = useMemo(() => buildPianoKeys(), []);
 
   const ensureAudio = useCallback(async () => {
     if (!audioRef.current) {
@@ -217,9 +214,8 @@ export function Synthesizer() {
         key={key.id}
         type="button"
         aria-label={key.id}
-        className={`relative shrink-0 rounded-b-lg border border-slate-300 font-semibold shadow-sm transition-transform ${isPressed ? "key-pressed" : ""}`}
+        className={`relative min-w-0 flex-1 rounded-b-lg border border-slate-300 font-semibold shadow-sm transition-transform ${isPressed ? "key-pressed" : ""}`}
         style={{
-          width: whiteKeyWidth,
           height: whiteKeyHeight,
           fontSize: settings.keyboardFontSize ?? 14,
           color: settings.keyTextColor ?? "#475569",
@@ -241,8 +237,9 @@ export function Synthesizer() {
         aria-label={key.id}
         className={`absolute top-0 z-10 rounded-b-md border border-slate-900 font-semibold shadow-md transition-transform ${isPressed ? "key-pressed" : ""}`}
         style={{
-          left: key.left,
-          width: blackKeyWidth,
+          left: `${(key.leftRatio ?? 0) * 100}%`,
+          transform: "translateX(-50%)",
+          width: `${blackKeyWidthRatio}%`,
           height: blackKeyHeight,
           fontSize: Math.max(10, (settings.keyboardFontSize ?? 18) * 0.55),
           color: "#f8fafc",
@@ -266,17 +263,9 @@ export function Synthesizer() {
       <p className="mb-2 shrink-0 text-center text-sm font-medium text-slate-600">
         {t("synthesizerHint")}
       </p>
-      <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto pb-1">
-        <div
-          className="relative mx-auto"
-          style={{
-            width: whiteKeys.length * whiteKeyWidth,
-            height: whiteKeyHeight,
-          }}
-        >
-          <div className="relative flex h-full">
-            {whiteKeys.map(renderWhiteKey)}
-          </div>
+      <div className="relative flex min-h-0 w-full flex-1">
+        <div className="relative flex h-full w-full">
+          {whiteKeys.map(renderWhiteKey)}
           {blackKeys.map(renderBlackKey)}
         </div>
       </div>
