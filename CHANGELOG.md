@@ -5,6 +5,14 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.2.3 (2026-06-23)
+
+## What's Changed
+* chore: route Dependabot to dev and limit CI to dev-to-main PRs by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/35
+
+
+**Full Changelog**: https://github.com/pountzas/accessibility-keyboard/compare/v0.2.2...v0.2.3
+
 ## 0.2.2 (2026-06-17)
 
 ## What's Changed
