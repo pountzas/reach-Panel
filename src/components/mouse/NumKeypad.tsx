@@ -35,7 +35,7 @@ function computeKeyMetrics(containerHeight: number, rowCount: number) {
   }
   const spacing = Math.max(2, Math.floor(containerHeight * 0.01));
   const available = containerHeight - spacing * (rowCount - 1);
-  const keyHeight = Math.max(24, Math.min(64, Math.floor(available / rowCount)));
+  const keyHeight = Math.max(24, Math.floor(available / rowCount));
   return { keyHeight, spacing };
 }
 

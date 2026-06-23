@@ -108,6 +108,8 @@ export const el: Record<keyof typeof en, string> = {
 
   keyboardSectionMode: "Λειτουργία τμήματος πληκτρολογίου",
 
+  resizeInputRow: "Αλλαγή μεγέθους πληκτρολογίου και ποντικιού",
+
   keyColor: "Χρώμα πλήκτρων",
 
   keyTextColor: "Χρώμα κειμένου πλήκτρων",

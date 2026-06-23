@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ComponentType } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
+import { useContainerSize } from "../../hooks/useContainerSize";
 import {
   DoubleClickIcon,
   DragLockIcon,
@@ -12,8 +13,54 @@ import {
 
 const SPEED_MAP = { slow: 0.5, medium: 1, fast: 2, custom: 1.5 };
 
+function computeButtonMetrics(containerWidth: number) {
+  if (containerWidth <= 0) {
+    return { iconSize: 24, paddingY: 12, gap: 8 };
+  }
+  const iconSize = Math.max(18, Math.min(28, Math.floor(containerWidth / 9)));
+  const paddingY = Math.max(6, Math.min(14, Math.floor(containerWidth / 18)));
+  const gap = Math.max(4, Math.min(10, Math.floor(containerWidth / 24)));
+  return { iconSize, paddingY, gap };
+}
+
+interface TrackpadButtonProps {
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  iconSize: number;
+  paddingY: number;
+  active?: boolean;
+  onClick: () => void | Promise<void>;
+}
+
+function TrackpadButton({
+  label,
+  icon: Icon,
+  iconSize,
+  paddingY,
+  active,
+  onClick,
+}: TrackpadButtonProps) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      {...(active !== undefined ? { "aria-pressed": active } : {})}
+      className={`flex items-center justify-center rounded-lg px-2 text-slate-700 shadow ${active ? "bg-blue-200" : "bg-white"}`}
+      style={{ paddingTop: paddingY, paddingBottom: paddingY }}
+      onClick={() => void onClick()}
+    >
+      <span className="inline-flex shrink-0" style={{ width: iconSize, height: iconSize }}>
+        <Icon className="h-full w-full" />
+      </span>
+    </button>
+  );
+}
+
 export function Trackpad() {
   const { settings, pollError } = useAppStore();
+  const { ref, width } = useContainerSize<HTMLDivElement>();
+  const { iconSize, paddingY, gap } = computeButtonMetrics(width);
   const [dragLock, setDragLock] = useState(false);
   const [precision, setPrecision] = useState(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
@@ -47,9 +94,9 @@ export function Trackpad() {
   };
 
   return (
-    <div className="flex h-full flex-col gap-2">
+    <div ref={ref} className="flex h-full min-h-0 flex-col" style={{ gap }}>
       <div
-        className="flex-1 rounded-xl border-2 border-dashed border-slate-400 bg-slate-100 touch-none"
+        className="min-h-0 flex-1 rounded-xl border-2 border-dashed border-slate-400 bg-slate-100 touch-none"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -59,74 +106,62 @@ export function Trackpad() {
           Trackpad
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        <button
-          type="button"
-          aria-label="Left click"
-          title="Left click"
-          className="flex items-center justify-center rounded-lg bg-white px-2 py-3 text-slate-700 shadow"
+      <div className="grid shrink-0 grid-cols-3" style={{ gap }}>
+        <TrackpadButton
+          label="Left click"
+          icon={LeftClickIcon}
+          iconSize={iconSize}
+          paddingY={paddingY}
           onClick={async () => {
             await invoke("cmd_mouse_click", { button: "left" });
             await pollError();
           }}
-        >
-          <LeftClickIcon />
-        </button>
-        <button
-          type="button"
-          aria-label="Double click"
-          title="Double click"
-          className="flex items-center justify-center rounded-lg bg-white px-2 py-3 text-slate-700 shadow"
+        />
+        <TrackpadButton
+          label="Double click"
+          icon={DoubleClickIcon}
+          iconSize={iconSize}
+          paddingY={paddingY}
           onClick={async () => {
             await invoke("cmd_mouse_double_click");
             await pollError();
           }}
-        >
-          <DoubleClickIcon />
-        </button>
-        <button
-          type="button"
-          aria-label="Right click"
-          title="Right click"
-          className="flex items-center justify-center rounded-lg bg-white px-2 py-3 text-slate-700 shadow"
+        />
+        <TrackpadButton
+          label="Right click"
+          icon={RightClickIcon}
+          iconSize={iconSize}
+          paddingY={paddingY}
           onClick={async () => {
             await invoke("cmd_mouse_click", { button: "right" });
             await pollError();
           }}
-        >
-          <RightClickIcon />
-        </button>
-        <button
-          type="button"
-          aria-label="Drag lock"
-          title="Drag lock"
-          aria-pressed={dragLock}
-          className={`flex items-center justify-center rounded-lg px-2 py-3 text-slate-700 shadow ${dragLock ? "bg-blue-200" : "bg-white"}`}
+        />
+        <TrackpadButton
+          label="Drag lock"
+          icon={DragLockIcon}
+          iconSize={iconSize}
+          paddingY={paddingY}
+          active={dragLock}
           onClick={() => setDragLock(!dragLock)}
-        >
-          <DragLockIcon />
-        </button>
-        <button
-          type="button"
-          aria-label="Precision mode"
-          title="Precision mode"
-          aria-pressed={precision}
-          className={`flex items-center justify-center rounded-lg px-2 py-3 text-slate-700 shadow ${precision ? "bg-blue-200" : "bg-white"}`}
+        />
+        <TrackpadButton
+          label="Precision mode"
+          icon={PrecisionIcon}
+          iconSize={iconSize}
+          paddingY={paddingY}
+          active={precision}
           onClick={() => setPrecision(!precision)}
-        >
-          <PrecisionIcon />
-        </button>
-        <button
-          type="button"
-          aria-label="Scroll"
-          title="Scroll"
-          className="flex items-center justify-center rounded-lg bg-white px-2 py-3 text-slate-700 shadow"
+        />
+        <TrackpadButton
+          label="Scroll"
+          icon={ScrollIcon}
+          iconSize={iconSize}
+          paddingY={paddingY}
           onClick={async () => {
             await invoke("cmd_mouse_scroll", { delta: 120, horizontal: false });
           }}
-        >
-          <ScrollIcon />
-        </button>
+        />
       </div>
     </div>
   );

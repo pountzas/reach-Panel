@@ -104,6 +104,8 @@ export const en = {
 
   keyboardSectionMode: "Keyboard section mode",
 
+  resizeInputRow: "Resize keyboard and mouse panels",
+
   keyColor: "Key color",
 
   keyTextColor: "Key text color",

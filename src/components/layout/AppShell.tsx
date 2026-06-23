@@ -1,5 +1,6 @@
 import { type CSSProperties } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
@@ -14,7 +15,8 @@ import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 
 function InputRowPanel() {
-  const { settings } = useAppStore();
+  const { settings, updateSettings } = useAppStore();
+  const rightRatio = settings.inputRowRightRatio ?? 0.28;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
@@ -23,16 +25,20 @@ function InputRowPanel() {
           <SuggestionsBar />
         </div>
       )}
-      <div className="flex min-h-0 flex-1 items-stretch gap-2">
-        <div className="min-h-0 min-w-0 flex-1">
+      {settings.mouseVisible ? (
+        <ResizableSplitPane
+          rightRatio={rightRatio}
+          onRightRatioChange={(inputRowRightRatio) =>
+            updateSettings({ inputRowRightRatio })
+          }
+          left={<KeyboardSection />}
+          right={<MousePanel />}
+        />
+      ) : (
+        <div className="min-h-0 flex-1">
           <KeyboardSection />
         </div>
-        {settings.mouseVisible && (
-          <div className="h-full w-56 shrink-0 min-w-[180px]">
-            <MousePanel />
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -36,6 +36,8 @@ export interface AppSettings {
   functionKeysEnabled: boolean;
   keyboardSectionMode: KeyboardSectionMode;
   keyboardModeToggleVisible: boolean;
+  /** Fraction of input-row width used by the mouse / numpad panel (0–1). */
+  inputRowRightRatio?: number;
 }
 
 export interface ProfileFileInfo {
@@ -146,4 +148,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   functionKeysEnabled: false,
   keyboardSectionMode: "keyboard",
   keyboardModeToggleVisible: true,
+  inputRowRightRatio: 0.28,
 };
