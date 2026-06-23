@@ -1,3 +1,4 @@
+import { MouseIcon, NumpadIcon } from "../common/SectionIcons";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Trackpad } from "./Trackpad";
@@ -15,26 +16,31 @@ export function MousePanel() {
         backgroundColor: settings.mousePanelBgColor ?? "#f8fafc",
       }}
     >
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-slate-700">
-          {showNumpad ? t("numpad") : t("mouse")}
-        </span>
-        <div className="flex rounded border border-slate-300 text-xs">
+      <div className="mb-2 flex justify-end">
+        <div className="flex rounded border border-slate-300">
           <button
             type="button"
-            className={`rounded-l px-2 py-0.5 ${!showNumpad ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+            className={`group relative flex items-center justify-center rounded-l p-2 ${!showNumpad ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
             onClick={() => updateSettings({ mousePanelMode: "mouse" })}
             aria-pressed={!showNumpad}
+            aria-label={t("mouse")}
           >
-            {t("mouse")}
+            <MouseIcon className="h-4 w-4" />
+            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              {t("mouse")}
+            </span>
           </button>
           <button
             type="button"
-            className={`rounded-r px-2 py-0.5 ${showNumpad ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+            className={`group relative flex items-center justify-center rounded-r p-2 ${showNumpad ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
             onClick={() => updateSettings({ mousePanelMode: "numpad" })}
             aria-pressed={showNumpad}
+            aria-label={t("numpad")}
           >
-            {t("numpad")}
+            <NumpadIcon className="h-4 w-4" />
+            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              {t("numpad")}
+            </span>
           </button>
         </div>
       </div>

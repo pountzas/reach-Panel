@@ -1,3 +1,4 @@
+import { KeyboardIcon, SynthesizerIcon } from "../common/SectionIcons";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Keyboard } from "./Keyboard";
@@ -16,18 +17,20 @@ export function KeyboardSection() {
           <div className="flex rounded border border-slate-300 text-xs">
             <button
               type="button"
-              className={`rounded-l px-2 py-0.5 ${!showSynth ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+              className={`flex items-center gap-1 rounded-l px-2 py-0.5 ${!showSynth ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
               onClick={() => updateSettings({ keyboardSectionMode: "keyboard" })}
               aria-pressed={!showSynth}
             >
+              <KeyboardIcon />
               {t("keyboard")}
             </button>
             <button
               type="button"
-              className={`rounded-r px-2 py-0.5 ${showSynth ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+              className={`flex items-center gap-1 rounded-r px-2 py-0.5 ${showSynth ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
               onClick={() => updateSettings({ keyboardSectionMode: "synthesizer" })}
               aria-pressed={showSynth}
             >
+              <SynthesizerIcon />
               {t("synthesizer")}
             </button>
           </div>
