@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
 import { KeyButton } from "../keyboard/KeyButton";
+import { useContainerSize } from "../../hooks/useContainerSize";
 
 const NUMPAD_ROWS: { label: string; key: string; width?: number }[][] = [
   [
@@ -28,10 +29,21 @@ const NUMPAD_ROWS: { label: string; key: string; width?: number }[][] = [
   ],
 ];
 
+function computeKeyMetrics(containerHeight: number, rowCount: number) {
+  if (containerHeight <= 0 || rowCount <= 0) {
+    return { keyHeight: 40, spacing: 4 };
+  }
+  const spacing = Math.max(2, Math.floor(containerHeight * 0.01));
+  const available = containerHeight - spacing * (rowCount - 1);
+  const keyHeight = Math.max(24, Math.min(64, Math.floor(available / rowCount)));
+  return { keyHeight, spacing };
+}
+
 export function NumKeypad() {
   const { settings, pollError } = useAppStore();
-  const keySize = Math.min(settings.keyboardKeySize, 64);
-  const spacing = Math.min(settings.keyboardSpacing, 6);
+  const { ref, height } = useContainerSize<HTMLDivElement>();
+  const { keyHeight, spacing } = computeKeyMetrics(height, NUMPAD_ROWS.length);
+  const fontSize = settings.keyboardFontSize ?? 18;
 
   const handleKey = async (key: string) => {
     await invoke("cmd_press_key", { request: { key, modifiers: [] } });
@@ -39,19 +51,20 @@ export function NumKeypad() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col justify-center">
+    <div ref={ref} className="flex h-full min-h-0 flex-col justify-center">
       {NUMPAD_ROWS.map((row, ri) => (
-        <div key={ri} className="flex justify-center">
+        <div key={ri} className="flex w-full">
           {row.map((k, ci) => (
             <KeyButton
               key={`${ri}-${k.key}-${ci}`}
               label={k.label}
               width={k.width ?? 1}
-              size={keySize}
+              size={keyHeight}
               spacing={spacing}
-              fontSize={settings.keyboardFontSize ?? 18}
+              fontSize={fontSize}
               bgColor={settings.keyboardKeyColor ?? "#ffffff"}
               textColor={settings.keyTextColor ?? "#1e293b"}
+              stretch
               onPress={() => void handleKey(k.key)}
             />
           ))}

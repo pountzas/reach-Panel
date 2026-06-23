@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useContainerSize } from "../../hooks/useContainerSize";
 
 const WHITE_NOTES = ["C", "D", "E", "F", "G", "A", "B"] as const;
 const BLACK_AFTER_WHITE: Record<number, string> = {
@@ -98,12 +99,18 @@ type ActiveVoice = {
 export function Synthesizer() {
   const { settings } = useAppStore();
   const { t } = useTranslation();
+  const { ref, width, height } = useContainerSize<HTMLDivElement>();
   const audioRef = useRef<AudioContext | null>(null);
   const activeVoices = useRef<Map<string, ActiveVoice>>(new Map());
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set());
 
-  const whiteKeyWidth = settings.keyboardKeySize * 0.78;
-  const whiteKeyHeight = settings.keyboardKeySize * 3.4;
+  const whiteKeyCount = OCTAVE_COUNT * 7 + 1;
+  const hintHeight = 28;
+  const padding = 16;
+  const availableHeight = Math.max(80, height - hintHeight - padding);
+  const availableWidth = Math.max(200, width - padding);
+  const whiteKeyWidth = Math.max(20, Math.min(availableWidth / whiteKeyCount, 56));
+  const whiteKeyHeight = Math.max(80, Math.min(availableHeight, whiteKeyWidth * 4.4));
   const blackKeyWidth = whiteKeyWidth * 0.58;
   const blackKeyHeight = whiteKeyHeight * 0.62;
 
@@ -242,28 +249,29 @@ export function Synthesizer() {
           backgroundColor: isPressed ? pressedBlackColor : blackKeyColor,
         }}
         {...keyHandlers(key)}
-      />
+      >
+      </button>
     );
   };
 
   return (
     <div
-      className="flex flex-col rounded-xl p-2"
+      ref={ref}
+      className="flex h-full w-full flex-col rounded-xl p-2"
       style={{
         backgroundColor: settings.keyboardBgColor ?? "#e8edf2",
         opacity: settings.opacity,
       }}
     >
-      <p className="mb-2 text-center text-sm font-medium text-slate-600">
+      <p className="mb-2 shrink-0 text-center text-sm font-medium text-slate-600">
         {t("synthesizerHint")}
       </p>
-      <div className="overflow-x-auto pb-1">
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto pb-1">
         <div
           className="relative mx-auto"
           style={{
             width: whiteKeys.length * whiteKeyWidth,
             height: whiteKeyHeight,
-            minWidth: "min(100%, fit-content)",
           }}
         >
           <div className="relative flex h-full">

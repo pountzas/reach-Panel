@@ -241,24 +241,6 @@ export function SettingsPanel() {
             />
             {t("showMouseSection")}
           </label>
-          {settings.mouseVisible && (
-            <label className="mt-2 block text-sm">
-              {t("position")}
-              <select
-                className="mt-1 w-full rounded border px-2 py-1"
-                value={settings.mouseSide}
-                onChange={(e) =>
-                  updateSettings({
-                    mouseSide: e.target.value as "right" | "left" | "floating",
-                  })
-                }
-              >
-                <option value="right">{t("mouseRight")}</option>
-                <option value="left">{t("mouseLeft")}</option>
-                <option value="floating">{t("mouseFloating")}</option>
-              </select>
-            </label>
-          )}
         </section>
 
         <section className="mb-4">
@@ -294,28 +276,6 @@ export function SettingsPanel() {
         </section>
 
         <section className="mb-4 grid grid-cols-2 gap-3">
-          <label className="text-sm">
-            {t("keySize")}
-            <input
-              type="range"
-              min={36}
-              max={80}
-              value={settings.keyboardKeySize}
-              onChange={(e) => updateSettings({ keyboardKeySize: Number(e.target.value) })}
-              className="w-full"
-            />
-          </label>
-          <label className="text-sm">
-            {t("spacing")}
-            <input
-              type="range"
-              min={0}
-              max={30}
-              value={settings.keyboardSpacing}
-              onChange={(e) => updateSettings({ keyboardSpacing: Number(e.target.value) })}
-              className="w-full"
-            />
-          </label>
           <label className="text-sm">
             {t("opacity")}
             <input

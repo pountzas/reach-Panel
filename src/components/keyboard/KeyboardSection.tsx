@@ -10,7 +10,7 @@ export function KeyboardSection() {
   const showToggle = settings.keyboardModeToggleVisible;
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex h-full min-w-0 flex-1 flex-col">
       {showToggle && (
         <div className="mb-1 flex justify-end">
           <div className="flex rounded border border-slate-300 text-xs">
@@ -33,7 +33,15 @@ export function KeyboardSection() {
           </div>
         </div>
       )}
-      {showSynth ? <Synthesizer /> : <Keyboard />}
+      {showSynth ? (
+        <div className="min-h-0 flex-1">
+          <Synthesizer />
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1">
+          <Keyboard />
+        </div>
+      )}
     </div>
   );
 }

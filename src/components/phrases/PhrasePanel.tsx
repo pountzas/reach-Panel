@@ -34,7 +34,7 @@ export function PhrasePanel() {
 
   return (
 
-    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2">
+    <div className="flex h-full flex-col gap-2 overflow-auto rounded-xl border border-slate-200 bg-white p-2">
 
       <div className="flex items-center justify-between">
 
