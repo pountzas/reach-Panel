@@ -10,6 +10,8 @@ interface KeyButtonProps {
   textColor?: string;
   active?: boolean;
   stretch?: boolean;
+  gridColumn?: string;
+  gridRow?: string;
   onPress: () => void;
 }
 
@@ -23,33 +25,48 @@ export function KeyButton({
   textColor = "#1e293b",
   active,
   stretch,
+  gridColumn,
+  gridRow,
   onPress,
 }: KeyButtonProps) {
   const [localPressed, setLocalPressed] = useState(false);
   const pressed = active || localPressed;
+  const inGrid = gridColumn !== undefined && gridRow !== undefined;
+
+  const sharedStyle = {
+    fontSize,
+    color: textColor,
+    backgroundColor: bgColor,
+  };
 
   return (
     <button
       type="button"
       className={`rounded-lg border border-slate-300 font-semibold shadow-sm transition active:scale-95 ${active ? "sticky-active" : ""} ${pressed ? "key-pressed" : ""}`}
       style={
-        stretch
+        inGrid
           ? {
+              ...sharedStyle,
+              gridColumn,
+              gridRow,
+              minWidth: 0,
+              minHeight: 0,
+              alignSelf: "stretch",
+              justifySelf: "stretch",
+            }
+          : stretch
+          ? {
+              ...sharedStyle,
               flex: `${width} 1 0`,
               minWidth: 0,
               height: size,
-              fontSize,
-              color: textColor,
-              backgroundColor: bgColor,
               marginRight: spacing,
               marginBottom: spacing,
             }
           : {
+              ...sharedStyle,
               width: size * width + spacing * (width - 1),
               height: size,
-              fontSize,
-              color: textColor,
-              backgroundColor: bgColor,
               marginRight: spacing,
               marginBottom: spacing,
             }
