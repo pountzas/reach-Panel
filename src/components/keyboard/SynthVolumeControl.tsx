@@ -17,7 +17,7 @@ export function SynthVolumeControl({
   const { t } = useTranslation();
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2 px-4">
+    <div className="flex shrink-0 items-center gap-2 px-4">
       <button
         type="button"
         className={`group relative flex shrink-0 items-center justify-center rounded border border-slate-300 p-2 ${muted ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}

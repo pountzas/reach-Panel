@@ -17,14 +17,14 @@ export function MousePanel() {
         backgroundColor: settings.mousePanelBgColor ?? "#f8fafc",
       }}
     >
-      <div className="mb-2 flex items-center gap-2">
-        {!showNumpad && (
+      <div className="mb-2 flex items-center justify-end gap-2 pr-1">
+      {!showNumpad && (
           <MouseSpeedSlider
             value={settings.mouseSpeed}
             onChange={(mouseSpeed) => updateSettings({ mouseSpeed })}
           />
         )}
-        <div className={`flex shrink-0 rounded border border-slate-300 ${showNumpad ? "ml-auto" : ""}`}>
+        <div className="flex shrink-0 rounded border border-slate-300">
           <button
             type="button"
             className={`group relative flex items-center justify-center rounded-l p-2 ${!showNumpad ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
@@ -50,6 +50,7 @@ export function MousePanel() {
             </span>
           </button>
         </div>
+        
       </div>
       <div className="min-h-0 flex-1">
         {showNumpad ? <NumKeypad /> : <Trackpad />}

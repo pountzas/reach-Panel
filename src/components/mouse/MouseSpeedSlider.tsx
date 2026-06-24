@@ -21,7 +21,7 @@ export function MouseSpeedSlider({ value, onChange }: MouseSpeedSliderProps) {
   const labelKey = MOUSE_SPEED_LABEL_KEYS[speed] as TranslationKey;
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2 px-4">
+    <div className="flex shrink-0 items-center px-4">
       <label className="sr-only" htmlFor="mouse-speed-slider">
         {t("speed")}
       </label>
