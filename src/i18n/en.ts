@@ -26,11 +26,13 @@ export const en = {
 
   speedSlow: "Slow",
 
+  speedVerySlow: "Very slow",
+
   speedMedium: "Medium",
 
   speedFast: "Fast",
 
-  speedCustom: "Custom",
+  speedVeryFast: "Very fast",
 
   quickActions: "Quick Actions",
 
@@ -99,6 +101,12 @@ export const en = {
   synthesizer: "Synthesizer",
 
   synthesizerHint: "Tap keys to play notes",
+
+  synthesizerVolume: "Volume",
+
+  mute: "Mute",
+
+  unmute: "Unmute",
 
   showKeyboardModeToggle: "Show keyboard / synthesizer toggle",
 

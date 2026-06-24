@@ -30,11 +30,13 @@ export const el: Record<keyof typeof en, string> = {
 
   speedSlow: "Αργή",
 
+  speedVerySlow: "Πολύ αργή",
+
   speedMedium: "Μέτρια",
 
   speedFast: "Γρήγορη",
 
-  speedCustom: "Προσαρμοσμένη",
+  speedVeryFast: "Πολύ γρήγορη",
 
   quickActions: "Γρήγορες ενέργειες",
 
@@ -103,6 +105,12 @@ export const el: Record<keyof typeof en, string> = {
   synthesizer: "Συνθετητής",
 
   synthesizerHint: "Πατήστε πλήκτρα για να παίξετε νότες",
+
+  synthesizerVolume: "Ένταση",
+
+  mute: "Σίγαση",
+
+  unmute: "Ξεσίγαση",
 
   showKeyboardModeToggle: "Εμφάνιση εναλλαγής πληκτρολογίου / συνθετητή",
 

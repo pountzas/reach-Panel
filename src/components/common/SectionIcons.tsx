@@ -85,3 +85,41 @@ export function NumpadIcon({ className = iconClass }: IconProps) {
     </svg>
   );
 }
+
+export function VolumeIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="M15.5 9.5a4 4 0 0 1 0 5" />
+      <path d="M18 7a7 7 0 0 1 0 10" />
+    </svg>
+  );
+}
+
+export function MuteIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="m16 9 5 6" />
+      <path d="m21 9-5 6" />
+    </svg>
+  );
+}

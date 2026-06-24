@@ -1,4 +1,5 @@
 import { MouseIcon, NumpadIcon } from "../common/SectionIcons";
+import { MouseSpeedSlider } from "./MouseSpeedSlider";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Trackpad } from "./Trackpad";
@@ -16,8 +17,14 @@ export function MousePanel() {
         backgroundColor: settings.mousePanelBgColor ?? "#f8fafc",
       }}
     >
-      <div className="mb-2 flex justify-end">
-        <div className="flex rounded border border-slate-300">
+      <div className="mb-2 flex items-center gap-2">
+        {!showNumpad && (
+          <MouseSpeedSlider
+            value={settings.mouseSpeed}
+            onChange={(mouseSpeed) => updateSettings({ mouseSpeed })}
+          />
+        )}
+        <div className={`flex shrink-0 rounded border border-slate-300 ${showNumpad ? "ml-auto" : ""}`}>
           <button
             type="button"
             className={`group relative flex items-center justify-center rounded-l p-2 ${!showNumpad ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
@@ -44,25 +51,6 @@ export function MousePanel() {
           </button>
         </div>
       </div>
-      {!showNumpad && (
-        <div className="mb-2">
-          <label className="text-xs text-slate-500">{t("speed")}</label>
-          <select
-            className="w-full rounded border px-2 py-1 text-sm"
-            value={settings.mouseSpeed}
-            onChange={(e) =>
-              updateSettings({
-                mouseSpeed: e.target.value as "slow" | "medium" | "fast" | "custom",
-              })
-            }
-          >
-            <option value="slow">{t("speedSlow")}</option>
-            <option value="medium">{t("speedMedium")}</option>
-            <option value="fast">{t("speedFast")}</option>
-            <option value="custom">{t("speedCustom")}</option>
-          </select>
-        </div>
-      )}
       <div className="min-h-0 flex-1">
         {showNumpad ? <NumKeypad /> : <Trackpad />}
       </div>

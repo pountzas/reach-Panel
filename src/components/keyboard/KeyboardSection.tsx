@@ -1,4 +1,5 @@
 import { KeyboardIcon, SynthesizerIcon } from "../common/SectionIcons";
+import { SynthVolumeControl } from "./SynthVolumeControl";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Keyboard } from "./Keyboard";
@@ -13,8 +14,18 @@ export function KeyboardSection() {
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
       {showToggle && (
-        <div className="mb-1 flex justify-end">
-          <div className="flex rounded border border-slate-300">
+        <div className="mb-1 flex items-center gap-2">
+          {showSynth && (
+            <SynthVolumeControl
+              volume={settings.synthesizerVolume ?? 70}
+              muted={settings.synthesizerMuted ?? false}
+              onVolumeChange={(synthesizerVolume) => updateSettings({ synthesizerVolume })}
+              onMutedChange={(synthesizerMuted) => updateSettings({ synthesizerMuted })}
+            />
+          )}
+          <div
+            className={`flex shrink-0 rounded border border-slate-300 ${!showSynth ? "ml-auto" : ""}`}
+          >
             <button
               type="button"
               className={`group relative flex items-center justify-center rounded-l p-2 ${!showSynth ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}

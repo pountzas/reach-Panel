@@ -1,6 +1,7 @@
 import type { SectionLayouts } from "./sectionLayouts";
+import type { MouseSpeed } from "./mouseSpeed";
 
-export type MouseSpeed = "slow" | "medium" | "fast" | "custom";
+export type { MouseSpeed };
 export type MousePanelMode = "mouse" | "numpad";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
 
@@ -36,6 +37,8 @@ export interface AppSettings {
   functionKeysEnabled: boolean;
   keyboardSectionMode: KeyboardSectionMode;
   keyboardModeToggleVisible: boolean;
+  synthesizerVolume?: number;
+  synthesizerMuted?: boolean;
   /** Fraction of input-row width used by the mouse / numpad panel (0–1). */
   inputRowRightRatio?: number;
 }
@@ -148,5 +151,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   functionKeysEnabled: false,
   keyboardSectionMode: "keyboard",
   keyboardModeToggleVisible: true,
+  synthesizerVolume: 70,
+  synthesizerMuted: false,
   inputRowRightRatio: 0.28,
 };

@@ -3,6 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import {
+  MOUSE_SPEED_MULTIPLIERS,
+  resolveMouseSpeed,
+} from "../../lib/mouseSpeed";
+import {
   DoubleClickIcon,
   DragLockIcon,
   LeftClickIcon,
@@ -11,7 +15,7 @@ import {
   ScrollIcon,
 } from "./MouseButtonIcons";
 
-const SPEED_MAP = { slow: 0.5, medium: 1, fast: 2, custom: 1.5 };
+const SPEED_MAP = MOUSE_SPEED_MULTIPLIERS;
 
 function computeButtonMetrics(containerWidth: number) {
   if (containerWidth <= 0) {
@@ -67,7 +71,7 @@ export function Trackpad() {
   const dragging = useRef(false);
 
   const speed =
-    (SPEED_MAP[settings.mouseSpeed] ?? 1) *
+    (SPEED_MAP[resolveMouseSpeed(settings.mouseSpeed)] ?? 1) *
     (precision || settings.precisionMode ? 0.4 : 1) *
     (settings.mouseCustomSpeed ?? 1);
 

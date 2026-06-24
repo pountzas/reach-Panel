@@ -1,6 +1,5 @@
-import { useCallback, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useAppStore } from "../../stores/appStore";
-import { useTranslation } from "../../hooks/useTranslation";
 import { useContainerSize } from "../../hooks/useContainerSize";
 
 const WHITE_NOTES = ["C", "D", "E", "F", "G", "A", "B"] as const;
@@ -85,12 +84,12 @@ function buildPianoKeys(): { whiteKeys: PianoKey[]; blackKeys: PianoKey[] } {
   return { whiteKeys, blackKeys };
 }
 
-function computePianoMetrics(containerHeight: number, hintHeight: number) {
+function computePianoMetrics(containerHeight: number) {
   if (containerHeight <= 0) {
     return { whiteKeyHeight: 80, blackKeyHeightRatio: 0.62 };
   }
   const padding = 16;
-  const available = containerHeight - padding - hintHeight;
+  const available = containerHeight - padding;
   const whiteKeyHeight = Math.max(28, Math.floor(available));
   return { whiteKeyHeight, blackKeyHeightRatio: 0.62 };
 }
@@ -102,15 +101,19 @@ type ActiveVoice = {
 
 export function Synthesizer() {
   const { settings } = useAppStore();
-  const { t } = useTranslation();
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const audioRef = useRef<AudioContext | null>(null);
+  const masterGainRef = useRef<GainNode | null>(null);
   const activeVoices = useRef<Map<string, ActiveVoice>>(new Map());
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set());
 
+  const volumeLevel = useMemo(() => {
+    if (settings.synthesizerMuted) return 0;
+    return (settings.synthesizerVolume ?? 70) / 100;
+  }, [settings.synthesizerMuted, settings.synthesizerVolume]);
+
   const whiteKeyCount = OCTAVE_COUNT * 7 + 1;
-  const hintHeight = 36;
-  const { whiteKeyHeight, blackKeyHeightRatio } = computePianoMetrics(height, hintHeight);
+  const { whiteKeyHeight, blackKeyHeightRatio } = computePianoMetrics(height);
   const blackKeyWidthRatio = (100 / whiteKeyCount) * 0.58;
   const blackKeyHeight = whiteKeyHeight * blackKeyHeightRatio;
 
@@ -119,12 +122,24 @@ export function Synthesizer() {
   const ensureAudio = useCallback(async () => {
     if (!audioRef.current) {
       audioRef.current = new AudioContext();
+      masterGainRef.current = audioRef.current.createGain();
+      masterGainRef.current.connect(audioRef.current.destination);
     }
     if (audioRef.current.state === "suspended") {
       await audioRef.current.resume();
     }
+    if (masterGainRef.current) {
+      masterGainRef.current.gain.setValueAtTime(volumeLevel, audioRef.current.currentTime);
+    }
     return audioRef.current;
-  }, []);
+  }, [volumeLevel]);
+
+  useEffect(() => {
+    const ctx = audioRef.current;
+    const master = masterGainRef.current;
+    if (!ctx || !master) return;
+    master.gain.setValueAtTime(volumeLevel, ctx.currentTime);
+  }, [volumeLevel]);
 
   const startNote = useCallback(
     async (keyId: string, frequency: number) => {
@@ -138,7 +153,8 @@ export function Synthesizer() {
       gain.gain.setValueAtTime(0.001, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.02);
       oscillator.connect(gain);
-      gain.connect(ctx.destination);
+      const master = masterGainRef.current ?? ctx.destination;
+      gain.connect(master);
       oscillator.start();
       activeVoices.current.set(keyId, { oscillator, gain });
     },
@@ -260,9 +276,6 @@ export function Synthesizer() {
         opacity: settings.opacity,
       }}
     >
-      <p className="mb-2 shrink-0 text-center text-sm font-medium text-slate-600">
-        {t("synthesizerHint")}
-      </p>
       <div className="relative flex min-h-0 w-full flex-1">
         <div className="relative flex h-full w-full">
           {whiteKeys.map(renderWhiteKey)}
