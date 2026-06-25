@@ -5,6 +5,22 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.0 (2026-06-25)
+
+## What's Changed
+* chore(deps): bump the npm-minor-and-patch group across 1 directory with 4 updates by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/34
+* chore(deps): bump the cargo-minor-and-patch group across 1 directory with 2 updates by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/33
+* chore(deps): bump actions/checkout from 4 to 6 by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/23
+* chore(deps): bump actions/setup-node from 4 to 6 by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/22
+* chore(deps): bump actions/upload-artifact from 4 to 7 by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/20
+* chore(deps): bump googleapis/release-please-action from 4 to 5 by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/21
+* feat: add resizable sections with keyboard and mouse layout improvements by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/37
+
+## New Contributors
+* @dependabot[bot] made their first contribution in https://github.com/pountzas/accessibility-keyboard/pull/34
+
+**Full Changelog**: https://github.com/pountzas/accessibility-keyboard/compare/v0.2.3...v0.3.0
+
 ## 0.2.3 (2026-06-23)
 
 ## What's Changed
