@@ -1,4 +1,5 @@
 import { KeyboardIcon, SynthesizerIcon } from "../common/SectionIcons";
+import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { SynthVolumeControl } from "./SynthVolumeControl";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -14,8 +15,7 @@ export function KeyboardSection() {
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
       {showToggle && (
-        <div className="mb-1 flex items-center justify-end gap-2 pr-1">
-         
+        <div className="relative z-20 mb-1 flex items-end justify-end gap-2 overflow-visible pr-1 pt-6">
           {showSynth && (
             <SynthVolumeControl
               volume={settings.synthesizerVolume ?? 70}
@@ -24,32 +24,24 @@ export function KeyboardSection() {
               onMutedChange={(synthesizerMuted) => updateSettings({ synthesizerMuted })}
             />
           )}
-           <div className="flex shrink-0 rounded border border-slate-300">
-            <button
-              type="button"
-              className={`group relative flex items-center justify-center rounded-l p-2 ${!showSynth ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+          <ModeToggleGroup>
+            <ModeToggleButton
+              active={!showSynth}
+              position="first"
+              label={t("keyboard")}
               onClick={() => updateSettings({ keyboardSectionMode: "keyboard" })}
-              aria-pressed={!showSynth}
-              aria-label={t("keyboard")}
             >
               <KeyboardIcon className="h-4 w-4" />
-              <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                {t("keyboard")}
-              </span>
-            </button>
-            <button
-              type="button"
-              className={`group relative flex items-center justify-center rounded-r p-2 ${showSynth ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+            </ModeToggleButton>
+            <ModeToggleButton
+              active={showSynth}
+              position="last"
+              label={t("synthesizer")}
               onClick={() => updateSettings({ keyboardSectionMode: "synthesizer" })}
-              aria-pressed={showSynth}
-              aria-label={t("synthesizer")}
             >
               <SynthesizerIcon className="h-4 w-4" />
-              <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                {t("synthesizer")}
-              </span>
-            </button>
-          </div>
+            </ModeToggleButton>
+          </ModeToggleGroup>
         </div>
       )}
       {showSynth ? (

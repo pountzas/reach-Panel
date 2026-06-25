@@ -2,6 +2,9 @@ import { useRef, useState, type ComponentType } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
+import { usePressableButton } from "../../hooks/usePressableButton";
+import { HoverTooltip } from "../common/ModeToggle";
+import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 import {
   MOUSE_SPEED_MULTIPLIERS,
   resolveMouseSpeed,
@@ -32,6 +35,8 @@ interface TrackpadButtonProps {
   icon: ComponentType<{ className?: string }>;
   iconSize: number;
   paddingY: number;
+  bgColor: string;
+  textColor: string;
   active?: boolean;
   onClick: () => void | Promise<void>;
 }
@@ -41,22 +46,32 @@ function TrackpadButton({
   icon: Icon,
   iconSize,
   paddingY,
+  bgColor,
+  textColor,
   active,
   onClick,
 }: TrackpadButtonProps) {
+  const { pressedClass, pointerHandlers } = usePressableButton(active ?? false);
+
   return (
     <button
       type="button"
       aria-label={label}
-      title={label}
       {...(active !== undefined ? { "aria-pressed": active } : {})}
-      className={`flex items-center justify-center rounded-lg px-2 text-slate-700 shadow ${active ? "bg-blue-200" : "bg-white"}`}
-      style={{ paddingTop: paddingY, paddingBottom: paddingY }}
+      className={`ak-action-btn group relative flex items-center justify-center px-2 ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`}
+      style={{
+        paddingTop: paddingY,
+        paddingBottom: paddingY,
+        color: textColor,
+        backgroundColor: bgColor,
+      }}
       onClick={() => void onClick()}
+      {...pointerHandlers}
     >
       <span className="inline-flex shrink-0" style={{ width: iconSize, height: iconSize }}>
         <Icon className="h-full w-full" />
       </span>
+      <HoverTooltip label={label} />
     </button>
   );
 }
@@ -69,6 +84,8 @@ export function Trackpad() {
   const [precision, setPrecision] = useState(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
+  const keyBgColor = settings.keyboardKeyColor ?? "#ffffff";
+  const keyTextColor = settings.keyTextColor ?? "#1e293b";
 
   const speed =
     (SPEED_MAP[resolveMouseSpeed(settings.mouseSpeed)] ?? 1) *
@@ -116,6 +133,8 @@ export function Trackpad() {
           icon={LeftClickIcon}
           iconSize={iconSize}
           paddingY={paddingY}
+          bgColor={keyBgColor}
+          textColor={keyTextColor}
           onClick={async () => {
             await invoke("cmd_mouse_click", { button: "left" });
             await pollError();
@@ -126,6 +145,8 @@ export function Trackpad() {
           icon={DoubleClickIcon}
           iconSize={iconSize}
           paddingY={paddingY}
+          bgColor={keyBgColor}
+          textColor={keyTextColor}
           onClick={async () => {
             await invoke("cmd_mouse_double_click");
             await pollError();
@@ -136,6 +157,8 @@ export function Trackpad() {
           icon={RightClickIcon}
           iconSize={iconSize}
           paddingY={paddingY}
+          bgColor={keyBgColor}
+          textColor={keyTextColor}
           onClick={async () => {
             await invoke("cmd_mouse_click", { button: "right" });
             await pollError();
@@ -146,6 +169,8 @@ export function Trackpad() {
           icon={DragLockIcon}
           iconSize={iconSize}
           paddingY={paddingY}
+          bgColor={keyBgColor}
+          textColor={keyTextColor}
           active={dragLock}
           onClick={() => setDragLock(!dragLock)}
         />
@@ -154,6 +179,8 @@ export function Trackpad() {
           icon={PrecisionIcon}
           iconSize={iconSize}
           paddingY={paddingY}
+          bgColor={keyBgColor}
+          textColor={keyTextColor}
           active={precision}
           onClick={() => setPrecision(!precision)}
         />
@@ -162,6 +189,8 @@ export function Trackpad() {
           icon={ScrollIcon}
           iconSize={iconSize}
           paddingY={paddingY}
+          bgColor={keyBgColor}
+          textColor={keyTextColor}
           onClick={async () => {
             await invoke("cmd_mouse_scroll", { delta: 120, horizontal: false });
           }}

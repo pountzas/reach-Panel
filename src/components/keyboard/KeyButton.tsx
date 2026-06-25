@@ -1,4 +1,6 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode } from "react";
+import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
+import { usePressableButton } from "../../hooks/usePressableButton";
 
 interface KeyButtonProps {
   label: ReactNode;
@@ -29,8 +31,7 @@ export function KeyButton({
   gridRow,
   onPress,
 }: KeyButtonProps) {
-  const [localPressed, setLocalPressed] = useState(false);
-  const pressed = active || localPressed;
+  const { pressedClass, pointerHandlers } = usePressableButton(active ?? false);
   const inGrid = gridColumn !== undefined && gridRow !== undefined;
 
   const sharedStyle = {
@@ -42,7 +43,7 @@ export function KeyButton({
   return (
     <button
       type="button"
-      className={`rounded-lg border border-slate-300 font-semibold shadow-sm transition active:scale-95 ${active ? "sticky-active" : ""} ${pressed ? "key-pressed" : ""}`}
+      className={`ak-action-btn ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`}
       style={
         inGrid
           ? {
@@ -71,10 +72,8 @@ export function KeyButton({
               marginBottom: spacing,
             }
       }
-      onPointerDown={() => setLocalPressed(true)}
-      onPointerUp={() => setLocalPressed(false)}
-      onPointerLeave={() => setLocalPressed(false)}
       onClick={onPress}
+      {...pointerHandlers}
     >
       {label}
     </button>

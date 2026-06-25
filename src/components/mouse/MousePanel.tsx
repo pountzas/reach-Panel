@@ -1,4 +1,5 @@
 import { MouseIcon, NumpadIcon } from "../common/SectionIcons";
+import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { MouseSpeedSlider } from "./MouseSpeedSlider";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -17,40 +18,31 @@ export function MousePanel() {
         backgroundColor: settings.mousePanelBgColor ?? "#f8fafc",
       }}
     >
-      <div className="mb-2 flex items-center justify-end gap-2 pr-1">
-      {!showNumpad && (
+      <div className="relative z-20 mb-2 flex items-center justify-end gap-2 overflow-visible pr-1 pt-6">
+        {!showNumpad && (
           <MouseSpeedSlider
             value={settings.mouseSpeed}
             onChange={(mouseSpeed) => updateSettings({ mouseSpeed })}
           />
         )}
-        <div className="flex shrink-0 rounded border border-slate-300">
-          <button
-            type="button"
-            className={`group relative flex items-center justify-center rounded-l p-2 ${!showNumpad ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+        <ModeToggleGroup>
+          <ModeToggleButton
+            active={!showNumpad}
+            position="first"
+            label={t("mouse")}
             onClick={() => updateSettings({ mousePanelMode: "mouse" })}
-            aria-pressed={!showNumpad}
-            aria-label={t("mouse")}
           >
             <MouseIcon className="h-4 w-4" />
-            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-              {t("mouse")}
-            </span>
-          </button>
-          <button
-            type="button"
-            className={`group relative flex items-center justify-center rounded-r p-2 ${showNumpad ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+          </ModeToggleButton>
+          <ModeToggleButton
+            active={showNumpad}
+            position="last"
+            label={t("numpad")}
             onClick={() => updateSettings({ mousePanelMode: "numpad" })}
-            aria-pressed={showNumpad}
-            aria-label={t("numpad")}
           >
             <NumpadIcon className="h-4 w-4" />
-            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-              {t("numpad")}
-            </span>
-          </button>
-        </div>
-        
+          </ModeToggleButton>
+        </ModeToggleGroup>
       </div>
       <div className="min-h-0 flex-1">
         {showNumpad ? <NumKeypad /> : <Trackpad />}

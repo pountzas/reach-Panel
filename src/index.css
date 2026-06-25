@@ -29,7 +29,16 @@ button {
   touch-action: manipulation;
 }
 
-.key-pressed {
+/*
+ * Accessibility Keyboard — shared control interaction pattern
+ *
+ * Action buttons (keys, trackpad actions): .ak-action-btn + .key-pressed on press
+ * Mode toggles (keyboard/synth, mouse/numpad): .ak-mode-toggle + .ak-hover-tooltip above on hover
+ * Toggle helpers: components/common/ModeToggle.tsx, hooks/usePressableButton.ts, lib/buttonClasses.ts
+ */
+
+.key-pressed,
+.ak-action-btn.key-pressed {
   transform: scale(0.95);
   filter: brightness(0.9);
 }
