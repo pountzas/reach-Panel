@@ -8,9 +8,10 @@ import {
   KeyDef,
   resolveKeyOutput,
 } from "../../lib/keyboardLayouts";
-import { MAX_KEYBOARD_KEY_SIZE } from "../../lib/types";
 import { KeyButton } from "./KeyButton";
 import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
+import { useContainerSize } from "../../hooks/useContainerSize";
+import { computeKeyMetrics } from "../../lib/keyMetrics";
 
 export function Keyboard() {
   const {
@@ -29,13 +30,14 @@ export function Keyboard() {
     pollError,
   } = useAppStore();
 
+  const { ref, height } = useContainerSize<HTMLDivElement>();
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const activeModifiers = stickyModifiers.filter((m) => m !== "capslock");
   const rows = getLayoutRows(keyboardLayout, settings.language, {
     functionKeysEnabled: settings.functionKeysEnabled,
   });
-  const fullWidth =
-    !settings.mouseVisible && settings.keyboardKeySize >= MAX_KEYBOARD_KEY_SIZE;
+  const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
+  const fontSize = settings.keyboardFontSize ?? 18;
 
   const handleKey = async (keyDef: KeyDef) => {
     const key = keyDef.key;
@@ -102,14 +104,15 @@ export function Keyboard() {
 
   return (
     <div
-      className={`flex flex-col rounded-xl p-2 ${fullWidth ? "w-full" : ""}`}
+      ref={ref}
+      className="flex h-full w-full flex-col rounded-xl p-2"
       style={{
         backgroundColor: settings.keyboardBgColor ?? "#e8edf2",
         opacity: settings.opacity,
       }}
     >
       {rows.map((row, ri) => (
-        <div key={ri} className={`flex ${fullWidth ? "w-full" : ""}`}>
+        <div key={ri} className="flex w-full">
           {row.map((k, ci) => (
             <KeyButton
               key={`${ri}-${k.key}-${k.label}-${ci}`}
@@ -117,19 +120,19 @@ export function Keyboard() {
                 k.key === "langswitch" ? (
                   <LanguageSwitchLabel
                     currentLanguage={settings.language}
-                    fontSize={settings.keyboardFontSize ?? 18}
+                    fontSize={fontSize}
                   />
                 ) : (
                   displayLabel(k, physicalKeyState.capsLock, shiftActive)
                 )
               }
               width={k.width}
-              size={settings.keyboardKeySize}
-              spacing={settings.keyboardSpacing}
-              fontSize={settings.keyboardFontSize ?? 18}
+              size={keyHeight}
+              spacing={spacing}
+              fontSize={fontSize}
               bgColor={settings.keyboardKeyColor ?? "#ffffff"}
               textColor={settings.keyTextColor ?? "#1e293b"}
-              stretch={fullWidth}
+              stretch
               active={isKeyActive(
                 k,
                 ri,

@@ -1,68 +1,138 @@
 import { en } from "./en";
 
+
+
 export const el: Record<keyof typeof en, string> = {
+
   appTitle: "Πληκτρολόγιο Προσβασιμότητας",
+
   collapse: "Σύμπτυξη",
+
   expand: "Ανάπτυξη",
+
   settings: "Ρυθμίσεις",
+
   close: "Κλείσιμο",
+
   profile: "Προφίλ",
+
   accessibilityScreen: "Οθόνη προσβασιμότητας",
+
   primary: "Κύρια",
+
   mouse: "Ποντίκι",
+
   numpad: "Αριθμητικό",
+
   showMouseSection: "Εμφάνιση τμήματος ποντικιού",
-  width: "Πλάτος",
+
   speed: "Ταχύτητα",
+
   speedSlow: "Αργή",
+
+  speedVerySlow: "Πολύ αργή",
+
   speedMedium: "Μέτρια",
+
   speedFast: "Γρήγορη",
-  speedCustom: "Προσαρμοσμένη",
-  position: "Θέση",
-  mouseRight: "Δεξιά του πληκτρολογίου",
-  mouseLeft: "Αριστερά του πληκτρολογίου",
-  mouseFloating: "Αιωρούμενο",
+
+  speedVeryFast: "Πολύ γρήγορη",
+
   quickActions: "Γρήγορες ενέργειες",
+
   showQuickActionsBar: "Εμφάνιση γρήγορων ενεργειών",
+
   phrasesAndSuggestions: "Φράσεις & Προτάσεις",
+
   showPhrasesSection: "Εμφάνιση φράσεων",
+
   showSuggestionsBar: "Εμφάνιση προτάσεων",
-  keySize: "Μέγεθος πλήκτρων",
-  spacing: "Απόσταση",
+
   opacity: "Διαφάνεια",
+
   appTypingLanguage: "Γλώσσα εφαρμογής & πληκτρολογίου",
+
   languageEnglish: "English",
+
   languageGreek: "Ελληνικά",
+
   resetSettings: "Επαναφορά ρυθμίσεων",
+
   resetSettingsHint:
-    "Επαναφέρει διάταξη, θέση οθόνης, πλευρά ποντικιού, μεγέθη και όλες τις ρυθμίσεις στις προεπιλογές.",
+
+    "Επαναφέρει διάταξη, θέση οθόνης, μεγέθη πάνελ και όλες τις ρυθμίσεις στις προεπιλογές.",
+
+  layoutEdit: "Επεξεργασία διάταξης",
+
+  layoutEditDone: "Τέλος",
+
+  dragToMove: "Σύρετε για μετακίνηση",
+
   macroBuilder: "Δημιουργός μακροεντολών",
+
   headTracking: "Παρακολούθηση κεφαλής",
+
   phrases: "Φράσεις",
+
   emergency: "Επείγον",
+
   showEmergency: "Επείγον",
+
   predictionsOff: "Οι προτάσεις είναι απενεργοποιημένες",
+
   enable: "Ενεργοποίηση",
+
   suggest: "Πρόταση:",
+
   turnOff: "Απενεργοποίηση",
+
   inputError: "Σφάλμα εισόδου:",
+
   dismiss: "Απόρριψη",
+
   appearance: "Εμφάνιση",
+
   appBackgroundColor: "Φόντο εφαρμογής",
+
   headerColor: "Γραμμή κεφαλίδας",
+
   keyboardBackgroundColor: "Φόντο πληκτρολογίου",
+
   keyboard: "Πληκτρολόγιο",
+
   showFunctionKeys: "Εμφάνιση πλήκτρων λειτουργίας (F1–F12)",
+
   synthesizer: "Συνθετητής",
+
   synthesizerHint: "Πατήστε πλήκτρα για να παίξετε νότες",
+
+  synthesizerVolume: "Ένταση",
+
+  mute: "Σίγαση",
+
+  unmute: "Ξεσίγαση",
+
   showKeyboardModeToggle: "Εμφάνιση εναλλαγής πληκτρολογίου / συνθετητή",
+
   keyboardSectionMode: "Λειτουργία τμήματος πληκτρολογίου",
+
+  resizeInputRow: "Αλλαγή μεγέθους πληκτρολογίου και ποντικιού",
+
   keyColor: "Χρώμα πλήκτρων",
+
   keyTextColor: "Χρώμα κειμένου πλήκτρων",
+
   mousePanelColor: "Πάνελ ποντικιού",
+
   chooseBackgroundImage: "Επιλογή εικόνας φόντου",
+
   removeBackgroundImage: "Αφαίρεση εικόνας φόντου",
+
   backgroundImageOpacity: "Ορατότητα εικόνας φόντου",
+
   newProfileFileName: "Όνομα νέου αρχείου προφίλ",
+
   createProfile: "Δημιουργία αρχείου προφίλ",
+
 };
+

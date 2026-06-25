@@ -1,5 +1,7 @@
-export type MouseSide = "right" | "left" | "floating";
-export type MouseSpeed = "slow" | "medium" | "fast" | "custom";
+import type { SectionLayouts } from "./sectionLayouts";
+import type { MouseSpeed } from "./mouseSpeed";
+
+export type { MouseSpeed };
 export type MousePanelMode = "mouse" | "numpad";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
 
@@ -7,13 +9,10 @@ export interface AppSettings {
   theme: string;
   opacity: number;
   language: string;
-  mouseSide: MouseSide;
   mouseVisible: boolean;
   mousePanelMode: MousePanelMode;
-  mousePanelWidth: number;
-  keyboardKeySize: number;
-  keyboardSpacing: number;
   keyboardFontSize?: number;
+  sectionLayouts?: SectionLayouts;
   keyboardBgColor?: string;
   keyboardKeyColor?: string;
   keyTextColor?: string;
@@ -38,6 +37,10 @@ export interface AppSettings {
   functionKeysEnabled: boolean;
   keyboardSectionMode: KeyboardSectionMode;
   keyboardModeToggleVisible: boolean;
+  synthesizerVolume?: number;
+  synthesizerMuted?: boolean;
+  /** Fraction of input-row width used by the mouse / numpad panel (0–1). */
+  inputRowRightRatio?: number;
 }
 
 export interface ProfileFileInfo {
@@ -122,13 +125,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: "light",
   opacity: 0.95,
   language: "en",
-  mouseSide: "right",
   mouseVisible: true,
   mousePanelMode: "mouse",
-  mousePanelWidth: 280,
-  keyboardKeySize: 56,
-  keyboardSpacing: 6,
   keyboardFontSize: 18,
+  sectionLayouts: {},
   keyboardBgColor: "#e8edf2",
   keyboardKeyColor: "#ffffff",
   keyTextColor: "#1e293b",
@@ -151,6 +151,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   functionKeysEnabled: false,
   keyboardSectionMode: "keyboard",
   keyboardModeToggleVisible: true,
+  synthesizerVolume: 70,
+  synthesizerMuted: false,
+  inputRowRightRatio: 0.28,
 };
-
-export const MAX_KEYBOARD_KEY_SIZE = 80;

@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useAppStore } from "../../stores/appStore";
-import { useTranslation } from "../../hooks/useTranslation";
+import { useContainerSize } from "../../hooks/useContainerSize";
 
 const WHITE_NOTES = ["C", "D", "E", "F", "G", "A", "B"] as const;
 const BLACK_AFTER_WHITE: Record<number, string> = {
@@ -19,7 +19,7 @@ type PianoKey = {
   label: string;
   freq: number;
   isBlack: boolean;
-  left?: number;
+  leftRatio?: number;
 };
 
 function noteToMidi(note: string, octave: number): number {
@@ -44,10 +44,7 @@ function midiToFreq(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
-function buildPianoKeys(
-  whiteKeyWidth: number,
-  blackKeyWidth: number,
-): { whiteKeys: PianoKey[]; blackKeys: PianoKey[] } {
+function buildPianoKeys(): { whiteKeys: PianoKey[]; blackKeys: PianoKey[] } {
   const whiteKeys: PianoKey[] = [];
   const blackKeys: PianoKey[] = [];
 
@@ -70,10 +67,7 @@ function buildPianoKeys(
           label: blackNote,
           freq: midiToFreq(noteToMidi(blackNote, octave)),
           isBlack: true,
-          left:
-            (globalWhiteIndex + 1) * whiteKeyWidth -
-            blackKeyWidth / 2 -
-            whiteKeyWidth * 0.12,
+          leftRatio: (globalWhiteIndex + 1) / (OCTAVE_COUNT * 7 + 1),
         });
       }
     }
@@ -90,6 +84,16 @@ function buildPianoKeys(
   return { whiteKeys, blackKeys };
 }
 
+function computePianoMetrics(containerHeight: number) {
+  if (containerHeight <= 0) {
+    return { whiteKeyHeight: 80, blackKeyHeightRatio: 0.62 };
+  }
+  const padding = 16;
+  const available = containerHeight - padding;
+  const whiteKeyHeight = Math.max(28, Math.floor(available));
+  return { whiteKeyHeight, blackKeyHeightRatio: 0.62 };
+}
+
 type ActiveVoice = {
   oscillator: OscillatorNode;
   gain: GainNode;
@@ -97,30 +101,45 @@ type ActiveVoice = {
 
 export function Synthesizer() {
   const { settings } = useAppStore();
-  const { t } = useTranslation();
+  const { ref, height } = useContainerSize<HTMLDivElement>();
   const audioRef = useRef<AudioContext | null>(null);
+  const masterGainRef = useRef<GainNode | null>(null);
   const activeVoices = useRef<Map<string, ActiveVoice>>(new Map());
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set());
 
-  const whiteKeyWidth = settings.keyboardKeySize * 0.78;
-  const whiteKeyHeight = settings.keyboardKeySize * 3.4;
-  const blackKeyWidth = whiteKeyWidth * 0.58;
-  const blackKeyHeight = whiteKeyHeight * 0.62;
+  const volumeLevel = useMemo(() => {
+    if (settings.synthesizerMuted) return 0;
+    return (settings.synthesizerVolume ?? 70) / 100;
+  }, [settings.synthesizerMuted, settings.synthesizerVolume]);
 
-  const { whiteKeys, blackKeys } = useMemo(
-    () => buildPianoKeys(whiteKeyWidth, blackKeyWidth),
-    [whiteKeyWidth, blackKeyWidth],
-  );
+  const whiteKeyCount = OCTAVE_COUNT * 7 + 1;
+  const { whiteKeyHeight, blackKeyHeightRatio } = computePianoMetrics(height);
+  const blackKeyWidthRatio = (100 / whiteKeyCount) * 0.58;
+  const blackKeyHeight = whiteKeyHeight * blackKeyHeightRatio;
+
+  const { whiteKeys, blackKeys } = useMemo(() => buildPianoKeys(), []);
 
   const ensureAudio = useCallback(async () => {
     if (!audioRef.current) {
       audioRef.current = new AudioContext();
+      masterGainRef.current = audioRef.current.createGain();
+      masterGainRef.current.connect(audioRef.current.destination);
     }
     if (audioRef.current.state === "suspended") {
       await audioRef.current.resume();
     }
+    if (masterGainRef.current) {
+      masterGainRef.current.gain.setValueAtTime(volumeLevel, audioRef.current.currentTime);
+    }
     return audioRef.current;
-  }, []);
+  }, [volumeLevel]);
+
+  useEffect(() => {
+    const ctx = audioRef.current;
+    const master = masterGainRef.current;
+    if (!ctx || !master) return;
+    master.gain.setValueAtTime(volumeLevel, ctx.currentTime);
+  }, [volumeLevel]);
 
   const startNote = useCallback(
     async (keyId: string, frequency: number) => {
@@ -134,7 +153,8 @@ export function Synthesizer() {
       gain.gain.setValueAtTime(0.001, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.02);
       oscillator.connect(gain);
-      gain.connect(ctx.destination);
+      const master = masterGainRef.current ?? ctx.destination;
+      gain.connect(master);
       oscillator.start();
       activeVoices.current.set(keyId, { oscillator, gain });
     },
@@ -210,9 +230,8 @@ export function Synthesizer() {
         key={key.id}
         type="button"
         aria-label={key.id}
-        className={`relative shrink-0 rounded-b-lg border border-slate-300 font-semibold shadow-sm transition-transform ${isPressed ? "key-pressed" : ""}`}
+        className={`relative min-w-0 flex-1 rounded-b-lg border border-slate-300 font-semibold shadow-sm transition-transform ${isPressed ? "key-pressed" : ""}`}
         style={{
-          width: whiteKeyWidth,
           height: whiteKeyHeight,
           fontSize: settings.keyboardFontSize ?? 14,
           color: settings.keyTextColor ?? "#475569",
@@ -234,41 +253,32 @@ export function Synthesizer() {
         aria-label={key.id}
         className={`absolute top-0 z-10 rounded-b-md border border-slate-900 font-semibold shadow-md transition-transform ${isPressed ? "key-pressed" : ""}`}
         style={{
-          left: key.left,
-          width: blackKeyWidth,
+          left: `${(key.leftRatio ?? 0) * 100}%`,
+          transform: "translateX(-50%)",
+          width: `${blackKeyWidthRatio}%`,
           height: blackKeyHeight,
           fontSize: Math.max(10, (settings.keyboardFontSize ?? 18) * 0.55),
           color: "#f8fafc",
           backgroundColor: isPressed ? pressedBlackColor : blackKeyColor,
         }}
         {...keyHandlers(key)}
-      />
+      >
+      </button>
     );
   };
 
   return (
     <div
-      className="flex flex-col rounded-xl p-2"
+      ref={ref}
+      className="flex h-full w-full flex-col rounded-xl p-2"
       style={{
         backgroundColor: settings.keyboardBgColor ?? "#e8edf2",
         opacity: settings.opacity,
       }}
     >
-      <p className="mb-2 text-center text-sm font-medium text-slate-600">
-        {t("synthesizerHint")}
-      </p>
-      <div className="overflow-x-auto pb-1">
-        <div
-          className="relative mx-auto"
-          style={{
-            width: whiteKeys.length * whiteKeyWidth,
-            height: whiteKeyHeight,
-            minWidth: "min(100%, fit-content)",
-          }}
-        >
-          <div className="relative flex h-full">
-            {whiteKeys.map(renderWhiteKey)}
-          </div>
+      <div className="relative flex min-h-0 w-full flex-1">
+        <div className="relative flex h-full w-full">
+          {whiteKeys.map(renderWhiteKey)}
           {blackKeys.map(renderBlackKey)}
         </div>
       </div>

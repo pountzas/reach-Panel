@@ -15,7 +15,7 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           config-file: .github/release-please-config.json
@@ -93,11 +93,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           shopt -s nullglob
-          files=(src-tauri/target/release/bundle/dmg/*.dmg src-tauri/target/release/bundle/macos/*.app)
+          files=(src-tauri/target/release/bundle/dmg/*.dmg)
           if [ ${#files[@]} -gt 0 ]; then
             gh release upload "${{ needs.release-please.outputs.tag_name }}" "${files[@]}" --clobber
           else
-            echo "No macOS bundle artifacts found"
+            echo "No macOS .dmg artifacts found"
             exit 1
           fi
         shell: bash

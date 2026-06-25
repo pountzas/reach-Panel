@@ -1,3 +1,6 @@
+import { KeyboardIcon, SynthesizerIcon } from "../common/SectionIcons";
+import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
+import { SynthVolumeControl } from "./SynthVolumeControl";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Keyboard } from "./Keyboard";
@@ -10,30 +13,46 @@ export function KeyboardSection() {
   const showToggle = settings.keyboardModeToggleVisible;
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex h-full min-w-0 flex-1 flex-col">
       {showToggle && (
-        <div className="mb-1 flex justify-end">
-          <div className="flex rounded border border-slate-300 text-xs">
-            <button
-              type="button"
-              className={`rounded-l px-2 py-0.5 ${!showSynth ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+        <div className="relative z-20 mb-1 flex items-end justify-end gap-2 overflow-visible pr-1 pt-6">
+          {showSynth && (
+            <SynthVolumeControl
+              volume={settings.synthesizerVolume ?? 70}
+              muted={settings.synthesizerMuted ?? false}
+              onVolumeChange={(synthesizerVolume) => updateSettings({ synthesizerVolume })}
+              onMutedChange={(synthesizerMuted) => updateSettings({ synthesizerMuted })}
+            />
+          )}
+          <ModeToggleGroup>
+            <ModeToggleButton
+              active={!showSynth}
+              position="first"
+              label={t("keyboard")}
               onClick={() => updateSettings({ keyboardSectionMode: "keyboard" })}
-              aria-pressed={!showSynth}
             >
-              {t("keyboard")}
-            </button>
-            <button
-              type="button"
-              className={`rounded-r px-2 py-0.5 ${showSynth ? "bg-slate-700 text-white" : "bg-white text-slate-700"}`}
+              <KeyboardIcon className="h-4 w-4" />
+            </ModeToggleButton>
+            <ModeToggleButton
+              active={showSynth}
+              position="last"
+              label={t("synthesizer")}
               onClick={() => updateSettings({ keyboardSectionMode: "synthesizer" })}
-              aria-pressed={showSynth}
             >
-              {t("synthesizer")}
-            </button>
-          </div>
+              <SynthesizerIcon className="h-4 w-4" />
+            </ModeToggleButton>
+          </ModeToggleGroup>
         </div>
       )}
-      {showSynth ? <Synthesizer /> : <Keyboard />}
+      {showSynth ? (
+        <div className="min-h-0 flex-1">
+          <Synthesizer />
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1">
+          <Keyboard />
+        </div>
+      )}
     </div>
   );
 }

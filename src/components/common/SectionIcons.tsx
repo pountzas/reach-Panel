@@ -1,0 +1,125 @@
+interface IconProps {
+  className?: string;
+}
+
+const iconClass = "h-4 w-4 shrink-0";
+
+export function KeyboardIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="2" y="6" width="20" height="12" rx="2" />
+      <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01" strokeWidth="2.5" />
+      <path d="M8 14h8" />
+    </svg>
+  );
+}
+
+export function SynthesizerIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M3 18V8l3 2 3-2 3 2 3-2 3 2 3-2v10" />
+      <path d="M6 10v8M12 10v8M18 10v8" />
+      <path d="M9 8V6M15 8V6" />
+    </svg>
+  );
+}
+
+export function MouseIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M8 4.5A4.5 4.5 0 0 1 12.5 0H13a4 4 0 0 1 4 4v8.5a6.5 6.5 0 0 1-13 0V8a3.5 3.5 0 0 1 3.5-3.5Z" />
+      <path d="M12.5 0v7.5" />
+    </svg>
+  );
+}
+
+export function NumpadIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <circle cx="8.5" cy="8.5" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="8.5" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="8.5" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="8.5" cy="12" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="12" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="8.5" cy="15.5" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="15.5" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="15.5" r="0.75" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function VolumeIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="M15.5 9.5a4 4 0 0 1 0 5" />
+      <path d="M18 7a7 7 0 0 1 0 10" />
+    </svg>
+  );
+}
+
+export function MuteIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="m16 9 5 6" />
+      <path d="m21 9-5 6" />
+    </svg>
+  );
+}

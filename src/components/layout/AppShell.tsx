@@ -1,5 +1,6 @@
-import type { CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
@@ -9,8 +10,38 @@ import { ErrorBanner } from "../common/ErrorBanner";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import { MacroBuilder } from "../macros/MacroBuilder";
 import { HeadTrackingWizard } from "../head-tracking/HeadTrackingWizard";
+import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+
+function InputRowPanel() {
+  const { settings, updateSettings } = useAppStore();
+  const rightRatio = settings.inputRowRightRatio ?? 0.28;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-1">
+      {settings.suggestionsVisible && (
+        <div className="shrink-0">
+          <SuggestionsBar />
+        </div>
+      )}
+      {settings.mouseVisible ? (
+        <ResizableSplitPane
+          rightRatio={rightRatio}
+          onRightRatioChange={(inputRowRightRatio) =>
+            updateSettings({ inputRowRightRatio })
+          }
+          left={<KeyboardSection />}
+          right={<MousePanel />}
+        />
+      ) : (
+        <div className="min-h-0 flex-1">
+          <KeyboardSection />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AppShell() {
   const {
@@ -20,14 +51,17 @@ export function AppShell() {
     showHeadTrackingWizard,
     setShowSettings,
     toggleCollapsed,
+    updateSettings,
   } = useAppStore();
   const { t } = useTranslation();
 
   if (settings.collapsed) {
     return (
       <div
-        className="flex h-screen items-center justify-between px-4"
+        className="flex items-center justify-between px-4"
         style={{
+          width: "100vw",
+          height: "100vh",
           backgroundColor: settings.headerBgColor ?? "#1e293b",
           color: settings.headerTextColor ?? "#ffffff",
         }}
@@ -44,14 +78,6 @@ export function AppShell() {
     );
   }
 
-  const showMouse = settings.mouseVisible;
-  const mousePanel = showMouse ? <MousePanel /> : null;
-  const keyboardPanel = (
-    <div className="min-w-0 flex-1">
-      <KeyboardSection />
-    </div>
-  );
-
   const shellStyle: CSSProperties = {
     backgroundColor: settings.appBgColor ?? "#f1f5f9",
   };
@@ -63,16 +89,11 @@ export function AppShell() {
     shellStyle.backgroundRepeat = "no-repeat";
   }
 
-  const inputRow = (
-    <div className="flex shrink-0 items-stretch gap-2">
-      {showMouse && settings.mouseSide === "left" && mousePanel}
-      {keyboardPanel}
-      {showMouse && settings.mouseSide === "right" && mousePanel}
-    </div>
-  );
-
   return (
-    <div className="relative flex h-screen flex-col" style={shellStyle}>
+    <div
+      className="relative flex min-h-0 flex-col"
+      style={{ ...shellStyle, width: "100vw", height: "100vh" }}
+    >
       {settings.backgroundImagePath && (
         <div
           className="pointer-events-none absolute inset-0"
@@ -84,8 +105,8 @@ export function AppShell() {
       )}
 
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-        <div
-          className="flex items-center justify-between px-3 py-2"
+        <header
+          className="flex shrink-0 items-center justify-between px-3 py-2"
           style={{
             backgroundColor: settings.headerBgColor ?? "#1e293b",
             color: settings.headerTextColor ?? "#ffffff",
@@ -108,29 +129,21 @@ export function AppShell() {
               {t("settings")}
             </button>
           </div>
-        </div>
+        </header>
 
         <ErrorBanner />
-        {settings.quickActionsVisible && <QuickActionsBar />}
 
-        <div className="flex min-h-0 flex-1 flex-col p-2">
-          {settings.phrasesVisible && (
-            <div className="min-h-0 flex-1 overflow-auto">
-              <PhrasePanel />
-            </div>
-          )}
-
-          <div className="mt-auto shrink-0 space-y-2 pt-2">
-            {settings.suggestionsVisible && <SuggestionsBar />}
-            {inputRow}
-          </div>
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <SectionCanvas
+            quickActionsVisible={settings.quickActionsVisible}
+            phrasesVisible={settings.phrasesVisible}
+            savedLayouts={settings.sectionLayouts}
+            onLayoutsChange={(sectionLayouts) => updateSettings({ sectionLayouts })}
+            quickActions={<QuickActionsBar />}
+            phrases={<PhrasePanel />}
+            inputRow={<InputRowPanel />}
+          />
         </div>
-
-        {showMouse && settings.mouseSide === "floating" && (
-          <div className="fixed bottom-4 right-4 z-40 h-64 w-72 shadow-2xl">
-            <MousePanel />
-          </div>
-        )}
 
         {showSettings && <SettingsPanel />}
         {showMacroBuilder && <MacroBuilder />}

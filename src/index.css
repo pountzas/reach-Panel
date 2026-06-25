@@ -6,6 +6,15 @@
   background: #f0f4f8;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -14,18 +23,67 @@
 
 body {
   margin: 0;
-  overflow: hidden;
 }
 
 button {
   touch-action: manipulation;
 }
 
-.key-pressed {
+/*
+ * Accessibility Keyboard — shared control interaction pattern
+ *
+ * Action buttons (keys, trackpad actions): .ak-action-btn + .key-pressed on press
+ * Mode toggles (keyboard/synth, mouse/numpad): .ak-mode-toggle + .ak-hover-tooltip above on hover
+ * Toggle helpers: components/common/ModeToggle.tsx, hooks/usePressableButton.ts, lib/buttonClasses.ts
+ */
+
+.key-pressed,
+.ak-action-btn.key-pressed {
   transform: scale(0.95);
   filter: brightness(0.9);
 }
 
 .sticky-active {
   box-shadow: inset 0 0 0 3px #2563eb;
+}
+
+.mouse-speed-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: #cbd5e1;
+  cursor: pointer;
+}
+
+.mouse-speed-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background-color: #cbd5e1;
+}
+
+.mouse-speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  background-color: #334155;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 20%);
+}
+
+.mouse-speed-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background-color: #cbd5e1;
+}
+
+.mouse-speed-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  background-color: #334155;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 20%);
 }

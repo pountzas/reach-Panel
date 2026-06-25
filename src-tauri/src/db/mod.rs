@@ -398,11 +398,10 @@ impl Database {
                 "theme": "light",
                 "opacity": 0.95,
                 "language": "en",
-                "mouseSide": "right",
                 "mouseVisible": true,
-                "mousePanelWidth": 280,
-                "keyboardKeySize": 56,
-                "keyboardSpacing": 6,
+                "mousePanelMode": "mouse",
+                "keyboardFontSize": 18,
+                "sectionLayouts": {},
                 "mouseSpeed": "medium",
                 "precisionMode": false,
                 "predictionEnabled": true,
@@ -412,7 +411,10 @@ impl Database {
                 "emergencyVisible": true,
                 "accessibilityMonitorId": 0,
                 "collapsed": false,
-                "headTrackingEnabled": false
+                "headTrackingEnabled": false,
+                "functionKeysEnabled": false,
+                "keyboardSectionMode": "keyboard",
+                "keyboardModeToggleVisible": true
             });
             conn.execute(
                 "INSERT INTO profiles (id, name, settings_json, created_at) VALUES (?1, ?2, ?3, ?4)",
@@ -435,11 +437,10 @@ impl Database {
             "theme": "light",
             "opacity": 0.95,
             "language": "en",
-            "mouseSide": "right",
             "mouseVisible": true,
-            "mousePanelWidth": 280,
-            "keyboardKeySize": 56,
-            "keyboardSpacing": 6,
+            "mousePanelMode": "mouse",
+            "keyboardFontSize": 18,
+            "sectionLayouts": {},
             "mouseSpeed": "medium",
             "precisionMode": false,
             "predictionEnabled": true,
@@ -449,7 +450,10 @@ impl Database {
             "emergencyVisible": true,
             "accessibilityMonitorId": 0,
             "collapsed": false,
-            "headTrackingEnabled": false
+            "headTrackingEnabled": false,
+            "functionKeysEnabled": false,
+            "keyboardSectionMode": "keyboard",
+            "keyboardModeToggleVisible": true
         });
         conn.execute(
             "UPDATE profiles SET name = ?1, settings_json = ?2 WHERE id = ?3",
