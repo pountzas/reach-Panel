@@ -222,14 +222,8 @@ fn get_current_window_layout(window: &tauri::WebviewWindow) -> Result<WindowLayo
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let pos = window
-            .outer_position()
-            .map_err(|e| e.to_string())?
-            .to_physical(window.scale_factor().map_err(|e| e.to_string())?);
-        let size = window
-            .outer_size()
-            .map_err(|e| e.to_string())?
-            .to_physical(window.scale_factor().map_err(|e| e.to_string())?);
+        let pos = window.outer_position().map_err(|e| e.to_string())?;
+        let size = window.outer_size().map_err(|e| e.to_string())?;
         Ok(WindowLayout {
             x: pos.x,
             y: pos.y,
