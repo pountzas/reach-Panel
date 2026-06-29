@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
+import { getSynthBlackKeyColors } from "../../lib/colorProfiles";
 
 const WHITE_NOTES = ["C", "D", "E", "F", "G", "A", "B"] as const;
 const BLACK_AFTER_WHITE: Record<number, string> = {
@@ -200,8 +201,10 @@ export function Synthesizer() {
 
   const whiteKeyColor = settings.keyboardKeyColor ?? "#fafafa";
   const pressedWhiteColor = "#e2e8f0";
-  const blackKeyColor = "#1e293b";
-  const pressedBlackColor = "#0f172a";
+  const { base: blackKeyColor, pressed: pressedBlackColor } = getSynthBlackKeyColors(
+    settings.colorProfile,
+    settings.keyTextColor,
+  );
 
   const keyHandlers = (key: PianoKey) => ({
     onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {

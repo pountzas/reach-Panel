@@ -92,6 +92,16 @@ export const el: Record<keyof typeof en, string> = {
 
   appearance: "Εμφάνιση",
 
+  colorProfile: "Προφίλ χρωμάτων",
+
+  colorProfileLightGrey: "Ανοιχτό γκρι",
+
+  colorProfileDarkGrey: "Σκούρο γκρι",
+
+  colorProfileCustom: "Προσαρμοσμένο",
+
+  headerTextColor: "Κείμενο κεφαλίδας",
+
   appBackgroundColor: "Φόντο εφαρμογής",
 
   headerColor: "Γραμμή κεφαλίδας",

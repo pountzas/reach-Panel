@@ -2,6 +2,18 @@ import { useState } from "react";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+import {
+  COLOR_PROFILE_IDS,
+  getColorProfileColors,
+  type ColorProfileId,
+} from "../../lib/colorProfiles";
+import type { TranslationKey } from "../../i18n";
+
+const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
+  "light-grey": "colorProfileLightGrey",
+  "dark-grey": "colorProfileDarkGrey",
+  custom: "colorProfileCustom",
+};
 
 function ColorField({
   label,
@@ -122,38 +134,85 @@ export function SettingsPanel() {
 
         <section className="mb-4">
           <h3 className="mb-2 font-semibold">{t("appearance")}</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <ColorField
-              label={t("appBackgroundColor")}
-              value={settings.appBgColor ?? "#f1f5f9"}
-              onChange={(v) => updateSettings({ appBgColor: v })}
-            />
-            <ColorField
-              label={t("headerColor")}
-              value={settings.headerBgColor ?? "#1e293b"}
-              onChange={(v) => updateSettings({ headerBgColor: v })}
-            />
-            <ColorField
-              label={t("keyboardBackgroundColor")}
-              value={settings.keyboardBgColor ?? "#e8edf2"}
-              onChange={(v) => updateSettings({ keyboardBgColor: v })}
-            />
-            <ColorField
-              label={t("keyColor")}
-              value={settings.keyboardKeyColor ?? "#ffffff"}
-              onChange={(v) => updateSettings({ keyboardKeyColor: v })}
-            />
-            <ColorField
-              label={t("keyTextColor")}
-              value={settings.keyTextColor ?? "#1e293b"}
-              onChange={(v) => updateSettings({ keyTextColor: v })}
-            />
-            <ColorField
-              label={t("mousePanelColor")}
-              value={settings.mousePanelBgColor ?? "#f8fafc"}
-              onChange={(v) => updateSettings({ mousePanelBgColor: v })}
-            />
-          </div>
+          <fieldset className="mb-3">
+            <legend className="mb-1 text-sm font-medium">{t("colorProfile")}</legend>
+            <div className="flex flex-wrap gap-2">
+              {COLOR_PROFILE_IDS.map((id) => (
+                <label
+                  key={id}
+                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1 text-sm ${
+                    settings.colorProfile === id ? "border-slate-800 bg-slate-100" : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="colorProfile"
+                    checked={settings.colorProfile === id}
+                    onChange={() =>
+                      updateSettings({
+                        colorProfile: id,
+                        ...getColorProfileColors(id),
+                      })
+                    }
+                  />
+                  {t(COLOR_PROFILE_LABEL_KEYS[id])}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {settings.colorProfile === "custom" && (
+            <div className="grid grid-cols-2 gap-3">
+              <ColorField
+                label={t("appBackgroundColor")}
+                value={settings.appBgColor ?? "#f1f5f9"}
+                onChange={(v) =>
+                  updateSettings({ appBgColor: v, colorProfile: "custom" })
+                }
+              />
+              <ColorField
+                label={t("headerColor")}
+                value={settings.headerBgColor ?? "#1e293b"}
+                onChange={(v) =>
+                  updateSettings({ headerBgColor: v, colorProfile: "custom" })
+                }
+              />
+              <ColorField
+                label={t("headerTextColor")}
+                value={settings.headerTextColor ?? "#ffffff"}
+                onChange={(v) =>
+                  updateSettings({ headerTextColor: v, colorProfile: "custom" })
+                }
+              />
+              <ColorField
+                label={t("keyboardBackgroundColor")}
+                value={settings.keyboardBgColor ?? "#e8edf2"}
+                onChange={(v) =>
+                  updateSettings({ keyboardBgColor: v, colorProfile: "custom" })
+                }
+              />
+              <ColorField
+                label={t("keyColor")}
+                value={settings.keyboardKeyColor ?? "#ffffff"}
+                onChange={(v) =>
+                  updateSettings({ keyboardKeyColor: v, colorProfile: "custom" })
+                }
+              />
+              <ColorField
+                label={t("keyTextColor")}
+                value={settings.keyTextColor ?? "#1e293b"}
+                onChange={(v) =>
+                  updateSettings({ keyTextColor: v, colorProfile: "custom" })
+                }
+              />
+              <ColorField
+                label={t("mousePanelColor")}
+                value={settings.mousePanelBgColor ?? "#f8fafc"}
+                onChange={(v) =>
+                  updateSettings({ mousePanelBgColor: v, colorProfile: "custom" })
+                }
+              />
+            </div>
+          )}
           <div className="mt-3 space-y-2">
             <div className="flex flex-wrap gap-2">
               <button

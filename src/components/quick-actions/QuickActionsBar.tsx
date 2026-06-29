@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
+import { getSurfaceColors } from "../../lib/colorProfiles";
 
 const CATEGORY_COLORS: Record<string, string> = {
   Entertainment: "bg-purple-100 text-purple-800",
@@ -9,19 +10,23 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function QuickActionsBar() {
-  const { quickActions, loadQuickActions } = useAppStore();
+  const { quickActions, loadQuickActions, settings } = useAppStore();
+  const surface = getSurfaceColors(settings.appBgColor);
 
   const launch = async (actionType: string, target: string) => {
     await invoke("cmd_launch_quick_action", { actionType, target });
   };
 
   return (
-    <div className="flex h-full flex-wrap gap-2 overflow-auto border-b border-slate-200 bg-white px-3 py-2">
+    <div
+      className="flex h-full flex-wrap gap-2 overflow-auto border-b px-3 py-2"
+      style={{ backgroundColor: surface.panelBg, borderColor: surface.panelBorder }}
+    >
       {quickActions.map((action) => (
         <button
           key={action.id}
           type="button"
-          className={`rounded-xl px-4 py-2 text-sm font-semibold shadow-sm ${CATEGORY_COLORS[action.category] ?? "bg-slate-100"}`}
+          className={`rounded-xl px-4 py-2 text-sm font-semibold shadow-sm ${CATEGORY_COLORS[action.category] ?? "bg-slate-100 text-slate-900"}`}
           onClick={() => launch(action.action_type, action.target)}
         >
           {action.label}
@@ -29,7 +34,8 @@ export function QuickActionsBar() {
       ))}
       <button
         type="button"
-        className="rounded-xl border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500"
+        className="rounded-xl border border-dashed px-3 py-2 text-xs"
+        style={{ borderColor: surface.panelBorder, color: surface.panelMutedText }}
         onClick={() => loadQuickActions()}
       >
         Refresh

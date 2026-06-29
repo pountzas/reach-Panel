@@ -52,6 +52,7 @@ export function AppShell() {
     setShowSettings,
     toggleCollapsed,
     updateSettings,
+    isAnimatingWindow,
   } = useAppStore();
   const { t } = useTranslation();
 
@@ -69,8 +70,9 @@ export function AppShell() {
         <span className="font-semibold">{t("appTitle")}</span>
         <button
           type="button"
-          className="rounded-lg bg-white/20 px-4 py-2"
+          className="rounded-lg bg-white/20 px-4 py-2 disabled:opacity-50"
           onClick={toggleCollapsed}
+          disabled={isAnimatingWindow}
         >
           {t("expand")}
         </button>
@@ -116,8 +118,9 @@ export function AppShell() {
           <div className="flex gap-2">
             <button
               type="button"
-              className="rounded px-3 py-1 text-sm bg-white/20"
+              className="rounded px-3 py-1 text-sm bg-white/20 disabled:opacity-50"
               onClick={toggleCollapsed}
+              disabled={isAnimatingWindow}
             >
               {t("collapse")}
             </button>

@@ -21,6 +21,31 @@ body,
   user-select: none;
 }
 
+/*
+ * Global scrollbar styling — equivalent to the Tailwind v4.3 native utilities
+ * `scrollbar-thin scrollbar-track-gray-500 scrollbar-thumb-[#202123]/80`,
+ * applied to every scrollable surface. Standard properties cover Chromium
+ * (WebView2) and modern Safari; the ::-webkit-* rules cover older WebKit.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(32 33 35 / 0.8) var(--color-gray-500);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background-color: var(--color-gray-500);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgb(32 33 35 / 0.8);
+  border-radius: 9999px;
+}
+
 body {
   margin: 0;
 }

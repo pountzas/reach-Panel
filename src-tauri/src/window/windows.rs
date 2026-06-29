@@ -1,8 +1,9 @@
-use serde::Serialize;
-use windows::Win32::Foundation::{BOOL, LPARAM, RECT};
+use super::{MonitorInfo, WindowLayout};
+use windows::Win32::Foundation::{BOOL, HWND, LPARAM, RECT};
 use windows::Win32::Graphics::Gdi::{EnumDisplayMonitors, GetMonitorInfoW, MONITORINFO, MONITORINFOEXW};
-
-use super::MonitorInfo;
+use windows::Win32::UI::WindowsAndMessaging::{
+    GetWindowRect, SetWindowPos, HWND_TOP, SWP_NOACTIVATE, SWP_NOZORDER, SWP_SHOWWINDOW,
+};
 
 struct MonitorCollector {
     monitors: Vec<MonitorInfo>,
@@ -19,7 +20,7 @@ unsafe extern "system" fn monitor_enum_proc(
     let mut info = MONITORINFOEXW::default();
     info.monitorInfo.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
     if GetMonitorInfoW(hmonitor, &mut info as *mut _ as *mut MONITORINFO).as_bool() {
-        let rect = info.monitorInfo.rcMonitor;
+        let rect = info.monitorInfo.rcWork;
         let name = String::from_utf16_lossy(
             &info.szDevice[..info
                 .szDevice
@@ -55,4 +56,37 @@ pub fn list_monitors() -> Vec<MonitorInfo> {
         );
     }
     collector.monitors
+}
+
+pub fn get_window_bounds(hwnd: isize) -> Result<WindowLayout, String> {
+    let mut rect = RECT::default();
+    unsafe {
+        GetWindowRect(
+            HWND(hwnd as *mut core::ffi::c_void),
+            &mut rect,
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(WindowLayout {
+        x: rect.left,
+        y: rect.top,
+        width: (rect.right - rect.left) as u32,
+        height: (rect.bottom - rect.top) as u32,
+    })
+}
+
+pub fn set_window_bounds(hwnd: isize, layout: WindowLayout) -> Result<(), String> {
+    unsafe {
+        SetWindowPos(
+            HWND(hwnd as *mut core::ffi::c_void),
+            HWND_TOP,
+            layout.x,
+            layout.y,
+            layout.width as i32,
+            layout.height as i32,
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }

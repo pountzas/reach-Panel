@@ -12,6 +12,8 @@ import {
   type PixelRect,
 } from "../../lib/sectionSnap";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useAppStore } from "../../stores/appStore";
+import { getSurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
 
 const EDGE_SIZE = 6;
@@ -96,6 +98,8 @@ export function ResizableSection({
   children,
 }: ResizableSectionProps) {
   const { t } = useTranslation();
+  const appBgColor = useAppStore((s) => s.settings.appBgColor);
+  const surface = getSurfaceColors(appBgColor);
   const interactingRef = useRef(false);
   const lastValidRef = useRef<PixelRect | null>(null);
   const pixels = layoutToPixels(layout, containerWidth, containerHeight);
@@ -246,9 +250,18 @@ export function ResizableSection({
         endInteract();
       }}
     >
-      <div className="flex h-full flex-col overflow-hidden rounded-md border border-slate-300 bg-white/95 shadow-md">
-        <div className="section-drag-handle flex h-7 shrink-0 cursor-grab items-center border-b border-slate-300 bg-slate-100 px-2 active:cursor-grabbing">
-          <span className="truncate text-xs font-medium text-slate-600">
+      <div
+        className="flex h-full flex-col overflow-hidden rounded-md border shadow-md"
+        style={{ backgroundColor: surface.panelBg, borderColor: surface.panelBorder }}
+      >
+        <div
+          className="section-drag-handle flex h-7 shrink-0 cursor-grab items-center border-b px-2 active:cursor-grabbing"
+          style={{ backgroundColor: surface.panelHeaderBg, borderColor: surface.panelBorder }}
+        >
+          <span
+            className="truncate text-xs font-medium"
+            style={{ color: surface.panelMutedText }}
+          >
             {t(SECTION_TITLE_KEY[id])}
           </span>
         </div>

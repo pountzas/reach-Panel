@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -29,6 +29,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Prefetch Rust dependencies
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if cargo fetch --manifest-path src-tauri/Cargo.toml; then
+              exit 0
+            fi
+            echo "cargo fetch attempt ${attempt} failed; retrying in 15s..."
+            sleep 15
+          done
+          exit 1
 
       - name: Build Tauri app
         run: npm run tauri build
@@ -47,7 +59,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -65,6 +77,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Prefetch Rust dependencies
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if cargo fetch --manifest-path src-tauri/Cargo.toml; then
+              exit 0
+            fi
+            echo "cargo fetch attempt ${attempt} failed; retrying in 15s..."
+            sleep 15
+          done
+          exit 1
 
       - name: Build Tauri app (macOS)
         run: npm run tauri build

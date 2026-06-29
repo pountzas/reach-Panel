@@ -88,6 +88,16 @@ export const en = {
 
   appearance: "Appearance",
 
+  colorProfile: "Color profile",
+
+  colorProfileLightGrey: "Light grey",
+
+  colorProfileDarkGrey: "Dark grey",
+
+  colorProfileCustom: "Custom",
+
+  headerTextColor: "Header text",
+
   appBackgroundColor: "App background",
 
   headerColor: "Header bar",
