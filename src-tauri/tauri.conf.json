@@ -17,6 +17,7 @@
         "width": 1200,
         "height": 700,
         "resizable": true,
+        "decorations": false,
         "alwaysOnTop": true,
         "fullscreen": false
       }

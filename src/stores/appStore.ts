@@ -67,6 +67,7 @@ interface AppStore {
   syncWindowFocusable: () => Promise<void>;
   loadKeyboardLayout: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
+  isAnimatingWindow: boolean;
 }
 
 function parseSettings(json: string): AppSettings {
@@ -126,6 +127,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   showMacroBuilder: false,
   showHeadTrackingWizard: false,
   keyboardLayout: "QWERTY",
+  isAnimatingWindow: false,
 
   loadProfileFiles: async () => {
     const [profileFiles, activeProfileFile] = await Promise.all([
@@ -185,13 +187,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await get().loadPhrases();
       await get().loadSuggestions();
     }
-    if (partial.accessibilityMonitorId !== undefined) {
-      await invoke("cmd_move_window_to_monitor", {
-        monitorId: partial.accessibilityMonitorId,
+    if (partial.accessibilityMonitorId !== undefined || partial.collapsed !== undefined) {
+      await invoke("cmd_apply_window_layout", {
+        monitorId: next.accessibilityMonitorId,
+        collapsed: next.collapsed,
       });
-    }
-    if (partial.collapsed !== undefined) {
-      await invoke("cmd_set_collapsed", { collapsed: partial.collapsed });
     }
   },
 
@@ -359,8 +359,39 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   toggleCollapsed: async () => {
-    const collapsed = !get().settings.collapsed;
-    await get().updateSettings({ collapsed });
+    if (get().isAnimatingWindow) {
+      return;
+    }
+    const { settings } = get();
+    const collapsed = !settings.collapsed;
+    const next = { ...settings, collapsed };
+
+    set({ isAnimatingWindow: true });
+    try {
+      if (collapsed) {
+        set({ settings: next });
+        await invoke("cmd_update_profile_settings", {
+          profileId: INTERNAL_PROFILE_ID,
+          settingsJson: JSON.stringify(next),
+        });
+        await invoke("cmd_animate_window_layout", {
+          monitorId: next.accessibilityMonitorId,
+          collapsed: true,
+        });
+      } else {
+        await invoke("cmd_animate_window_layout", {
+          monitorId: settings.accessibilityMonitorId,
+          collapsed: false,
+        });
+        set({ settings: next });
+        await invoke("cmd_update_profile_settings", {
+          profileId: INTERNAL_PROFILE_ID,
+          settingsJson: JSON.stringify(next),
+        });
+      }
+    } finally {
+      set({ isAnimatingWindow: false });
+    }
   },
 }));
 
