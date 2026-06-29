@@ -4,6 +4,8 @@ import { useAppStore } from "../../stores/appStore";
 
 import { useTranslation } from "../../hooks/useTranslation";
 
+import { getSurfaceColors } from "../../lib/colorProfiles";
+
 
 
 export function PhrasePanel() {
@@ -11,6 +13,8 @@ export function PhrasePanel() {
   const { phrases, settings, updateSettings } = useAppStore();
 
   const { t } = useTranslation();
+
+  const surface = getSurfaceColors(settings.appBgColor);
 
 
 
@@ -34,13 +38,23 @@ export function PhrasePanel() {
 
   return (
 
-    <div className="flex h-full flex-col gap-2 overflow-auto rounded-xl border border-slate-200 bg-white p-2">
+    <div
+      className="flex h-full flex-col gap-2 overflow-auto rounded-xl border p-2"
+      style={{
+        backgroundColor: surface.panelBg,
+        borderColor: surface.panelBorder,
+        color: surface.panelText,
+      }}
+    >
 
       <div className="flex items-center justify-between">
 
         <span className="text-sm font-semibold">{t("phrases")}</span>
 
-        <label className="flex items-center gap-1 text-xs text-slate-600">
+        <label
+          className="flex items-center gap-1 text-xs"
+          style={{ color: surface.panelMutedText }}
+        >
 
           <input
 
@@ -72,7 +86,7 @@ export function PhrasePanel() {
 
               type="button"
 
-              className="rounded-lg bg-yellow-100 px-3 py-2 text-sm font-medium"
+              className="rounded-lg bg-yellow-100 px-3 py-2 text-sm font-medium text-slate-900"
 
               onClick={() => usePhrase(p.text, p.action)}
 
@@ -100,7 +114,7 @@ export function PhrasePanel() {
 
             type="button"
 
-            className="rounded-lg bg-slate-100 px-3 py-2 text-sm"
+            className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-900"
 
             onClick={() => usePhrase(p.text, p.action)}
 

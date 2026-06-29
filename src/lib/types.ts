@@ -1,12 +1,13 @@
 import type { SectionLayouts } from "./sectionLayouts";
 import type { MouseSpeed } from "./mouseSpeed";
+import type { ColorProfileId } from "./colorProfiles";
 
 export type { MouseSpeed };
 export type MousePanelMode = "mouse" | "numpad";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
 
 export interface AppSettings {
-  theme: string;
+  colorProfile: ColorProfileId;
   opacity: number;
   language: string;
   mouseVisible: boolean;
@@ -122,20 +123,20 @@ export interface HeadTrackingSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: "light",
+  colorProfile: "light-grey",
   opacity: 0.95,
   language: "en",
   mouseVisible: true,
   mousePanelMode: "mouse",
   keyboardFontSize: 18,
   sectionLayouts: {},
-  keyboardBgColor: "#e8edf2",
-  keyboardKeyColor: "#ffffff",
-  keyTextColor: "#1e293b",
-  appBgColor: "#f1f5f9",
-  headerBgColor: "#1e293b",
+  keyboardBgColor: "#d1d5db",
+  keyboardKeyColor: "#f3f4f6",
+  keyTextColor: "#374151",
+  appBgColor: "#e5e7eb",
+  headerBgColor: "#6b7280",
   headerTextColor: "#ffffff",
-  mousePanelBgColor: "#f8fafc",
+  mousePanelBgColor: "#e5e7eb",
   backgroundImageOpacity: 0.35,
   mouseSpeed: "medium",
   precisionMode: false,

@@ -5,6 +5,7 @@ import { useContainerSize } from "../../hooks/useContainerSize";
 import { usePressableButton } from "../../hooks/usePressableButton";
 import { HoverTooltip } from "../common/ModeToggle";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
+import { getSurfaceColors } from "../../lib/colorProfiles";
 import {
   MOUSE_SPEED_MULTIPLIERS,
   resolveMouseSpeed,
@@ -86,6 +87,7 @@ export function Trackpad() {
   const dragging = useRef(false);
   const keyBgColor = settings.keyboardKeyColor ?? "#ffffff";
   const keyTextColor = settings.keyTextColor ?? "#1e293b";
+  const surface = getSurfaceColors(settings.appBgColor);
 
   const speed =
     (SPEED_MAP[resolveMouseSpeed(settings.mouseSpeed)] ?? 1) *
@@ -117,13 +119,17 @@ export function Trackpad() {
   return (
     <div ref={ref} className="flex h-full min-h-0 flex-col" style={{ gap }}>
       <div
-        className="min-h-0 flex-1 rounded-xl border-2 border-dashed border-slate-400 bg-slate-100 touch-none"
+        className="min-h-0 flex-1 rounded-xl border-2 border-dashed touch-none"
+        style={{ backgroundColor: surface.insetBg, borderColor: surface.insetBorder }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <div className="flex h-full items-center justify-center text-slate-500">
+        <div
+          className="flex h-full items-center justify-center"
+          style={{ color: surface.insetText }}
+        >
           Trackpad
         </div>
       </div>

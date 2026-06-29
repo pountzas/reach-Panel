@@ -3,19 +3,22 @@ import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { MouseSpeedSlider } from "./MouseSpeedSlider";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+import { getSurfaceColors } from "../../lib/colorProfiles";
 import { Trackpad } from "./Trackpad";
 import { NumKeypad } from "./NumKeypad";
 
 export function MousePanel() {
   const { settings, updateSettings } = useAppStore();
   const { t } = useTranslation();
+  const surface = getSurfaceColors(settings.appBgColor);
   const showNumpad = settings.mousePanelMode === "numpad";
 
   return (
     <div
-      className="flex h-full min-h-0 w-full flex-col rounded-xl border border-slate-300 p-2"
+      className="flex h-full min-h-0 w-full flex-col rounded-xl border p-2"
       style={{
         backgroundColor: settings.mousePanelBgColor ?? "#f8fafc",
+        borderColor: surface.panelBorder,
       }}
     >
       <div className="relative z-20 mb-2 flex items-center justify-end gap-2 overflow-visible pr-1 pt-6">

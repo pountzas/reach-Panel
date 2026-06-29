@@ -16,6 +16,7 @@ import {
   ProfileFileInfo,
   QuickAction,
 } from "../lib/types";
+import { resolveColorProfile } from "../lib/colorProfiles";
 
 interface AppStore {
   profileFiles: ProfileFileInfo[];
@@ -70,7 +71,11 @@ interface AppStore {
 
 function parseSettings(json: string): AppSettings {
   try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(json) };
+    const { theme, ...parsed } = JSON.parse(json) as Partial<AppSettings> & {
+      theme?: unknown;
+    };
+    const colorProfile = resolveColorProfile({ ...parsed, theme });
+    return { ...DEFAULT_SETTINGS, ...parsed, colorProfile };
   } catch {
     return DEFAULT_SETTINGS;
   }
