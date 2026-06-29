@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } 
 import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { getSynthBlackKeyColors } from "../../lib/colorProfiles";
+import { findKeyIdAtPoint } from "../../lib/synthHitTest";
 
 const WHITE_NOTES = ["C", "D", "E", "F", "G", "A", "B"] as const;
 const BLACK_AFTER_WHITE: Record<number, string> = {
@@ -100,12 +101,22 @@ type ActiveVoice = {
   gain: GainNode;
 };
 
+type ActivePointer = {
+  keyId: string;
+  voice: ActiveVoice;
+};
+
+function pressedKeysFromPointers(activePointers: Map<number, ActivePointer>): Set<string> {
+  return new Set([...activePointers.values()].map((entry) => entry.keyId));
+}
+
 export function Synthesizer() {
   const { settings } = useAppStore();
   const { ref, height } = useContainerSize<HTMLDivElement>();
+  const pianoRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
-  const activeVoices = useRef<Map<string, ActiveVoice>>(new Map());
+  const activePointers = useRef<Map<number, ActivePointer>>(new Map());
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set());
 
   const volumeLevel = useMemo(() => {
@@ -119,6 +130,13 @@ export function Synthesizer() {
   const blackKeyHeight = whiteKeyHeight * blackKeyHeightRatio;
 
   const { whiteKeys, blackKeys } = useMemo(() => buildPianoKeys(), []);
+  const keyById = useMemo(() => {
+    const map = new Map<string, PianoKey>();
+    for (const key of [...whiteKeys, ...blackKeys]) {
+      map.set(key.id, key);
+    }
+    return map;
+  }, [whiteKeys, blackKeys]);
 
   const ensureAudio = useCallback(async () => {
     if (!audioRef.current) {
@@ -142,11 +160,19 @@ export function Synthesizer() {
     master.gain.setValueAtTime(volumeLevel, ctx.currentTime);
   }, [volumeLevel]);
 
-  const startNote = useCallback(
-    async (keyId: string, frequency: number) => {
-      const ctx = await ensureAudio();
-      if (activeVoices.current.has(keyId)) return;
+  const stopVoice = useCallback((voice: ActiveVoice) => {
+    const ctx = audioRef.current;
+    if (!ctx) return;
 
+    voice.gain.gain.cancelScheduledValues(ctx.currentTime);
+    voice.gain.gain.setValueAtTime(voice.gain.gain.value, ctx.currentTime);
+    voice.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+    voice.oscillator.stop(ctx.currentTime + 0.1);
+  }, []);
+
+  const startVoice = useCallback(
+    async (frequency: number): Promise<ActiveVoice> => {
+      const ctx = await ensureAudio();
       const oscillator = ctx.createOscillator();
       const gain = ctx.createGain();
       oscillator.type = "triangle";
@@ -157,47 +183,102 @@ export function Synthesizer() {
       const master = masterGainRef.current ?? ctx.destination;
       gain.connect(master);
       oscillator.start();
-      activeVoices.current.set(keyId, { oscillator, gain });
+      return { oscillator, gain };
     },
     [ensureAudio],
   );
 
-  const stopNote = useCallback(
-    async (keyId: string) => {
-      const voice = activeVoices.current.get(keyId);
-      if (!voice) return;
+  const syncPressedKeys = useCallback(() => {
+    setPressedKeys(pressedKeysFromPointers(activePointers.current));
+  }, []);
 
-      const ctx = audioRef.current;
-      if (!ctx) return;
+  const releasePointer = useCallback(
+    (pointerId: number) => {
+      const active = activePointers.current.get(pointerId);
+      if (!active) return;
 
-      voice.gain.gain.cancelScheduledValues(ctx.currentTime);
-      voice.gain.gain.setValueAtTime(voice.gain.gain.value, ctx.currentTime);
-      voice.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-      voice.oscillator.stop(ctx.currentTime + 0.1);
-      activeVoices.current.delete(keyId);
+      stopVoice(active.voice);
+      activePointers.current.delete(pointerId);
+      syncPressedKeys();
     },
-    [],
+    [stopVoice, syncPressedKeys],
   );
 
-  const pressKey = useCallback(
-    (key: PianoKey) => {
-      setPressedKeys((prev) => new Set(prev).add(key.id));
-      void startNote(key.id, key.freq);
+  const setPointerKey = useCallback(
+    async (pointerId: number, keyId: string | null) => {
+      const current = activePointers.current.get(pointerId);
+      if (current?.keyId === keyId) return;
+
+      if (current) {
+        stopVoice(current.voice);
+        activePointers.current.delete(pointerId);
+      }
+
+      if (keyId) {
+        const key = keyById.get(keyId);
+        if (!key) return;
+        const voice = await startVoice(key.freq);
+        activePointers.current.set(pointerId, { keyId, voice });
+      }
+
+      syncPressedKeys();
     },
-    [startNote],
+    [keyById, startVoice, stopVoice, syncPressedKeys],
   );
 
-  const releaseKey = useCallback(
-    (keyId: string) => {
-      setPressedKeys((prev) => {
-        const next = new Set(prev);
-        next.delete(keyId);
-        return next;
-      });
-      void stopNote(keyId);
+  const updatePointerFromEvent = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      const container = pianoRef.current;
+      if (!container) return;
+
+      const keyId = findKeyIdAtPoint(container, event.clientX, event.clientY);
+      void setPointerKey(event.pointerId, keyId);
     },
-    [stopNote],
+    [setPointerKey],
   );
+
+  const onPianoPointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      event.currentTarget.setPointerCapture(event.pointerId);
+      updatePointerFromEvent(event);
+    },
+    [updatePointerFromEvent],
+  );
+
+  const onPianoPointerMove = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+      updatePointerFromEvent(event);
+    },
+    [updatePointerFromEvent],
+  );
+
+  const onPianoPointerUp = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      releasePointer(event.pointerId);
+    },
+    [releasePointer],
+  );
+
+  const onPianoLostPointerCapture = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      releasePointer(event.pointerId);
+    },
+    [releasePointer],
+  );
+
+  useEffect(() => {
+    const pointers = activePointers.current;
+    return () => {
+      for (const entry of pointers.values()) {
+        stopVoice(entry.voice);
+      }
+      pointers.clear();
+    };
+  }, [stopVoice]);
 
   const whiteKeyColor = settings.keyboardKeyColor ?? "#fafafa";
   const pressedWhiteColor = "#e2e8f0";
@@ -206,26 +287,6 @@ export function Synthesizer() {
     settings.keyTextColor,
   );
 
-  const keyHandlers = (key: PianoKey) => ({
-    onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
-      event.currentTarget.setPointerCapture(event.pointerId);
-      pressKey(key);
-    },
-    onPointerUp: (event: PointerEvent<HTMLButtonElement>) => {
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-      releaseKey(key.id);
-    },
-    onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => {
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-      releaseKey(key.id);
-    },
-    onLostPointerCapture: () => releaseKey(key.id),
-  });
-
   const renderWhiteKey = (key: PianoKey) => {
     const isPressed = pressedKeys.has(key.id);
     return (
@@ -233,6 +294,7 @@ export function Synthesizer() {
         key={key.id}
         type="button"
         aria-label={key.id}
+        data-piano-key-id={key.id}
         className={`relative min-w-0 flex-1 rounded-b-lg border border-slate-300 font-semibold shadow-sm transition-transform ${isPressed ? "key-pressed" : ""}`}
         style={{
           height: whiteKeyHeight,
@@ -240,9 +302,10 @@ export function Synthesizer() {
           color: settings.keyTextColor ?? "#475569",
           backgroundColor: isPressed ? pressedWhiteColor : whiteKeyColor,
         }}
-        {...keyHandlers(key)}
       >
-        <span className="absolute bottom-2 left-1/2 -translate-x-1/2">{key.label}</span>
+        <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2">
+          {key.label}
+        </span>
       </button>
     );
   };
@@ -254,6 +317,7 @@ export function Synthesizer() {
         key={key.id}
         type="button"
         aria-label={key.id}
+        data-piano-key-id={key.id}
         className={`absolute top-0 z-10 rounded-b-md border border-slate-900 font-semibold shadow-md transition-transform ${isPressed ? "key-pressed" : ""}`}
         style={{
           left: `${(key.leftRatio ?? 0) * 100}%`,
@@ -264,9 +328,7 @@ export function Synthesizer() {
           color: "#f8fafc",
           backgroundColor: isPressed ? pressedBlackColor : blackKeyColor,
         }}
-        {...keyHandlers(key)}
-      >
-      </button>
+      />
     );
   };
 
@@ -280,7 +342,15 @@ export function Synthesizer() {
       }}
     >
       <div className="relative flex min-h-0 w-full flex-1">
-        <div className="relative flex h-full w-full">
+        <div
+          ref={pianoRef}
+          className="relative flex h-full w-full touch-none"
+          onPointerDown={onPianoPointerDown}
+          onPointerMove={onPianoPointerMove}
+          onPointerUp={onPianoPointerUp}
+          onPointerCancel={onPianoPointerUp}
+          onLostPointerCapture={onPianoLostPointerCapture}
+        >
           {whiteKeys.map(renderWhiteKey)}
           {blackKeys.map(renderBlackKey)}
         </div>
