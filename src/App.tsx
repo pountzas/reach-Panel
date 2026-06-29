@@ -11,6 +11,11 @@ function App() {
     const init = async () => {
       await loadProfileFiles();
       await loadMonitors();
+      const { settings } = useAppStore.getState();
+      await invoke("cmd_apply_window_layout", {
+        monitorId: settings.accessibilityMonitorId,
+        collapsed: settings.collapsed,
+      });
       await loadKeyboardLayout();
       await pollKeyboardState();
       await invoke("cmd_set_always_on_top", { enabled: true });

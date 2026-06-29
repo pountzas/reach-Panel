@@ -23,7 +23,7 @@ use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use profiles::{pick_image_file, ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
-use window::{list_monitors, MonitorInfo};
+use window::{compute_window_layout, list_monitors, MonitorInfo, WindowLayout};
 
 struct AppState {
     db: Database,
@@ -204,31 +204,130 @@ fn cmd_list_monitors() -> Vec<MonitorInfo> {
     list_monitors()
 }
 
+async fn apply_window_layout(
+    app: &tauri::AppHandle,
+    monitor_id: u32,
+    collapsed: bool,
+) -> Result<(), String> {
+    let monitors = list_monitors();
+    let layout = compute_window_layout(&monitors, monitor_id, collapsed)?;
+    set_window_layout(app, layout).await
+}
+
+fn get_current_window_layout(window: &tauri::WebviewWindow) -> Result<WindowLayout, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+        window::get_window_bounds(hwnd.0 as isize)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let pos = window
+            .outer_position()
+            .map_err(|e| e.to_string())?
+            .to_physical(window.scale_factor().map_err(|e| e.to_string())?);
+        let size = window
+            .outer_size()
+            .map_err(|e| e.to_string())?
+            .to_physical(window.scale_factor().map_err(|e| e.to_string())?);
+        Ok(WindowLayout {
+            x: pos.x,
+            y: pos.y,
+            width: size.width,
+            height: size.height,
+        })
+    }
+}
+
+async fn set_window_layout(
+    app: &tauri::AppHandle,
+    layout: WindowLayout,
+) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        #[cfg(target_os = "windows")]
+        {
+            let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+            window::set_window_bounds(hwnd.0 as isize, layout)?;
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            apply_window_layout_tauri(&window, layout)?;
+        }
+    }
+    Ok(())
+}
+
+async fn animate_window_layout(
+    app: &tauri::AppHandle,
+    monitor_id: u32,
+    collapsed: bool,
+) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    let monitors = list_monitors();
+    let target = compute_window_layout(&monitors, monitor_id, collapsed)?;
+    let from = get_current_window_layout(&window)?;
+
+    let steps = window::COLLAPSE_ANIMATION_MS / window::COLLAPSE_ANIMATION_FRAME_MS;
+    for step in 0..=steps {
+        let progress = step as f32 / steps as f32;
+        let layout = window::interpolate_layout(from, target, progress);
+        set_window_layout(app, layout).await?;
+        if step < steps {
+            tokio::time::sleep(std::time::Duration::from_millis(
+                window::COLLAPSE_ANIMATION_FRAME_MS,
+            ))
+            .await;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn apply_window_layout_tauri(
+    window: &tauri::WebviewWindow,
+    layout: WindowLayout,
+) -> Result<(), String> {
+    window
+        .set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+            x: layout.x,
+            y: layout.y,
+        }))
+        .map_err(|e| e.to_string())?;
+    window
+        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
+            width: layout.width,
+            height: layout.height,
+        }))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn cmd_apply_window_layout(
+    app: tauri::AppHandle,
+    monitor_id: u32,
+    collapsed: bool,
+) -> Result<(), String> {
+    apply_window_layout(&app, monitor_id, collapsed).await
+}
+
+#[tauri::command]
+async fn cmd_animate_window_layout(
+    app: tauri::AppHandle,
+    monitor_id: u32,
+    collapsed: bool,
+) -> Result<(), String> {
+    animate_window_layout(&app, monitor_id, collapsed).await
+}
+
 #[tauri::command]
 async fn cmd_move_window_to_monitor(
     app: tauri::AppHandle,
     monitor_id: u32,
 ) -> Result<(), String> {
-    let monitors = list_monitors();
-    let monitor = monitors
-        .into_iter()
-        .find(|m| m.id == monitor_id)
-        .ok_or_else(|| "Monitor not found".to_string())?;
-    if let Some(window) = app.get_webview_window("main") {
-        window
-            .set_position(tauri::Position::Physical(tauri::PhysicalPosition {
-                x: monitor.x,
-                y: monitor.y,
-            }))
-            .map_err(|e| e.to_string())?;
-        window
-            .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-                width: monitor.width as u32,
-                height: monitor.height as u32,
-            }))
-            .map_err(|e| e.to_string())?;
-    }
-    Ok(())
+    apply_window_layout(&app, monitor_id, false).await
 }
 
 #[tauri::command]
@@ -252,25 +351,12 @@ async fn cmd_set_window_focusable(app: tauri::AppHandle, focusable: bool) -> Res
 }
 
 #[tauri::command]
-async fn cmd_set_collapsed(app: tauri::AppHandle, collapsed: bool) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("main") {
-        if collapsed {
-            window
-                .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-                    width: 800,
-                    height: 48,
-                }))
-                .map_err(|e| e.to_string())?;
-        } else {
-            window
-                .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-                    width: 1200,
-                    height: 700,
-                }))
-                .map_err(|e| e.to_string())?;
-        }
-    }
-    Ok(())
+async fn cmd_set_collapsed(
+    app: tauri::AppHandle,
+    monitor_id: u32,
+    collapsed: bool,
+) -> Result<(), String> {
+    apply_window_layout(&app, monitor_id, collapsed).await
 }
 
 #[tauri::command]
@@ -562,6 +648,8 @@ pub fn run() {
             });
 
             if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_decorations(false);
+                let _ = window.set_shadow(false);
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
                 #[cfg(target_os = "windows")]
@@ -585,6 +673,8 @@ pub fn run() {
             cmd_mouse_double_click,
             cmd_mouse_scroll,
             cmd_list_monitors,
+            cmd_apply_window_layout,
+            cmd_animate_window_layout,
             cmd_move_window_to_monitor,
             cmd_set_always_on_top,
             cmd_set_window_focusable,
