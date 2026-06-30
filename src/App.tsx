@@ -4,8 +4,13 @@ import { AppShell } from "./components/layout/AppShell";
 import { useAppStore } from "./stores/appStore";
 
 function App() {
-  const { loadProfileFiles, loadMonitors, loadKeyboardLayout, pollKeyboardState } =
-    useAppStore();
+  const {
+    loadProfileFiles,
+    loadMonitors,
+    loadKeyboardLayout,
+    pollKeyboardState,
+    checkForUpdates,
+  } = useAppStore();
 
   useEffect(() => {
     const init = async () => {
@@ -20,9 +25,10 @@ function App() {
       await pollKeyboardState();
       await invoke("cmd_set_always_on_top", { enabled: true });
       await invoke("cmd_set_window_focusable", { focusable: false });
+      void checkForUpdates();
     };
     init();
-  }, [loadProfileFiles, loadMonitors, loadKeyboardLayout, pollKeyboardState]);
+  }, [loadProfileFiles, loadMonitors, loadKeyboardLayout, pollKeyboardState, checkForUpdates]);
 
   useEffect(() => {
     const id = window.setInterval(() => {

@@ -144,5 +144,29 @@ export const el: Record<keyof typeof en, string> = {
 
   createProfile: "Δημιουργία αρχείου προφίλ",
 
+  updateAvailable: "Διαθέσιμη ενημέρωση",
+
+  updateVersionInfo: "Υπάρχει νέα έκδοση:",
+
+  updateNow: "Ενημέρωση τώρα",
+
+  updateLater: "Αργότερα",
+
+  skipThisVersion: "Παράλειψη αυτής της έκδοσης",
+
+  updateDownloading: "Λήψη ενημέρωσης…",
+
+  updatePreparing: "Προετοιμασία λήψης…",
+
+  updateFailed: "Η ενημέρωση απέτυχε:",
+
+  updateRetry: "Επανάληψη",
+
+  checkForUpdates: "Έλεγχος για ενημερώσεις",
+
+  updateUpToDate: "Έχετε την τελευταία έκδοση.",
+
+  updateCheckFailed: "Δεν ήταν δυνατός ο έλεγχος για ενημερώσεις.",
+
 };
 

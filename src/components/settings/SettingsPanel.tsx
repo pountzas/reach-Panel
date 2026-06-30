@@ -59,6 +59,8 @@ export function SettingsPanel() {
     setShowMacroBuilder,
     setShowHeadTrackingWizard,
     resetSettingsToDefaults,
+    checkForUpdates,
+    updateCheckStatus,
   } = useAppStore();
   const { t } = useTranslation();
   const [newProfileName, setNewProfileName] = useState("");
@@ -373,6 +375,24 @@ export function SettingsPanel() {
             {t("resetSettings")}
           </button>
           <p className="mt-1 text-xs text-slate-500">{t("resetSettingsHint")}</p>
+        </section>
+
+        <section className="mb-4">
+          <h3 className="mb-2 font-semibold">{t("checkForUpdates")}</h3>
+          <button
+            type="button"
+            className="rounded-lg bg-slate-100 px-3 py-2 text-sm disabled:opacity-50"
+            disabled={updateCheckStatus === "checking"}
+            onClick={() => void checkForUpdates()}
+          >
+            {updateCheckStatus === "checking" ? t("updatePreparing") : t("checkForUpdates")}
+          </button>
+          {updateCheckStatus === "upToDate" && (
+            <p className="mt-1 text-xs text-green-700">{t("updateUpToDate")}</p>
+          )}
+          {updateCheckStatus === "error" && (
+            <p className="mt-1 text-xs text-red-700">{t("updateCheckFailed")}</p>
+          )}
         </section>
 
         <section className="flex flex-wrap gap-2">

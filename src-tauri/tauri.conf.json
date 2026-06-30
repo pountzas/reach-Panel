@@ -35,6 +35,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -42,5 +43,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEEzNTM3OTk2QjNGNzM1M0EKUldRNk5mZXpsbmxUby9oVzdyUE1LQkhTbnRlSmJMVlFUdGZ4ZnRjVnk5aExWVWdEQWlXSlNGZFQK",
+      "endpoints": [
+        "https://github.com/pountzas/accessibility-keyboard/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
