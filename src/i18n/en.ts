@@ -106,7 +106,11 @@ export const en = {
 
   keyboard: "Keyboard",
 
-  showFunctionKeys: "Show function keys (F1–F12)",
+  fnKeyMode: "Fn key behavior",
+
+  fnKeyModeOneShot: "One-shot (Fn turns off after each F-key)",
+
+  fnKeyModeLatched: "Latched (Fn stays on until tapped again)",
 
   synthesizer: "Synthesizer",
 

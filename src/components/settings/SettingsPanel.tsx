@@ -7,6 +7,7 @@ import {
   getColorProfileColors,
   type ColorProfileId,
 } from "../../lib/colorProfiles";
+import type { FnKeyMode } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
@@ -255,13 +256,18 @@ export function SettingsPanel() {
 
         <section className="mb-4">
           <h3 className="mb-2 font-semibold">{t("keyboard")}</h3>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={settings.functionKeysEnabled}
-              onChange={(e) => updateSettings({ functionKeysEnabled: e.target.checked })}
-            />
-            {t("showFunctionKeys")}
+          <label className="block text-sm">
+            {t("fnKeyMode")}
+            <select
+              value={settings.fnKeyMode}
+              onChange={(e) =>
+                updateSettings({ fnKeyMode: e.target.value as FnKeyMode })
+              }
+              className="mt-1 w-full rounded border px-2 py-1"
+            >
+              <option value="one-shot">{t("fnKeyModeOneShot")}</option>
+              <option value="latched">{t("fnKeyModeLatched")}</option>
+            </select>
           </label>
           <label className="mt-2 flex items-center gap-2 text-sm">
             <input

@@ -59,6 +59,7 @@ interface AppStore {
   pollKeyboardState: () => Promise<void>;
   toggleLanguage: () => Promise<void>;
   clearSticky: () => void;
+  clearStickyExceptFn: () => void;
   loadSuggestions: () => Promise<void>;
   applySuggestion: (word: string) => Promise<void>;
   setLastError: (error: string | null) => void;
@@ -320,6 +321,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   clearSticky: () => set({ stickyModifiers: [] }),
+
+  clearStickyExceptFn: () =>
+    set((s) => ({
+      stickyModifiers: s.stickyModifiers.filter((m) => m === "fn"),
+    })),
 
   loadSuggestions: async () => {
     const { settings, typedBuffer } = get();

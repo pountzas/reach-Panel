@@ -3,6 +3,8 @@ import { useAppStore } from "../../stores/appStore";
 import {
   displayLabel,
   getLayoutRows,
+  isFnActive,
+  isFnMappedKey,
   isKeyActive,
   isShiftActive,
   KeyDef,
@@ -23,6 +25,7 @@ export function Keyboard() {
     pollKeyboardState,
     toggleLanguage,
     clearSticky,
+    clearStickyExceptFn,
     appendTyped,
     backspaceTyped,
     setTypedBuffer,
@@ -32,12 +35,19 @@ export function Keyboard() {
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
-  const activeModifiers = stickyModifiers.filter((m) => m !== "capslock");
-  const rows = getLayoutRows(keyboardLayout, settings.language, {
-    functionKeysEnabled: settings.functionKeysEnabled,
-  });
+  const fnActive = isFnActive(stickyModifiers);
+  const activeModifiers = stickyModifiers.filter((m) => m !== "capslock" && m !== "fn");
+  const rows = getLayoutRows(keyboardLayout, settings.language);
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
   const fontSize = settings.keyboardFontSize ?? 18;
+
+  const clearModifiersAfterKey = (usedFn: boolean) => {
+    if (settings.fnKeyMode === "latched") {
+      if (activeModifiers.length) clearStickyExceptFn();
+      return;
+    }
+    if (activeModifiers.length || usedFn) clearSticky();
+  };
 
   const handleKey = async (keyDef: KeyDef) => {
     const key = keyDef.key;
@@ -75,7 +85,7 @@ export function Keyboard() {
       await invoke("cmd_press_key", {
         request: { key: "enter", modifiers: [...activeModifiers] },
       });
-      clearSticky();
+      clearModifiersAfterKey(false);
       await loadSuggestions();
       await pollError();
       return;
@@ -86,18 +96,19 @@ export function Keyboard() {
       await invoke("cmd_press_key", {
         request: { key: "space", modifiers: [...activeModifiers] },
       });
-      if (activeModifiers.length) clearSticky();
+      clearModifiersAfterKey(false);
       await loadSuggestions();
       await pollError();
       return;
     }
 
-    const output = resolveKeyOutput(keyDef, physicalKeyState.capsLock, shiftActive);
+    const usedFn = fnActive && isFnMappedKey(keyDef.key);
+    const output = resolveKeyOutput(keyDef, physicalKeyState.capsLock, shiftActive, fnActive);
     if (output.length === 1) appendTyped(output);
     await invoke("cmd_press_key", {
       request: { key: output, modifiers: [...activeModifiers] },
     });
-    if (activeModifiers.length) clearSticky();
+    clearModifiersAfterKey(usedFn);
     await loadSuggestions();
     await pollError();
   };
@@ -123,7 +134,7 @@ export function Keyboard() {
                     fontSize={fontSize}
                   />
                 ) : (
-                  displayLabel(k, physicalKeyState.capsLock, shiftActive)
+                  displayLabel(k, physicalKeyState.capsLock, shiftActive, fnActive)
                 )
               }
               width={k.width}
@@ -133,14 +144,7 @@ export function Keyboard() {
               bgColor={settings.keyboardKeyColor ?? "#ffffff"}
               textColor={settings.keyTextColor ?? "#1e293b"}
               stretch
-              active={isKeyActive(
-                k,
-                ri,
-                ci,
-                physicalKeyState,
-                stickyModifiers,
-                { functionKeysEnabled: settings.functionKeysEnabled },
-              )}
+              active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
               onPress={() => handleKey(k)}
             />
           ))}
