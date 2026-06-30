@@ -65,13 +65,43 @@ export function vkForLayoutKey(row: number, col: number): number | null {
   return keyNameToVk(keyDef.key);
 }
 
+export const FN_KEY_MAP: Record<string, string> = {
+  "1": "F1",
+  "2": "F2",
+  "3": "F3",
+  "4": "F4",
+  "5": "F5",
+  "6": "F6",
+  "7": "F7",
+  "8": "F8",
+  "9": "F9",
+  "0": "F10",
+  "-": "F11",
+  "=": "F12",
+};
+
+export function isFnActive(stickyModifiers: string[]): boolean {
+  return stickyModifiers.includes("fn");
+}
+
+export function isFnMappedKey(key: string): boolean {
+  return key in FN_KEY_MAP;
+}
+
+function fnKeyVk(key: string): number | null {
+  const fnKey = FN_KEY_MAP[key];
+  if (!fnKey) return null;
+  const num = Number.parseInt(fnKey.slice(1), 10);
+  if (num < 1 || num > 24) return null;
+  return 0x70 + num - 1;
+}
+
 export function isKeyActive(
   keyDef: KeyDef,
   row: number,
   col: number,
   physical: PhysicalKeyState,
   stickyModifiers: string[],
-  options?: { functionKeysEnabled?: boolean },
 ): boolean {
   const pressed = new Set(physical.pressedVks);
   switch (keyDef.key) {
@@ -85,19 +115,16 @@ export function isKeyActive(
       return physical.alt || stickyModifiers.includes("alt");
     case "win":
       return physical.win || stickyModifiers.includes("win");
+    case "fn":
+      return stickyModifiers.includes("fn");
     case "langswitch":
       return false;
     default: {
-      if (/^F\d{1,2}$/i.test(keyDef.key)) {
-        const num = Number.parseInt(keyDef.key.slice(1), 10);
-        if (num >= 1 && num <= 24) {
-          return pressed.has(0x70 + num - 1);
-        }
-        return false;
+      const fnVk = fnKeyVk(keyDef.key);
+      if (fnVk !== null && pressed.has(fnVk)) {
+        return true;
       }
-      const layoutRow =
-        options?.functionKeysEnabled && row > 0 ? row - 1 : row;
-      const vk = vkForLayoutKey(layoutRow, col);
+      const vk = vkForLayoutKey(row, col);
       return vk !== null && pressed.has(vk);
     }
   }
@@ -131,8 +158,13 @@ export function resolveKeyOutput(
   keyDef: KeyDef,
   capsLock: boolean,
   shift: boolean,
+  fnActive: boolean,
 ): string {
   if (keyDef.modifier || keyDef.key.length > 1) return keyDef.key;
+  if (fnActive) {
+    const fnKey = FN_KEY_MAP[keyDef.key];
+    if (fnKey) return fnKey;
+  }
   if (isLetterKey(keyDef.key)) {
     return resolveLetterCase(keyDef.key, capsLock, shift);
   }
@@ -144,29 +176,19 @@ export function displayLabel(
   keyDef: KeyDef,
   capsLock: boolean,
   shift: boolean,
+  fnActive: boolean,
 ): string {
   if (keyDef.modifier || keyDef.key.length > 1) return keyDef.label;
+  if (fnActive) {
+    const fnKey = FN_KEY_MAP[keyDef.key];
+    if (fnKey) return fnKey;
+  }
   if (isLetterKey(keyDef.key)) {
     return resolveLetterCase(keyDef.key, capsLock, shift);
   }
   if (shift && keyDef.shiftLabel) return keyDef.shiftLabel;
   return keyDef.label;
 }
-
-export const FUNCTION_KEY_ROW: KeyDef[] = [
-  { label: "F1", key: "F1" },
-  { label: "F2", key: "F2" },
-  { label: "F3", key: "F3" },
-  { label: "F4", key: "F4" },
-  { label: "F5", key: "F5" },
-  { label: "F6", key: "F6" },
-  { label: "F7", key: "F7" },
-  { label: "F8", key: "F8" },
-  { label: "F9", key: "F9" },
-  { label: "F10", key: "F10" },
-  { label: "F11", key: "F11" },
-  { label: "F12", key: "F12" },
-];
 
 export const QWERTY_ROWS: KeyDef[][] = [
   [
@@ -237,6 +259,7 @@ export const QWERTY_ROWS: KeyDef[][] = [
     { label: "Lang", key: "langswitch", width: 1.2 },
     { label: "Space", key: "space", width: 4.2 },
     { label: "Alt", key: "alt", width: 1.2, modifier: true },
+    { label: "Fn", key: "fn", width: 1.1, modifier: true },
     { label: "Ctrl", key: "ctrl", width: 1.3, modifier: true },
   ],
 ];
@@ -312,6 +335,7 @@ export const GREEK_ROWS: KeyDef[][] = [
     { label: "Lang", key: "langswitch", width: 1.2 },
     { label: "Space", key: "space", width: 4.2 },
     { label: "Alt", key: "alt", width: 1.2, modifier: true },
+    { label: "Fn", key: "fn", width: 1.1, modifier: true },
     { label: "Ctrl", key: "ctrl", width: 1.3, modifier: true },
   ],
 ];
@@ -328,31 +352,21 @@ export function languageSwitchLabel(current: string): string {
   return nextLanguage(current) === "el" ? "EL" : "EN";
 }
 
-export function getLayoutRows(
-  layoutName: string,
-  language: string,
-  options?: { functionKeysEnabled?: boolean },
-): KeyDef[][] {
-  const base =
-    language === "el"
-      ? GREEK_ROWS
-      : layoutName === "AZERTY"
-        ? QWERTY_ROWS.map((row) =>
-            row.map((k) => {
-              const azertyMap: Record<string, string> = {
-                q: "a",
-                w: "z",
-                a: "q",
-                z: "w",
-              };
-              const mapped = azertyMap[k.key.toLowerCase()];
-              return mapped ? { ...k, key: mapped, label: mapped } : k;
-            }),
-          )
-        : QWERTY_ROWS;
-
-  if (options?.functionKeysEnabled) {
-    return [FUNCTION_KEY_ROW, ...base];
+export function getLayoutRows(layoutName: string, language: string): KeyDef[][] {
+  if (language === "el") return GREEK_ROWS;
+  if (layoutName === "AZERTY") {
+    return QWERTY_ROWS.map((row) =>
+      row.map((k) => {
+        const azertyMap: Record<string, string> = {
+          q: "a",
+          w: "z",
+          a: "q",
+          z: "w",
+        };
+        const mapped = azertyMap[k.key.toLowerCase()];
+        return mapped ? { ...k, key: mapped, label: mapped } : k;
+      }),
+    );
   }
-  return base;
+  return QWERTY_ROWS;
 }

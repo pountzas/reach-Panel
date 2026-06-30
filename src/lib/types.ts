@@ -4,6 +4,7 @@ import type { ColorProfileId } from "./colorProfiles";
 
 export type { MouseSpeed };
 export type MousePanelMode = "mouse" | "numpad";
+export type FnKeyMode = "one-shot" | "latched";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
 
 export interface AppSettings {
@@ -35,7 +36,7 @@ export interface AppSettings {
   collapsed: boolean;
   headTrackingEnabled: boolean;
   mouseAutoHide?: boolean;
-  functionKeysEnabled: boolean;
+  fnKeyMode: FnKeyMode;
   keyboardSectionMode: KeyboardSectionMode;
   keyboardModeToggleVisible: boolean;
   synthesizerVolume?: number;
@@ -149,7 +150,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   collapsed: false,
   headTrackingEnabled: false,
   mouseAutoHide: false,
-  functionKeysEnabled: false,
+  fnKeyMode: "one-shot",
   keyboardSectionMode: "keyboard",
   keyboardModeToggleVisible: true,
   synthesizerVolume: 70,

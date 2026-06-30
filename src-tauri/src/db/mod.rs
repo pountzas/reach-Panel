@@ -412,7 +412,7 @@ impl Database {
                 "accessibilityMonitorId": 0,
                 "collapsed": false,
                 "headTrackingEnabled": false,
-                "functionKeysEnabled": false,
+                "fnKeyMode": "one-shot",
                 "keyboardSectionMode": "keyboard",
                 "keyboardModeToggleVisible": true
             });
@@ -451,7 +451,7 @@ impl Database {
             "accessibilityMonitorId": 0,
             "collapsed": false,
             "headTrackingEnabled": false,
-            "functionKeysEnabled": false,
+            "fnKeyMode": "one-shot",
             "keyboardSectionMode": "keyboard",
             "keyboardModeToggleVisible": true
         });
