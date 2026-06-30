@@ -7,6 +7,7 @@ import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { ErrorBanner } from "../common/ErrorBanner";
+import { UpdatePrompt } from "../common/UpdatePrompt";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import { MacroBuilder } from "../macros/MacroBuilder";
 import { HeadTrackingWizard } from "../head-tracking/HeadTrackingWizard";
@@ -49,6 +50,8 @@ export function AppShell() {
     showSettings,
     showMacroBuilder,
     showHeadTrackingWizard,
+    pendingUpdate,
+    setPendingUpdate,
     setShowSettings,
     toggleCollapsed,
     updateSettings,
@@ -151,6 +154,12 @@ export function AppShell() {
         {showSettings && <SettingsPanel />}
         {showMacroBuilder && <MacroBuilder />}
         {showHeadTrackingWizard && <HeadTrackingWizard />}
+        {pendingUpdate && (
+          <UpdatePrompt
+            update={pendingUpdate}
+            onDismiss={() => setPendingUpdate(null)}
+          />
+        )}
       </div>
     </div>
   );

@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -48,7 +48,21 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri build
+
+      - name: Resolve Windows updater artifacts
+        id: updater
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe" | Select-Object -First 1
+          if (-not $installer) { throw "NSIS installer not found" }
+          $sig = Get-ChildItem "$($installer.FullName).sig" | Select-Object -First 1
+          if (-not $sig) { throw "NSIS signature not found" }
+          "installer_name=$($installer.Name)" >> $env:GITHUB_OUTPUT
+          "sig_name=$($sig.Name)" >> $env:GITHUB_OUTPUT
 
       - name: Upload installers to GitHub Release
         env:
@@ -57,7 +71,16 @@ jobs:
           gh release upload ${{ needs.release-please.outputs.tag_name }} `
             src-tauri/target/release/bundle/msi/*.msi `
             src-tauri/target/release/bundle/nsis/*.exe `
+            src-tauri/target/release/bundle/nsis/*.exe.sig `
             --clobber
+
+      - name: Upload Windows updater artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-windows
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe.sig
 
   build-macos:
     needs: release-please
@@ -66,7 +89,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -86,6 +109,9 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app (macOS)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri build
 
       - name: Upload macOS installers to GitHub Release
@@ -100,4 +126,69 @@ jobs:
             echo "No macOS .dmg artifacts found"
             exit 1
           fi
+          sig_files=(src-tauri/target/release/bundle/macos/*.tar.gz.sig)
+          if [ ${#sig_files[@]} -gt 0 ]; then
+            gh release upload "${{ needs.release-please.outputs.tag_name }}" "${sig_files[@]}" --clobber
+          fi
+          tar_files=(src-tauri/target/release/bundle/macos/*.tar.gz)
+          if [ ${#tar_files[@]} -gt 0 ]; then
+            gh release upload "${{ needs.release-please.outputs.tag_name }}" "${tar_files[@]}" --clobber
+          fi
         shell: bash
+
+      - name: Upload macOS updater artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-macos
+          path: |
+            src-tauri/target/release/bundle/macos/*.tar.gz
+            src-tauri/target/release/bundle/macos/*.tar.gz.sig
+
+  publish-updater-metadata:
+    needs: [release-please, build-windows, build-macos]
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download Windows updater artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: updater-windows
+          path: artifacts/windows
+
+      - name: Download macOS updater artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: updater-macos
+          path: artifacts/macos
+
+      - name: Generate latest.json
+        env:
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          WIN_EXE=$(find artifacts/windows -name '*-setup.exe' | head -n 1)
+          WIN_SIG=$(find artifacts/windows -name '*-setup.exe.sig' | head -n 1)
+          MAC_TAR=$(find artifacts/macos -name '*.tar.gz' ! -name '*.sig' | head -n 1)
+          MAC_SIG=$(find artifacts/macos -name '*.tar.gz.sig' | head -n 1)
+          if [ -z "$WIN_EXE" ] || [ -z "$WIN_SIG" ]; then
+            echo "Missing Windows updater artifacts"
+            exit 1
+          fi
+          if [ -z "$MAC_TAR" ] || [ -z "$MAC_SIG" ]; then
+            echo "Missing macOS updater artifacts"
+            exit 1
+          fi
+          export WINDOWS_INSTALLER="$WIN_EXE"
+          export WINDOWS_SIG="$WIN_SIG"
+          export MACOS_INSTALLER="$MAC_TAR"
+          export MACOS_SIG="$MAC_SIG"
+          node .github/scripts/generate-latest-json.mjs
+
+      - name: Upload latest.json to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ needs.release-please.outputs.tag_name }}" latest.json --clobber

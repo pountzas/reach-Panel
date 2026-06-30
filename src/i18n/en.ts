@@ -140,5 +140,29 @@ export const en = {
 
   createProfile: "Create profile file",
 
+  updateAvailable: "Update available",
+
+  updateVersionInfo: "A new version is available:",
+
+  updateNow: "Update now",
+
+  updateLater: "Later",
+
+  skipThisVersion: "Skip this version",
+
+  updateDownloading: "Downloading update…",
+
+  updatePreparing: "Preparing download…",
+
+  updateFailed: "Update failed:",
+
+  updateRetry: "Retry",
+
+  checkForUpdates: "Check for updates",
+
+  updateUpToDate: "You are on the latest version.",
+
+  updateCheckFailed: "Could not check for updates.",
+
 } as const;
 
