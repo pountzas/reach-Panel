@@ -50,8 +50,15 @@ The in-app updater verifies release bundles with a minisign key pair. The **publ
 If you do not already have a matching private key for the pubkey in the repo:
 
 ```bash
-npm run tauri signer generate -w ~/.tauri/accessibility-keyboard.key
+# Use `--` so npm forwards flags to the Tauri CLI (required).
+# PowerShell (Windows):
+npm run tauri -- signer generate -w "$env:USERPROFILE\.tauri\accessibility-keyboard.key"
+
+# bash (macOS/Linux):
+npm run tauri -- signer generate -w ~/.tauri/accessibility-keyboard.key
 ```
+
+You will be prompted for an optional password. Press Enter for no password, or set one and store the same value in the `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` secret.
 
 Copy the printed public key into `plugins.updater.pubkey` in `src-tauri/tauri.conf.json` (only if generating a new pair). Add these **repository secrets** under **Settings → Secrets and variables → Actions**:
 
@@ -66,7 +73,7 @@ The Release workflow validates that `TAURI_SIGNING_PRIVATE_KEY` exists before bu
 
 ```bash
 # PowerShell
-$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw "$HOME\.tauri\accessibility-keyboard.key"
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw "$env:USERPROFILE\.tauri\accessibility-keyboard.key"
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""   # omit if no password
 npm run build:tauri:release
 ```
