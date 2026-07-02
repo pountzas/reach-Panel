@@ -9,6 +9,7 @@ use anyhow::{anyhow, Result};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 pub struct TtsSettings {
     pub rate: i32,
     pub volume: u16,

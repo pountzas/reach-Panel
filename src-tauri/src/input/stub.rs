@@ -1,3 +1,6 @@
+//! Non-Windows input stubs — API surface mirrors the Windows module for compile-time parity.
+#![allow(dead_code)]
+
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
