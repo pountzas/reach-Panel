@@ -43,7 +43,7 @@ jobs:
           exit 1
 
       - name: Build Tauri app
-        run: npm run tauri build
+        run: npm run build:tauri
 
       - name: Upload Windows bundle
         uses: actions/upload-artifact@v7
@@ -91,7 +91,7 @@ jobs:
           exit 1
 
       - name: Build Tauri app (macOS)
-        run: npm run tauri build
+        run: npm run build:tauri
 
       - name: Upload macOS bundle
         uses: actions/upload-artifact@v7

@@ -30,7 +30,53 @@ If `link.exe` is not found, run from a Developer Command Prompt or activate the 
 
 Typical flow: `feature/*` → PR into `dev` → when ready to ship, PR `dev` → `main`.
 
-The **Build** workflow runs on pushes and PRs targeting `dev` and `main`. Releases are automated on `main` only (see below).
+The **Build** workflow runs on pull requests from `dev` into `main`. Releases are automated on `main` only (see below).
+
+## Building the Tauri app
+
+| Command | When to use |
+|---------|-------------|
+| `npm run build:tauri` | Local smoke tests, CI PR validation — produces installers **without** signed updater artifacts |
+| `npm run build:tauri:release` | Release builds only — produces signed updater artifacts (requires signing env vars below) |
+
+The default [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json) sets `createUpdaterArtifacts: false` so ordinary builds never require a signing key. Release builds merge [`src-tauri/tauri.release.conf.json`](src-tauri/tauri.release.conf.json), which re-enables updater artifacts for signed releases.
+
+## Updater signing (maintainers)
+
+The in-app updater verifies release bundles with a minisign key pair. The **public** key lives in `tauri.conf.json` (`plugins.updater.pubkey`). The **private** key must never be committed — store it only in GitHub Actions secrets.
+
+### One-time key generation
+
+If you do not already have a matching private key for the pubkey in the repo:
+
+```bash
+# Use `--` so npm forwards flags to the Tauri CLI (required).
+# PowerShell (Windows):
+npm run tauri -- signer generate -w "$env:USERPROFILE\.tauri\accessibility-keyboard.key"
+
+# bash (macOS/Linux):
+npm run tauri -- signer generate -w ~/.tauri/accessibility-keyboard.key
+```
+
+You will be prompted for an optional password. Press Enter for no password, or set one and store the same value in the `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` secret.
+
+Copy the printed public key into `plugins.updater.pubkey` in `src-tauri/tauri.conf.json` (only if generating a new pair). Add these **repository secrets** under **Settings → Secrets and variables → Actions**:
+
+| Secret | Value |
+|--------|--------|
+| `TAURI_SIGNING_PRIVATE_KEY` | Entire contents of the `.key` file |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Key password, or leave unset / empty if none was set |
+
+The Release workflow validates that `TAURI_SIGNING_PRIVATE_KEY` exists before building. If release builds fail with a signing error, the private key is missing, wrong, or does not match the pubkey in config.
+
+### Local signed release build (optional)
+
+```bash
+# PowerShell
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw "$env:USERPROFILE\.tauri\accessibility-keyboard.key"
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""   # omit if no password
+npm run build:tauri:release
+```
 
 ## Pull request workflow
 
@@ -69,7 +115,8 @@ After cloning or forking, maintainers should ensure:
 1. A `dev` branch exists on the remote (create from `main` if missing): `git checkout -b dev && git push -u origin dev`
 2. The latest release tag exists on `main` (e.g. `v0.1.0`) and matches `.release-please-manifest.json`
 3. **Settings → Actions → General:** enable **Allow GitHub Actions to create and approve pull requests** (required for release-please)
-4. If `main` is branch-protected, allow `github-actions[bot]` to push and merge Release PRs
+4. **Settings → Secrets and variables → Actions:** configure `TAURI_SIGNING_PRIVATE_KEY` (and password if used) — see [Updater signing](#updater-signing-maintainers)
+5. If `main` is branch-protected, allow `github-actions[bot]` to push and merge Release PRs
 
 ## Accessibility changes
 

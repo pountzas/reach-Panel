@@ -21,8 +21,24 @@ jobs:
           config-file: .github/release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  build-windows:
+  validate-release-secrets:
     needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify updater signing secrets
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::TAURI_SIGNING_PRIVATE_KEY is not configured in repository secrets."
+            echo "Signed updater artifacts are required for releases. See CONTRIBUTING.md (Updater signing)."
+            exit 1
+          fi
+          echo "Updater signing secret is present."
+
+  build-windows:
+    needs: [release-please, validate-release-secrets]
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: windows-latest
 
@@ -47,11 +63,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Tauri app
+      - name: Build Tauri app (signed release)
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build
+        run: npm run build:tauri:release
 
       - name: Resolve Windows updater artifacts
         id: updater
@@ -83,7 +99,7 @@ jobs:
             src-tauri/target/release/bundle/nsis/*-setup.exe.sig
 
   build-macos:
-    needs: release-please
+    needs: [release-please, validate-release-secrets]
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: macos-latest
 
@@ -108,11 +124,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Tauri app (macOS)
+      - name: Build Tauri app (macOS, signed release)
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build
+        run: npm run build:tauri:release
 
       - name: Upload macOS installers to GitHub Release
         env:
