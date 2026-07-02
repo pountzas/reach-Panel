@@ -1,4 +1,4 @@
-export const en = {
+﻿export const en = {
 
   appTitle: "Accessibility Keyboard",
 
@@ -154,9 +154,9 @@ export const en = {
 
   skipThisVersion: "Skip this version",
 
-  updateDownloading: "Downloading update…",
+  updateDownloading: "Downloading updateâ€¦",
 
-  updatePreparing: "Preparing download…",
+  updatePreparing: "Preparing downloadâ€¦",
 
   updateFailed: "Update failed:",
 
@@ -167,6 +167,24 @@ export const en = {
   updateUpToDate: "You are on the latest version.",
 
   updateCheckFailed: "Could not check for updates.",
+
+  settingsVisibleSections: "Visible Sections",
+
+  settingsGeneral: "General",
+
+  settingsToolsMaintenance: "Tools & Maintenance",
+
+  quickActionLabel: "Label",
+
+  quickActionTarget: "Target (app or URL)",
+
+  quickActionTypeApp: "App",
+
+  quickActionTypeUrl: "URL",
+
+  quickActionAdd: "Add action",
+
+  quickActionDelete: "Delete",
 
 } as const;
 

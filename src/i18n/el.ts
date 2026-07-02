@@ -172,5 +172,23 @@ export const el: Record<keyof typeof en, string> = {
 
   updateCheckFailed: "Δεν ήταν δυνατός ο έλεγχος για ενημερώσεις.",
 
-};
 
+  settingsVisibleSections: "Ορατά τμήματα",
+
+  settingsGeneral: "Γενικά",
+
+  settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
+
+  quickActionLabel: "Ετικέτα",
+
+  quickActionTarget: "Στόχος (εφαρμογή ή URL)",
+
+  quickActionTypeApp: "Εφαρμογή",
+
+  quickActionTypeUrl: "URL",
+
+  quickActionAdd: "Προσθήκη ενέργειας",
+
+  quickActionDelete: "Διαγραφή",
+
+};

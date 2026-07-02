@@ -297,9 +297,3 @@ fn import_profile_into_db(db: &Database, profile_id: &str, file: &ProfileFile) -
     Ok(())
 }
 
-pub fn pick_image_file() -> Result<Option<String>> {
-    let file = rfd::FileDialog::new()
-        .add_filter("Images", &["png", "jpg", "jpeg", "gif", "webp", "bmp"])
-        .pick_file();
-    Ok(file.map(|p| p.to_string_lossy().into_owned()))
-}
