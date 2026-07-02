@@ -17,7 +17,8 @@ import { useTranslation } from "../../hooks/useTranslation";
 
 function InputRowPanel() {
   const { settings, updateSettings } = useAppStore();
-  const rightRatio = settings.inputRowRightRatio ?? 0.28;
+  const mouseSide = settings.mousePanelSide ?? "right";
+  const mouseRatio = settings.inputRowRightRatio ?? 0.28;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
@@ -28,12 +29,15 @@ function InputRowPanel() {
       )}
       {settings.mouseVisible ? (
         <ResizableSplitPane
-          rightRatio={rightRatio}
+          ratioSide={mouseSide === "left" ? "left" : "right"}
+          rightRatio={mouseRatio}
           onRightRatioChange={(inputRowRightRatio) =>
             updateSettings({ inputRowRightRatio })
           }
-          left={<KeyboardSection />}
-          right={<MousePanel />}
+          minLeftWidth={mouseSide === "left" ? 140 : 160}
+          minRightWidth={mouseSide === "left" ? 160 : 140}
+          left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
+          right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
         />
       ) : (
         <div className="min-h-0 flex-1">

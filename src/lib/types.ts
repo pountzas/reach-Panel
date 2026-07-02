@@ -4,6 +4,7 @@ import type { ColorProfileId } from "./colorProfiles";
 
 export type { MouseSpeed };
 export type MousePanelMode = "mouse" | "numpad";
+export type MousePanelSide = "left" | "right";
 export type FnKeyMode = "one-shot" | "latched";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
 
@@ -13,6 +14,7 @@ export interface AppSettings {
   language: string;
   mouseVisible: boolean;
   mousePanelMode: MousePanelMode;
+  mousePanelSide: MousePanelSide;
   keyboardFontSize?: number;
   sectionLayouts?: SectionLayouts;
   keyboardBgColor?: string;
@@ -129,6 +131,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: "en",
   mouseVisible: true,
   mousePanelMode: "mouse",
+  mousePanelSide: "right",
   keyboardFontSize: 18,
   sectionLayouts: {},
   keyboardBgColor: "#d1d5db",

@@ -24,6 +24,10 @@ export const el: Record<keyof typeof en, string> = {
 
   numpad: "Αριθμητικό",
 
+  mousePanelLeft: "Αριστερά του πληκτρολογίου",
+
+  mousePanelRight: "Δεξιά του πληκτρολογίου",
+
   showMouseSection: "Εμφάνιση τμήματος ποντικιού",
 
   speed: "Ταχύτητα",

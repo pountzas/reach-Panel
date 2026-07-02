@@ -79,11 +79,15 @@ interface AppStore {
 
 function parseSettings(json: string): AppSettings {
   try {
-    const { theme, ...parsed } = JSON.parse(json) as Partial<AppSettings> & {
+    const { theme, mouseSide, ...parsed } = JSON.parse(json) as Partial<AppSettings> & {
       theme?: unknown;
+      mouseSide?: "left" | "right" | "floating";
     };
     const colorProfile = resolveColorProfile({ ...parsed, theme });
-    return { ...DEFAULT_SETTINGS, ...parsed, colorProfile };
+    const mousePanelSide =
+      parsed.mousePanelSide ??
+      (mouseSide === "left" ? "left" : DEFAULT_SETTINGS.mousePanelSide);
+    return { ...DEFAULT_SETTINGS, ...parsed, colorProfile, mousePanelSide };
   } catch {
     return DEFAULT_SETTINGS;
   }
