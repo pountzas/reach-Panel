@@ -1,6 +1,6 @@
 [package]
 name = "accessibility-keyboard"
-version = "0.3.0"
+version = "0.4.0"
 description = "Assistive virtual keyboard and mouse for tetraplegic users"
 authors = ["Nik"]
 edition = "2021"
