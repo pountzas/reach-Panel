@@ -20,6 +20,10 @@
 
   numpad: "Num pad",
 
+  mousePanelLeft: "Left of keyboard",
+
+  mousePanelRight: "Right of keyboard",
+
   showMouseSection: "Show mouse section",
 
   speed: "Speed",

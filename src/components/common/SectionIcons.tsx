@@ -86,6 +86,44 @@ export function NumpadIcon({ className = iconClass }: IconProps) {
   );
 }
 
+export function PanelLeftIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="3" y="5" width="6" height="14" rx="1.5" />
+      <rect x="11" y="5" width="10" height="14" rx="1.5" />
+      <path d="M13 10h.01M17 10h.01M13 14h6" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+export function PanelRightIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="3" y="5" width="10" height="14" rx="1.5" />
+      <rect x="15" y="5" width="6" height="14" rx="1.5" />
+      <path d="M5 10h.01M9 10h.01M5 14h6" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
 export function VolumeIcon({ className = iconClass }: IconProps) {
   return (
     <svg

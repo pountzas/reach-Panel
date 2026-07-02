@@ -1,4 +1,4 @@
-import { MouseIcon, NumpadIcon } from "../common/SectionIcons";
+import { MouseIcon, NumpadIcon, PanelLeftIcon, PanelRightIcon } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { MouseSpeedSlider } from "./MouseSpeedSlider";
 import { useAppStore } from "../../stores/appStore";
@@ -12,6 +12,7 @@ export function MousePanel() {
   const { t } = useTranslation();
   const surface = getSurfaceColors(settings.appBgColor);
   const showNumpad = settings.mousePanelMode === "numpad";
+  const mouseOnLeft = settings.mousePanelSide === "left";
 
   return (
     <div
@@ -28,6 +29,24 @@ export function MousePanel() {
             onChange={(mouseSpeed) => updateSettings({ mouseSpeed })}
           />
         )}
+        <ModeToggleGroup>
+          <ModeToggleButton
+            active={mouseOnLeft}
+            position="first"
+            label={t("mousePanelLeft")}
+            onClick={() => updateSettings({ mousePanelSide: "left" })}
+          >
+            <PanelLeftIcon className="h-4 w-4" />
+          </ModeToggleButton>
+          <ModeToggleButton
+            active={!mouseOnLeft}
+            position="last"
+            label={t("mousePanelRight")}
+            onClick={() => updateSettings({ mousePanelSide: "right" })}
+          >
+            <PanelRightIcon className="h-4 w-4" />
+          </ModeToggleButton>
+        </ModeToggleGroup>
         <ModeToggleGroup>
           <ModeToggleButton
             active={!showNumpad}
