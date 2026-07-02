@@ -46,7 +46,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEEzNTM3OTk2QjNGNzM1M0EKUldRNk5mZXpsbmxUby9oVzdyUE1LQkhTbnRlSmJMVlFUdGZ4ZnRjVnk5aExWVWdEQWlXSlNGZFQK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwOUFGNkIwRTA3MEM4NEQKUldSTnlIRGdzUGFhc0hudnVzaGVCMFpWcUVrbkx1c3YxRnN6c3U3S3ptQ3hSZUVSOVRlOGJGQ0sK",
       "endpoints": [
         "https://github.com/pountzas/accessibility-keyboard/releases/latest/download/latest.json"
       ]
