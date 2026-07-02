@@ -1,13 +1,17 @@
-import { useState } from "react";
+﻿import { useState, type CSSProperties, type ReactNode } from "react";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import {
   COLOR_PROFILE_IDS,
   getColorProfileColors,
+  getSurfaceColors,
   type ColorProfileId,
+  type SurfaceColors,
 } from "../../lib/colorProfiles";
+import type { FnKeyMode } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
+import { SettingsSection } from "./SettingsSection";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -15,17 +19,27 @@ const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   custom: "colorProfileCustom",
 };
 
+function fieldStyle(surface: SurfaceColors): CSSProperties {
+  return {
+    backgroundColor: surface.insetBg,
+    borderColor: surface.insetBorder,
+    color: surface.panelText,
+  };
+}
+
 function ColorField({
   label,
   value,
   onChange,
+  surface,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  surface: SurfaceColors;
 }) {
   return (
-    <label className="text-sm">
+    <label className="text-sm" style={{ color: surface.panelText }}>
       {label}
       <div className="mt-1 flex items-center gap-2">
         <input
@@ -33,15 +47,70 @@ function ColorField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="h-9 w-12 cursor-pointer rounded border"
+          style={{ borderColor: surface.insetBorder }}
         />
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="min-w-0 flex-1 rounded border px-2 py-1 text-xs"
+          style={fieldStyle(surface)}
         />
       </div>
     </label>
+  );
+}
+
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+  surface,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  surface: SurfaceColors;
+}) {
+  return (
+    <label
+      className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5"
+      style={{ backgroundColor: surface.insetBg }}
+    >
+      <span className="text-sm" style={{ color: surface.panelText }}>
+        {label}
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+    </label>
+  );
+}
+
+function ThemedSelect({
+  value,
+  onChange,
+  surface,
+  children,
+  className = "mt-1 w-full rounded border px-2 py-1.5 text-sm",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  surface: SurfaceColors;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <select
+      className={className}
+      style={fieldStyle(surface)}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      {children}
+    </select>
   );
 }
 
@@ -59,344 +128,399 @@ export function SettingsPanel() {
     setShowMacroBuilder,
     setShowHeadTrackingWizard,
     resetSettingsToDefaults,
+    checkForUpdates,
+    updateCheckStatus,
   } = useAppStore();
   const { t } = useTranslation();
   const [newProfileName, setNewProfileName] = useState("");
 
   if (!settings) return null;
 
+  const surface = getSurfaceColors(settings.appBgColor);
+  const headerBg = settings.headerBgColor ?? "#1e293b";
+  const headerText = settings.headerTextColor ?? "#ffffff";
+  const secondaryButtonStyle: CSSProperties = {
+    backgroundColor: surface.panelButtonBg,
+    borderColor: surface.panelBorder,
+    color: surface.panelText,
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl shadow-xl"
+        style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
+      >
+        <div
+          className="flex shrink-0 items-center justify-between px-5 py-3"
+          style={{ backgroundColor: headerBg, color: headerText }}
+        >
           <h2 className="text-lg font-bold">{t("settings")}</h2>
-          <button type="button" onClick={() => setShowSettings(false)}>
+          <button
+            type="button"
+            className="rounded px-3 py-1 text-sm bg-white/20"
+            onClick={() => setShowSettings(false)}
+          >
             {t("close")}
           </button>
         </div>
 
-        <section className="mb-4">
-          <h3 className="mb-2 font-semibold">{t("profile")}</h3>
-          <select
-            className="w-full rounded border px-2 py-2"
-            value={activeProfileFile ?? ""}
-            onChange={(e) => setProfileFile(e.target.value)}
-          >
-            {profileFiles.map((p) => (
-              <option key={p.filename} value={p.filename}>
-                {p.name} ({p.filename})
-              </option>
-            ))}
-          </select>
-          <div className="mt-2 flex gap-2">
-            <input
-              className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
-              placeholder={t("newProfileFileName")}
-              value={newProfileName}
-              onChange={(e) => setNewProfileName(e.target.value)}
-            />
-            <button
-              type="button"
-              className="shrink-0 rounded-lg bg-slate-800 px-3 py-1 text-sm text-white"
-              onClick={() => {
-                if (!newProfileName.trim()) return;
-                void createProfileFile(newProfileName.trim(), newProfileName.trim());
-                setNewProfileName("");
-              }}
+        <div className="space-y-5 overflow-y-auto p-5">
+          <SettingsSection title={t("profile")} surface={surface}>
+            <ThemedSelect
+              value={activeProfileFile ?? ""}
+              onChange={(v) => setProfileFile(v)}
+              surface={surface}
+              className="w-full rounded border px-2 py-2 text-sm"
             >
-              {t("createProfile")}
-            </button>
-          </div>
-        </section>
-
-        <section className="mb-4">
-          <h3 className="mb-2 font-semibold">{t("accessibilityScreen")}</h3>
-          <ul className="max-h-48 space-y-1 overflow-y-auto rounded border p-2">
-            {monitors.map((m) => {
-              const label = `${m.name} (${m.width}x${m.height})${m.is_primary ? ` [${t("primary")}]` : ""}`;
-              return (
-                <li key={m.id}>
-                  <label className="flex cursor-pointer items-start gap-2 rounded px-1 py-1 hover:bg-slate-50">
-                    <input
-                      type="radio"
-                      name="accessibilityMonitor"
-                      className="mt-1 shrink-0"
-                      checked={settings.accessibilityMonitorId === m.id}
-                      onChange={() => updateSettings({ accessibilityMonitorId: m.id })}
-                    />
-                    <span className="min-w-0 break-all text-sm leading-snug">{label}</span>
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
-        <section className="mb-4">
-          <h3 className="mb-2 font-semibold">{t("appearance")}</h3>
-          <fieldset className="mb-3">
-            <legend className="mb-1 text-sm font-medium">{t("colorProfile")}</legend>
-            <div className="flex flex-wrap gap-2">
-              {COLOR_PROFILE_IDS.map((id) => (
-                <label
-                  key={id}
-                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1 text-sm ${
-                    settings.colorProfile === id ? "border-slate-800 bg-slate-100" : ""
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="colorProfile"
-                    checked={settings.colorProfile === id}
-                    onChange={() =>
-                      updateSettings({
-                        colorProfile: id,
-                        ...getColorProfileColors(id),
-                      })
-                    }
-                  />
-                  {t(COLOR_PROFILE_LABEL_KEYS[id])}
-                </label>
+              {profileFiles.map((p) => (
+                <option key={p.filename} value={p.filename}>
+                  {p.name} ({p.filename})
+                </option>
               ))}
-            </div>
-          </fieldset>
-          {settings.colorProfile === "custom" && (
-            <div className="grid grid-cols-2 gap-3">
-              <ColorField
-                label={t("appBackgroundColor")}
-                value={settings.appBgColor ?? "#f1f5f9"}
-                onChange={(v) =>
-                  updateSettings({ appBgColor: v, colorProfile: "custom" })
-                }
+            </ThemedSelect>
+            <div className="mt-3 flex gap-2">
+              <input
+                className="min-w-0 flex-1 rounded border px-2 py-1.5 text-sm"
+                style={fieldStyle(surface)}
+                placeholder={t("newProfileFileName")}
+                value={newProfileName}
+                onChange={(e) => setNewProfileName(e.target.value)}
               />
-              <ColorField
-                label={t("headerColor")}
-                value={settings.headerBgColor ?? "#1e293b"}
-                onChange={(v) =>
-                  updateSettings({ headerBgColor: v, colorProfile: "custom" })
-                }
-              />
-              <ColorField
-                label={t("headerTextColor")}
-                value={settings.headerTextColor ?? "#ffffff"}
-                onChange={(v) =>
-                  updateSettings({ headerTextColor: v, colorProfile: "custom" })
-                }
-              />
-              <ColorField
-                label={t("keyboardBackgroundColor")}
-                value={settings.keyboardBgColor ?? "#e8edf2"}
-                onChange={(v) =>
-                  updateSettings({ keyboardBgColor: v, colorProfile: "custom" })
-                }
-              />
-              <ColorField
-                label={t("keyColor")}
-                value={settings.keyboardKeyColor ?? "#ffffff"}
-                onChange={(v) =>
-                  updateSettings({ keyboardKeyColor: v, colorProfile: "custom" })
-                }
-              />
-              <ColorField
-                label={t("keyTextColor")}
-                value={settings.keyTextColor ?? "#1e293b"}
-                onChange={(v) =>
-                  updateSettings({ keyTextColor: v, colorProfile: "custom" })
-                }
-              />
-              <ColorField
-                label={t("mousePanelColor")}
-                value={settings.mousePanelBgColor ?? "#f8fafc"}
-                onChange={(v) =>
-                  updateSettings({ mousePanelBgColor: v, colorProfile: "custom" })
-                }
-              />
-            </div>
-          )}
-          <div className="mt-3 space-y-2">
-            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className="rounded-lg border px-3 py-1 text-sm"
-                onClick={() => void pickBackgroundImage()}
+                className="shrink-0 rounded-lg px-3 py-1.5 text-sm"
+                style={{ backgroundColor: headerBg, color: headerText }}
+                onClick={() => {
+                  if (!newProfileName.trim()) return;
+                  void createProfileFile(newProfileName.trim(), newProfileName.trim());
+                  setNewProfileName("");
+                }}
               >
-                {t("chooseBackgroundImage")}
+                {t("createProfile")}
               </button>
-              {settings.backgroundImagePath && (
+            </div>
+          </SettingsSection>
+
+          <SettingsSection title={t("accessibilityScreen")} surface={surface}>
+            <ul
+              className="max-h-48 space-y-1 overflow-y-auto rounded border p-2"
+              style={{
+                backgroundColor: surface.insetBg,
+                borderColor: surface.insetBorder,
+              }}
+            >
+              {monitors.map((m) => {
+                const label = `${m.name} (${m.width}x${m.height})${m.is_primary ? ` [${t("primary")}]` : ""}`;
+                return (
+                  <li key={m.id}>
+                    <label
+                      className="flex cursor-pointer items-start gap-2 rounded px-2 py-1.5"
+                      style={{ color: surface.panelText }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = surface.panelButtonBg;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="accessibilityMonitor"
+                        className="mt-1 shrink-0"
+                        checked={settings.accessibilityMonitorId === m.id}
+                        onChange={() => updateSettings({ accessibilityMonitorId: m.id })}
+                      />
+                      <span className="min-w-0 break-all text-sm leading-snug">{label}</span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </SettingsSection>
+
+          <SettingsSection title={t("appearance")} surface={surface}>
+            <fieldset className="mb-4">
+              <legend
+                className="mb-2 text-sm font-medium"
+                style={{ color: surface.panelText }}
+              >
+                {t("colorProfile")}
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {COLOR_PROFILE_IDS.map((id) => {
+                  const selected = settings.colorProfile === id;
+                  return (
+                    <label
+                      key={id}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm"
+                      style={{
+                        borderColor: selected ? surface.panelBorder : surface.insetBorder,
+                        backgroundColor: selected ? surface.panelHeaderBg : surface.insetBg,
+                        color: surface.panelText,
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="colorProfile"
+                        checked={selected}
+                        onChange={() =>
+                          updateSettings({
+                            colorProfile: id,
+                            ...getColorProfileColors(id),
+                          })
+                        }
+                      />
+                      {t(COLOR_PROFILE_LABEL_KEYS[id])}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            {settings.colorProfile === "custom" && (
+              <div className="mb-4 grid grid-cols-2 gap-3">
+                <ColorField
+                  label={t("appBackgroundColor")}
+                  value={settings.appBgColor ?? "#f1f5f9"}
+                  onChange={(v) => updateSettings({ appBgColor: v, colorProfile: "custom" })}
+                  surface={surface}
+                />
+                <ColorField
+                  label={t("headerColor")}
+                  value={settings.headerBgColor ?? "#1e293b"}
+                  onChange={(v) => updateSettings({ headerBgColor: v, colorProfile: "custom" })}
+                  surface={surface}
+                />
+                <ColorField
+                  label={t("headerTextColor")}
+                  value={settings.headerTextColor ?? "#ffffff"}
+                  onChange={(v) => updateSettings({ headerTextColor: v, colorProfile: "custom" })}
+                  surface={surface}
+                />
+                <ColorField
+                  label={t("keyboardBackgroundColor")}
+                  value={settings.keyboardBgColor ?? "#e8edf2"}
+                  onChange={(v) => updateSettings({ keyboardBgColor: v, colorProfile: "custom" })}
+                  surface={surface}
+                />
+                <ColorField
+                  label={t("keyColor")}
+                  value={settings.keyboardKeyColor ?? "#ffffff"}
+                  onChange={(v) => updateSettings({ keyboardKeyColor: v, colorProfile: "custom" })}
+                  surface={surface}
+                />
+                <ColorField
+                  label={t("keyTextColor")}
+                  value={settings.keyTextColor ?? "#1e293b"}
+                  onChange={(v) => updateSettings({ keyTextColor: v, colorProfile: "custom" })}
+                  surface={surface}
+                />
+                <ColorField
+                  label={t("mousePanelColor")}
+                  value={settings.mousePanelBgColor ?? "#f8fafc"}
+                  onChange={(v) => updateSettings({ mousePanelBgColor: v, colorProfile: "custom" })}
+                  surface={surface}
+                />
+              </div>
+            )}
+
+            <div className="mb-4 space-y-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="rounded-lg border border-red-200 px-3 py-1 text-sm text-red-700"
-                  onClick={() => updateSettings({ backgroundImagePath: undefined })}
+                  className="rounded-lg border px-3 py-1.5 text-sm"
+                  style={secondaryButtonStyle}
+                  onClick={() => void pickBackgroundImage()}
                 >
-                  {t("removeBackgroundImage")}
+                  {t("chooseBackgroundImage")}
                 </button>
+                {settings.backgroundImagePath && (
+                  <button
+                    type="button"
+                    className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700"
+                    style={{ backgroundColor: surface.insetBg }}
+                    onClick={() => updateSettings({ backgroundImagePath: undefined })}
+                  >
+                    {t("removeBackgroundImage")}
+                  </button>
+                )}
+              </div>
+              {settings.backgroundImagePath && (
+                <label className="block text-sm" style={{ color: surface.panelText }}>
+                  {t("backgroundImageOpacity")}
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={settings.backgroundImageOpacity ?? 0.35}
+                    onChange={(e) =>
+                      updateSettings({ backgroundImageOpacity: Number(e.target.value) })
+                    }
+                    className="mt-1 w-full"
+                  />
+                </label>
               )}
             </div>
-            {settings.backgroundImagePath && (
-              <label className="block text-sm">
-                {t("backgroundImageOpacity")}
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={settings.backgroundImageOpacity ?? 0.35}
-                  onChange={(e) =>
-                    updateSettings({ backgroundImageOpacity: Number(e.target.value) })
+
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("opacity")}
+              <input
+                type="range"
+                min={0.5}
+                max={1}
+                step={0.05}
+                value={settings.opacity}
+                onChange={(e) => updateSettings({ opacity: Number(e.target.value) })}
+                className="mt-1 w-full"
+              />
+            </label>
+          </SettingsSection>
+
+          <SettingsSection title={t("settingsVisibleSections")} surface={surface}>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <ToggleRow
+                label={t("showMouseSection")}
+                checked={settings.mouseVisible}
+                onChange={(checked) => updateSettings({ mouseVisible: checked })}
+                surface={surface}
+              />
+              <ToggleRow
+                label={t("showQuickActionsBar")}
+                checked={settings.quickActionsVisible}
+                onChange={(checked) => updateSettings({ quickActionsVisible: checked })}
+                surface={surface}
+              />
+              <ToggleRow
+                label={t("showPhrasesSection")}
+                checked={settings.phrasesVisible}
+                onChange={(checked) => updateSettings({ phrasesVisible: checked })}
+                surface={surface}
+              />
+              <ToggleRow
+                label={t("showSuggestionsBar")}
+                checked={settings.suggestionsVisible}
+                onChange={(checked) => updateSettings({ suggestionsVisible: checked })}
+                surface={surface}
+              />
+            </div>
+          </SettingsSection>
+
+          <SettingsSection title={t("keyboard")} surface={surface}>
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("fnKeyMode")}
+              <ThemedSelect
+                value={settings.fnKeyMode}
+                onChange={(v) => updateSettings({ fnKeyMode: v as FnKeyMode })}
+                surface={surface}
+              >
+                <option value="one-shot">{t("fnKeyModeOneShot")}</option>
+                <option value="latched">{t("fnKeyModeLatched")}</option>
+              </ThemedSelect>
+            </label>
+            <div className="mt-3">
+              <ToggleRow
+                label={t("showKeyboardModeToggle")}
+                checked={settings.keyboardModeToggleVisible}
+                onChange={(checked) => updateSettings({ keyboardModeToggleVisible: checked })}
+                surface={surface}
+              />
+            </div>
+            {!settings.keyboardModeToggleVisible && (
+              <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
+                {t("keyboardSectionMode")}
+                <ThemedSelect
+                  value={settings.keyboardSectionMode}
+                  onChange={(v) =>
+                    updateSettings({
+                      keyboardSectionMode: v as "keyboard" | "synthesizer",
+                    })
                   }
-                  className="w-full"
-                />
+                  surface={surface}
+                >
+                  <option value="keyboard">{t("keyboard")}</option>
+                  <option value="synthesizer">{t("synthesizer")}</option>
+                </ThemedSelect>
               </label>
             )}
-          </div>
-        </section>
+          </SettingsSection>
 
-        <section className="mb-4">
-          <h3 className="mb-2 font-semibold">{t("keyboard")}</h3>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={settings.functionKeysEnabled}
-              onChange={(e) => updateSettings({ functionKeysEnabled: e.target.checked })}
-            />
-            {t("showFunctionKeys")}
-          </label>
-          <label className="mt-2 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={settings.keyboardModeToggleVisible}
-              onChange={(e) =>
-                updateSettings({ keyboardModeToggleVisible: e.target.checked })
-              }
-            />
-            {t("showKeyboardModeToggle")}
-          </label>
-          {!settings.keyboardModeToggleVisible && (
-            <label className="mt-2 block text-sm">
-              {t("keyboardSectionMode")}
-              <select
-                className="mt-1 w-full rounded border px-2 py-1"
-                value={settings.keyboardSectionMode}
-                onChange={(e) =>
-                  updateSettings({
-                    keyboardSectionMode: e.target.value as "keyboard" | "synthesizer",
-                  })
-                }
+          <SettingsSection title={t("quickActions")} surface={surface}>
+            <QuickActionEditor surface={surface} />
+          </SettingsSection>
+
+          <SettingsSection title={t("settingsGeneral")} surface={surface}>
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("appTypingLanguage")}
+              <ThemedSelect
+                value={settings.language}
+                onChange={(v) => updateSettings({ language: v })}
+                surface={surface}
               >
-                <option value="keyboard">{t("keyboard")}</option>
-                <option value="synthesizer">{t("synthesizer")}</option>
-              </select>
+                <option value="en">{t("languageEnglish")}</option>
+                <option value="el">{t("languageGreek")}</option>
+              </ThemedSelect>
             </label>
-          )}
-        </section>
+          </SettingsSection>
 
-        <section className="mb-4">
-          <h3 className="mb-2 font-semibold">{t("mouse")}</h3>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={settings.mouseVisible}
-              onChange={(e) => updateSettings({ mouseVisible: e.target.checked })}
-            />
-            {t("showMouseSection")}
-          </label>
-        </section>
+          <SettingsSection title={t("settingsToolsMaintenance")} surface={surface}>
+            <div className="mb-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-lg border px-3 py-2 text-sm"
+                style={secondaryButtonStyle}
+                onClick={() => {
+                  setShowSettings(false);
+                  setShowMacroBuilder(true);
+                }}
+              >
+                {t("macroBuilder")}
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border px-3 py-2 text-sm"
+                style={secondaryButtonStyle}
+                onClick={() => {
+                  setShowSettings(false);
+                  setShowHeadTrackingWizard(true);
+                }}
+              >
+                {t("headTracking")}
+              </button>
+            </div>
 
-        <section className="mb-4">
-          <h3 className="mb-2 font-semibold">{t("quickActions")}</h3>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={settings.quickActionsVisible}
-              onChange={(e) => updateSettings({ quickActionsVisible: e.target.checked })}
-            />
-            {t("showQuickActionsBar")}
-          </label>
-        </section>
+            <div className="mb-4">
+              <button
+                type="button"
+                className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
+                style={secondaryButtonStyle}
+                disabled={updateCheckStatus === "checking"}
+                onClick={() => void checkForUpdates()}
+              >
+                {updateCheckStatus === "checking" ? t("updatePreparing") : t("checkForUpdates")}
+              </button>
+              {updateCheckStatus === "upToDate" && (
+                <p className="mt-1 text-xs text-green-700">{t("updateUpToDate")}</p>
+              )}
+              {updateCheckStatus === "error" && (
+                <p className="mt-1 text-xs text-red-700">{t("updateCheckFailed")}</p>
+              )}
+            </div>
 
-        <section className="mb-4">
-          <h3 className="mb-2 font-semibold">{t("phrasesAndSuggestions")}</h3>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={settings.phrasesVisible}
-              onChange={(e) => updateSettings({ phrasesVisible: e.target.checked })}
-            />
-            {t("showPhrasesSection")}
-          </label>
-          <label className="mt-2 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={settings.suggestionsVisible}
-              onChange={(e) => updateSettings({ suggestionsVisible: e.target.checked })}
-            />
-            {t("showSuggestionsBar")}
-          </label>
-        </section>
-
-        <section className="mb-4 grid grid-cols-2 gap-3">
-          <label className="text-sm">
-            {t("opacity")}
-            <input
-              type="range"
-              min={0.5}
-              max={1}
-              step={0.05}
-              value={settings.opacity}
-              onChange={(e) => updateSettings({ opacity: Number(e.target.value) })}
-              className="w-full"
-            />
-          </label>
-          <label className="text-sm">
-            {t("appTypingLanguage")}
-            <select
-              className="w-full rounded border px-2 py-1"
-              value={settings.language}
-              onChange={(e) => updateSettings({ language: e.target.value })}
+            <button
+              type="button"
+              className="w-full rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700"
+              style={{ backgroundColor: surface.insetBg }}
+              onClick={() => void resetSettingsToDefaults()}
             >
-              <option value="en">{t("languageEnglish")}</option>
-              <option value="el">{t("languageGreek")}</option>
-            </select>
-          </label>
-        </section>
-
-        <section className="mb-4">
-          <QuickActionEditor />
-        </section>
-
-        <section className="mb-4">
-          <button
-            type="button"
-            className="w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
-            onClick={() => void resetSettingsToDefaults()}
-          >
-            {t("resetSettings")}
-          </button>
-          <p className="mt-1 text-xs text-slate-500">{t("resetSettingsHint")}</p>
-        </section>
-
-        <section className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded-lg bg-slate-100 px-3 py-2 text-sm"
-            onClick={() => {
-              setShowSettings(false);
-              setShowMacroBuilder(true);
-            }}
-          >
-            {t("macroBuilder")}
-          </button>
-          <button
-            type="button"
-            className="rounded-lg bg-slate-100 px-3 py-2 text-sm"
-            onClick={() => {
-              setShowSettings(false);
-              setShowHeadTrackingWizard(true);
-            }}
-          >
-            {t("headTracking")}
-          </button>
-        </section>
+              {t("resetSettings")}
+            </button>
+            <p className="mt-1 text-xs" style={{ color: surface.panelMutedText }}>
+              {t("resetSettingsHint")}
+            </p>
+          </SettingsSection>
+        </div>
       </div>
     </div>
   );

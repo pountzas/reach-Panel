@@ -22,7 +22,7 @@ use std::sync::Mutex;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
-use profiles::{pick_image_file, ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
+use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{compute_window_layout, list_monitors, MonitorInfo, WindowLayout};
 
 struct AppState {
@@ -396,9 +396,38 @@ fn cmd_create_profile_file(
         .map_err(|e| e.to_string())
 }
 
+/// Temporarily drops always-on-top so native file dialogs appear above the app window.
+struct RestoreAlwaysOnTop(tauri::AppHandle);
+
+impl Drop for RestoreAlwaysOnTop {
+    fn drop(&mut self) {
+        if let Some(window) = self.0.get_webview_window("main") {
+            let _ = window.set_always_on_top(true);
+        }
+    }
+}
+
+fn pick_background_image(app: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    window
+        .set_always_on_top(false)
+        .map_err(|e| e.to_string())?;
+    let _restore = RestoreAlwaysOnTop(app.clone());
+
+    let file = rfd::FileDialog::new()
+        .add_filter("Images", &["png", "jpg", "jpeg", "gif", "webp", "bmp"])
+        .set_parent(&window)
+        .pick_file();
+
+    Ok(file.map(|p| p.to_string_lossy().into_owned()))
+}
+
 #[tauri::command]
-fn cmd_pick_background_image() -> Result<Option<String>, String> {
-    pick_image_file().map_err(|e| e.to_string())
+fn cmd_pick_background_image(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    pick_background_image(&app)
 }
 
 #[tauri::command]
@@ -624,6 +653,8 @@ fn cmd_head_tracking_move(dx: i32, dy: i32, state: State<AppState>) -> CommandRe
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let app_data_dir = app
                 .path()

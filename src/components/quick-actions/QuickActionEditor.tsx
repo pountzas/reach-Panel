@@ -1,11 +1,22 @@
-import { useState } from "react";
+﻿import { useState, type CSSProperties } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { v4 as uuidv4 } from "../../lib/uuid";
 import { useAppStore } from "../../stores/appStore";
+import { useTranslation } from "../../hooks/useTranslation";
+import type { SurfaceColors } from "../../lib/colorProfiles";
 import { INTERNAL_PROFILE_ID, type QuickAction } from "../../lib/types";
 
-export function QuickActionEditor() {
+function fieldStyle(surface: SurfaceColors): CSSProperties {
+  return {
+    backgroundColor: surface.insetBg,
+    borderColor: surface.insetBorder,
+    color: surface.panelText,
+  };
+}
+
+export function QuickActionEditor({ surface }: { surface: SurfaceColors }) {
   const { quickActions, loadQuickActions, saveActiveProfile } = useAppStore();
+  const { t } = useTranslation();
   const [label, setLabel] = useState("");
   const [target, setTarget] = useState("");
   const [actionType, setActionType] = useState<"app" | "url">("url");
@@ -35,32 +46,37 @@ export function QuickActionEditor() {
     await saveActiveProfile();
   };
 
+  const inputClass = "rounded border px-2 py-1.5 text-sm";
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
-      <h3 className="mb-2 font-semibold">Quick Action Editor</h3>
-      <div className="mb-2 grid grid-cols-2 gap-2">
+    <div>
+      <div className="mb-3 grid grid-cols-2 gap-2">
         <input
-          className="rounded border px-2 py-1 text-sm"
-          placeholder="Label"
+          className={inputClass}
+          style={fieldStyle(surface)}
+          placeholder={t("quickActionLabel")}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
         />
         <input
-          className="rounded border px-2 py-1 text-sm"
-          placeholder="Target (chrome or URL)"
+          className={inputClass}
+          style={fieldStyle(surface)}
+          placeholder={t("quickActionTarget")}
           value={target}
           onChange={(e) => setTarget(e.target.value)}
         />
         <select
-          className="rounded border px-2 py-1 text-sm"
+          className={inputClass}
+          style={fieldStyle(surface)}
           value={actionType}
           onChange={(e) => setActionType(e.target.value as "app" | "url")}
         >
-          <option value="app">App</option>
-          <option value="url">URL</option>
+          <option value="app">{t("quickActionTypeApp")}</option>
+          <option value="url">{t("quickActionTypeUrl")}</option>
         </select>
         <select
-          className="rounded border px-2 py-1 text-sm"
+          className={inputClass}
+          style={fieldStyle(surface)}
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         >
@@ -72,19 +88,36 @@ export function QuickActionEditor() {
       </div>
       <button
         type="button"
-        className="mb-3 rounded-lg bg-blue-600 px-3 py-1 text-sm text-white"
+        className="mb-3 rounded-lg px-3 py-1.5 text-sm"
+        style={{
+          backgroundColor: surface.panelHeaderBg,
+          color: surface.panelText,
+          borderColor: surface.panelBorder,
+          borderWidth: 1,
+        }}
         onClick={save}
       >
-        Add Action
+        {t("quickActionAdd")}
       </button>
       <ul className="space-y-1 text-sm">
         {quickActions.map((a) => (
-          <li key={a.id} className="flex items-center justify-between rounded bg-slate-50 px-2 py-1">
+          <li
+            key={a.id}
+            className="flex items-center justify-between rounded px-2 py-1.5"
+            style={{
+              backgroundColor: surface.insetBg,
+              color: surface.panelText,
+            }}
+          >
             <span>
               {a.label} ({a.category})
             </span>
-            <button type="button" className="text-red-600" onClick={() => remove(a.id)}>
-              Delete
+            <button
+              type="button"
+              className="text-red-600"
+              onClick={() => remove(a.id)}
+            >
+              {t("quickActionDelete")}
             </button>
           </li>
         ))}

@@ -32,7 +32,7 @@ _Replace with captures from your release build when ready — see [docs/images/R
 
 - System-wide keyboard injection with sticky modifiers
 - Adjustable on-screen keyboard (size, spacing, colors, opacity)
-- Optional function keys row (F1–F12) via Settings
+- Fn key on the bottom row maps number keys 1–0 and `-` `=` to F1–F12
 - Keyboard / synthesizer mode toggle with two-octave piano keyboard
 - Language switch key with country flag icons (EN ↔ EL)
 - Predictive text (English + Greek) with disable toggle

@@ -1,4 +1,4 @@
-export const en = {
+﻿export const en = {
 
   appTitle: "Accessibility Keyboard",
 
@@ -106,7 +106,11 @@ export const en = {
 
   keyboard: "Keyboard",
 
-  showFunctionKeys: "Show function keys (F1–F12)",
+  fnKeyMode: "Fn key behavior",
+
+  fnKeyModeOneShot: "One-shot (Fn turns off after each F-key)",
+
+  fnKeyModeLatched: "Latched (Fn stays on until tapped again)",
 
   synthesizer: "Synthesizer",
 
@@ -139,6 +143,48 @@ export const en = {
   newProfileFileName: "New profile file name",
 
   createProfile: "Create profile file",
+
+  updateAvailable: "Update available",
+
+  updateVersionInfo: "A new version is available:",
+
+  updateNow: "Update now",
+
+  updateLater: "Later",
+
+  skipThisVersion: "Skip this version",
+
+  updateDownloading: "Downloading updateâ€¦",
+
+  updatePreparing: "Preparing downloadâ€¦",
+
+  updateFailed: "Update failed:",
+
+  updateRetry: "Retry",
+
+  checkForUpdates: "Check for updates",
+
+  updateUpToDate: "You are on the latest version.",
+
+  updateCheckFailed: "Could not check for updates.",
+
+  settingsVisibleSections: "Visible Sections",
+
+  settingsGeneral: "General",
+
+  settingsToolsMaintenance: "Tools & Maintenance",
+
+  quickActionLabel: "Label",
+
+  quickActionTarget: "Target (app or URL)",
+
+  quickActionTypeApp: "App",
+
+  quickActionTypeUrl: "URL",
+
+  quickActionAdd: "Add action",
+
+  quickActionDelete: "Delete",
 
 } as const;
 

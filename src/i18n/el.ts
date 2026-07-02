@@ -110,7 +110,11 @@ export const el: Record<keyof typeof en, string> = {
 
   keyboard: "Πληκτρολόγιο",
 
-  showFunctionKeys: "Εμφάνιση πλήκτρων λειτουργίας (F1–F12)",
+  fnKeyMode: "Συμπεριφορά πλήκτρου Fn",
+
+  fnKeyModeOneShot: "Μίας χρήσης (το Fn απενεργοποιείται μετά από κάθε F-key)",
+
+  fnKeyModeLatched: "Κλειδωμένο (το Fn μένει ενεργό μέχρι να το πατήσετε ξανά)",
 
   synthesizer: "Συνθετητής",
 
@@ -144,5 +148,47 @@ export const el: Record<keyof typeof en, string> = {
 
   createProfile: "Δημιουργία αρχείου προφίλ",
 
-};
+  updateAvailable: "Διαθέσιμη ενημέρωση",
 
+  updateVersionInfo: "Υπάρχει νέα έκδοση:",
+
+  updateNow: "Ενημέρωση τώρα",
+
+  updateLater: "Αργότερα",
+
+  skipThisVersion: "Παράλειψη αυτής της έκδοσης",
+
+  updateDownloading: "Λήψη ενημέρωσης…",
+
+  updatePreparing: "Προετοιμασία λήψης…",
+
+  updateFailed: "Η ενημέρωση απέτυχε:",
+
+  updateRetry: "Επανάληψη",
+
+  checkForUpdates: "Έλεγχος για ενημερώσεις",
+
+  updateUpToDate: "Έχετε την τελευταία έκδοση.",
+
+  updateCheckFailed: "Δεν ήταν δυνατός ο έλεγχος για ενημερώσεις.",
+
+
+  settingsVisibleSections: "Ορατά τμήματα",
+
+  settingsGeneral: "Γενικά",
+
+  settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
+
+  quickActionLabel: "Ετικέτα",
+
+  quickActionTarget: "Στόχος (εφαρμογή ή URL)",
+
+  quickActionTypeApp: "Εφαρμογή",
+
+  quickActionTypeUrl: "URL",
+
+  quickActionAdd: "Προσθήκη ενέργειας",
+
+  quickActionDelete: "Διαγραφή",
+
+};

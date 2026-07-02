@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import type { Update } from "@tauri-apps/plugin-updater";
+import { checkForUpdate } from "../lib/updater";
 import {
   DEFAULT_PHYSICAL_KEY_STATE,
   PhysicalKeyState,
@@ -57,6 +59,7 @@ interface AppStore {
   pollKeyboardState: () => Promise<void>;
   toggleLanguage: () => Promise<void>;
   clearSticky: () => void;
+  clearStickyExceptFn: () => void;
   loadSuggestions: () => Promise<void>;
   applySuggestion: (word: string) => Promise<void>;
   setLastError: (error: string | null) => void;
@@ -68,6 +71,10 @@ interface AppStore {
   loadKeyboardLayout: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
   isAnimatingWindow: boolean;
+  pendingUpdate: Update | null;
+  updateCheckStatus: "idle" | "checking" | "upToDate" | "error";
+  setPendingUpdate: (update: Update | null) => void;
+  checkForUpdates: () => Promise<void>;
 }
 
 function parseSettings(json: string): AppSettings {
@@ -128,6 +135,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
   showHeadTrackingWizard: false,
   keyboardLayout: "QWERTY",
   isAnimatingWindow: false,
+  pendingUpdate: null,
+  updateCheckStatus: "idle",
+
+  setPendingUpdate: (update) => {
+    set({ pendingUpdate: update });
+    void get().syncWindowFocusable();
+  },
+
+  checkForUpdates: async () => {
+    set({ updateCheckStatus: "checking" });
+    try {
+      const update = await checkForUpdate();
+      if (update) {
+        set({ pendingUpdate: update, updateCheckStatus: "idle" });
+      } else {
+        set({ pendingUpdate: null, updateCheckStatus: "upToDate" });
+      }
+    } catch {
+      set({ updateCheckStatus: "error" });
+    }
+    void get().syncWindowFocusable();
+  },
 
   loadProfileFiles: async () => {
     const [profileFiles, activeProfileFile] = await Promise.all([
@@ -293,6 +322,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   clearSticky: () => set({ stickyModifiers: [] }),
 
+  clearStickyExceptFn: () =>
+    set((s) => ({
+      stickyModifiers: s.stickyModifiers.filter((m) => m === "fn"),
+    })),
+
   loadSuggestions: async () => {
     const { settings, typedBuffer } = get();
     if (!settings.predictionEnabled) {
@@ -335,8 +369,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   syncWindowFocusable: async () => {
-    const { showSettings, showMacroBuilder, showHeadTrackingWizard } = get();
-    const needsFocus = showSettings || showMacroBuilder || showHeadTrackingWizard;
+    const { showSettings, showMacroBuilder, showHeadTrackingWizard, pendingUpdate } =
+      get();
+    const needsFocus =
+      showSettings || showMacroBuilder || showHeadTrackingWizard || pendingUpdate !== null;
     await invoke("cmd_set_window_focusable", { focusable: needsFocus });
   },
 
