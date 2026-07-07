@@ -3,6 +3,7 @@ import {
   MODE_TOGGLE_BUTTON_CLASS,
   modeToggleActiveClass,
   modeToggleRadiusClass,
+  type ModeTogglePosition,
 } from "../../lib/buttonClasses";
 
 interface HoverTooltipProps {
@@ -20,7 +21,7 @@ export function HoverTooltip({ label }: HoverTooltipProps) {
 
 interface ModeToggleButtonProps {
   active: boolean;
-  position: "first" | "last" | "only";
+  position: ModeTogglePosition;
   label: string;
   onClick: () => void;
   children: ReactNode;

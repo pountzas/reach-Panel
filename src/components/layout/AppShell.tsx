@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
+import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
 import { SuggestionsBar } from "../common/SuggestionsBar";
@@ -34,8 +35,8 @@ function InputRowPanel() {
           onRightRatioChange={(inputRowRightRatio) =>
             updateSettings({ inputRowRightRatio })
           }
-          minLeftWidth={mouseSide === "left" ? 140 : 160}
-          minRightWidth={mouseSide === "left" ? 160 : 140}
+          minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
+          minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
           left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
           right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
         />
