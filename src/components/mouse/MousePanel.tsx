@@ -1,6 +1,6 @@
 import { MouseIcon, NumpadIcon, PanelLeftIcon, PanelRightIcon } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
-import { MouseSpeedSlider } from "./MouseSpeedSlider";
+import { MouseSpeedSwitch } from "./MouseSpeedSwitch";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { getSurfaceColors } from "../../lib/colorProfiles";
@@ -22,9 +22,9 @@ export function MousePanel() {
         borderColor: surface.panelBorder,
       }}
     >
-      <div className="relative z-20 mb-2 flex items-center justify-end gap-2 overflow-visible pr-1 pt-6">
+      <div className="relative z-20 mb-2 flex shrink-0 items-center justify-end gap-2 overflow-visible pr-1 pt-6">
         {!showNumpad && (
-          <MouseSpeedSlider
+          <MouseSpeedSwitch
             value={settings.mouseSpeed}
             onChange={(mouseSpeed) => updateSettings({ mouseSpeed })}
           />
