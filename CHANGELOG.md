@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 (2026-07-08)
+
+## What's Changed
+* feat: restore mouse panel left/right placement toggle by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/53
+* feat: replace mouse speed slider with 5-phase icon switch by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/59
+* Dev by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/60
+
+
+**Full Changelog**: https://github.com/pountzas/accessibility-keyboard/compare/v0.4.0...v0.5.0
+
 ## 0.4.0 (2026-07-02)
 
 ## What's Changed
