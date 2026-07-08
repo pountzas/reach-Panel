@@ -10,13 +10,31 @@ export function modeToggleActiveClass(active: boolean) {
   return active ? "bg-slate-700 text-white" : "bg-white text-slate-700";
 }
 
-export function modeToggleRadiusClass(position: "first" | "last" | "only") {
+export type ModeTogglePosition = "first" | "middle" | "last" | "only";
+
+export function modeToggleRadiusClass(position: ModeTogglePosition) {
   switch (position) {
     case "first":
       return "rounded-l";
+    case "middle":
+      return "rounded-none";
     case "last":
       return "rounded-r";
     case "only":
       return "rounded";
+    default: {
+      const _exhaustive: never = position;
+      return _exhaustive;
+    }
   }
+}
+
+export function modeToggleSegmentPosition(
+  index: number,
+  total: number,
+): ModeTogglePosition {
+  if (total <= 1) return "only";
+  if (index === 0) return "first";
+  if (index === total - 1) return "last";
+  return "middle";
 }

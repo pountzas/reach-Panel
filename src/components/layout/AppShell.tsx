@@ -3,9 +3,9 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
+import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
-import { SuggestionsBar } from "../common/SuggestionsBar";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { UpdatePrompt } from "../common/UpdatePrompt";
 import { SettingsPanel } from "../settings/SettingsPanel";
@@ -17,23 +17,22 @@ import { useTranslation } from "../../hooks/useTranslation";
 
 function InputRowPanel() {
   const { settings, updateSettings } = useAppStore();
-  const rightRatio = settings.inputRowRightRatio ?? 0.28;
+  const mouseSide = settings.mousePanelSide ?? "right";
+  const mouseRatio = settings.inputRowRightRatio ?? 0.28;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
-      {settings.suggestionsVisible && (
-        <div className="shrink-0">
-          <SuggestionsBar />
-        </div>
-      )}
       {settings.mouseVisible ? (
         <ResizableSplitPane
-          rightRatio={rightRatio}
+          ratioSide={mouseSide === "left" ? "left" : "right"}
+          rightRatio={mouseRatio}
           onRightRatioChange={(inputRowRightRatio) =>
             updateSettings({ inputRowRightRatio })
           }
-          left={<KeyboardSection />}
-          right={<MousePanel />}
+          minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
+          minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
+          left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
+          right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
         />
       ) : (
         <div className="min-h-0 flex-1">

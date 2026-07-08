@@ -4,7 +4,7 @@ import { useTranslation } from "../../hooks/useTranslation";
 const SPLITTER_WIDTH = 6;
 const DEFAULT_MIN_LEFT = 160;
 const DEFAULT_MIN_RIGHT = 140;
-const DEFAULT_MAX_RIGHT_RATIO = 1 / 3;
+const DEFAULT_MAX_SIZED_RATIO = 1 / 3;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -13,8 +13,10 @@ function clamp(value: number, min: number, max: number) {
 interface ResizableSplitPaneProps {
   left: ReactNode;
   right: ReactNode;
+  /** Width fraction (0–1) of the pane on `ratioSide`. */
   rightRatio: number;
   onRightRatioChange: (ratio: number) => void;
+  ratioSide?: "left" | "right";
   minLeftWidth?: number;
   minRightWidth?: number;
   maxRightRatio?: number;
@@ -25,9 +27,10 @@ export function ResizableSplitPane({
   right,
   rightRatio,
   onRightRatioChange,
+  ratioSide = "right",
   minLeftWidth = DEFAULT_MIN_LEFT,
   minRightWidth = DEFAULT_MIN_RIGHT,
-  maxRightRatio = DEFAULT_MAX_RIGHT_RATIO,
+  maxRightRatio = DEFAULT_MAX_SIZED_RATIO,
 }: ResizableSplitPaneProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,15 +38,19 @@ export function ResizableSplitPane({
     null,
   );
 
+  const sizedMinWidth = ratioSide === "left" ? minLeftWidth : minRightWidth;
+  const otherMinWidth = ratioSide === "left" ? minRightWidth : minLeftWidth;
+
   const ratioBounds = useCallback(
     (totalWidth: number) => {
-      const minRight = (minRightWidth + SPLITTER_WIDTH) / totalWidth;
-      const maxFromMinLeft = (totalWidth - minLeftWidth - SPLITTER_WIDTH) / totalWidth;
+      const minSized = (sizedMinWidth + SPLITTER_WIDTH) / totalWidth;
+      const maxFromOtherMin =
+        (totalWidth - otherMinWidth - SPLITTER_WIDTH) / totalWidth;
       const maxFromWindow = (window.innerWidth * maxRightRatio) / totalWidth;
-      const maxRight = Math.min(maxFromMinLeft, maxFromWindow);
-      return { minRight, maxRight: Math.max(minRight, maxRight) };
+      const maxSized = Math.min(maxFromOtherMin, maxFromWindow);
+      return { minSized, maxSized: Math.max(minSized, maxSized) };
     },
-    [minLeftWidth, minRightWidth, maxRightRatio],
+    [maxRightRatio, otherMinWidth, sizedMinWidth],
   );
 
   const clampToBounds = useCallback(() => {
@@ -53,9 +60,9 @@ export function ResizableSplitPane({
     const width = container.getBoundingClientRect().width;
     if (width <= 0) return;
 
-    const { minRight, maxRight } = ratioBounds(width);
-    if (rightRatio > maxRight || rightRatio < minRight) {
-      onRightRatioChange(clamp(rightRatio, minRight, maxRight));
+    const { minSized, maxSized } = ratioBounds(width);
+    if (rightRatio > maxSized || rightRatio < minSized) {
+      onRightRatioChange(clamp(rightRatio, minSized, maxSized));
     }
   }, [onRightRatioChange, ratioBounds, rightRatio]);
 
@@ -94,9 +101,10 @@ export function ResizableSplitPane({
     const drag = dragStateRef.current;
     if (!drag) return;
 
-    const deltaRatio = (drag.startX - event.clientX) / drag.width;
-    const { minRight, maxRight } = ratioBounds(drag.width);
-    onRightRatioChange(clamp(drag.startRatio + deltaRatio, minRight, maxRight));
+    const rawDelta = (drag.startX - event.clientX) / drag.width;
+    const deltaRatio = ratioSide === "left" ? -rawDelta : rawDelta;
+    const { minSized, maxSized } = ratioBounds(drag.width);
+    onRightRatioChange(clamp(drag.startRatio + deltaRatio, minSized, maxSized));
   };
 
   const onSplitterPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -106,9 +114,9 @@ export function ResizableSplitPane({
     dragStateRef.current = null;
   };
 
-  const leftFlex = 1 - rightRatio;
-  const rightFlex = rightRatio;
-  const maxRightPercent = Math.round(maxRightRatio * 100);
+  const leftFlex = ratioSide === "left" ? rightRatio : 1 - rightRatio;
+  const rightFlex = ratioSide === "left" ? 1 - rightRatio : rightRatio;
+  const maxSizedPercent = Math.round(maxRightRatio * 100);
 
   return (
     <div ref={containerRef} className="flex min-h-0 flex-1 items-stretch">
@@ -123,7 +131,7 @@ export function ResizableSplitPane({
         aria-orientation="vertical"
         aria-label={t("resizeInputRow")}
         aria-valuemin={0}
-        aria-valuemax={maxRightPercent}
+        aria-valuemax={maxSizedPercent}
         aria-valuenow={Math.round(rightRatio * 100)}
         className="group z-20 flex shrink-0 cursor-col-resize items-stretch px-0.5"
         style={{ width: SPLITTER_WIDTH }}

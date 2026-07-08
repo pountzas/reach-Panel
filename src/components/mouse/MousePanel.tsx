@@ -1,6 +1,6 @@
-import { MouseIcon, NumpadIcon } from "../common/SectionIcons";
+import { MouseIcon, NumpadIcon, PanelLeftIcon, PanelRightIcon } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
-import { MouseSpeedSlider } from "./MouseSpeedSlider";
+import { MouseSpeedSwitch } from "./MouseSpeedSwitch";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { getSurfaceColors } from "../../lib/colorProfiles";
@@ -12,6 +12,7 @@ export function MousePanel() {
   const { t } = useTranslation();
   const surface = getSurfaceColors(settings.appBgColor);
   const showNumpad = settings.mousePanelMode === "numpad";
+  const mouseOnLeft = settings.mousePanelSide === "left";
 
   return (
     <div
@@ -21,13 +22,31 @@ export function MousePanel() {
         borderColor: surface.panelBorder,
       }}
     >
-      <div className="relative z-20 mb-2 flex items-center justify-end gap-2 overflow-visible pr-1 pt-6">
+      <div className="relative z-20 mb-2 flex shrink-0 items-center justify-end gap-2 overflow-visible pr-1 pt-3.5 pb-1.5">
         {!showNumpad && (
-          <MouseSpeedSlider
+          <MouseSpeedSwitch
             value={settings.mouseSpeed}
             onChange={(mouseSpeed) => updateSettings({ mouseSpeed })}
           />
         )}
+        <ModeToggleGroup>
+          <ModeToggleButton
+            active={mouseOnLeft}
+            position="first"
+            label={t("mousePanelLeft")}
+            onClick={() => updateSettings({ mousePanelSide: "left" })}
+          >
+            <PanelLeftIcon className="h-4 w-4" />
+          </ModeToggleButton>
+          <ModeToggleButton
+            active={!mouseOnLeft}
+            position="last"
+            label={t("mousePanelRight")}
+            onClick={() => updateSettings({ mousePanelSide: "right" })}
+          >
+            <PanelRightIcon className="h-4 w-4" />
+          </ModeToggleButton>
+        </ModeToggleGroup>
         <ModeToggleGroup>
           <ModeToggleButton
             active={!showNumpad}
