@@ -22,7 +22,7 @@ export function MousePanel() {
         borderColor: surface.panelBorder,
       }}
     >
-      <div className="relative z-20 mb-2 flex shrink-0 items-center justify-end gap-2 overflow-visible pr-1 pt-6">
+      <div className="relative z-20 mb-2 flex shrink-0 items-center justify-end gap-2 overflow-visible pr-1 pt-3.5 pb-1.5">
         {!showNumpad && (
           <MouseSpeedSwitch
             value={settings.mouseSpeed}

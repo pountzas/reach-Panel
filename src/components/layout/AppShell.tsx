@@ -6,7 +6,6 @@ import { MousePanel } from "../mouse/MousePanel";
 import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
-import { SuggestionsBar } from "../common/SuggestionsBar";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { UpdatePrompt } from "../common/UpdatePrompt";
 import { SettingsPanel } from "../settings/SettingsPanel";
@@ -23,11 +22,6 @@ function InputRowPanel() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
-      {settings.suggestionsVisible && (
-        <div className="shrink-0">
-          <SuggestionsBar />
-        </div>
-      )}
       {settings.mouseVisible ? (
         <ResizableSplitPane
           ratioSide={mouseSide === "left" ? "left" : "right"}
