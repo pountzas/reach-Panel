@@ -23,7 +23,12 @@ export function AboutSection({ surface }: AboutSectionProps) {
   const [version, setVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    void getCurrentAppVersion().then(setVersion);
+    void getCurrentAppVersion()
+      .then(setVersion)
+      .catch((error) => {
+        console.error("Failed to load app version:", error);
+        setVersion("—");
+      });
   }, []);
 
   const secondaryButtonStyle: CSSProperties = {

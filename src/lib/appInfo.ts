@@ -14,5 +14,7 @@ export const APP_INFO = {
 } as const;
 
 export function openExternalLink(url: string): void {
-  void openUrl(url);
+  void openUrl(url).catch((error) => {
+    console.error(`Failed to open external link (${url}):`, error);
+  });
 }
