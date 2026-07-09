@@ -5,6 +5,21 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.1 (2026-07-09)
+
+## What's Changed
+* Add About section to settings by @pountzas in https://github.com/pountzas/reach-Panel/pull/62
+* chore(deps): bump tauri from 2.11.3 to 2.11.5 in /src-tauri in the cargo-minor-and-patch group across 1 directory by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/58
+* chore(deps-dev): bump vite from 8.1.0 to 8.1.3 in the npm-minor-and-patch group by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/57
+* chore(deps): bump actions/download-artifact from 4 to 8 by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/56
+* chore(deps): bump actions/checkout from 6 to 7 by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/55
+* chore(deps): bump actions/upload-artifact from 4 to 7 by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/54
+* chore(deps): merge Dependabot security and dependency updates by @pountzas in https://github.com/pountzas/reach-Panel/pull/63
+* Release dev to main — ReachPanel rename, about section, dependency updates by @pountzas in https://github.com/pountzas/reach-Panel/pull/64
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.5.0...v0.5.1
+
 ## 0.5.0 (2026-07-08)
 
 ## What's Changed
