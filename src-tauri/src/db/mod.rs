@@ -105,6 +105,11 @@ impl Database {
 
         if !db_path.exists() && legacy_path.exists() {
             std::fs::rename(&legacy_path, &db_path)?;
+        } else if db_path.exists() && legacy_path.exists() {
+            eprintln!(
+                "Both {DB_FILE} and {LEGACY_DB_FILE} exist in {}; using {DB_FILE} and leaving the legacy database untouched.",
+                app_data_dir.display()
+            );
         }
 
         Ok(db_path)
