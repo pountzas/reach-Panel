@@ -14,6 +14,8 @@ import { HeadTrackingWizard } from "../head-tracking/HeadTrackingWizard";
 import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+import { CollapseIcon, ExpandIcon, SettingsIcon } from "../common/SectionIcons";
+import { IconActionButton } from "../common/IconActionButton";
 
 function InputRowPanel() {
   const { settings, updateSettings } = useAppStore();
@@ -70,14 +72,14 @@ export function AppShell() {
         }}
       >
         <span className="font-semibold">{t("appTitle")}</span>
-        <button
-          type="button"
-          className="rounded-lg bg-white/20 px-4 py-2 disabled:opacity-50"
+        <IconActionButton
+          label={t("expand")}
           onClick={toggleCollapsed}
           disabled={isAnimatingWindow}
+          className="h-8 w-8 rounded-lg bg-white/20 hover:bg-white/30"
         >
-          {t("expand")}
-        </button>
+          <ExpandIcon />
+        </IconActionButton>
       </div>
     );
   }
@@ -117,22 +119,22 @@ export function AppShell() {
           }}
         >
           <span className="font-semibold">{t("appTitle")}</span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="rounded px-3 py-1 text-sm bg-white/20 disabled:opacity-50"
+          <div className="flex gap-1">
+            <IconActionButton
+              label={t("collapse")}
               onClick={toggleCollapsed}
               disabled={isAnimatingWindow}
+              className="rounded bg-white/20 hover:bg-white/30"
             >
-              {t("collapse")}
-            </button>
-            <button
-              type="button"
-              className="rounded px-3 py-1 text-sm bg-white/20"
+              <CollapseIcon />
+            </IconActionButton>
+            <IconActionButton
+              label={t("settings")}
               onClick={() => setShowSettings(true)}
+              className="rounded bg-white/20 hover:bg-white/30"
             >
-              {t("settings")}
-            </button>
+              <SettingsIcon />
+            </IconActionButton>
           </div>
         </header>
 

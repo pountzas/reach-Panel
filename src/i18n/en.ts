@@ -6,6 +6,8 @@
 
   expand: "Expand",
 
+  minimizeSection: "Minimize",
+
   settings: "Settings",
 
   close: "Close",

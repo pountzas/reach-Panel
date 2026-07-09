@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Rnd, type ResizeEnable } from "react-rnd";
 import {
+  effectiveSectionHeight,
   layoutToPixels,
   pixelsToLayout,
+  SECTION_HEADER_HEIGHT_PX,
+  toggleSectionMinimized,
   type SectionId,
   type SectionLayout,
 } from "../../lib/sectionLayouts";
@@ -15,6 +18,8 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
+import { CloseIcon, ExpandIcon, MinimizeIcon } from "../common/SectionIcons";
+import { IconActionButton } from "../common/IconActionButton";
 
 const EDGE_SIZE = 6;
 const MIN_SECTION_WIDTH = 160;
@@ -66,6 +71,17 @@ const resizeHandleStyles = {
   },
 } as const;
 
+const DISABLE_RESIZE: ResizeEnable = {
+  top: false,
+  right: false,
+  bottom: false,
+  left: false,
+  topRight: false,
+  topLeft: false,
+  bottomRight: false,
+  bottomLeft: false,
+};
+
 const SECTION_TITLE_KEY: Record<SectionId, TranslationKey> = {
   "quick-actions": "quickActions",
   phrases: "phrases",
@@ -98,34 +114,38 @@ export function ResizableSection({
   children,
 }: ResizableSectionProps) {
   const { t } = useTranslation();
+  const updateSettings = useAppStore((s) => s.updateSettings);
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const surface = getSurfaceColors(appBgColor);
   const interactingRef = useRef(false);
   const lastValidRef = useRef<PixelRect | null>(null);
+  const isMinimized = layout.minimized ?? false;
+  const showPanelControls = id !== "input-row";
   const pixels = layoutToPixels(layout, containerWidth, containerHeight);
+  const effectiveHeight = effectiveSectionHeight(layout, containerHeight);
   const [position, setPosition] = useState({ x: pixels.x, y: pixels.y });
   const [size, setSize] = useState({
     width: pixels.width,
-    height: pixels.height,
+    height: effectiveHeight,
   });
   const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
     if (interactingRef.current) return;
     setPosition({ x: pixels.x, y: pixels.y });
-    setSize({ width: pixels.width, height: pixels.height });
+    setSize({ width: pixels.width, height: effectiveHeight });
     lastValidRef.current = {
       x: pixels.x,
       y: pixels.y,
       width: pixels.width,
-      height: pixels.height,
+      height: effectiveHeight,
     };
-  }, [pixels.x, pixels.y, pixels.width, pixels.height]);
+  }, [pixels.x, pixels.y, pixels.width, effectiveHeight]);
 
   const persistLayout = (rect: PixelRect) => {
-    onLayoutChange(
-      id,
-      pixelsToLayout(
+    onLayoutChange(id, {
+      ...layout,
+      ...pixelsToLayout(
         rect.x,
         rect.y,
         rect.width,
@@ -133,22 +153,25 @@ export function ResizableSection({
         containerWidth,
         containerHeight,
       ),
-    );
+    });
   };
 
   const applyRect = (candidate: PixelRect, persist: boolean) => {
+    const minHeight = isMinimized ? SECTION_HEADER_HEIGHT_PX : MIN_SECTION_HEIGHT;
     const adjusted = adjustRect(
       candidate,
       siblingRects,
       containerWidth,
       containerHeight,
       MIN_SECTION_WIDTH,
-      MIN_SECTION_HEIGHT,
+      minHeight,
     );
 
-    const finalRect = fitsWithoutOverlap(adjusted, siblingRects)
-      ? adjusted
-      : (lastValidRef.current ?? adjusted);
+    const height = isMinimized ? SECTION_HEADER_HEIGHT_PX : adjusted.height;
+    const finalCandidate = { ...adjusted, height };
+    const finalRect = fitsWithoutOverlap(finalCandidate, siblingRects)
+      ? finalCandidate
+      : (lastValidRef.current ?? finalCandidate);
 
     setPosition({ x: finalRect.x, y: finalRect.y });
     setSize({ width: finalRect.width, height: finalRect.height });
@@ -177,7 +200,26 @@ export function ResizableSection({
     onInteractChange?.(id, false);
   };
 
+  const handleToggleMinimize = () => {
+    onLayoutChange(id, toggleSectionMinimized(layout, containerHeight));
+  };
+
+  const handleClose = () => {
+    switch (id) {
+      case "quick-actions":
+        updateSettings({ quickActionsVisible: false });
+        break;
+      case "phrases":
+        updateSettings({ phrasesVisible: false });
+        break;
+      default:
+        break;
+    }
+  };
+
   const edgeHandle = <EdgeHitArea />;
+  const minHeight = isMinimized ? SECTION_HEADER_HEIGHT_PX : MIN_SECTION_HEIGHT;
+  const maxHeight = isMinimized ? SECTION_HEADER_HEIGHT_PX : undefined;
 
   return (
     <Rnd
@@ -185,10 +227,11 @@ export function ResizableSection({
       size={size}
       bounds="parent"
       minWidth={MIN_SECTION_WIDTH}
-      minHeight={MIN_SECTION_HEIGHT}
+      minHeight={minHeight}
+      maxHeight={maxHeight}
       dragHandleClassName="section-drag-handle"
       cancel=".section-no-drag"
-      enableResizing={ENABLE_RESIZE}
+      enableResizing={isMinimized ? DISABLE_RESIZE : ENABLE_RESIZE}
       resizeHandleStyles={resizeHandleStyles}
       resizeHandleComponent={{
         top: edgeHandle,
@@ -255,7 +298,7 @@ export function ResizableSection({
         style={{ backgroundColor: surface.panelBg, borderColor: surface.panelBorder }}
       >
         <div
-          className="section-drag-handle flex h-7 shrink-0 cursor-grab items-center border-b px-2 active:cursor-grabbing"
+          className="section-drag-handle flex h-7 shrink-0 cursor-grab items-center justify-between border-b px-2 active:cursor-grabbing"
           style={{ backgroundColor: surface.panelHeaderBg, borderColor: surface.panelBorder }}
         >
           <span
@@ -264,10 +307,29 @@ export function ResizableSection({
           >
             {t(SECTION_TITLE_KEY[id])}
           </span>
+          {showPanelControls && (
+            <div className="section-no-drag ml-1 flex shrink-0 items-center gap-0.5">
+              <IconActionButton
+                label={isMinimized ? t("expand") : t("minimizeSection")}
+                onClick={handleToggleMinimize}
+              >
+                {isMinimized ? (
+                  <ExpandIcon className="h-3.5 w-3.5" />
+                ) : (
+                  <MinimizeIcon className="h-3.5 w-3.5" />
+                )}
+              </IconActionButton>
+              <IconActionButton label={t("close")} onClick={handleClose}>
+                <CloseIcon className="h-3.5 w-3.5" />
+              </IconActionButton>
+            </div>
+          )}
         </div>
-        <div className="section-no-drag min-h-0 flex-1 overflow-hidden p-1">
-          {children}
-        </div>
+        {!isMinimized && (
+          <div className="section-no-drag min-h-0 flex-1 overflow-hidden p-1">
+            {children}
+          </div>
+        )}
       </div>
     </Rnd>
   );

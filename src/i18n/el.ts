@@ -10,6 +10,8 @@ export const el: Record<keyof typeof en, string> = {
 
   expand: "Ανάπτυξη",
 
+  minimizeSection: "Σμίκρυνση",
+
   settings: "Ρυθμίσεις",
 
   close: "Κλείσιμο",

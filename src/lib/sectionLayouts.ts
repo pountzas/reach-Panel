@@ -5,7 +5,11 @@ export interface SectionLayout {
   yPct: number;
   wPct: number;
   hPct: number;
+  minimized?: boolean;
+  expandedHPct?: number;
 }
+
+export const SECTION_HEADER_HEIGHT_PX = 28;
 
 export type SectionLayouts = Partial<Record<SectionId, SectionLayout>>;
 
@@ -20,10 +24,51 @@ const MIN_H_PCT = 10;
 
 function clampLayout(layout: SectionLayout): SectionLayout {
   const wPct = Math.max(MIN_W_PCT, Math.min(100 - GAP_PCT * 2, layout.wPct));
-  const hPct = Math.max(MIN_H_PCT, Math.min(100 - GAP_PCT * 2, layout.hPct));
+  const hPctMin = layout.minimized ? 0 : MIN_H_PCT;
+  const hPct = Math.max(hPctMin, Math.min(100 - GAP_PCT * 2, layout.hPct));
   const xPct = Math.max(GAP_PCT, Math.min(100 - wPct - GAP_PCT, layout.xPct));
   const yPct = Math.max(GAP_PCT, Math.min(100 - hPct - GAP_PCT, layout.yPct));
-  return { xPct, yPct, wPct, hPct };
+  return {
+    xPct,
+    yPct,
+    wPct,
+    hPct,
+    minimized: layout.minimized,
+    expandedHPct: layout.expandedHPct,
+  };
+}
+
+function headerHeightPct(containerHeight: number): number {
+  return (SECTION_HEADER_HEIGHT_PX / containerHeight) * 100;
+}
+
+export function effectiveSectionHeight(
+  layout: SectionLayout,
+  containerHeight: number,
+): number {
+  if (layout.minimized) {
+    return SECTION_HEADER_HEIGHT_PX;
+  }
+  return (layout.hPct / 100) * containerHeight;
+}
+
+export function toggleSectionMinimized(
+  layout: SectionLayout,
+  containerHeight: number,
+): SectionLayout {
+  if (layout.minimized) {
+    return {
+      ...layout,
+      minimized: false,
+      hPct: layout.expandedHPct ?? layout.hPct,
+    };
+  }
+  return {
+    ...layout,
+    minimized: true,
+    expandedHPct: layout.hPct,
+    hPct: headerHeightPct(containerHeight),
+  };
 }
 
 export function computeDefaultSectionLayouts(
