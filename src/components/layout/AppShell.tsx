@@ -15,8 +15,9 @@ import { HeadTrackingWizard } from "../head-tracking/HeadTrackingWizard";
 import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
-import { CollapseIcon, CloseIcon, ExpandIcon, SettingsIcon } from "../common/SectionIcons";
+import { CollapseIcon, CloseIcon, SettingsIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
+import { CollapsedFab } from "./CollapsedFab";
 
 function InputRowPanel() {
   const { settings, updateSettings } = useAppStore();
@@ -66,36 +67,7 @@ export function AppShell() {
   };
 
   if (settings.collapsed) {
-    return (
-      <div
-        className="flex items-center justify-between px-4"
-        style={{
-          width: "100vw",
-          height: "100vh",
-          backgroundColor: settings.headerBgColor ?? "#1e293b",
-          color: settings.headerTextColor ?? "#ffffff",
-        }}
-      >
-        <span className="font-semibold">{t("appTitle")}</span>
-        <div className="flex gap-1">
-          <IconActionButton
-            label={t("expand")}
-            onClick={toggleCollapsed}
-            disabled={isAnimatingWindow}
-            className="h-8 w-8 rounded-lg bg-white/20 hover:bg-white/30"
-          >
-            <ExpandIcon />
-          </IconActionButton>
-          <IconActionButton
-            label={t("close")}
-            onClick={handleCloseApp}
-            className="h-8 w-8 rounded-lg bg-white/20 hover:bg-white/30"
-          >
-            <CloseIcon />
-          </IconActionButton>
-        </div>
-      </div>
-    );
+    return <CollapsedFab />;
   }
 
   const shellStyle: CSSProperties = {

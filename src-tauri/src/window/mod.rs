@@ -19,7 +19,8 @@ pub struct WindowLayout {
     pub height: u32,
 }
 
-const COLLAPSED_BAR_HEIGHT: u32 = 48;
+const COLLAPSED_SIZE: u32 = 56;
+const COLLAPSED_MARGIN: u32 = 16;
 pub const COLLAPSE_ANIMATION_MS: u64 = 400;
 pub const COLLAPSE_ANIMATION_FRAME_MS: u64 = 60;
 
@@ -56,7 +57,7 @@ pub fn compute_window_layout(
         .or_else(|| monitors.iter().find(|m| m.is_primary))
         .ok_or_else(|| "No monitor found".to_string())?;
 
-    let (x, mut y, w, mut h) = if monitors.len() >= 2 {
+    let (mut x, mut y, mut w, mut h) = if monitors.len() >= 2 {
         (
             monitor.x,
             monitor.y,
@@ -73,8 +74,10 @@ pub fn compute_window_layout(
     };
 
     if collapsed {
-        y += h as i32 - COLLAPSED_BAR_HEIGHT as i32;
-        h = COLLAPSED_BAR_HEIGHT;
+        x += w as i32 - COLLAPSED_SIZE as i32 - COLLAPSED_MARGIN as i32;
+        y += h as i32 - COLLAPSED_SIZE as i32 - COLLAPSED_MARGIN as i32;
+        w = COLLAPSED_SIZE;
+        h = COLLAPSED_SIZE;
     }
 
     Ok(WindowLayout {
@@ -83,6 +86,48 @@ pub fn compute_window_layout(
         width: w,
         height: h,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_monitor(id: u32, x: i32, y: i32, w: i32, h: i32) -> MonitorInfo {
+        MonitorInfo {
+            id,
+            name: format!("Monitor {id}"),
+            x,
+            y,
+            width: w,
+            height: h,
+            is_primary: id == 0,
+        }
+    }
+
+    #[test]
+    fn collapsed_single_monitor_bottom_right() {
+        let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
+        let layout = compute_window_layout(&monitors, 0, true).unwrap();
+
+        assert_eq!(layout.width, COLLAPSED_SIZE);
+        assert_eq!(layout.height, COLLAPSED_SIZE);
+        assert_eq!(layout.x, 1920 - 56 - 16);
+        assert_eq!(layout.y, 540 + 540 - 56 - 16);
+    }
+
+    #[test]
+    fn collapsed_multi_monitor_bottom_right() {
+        let monitors = vec![
+            sample_monitor(0, 0, 0, 1920, 1080),
+            sample_monitor(1, 1920, 0, 1920, 1080),
+        ];
+        let layout = compute_window_layout(&monitors, 1, true).unwrap();
+
+        assert_eq!(layout.width, COLLAPSED_SIZE);
+        assert_eq!(layout.height, COLLAPSED_SIZE);
+        assert_eq!(layout.x, 1920 + 1920 - 56 - 16);
+        assert_eq!(layout.y, 1080 - 56 - 16);
+    }
 }
 
 #[cfg(target_os = "windows")]
