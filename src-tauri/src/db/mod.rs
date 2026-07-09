@@ -414,7 +414,7 @@ impl Database {
         if exists == 0 {
             let now = Utc::now().to_rfc3339();
             let settings = serde_json::json!({
-                "colorProfile": "light-grey",
+                "colorProfile": "dark-grey",
                 "opacity": 0.95,
                 "language": "en",
                 "mouseVisible": true,
@@ -454,7 +454,7 @@ impl Database {
         self.clear_profile_data(profile_id)?;
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
         let settings = serde_json::json!({
-            "colorProfile": "light-grey",
+            "colorProfile": "dark-grey",
             "opacity": 0.95,
             "language": "en",
             "mouseVisible": true,

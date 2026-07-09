@@ -13,6 +13,8 @@ import type { FnKeyMode } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
 import { SettingsSection } from "./SettingsSection";
 import { AboutSection } from "./AboutSection";
+import { CloseIcon } from "../common/SectionIcons";
+import { IconActionButton } from "../common/IconActionButton";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -157,13 +159,13 @@ export function SettingsPanel() {
           style={{ backgroundColor: headerBg, color: headerText }}
         >
           <h2 className="text-lg font-bold">{t("settings")}</h2>
-          <button
-            type="button"
-            className="rounded px-3 py-1 text-sm bg-white/20"
+          <IconActionButton
+            label={t("close")}
             onClick={() => setShowSettings(false)}
+            className="rounded bg-white/20 hover:bg-white/30"
           >
-            {t("close")}
-          </button>
+            <CloseIcon />
+          </IconActionButton>
         </div>
 
         <div className="space-y-5 overflow-y-auto p-5">

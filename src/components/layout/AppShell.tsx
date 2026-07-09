@@ -1,5 +1,6 @@
 import { type CSSProperties } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { exit } from "@tauri-apps/plugin-process";
 import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
@@ -14,7 +15,7 @@ import { HeadTrackingWizard } from "../head-tracking/HeadTrackingWizard";
 import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
-import { CollapseIcon, ExpandIcon, SettingsIcon } from "../common/SectionIcons";
+import { CollapseIcon, CloseIcon, ExpandIcon, SettingsIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 
 function InputRowPanel() {
@@ -60,6 +61,10 @@ export function AppShell() {
   } = useAppStore();
   const { t } = useTranslation();
 
+  const handleCloseApp = () => {
+    void exit(0);
+  };
+
   if (settings.collapsed) {
     return (
       <div
@@ -72,14 +77,23 @@ export function AppShell() {
         }}
       >
         <span className="font-semibold">{t("appTitle")}</span>
-        <IconActionButton
-          label={t("expand")}
-          onClick={toggleCollapsed}
-          disabled={isAnimatingWindow}
-          className="h-8 w-8 rounded-lg bg-white/20 hover:bg-white/30"
-        >
-          <ExpandIcon />
-        </IconActionButton>
+        <div className="flex gap-1">
+          <IconActionButton
+            label={t("expand")}
+            onClick={toggleCollapsed}
+            disabled={isAnimatingWindow}
+            className="h-8 w-8 rounded-lg bg-white/20 hover:bg-white/30"
+          >
+            <ExpandIcon />
+          </IconActionButton>
+          <IconActionButton
+            label={t("close")}
+            onClick={handleCloseApp}
+            className="h-8 w-8 rounded-lg bg-white/20 hover:bg-white/30"
+          >
+            <CloseIcon />
+          </IconActionButton>
+        </div>
       </div>
     );
   }
@@ -134,6 +148,13 @@ export function AppShell() {
               className="rounded bg-white/20 hover:bg-white/30"
             >
               <SettingsIcon />
+            </IconActionButton>
+            <IconActionButton
+              label={t("close")}
+              onClick={handleCloseApp}
+              className="rounded bg-white/20 hover:bg-white/30"
+            >
+              <CloseIcon />
             </IconActionButton>
           </div>
         </header>
