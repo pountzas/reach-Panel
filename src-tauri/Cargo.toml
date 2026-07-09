@@ -1,6 +1,6 @@
 [package]
 name = "reach-panel"
-version = "0.5.0"
+version = "0.5.1"
 description = "ReachPanel — assistive virtual keyboard and mouse"
 authors = ["Nik"]
 edition = "2021"
