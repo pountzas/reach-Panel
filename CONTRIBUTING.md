@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve Accessibility Keyboard.
+Thank you for helping improve ReachPanel.
 
 ## Prerequisites
 
@@ -12,8 +12,8 @@ Thank you for helping improve Accessibility Keyboard.
 ## Getting started
 
 ```bash
-git clone https://github.com/pountzas/accessibility-keyboard.git
-cd accessibility-keyboard
+git clone https://github.com/pountzas/reach-Panel.git
+cd reach-Panel
 npm install
 npm run tauri dev
 ```
@@ -52,10 +52,10 @@ If you do not already have a matching private key for the pubkey in the repo:
 ```bash
 # Use `--` so npm forwards flags to the Tauri CLI (required).
 # PowerShell (Windows):
-npm run tauri -- signer generate -w "$env:USERPROFILE\.tauri\accessibility-keyboard.key"
+npm run tauri -- signer generate -w "$env:USERPROFILE\.tauri\reach-panel.key"
 
 # bash (macOS/Linux):
-npm run tauri -- signer generate -w ~/.tauri/accessibility-keyboard.key
+npm run tauri -- signer generate -w ~/.tauri/reach-panel.key
 ```
 
 You will be prompted for an optional password. Press Enter for no password, or set one and store the same value in the `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` secret.
@@ -73,7 +73,7 @@ The Release workflow validates that `TAURI_SIGNING_PRIVATE_KEY` exists before bu
 
 ```bash
 # PowerShell
-$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw "$env:USERPROFILE\.tauri\accessibility-keyboard.key"
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw "$env:USERPROFILE\.tauri\reach-panel.key"
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""   # omit if no password
 npm run build:tauri:release
 ```
@@ -104,7 +104,7 @@ Releases are automated with [release-please](https://github.com/googleapis/relea
 
 1. Merge `dev` into `main` via pull request.
 2. Release-please opens or updates a **Release PR** on `main` (e.g. `chore(main): release 0.1.1`) that bumps version files and `CHANGELOG.md`.
-3. Merge the Release PR. GitHub Actions builds Windows `.exe`/`.msi` and macOS `.dmg` bundles and attaches them to the [Releases](https://github.com/pountzas/accessibility-keyboard/releases) page.
+3. Merge the Release PR. GitHub Actions builds Windows `.exe`/`.msi` and macOS `.dmg` bundles and attaches them to the [Releases](https://github.com/pountzas/reach-Panel/releases) page.
 
 Version is kept in sync across `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`.
 

@@ -1,6 +1,6 @@
 {
-  "name": "accessibility-keyboard",
-  "version": "0.3.0",
+  "name": "reach-panel",
+  "version": "0.5.0",
   "license": "MIT",
   "type": "module",
   "scripts": {

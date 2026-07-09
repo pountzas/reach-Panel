@@ -4,7 +4,7 @@ import { en } from "./en";
 
 export const el: Record<keyof typeof en, string> = {
 
-  appTitle: "Πληκτρολόγιο Προσβασιμότητας",
+  appTitle: "ReachPanel",
 
   collapse: "Σύμπτυξη",
 
@@ -194,5 +194,26 @@ export const el: Record<keyof typeof en, string> = {
   quickActionAdd: "Προσθήκη ενέργειας",
 
   quickActionDelete: "Διαγραφή",
+
+  settingsAbout: "Σχετικά",
+
+  aboutDescription:
+    "Εικονικό πληκτρολόγιο και ποντίκι προσβασιμότητας για Windows.",
+
+  aboutVersion: "Έκδοση",
+
+  aboutCreatedBy: "Δημιουργός",
+
+  aboutGitHub: "GitHub",
+
+  aboutSource: "Πηγαίος κώδικας",
+
+  aboutTwitter: "X",
+
+  aboutLinkedIn: "LinkedIn",
+
+  aboutWebsite: "Ιστοσελίδα",
+
+  aboutEmail: "Email",
 
 };

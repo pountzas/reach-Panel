@@ -1,9 +1,43 @@
 # Changelog
 
-All notable changes to this project are documented here. Release binaries are published on [GitHub Releases](https://github.com/pountzas/accessibility-keyboard/releases).
+All notable changes to this project are documented here. Release binaries are published on [GitHub Releases](https://github.com/pountzas/reach-Panel/releases).
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## 0.5.0 (2026-07-08)
+
+## What's Changed
+* feat: restore mouse panel left/right placement toggle by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/53
+* feat: replace mouse speed slider with 5-phase icon switch by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/59
+* Dev by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/60
+
+
+**Full Changelog**: https://github.com/pountzas/accessibility-keyboard/compare/v0.4.0...v0.5.0
+
+## 0.4.0 (2026-07-02)
+
+## What's Changed
+* Adaptive window layout with taskbar-aware placement and collapse animation by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/44
+* chore(deps): bump actions/checkout from 6 to 7 by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/39
+* chore(deps): bump windows-future from 0.2.1 to 0.3.2 in /src-tauri by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/28
+* chore(deps): bump rfd from 0.15.4 to 0.17.2 in /src-tauri by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/30
+* chore(deps): bump rusqlite from 0.32.1 to 0.40.1 in /src-tauri by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/29
+* chore(deps): bump the cargo-minor-and-patch group across 1 directory with 2 updates by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/40
+* chore(deps): bump the npm-minor-and-patch group with 3 updates by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/41
+* chore(deps-dev): bump typescript from 5.8.3 to 6.0.3 by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/25
+* chore(deps-dev): bump vite from 7.3.5 to 8.1.0 by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/42
+* chore(deps-dev): bump @vitejs/plugin-react from 4.7.0 to 6.0.3 by @dependabot[bot] in https://github.com/pountzas/accessibility-keyboard/pull/43
+* Release dev: v0.3.0 features, adaptive window layout, and dependency updates by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/45
+* Fix synthesizer slide-to-note touch behavior by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/46
+* feat: add in-app auto-update on startup by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/47
+* Replace F-key row with Fn modifier key by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/48
+* feat: refactor settings UI and fix background image picker by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/50
+* fix: skip updater signing in PR build workflow by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/51
+* Release dev to main (0.3.0 + Fn key, updater, layout improvements) by @pountzas in https://github.com/pountzas/accessibility-keyboard/pull/49
+
+
+**Full Changelog**: https://github.com/pountzas/accessibility-keyboard/compare/v0.3.0...v0.4.0
 
 ## 0.3.0 (2026-06-25)
 
@@ -81,4 +115,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Macro builder with JSON import/export
 - Head tracking calibration wizard
 
-[0.1.0]: https://github.com/pountzas/accessibility-keyboard/releases/tag/v0.1.0
+[0.1.0]: https://github.com/pountzas/reach-Panel/releases/tag/v0.1.0

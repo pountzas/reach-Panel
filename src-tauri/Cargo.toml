@@ -1,12 +1,12 @@
 [package]
-name = "accessibility-keyboard"
-version = "0.3.0"
-description = "Assistive virtual keyboard and mouse for tetraplegic users"
+name = "reach-panel"
+version = "0.5.0"
+description = "ReachPanel — assistive virtual keyboard and mouse"
 authors = ["Nik"]
 edition = "2021"
 
 [lib]
-name = "accessibility_keyboard_lib"
+name = "reach_panel_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
