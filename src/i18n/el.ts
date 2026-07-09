@@ -4,7 +4,7 @@ import { en } from "./en";
 
 export const el: Record<keyof typeof en, string> = {
 
-  appTitle: "Πληκτρολόγιο Προσβασιμότητας",
+  appTitle: "ReachPanel",
 
   collapse: "Σύμπτυξη",
 

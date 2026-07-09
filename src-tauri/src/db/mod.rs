@@ -86,7 +86,7 @@ pub struct PredictionEntry {
 impl Database {
     pub fn new(app_data_dir: PathBuf) -> Result<Self> {
         std::fs::create_dir_all(&app_data_dir)?;
-        let db_path = app_data_dir.join("accessibility-keyboard.db");
+        let db_path = Self::resolve_db_path(&app_data_dir)?;
         let conn = Connection::open(db_path)?;
         let db = Self {
             conn: Mutex::new(conn),
@@ -94,6 +94,20 @@ impl Database {
         db.migrate()?;
         db.seed_if_empty()?;
         Ok(db)
+    }
+
+    fn resolve_db_path(app_data_dir: &PathBuf) -> Result<PathBuf> {
+        const DB_FILE: &str = "reach-panel.db";
+        const LEGACY_DB_FILE: &str = "accessibility-keyboard.db";
+
+        let db_path = app_data_dir.join(DB_FILE);
+        let legacy_path = app_data_dir.join(LEGACY_DB_FILE);
+
+        if !db_path.exists() && legacy_path.exists() {
+            std::fs::rename(&legacy_path, &db_path)?;
+        }
+
+        Ok(db_path)
     }
 
     fn migrate(&self) -> Result<()> {

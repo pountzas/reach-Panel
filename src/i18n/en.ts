@@ -1,6 +1,6 @@
 ﻿export const en = {
 
-  appTitle: "Accessibility Keyboard",
+  appTitle: "ReachPanel",
 
   collapse: "Collapse",
 

@@ -5,7 +5,7 @@ export const APP_INFO = {
   description: "Assistive virtual keyboard and mouse for Windows.",
   links: {
     github: "https://github.com/pountzas",
-    githubRepo: "https://github.com/pountzas/accessibility-keyboard",
+    githubRepo: "https://github.com/pountzas/reach-Panel",
     twitter: "https://x.com/pountzas20",
     linkedin: "https://www.linkedin.com/in/nikos-pountzas/",
     website: "https://pountzas-portfolio.vercel.app/",

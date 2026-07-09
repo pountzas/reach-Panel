@@ -23,7 +23,7 @@ We track Tauri releases for a proper fix and dismiss this alert as an accepted u
 
 Please **do not** open a public GitHub issue for security vulnerabilities.
 
-Instead, report them through [GitHub Security Advisories](https://github.com/pountzas/accessibility-keyboard/security/advisories/new) (preferred) or contact the maintainers privately.
+Instead, report them through [GitHub Security Advisories](https://github.com/pountzas/reach-Panel/security/advisories/new) (preferred) or contact the maintainers privately.
 
 Include:
 

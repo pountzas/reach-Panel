@@ -8,8 +8,13 @@ if (!tag) {
 }
 
 const version = tag.replace(/^v/, "");
-const repo = process.env.GITHUB_REPOSITORY ?? "pountzas/accessibility-keyboard";
+const repo = process.env.GITHUB_REPOSITORY ?? "pountzas/reach-Panel";
 const baseUrl = `https://github.com/${repo}/releases/download/${tag}`;
+
+/** Match GitHub release asset names (Tauri replaces spaces with dots in bundle filenames). */
+function releaseAssetName(filePath) {
+  return path.basename(filePath).replace(/ /g, ".");
+}
 
 function readSignature(sigPath) {
   return fs.readFileSync(sigPath, "utf8").trim();
@@ -20,7 +25,7 @@ function addPlatform(platforms, platformKey, installerPath, sigPath) {
     return;
   }
   platforms[platformKey] = {
-    url: `${baseUrl}/${path.basename(installerPath)}`,
+    url: `${baseUrl}/${encodeURIComponent(releaseAssetName(installerPath))}`,
     signature: readSignature(sigPath),
   };
 }
