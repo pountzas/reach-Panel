@@ -70,7 +70,7 @@ pub fn stop_speaking() -> Result<()> {
 
 pub fn validate_tts() -> Result<()> {
     speak_text(
-        "Accessibility keyboard ready.",
+        "ReachPanel ready.",
         TtsSettings {
             rate: 0,
             volume: 100,

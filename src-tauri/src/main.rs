@@ -2,5 +2,5 @@
 #![cfg_attr(all(not(debug_assertions), target_os = "windows"), windows_subsystem = "windows")]
 
 fn main() {
-    accessibility_keyboard_lib::run()
+    reach_panel_lib::run()
 }

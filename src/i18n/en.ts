@@ -1,6 +1,6 @@
 ﻿export const en = {
 
-  appTitle: "Accessibility Keyboard",
+  appTitle: "ReachPanel",
 
   collapse: "Collapse",
 
@@ -189,6 +189,26 @@
   quickActionAdd: "Add action",
 
   quickActionDelete: "Delete",
+
+  settingsAbout: "About",
+
+  aboutDescription: "Assistive virtual keyboard and mouse for Windows.",
+
+  aboutVersion: "Version",
+
+  aboutCreatedBy: "Created by",
+
+  aboutGitHub: "GitHub",
+
+  aboutSource: "Source",
+
+  aboutTwitter: "X",
+
+  aboutLinkedIn: "LinkedIn",
+
+  aboutWebsite: "Website",
+
+  aboutEmail: "Email",
 
 } as const;
 
