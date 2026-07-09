@@ -12,6 +12,7 @@ import {
 import type { FnKeyMode } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
 import { SettingsSection } from "./SettingsSection";
+import { AboutSection } from "./AboutSection";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -519,6 +520,10 @@ export function SettingsPanel() {
             <p className="mt-1 text-xs" style={{ color: surface.panelMutedText }}>
               {t("resetSettingsHint")}
             </p>
+          </SettingsSection>
+
+          <SettingsSection title={t("settingsAbout")} surface={surface}>
+            <AboutSection surface={surface} />
           </SettingsSection>
         </div>
       </div>

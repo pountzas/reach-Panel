@@ -195,4 +195,25 @@ export const el: Record<keyof typeof en, string> = {
 
   quickActionDelete: "Διαγραφή",
 
+  settingsAbout: "Σχετικά",
+
+  aboutDescription:
+    "Εικονικό πληκτρολόγιο και ποντίκι προσβασιμότητας για Windows.",
+
+  aboutVersion: "Έκδοση",
+
+  aboutCreatedBy: "Δημιουργός",
+
+  aboutGitHub: "GitHub",
+
+  aboutSource: "Πηγαίος κώδικας",
+
+  aboutTwitter: "X",
+
+  aboutLinkedIn: "LinkedIn",
+
+  aboutWebsite: "Ιστοσελίδα",
+
+  aboutEmail: "Email",
+
 };
