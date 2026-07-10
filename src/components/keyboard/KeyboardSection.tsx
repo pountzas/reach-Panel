@@ -1,4 +1,4 @@
-import { CompactViewIcon, ExpandedViewIcon, KeyboardIcon, SynthesizerIcon } from "../common/SectionIcons";
+import { KeyboardIcon, SynthesizerIcon } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { SynthVolumeControl } from "./SynthVolumeControl";
@@ -14,7 +14,7 @@ export function KeyboardSection() {
   const compact = settings.inputAreaCompact;
   const showToggle = settings.keyboardModeToggleVisible && !compact;
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
-  const showToolbar = true;
+  const showToolbar = showToggle || showSuggestions;
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
@@ -25,56 +25,36 @@ export function KeyboardSection() {
           <div className="pl-1.5 pb-1 min-w-0 flex-1">
             {showSuggestions && <SuggestionsBar />}
           </div>
-          <div className="pr-2 pb-1.5 flex shrink-0 items-end gap-2">
-            {showToggle && (
-              <>
-                {showSynth && (
-                  <SynthVolumeControl
-                    volume={settings.synthesizerVolume ?? 70}
-                    muted={settings.synthesizerMuted ?? false}
-                    onVolumeChange={(synthesizerVolume) => updateSettings({ synthesizerVolume })}
-                    onMutedChange={(synthesizerMuted) => updateSettings({ synthesizerMuted })}
-                  />
-                )}
-                <ModeToggleGroup>
-                  <ModeToggleButton
-                    active={!showSynth}
-                    position="first"
-                    label={t("keyboard")}
-                    onClick={() => updateSettings({ keyboardSectionMode: "keyboard" })}
-                  >
-                    <KeyboardIcon className="h-4 w-4" />
-                  </ModeToggleButton>
-                  <ModeToggleButton
-                    active={showSynth}
-                    position="last"
-                    label={t("synthesizer")}
-                    onClick={() => updateSettings({ keyboardSectionMode: "synthesizer" })}
-                  >
-                    <SynthesizerIcon className="h-4 w-4" />
-                  </ModeToggleButton>
-                </ModeToggleGroup>
-              </>
-            )}
-            <ModeToggleGroup>
-              <ModeToggleButton
-                active={!compact}
-                position="first"
-                label={t("inputAreaNormal")}
-                onClick={() => updateSettings({ inputAreaCompact: false })}
-              >
-                <CompactViewIcon className="h-4 w-4" />
-              </ModeToggleButton>
-              <ModeToggleButton
-                active={compact}
-                position="last"
-                label={t("inputAreaCompact")}
-                onClick={() => updateSettings({ inputAreaCompact: true })}
-              >
-                <ExpandedViewIcon className="h-4 w-4" />
-              </ModeToggleButton>
-            </ModeToggleGroup>
-          </div>
+          {showToggle && (
+            <div className="pr-2 pb-1.5 flex shrink-0 items-end gap-2">
+              {showSynth && (
+                <SynthVolumeControl
+                  volume={settings.synthesizerVolume ?? 70}
+                  muted={settings.synthesizerMuted ?? false}
+                  onVolumeChange={(synthesizerVolume) => updateSettings({ synthesizerVolume })}
+                  onMutedChange={(synthesizerMuted) => updateSettings({ synthesizerMuted })}
+                />
+              )}
+              <ModeToggleGroup>
+                <ModeToggleButton
+                  active={!showSynth}
+                  position="first"
+                  label={t("keyboard")}
+                  onClick={() => updateSettings({ keyboardSectionMode: "keyboard" })}
+                >
+                  <KeyboardIcon className="h-4 w-4" />
+                </ModeToggleButton>
+                <ModeToggleButton
+                  active={showSynth}
+                  position="last"
+                  label={t("synthesizer")}
+                  onClick={() => updateSettings({ keyboardSectionMode: "synthesizer" })}
+                >
+                  <SynthesizerIcon className="h-4 w-4" />
+                </ModeToggleButton>
+              </ModeToggleGroup>
+            </div>
+          )}
         </div>
       )}
       {showSynth ? (

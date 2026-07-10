@@ -20,6 +20,7 @@ import { getSurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
 import { CloseIcon, ExpandIcon, MinimizeIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
+import { InputAreaViewButtons } from "./InputAreaViewButtons";
 
 const EDGE_SIZE = 6;
 const MIN_SECTION_WIDTH = 160;
@@ -307,22 +308,26 @@ export function ResizableSection({
           >
             {t(SECTION_TITLE_KEY[id])}
           </span>
-          {showPanelControls && (
-            <div className="section-no-drag ml-1 flex shrink-0 items-center gap-0.5">
-              <IconActionButton
-                label={isMinimized ? t("expand") : t("minimizeSection")}
-                onClick={handleToggleMinimize}
-              >
-                {isMinimized ? (
-                  <ExpandIcon className="h-3.5 w-3.5" />
-                ) : (
-                  <MinimizeIcon className="h-3.5 w-3.5" />
-                )}
-              </IconActionButton>
-              <IconActionButton label={t("close")} onClick={handleClose}>
-                <CloseIcon className="h-3.5 w-3.5" />
-              </IconActionButton>
-            </div>
+          {id === "input-row" ? (
+            <InputAreaViewButtons />
+          ) : (
+            showPanelControls && (
+              <div className="section-no-drag ml-1 flex shrink-0 items-center gap-0.5">
+                <IconActionButton
+                  label={isMinimized ? t("expand") : t("minimizeSection")}
+                  onClick={handleToggleMinimize}
+                >
+                  {isMinimized ? (
+                    <ExpandIcon className="h-3.5 w-3.5" />
+                  ) : (
+                    <MinimizeIcon className="h-3.5 w-3.5" />
+                  )}
+                </IconActionButton>
+                <IconActionButton label={t("close")} onClick={handleClose}>
+                  <CloseIcon className="h-3.5 w-3.5" />
+                </IconActionButton>
+              </div>
+            )
           )}
         </div>
         {!isMinimized && (
