@@ -46,6 +46,10 @@ export interface AppSettings {
   synthesizerMuted?: boolean;
   /** Fraction of input-row width used by the mouse / numpad panel (0–1). */
   inputRowRightRatio?: number;
+  /** When true, hides section toolbars and suggestions for more keyboard/trackpad area. */
+  inputAreaCompact: boolean;
+  /** When false, hides drag lock, precision, and scroll buttons on the trackpad. */
+  mouseBottomRowVisible: boolean;
 }
 
 export interface ProfileFileInfo {
@@ -154,4 +158,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   synthesizerVolume: 70,
   synthesizerMuted: false,
   inputRowRightRatio: 0.28,
+  inputAreaCompact: false,
+  mouseBottomRowVisible: true,
 };
