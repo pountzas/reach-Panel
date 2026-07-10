@@ -56,7 +56,13 @@ export const el: Record<keyof typeof en, string> = {
 
   opacity: "Διαφάνεια",
 
-  appTypingLanguage: "Γλώσσα εφαρμογής & πληκτρολογίου",
+  appLanguage: "Γλώσσα εφαρμογής",
+
+  appLanguageHint: "Μενού, φράσεις, προτάσεις και ομιλία",
+
+  typingLanguage: "Γλώσσα πληκτρολογίου",
+
+  typingLanguageHint: "Εισαγωγή κειμένου και διάταξη πλήκτρων",
 
   languageEnglish: "English",
 

@@ -463,16 +463,33 @@ export function SettingsPanel() {
           </SettingsSection>
 
           <SettingsSection title={t("settingsGeneral")} surface={surface}>
-            <label className="block text-sm" style={{ color: surface.panelText }}>
-              {t("appTypingLanguage")}
+            <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
+              {t("appLanguage")}
               <ThemedSelect
-                value={settings.language}
-                onChange={(v) => updateSettings({ language: v })}
+                value={settings.uiLanguage}
+                onChange={(v) => updateSettings({ uiLanguage: v })}
                 surface={surface}
               >
                 <option value="en">{t("languageEnglish")}</option>
                 <option value="el">{t("languageGreek")}</option>
               </ThemedSelect>
+              <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
+                {t("appLanguageHint")}
+              </span>
+            </label>
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("typingLanguage")}
+              <ThemedSelect
+                value={settings.typingLanguage}
+                onChange={(v) => updateSettings({ typingLanguage: v })}
+                surface={surface}
+              >
+                <option value="en">{t("languageEnglish")}</option>
+                <option value="el">{t("languageGreek")}</option>
+              </ThemedSelect>
+              <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
+                {t("typingLanguageHint")}
+              </span>
             </label>
           </SettingsSection>
 

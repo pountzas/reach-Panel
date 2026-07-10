@@ -37,7 +37,7 @@ export function Keyboard() {
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const fnActive = isFnActive(stickyModifiers);
   const activeModifiers = stickyModifiers.filter((m) => m !== "capslock" && m !== "fn");
-  const rows = getLayoutRows(keyboardLayout, settings.language);
+  const rows = getLayoutRows(keyboardLayout, settings.typingLanguage);
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
   const fontSize = settings.keyboardFontSize ?? 18;
 
@@ -130,7 +130,7 @@ export function Keyboard() {
               label={
                 k.key === "langswitch" ? (
                   <LanguageSwitchLabel
-                    currentLanguage={settings.language}
+                    currentLanguage={settings.typingLanguage}
                     fontSize={fontSize}
                   />
                 ) : (

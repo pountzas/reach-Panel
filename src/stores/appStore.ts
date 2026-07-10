@@ -79,15 +79,28 @@ interface AppStore {
 
 function parseSettings(json: string): AppSettings {
   try {
-    const { theme, mouseSide, ...parsed } = JSON.parse(json) as Partial<AppSettings> & {
+    const { theme, mouseSide, language: legacyLanguage, ...parsed } = JSON.parse(
+      json,
+    ) as Partial<AppSettings> & {
       theme?: unknown;
       mouseSide?: "left" | "right" | "floating";
+      language?: string;
     };
     const colorProfile = resolveColorProfile({ ...parsed, theme });
     const mousePanelSide =
       parsed.mousePanelSide ??
       (mouseSide === "left" ? "left" : DEFAULT_SETTINGS.mousePanelSide);
-    return { ...DEFAULT_SETTINGS, ...parsed, colorProfile, mousePanelSide };
+    const typingLanguage =
+      parsed.typingLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.typingLanguage;
+    const uiLanguage = parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+      typingLanguage,
+      uiLanguage,
+      colorProfile,
+      mousePanelSide,
+    };
   } catch {
     return DEFAULT_SETTINGS;
   }
@@ -113,7 +126,7 @@ async function loadProfileData(
     ? parseSettings(active.settings_json)
     : DEFAULT_SETTINGS;
   set({ settings });
-  await invoke("cmd_set_system_language", { language: settings.language });
+  await invoke("cmd_set_system_language", { language: settings.typingLanguage });
   await get().pollKeyboardState();
   await get().loadQuickActions();
   await get().loadPhrases();
@@ -204,18 +217,24 @@ export const useAppStore = create<AppStore>((set, get) => ({
   updateSettings: async (partial, options) => {
     const { settings } = get();
     const syncToSystem = options?.syncToSystem ?? true;
-    const languageChanged =
-      partial.language !== undefined && partial.language !== settings.language;
+    const typingLanguageChanged =
+      partial.typingLanguage !== undefined &&
+      partial.typingLanguage !== settings.typingLanguage;
+    const uiLanguageChanged =
+      partial.uiLanguage !== undefined && partial.uiLanguage !== settings.uiLanguage;
     const next = { ...settings, ...partial };
     set({ settings: next });
-    if (syncToSystem && languageChanged) {
-      await invoke("cmd_set_system_language", { language: partial.language! });
+    if (syncToSystem && typingLanguageChanged) {
+      await invoke("cmd_set_system_language", { language: partial.typingLanguage! });
     }
     await invoke("cmd_update_profile_settings", {
       profileId: INTERNAL_PROFILE_ID,
       settingsJson: JSON.stringify(next),
     });
-    if (languageChanged) {
+    if (typingLanguageChanged) {
+      set({ typedBuffer: "", suggestions: [] });
+    }
+    if (uiLanguageChanged) {
       set({ typedBuffer: "", suggestions: [] });
       await get().loadPhrases();
       await get().loadSuggestions();
@@ -250,7 +269,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const [phrases, phraseCategories] = await Promise.all([
       invoke<Phrase[]>("cmd_get_phrases", {
         profileId: INTERNAL_PROFILE_ID,
-        language: settings.language,
+        language: settings.uiLanguage,
       }),
       invoke<PhraseCategory[]>("cmd_get_phrase_categories", {
         profileId: INTERNAL_PROFILE_ID,
@@ -290,36 +309,35 @@ export const useAppStore = create<AppStore>((set, get) => ({
       prev.pressedVks.length === next.pressedVks.length &&
       prev.pressedVks.every((vk, i) => vk === next.pressedVks[i]);
 
-    const languageUnchanged = settings.language === next.systemLanguage;
+    const typingLanguageUnchanged =
+      settings.typingLanguage === next.systemLanguage;
     const layoutUnchanged = keyboardLayout === next.keyboardLayout;
 
-    if (keysUnchanged && languageUnchanged && layoutUnchanged) {
+    if (keysUnchanged && typingLanguageUnchanged && layoutUnchanged) {
       return;
     }
 
     set({
       physicalKeyState: next,
       keyboardLayout: next.keyboardLayout,
-      ...(languageUnchanged
+      ...(typingLanguageUnchanged
         ? {}
-        : { settings: { ...settings, language: next.systemLanguage } }),
+        : { settings: { ...settings, typingLanguage: next.systemLanguage } }),
     });
 
-    if (!languageUnchanged) {
+    if (!typingLanguageUnchanged) {
       await invoke("cmd_update_profile_settings", {
         profileId: INTERNAL_PROFILE_ID,
         settingsJson: JSON.stringify(get().settings),
       });
       set({ typedBuffer: "", suggestions: [] });
-      await get().loadPhrases();
-      await get().loadSuggestions();
     }
   },
 
   toggleLanguage: async () => {
     const { settings } = get();
-    const next = settings.language === "en" ? "el" : "en";
-    await get().updateSettings({ language: next });
+    const next = settings.typingLanguage === "en" ? "el" : "en";
+    await get().updateSettings({ typingLanguage: next });
     await get().pollKeyboardState();
     await get().pollError();
   },
@@ -346,7 +364,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const results = await invoke<{ word: string }[]>("cmd_get_suggestions", {
       profileId: INTERNAL_PROFILE_ID,
       prefix,
-      language: settings.language,
+      language: settings.uiLanguage,
     });
     set({ suggestions: results.map((r) => r.word) });
   },
@@ -361,7 +379,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await invoke("cmd_record_word", {
       profileId: INTERNAL_PROFILE_ID,
       word,
-      language: settings.language,
+      language: settings.uiLanguage,
     });
     await get().loadSuggestions();
   },
