@@ -416,7 +416,8 @@ impl Database {
             let settings = serde_json::json!({
                 "colorProfile": "dark-grey",
                 "opacity": 0.95,
-                "language": "en",
+                "uiLanguage": "en",
+                "typingLanguage": "en",
                 "mouseVisible": true,
                 "mousePanelMode": "mouse",
                 "mousePanelSide": "right",
@@ -456,7 +457,8 @@ impl Database {
         let settings = serde_json::json!({
             "colorProfile": "dark-grey",
             "opacity": 0.95,
-            "language": "en",
+            "uiLanguage": "en",
+            "typingLanguage": "en",
             "mouseVisible": true,
             "mousePanelMode": "mouse",
             "mousePanelSide": "right",

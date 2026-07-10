@@ -15,7 +15,12 @@ fn profile_language(db: &Database, profile_id: &str) -> String {
                 .into_iter()
                 .find(|p| p.id == profile_id)
                 .and_then(|p| serde_json::from_str::<serde_json::Value>(&p.settings_json).ok())
-                .and_then(|v| v.get("language").and_then(|l| l.as_str()).map(String::from))
+                .and_then(|v| {
+                    v.get("uiLanguage")
+                        .and_then(|l| l.as_str())
+                        .or_else(|| v.get("language").and_then(|l| l.as_str()))
+                        .map(String::from)
+                })
         })
         .unwrap_or_else(|| "en".to_string())
 }

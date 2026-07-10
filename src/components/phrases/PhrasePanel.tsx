@@ -30,7 +30,7 @@ export function PhrasePanel() {
 
   const usePhrase = async (text: string, action: string) => {
 
-    await invoke("cmd_use_phrase", { text, action, language: settings.language });
+    await invoke("cmd_use_phrase", { text, action, language: settings.uiLanguage });
 
   };
 

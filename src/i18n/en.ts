@@ -52,7 +52,13 @@
 
   opacity: "Opacity",
 
-  appTypingLanguage: "App & typing language",
+  appLanguage: "App language",
+
+  appLanguageHint: "Menus, phrases, predictions, and speech",
+
+  typingLanguage: "Typing language",
+
+  typingLanguageHint: "Keyboard input and on-screen key layout",
 
   languageEnglish: "English",
 

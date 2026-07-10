@@ -12,7 +12,8 @@ export type KeyboardSectionMode = "keyboard" | "synthesizer";
 export interface AppSettings {
   colorProfile: ColorProfileId;
   opacity: number;
-  language: string;
+  uiLanguage: string;
+  typingLanguage: string;
   mouseVisible: boolean;
   mousePanelMode: MousePanelMode;
   mousePanelSide: MousePanelSide;
@@ -134,7 +135,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   colorProfile: "dark-grey",
   ...COLOR_PROFILE_PRESETS["dark-grey"],
   opacity: 0.95,
-  language: "en",
+  uiLanguage: "en",
+  typingLanguage: "en",
   mouseVisible: true,
   mousePanelMode: "mouse",
   mousePanelSide: "right",
