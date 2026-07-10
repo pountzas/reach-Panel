@@ -132,6 +132,12 @@
 
   keyboardSectionMode: "Keyboard section mode",
 
+  inputAreaNormal: "Normal view",
+
+  inputAreaCompact: "Maximize keyboard and trackpad",
+
+  showMouseBottomRow: "Show drag, precision & scroll row",
+
   resizeInputRow: "Resize keyboard and mouse panels",
 
   keyColor: "Key color",

@@ -13,6 +13,7 @@ export function MousePanel() {
   const surface = getSurfaceColors(settings.appBgColor);
   const showNumpad = settings.mousePanelMode === "numpad";
   const mouseOnLeft = settings.mousePanelSide === "left";
+  const compact = settings.inputAreaCompact;
 
   return (
     <div
@@ -22,6 +23,7 @@ export function MousePanel() {
         borderColor: surface.panelBorder,
       }}
     >
+      {!compact && (
       <div className="relative z-20 mb-2 flex shrink-0 items-center justify-end gap-2 overflow-visible pr-1 pt-3.5 pb-1.5">
         {!showNumpad && (
           <MouseSpeedSwitch
@@ -66,6 +68,7 @@ export function MousePanel() {
           </ModeToggleButton>
         </ModeToggleGroup>
       </div>
+      )}
       <div className="min-h-0 flex-1">
         {showNumpad ? <NumKeypad /> : <Trackpad />}
       </div>

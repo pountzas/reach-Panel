@@ -136,6 +136,12 @@ export const el: Record<keyof typeof en, string> = {
 
   keyboardSectionMode: "Λειτουργία τμήματος πληκτρολογίου",
 
+  inputAreaNormal: "Κανονική προβολή",
+
+  inputAreaCompact: "Μεγιστοποίηση πληκτρολογίου και trackpad",
+
+  showMouseBottomRow: "Εμφάνιση σειράς drag, precision & scroll",
+
   resizeInputRow: "Αλλαγή μεγέθους πληκτρολογίου και ποντικιού",
 
   keyColor: "Χρώμα πλήκτρων",

@@ -449,6 +449,15 @@ export function SettingsPanel() {
             )}
           </SettingsSection>
 
+          <SettingsSection title={t("mouse")} surface={surface}>
+            <ToggleRow
+              label={t("showMouseBottomRow")}
+              checked={settings.mouseBottomRowVisible}
+              onChange={(checked) => updateSettings({ mouseBottomRowVisible: checked })}
+              surface={surface}
+            />
+          </SettingsSection>
+
           <SettingsSection title={t("quickActions")} surface={surface}>
             <QuickActionEditor surface={surface} />
           </SettingsSection>

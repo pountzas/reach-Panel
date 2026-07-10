@@ -21,13 +21,26 @@ import {
 
 const SPEED_MAP = MOUSE_SPEED_MULTIPLIERS;
 
-function computeButtonMetrics(containerWidth: number) {
+const COMPACT_SCALE = 0.75;
+
+function computeButtonMetrics(containerWidth: number, compact: boolean) {
+  const scale = compact ? COMPACT_SCALE : 1;
   if (containerWidth <= 0) {
-    return { iconSize: 24, paddingY: 12, gap: 8 };
+    return {
+      iconSize: Math.round(24 * scale),
+      paddingY: Math.round(12 * scale),
+      gap: Math.round(8 * scale),
+    };
   }
-  const iconSize = Math.max(18, Math.min(28, Math.floor(containerWidth / 9)));
-  const paddingY = Math.max(6, Math.min(14, Math.floor(containerWidth / 18)));
-  const gap = Math.max(4, Math.min(10, Math.floor(containerWidth / 24)));
+  const iconSize = Math.round(
+    Math.max(18, Math.min(28, Math.floor(containerWidth / 9))) * scale,
+  );
+  const paddingY = Math.round(
+    Math.max(6, Math.min(14, Math.floor(containerWidth / 18))) * scale,
+  );
+  const gap = Math.round(
+    Math.max(4, Math.min(10, Math.floor(containerWidth / 24))) * scale,
+  );
   return { iconSize, paddingY, gap };
 }
 
@@ -80,7 +93,9 @@ function TrackpadButton({
 export function Trackpad() {
   const { settings, pollError } = useAppStore();
   const { ref, width } = useContainerSize<HTMLDivElement>();
-  const { iconSize, paddingY, gap } = computeButtonMetrics(width);
+  const compact = settings.inputAreaCompact;
+  const showBottomRow = settings.mouseBottomRowVisible;
+  const { iconSize, paddingY, gap } = computeButtonMetrics(width, compact);
   const [dragLock, setDragLock] = useState(false);
   const [precision, setPrecision] = useState(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
@@ -116,6 +131,8 @@ export function Trackpad() {
     lastPos.current = null;
   };
 
+  const buttonProps = { iconSize, paddingY, bgColor: keyBgColor, textColor: keyTextColor };
+
   return (
     <div ref={ref} className="flex h-full min-h-0 flex-col" style={{ gap }}>
       <div
@@ -137,10 +154,7 @@ export function Trackpad() {
         <TrackpadButton
           label="Left click"
           icon={LeftClickIcon}
-          iconSize={iconSize}
-          paddingY={paddingY}
-          bgColor={keyBgColor}
-          textColor={keyTextColor}
+          {...buttonProps}
           onClick={async () => {
             await invoke("cmd_mouse_click", { button: "left" });
             await pollError();
@@ -149,10 +163,7 @@ export function Trackpad() {
         <TrackpadButton
           label="Double click"
           icon={DoubleClickIcon}
-          iconSize={iconSize}
-          paddingY={paddingY}
-          bgColor={keyBgColor}
-          textColor={keyTextColor}
+          {...buttonProps}
           onClick={async () => {
             await invoke("cmd_mouse_double_click");
             await pollError();
@@ -161,46 +172,38 @@ export function Trackpad() {
         <TrackpadButton
           label="Right click"
           icon={RightClickIcon}
-          iconSize={iconSize}
-          paddingY={paddingY}
-          bgColor={keyBgColor}
-          textColor={keyTextColor}
+          {...buttonProps}
           onClick={async () => {
             await invoke("cmd_mouse_click", { button: "right" });
             await pollError();
           }}
         />
-        <TrackpadButton
-          label="Drag lock"
-          icon={DragLockIcon}
-          iconSize={iconSize}
-          paddingY={paddingY}
-          bgColor={keyBgColor}
-          textColor={keyTextColor}
-          active={dragLock}
-          onClick={() => setDragLock(!dragLock)}
-        />
-        <TrackpadButton
-          label="Precision mode"
-          icon={PrecisionIcon}
-          iconSize={iconSize}
-          paddingY={paddingY}
-          bgColor={keyBgColor}
-          textColor={keyTextColor}
-          active={precision}
-          onClick={() => setPrecision(!precision)}
-        />
-        <TrackpadButton
-          label="Scroll"
-          icon={ScrollIcon}
-          iconSize={iconSize}
-          paddingY={paddingY}
-          bgColor={keyBgColor}
-          textColor={keyTextColor}
-          onClick={async () => {
-            await invoke("cmd_mouse_scroll", { delta: 120, horizontal: false });
-          }}
-        />
+        {showBottomRow && (
+          <>
+            <TrackpadButton
+              label="Drag lock"
+              icon={DragLockIcon}
+              {...buttonProps}
+              active={dragLock}
+              onClick={() => setDragLock(!dragLock)}
+            />
+            <TrackpadButton
+              label="Precision mode"
+              icon={PrecisionIcon}
+              {...buttonProps}
+              active={precision}
+              onClick={() => setPrecision(!precision)}
+            />
+            <TrackpadButton
+              label="Scroll"
+              icon={ScrollIcon}
+              {...buttonProps}
+              onClick={async () => {
+                await invoke("cmd_mouse_scroll", { delta: 120, horizontal: false });
+              }}
+            />
+          </>
+        )}
       </div>
     </div>
   );
