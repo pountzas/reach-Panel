@@ -3,6 +3,7 @@ mod input;
 mod macros;
 mod prediction;
 mod profiles;
+mod stt;
 mod tts;
 mod window;
 
@@ -19,8 +20,9 @@ use input::focus_target;
 use prediction::{get_installed_languages, get_suggestions, record_usage};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::{Manager, State};
+use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
+use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{compute_window_layout, list_monitors, MonitorInfo, WindowLayout};
@@ -560,6 +562,42 @@ fn cmd_validate_tts() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn cmd_start_dictation(language: String, app: AppHandle) -> Result<(), String> {
+    start_dictation(&language, app).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_stop_dictation() -> Result<(), String> {
+    stop_dictation().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_get_stt_status() -> Result<SttStatus, String> {
+    Ok(get_stt_status())
+}
+
+/// Opens a Windows Settings page (e.g. `ms-settings:privacy-speech`).
+#[tauri::command]
+fn cmd_open_windows_settings(uri: String) -> Result<(), String> {
+    if !uri.starts_with("ms-settings:") {
+        return Err("Only ms-settings: URIs are allowed".to_string());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", &uri])
+            .spawn()
+            .map_err(|e| format!("Failed to open Windows Settings: {e}"))?;
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = uri;
+        Err("Windows Settings are only available on Windows".to_string())
+    }
+}
+
+#[tauri::command]
 fn cmd_get_suggestions(
     profile_id: String,
     prefix: String,
@@ -724,6 +762,10 @@ pub fn run() {
             cmd_list_voices,
             cmd_get_tts_status,
             cmd_validate_tts,
+            cmd_start_dictation,
+            cmd_stop_dictation,
+            cmd_get_stt_status,
+            cmd_open_windows_settings,
             cmd_get_suggestions,
             cmd_record_word,
             cmd_get_languages,

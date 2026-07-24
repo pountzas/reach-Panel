@@ -134,6 +134,23 @@ export const el: Record<keyof typeof en, string> = {
 
   synthesizerVolume: "Ένταση",
 
+  dictationStart: "Έναρξη υπαγόρευσης",
+
+  dictationStop: "Διακοπή υπαγόρευσης",
+
+  dictationListening: "Ακούει…",
+
+  dictationErrorNoLanguage:
+    "Η αναγνώριση ομιλίας δεν είναι διαθέσιμη για αυτή τη γλώσσα πληκτρολόγησης. Εγκαταστήστε το πακέτο ομιλίας στις Ρυθμίσεις Windows > Ώρα και γλώσσα > Ομιλία.",
+
+  dictationErrorUnavailable:
+    "Η υπαγόρευση φωνής είναι διαθέσιμη μόνο στα Windows.",
+
+  dictationErrorSpeechPrivacy:
+    "Η διαδικτυακή αναγνώριση ομιλίας είναι απενεργοποιημένη στα Windows. Ενεργοποιήστε την στις Ρυθμίσεις → Απόρρητο και ασφάλεια → Ομιλία και δοκιμάστε ξανά. (Δεν είναι αίτημα άδειας μικροφώνου.)",
+
+  dictationOpenSpeechSettings: "Άνοιγμα ρυθμίσεων ομιλίας",
+
   mute: "Σίγαση",
 
   unmute: "Ξεσίγαση",

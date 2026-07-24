@@ -44,6 +44,8 @@ windows = { version = "0.58", features = [
     "Media_Core",
     "Media_Playback",
     "Media_SpeechSynthesis",
+    "Media_SpeechRecognition",
+    "Globalization",
     "Storage_Streams",
     "implement",
 ] }

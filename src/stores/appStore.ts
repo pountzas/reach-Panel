@@ -20,6 +20,8 @@ import {
 } from "../lib/types";
 import { resolveColorProfile } from "../lib/colorProfiles";
 
+export type DictationState = "idle" | "listening" | "processing";
+
 interface AppStore {
   profileFiles: ProfileFileInfo[];
   activeProfileFile: string | null;
@@ -34,6 +36,7 @@ interface AppStore {
   stickyModifiers: string[];
   physicalKeyState: PhysicalKeyState;
   lastError: string | null;
+  dictationState: DictationState;
   showSettings: boolean;
   showMacroBuilder: boolean;
   showHeadTrackingWizard: boolean;
@@ -64,6 +67,9 @@ interface AppStore {
   applySuggestion: (word: string) => Promise<void>;
   setLastError: (error: string | null) => void;
   pollError: () => Promise<void>;
+  setDictationState: (state: DictationState) => void;
+  toggleDictation: () => Promise<void>;
+  stopDictation: () => Promise<void>;
   setShowSettings: (show: boolean) => void;
   setShowMacroBuilder: (show: boolean) => void;
   setShowHeadTrackingWizard: (show: boolean) => void;
@@ -147,6 +153,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   stickyModifiers: [],
   physicalKeyState: DEFAULT_PHYSICAL_KEY_STATE,
   lastError: null,
+  dictationState: "idle",
   showSettings: false,
   showMacroBuilder: false,
   showHeadTrackingWizard: false,
@@ -224,6 +231,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
       partial.uiLanguage !== undefined && partial.uiLanguage !== settings.uiLanguage;
     const next = { ...settings, ...partial };
     set({ settings: next });
+    if (
+      partial.keyboardSectionMode === "synthesizer" ||
+      partial.collapsed === true
+    ) {
+      await get().stopDictation();
+    }
     if (syncToSystem && typingLanguageChanged) {
       await invoke("cmd_set_system_language", { language: partial.typingLanguage! });
     }
@@ -232,6 +245,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       settingsJson: JSON.stringify(next),
     });
     if (typingLanguageChanged) {
+      await get().stopDictation();
       set({ typedBuffer: "", suggestions: [] });
     }
     if (uiLanguageChanged) {
@@ -388,6 +402,36 @@ export const useAppStore = create<AppStore>((set, get) => ({
   pollError: async () => {
     const error = await invoke<string | null>("get_last_error");
     set({ lastError: error });
+  },
+
+  setDictationState: (state) => set({ dictationState: state }),
+
+  stopDictation: async () => {
+    if (get().dictationState === "idle") return;
+    try {
+      await invoke("cmd_stop_dictation");
+    } finally {
+      set({ dictationState: "idle" });
+    }
+  },
+
+  toggleDictation: async () => {
+    const { dictationState, settings } = get();
+    if (dictationState === "listening") {
+      await get().stopDictation();
+      return;
+    }
+    try {
+      await invoke("cmd_start_dictation", { language: settings.typingLanguage });
+      set({ dictationState: "listening" });
+      await get().pollError();
+    } catch (error) {
+      set({ dictationState: "idle" });
+      set({
+        lastError:
+          error instanceof Error ? error.message : String(error),
+      });
+    }
   },
 
   syncWindowFocusable: async () => {

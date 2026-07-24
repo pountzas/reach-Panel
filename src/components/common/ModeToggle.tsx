@@ -25,6 +25,7 @@ interface ModeToggleButtonProps {
   label: string;
   onClick: () => void;
   children: ReactNode;
+  activeClassName?: string;
 }
 
 export function ModeToggleButton({
@@ -33,11 +34,12 @@ export function ModeToggleButton({
   label,
   onClick,
   children,
+  activeClassName,
 }: ModeToggleButtonProps) {
   return (
     <button
       type="button"
-      className={`ak-mode-toggle ${MODE_TOGGLE_BUTTON_CLASS} ${modeToggleRadiusClass(position)} ${modeToggleActiveClass(active)}`}
+      className={`ak-mode-toggle ${MODE_TOGGLE_BUTTON_CLASS} ${modeToggleRadiusClass(position)} ${activeClassName ?? modeToggleActiveClass(active)}`}
       onClick={onClick}
       aria-pressed={active}
       aria-label={label}

@@ -130,6 +130,23 @@
 
   synthesizerVolume: "Volume",
 
+  dictationStart: "Start dictation",
+
+  dictationStop: "Stop dictation",
+
+  dictationListening: "Listening…",
+
+  dictationErrorNoLanguage:
+    "Speech recognition is not available for this typing language. Install the speech pack in Windows Settings > Time & language > Speech.",
+
+  dictationErrorUnavailable:
+    "Voice dictation is only available on Windows.",
+
+  dictationErrorSpeechPrivacy:
+    "Online speech recognition is turned off in Windows. Turn it on in Privacy & security → Speech, then try again. (This is not a microphone permission prompt.)",
+
+  dictationOpenSpeechSettings: "Open Speech settings",
+
   mute: "Mute",
 
   unmute: "Unmute",
