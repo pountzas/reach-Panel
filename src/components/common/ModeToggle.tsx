@@ -56,7 +56,7 @@ interface ModeToggleGroupProps {
 
 export function ModeToggleGroup({ children }: ModeToggleGroupProps) {
   return (
-    <div className="relative flex shrink-0 overflow-visible rounded border border-slate-300">
+    <div className="relative box-border flex h-8 shrink-0 items-stretch overflow-visible rounded border border-slate-300">
       {children}
     </div>
   );

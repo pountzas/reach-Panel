@@ -5,9 +5,11 @@ import {
   type Magnitude,
 } from "dsssp";
 import "dsssp/font";
+import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
 
-const GRAPH_WIDTH = 140;
-const GRAPH_HEIGHT = 36;
+const GRAPH_WIDTH = 120;
+/** Inner SVG height: h-8 (32px) minus 2px border. */
+const GRAPH_HEIGHT = 30;
 const POINT_COUNT = 48;
 
 function byteToMagnitude(value: number): number {
@@ -124,64 +126,67 @@ export function DictationVisualizer({ active }: DictationVisualizerProps) {
     };
   }, [active]);
 
-  if (!active || magnitudes.length === 0) {
+  if (!active) {
     return null;
   }
 
   return (
     <div
-      className="overflow-hidden rounded border border-red-300/60 bg-red-50/80"
+      className={`box-border ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 overflow-hidden rounded border border-red-300/60 bg-red-50/80`}
+      style={{ width: GRAPH_WIDTH }}
       aria-hidden
     >
-      <FrequencyResponseGraph
-        width={GRAPH_WIDTH}
-        height={GRAPH_HEIGHT}
-        ariaLabel="Live dictation spectrum"
-        scale={{
-          minFreq: 40,
-          maxFreq: 8000,
-          minGain: -8,
-          maxGain: 16,
-          dbLabels: false,
-          octaveTicks: 0,
-          octaveLabels: [],
-          majorTicks: [],
-        }}
-        theme={{
-          background: {
-            grid: {
-              dotted: false,
-              lineColor: "transparent",
-              lineWidth: { minor: 0, major: 0, center: 0, border: 0 },
+      {magnitudes.length > 0 ? (
+        <FrequencyResponseGraph
+          width={GRAPH_WIDTH}
+          height={GRAPH_HEIGHT}
+          ariaLabel="Live dictation spectrum"
+          scale={{
+            minFreq: 40,
+            maxFreq: 8000,
+            minGain: -8,
+            maxGain: 16,
+            dbLabels: false,
+            octaveTicks: 0,
+            octaveLabels: [],
+            majorTicks: [],
+          }}
+          theme={{
+            background: {
+              grid: {
+                dotted: false,
+                lineColor: "transparent",
+                lineWidth: { minor: 0, major: 0, center: 0, border: 0 },
+              },
+              gradient: {
+                start: "transparent",
+                stop: "transparent",
+                direction: "VERTICAL",
+              },
+              label: {
+                color: "transparent",
+                fontSize: 0,
+              },
             },
-            gradient: {
-              start: "transparent",
-              stop: "transparent",
-              direction: "VERTICAL",
+            curve: {
+              color: "#dc2626",
+              width: 1.5,
+              opacity: 0.95,
             },
-            label: {
-              color: "transparent",
-              fontSize: 0,
-            },
-          },
-          curve: {
-            color: "#dc2626",
-            width: 1.5,
-            opacity: 0.95,
-          },
-        }}
-        style={{ display: "block" }}
-      >
-        <FrequencyResponseCurve
-          magnitudes={magnitudes}
-          color="#dc2626"
-          lineWidth={1.75}
-          opacity={0.95}
-          animate
-          easing="easeOut"
-          duration={80}
-        />
-      </FrequencyResponseGraph>
+          }}
+          style={{ display: "block" }}
+        >
+          <FrequencyResponseCurve
+            magnitudes={magnitudes}
+            color="#dc2626"
+            lineWidth={1.75}
+            opacity={0.95}
+            animate
+            easing="easeOut"
+            duration={80}
+          />
+        </FrequencyResponseGraph>
+      ) : null}
     </div>
   );
 }

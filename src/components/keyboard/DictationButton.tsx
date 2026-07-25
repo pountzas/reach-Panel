@@ -10,7 +10,7 @@ export function DictationButton() {
   const listening = dictationState === "listening";
 
   return (
-    <div className="flex shrink-0 items-center gap-2">
+    <>
       <DictationVisualizer active={listening} />
       <ModeToggleGroup>
         <ModeToggleButton
@@ -25,6 +25,6 @@ export function DictationButton() {
           <MicrophoneIcon className="h-4 w-4" />
         </ModeToggleButton>
       </ModeToggleGroup>
-    </div>
+    </>
   );
 }

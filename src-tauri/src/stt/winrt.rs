@@ -110,7 +110,7 @@ fn language_supported(tag: &str) -> Result<()> {
         }
     }
     Err(anyhow!(
-        "No speech recognition language found for '{tag}'. Install it in Windows Settings > Time & language > Speech."
+        "SPEECH_LANGUAGE: No speech recognition language found for '{tag}'. Install the speech pack in Windows Settings → Time & language → Speech (or Language & region), then try again."
     ))
 }
 

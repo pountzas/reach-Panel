@@ -137,7 +137,7 @@
   dictationListening: "Listening…",
 
   dictationErrorNoLanguage:
-    "Speech recognition is not available for this typing language. Install the speech pack in Windows Settings > Time & language > Speech.",
+    "Speech recognition for this typing language is not installed. Add the speech pack in Windows Settings → Time & language → Speech (or Language & region), then try again.",
 
   dictationErrorUnavailable:
     "Voice dictation is only available on Windows.",
@@ -146,6 +146,8 @@
     "Online speech recognition is turned off in Windows. Turn it on in Privacy & security → Speech, then try again. (This is not a microphone permission prompt.)",
 
   dictationOpenSpeechSettings: "Open Speech settings",
+
+  dictationOpenSpeechLanguageSettings: "Install speech language",
 
   mute: "Mute",
 
