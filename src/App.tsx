@@ -57,6 +57,14 @@ function App() {
 
     unlisteners.push(
       listen<{ state: "idle" | "listening" | "processing" }>("stt-state", (event) => {
+        // Ignore late listening/processing events after the user already stopped
+        // (Whisper worker could still emit while winding down).
+        if (
+          event.payload.state !== "idle" &&
+          useAppStore.getState().dictationState === "idle"
+        ) {
+          return;
+        }
         setDictationState(event.payload.state);
       }),
     );

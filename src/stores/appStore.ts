@@ -487,10 +487,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   stopDictation: async () => {
     if (get().dictationState === "idle") return;
+    // Optimistic: clear listening UI immediately so the mic toggle feels responsive
+    // even when Whisper was mid-transcription (common on Greek / offline path).
+    set({ dictationState: "idle" });
     try {
       await invoke("cmd_stop_dictation");
-    } finally {
-      set({ dictationState: "idle" });
+    } catch (error) {
+      set({
+        lastError:
+          error instanceof Error ? error.message : String(error),
+      });
     }
   },
 

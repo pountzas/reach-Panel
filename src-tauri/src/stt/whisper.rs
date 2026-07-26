@@ -30,6 +30,8 @@ struct WhisperRuntime {
     ctx: Option<Arc<WhisperContext>>,
     download_in_progress: bool,
     session: Option<WhisperSession>,
+    /// Worker still finishing after stop; joined before the next start.
+    lingering_worker: Option<JoinHandle<()>>,
 }
 
 /// WASAPI streams are thread-safe in practice; cpal marks them !Send for cross-platform reasons.
@@ -55,6 +57,7 @@ fn runtime() -> &'static Mutex<WhisperRuntime> {
             ctx: None,
             download_in_progress: false,
             session: None,
+            lingering_worker: None,
         })
     })
 }
@@ -211,16 +214,22 @@ fn download_model(path: &Path, app: &AppHandle) -> Result<()> {
 
 pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     let ctx = {
-        let guard = runtime()
+        let mut guard = runtime()
             .lock()
             .map_err(|_| anyhow!("Whisper runtime lock poisoned"))?;
         if guard.session.is_some() {
             return Err(anyhow!("Dictation is already active"));
         }
-        guard
+        let lingering = guard.lingering_worker.take();
+        let ctx = guard
             .ctx
             .clone()
-            .ok_or_else(|| anyhow!("WHISPER_MODEL: Local speech model is not ready yet."))?
+            .ok_or_else(|| anyhow!("WHISPER_MODEL: Local speech model is not ready yet."))?;
+        drop(guard);
+        if let Some(worker) = lingering {
+            let _ = worker.join();
+        }
+        ctx
     };
 
     let host = cpal::default_host();
@@ -388,6 +397,9 @@ fn worker_loop(
             && (silence_secs >= SILENCE_SECS || speech_secs >= MAX_UTTERANCE_SECS);
 
         if should_flush {
+            if stop_flag.load(Ordering::SeqCst) {
+                break;
+            }
             let end = snapshot.len().saturating_sub(
                 (silence_secs.min(SILENCE_SECS) * TARGET_SAMPLE_RATE as f32) as usize,
             );
@@ -398,8 +410,16 @@ fn worker_loop(
             if chunk.len() as f32 / TARGET_SAMPLE_RATE as f32 >= MIN_SPEECH_SECS * 0.8 {
                 emit_state(&app, SttState::Processing, Some(language.clone()));
                 match transcribe(&ctx, &chunk, &language) {
-                    Ok(text) => handle_result(&app, &text),
-                    Err(err) => emit_error(&app, err.to_string()),
+                    Ok(text) => {
+                        if !stop_flag.load(Ordering::SeqCst) {
+                            handle_result(&app, &text);
+                        }
+                    }
+                    Err(err) => {
+                        if !stop_flag.load(Ordering::SeqCst) {
+                            emit_error(&app, err.to_string());
+                        }
+                    }
                 }
                 if !stop_flag.load(Ordering::SeqCst) {
                     emit_state(&app, SttState::Listening, Some(language.clone()));
@@ -407,19 +427,8 @@ fn worker_loop(
             }
         }
     }
-
-    // Flush remainder on stop.
-    let remainder = match samples.lock() {
-        Ok(buf) => buf.get(cursor..).map(|s| s.to_vec()).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    };
-    if remainder.len() as f32 / TARGET_SAMPLE_RATE as f32 >= MIN_SPEECH_SECS * 0.6 {
-        emit_state(&app, SttState::Processing, Some(language.clone()));
-        match transcribe(&ctx, &remainder, &language) {
-            Ok(text) => handle_result(&app, &text),
-            Err(err) => emit_error(&app, err.to_string()),
-        }
-    }
+    // Do not flush/transcribe remainder on stop — that blocked the UI toggle for seconds
+    // on Greek/Whisper sessions. Dropping audio on cancel is the expected UX.
 }
 
 fn transcribe(ctx: &WhisperContext, audio: &[f32], language: &str) -> Result<String> {
@@ -475,13 +484,28 @@ pub fn stop_dictation() -> Result<()> {
     };
 
     session.stop_flag.store(true, Ordering::SeqCst);
-    // Drop stream to stop capture before joining worker.
+    // Drop stream immediately so capture/visual feedback stop even if the worker
+    // is mid-transcribe.
     drop(session._stream);
+    emit_state(&session.app_handle, SttState::Idle, None);
+
+    // Keep the join handle so the next start can wait if needed, without blocking
+    // this stop command on a long Whisper decode.
     if let Some(worker) = session.worker.take() {
-        let _ = worker.join();
+        if let Ok(mut guard) = runtime().lock() {
+            if let Some(prev) = guard.lingering_worker.take() {
+                thread::spawn(move || {
+                    let _ = prev.join();
+                });
+            }
+            guard.lingering_worker = Some(worker);
+        } else {
+            thread::spawn(move || {
+                let _ = worker.join();
+            });
+        }
     }
 
-    emit_state(&session.app_handle, SttState::Idle, None);
     Ok(())
 }
 

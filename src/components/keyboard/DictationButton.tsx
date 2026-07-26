@@ -17,6 +17,7 @@ export function DictationButton() {
   const listening = dictationState === "listening" || dictationState === "processing";
   const canDictate = sttCapability?.canDictate ?? false;
   const downloading = sttCapability?.whisperDownloading ?? false;
+  // Never disable while a session is active — stop must always be clickable.
   const disabled = !listening && !canDictate;
 
   useEffect(() => {
