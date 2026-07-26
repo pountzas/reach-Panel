@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  computeDefaultSectionLayouts,
+  hasStaleGap,
   layoutToPixels,
   resolveSectionLayouts,
   type SectionId,
@@ -40,6 +42,8 @@ export function SectionCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState(fallbackCanvasSize);
   const [liveRects, setLiveRects] = useState<Partial<Record<SectionId, PixelRect>>>({});
+  const onLayoutsChangeRef = useRef(onLayoutsChange);
+  onLayoutsChangeRef.current = onLayoutsChange;
 
   const updateSize = useCallback(() => {
     const element = containerRef.current;
@@ -77,10 +81,31 @@ export function SectionCanvas({
     };
   }, [updateSize]);
 
-  const visibility = {
-    quickActions: quickActionsVisible,
-    phrases: phrasesVisible,
-  };
+  const visibility = useMemo(
+    () => ({
+      quickActions: quickActionsVisible,
+      phrases: phrasesVisible,
+    }),
+    [quickActionsVisible, phrasesVisible],
+  );
+
+  const prevVisibilityRef = useRef(visibility);
+
+  // Reset to default stack when visibility changes or saved layouts leave a stale gap.
+  useEffect(() => {
+    const visibilityChanged =
+      prevVisibilityRef.current.quickActions !== visibility.quickActions ||
+      prevVisibilityRef.current.phrases !== visibility.phrases;
+    prevVisibilityRef.current = visibility;
+
+    if (!visibilityChanged && !hasStaleGap(savedLayouts, visibility)) {
+      return;
+    }
+
+    const defaults = computeDefaultSectionLayouts(visibility);
+    setLiveRects({});
+    onLayoutsChangeRef.current(defaults);
+  }, [savedLayouts, visibility]);
 
   const layouts = resolveSectionLayouts(savedLayouts, visibility);
 

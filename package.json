@@ -21,6 +21,7 @@
     "@tauri-apps/plugin-updater": "^2.10.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-hot-toast": "^2.6.0",
     "react-rnd": "^10.5.3",
     "svg-flags": "^1.0.5",
     "tailwindcss": "^4.3.0",

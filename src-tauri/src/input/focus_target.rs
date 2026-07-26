@@ -4,8 +4,9 @@ use windows::Win32::Foundation::HWND;
 use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId};
 use windows::Win32::UI::Accessibility::{SetWinEventHook, HWINEVENTHOOK};
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, EVENT_SYSTEM_FOREGROUND, GetForegroundWindow, GetWindowThreadProcessId,
-    IsWindow, SetForegroundWindow, ShowWindow, SW_RESTORE, WINEVENT_OUTOFCONTEXT,
+    BringWindowToTop, EVENT_SYSTEM_FOREGROUND, GetClassNameW, GetForegroundWindow,
+    GetWindowThreadProcessId, IsWindow, IsWindowVisible, SetForegroundWindow, ShowWindow,
+    SW_RESTORE, WINEVENT_OUTOFCONTEXT,
 };
 
 static TARGET_HWND: Mutex<Option<usize>> = Mutex::new(None);
@@ -13,7 +14,6 @@ static HOOK_ONCE: Once = Once::new();
 
 pub fn init() {
     install_hook();
-    remember_current_if_external();
 }
 
 fn install_hook() {
@@ -59,6 +59,47 @@ fn is_our_window(hwnd: HWND) -> bool {
     }
 }
 
+fn window_class_name(hwnd: HWND) -> String {
+    unsafe {
+        let mut buf = [0u16; 256];
+        let len = GetClassNameW(hwnd, &mut buf);
+        if len == 0 {
+            return String::new();
+        }
+        String::from_utf16_lossy(&buf[..len as usize])
+    }
+}
+
+/// Desktop / taskbar are not typing targets.
+fn is_shell_window(hwnd: HWND) -> bool {
+    let class = window_class_name(hwnd);
+    matches!(
+        class.as_str(),
+        "Progman"
+            | "WorkerW"
+            | "Shell_TrayWnd"
+            | "Shell_SecondaryTrayWnd"
+            | "DV2ControlHost"
+            | "ForegroundStaging"
+            | "ApplicationManager_DesktopShellWindow"
+    )
+}
+
+pub fn is_valid_typing_target(hwnd: HWND) -> bool {
+    if is_null(hwnd) || is_our_window(hwnd) {
+        return false;
+    }
+    unsafe {
+        if !IsWindow(hwnd).as_bool() || !IsWindowVisible(hwnd).as_bool() {
+            return false;
+        }
+    }
+    if is_shell_window(hwnd) {
+        return false;
+    }
+    true
+}
+
 unsafe extern "system" fn foreground_hook(
     _hook: HWINEVENTHOOK,
     event: u32,
@@ -74,7 +115,7 @@ unsafe extern "system" fn foreground_hook(
     if id_object != 0 || id_child != 0 {
         return;
     }
-    if is_our_window(hwnd) {
+    if !is_valid_typing_target(hwnd) {
         return;
     }
     if let Ok(mut target) = TARGET_HWND.lock() {
@@ -85,12 +126,12 @@ unsafe extern "system" fn foreground_hook(
 pub fn get_effective_input_hwnd() -> Option<HWND> {
     unsafe {
         let fg = GetForegroundWindow();
-        if !is_null(fg) && !is_our_window(fg) {
+        if is_valid_typing_target(fg) {
             return Some(fg);
         }
         let target = TARGET_HWND.lock().ok().and_then(|g| *g)?;
         let hwnd = usize_to_hwnd(target);
-        if IsWindow(hwnd).as_bool() {
+        if is_valid_typing_target(hwnd) {
             Some(hwnd)
         } else {
             None
@@ -98,10 +139,19 @@ pub fn get_effective_input_hwnd() -> Option<HWND> {
     }
 }
 
+/// Same target used for typing — if keys can be injected, language can switch.
+pub fn get_language_switch_hwnd() -> Option<HWND> {
+    get_effective_input_hwnd()
+}
+
+pub fn has_input_target() -> bool {
+    get_effective_input_hwnd().is_some()
+}
+
 pub fn remember_current_if_external() {
     unsafe {
         let fg = GetForegroundWindow();
-        if is_null(fg) || is_our_window(fg) {
+        if !is_valid_typing_target(fg) {
             return;
         }
         if let Ok(mut target) = TARGET_HWND.lock() {
@@ -122,7 +172,7 @@ pub fn restore_target_focus() -> Result<()> {
             return Ok(());
         };
         let hwnd = usize_to_hwnd(target_hwnd);
-        if !IsWindow(hwnd).as_bool() {
+        if !is_valid_typing_target(hwnd) {
             return Ok(());
         }
         bring_to_foreground(hwnd)?;

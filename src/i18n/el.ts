@@ -100,6 +100,11 @@ export const el: Record<keyof typeof en, string> = {
 
   inputError: "Σφάλμα εισόδου:",
 
+  dictationErrorSpeechPrivacy:
+    "Η αναγνώριση ομιλίας αποκλείστηκε. Ενεργοποιήστε την online αναγνώριση ομιλίας στις ρυθμίσεις απορρήτου των Windows.",
+
+  dictationOpenSpeechSettings: "Άνοιγμα ρυθμίσεων ομιλίας",
+
   dismiss: "Απόρριψη",
 
   appearance: "Εμφάνιση",

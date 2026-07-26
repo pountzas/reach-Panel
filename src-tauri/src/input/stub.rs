@@ -7,6 +7,12 @@ use serde::{Deserialize, Serialize};
 pub mod focus_target {
     pub fn init() {}
     pub fn remember_current_if_external() {}
+    pub fn has_input_target() -> bool {
+        false
+    }
+    pub fn get_language_switch_hwnd() -> Option<()> {
+        None
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -26,6 +32,7 @@ pub struct KeyboardState {
     pub pressed_vks: Vec<u16>,
     pub system_language: String,
     pub keyboard_layout: String,
+    pub has_input_target: bool,
 }
 
 fn unsupported<T>() -> Result<T> {
@@ -60,6 +67,7 @@ pub fn get_keyboard_state() -> KeyboardState {
         pressed_vks: vec![],
         system_language: "en".to_string(),
         keyboard_layout: "QWERTY".to_string(),
+        has_input_target: false,
     }
 }
 

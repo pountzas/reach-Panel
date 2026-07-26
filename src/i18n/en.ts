@@ -96,6 +96,11 @@
 
   inputError: "Input error:",
 
+  dictationErrorSpeechPrivacy:
+    "Speech recognition is blocked. Enable online speech recognition in Windows privacy settings.",
+
+  dictationOpenSpeechSettings: "Open Speech Settings",
+
   dismiss: "Dismiss",
 
   appearance: "Appearance",

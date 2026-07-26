@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { useTranslation } from "../../hooks/useTranslation";
+import { notify } from "../../lib/notify";
 import {
   getCurrentAppVersion,
   installUpdate,
@@ -8,7 +9,7 @@ import {
   type UpdateProgress,
 } from "../../lib/updater";
 
-type PromptState = "prompt" | "downloading" | "error";
+type PromptState = "prompt" | "downloading";
 
 interface UpdatePromptProps {
   update: Update;
@@ -30,7 +31,6 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
     downloaded: 0,
     contentLength: null,
   });
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     void getCurrentAppVersion().then(setCurrentVersion);
@@ -38,14 +38,15 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
 
   const handleInstall = useCallback(async () => {
     setState("downloading");
-    setErrorMessage(null);
     try {
       await installUpdate(update, setProgress);
     } catch (error) {
-      setState("error");
-      setErrorMessage(error instanceof Error ? error.message : String(error));
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(`${t("updateFailed")} ${message}`);
+      setState("prompt");
+      setProgress({ downloaded: 0, contentLength: null });
     }
-  }, [update]);
+  }, [t, update]);
 
   const handleSkip = useCallback(() => {
     skipUpdateVersion(update.version);
@@ -111,30 +112,6 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
               {progressPercent > 0 ? `${progressPercent}%` : t("updatePreparing")}
             </p>
           </div>
-        )}
-
-        {state === "error" && (
-          <>
-            <p className="mt-2 text-sm text-red-700">
-              {t("updateFailed")} {errorMessage}
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                onClick={onDismiss}
-              >
-                {t("updateLater")}
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-                onClick={() => void handleInstall()}
-              >
-                {t("updateRetry")}
-              </button>
-            </div>
-          </>
         )}
       </div>
     </div>
