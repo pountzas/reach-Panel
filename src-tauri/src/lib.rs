@@ -22,7 +22,9 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
-use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
+use stt::{
+    ensure_whisper_model, get_status as get_stt_status, start_dictation, stop_dictation, SttStatus,
+};
 use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{compute_window_layout, list_monitors, MonitorInfo, WindowLayout};
@@ -572,8 +574,13 @@ fn cmd_stop_dictation() -> Result<(), String> {
 }
 
 #[tauri::command]
-fn cmd_get_stt_status() -> Result<SttStatus, String> {
-    Ok(get_stt_status())
+fn cmd_get_stt_status(language: Option<String>) -> Result<SttStatus, String> {
+    Ok(get_stt_status(language.as_deref()))
+}
+
+#[tauri::command]
+fn cmd_ensure_whisper_model(app: AppHandle) -> Result<(), String> {
+    ensure_whisper_model(app).map_err(|e| e.to_string())
 }
 
 /// Opens a Windows Settings page (e.g. `ms-settings:privacy-speech`).
@@ -710,6 +717,8 @@ pub fn run() {
                 last_error: Mutex::new(None),
             });
 
+            stt::init(&app_data_dir, app.handle().clone());
+
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_decorations(false);
                 let _ = window.set_shadow(false);
@@ -765,6 +774,7 @@ pub fn run() {
             cmd_start_dictation,
             cmd_stop_dictation,
             cmd_get_stt_status,
+            cmd_ensure_whisper_model,
             cmd_open_windows_settings,
             cmd_get_suggestions,
             cmd_record_word,

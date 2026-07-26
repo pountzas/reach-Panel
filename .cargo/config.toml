@@ -1,0 +1,4 @@
+# whisper-rs bindgen needs libclang on Windows. Override locally if LLVM is elsewhere:
+#   set LIBCLANG_PATH=C:\Path\To\LLVM\bin
+[env]
+LIBCLANG_PATH = { value = "C:\\Program Files\\LLVM\\bin", force = false }

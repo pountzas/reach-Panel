@@ -1,58 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  FrequencyResponseCurve,
-  FrequencyResponseGraph,
-  type Magnitude,
-} from "dsssp";
-import "dsssp/font";
 import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
 
-const GRAPH_WIDTH = 120;
-/** Inner SVG height: h-8 (32px) minus 2px border. */
-const GRAPH_HEIGHT = 30;
-const POINT_COUNT = 48;
-
-function byteToMagnitude(value: number): number {
-  return (value / 255) * 18 - 4;
-}
-
-function buildMagnitudes(
-  data: Uint8Array,
-  sampleRate: number,
-): Magnitude[] {
-  const nyquist = sampleRate / 2;
-  const binCount = data.length;
-  const result: Magnitude[] = [];
-
-  for (let i = 0; i < POINT_COUNT; i++) {
-    const t = i / (POINT_COUNT - 1);
-    const freq = 40 * Math.pow(nyquist / 40, t);
-    if (freq > nyquist) break;
-    const bin = Math.min(
-      binCount - 1,
-      Math.max(0, Math.round((freq / nyquist) * (binCount - 1))),
-    );
-    result.push({
-      frequency: freq,
-      magnitude: byteToMagnitude(data[bin] ?? 0),
-    });
-  }
-
-  return result;
-}
+const BAR_COUNT = 28;
+const GRAPH_WIDTH = 112;
+const MIN_BAR = 3;
+const MAX_BAR = 22;
 
 interface DictationVisualizerProps {
   active: boolean;
 }
 
+/** Cursor-chat-style mic waveform: centered vertical bars driven by live audio. */
 export function DictationVisualizer({ active }: DictationVisualizerProps) {
-  const [magnitudes, setMagnitudes] = useState<Magnitude[]>([]);
+  const [levels, setLevels] = useState<number[]>(() =>
+    Array.from({ length: BAR_COUNT }, () => 0.08),
+  );
   const rafRef = useRef<number | null>(null);
   const audioRef = useRef<{
     context: AudioContext;
     stream: MediaStream;
     analyser: AnalyserNode;
   } | null>(null);
+  const smoothRef = useRef<number[]>(Array.from({ length: BAR_COUNT }, () => 0.08));
 
   useEffect(() => {
     if (!active) {
@@ -65,7 +34,8 @@ export function DictationVisualizer({ active }: DictationVisualizerProps) {
         void audioRef.current.context.close();
         audioRef.current = null;
       }
-      setMagnitudes([]);
+      smoothRef.current = Array.from({ length: BAR_COUNT }, () => 0.08);
+      setLevels(smoothRef.current.slice());
       return;
     }
 
@@ -89,24 +59,55 @@ export function DictationVisualizer({ active }: DictationVisualizerProps) {
         const context = new AudioContext();
         const source = context.createMediaStreamSource(stream);
         const analyser = context.createAnalyser();
-        analyser.fftSize = 512;
-        analyser.smoothingTimeConstant = 0.7;
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.55;
         source.connect(analyser);
 
         audioRef.current = { context, stream, analyser };
-        const data = new Uint8Array(analyser.frequencyBinCount);
+        const time = new Uint8Array(analyser.fftSize);
+        const freq = new Uint8Array(analyser.frequencyBinCount);
 
         const tick = () => {
           if (!audioRef.current) return;
-          audioRef.current.analyser.getByteFrequencyData(data);
-          setMagnitudes(
-            buildMagnitudes(data, audioRef.current.context.sampleRate),
-          );
+          const { analyser: node } = audioRef.current;
+          node.getByteTimeDomainData(time);
+          node.getByteFrequencyData(freq);
+
+          let sum = 0;
+          for (let i = 0; i < time.length; i++) {
+            const v = (time[i] - 128) / 128;
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / time.length);
+          const voice = Math.min(1, rms * 4.2);
+
+          const next = smoothRef.current.map((prev, i) => {
+            // Map bars from center outward across low→mid frequency energy.
+            const dist = Math.abs(i - (BAR_COUNT - 1) / 2) / ((BAR_COUNT - 1) / 2);
+            const bin = Math.min(
+              freq.length - 1,
+              Math.floor(2 + dist * (freq.length * 0.35)),
+            );
+            const band = (freq[bin] ?? 0) / 255;
+            const target = Math.min(
+              1,
+              0.1 + voice * 0.35 + band * (0.55 + voice * 0.45),
+            );
+            // Idle shimmer so the waveform feels alive while listening.
+            const shimmer =
+              0.04 +
+              0.03 * Math.sin(performance.now() / 220 + i * 0.55) *
+                (1 - voice);
+            const desired = Math.max(target, shimmer);
+            return prev + (desired - prev) * 0.35;
+          });
+          smoothRef.current = next;
+          setLevels(next.slice());
           rafRef.current = requestAnimationFrame(tick);
         };
         rafRef.current = requestAnimationFrame(tick);
       } catch {
-        setMagnitudes([]);
+        setLevels(Array.from({ length: BAR_COUNT }, () => 0.12));
       }
     };
 
@@ -132,61 +133,26 @@ export function DictationVisualizer({ active }: DictationVisualizerProps) {
 
   return (
     <div
-      className={`box-border ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 overflow-hidden rounded border border-red-300/60 bg-red-50/80`}
+      className={`box-border ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-900/90 px-2`}
       style={{ width: GRAPH_WIDTH }}
       aria-hidden
     >
-      {magnitudes.length > 0 ? (
-        <FrequencyResponseGraph
-          width={GRAPH_WIDTH}
-          height={GRAPH_HEIGHT}
-          ariaLabel="Live dictation spectrum"
-          scale={{
-            minFreq: 40,
-            maxFreq: 8000,
-            minGain: -8,
-            maxGain: 16,
-            dbLabels: false,
-            octaveTicks: 0,
-            octaveLabels: [],
-            majorTicks: [],
-          }}
-          theme={{
-            background: {
-              grid: {
-                dotted: false,
-                lineColor: "transparent",
-                lineWidth: { minor: 0, major: 0, center: 0, border: 0 },
-              },
-              gradient: {
-                start: "transparent",
-                stop: "transparent",
-                direction: "VERTICAL",
-              },
-              label: {
-                color: "transparent",
-                fontSize: 0,
-              },
-            },
-            curve: {
-              color: "#dc2626",
-              width: 1.5,
-              opacity: 0.95,
-            },
-          }}
-          style={{ display: "block" }}
-        >
-          <FrequencyResponseCurve
-            magnitudes={magnitudes}
-            color="#dc2626"
-            lineWidth={1.75}
-            opacity={0.95}
-            animate
-            easing="easeOut"
-            duration={80}
-          />
-        </FrequencyResponseGraph>
-      ) : null}
+      <div className="flex h-full w-full items-center justify-center gap-[2px]">
+        {levels.map((level, index) => {
+          const height = MIN_BAR + level * (MAX_BAR - MIN_BAR);
+          return (
+            <span
+              key={index}
+              className="w-[2.5px] rounded-full bg-red-400"
+              style={{
+                height,
+                opacity: 0.55 + level * 0.45,
+                transition: "height 60ms linear, opacity 60ms linear",
+              }}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

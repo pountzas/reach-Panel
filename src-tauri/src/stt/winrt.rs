@@ -1,8 +1,9 @@
+use super::events::{emit_error, emit_state, handle_result, map_stt_error};
+use super::route::winrt_language_tag;
 use super::{SttState, SttStatus};
-use crate::input::type_text;
 use anyhow::{anyhow, Result};
 use std::sync::{Mutex, OnceLock};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 use windows::core::HSTRING;
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
 use windows::Globalization::Language;
@@ -12,23 +13,6 @@ use windows::Media::SpeechRecognition::{
     SpeechRecognizer,
 };
 use windows::Win32::System::WinRT::{RoInitialize, RO_INIT_MULTITHREADED};
-
-#[derive(Debug, Clone, serde::Serialize)]
-struct SttStateEvent {
-    state: SttState,
-    language: Option<String>,
-}
-
-#[derive(Debug, Clone, serde::Serialize)]
-struct SttResultEvent {
-    text: String,
-    is_final: bool,
-}
-
-#[derive(Debug, Clone, serde::Serialize)]
-struct SttErrorEvent {
-    message: String,
-}
 
 struct ActiveSession {
     recognizer: SpeechRecognizer,
@@ -64,78 +48,40 @@ fn ensure_winrt() -> Result<()> {
     Ok(())
 }
 
-fn language_tag(language: &str) -> &'static str {
-    match language {
-        "el" => "el-GR",
-        _ => "en-US",
+pub fn is_language_supported(language: &str) -> bool {
+    if ensure_winrt().is_err() {
+        return false;
     }
+    let tag = winrt_language_tag(language);
+    language_in_supported_topics(tag).unwrap_or(false)
 }
 
-fn emit_error(app: &AppHandle, message: impl Into<String>) {
-    let message = map_stt_error(message.into()).to_string();
-    let _ = app.emit("stt-error", SttErrorEvent { message });
-}
-
-fn emit_state(app: &AppHandle, state: SttState, language: Option<String>) {
-    let _ = app.emit(
-        "stt-state",
-        SttStateEvent {
-            state,
-            language,
-        },
-    );
-}
-
-fn map_stt_error(error: impl std::fmt::Display) -> anyhow::Error {
-    let message = error.to_string();
-    let lower = message.to_lowercase();
-    if lower.contains("0x80045509")
-        || lower.contains("speech privacy policy")
-        || lower.contains("privacy statement")
-    {
-        return anyhow!(
-            "SPEECH_PRIVACY: Online speech recognition is turned off in Windows. Open Settings → Privacy & security → Speech and turn on Online speech recognition, then try again."
-        );
-    }
-    anyhow!("{message}")
-}
-
-fn language_supported(tag: &str) -> Result<()> {
+fn language_in_supported_topics(tag: &str) -> Result<bool> {
     let supported = SpeechRecognizer::SupportedTopicLanguages()?;
     let size = supported.Size()?;
     for i in 0..size {
         let lang = supported.GetAt(i)?;
         if lang.LanguageTag()?.to_string().eq_ignore_ascii_case(tag) {
-            return Ok(());
+            return Ok(true);
         }
+    }
+    Ok(false)
+}
+
+fn require_language_supported(tag: &str) -> Result<()> {
+    if language_in_supported_topics(tag)? {
+        return Ok(());
     }
     Err(anyhow!(
         "SPEECH_LANGUAGE: No speech recognition language found for '{tag}'. Install the speech pack in Windows Settings → Time & language → Speech (or Language & region), then try again."
     ))
 }
 
-fn handle_result(app: &AppHandle, text: &str) {
-    if text.is_empty() {
-        return;
-    }
-    if let Err(error) = type_text(text) {
-        emit_error(app, error.to_string());
-        return;
-    }
-    let _ = app.emit(
-        "stt-result",
-        SttResultEvent {
-            text: text.to_string(),
-            is_final: true,
-        },
-    );
-}
-
 pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     ensure_winrt()?;
 
-    let tag = language_tag(language);
-    language_supported(tag)?;
+    let tag = winrt_language_tag(language);
+    require_language_supported(tag)?;
 
     let mut guard = runtime()
         .lock()
@@ -152,7 +98,7 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     let compilation = compile
         .get()
         .map_err(|e| anyhow!("Failed to compile speech constraints: {e}"))?;
-    if compilation.Status()? != windows::Media::SpeechRecognition::SpeechRecognitionResultStatus::Success {
+    if compilation.Status()? != SpeechRecognitionResultStatus::Success {
         return Err(anyhow!(
             "Speech recognition constraints failed to compile for '{tag}'"
         ));
@@ -247,6 +193,12 @@ pub fn get_status() -> SttStatus {
             return SttStatus {
                 state: SttState::Idle,
                 language: None,
+                engine: None,
+                whisper_ready: false,
+                whisper_downloading: false,
+                winrt_supported: false,
+                online: false,
+                can_dictate: false,
             };
         }
     };
@@ -255,11 +207,23 @@ pub fn get_status() -> SttStatus {
         SttStatus {
             state: SttState::Listening,
             language: Some(session.language.clone()),
+            engine: Some("winrt".to_string()),
+            whisper_ready: false,
+            whisper_downloading: false,
+            winrt_supported: true,
+            online: true,
+            can_dictate: true,
         }
     } else {
         SttStatus {
             state: SttState::Idle,
             language: None,
+            engine: None,
+            whisper_ready: false,
+            whisper_downloading: false,
+            winrt_supported: false,
+            online: false,
+            can_dictate: false,
         }
     }
 }

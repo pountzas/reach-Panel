@@ -12,6 +12,8 @@ function App() {
     pollKeyboardState,
     checkForUpdates,
     setDictationState,
+    refreshSttCapability,
+    setSttCapability,
     appendTyped,
     loadSuggestions,
     setLastError,
@@ -31,15 +33,7 @@ function App() {
       await invoke("cmd_set_always_on_top", { enabled: true });
       await invoke("cmd_set_window_focusable", { focusable: false });
       void checkForUpdates();
-
-      try {
-        const status = await invoke<{ state: "idle" | "listening" | "processing" }>(
-          "cmd_get_stt_status",
-        );
-        setDictationState(status.state);
-      } catch {
-        setDictationState("idle");
-      }
+      await refreshSttCapability();
     };
     init();
   }, [
@@ -48,7 +42,7 @@ function App() {
     loadKeyboardLayout,
     pollKeyboardState,
     checkForUpdates,
-    setDictationState,
+    refreshSttCapability,
   ]);
 
   useEffect(() => {
@@ -79,7 +73,33 @@ function App() {
       listen<{ message: string }>("stt-error", (event) => {
         setDictationState("idle");
         setLastError(event.payload.message);
+        void refreshSttCapability();
       }),
+    );
+
+    unlisteners.push(
+      listen<{ progress: number; ready: boolean; error: string | null }>(
+        "stt-whisper-download",
+        (event) => {
+          const current = useAppStore.getState().sttCapability;
+          setSttCapability({
+            engine: current?.engine ?? null,
+            whisperReady: event.payload.ready,
+            whisperDownloading: !event.payload.ready && !event.payload.error,
+            winrtSupported: current?.winrtSupported ?? false,
+            online: current?.online ?? false,
+            canDictate:
+              event.payload.ready ||
+              ((current?.online ?? false) && (current?.winrtSupported ?? false)),
+          });
+          if (event.payload.error) {
+            setLastError(`WHISPER_MODEL: ${event.payload.error}`);
+          }
+          if (event.payload.ready) {
+            void refreshSttCapability();
+          }
+        },
+      ),
     );
 
     return () => {
@@ -87,7 +107,14 @@ function App() {
         for (const stop of stops) stop();
       });
     };
-  }, [appendTyped, loadSuggestions, setDictationState, setLastError]);
+  }, [
+    appendTyped,
+    loadSuggestions,
+    refreshSttCapability,
+    setDictationState,
+    setLastError,
+    setSttCapability,
+  ]);
 
   return <AppShell />;
 }

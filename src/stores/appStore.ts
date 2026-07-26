@@ -22,6 +22,15 @@ import { resolveColorProfile } from "../lib/colorProfiles";
 
 export type DictationState = "idle" | "listening" | "processing";
 
+export interface SttCapability {
+  engine: "winrt" | "whisper" | null;
+  whisperReady: boolean;
+  whisperDownloading: boolean;
+  winrtSupported: boolean;
+  online: boolean;
+  canDictate: boolean;
+}
+
 interface AppStore {
   profileFiles: ProfileFileInfo[];
   activeProfileFile: string | null;
@@ -37,6 +46,7 @@ interface AppStore {
   physicalKeyState: PhysicalKeyState;
   lastError: string | null;
   dictationState: DictationState;
+  sttCapability: SttCapability | null;
   showSettings: boolean;
   showMacroBuilder: boolean;
   showHeadTrackingWizard: boolean;
@@ -68,6 +78,9 @@ interface AppStore {
   setLastError: (error: string | null) => void;
   pollError: () => Promise<void>;
   setDictationState: (state: DictationState) => void;
+  setSttCapability: (capability: SttCapability | null) => void;
+  refreshSttCapability: () => Promise<void>;
+  ensureWhisperModel: () => Promise<void>;
   toggleDictation: () => Promise<void>;
   stopDictation: () => Promise<void>;
   setShowSettings: (show: boolean) => void;
@@ -154,6 +167,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   physicalKeyState: DEFAULT_PHYSICAL_KEY_STATE,
   lastError: null,
   dictationState: "idle",
+  sttCapability: null,
   showSettings: false,
   showMacroBuilder: false,
   showHeadTrackingWizard: false,
@@ -406,6 +420,71 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setDictationState: (state) => set({ dictationState: state }),
 
+  setSttCapability: (capability) => set({ sttCapability: capability }),
+
+  refreshSttCapability: async () => {
+    try {
+      const status = await invoke<{
+        state: DictationState;
+        engine: "winrt" | "whisper" | null;
+        whisperReady: boolean;
+        whisperDownloading: boolean;
+        winrtSupported: boolean;
+        online: boolean;
+        canDictate: boolean;
+      }>("cmd_get_stt_status", {
+        language: get().settings.typingLanguage,
+      });
+      set({
+        dictationState: status.state,
+        sttCapability: {
+          engine: status.engine,
+          whisperReady: status.whisperReady,
+          whisperDownloading: status.whisperDownloading,
+          winrtSupported: status.winrtSupported,
+          online: status.online,
+          canDictate: status.canDictate,
+        },
+      });
+    } catch {
+      set({
+        sttCapability: {
+          engine: null,
+          whisperReady: false,
+          whisperDownloading: false,
+          winrtSupported: false,
+          online: false,
+          canDictate: false,
+        },
+      });
+    }
+  },
+
+  ensureWhisperModel: async () => {
+    try {
+      set({
+        sttCapability: get().sttCapability
+          ? { ...get().sttCapability!, whisperDownloading: true }
+          : {
+              engine: null,
+              whisperReady: false,
+              whisperDownloading: true,
+              winrtSupported: false,
+              online: false,
+              canDictate: false,
+            },
+      });
+      await invoke("cmd_ensure_whisper_model");
+      await get().refreshSttCapability();
+    } catch (error) {
+      set({
+        lastError:
+          error instanceof Error ? error.message : String(error),
+      });
+      await get().refreshSttCapability();
+    }
+  },
+
   stopDictation: async () => {
     if (get().dictationState === "idle") return;
     try {
@@ -416,21 +495,31 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   toggleDictation: async () => {
-    const { dictationState, settings } = get();
-    if (dictationState === "listening") {
+    const { dictationState, settings, sttCapability } = get();
+    if (dictationState === "listening" || dictationState === "processing") {
       await get().stopDictation();
+      return;
+    }
+    if (sttCapability && !sttCapability.canDictate) {
+      set({
+        lastError: sttCapability.winrtSupported
+          ? "WHISPER_MODEL: Local speech model is not ready yet."
+          : "WHISPER_UNSUPPORTED: Windows speech recognition does not support this language.",
+      });
       return;
     }
     try {
       await invoke("cmd_start_dictation", { language: settings.typingLanguage });
       set({ dictationState: "listening" });
       await get().pollError();
+      await get().refreshSttCapability();
     } catch (error) {
       set({ dictationState: "idle" });
       set({
         lastError:
           error instanceof Error ? error.message : String(error),
       });
+      await get().refreshSttCapability();
     }
   },
 

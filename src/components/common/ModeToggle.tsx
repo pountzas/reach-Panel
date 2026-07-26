@@ -26,6 +26,7 @@ interface ModeToggleButtonProps {
   onClick: () => void;
   children: ReactNode;
   activeClassName?: string;
+  disabled?: boolean;
 }
 
 export function ModeToggleButton({
@@ -35,14 +36,16 @@ export function ModeToggleButton({
   onClick,
   children,
   activeClassName,
+  disabled = false,
 }: ModeToggleButtonProps) {
   return (
     <button
       type="button"
-      className={`ak-mode-toggle ${MODE_TOGGLE_BUTTON_CLASS} ${modeToggleRadiusClass(position)} ${activeClassName ?? modeToggleActiveClass(active)}`}
+      className={`ak-mode-toggle ${MODE_TOGGLE_BUTTON_CLASS} ${modeToggleRadiusClass(position)} ${activeClassName ?? modeToggleActiveClass(active)} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
       onClick={onClick}
       aria-pressed={active}
       aria-label={label}
+      disabled={disabled}
     >
       {children}
       <HoverTooltip label={label} />

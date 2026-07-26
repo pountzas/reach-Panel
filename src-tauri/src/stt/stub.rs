@@ -16,5 +16,11 @@ pub fn get_status() -> SttStatus {
     SttStatus {
         state: SttState::Idle,
         language: None,
+        engine: None,
+        whisper_ready: false,
+        whisper_downloading: false,
+        winrt_supported: false,
+        online: false,
+        can_dictate: false,
     }
 }
