@@ -22,6 +22,7 @@ import {
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
+import { computeContentHeightRatio } from "../lib/sectionLayouts";
 
 /** Avoid re-toasting the same backend error until it clears. */
 let lastAnnouncedError: string | null = null;
@@ -31,6 +32,32 @@ let typingLanguageSwitchInFlight = false;
 
 const LANGUAGE_CHANGE_NO_TARGET_FALLBACK =
   "No target application to switch language. Click into the app you want to type in first.";
+
+function heightRatioFromSettings(settings: AppSettings): number {
+  return computeContentHeightRatio({
+    quickActions: settings.quickActionsVisible,
+    phrases: settings.phrasesVisible,
+  });
+}
+
+async function syncWindowLayoutFromSettings(
+  settings: AppSettings,
+  preferAnimate: boolean,
+) {
+  const args = {
+    monitorId: settings.accessibilityMonitorId,
+    collapsed: settings.collapsed,
+    collapsedDictation:
+      settings.collapsed && settings.dictationVisible !== false,
+    heightRatio: heightRatioFromSettings(settings),
+  };
+  // Animate height like phrases/QA toggles; apply for collapsed / cold load.
+  if (preferAnimate && !settings.collapsed) {
+    await invoke("cmd_animate_window_layout", args);
+  } else {
+    await invoke("cmd_apply_window_layout", args);
+  }
+}
 
 export type DictationState = "idle" | "listening" | "processing";
 
@@ -148,6 +175,7 @@ function buildDefaultSettings(monitors: MonitorInfo[]): AppSettings {
 async function loadProfileData(
   set: (partial: Partial<AppStore>) => void,
   get: () => AppStore,
+  options?: { animateLayout?: boolean },
 ) {
   const profiles = await invoke<{ id: string; settings_json: string }[]>(
     "cmd_get_profiles",
@@ -162,6 +190,10 @@ async function loadProfileData(
   await get().loadQuickActions();
   await get().loadPhrases();
   await get().loadMacros();
+  await syncWindowLayoutFromSettings(
+    get().settings,
+    options?.animateLayout === true,
+  );
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -227,7 +259,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       typedBuffer: "",
       stickyModifiers: [],
     });
-    await loadProfileData(set, get);
+    await loadProfileData(set, get, { animateLayout: true });
     await get().loadSuggestions();
   },
 
@@ -310,6 +342,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
     {
       const current = get().settings;
+      const visibilityChanged =
+        partial.phrasesVisible !== undefined ||
+        partial.quickActionsVisible !== undefined;
       if (
         partial.accessibilityMonitorId !== undefined ||
         partial.collapsed !== undefined ||
@@ -320,6 +355,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
           collapsed: current.collapsed,
           collapsedDictation:
             current.collapsed && current.dictationVisible !== false,
+          heightRatio: heightRatioFromSettings(current),
+        });
+      } else if (visibilityChanged && !current.collapsed) {
+        await invoke("cmd_animate_window_layout", {
+          monitorId: current.accessibilityMonitorId,
+          collapsed: false,
+          collapsedDictation: false,
+          heightRatio: heightRatioFromSettings(current),
         });
       }
     }
@@ -648,12 +691,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
           collapsedDictation: next.dictationVisible !== false,
+          heightRatio: heightRatioFromSettings(next),
         });
       } else {
         await invoke("cmd_animate_window_layout", {
           monitorId: settings.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
+          heightRatio: heightRatioFromSettings(settings),
         });
         set({ settings: next });
         await invoke("cmd_update_profile_settings", {

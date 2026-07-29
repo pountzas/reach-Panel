@@ -21,6 +21,9 @@ pub struct WindowLayout {
 
 const COLLAPSED_SIZE: u32 = 56;
 const COLLAPSED_MARGIN: u32 = 16;
+/// Transparent padding around FABs so shadow + hover:scale-105 are not clipped.
+/// Keep in sync with FAB_PAD in CollapsedFab.tsx.
+const COLLAPSED_PAD: u32 = 10;
 /// Gap between stacked collapsed FABs (expand + dictation).
 const COLLAPSED_FAB_GAP: u32 = 12;
 pub const COLLAPSE_ANIMATION_MS: u64 = 400;
@@ -53,6 +56,7 @@ pub fn compute_window_layout(
     monitor_id: u32,
     collapsed: bool,
     collapsed_dictation: bool,
+    height_ratio: f32,
 ) -> Result<WindowLayout, String> {
     let monitor = monitors
         .iter()
@@ -77,15 +81,24 @@ pub fn compute_window_layout(
     };
 
     if collapsed {
-        let collapsed_h = if collapsed_dictation {
+        // FAB stays bottom-right of the full region; ignore content height_ratio.
+        let fab_stack_h = if collapsed_dictation {
             COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP
         } else {
             COLLAPSED_SIZE
         };
-        x += w as i32 - COLLAPSED_SIZE as i32 - COLLAPSED_MARGIN as i32;
+        let collapsed_w = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
+        let collapsed_h = fab_stack_h + 2 * COLLAPSED_PAD;
+        x += w as i32 - collapsed_w as i32 - COLLAPSED_MARGIN as i32;
         y += h as i32 - collapsed_h as i32 - COLLAPSED_MARGIN as i32;
-        w = COLLAPSED_SIZE;
+        w = collapsed_w;
         h = collapsed_h;
+    } else {
+        let ratio = height_ratio.clamp(0.05, 1.0);
+        let region_y = y;
+        let region_h = h;
+        h = ((region_h as f32) * ratio).round().max(1.0) as u32;
+        y = region_y + region_h as i32 - h as i32;
     }
 
     Ok(WindowLayout {
@@ -115,23 +128,26 @@ mod tests {
     #[test]
     fn collapsed_single_monitor_bottom_right() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
-        let layout = compute_window_layout(&monitors, 0, true, false).unwrap();
+        let layout = compute_window_layout(&monitors, 0, true, false, 0.5).unwrap();
+        let expected_w = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
+        let expected_h = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
 
-        assert_eq!(layout.width, COLLAPSED_SIZE);
-        assert_eq!(layout.height, COLLAPSED_SIZE);
-        assert_eq!(layout.x, 1920 - 56 - 16);
-        assert_eq!(layout.y, 540 + 540 - 56 - 16);
+        assert_eq!(layout.width, expected_w);
+        assert_eq!(layout.height, expected_h);
+        assert_eq!(layout.x, 1920 - expected_w as i32 - 16);
+        assert_eq!(layout.y, 540 + 540 - expected_h as i32 - 16);
     }
 
     #[test]
     fn collapsed_with_dictation_is_taller() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
-        let layout = compute_window_layout(&monitors, 0, true, true).unwrap();
-        let expected_h = COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP;
+        let layout = compute_window_layout(&monitors, 0, true, true, 1.0).unwrap();
+        let expected_w = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
+        let expected_h = COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP + 2 * COLLAPSED_PAD;
 
-        assert_eq!(layout.width, COLLAPSED_SIZE);
+        assert_eq!(layout.width, expected_w);
         assert_eq!(layout.height, expected_h);
-        assert_eq!(layout.x, 1920 - 56 - 16);
+        assert_eq!(layout.x, 1920 - expected_w as i32 - 16);
         assert_eq!(layout.y, 540 + 540 - expected_h as i32 - 16);
     }
 
@@ -141,12 +157,53 @@ mod tests {
             sample_monitor(0, 0, 0, 1920, 1080),
             sample_monitor(1, 1920, 0, 1920, 1080),
         ];
-        let layout = compute_window_layout(&monitors, 1, true, false).unwrap();
+        let layout = compute_window_layout(&monitors, 1, true, false, 1.0).unwrap();
+        let expected_w = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
+        let expected_h = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
 
-        assert_eq!(layout.width, COLLAPSED_SIZE);
-        assert_eq!(layout.height, COLLAPSED_SIZE);
-        assert_eq!(layout.x, 1920 + 1920 - 56 - 16);
-        assert_eq!(layout.y, 1080 - 56 - 16);
+        assert_eq!(layout.width, expected_w);
+        assert_eq!(layout.height, expected_h);
+        assert_eq!(layout.x, 1920 + 1920 - expected_w as i32 - 16);
+        assert_eq!(layout.y, 1080 - expected_h as i32 - 16);
+    }
+
+    #[test]
+    fn expanded_full_ratio_fills_single_monitor_region() {
+        let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
+        let layout = compute_window_layout(&monitors, 0, false, false, 1.0).unwrap();
+
+        assert_eq!(layout.x, 0);
+        assert_eq!(layout.y, 540);
+        assert_eq!(layout.width, 1920);
+        assert_eq!(layout.height, 540);
+    }
+
+    #[test]
+    fn expanded_partial_ratio_bottom_aligned_single_monitor() {
+        let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
+        let layout = compute_window_layout(&monitors, 0, false, false, 0.5).unwrap();
+
+        assert_eq!(layout.width, 1920);
+        assert_eq!(layout.height, 270);
+        assert_eq!(layout.x, 0);
+        // Bottom of window stays at region bottom (1080).
+        assert_eq!(layout.y + layout.height as i32, 1080);
+        assert_eq!(layout.y, 810);
+    }
+
+    #[test]
+    fn expanded_partial_ratio_bottom_aligned_multi_monitor() {
+        let monitors = vec![
+            sample_monitor(0, 0, 0, 1920, 1080),
+            sample_monitor(1, 1920, 0, 1920, 1080),
+        ];
+        let layout = compute_window_layout(&monitors, 1, false, false, 0.61).unwrap();
+
+        let expected_h = ((1080.0_f32) * 0.61).round() as u32;
+        assert_eq!(layout.x, 1920);
+        assert_eq!(layout.width, 1920);
+        assert_eq!(layout.height, expected_h);
+        assert_eq!(layout.y + layout.height as i32, 1080);
     }
 }
 

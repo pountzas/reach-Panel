@@ -5,6 +5,8 @@ import { useTranslation } from "../../hooks/useTranslation";
 
 const FAB_SIZE = 56;
 const FAB_GAP = 12;
+/** Must stay in sync with COLLAPSED_PAD in src-tauri/src/window/mod.rs */
+const FAB_PAD = 10;
 
 export function CollapsedFab() {
   const {
@@ -44,7 +46,7 @@ export function CollapsedFab() {
   return (
     <div
       className="flex h-full w-full flex-col items-center justify-center"
-      style={{ background: "transparent", gap: FAB_GAP }}
+      style={{ background: "transparent", gap: FAB_GAP, padding: FAB_PAD }}
     >
       {showDictation && (
         <button

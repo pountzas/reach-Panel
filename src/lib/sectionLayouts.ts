@@ -22,6 +22,33 @@ const GAP_PCT = 1;
 const MIN_W_PCT = 15;
 const MIN_H_PCT = 10;
 
+/** Default band sizes as fractions of full keyboard region height. */
+const QUICK_ACTIONS_HEIGHT_RATIO = 0.1;
+const PHRASES_HEIGHT_RATIO = 0.38;
+const GAP_HEIGHT_RATIO = GAP_PCT / 100;
+/** Minimum window height so header + input-row stay usable. */
+const MIN_CONTENT_HEIGHT_RATIO = 0.5;
+
+/**
+ * Fraction of the full keyboard region height needed for the currently
+ * visible sections. All visible → 1.0; hiding phrases/QA shrinks the window.
+ */
+export function computeContentHeightRatio(visible: SectionVisibility): number {
+  if (visible.quickActions && visible.phrases) {
+    return 1;
+  }
+
+  let ratio = 1;
+  if (!visible.phrases) {
+    ratio -= PHRASES_HEIGHT_RATIO + GAP_HEIGHT_RATIO;
+  }
+  if (!visible.quickActions) {
+    ratio -= QUICK_ACTIONS_HEIGHT_RATIO + GAP_HEIGHT_RATIO;
+  }
+
+  return Math.max(MIN_CONTENT_HEIGHT_RATIO, Math.min(1, ratio));
+}
+
 function clampLayout(layout: SectionLayout): SectionLayout {
   const wPct = Math.max(MIN_W_PCT, Math.min(100 - GAP_PCT * 2, layout.wPct));
   const hPctMin = layout.minimized ? 0 : MIN_H_PCT;

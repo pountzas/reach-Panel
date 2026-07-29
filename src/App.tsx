@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { AppShell } from "./components/layout/AppShell";
+import { computeContentHeightRatio } from "./lib/sectionLayouts";
 import { useAppStore } from "./stores/appStore";
 
 function App() {
@@ -29,6 +30,10 @@ function App() {
         collapsed: settings.collapsed,
         collapsedDictation:
           settings.collapsed && settings.dictationVisible !== false,
+        heightRatio: computeContentHeightRatio({
+          quickActions: settings.quickActionsVisible,
+          phrases: settings.phrasesVisible,
+        }),
       });
       await loadKeyboardLayout();
       await pollKeyboardState();
