@@ -125,6 +125,60 @@ export function resolveSectionLayouts(
   return resolved;
 }
 
+/** Visible section ids for the current visibility flags (always includes input-row). */
+export function visibleSectionIds(visible: SectionVisibility): SectionId[] {
+  const ids: SectionId[] = [];
+  if (visible.quickActions) ids.push("quick-actions");
+  if (visible.phrases) ids.push("phrases");
+  ids.push("input-row");
+  return ids;
+}
+
+/**
+ * True when saved layouts do not retain entries for currently hidden sections.
+ * Missing keys for visible sections are fine (defaults fill them in).
+ */
+export function layoutsMatchVisibility(
+  saved: SectionLayouts | undefined,
+  visible: SectionVisibility,
+): boolean {
+  if (!saved) return true;
+  if (saved["quick-actions"] && !visible.quickActions) return false;
+  if (saved.phrases && !visible.phrases) return false;
+  return true;
+}
+
+/**
+ * Detects a leftover gap after hide/reload — e.g. input-row still sits below a
+ * missing phrases band, or the topmost section is parked too far down the canvas.
+ */
+export function hasStaleGap(
+  saved: SectionLayouts | undefined,
+  visible: SectionVisibility,
+): boolean {
+  if (!saved || Object.keys(saved).length === 0) return false;
+  if (!layoutsMatchVisibility(saved, visible)) return true;
+
+  const defaults = computeDefaultSectionLayouts(visible);
+  const input = saved["input-row"];
+  if (!input) return false;
+
+  const defaultInput = defaults["input-row"];
+  // Input row still parked where a hidden band used to be (large Y offset vs default).
+  if (input.yPct > defaultInput.yPct + GAP_PCT * 2 + 5) {
+    return true;
+  }
+
+  // Topmost visible section should start near the top of the canvas.
+  const topId = visibleSectionIds(visible)[0];
+  const top = saved[topId];
+  if (top && top.yPct > GAP_PCT * 3) {
+    return true;
+  }
+
+  return false;
+}
+
 export function layoutToPixels(
   layout: SectionLayout,
   containerWidth: number,

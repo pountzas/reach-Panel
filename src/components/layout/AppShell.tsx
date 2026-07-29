@@ -7,6 +7,7 @@ import { MousePanel } from "../mouse/MousePanel";
 import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
+import { AppToaster } from "../common/AppToaster";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { UpdatePrompt } from "../common/UpdatePrompt";
 import { SettingsPanel } from "../settings/SettingsPanel";
@@ -131,9 +132,8 @@ export function AppShell() {
           </div>
         </header>
 
-        <ErrorBanner />
-
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ErrorBanner />
           <SectionCanvas
             quickActionsVisible={settings.quickActionsVisible}
             phrasesVisible={settings.phrasesVisible}
@@ -154,6 +154,7 @@ export function AppShell() {
             onDismiss={() => setPendingUpdate(null)}
           />
         )}
+        <AppToaster />
       </div>
     </div>
   );

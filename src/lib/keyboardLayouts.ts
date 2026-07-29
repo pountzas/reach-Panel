@@ -15,6 +15,7 @@ export interface PhysicalKeyState {
   pressedVks: number[];
   systemLanguage: string;
   keyboardLayout: string;
+  hasInputTarget: boolean;
 }
 
 export const DEFAULT_PHYSICAL_KEY_STATE: PhysicalKeyState = {
@@ -26,6 +27,7 @@ export const DEFAULT_PHYSICAL_KEY_STATE: PhysicalKeyState = {
   pressedVks: [],
   systemLanguage: "en",
   keyboardLayout: "QWERTY",
+  hasInputTarget: false,
 };
 
 const SPECIAL_VK: Record<string, number> = {
