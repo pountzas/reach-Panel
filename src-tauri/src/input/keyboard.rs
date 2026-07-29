@@ -273,6 +273,8 @@ pub struct KeyboardState {
     pub pressed_vks: Vec<u16>,
     pub system_language: String,
     pub keyboard_layout: String,
+    /// True when an external target window is available for typing / language switch.
+    pub has_input_target: bool,
 }
 
 fn is_async_key_down(vk: i32) -> bool {
@@ -302,6 +304,7 @@ pub fn get_keyboard_state() -> KeyboardState {
     pressed_vks.sort_unstable();
     pressed_vks.dedup();
 
+    let has_input_target = super::focus_target::has_input_target();
     let (lang_id, keyboard_layout) = active_input_locale();
     KeyboardState {
         caps_lock: get_caps_lock_state(),
@@ -312,6 +315,7 @@ pub fn get_keyboard_state() -> KeyboardState {
         pressed_vks,
         system_language: lang_id_to_app_language(lang_id),
         keyboard_layout,
+        has_input_target,
     }
 }
 
@@ -319,11 +323,16 @@ fn active_input_locale() -> (u32, String) {
     use windows::Win32::UI::Input::KeyboardAndMouse::GetKeyboardLayout;
     use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
 
+    // Prefer a real typing target; fall back to foreground so Alt+Shift in the
+    // focused app still updates our on-screen layout.
+    let hwnd = match get_effective_input_hwnd() {
+        Some(hwnd) => hwnd,
+        None => unsafe { GetForegroundWindow() },
+    };
+    if hwnd.0.is_null() {
+        return (0x0409, "QWERTY".to_string());
+    }
     unsafe {
-        let hwnd = get_effective_input_hwnd().unwrap_or(GetForegroundWindow());
-        if hwnd.0.is_null() {
-            return (0x0409, "QWERTY".to_string());
-        }
         let thread_id = GetWindowThreadProcessId(hwnd, None);
         let layout = GetKeyboardLayout(thread_id);
         let lang_id = (layout.0 as u32) & 0xFFFF;
@@ -393,7 +402,9 @@ fn load_layout_for_language(lang: &str) -> Result<windows::Win32::UI::Input::Key
 }
 
 pub fn set_system_language(lang: &str) -> Result<()> {
-    with_target_focus(|| set_system_language_impl(lang))
+    // Do not restore_target_focus() here — that would bring back a previously
+    // focused app and make "no target" look like success after the first switch.
+    set_system_language_impl(lang)
 }
 
 fn set_system_language_impl(lang: &str) -> Result<()> {
@@ -406,8 +417,11 @@ fn set_system_language_impl(lang: &str) -> Result<()> {
         GetWindowThreadProcessId, PostMessageW, WM_INPUTLANGCHANGEREQUEST,
     };
 
-    let hwnd = get_effective_input_hwnd()
-        .ok_or_else(|| anyhow!("No target application to switch language. Click into the app you want to type in first."))?;
+    let hwnd = super::focus_target::get_language_switch_hwnd().ok_or_else(|| {
+        anyhow!(
+            "No target application to switch language. Click into the app you want to type in first."
+        )
+    })?;
 
     let target_primary = match lang {
         "el" => 0x08u32,

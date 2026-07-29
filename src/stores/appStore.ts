@@ -8,6 +8,7 @@ import {
 } from "../lib/keyboardLayouts";
 import {
   AppSettings,
+  CommandResult,
   DEFAULT_SETTINGS,
   INTERNAL_PROFILE_ID,
   MacroDef,
@@ -19,6 +20,17 @@ import {
   QuickAction,
 } from "../lib/types";
 import { resolveColorProfile } from "../lib/colorProfiles";
+import { notify } from "../lib/notify";
+import { isStickySpeechError } from "../lib/speechPrivacy";
+
+/** Avoid re-toasting the same backend error until it clears. */
+let lastAnnouncedError: string | null = null;
+
+/** Block OS→UI language sync while a typing-language switch is in flight. */
+let typingLanguageSwitchInFlight = false;
+
+const LANGUAGE_CHANGE_NO_TARGET_FALLBACK =
+  "No target application to switch language. Click into the app you want to type in first.";
 
 export type DictationState = "idle" | "listening" | "processing";
 
@@ -243,17 +255,49 @@ export const useAppStore = create<AppStore>((set, get) => ({
       partial.typingLanguage !== settings.typingLanguage;
     const uiLanguageChanged =
       partial.uiLanguage !== undefined && partial.uiLanguage !== settings.uiLanguage;
+    const previousTypingLanguage = settings.typingLanguage;
     const next = { ...settings, ...partial };
     set({ settings: next });
     if (partial.keyboardSectionMode === "synthesizer") {
       await get().stopDictation();
     }
     if (syncToSystem && typingLanguageChanged) {
-      await invoke("cmd_set_system_language", { language: partial.typingLanguage! });
+      // Soft CommandResult — does not throw; must check success or the UI
+      // optimistically flips language and never surfaces a toast.
+      typingLanguageSwitchInFlight = true;
+      try {
+        const result = await invoke<CommandResult>("cmd_set_system_language", {
+          language: partial.typingLanguage!,
+        });
+        if (!result.success) {
+          set({
+            settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+          });
+          const message = result.error?.trim() || LANGUAGE_CHANGE_NO_TARGET_FALLBACK;
+          lastAnnouncedError = message;
+          // Stable id so this toast reappears every failed switch (not only once).
+          notify.error(message, { id: "typing-language-no-target" });
+          return;
+        }
+        lastAnnouncedError = null;
+      } catch (error) {
+        set({
+          settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+        });
+        const message =
+          error instanceof Error
+            ? error.message
+            : String(error || LANGUAGE_CHANGE_NO_TARGET_FALLBACK);
+        lastAnnouncedError = message;
+        notify.error(message, { id: "typing-language-no-target" });
+        return;
+      } finally {
+        typingLanguageSwitchInFlight = false;
+      }
     }
     await invoke("cmd_update_profile_settings", {
       profileId: INTERNAL_PROFILE_ID,
-      settingsJson: JSON.stringify(next),
+      settingsJson: JSON.stringify(get().settings),
     });
     if (typingLanguageChanged) {
       await get().stopDictation();
@@ -264,17 +308,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await get().loadPhrases();
       await get().loadSuggestions();
     }
-    if (
-      partial.accessibilityMonitorId !== undefined ||
-      partial.collapsed !== undefined ||
-      (next.collapsed && partial.dictationVisible !== undefined)
-    ) {
-      await invoke("cmd_apply_window_layout", {
-        monitorId: next.accessibilityMonitorId,
-        collapsed: next.collapsed,
-        collapsedDictation:
-          next.collapsed && next.dictationVisible !== false,
-      });
+    {
+      const current = get().settings;
+      if (
+        partial.accessibilityMonitorId !== undefined ||
+        partial.collapsed !== undefined ||
+        (current.collapsed && partial.dictationVisible !== undefined)
+      ) {
+        await invoke("cmd_apply_window_layout", {
+          monitorId: current.accessibilityMonitorId,
+          collapsed: current.collapsed,
+          collapsedDictation:
+            current.collapsed && current.dictationVisible !== false,
+        });
+      }
     }
   },
 
@@ -340,11 +387,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       prev.pressedVks.length === next.pressedVks.length &&
       prev.pressedVks.every((vk, i) => vk === next.pressedVks[i]);
 
+    // Sync from the focused/target app so Alt+Shift updates our layout.
+    // Skip while a language-button switch is in flight.
     const typingLanguageUnchanged =
+      typingLanguageSwitchInFlight ||
       settings.typingLanguage === next.systemLanguage;
     const layoutUnchanged = keyboardLayout === next.keyboardLayout;
 
     if (keysUnchanged && typingLanguageUnchanged && layoutUnchanged) {
+      if (prev.hasInputTarget !== next.hasInputTarget) {
+        set({ physicalKeyState: next });
+      }
       return;
     }
 
@@ -370,7 +423,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const next = settings.typingLanguage === "en" ? "el" : "en";
     await get().updateSettings({ typingLanguage: next });
     await get().pollKeyboardState();
-    await get().pollError();
   },
 
   clearSticky: () => set({ stickyModifiers: [] }),
@@ -415,10 +467,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await get().loadSuggestions();
   },
 
-  setLastError: (error) => set({ lastError: error }),
+  setLastError: (error) => {
+    if (!error) {
+      lastAnnouncedError = null;
+      set({ lastError: null });
+      return;
+    }
+    // Sticky overlay for actionable speech errors; everything else → toast.
+    if (isStickySpeechError(error)) {
+      lastAnnouncedError = error;
+      set({ lastError: error });
+      return;
+    }
+    if (lastAnnouncedError === error) {
+      return;
+    }
+    lastAnnouncedError = error;
+    notify.error(error);
+    set({ lastError: null });
+  },
   pollError: async () => {
     const error = await invoke<string | null>("get_last_error");
-    set({ lastError: error });
+    get().setLastError(error);
   },
 
   setDictationState: (state) => set({ dictationState: state }),
