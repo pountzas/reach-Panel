@@ -13,7 +13,8 @@ use db::{
 use input::{
     get_keyboard_layout, get_keyboard_state, get_cursor_position, mouse_click,
     mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
-    press_key, press_media_key, set_system_language, type_text, KeyPressRequest, KeyboardState,
+    press_key, press_media_key, set_system_language, type_text, windows_ui_language,
+    KeyPressRequest, KeyboardState,
 };
 #[cfg(target_os = "windows")]
 use input::focus_target;
@@ -439,6 +440,27 @@ fn cmd_create_profile_file(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn cmd_delete_profile_file(filename: String, state: State<AppState>) -> Result<String, String> {
+    state
+        .profiles
+        .delete_profile_file(&state.db, &filename)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_wipe_active_profile(state: State<AppState>) -> Result<(), String> {
+    state
+        .profiles
+        .wipe_active_profile(&state.db)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_get_windows_ui_language() -> String {
+    windows_ui_language()
+}
+
 /// Temporarily drops always-on-top so native file dialogs appear above the app window.
 struct RestoreAlwaysOnTop(tauri::AppHandle);
 
@@ -655,7 +677,14 @@ fn cmd_get_suggestions(
 
 #[tauri::command]
 fn cmd_record_word(profile_id: String, word: String, language: String, state: State<AppState>) -> Result<(), String> {
-    record_usage(&state.db, &profile_id, &word, &language).map_err(|e| e.to_string())
+    record_usage(&state.db, &profile_id, &word, &language).map_err(|e| e.to_string())?;
+    if profile_id == INTERNAL_PROFILE_ID {
+        state
+            .profiles
+            .save_active_profile(&state.db)
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -706,7 +735,12 @@ fn cmd_export_macro(macro_id: String, state: State<AppState>) -> Result<String, 
 
 #[tauri::command]
 fn cmd_import_macro(json: String, state: State<AppState>) -> Result<MacroDef, String> {
-    macros::import_macro(&state.db, &json).map_err(|e| e.to_string())
+    let macro_def = macros::import_macro(&state.db, &json).map_err(|e| e.to_string())?;
+    state
+        .profiles
+        .save_active_profile(&state.db)
+        .map_err(|e| e.to_string())?;
+    Ok(macro_def)
 }
 
 #[tauri::command]
@@ -796,6 +830,9 @@ pub fn run() {
             cmd_load_profile_file,
             cmd_save_active_profile_file,
             cmd_create_profile_file,
+            cmd_delete_profile_file,
+            cmd_wipe_active_profile,
+            cmd_get_windows_ui_language,
             cmd_pick_background_image,
             cmd_update_profile_settings,
             cmd_get_quick_actions,

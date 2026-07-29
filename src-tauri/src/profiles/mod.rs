@@ -1,6 +1,7 @@
 use crate::db::{
     Database, MacroDef, MacroStep, PhraseCategory, PhraseWithLanguage, PredictionEntry, QuickAction,
 };
+use crate::input::windows_ui_language;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -10,6 +11,7 @@ use uuid::Uuid;
 
 const ACTIVE_PROFILE_CONFIG: &str = "active_profile.txt";
 pub const INTERNAL_PROFILE_ID: &str = "active";
+const DEFAULT_PROFILE_FILENAME: &str = "default.profile.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfileFileInfo {
@@ -108,8 +110,9 @@ impl ProfileStore {
             return Ok(filename);
         }
 
-        let filename = "default.profile.json".to_string();
-        db.ensure_internal_profile(INTERNAL_PROFILE_ID, "Default")?;
+        let filename = DEFAULT_PROFILE_FILENAME.to_string();
+        let ui_language = windows_ui_language();
+        db.ensure_internal_profile(INTERNAL_PROFILE_ID, "Default", &ui_language)?;
         let file = export_profile_from_db(db, INTERNAL_PROFILE_ID)?;
         let path = self.profiles_dir.join(&filename);
         fs::write(path, serde_json::to_string_pretty(&file)?)?;
@@ -183,10 +186,54 @@ impl ProfileStore {
         if path.exists() {
             return Err(anyhow!("Profile file already exists"));
         }
-        db.reset_profile_to_defaults(INTERNAL_PROFILE_ID, name)?;
+        let ui_language = windows_ui_language();
+        db.reset_profile_to_defaults(INTERNAL_PROFILE_ID, name, &ui_language)?;
         self.write_active_filename(&safe_name)?;
         self.save_active_profile(db)?;
         Ok(())
+    }
+
+    /// Reset settings + wipe QA/macros/phrases/predictions/HT, keep profile filename/name.
+    pub fn wipe_active_profile(&self, db: &Database) -> Result<()> {
+        let name = db
+            .get_profile_by_id(INTERNAL_PROFILE_ID)?
+            .map(|p| p.name)
+            .unwrap_or_else(|| "Default".to_string());
+        let ui_language = windows_ui_language();
+        db.reset_profile_to_defaults(INTERNAL_PROFILE_ID, &name, &ui_language)?;
+        self.save_active_profile(db)?;
+        Ok(())
+    }
+
+    /// Delete a profile file. If it was active (or last), recreate fresh `default.profile.json`.
+    pub fn delete_profile_file(&self, db: &Database, filename: &str) -> Result<String> {
+        let path = self.profiles_dir.join(filename);
+        if !path.exists() {
+            return Err(anyhow!("Profile file not found: {filename}"));
+        }
+
+        let active = self.active_filename()?;
+        let was_active = active == filename;
+        fs::remove_file(&path)?;
+
+        if !was_active {
+            let remaining = self.list_profile_files()?;
+            if remaining.is_empty() {
+                return self.recreate_default_profile(db);
+            }
+            return Ok(active);
+        }
+
+        self.recreate_default_profile(db)
+    }
+
+    fn recreate_default_profile(&self, db: &Database) -> Result<String> {
+        let ui_language = windows_ui_language();
+        db.reset_profile_to_defaults(INTERNAL_PROFILE_ID, "Default", &ui_language)?;
+        let filename = DEFAULT_PROFILE_FILENAME.to_string();
+        self.write_active_filename(&filename)?;
+        self.save_active_profile(db)?;
+        Ok(filename)
     }
 }
 
@@ -244,7 +291,12 @@ fn export_profile_from_db(db: &Database, profile_id: &str) -> Result<ProfileFile
 }
 
 fn import_profile_into_db(db: &Database, profile_id: &str, file: &ProfileFile) -> Result<()> {
-    db.ensure_internal_profile(profile_id, &file.name)?;
+    let ui_language = file
+        .settings
+        .get("uiLanguage")
+        .and_then(|v| v.as_str())
+        .unwrap_or("en");
+    db.ensure_internal_profile(profile_id, &file.name, ui_language)?;
     db.clear_profile_data(profile_id)?;
     db.update_profile_settings(profile_id, &file.settings.to_string())?;
 
@@ -296,4 +348,3 @@ fn import_profile_into_db(db: &Database, profile_id: &str, file: &ProfileFile) -
     )?;
     Ok(())
 }
-

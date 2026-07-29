@@ -74,6 +74,7 @@ export function MacroBuilder() {
   const doImport = async () => {
     await invoke("cmd_import_macro", { json: importJson });
     await loadMacros();
+    await saveActiveProfile();
   };
 
   return (

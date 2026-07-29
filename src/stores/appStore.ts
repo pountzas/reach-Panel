@@ -100,6 +100,7 @@ interface AppStore {
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
+  deleteProfileFile: (filename: string) => Promise<void>;
   updateSettings: (
     partial: Partial<AppSettings>,
     options?: { syncToSystem?: boolean },
@@ -107,6 +108,7 @@ interface AppStore {
   /** Live-preview OS window height while dragging the main header (no persist). */
   applyWindowHeightRatioLive: (ratio: number) => Promise<void>;
   resetSettingsToDefaults: () => Promise<void>;
+  wipeActiveProfile: () => Promise<void>;
   loadMonitors: () => Promise<void>;
   loadQuickActions: () => Promise<void>;
   loadPhrases: () => Promise<void>;
@@ -160,9 +162,21 @@ function parseSettings(json: string): AppSettings {
     const typingLanguage =
       parsed.typingLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.typingLanguage;
     const uiLanguage = parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
+    // Older profile files may omit keys that previously defaulted to "on".
+    // Keep that behavior for existing installs; new profiles write explicit values.
+    const legacyFill: Partial<AppSettings> = {
+      predictionEnabled: parsed.predictionEnabled ?? true,
+      quickActionsVisible: parsed.quickActionsVisible ?? true,
+      phrasesVisible: parsed.phrasesVisible ?? true,
+      suggestionsVisible: parsed.suggestionsVisible ?? true,
+      dictationVisible: parsed.dictationVisible ?? true,
+      emergencyVisible: parsed.emergencyVisible ?? true,
+      keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,
+    };
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
+      ...legacyFill,
       typingLanguage,
       uiLanguage,
       colorProfile,
@@ -173,10 +187,14 @@ function parseSettings(json: string): AppSettings {
   }
 }
 
-function buildDefaultSettings(monitors: MonitorInfo[]): AppSettings {
+function buildDefaultSettings(
+  monitors: MonitorInfo[],
+  uiLanguage: string = DEFAULT_SETTINGS.uiLanguage,
+): AppSettings {
   const primary = monitors.find((m) => m.is_primary) ?? monitors[0];
   return {
     ...DEFAULT_SETTINGS,
+    uiLanguage,
     accessibilityMonitorId: primary?.id ?? DEFAULT_SETTINGS.accessibilityMonitorId,
   };
 }
@@ -275,6 +293,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
   createProfileFile: async (filename, name) => {
     await invoke("cmd_create_profile_file", { filename, name });
     await get().loadProfileFiles();
+  },
+
+  deleteProfileFile: async (filename) => {
+    const nextActive = await invoke<string>("cmd_delete_profile_file", { filename });
+    set({
+      typedBuffer: "",
+      stickyModifiers: [],
+      activeProfileFile: nextActive,
+    });
+    await get().loadProfileFiles();
+    await get().loadSuggestions();
   },
 
   saveActiveProfile: async () => {
@@ -408,7 +437,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   resetSettingsToDefaults: async () => {
     const { monitors } = get();
-    await get().updateSettings(buildDefaultSettings(monitors));
+    const uiLanguage = await invoke<string>("cmd_get_windows_ui_language");
+    await get().updateSettings(buildDefaultSettings(monitors, uiLanguage));
+  },
+
+  wipeActiveProfile: async () => {
+    await invoke("cmd_wipe_active_profile");
+    set({
+      typedBuffer: "",
+      stickyModifiers: [],
+    });
+    await loadProfileData(set, get, { animateLayout: true });
+    await get().loadSuggestions();
   },
 
   loadMonitors: async () => {

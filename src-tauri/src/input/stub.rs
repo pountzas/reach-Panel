@@ -75,6 +75,10 @@ pub fn get_keyboard_layout() -> String {
     "QWERTY".to_string()
 }
 
+pub fn windows_ui_language() -> String {
+    "en".to_string()
+}
+
 pub fn set_system_language(_lang: &str) -> Result<()> {
     unsupported()
 }
