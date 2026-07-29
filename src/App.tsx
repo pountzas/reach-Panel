@@ -28,11 +28,13 @@ function MainApp() {
     appendTyped,
     loadSuggestions,
     setLastError,
+    loadImportedSongs,
   } = useAppStore();
 
   useEffect(() => {
     const init = async () => {
       await loadProfileFiles();
+      await loadImportedSongs();
       await loadMonitors();
       const { settings } = useAppStore.getState();
       await invoke("cmd_apply_window_layout", {
@@ -55,6 +57,7 @@ function MainApp() {
     init();
   }, [
     loadProfileFiles,
+    loadImportedSongs,
     loadMonitors,
     loadKeyboardLayout,
     pollKeyboardState,

@@ -218,6 +218,16 @@
 
   stopSong: "Stop",
 
+  loadSong: "Load",
+
+  deleteSong: "Delete",
+
+  confirmDeleteSong: "Delete imported song “{title}”?",
+
+  builtInSongs: "Built-in",
+
+  importedSongs: "Imported",
+
   playingNote: "Playing",
 
   waitingForNote: "Play",

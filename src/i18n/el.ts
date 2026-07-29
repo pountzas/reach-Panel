@@ -222,6 +222,16 @@ export const el: Record<keyof typeof en, string> = {
 
   stopSong: "Διακοπή",
 
+  loadSong: "Φόρτωση",
+
+  deleteSong: "Διαγραφή",
+
+  confirmDeleteSong: "Διαγραφή εισαγμένου τραγουδιού «{title}»;",
+
+  builtInSongs: "Ενσωματωμένα",
+
+  importedSongs: "Εισαγμένα",
+
   playingNote: "Παίζει",
 
   waitingForNote: "Παίξε",

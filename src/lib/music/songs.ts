@@ -179,9 +179,23 @@ export const BUILT_IN_SONGS: MusicSong[] = [
   },
 ];
 
-export function getSongById(id: string | null | undefined): MusicSong | null {
+export function getSongById(
+  id: string | null | undefined,
+  importedSongs: MusicSong[] = [],
+): MusicSong | null {
   if (!id) return null;
-  return BUILT_IN_SONGS.find((song) => song.id === id) ?? null;
+  return (
+    BUILT_IN_SONGS.find((song) => song.id === id) ??
+    importedSongs.find((song) => song.id === id) ??
+    null
+  );
+}
+
+export function listSelectableSongs(importedSongs: MusicSong[]): {
+  builtIn: MusicSong[];
+  imported: MusicSong[];
+} {
+  return { builtIn: BUILT_IN_SONGS, imported: importedSongs };
 }
 
 export function songPitches(song: MusicSong): string[] {

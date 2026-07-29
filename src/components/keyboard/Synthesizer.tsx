@@ -37,6 +37,7 @@ export function Synthesizer() {
   const musicPlaybackActive = useAppStore((s) => s.musicPlaybackActive);
   const musicSongId = useAppStore((s) => s.musicSongId);
   const musicNoteIndex = useAppStore((s) => s.musicNoteIndex);
+  const importedSongs = useAppStore((s) => s.importedSongs);
   const reportMusicKeyPlayed = useAppStore((s) => s.reportMusicKeyPlayed);
   const setMusicPlaybackNoteIndex = useAppStore((s) => s.setMusicPlaybackNoteIndex);
   const finishMusicPlayback = useAppStore((s) => s.finishMusicPlayback);
@@ -54,11 +55,11 @@ export function Synthesizer() {
 
   const targetKeyId = useMemo(() => {
     if (!musicTeachingEnabled) return null;
-    const song = getSongById(musicSongId);
+    const song = getSongById(musicSongId, importedSongs);
     if (!song) return null;
     if (musicNoteIndex >= song.notes.length) return null;
     return song.notes[musicNoteIndex]?.pitch ?? null;
-  }, [musicTeachingEnabled, musicSongId, musicNoteIndex]);
+  }, [importedSongs, musicTeachingEnabled, musicSongId, musicNoteIndex]);
 
   const volumeLevel = useMemo(() => {
     if (settings.synthesizerMuted) return 0;
@@ -255,7 +256,7 @@ export function Synthesizer() {
       return;
     }
 
-    const song = getSongById(musicSongId);
+    const song = getSongById(musicSongId, importedSongs);
     if (!song || song.notes.length === 0) {
       finishMusicPlayback();
       return;
@@ -337,6 +338,7 @@ export function Synthesizer() {
     clearPlaybackSchedule,
     ensureAudio,
     finishMusicPlayback,
+    importedSongs,
     keyById,
     musicPlaybackActive,
     musicSongId,

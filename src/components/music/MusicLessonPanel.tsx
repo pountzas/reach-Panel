@@ -1,8 +1,13 @@
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { getSurfaceColors } from "../../lib/colorProfiles";
-import { BUILT_IN_SONGS, getSongById, songRequiredOctaveCount } from "../../lib/music/songs";
+import {
+  BUILT_IN_SONGS,
+  getSongById,
+  songRequiredOctaveCount,
+} from "../../lib/music/songs";
 import { resolveSynthOctaveCount } from "../../lib/music/octaveCount";
+import { isImportedMusicSong } from "../../lib/music/parseJsonSong";
 
 /** Fixed slot width so the strip can keep the active note centered. */
 const NOTE_SLOT_REM = 2.75;
@@ -13,14 +18,18 @@ export function MusicLessonPanel() {
   const musicSongId = useAppStore((s) => s.musicSongId);
   const musicNoteIndex = useAppStore((s) => s.musicNoteIndex);
   const musicPlaybackActive = useAppStore((s) => s.musicPlaybackActive);
+  const importedSongs = useAppStore((s) => s.importedSongs);
   const setMusicSongId = useAppStore((s) => s.setMusicSongId);
   const restartMusicLesson = useAppStore((s) => s.restartMusicLesson);
   const startMusicPlayback = useAppStore((s) => s.startMusicPlayback);
   const stopMusicPlayback = useAppStore((s) => s.stopMusicPlayback);
+  const importMusicSongsFromFile = useAppStore((s) => s.importMusicSongsFromFile);
+  const deleteImportedSong = useAppStore((s) => s.deleteImportedSong);
   const { t } = useTranslation();
   const surface = getSurfaceColors(settings.appBgColor);
 
-  const song = getSongById(musicSongId);
+  const song = getSongById(musicSongId, importedSongs);
+  const selectedIsImported = song ? isImportedMusicSong(song) : false;
   const total = song?.notes.length ?? 0;
   const completed = total > 0 && musicNoteIndex >= total;
   const focusIndex = completed
@@ -54,6 +63,19 @@ export function MusicLessonPanel() {
             className="rounded-md border px-2 py-1 text-xs font-medium"
             style={{
               borderColor: surface.panelBorder,
+              backgroundColor: surface.panelBg,
+              color: surface.panelText,
+            }}
+            onClick={() => void importMusicSongsFromFile()}
+            disabled={musicPlaybackActive}
+          >
+            {t("loadSong")}
+          </button>
+          <button
+            type="button"
+            className="rounded-md border px-2 py-1 text-xs font-medium"
+            style={{
+              borderColor: surface.panelBorder,
               backgroundColor: musicPlaybackActive ? "#fde68a" : surface.panelBg,
               color: surface.panelText,
             }}
@@ -81,6 +103,29 @@ export function MusicLessonPanel() {
           >
             {t("restartLesson")}
           </button>
+          {selectedIsImported && (
+            <button
+              type="button"
+              className="rounded-md border px-2 py-1 text-xs font-medium"
+              style={{
+                borderColor: surface.panelBorder,
+                backgroundColor: surface.panelBg,
+                color: surface.panelText,
+              }}
+              onClick={() => {
+                if (!song) return;
+                const ok = window.confirm(
+                  t("confirmDeleteSong").replace("{title}", song.title),
+                );
+                if (ok) {
+                  void deleteImportedSong(song.id);
+                }
+              }}
+              disabled={musicPlaybackActive}
+            >
+              {t("deleteSong")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -99,12 +144,24 @@ export function MusicLessonPanel() {
             void setMusicSongId(event.target.value);
           }}
         >
-          {BUILT_IN_SONGS.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {entry.title}
-              {entry.composer ? ` — ${entry.composer}` : ""}
-            </option>
-          ))}
+          <optgroup label={t("builtInSongs")}>
+            {BUILT_IN_SONGS.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.title}
+                {entry.composer ? ` — ${entry.composer}` : ""}
+              </option>
+            ))}
+          </optgroup>
+          {importedSongs.length > 0 && (
+            <optgroup label={t("importedSongs")}>
+              {importedSongs.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.title}
+                  {entry.composer ? ` — ${entry.composer}` : ""}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
       </label>
 

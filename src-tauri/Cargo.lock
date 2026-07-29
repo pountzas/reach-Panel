@@ -3090,6 +3090,7 @@ name = "reach-panel"
 version = "0.5.1"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "chrono",
  "cpal",
  "rfd",
