@@ -54,6 +54,8 @@ export const el: Record<keyof typeof en, string> = {
 
   showSuggestionsBar: "Εμφάνιση προτάσεων",
 
+  showDictationControl: "Εμφάνιση υπαγόρευσης (μικρόφωνο)",
+
   opacity: "Διαφάνεια",
 
   appLanguage: "Γλώσσα εφαρμογής",
@@ -133,6 +135,41 @@ export const el: Record<keyof typeof en, string> = {
   synthesizerHint: "Πατήστε πλήκτρα για να παίξετε νότες",
 
   synthesizerVolume: "Ένταση",
+
+  dictationStart: "Έναρξη υπαγόρευσης",
+
+  dictationStop: "Διακοπή υπαγόρευσης",
+
+  dictationListening: "Ακούει…",
+
+  dictationErrorNoLanguage:
+    "Η αναγνώριση ομιλίας για αυτή τη γλώσσα πληκτρολόγησης δεν είναι εγκατεστημένη. Προσθέστε το πακέτο ομιλίας στις Ρυθμίσεις Windows → Ώρα και γλώσσα → Ομιλία (ή Γλώσσα και περιοχή) και δοκιμάστε ξανά.",
+
+  dictationErrorUnavailable:
+    "Η υπαγόρευση φωνής είναι διαθέσιμη μόνο στα Windows.",
+
+  dictationErrorSpeechPrivacy:
+    "Η διαδικτυακή αναγνώριση ομιλίας είναι απενεργοποιημένη στα Windows. Ενεργοποιήστε την στις Ρυθμίσεις → Απόρρητο και ασφάλεια → Ομιλία και δοκιμάστε ξανά. (Δεν είναι αίτημα άδειας μικροφώνου.)",
+
+  dictationErrorWhisperModel:
+    "Το τοπικό μοντέλο ομιλίας δεν είναι έτοιμο ακόμα. Κατεβάστε το για υπαγόρευση εκτός σύνδεσης ή σε γλώσσες που δεν υποστηρίζει η Windows (όπως τα ελληνικά).",
+
+  dictationErrorWinrtUnsupported:
+    "Η αναγνώριση ομιλίας των Windows δεν υποστηρίζει αυτή τη γλώσσα. Κατεβάστε το τοπικό μοντέλο ομιλίας για υπαγόρευση.",
+
+  dictationUnavailableUnsupported:
+    "Η υπαγόρευση δεν είναι διαθέσιμη — κατεβάστε το τοπικό μοντέλο ομιλίας για αυτή τη γλώσσα",
+
+  dictationUnavailableOffline:
+    "Η υπαγόρευση δεν είναι διαθέσιμη εκτός σύνδεσης — κατεβάστε το τοπικό μοντέλο ομιλίας",
+
+  dictationDownloadModel: "Λήψη μοντέλου ομιλίας",
+
+  dictationDownloadingModel: "Λήψη μοντέλου ομιλίας…",
+
+  dictationOpenSpeechSettings: "Άνοιγμα ρυθμίσεων ομιλίας",
+
+  dictationOpenSpeechLanguageSettings: "Εγκατάσταση γλώσσας ομιλίας",
 
   mute: "Σίγαση",
 

@@ -50,6 +50,8 @@
 
   showSuggestionsBar: "Show suggestions bar",
 
+  showDictationControl: "Show dictation (mic)",
+
   opacity: "Opacity",
 
   appLanguage: "App language",
@@ -129,6 +131,41 @@
   synthesizerHint: "Tap keys to play notes",
 
   synthesizerVolume: "Volume",
+
+  dictationStart: "Start dictation",
+
+  dictationStop: "Stop dictation",
+
+  dictationListening: "Listening…",
+
+  dictationErrorNoLanguage:
+    "Speech recognition for this typing language is not installed. Add the speech pack in Windows Settings → Time & language → Speech (or Language & region), then try again.",
+
+  dictationErrorUnavailable:
+    "Voice dictation is only available on Windows.",
+
+  dictationErrorSpeechPrivacy:
+    "Online speech recognition is turned off in Windows. Turn it on in Privacy & security → Speech, then try again. (This is not a microphone permission prompt.)",
+
+  dictationErrorWhisperModel:
+    "The local speech model isn’t ready yet. Download it to dictate offline or in languages Windows doesn’t support (such as Greek).",
+
+  dictationErrorWinrtUnsupported:
+    "Windows speech recognition doesn’t support this language. Download the local speech model to dictate.",
+
+  dictationUnavailableUnsupported:
+    "Dictation unavailable — download the local speech model for this language",
+
+  dictationUnavailableOffline:
+    "Dictation unavailable offline — download the local speech model",
+
+  dictationDownloadModel: "Download speech model",
+
+  dictationDownloadingModel: "Downloading speech model…",
+
+  dictationOpenSpeechSettings: "Open Speech settings",
+
+  dictationOpenSpeechLanguageSettings: "Install speech language",
 
   mute: "Mute",
 

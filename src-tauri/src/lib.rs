@@ -3,6 +3,7 @@ mod input;
 mod macros;
 mod prediction;
 mod profiles;
+mod stt;
 mod tts;
 mod window;
 
@@ -19,8 +20,11 @@ use input::focus_target;
 use prediction::{get_installed_languages, get_suggestions, record_usage};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::{Manager, State};
+use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
+use stt::{
+    ensure_whisper_model, get_status as get_stt_status, start_dictation, stop_dictation, SttStatus,
+};
 use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{compute_window_layout, list_monitors, MonitorInfo, WindowLayout};
@@ -208,9 +212,10 @@ async fn apply_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
     let monitors = list_monitors();
-    let layout = compute_window_layout(&monitors, monitor_id, collapsed)?;
+    let layout = compute_window_layout(&monitors, monitor_id, collapsed, collapsed_dictation)?;
     set_window_layout(app, layout).await
 }
 
@@ -255,12 +260,14 @@ async fn animate_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
     let monitors = list_monitors();
-    let target = compute_window_layout(&monitors, monitor_id, collapsed)?;
+    let target =
+        compute_window_layout(&monitors, monitor_id, collapsed, collapsed_dictation)?;
     let from = get_current_window_layout(&window)?;
 
     let steps = window::COLLAPSE_ANIMATION_MS / window::COLLAPSE_ANIMATION_FRAME_MS;
@@ -303,8 +310,9 @@ async fn cmd_apply_window_layout(
     app: tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, collapsed).await
+    apply_window_layout(&app, monitor_id, collapsed, collapsed_dictation).await
 }
 
 #[tauri::command]
@@ -312,8 +320,9 @@ async fn cmd_animate_window_layout(
     app: tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
-    animate_window_layout(&app, monitor_id, collapsed).await
+    animate_window_layout(&app, monitor_id, collapsed, collapsed_dictation).await
 }
 
 #[tauri::command]
@@ -321,7 +330,7 @@ async fn cmd_move_window_to_monitor(
     app: tauri::AppHandle,
     monitor_id: u32,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, false).await
+    apply_window_layout(&app, monitor_id, false, false).await
 }
 
 #[tauri::command]
@@ -349,8 +358,9 @@ async fn cmd_set_collapsed(
     app: tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, collapsed).await
+    apply_window_layout(&app, monitor_id, collapsed, collapsed_dictation).await
 }
 
 #[tauri::command]
@@ -560,6 +570,47 @@ fn cmd_validate_tts() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn cmd_start_dictation(language: String, app: AppHandle) -> Result<(), String> {
+    start_dictation(&language, app).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_stop_dictation() -> Result<(), String> {
+    stop_dictation().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_get_stt_status(language: Option<String>) -> Result<SttStatus, String> {
+    Ok(get_stt_status(language.as_deref()))
+}
+
+#[tauri::command]
+fn cmd_ensure_whisper_model(app: AppHandle) -> Result<(), String> {
+    ensure_whisper_model(app).map_err(|e| e.to_string())
+}
+
+/// Opens a Windows Settings page (e.g. `ms-settings:privacy-speech`).
+#[tauri::command]
+fn cmd_open_windows_settings(uri: String) -> Result<(), String> {
+    if !uri.starts_with("ms-settings:") {
+        return Err("Only ms-settings: URIs are allowed".to_string());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", &uri])
+            .spawn()
+            .map_err(|e| format!("Failed to open Windows Settings: {e}"))?;
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = uri;
+        Err("Windows Settings are only available on Windows".to_string())
+    }
+}
+
+#[tauri::command]
 fn cmd_get_suggestions(
     profile_id: String,
     prefix: String,
@@ -672,6 +723,8 @@ pub fn run() {
                 last_error: Mutex::new(None),
             });
 
+            stt::init(&app_data_dir, app.handle().clone());
+
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_decorations(false);
                 let _ = window.set_shadow(false);
@@ -724,6 +777,11 @@ pub fn run() {
             cmd_list_voices,
             cmd_get_tts_status,
             cmd_validate_tts,
+            cmd_start_dictation,
+            cmd_stop_dictation,
+            cmd_get_stt_status,
+            cmd_ensure_whisper_model,
+            cmd_open_windows_settings,
             cmd_get_suggestions,
             cmd_record_word,
             cmd_get_languages,
