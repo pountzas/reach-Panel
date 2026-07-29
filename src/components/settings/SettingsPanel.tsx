@@ -184,26 +184,25 @@ export function SettingsPanel() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div
+      className="flex h-full w-full flex-col overflow-hidden"
+      style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
+    >
       <div
-        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl shadow-xl"
-        style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
+        className="flex shrink-0 items-center justify-between px-5 py-3"
+        style={{ backgroundColor: headerBg, color: headerText }}
       >
-        <div
-          className="flex shrink-0 items-center justify-between px-5 py-3"
-          style={{ backgroundColor: headerBg, color: headerText }}
+        <h2 className="text-lg font-bold">{t("settings")}</h2>
+        <IconActionButton
+          label={t("close")}
+          onClick={() => setShowSettings(false)}
+          className="rounded bg-white/20 hover:bg-white/30"
         >
-          <h2 className="text-lg font-bold">{t("settings")}</h2>
-          <IconActionButton
-            label={t("close")}
-            onClick={() => setShowSettings(false)}
-            className="rounded bg-white/20 hover:bg-white/30"
-          >
-            <CloseIcon />
-          </IconActionButton>
-        </div>
+          <CloseIcon />
+        </IconActionButton>
+      </div>
 
-        <div className="space-y-5 overflow-y-auto p-5">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
           <SettingsSection title={t("profile")} surface={surface}>
             <ThemedSelect
               value={activeProfileFile ?? ""}
@@ -581,8 +580,8 @@ export function SettingsPanel() {
                 className="rounded-lg border px-3 py-2 text-sm"
                 style={secondaryButtonStyle}
                 onClick={() => {
-                  setShowSettings(false);
                   setShowMacroBuilder(true);
+                  setShowSettings(false);
                 }}
               >
                 {t("macroBuilder")}
@@ -592,8 +591,8 @@ export function SettingsPanel() {
                 className="rounded-lg border px-3 py-2 text-sm"
                 style={secondaryButtonStyle}
                 onClick={() => {
-                  setShowSettings(false);
                   setShowHeadTrackingWizard(true);
+                  setShowSettings(false);
                 }}
               >
                 {t("headTracking")}
@@ -650,7 +649,6 @@ export function SettingsPanel() {
             <AboutSection surface={surface} />
           </SettingsSection>
         </div>
-      </div>
     </div>
   );
 }

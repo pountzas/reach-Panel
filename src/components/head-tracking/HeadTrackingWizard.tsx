@@ -43,15 +43,15 @@ export function HeadTrackingWizard() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Head Tracking Calibration</h2>
-          <button type="button" onClick={() => setShowHeadTrackingWizard(false)}>
-            Close
-          </button>
-        </div>
+    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
+      <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
+        <h2 className="text-lg font-bold">Head Tracking Calibration</h2>
+        <button type="button" onClick={() => setShowHeadTrackingWizard(false)}>
+          Close
+        </button>
+      </div>
 
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="mb-4 flex gap-2">
           <button
             type="button"
