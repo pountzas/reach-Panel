@@ -20,6 +20,11 @@ export const el: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Οθόνη προσβασιμότητας",
 
+  largeHeaders: "Μεγάλα headers για εύκολη αλλαγή μεγέθους",
+
+  largeHeadersHint:
+    "Διπλασιάζει το ύψος των headers και τα κουμπιά τους. Σύρετε την κενή περιοχή του header για να αλλάξετε το ύψος ενότητας ή παραθύρου.",
+
   primary: "Κύρια",
 
   mouse: "Ποντίκι",

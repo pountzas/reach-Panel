@@ -22,7 +22,7 @@ import {
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
-import { computeContentHeightRatio } from "../lib/sectionLayouts";
+import { clampWindowHeightRatio, computeContentHeightRatio } from "../lib/sectionLayouts";
 
 /** Avoid re-toasting the same backend error until it clears. */
 let lastAnnouncedError: string | null = null;
@@ -30,14 +30,21 @@ let lastAnnouncedError: string | null = null;
 /** Block OS→UI language sync while a typing-language switch is in flight. */
 let typingLanguageSwitchInFlight = false;
 
+/** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
+let liveHeightRatioPreview: number | null = null;
+
 const LANGUAGE_CHANGE_NO_TARGET_FALLBACK =
   "No target application to switch language. Click into the app you want to type in first.";
 
 function heightRatioFromSettings(settings: AppSettings): number {
-  return computeContentHeightRatio({
+  const contentRatio = computeContentHeightRatio({
     quickActions: settings.quickActionsVisible,
     phrases: settings.phrasesVisible,
   });
+  if (settings.windowHeightRatio == null) {
+    return contentRatio;
+  }
+  return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
 }
 
 async function syncWindowLayoutFromSettings(
@@ -97,6 +104,8 @@ interface AppStore {
     partial: Partial<AppSettings>,
     options?: { syncToSystem?: boolean },
   ) => Promise<void>;
+  /** Live-preview OS window height while dragging the main header (no persist). */
+  applyWindowHeightRatioLive: (ratio: number) => Promise<void>;
   resetSettingsToDefaults: () => Promise<void>;
   loadMonitors: () => Promise<void>;
   loadQuickActions: () => Promise<void>;
@@ -348,8 +357,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (
         partial.accessibilityMonitorId !== undefined ||
         partial.collapsed !== undefined ||
+        partial.windowHeightRatio !== undefined ||
         (current.collapsed && partial.dictationVisible !== undefined)
       ) {
+        if (partial.windowHeightRatio !== undefined) {
+          liveHeightRatioPreview = null;
+        }
         await invoke("cmd_apply_window_layout", {
           monitorId: current.accessibilityMonitorId,
           collapsed: current.collapsed,
@@ -366,6 +379,31 @@ export const useAppStore = create<AppStore>((set, get) => ({
         });
       }
     }
+  },
+
+  applyWindowHeightRatioLive: async (ratio) => {
+    const { settings } = get();
+    if (settings.collapsed) return;
+    const heightRatio = Math.max(
+      computeContentHeightRatio({
+        quickActions: settings.quickActionsVisible,
+        phrases: settings.phrasesVisible,
+      }),
+      clampWindowHeightRatio(ratio),
+    );
+    if (
+      liveHeightRatioPreview !== null &&
+      Math.abs(liveHeightRatioPreview - heightRatio) < 0.002
+    ) {
+      return;
+    }
+    liveHeightRatioPreview = heightRatio;
+    await invoke("cmd_apply_window_layout", {
+      monitorId: settings.accessibilityMonitorId,
+      collapsed: false,
+      collapsedDictation: false,
+      heightRatio,
+    });
   },
 
   resetSettingsToDefaults: async () => {
