@@ -126,12 +126,15 @@ export function SettingsPanel() {
     activeProfileFile,
     setProfileFile,
     createProfileFile,
+    deleteProfileFile,
+    saveActiveProfile,
     pickBackgroundImage,
     monitors,
     setShowSettings,
     setShowMacroBuilder,
     setShowHeadTrackingWizard,
     resetSettingsToDefaults,
+    wipeActiveProfile,
     checkForUpdates,
     updateCheckStatus,
     stopDictation,
@@ -148,6 +151,36 @@ export function SettingsPanel() {
     backgroundColor: surface.panelButtonBg,
     borderColor: surface.panelBorder,
     color: surface.panelText,
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      await saveActiveProfile();
+      notify.success(t("profileSaved"));
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (!activeProfileFile) return;
+    if (!window.confirm(t("deleteProfileConfirm"))) return;
+    try {
+      await deleteProfileFile(activeProfileFile);
+      notify.success(t("profileDeleted"));
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const handleWipeProfile = async () => {
+    if (!window.confirm(t("wipeProfileConfirm"))) return;
+    try {
+      await wipeActiveProfile();
+      notify.success(t("profileWiped"));
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : String(error));
+    }
   };
 
   return (
@@ -184,6 +217,25 @@ export function SettingsPanel() {
                 </option>
               ))}
             </ThemedSelect>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-sm"
+                style={{ backgroundColor: headerBg, color: headerText }}
+                onClick={() => void handleSaveProfile()}
+              >
+                {t("saveProfile")}
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700"
+                style={{ backgroundColor: surface.insetBg }}
+                onClick={() => void handleDeleteProfile()}
+                disabled={!activeProfileFile}
+              >
+                {t("deleteProfile")}
+              </button>
+            </div>
             <div className="mt-3 flex gap-2">
               <input
                 className="min-w-0 flex-1 rounded border px-2 py-1.5 text-sm"
@@ -576,10 +628,21 @@ export function SettingsPanel() {
               style={{ backgroundColor: surface.insetBg }}
               onClick={() => void resetSettingsToDefaults()}
             >
-              {t("resetSettings")}
+              {t("resetUi")}
             </button>
             <p className="mt-1 text-xs" style={{ color: surface.panelMutedText }}>
-              {t("resetSettingsHint")}
+              {t("resetUiHint")}
+            </p>
+            <button
+              type="button"
+              className="mt-3 w-full rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700"
+              style={{ backgroundColor: surface.insetBg }}
+              onClick={() => void handleWipeProfile()}
+            >
+              {t("wipeProfile")}
+            </button>
+            <p className="mt-1 text-xs" style={{ color: surface.panelMutedText }}>
+              {t("wipeProfileHint")}
             </p>
           </SettingsSection>
 

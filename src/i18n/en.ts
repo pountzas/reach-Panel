@@ -77,6 +77,32 @@
 
     "Restores layout, monitor position, panel sizes, and all other settings to their defaults.",
 
+  resetUi: "Reset UI",
+
+  resetUiHint:
+    "Restores all settings (theme, visibility, layout, languages) to defaults. Keeps quick actions, macros, phrases, and predictions.",
+
+  wipeProfile: "Wipe profile",
+
+  wipeProfileHint:
+    "Clears quick actions, macros, phrases, predictions, and head tracking, and resets all settings to defaults.",
+
+  wipeProfileConfirm:
+    "Wipe this profile? All quick actions, macros, phrases, predictions, and settings will be reset.",
+
+  saveProfile: "Save profile",
+
+  profileSaved: "Profile saved.",
+
+  deleteProfile: "Delete profile",
+
+  deleteProfileConfirm:
+    "Delete this profile? If it is active, a fresh default profile will be created.",
+
+  profileDeleted: "Profile deleted.",
+
+  profileWiped: "Profile wiped.",
+
   layoutEdit: "Edit layout",
 
   layoutEditDone: "Done",

@@ -348,6 +348,13 @@ pub fn lang_id_to_app_language(lang_id: u32) -> String {
     }
 }
 
+/// Windows UI language mapped to app locales (`en` / `el`); unsupported → `en`.
+pub fn windows_ui_language() -> String {
+    use windows::Win32::Globalization::GetUserDefaultUILanguage;
+    let lang_id = unsafe { GetUserDefaultUILanguage() } as u32;
+    lang_id_to_app_language(lang_id)
+}
+
 fn lang_id_to_layout_name(lang_id: u32) -> String {
     match lang_id {
         0x0409 => "QWERTY".to_string(),
