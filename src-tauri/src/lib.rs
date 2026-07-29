@@ -64,26 +64,6 @@ fn get_last_error(state: State<AppState>) -> Option<String> {
 }
 
 #[tauri::command]
-fn cmd_open_windows_settings(uri: String) -> Result<(), String> {
-    if !uri.starts_with("ms-settings:") {
-        return Err("Only ms-settings: URIs are allowed".to_string());
-    }
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("cmd")
-            .args(["/C", "start", "", &uri])
-            .spawn()
-            .map_err(|e| format!("Failed to open Windows Settings: {e}"))?;
-        Ok(())
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let _ = uri;
-        Err("Windows Settings are only available on Windows".to_string())
-    }
-}
-
-#[tauri::command]
 fn cmd_press_key(request: KeyPressRequest, state: State<AppState>) -> CommandResult {
     match press_key(request) {
         Ok(()) => {
@@ -757,7 +737,6 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_last_error,
-            cmd_open_windows_settings,
             cmd_press_key,
             cmd_type_text,
             cmd_press_combo,
