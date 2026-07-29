@@ -16,6 +16,11 @@
 
   accessibilityScreen: "Accessibility Screen",
 
+  largeHeaders: "Large headers for easier resize",
+
+  largeHeadersHint:
+    "Doubles header height and header buttons. Drag the empty header area to change section or window height.",
+
   primary: "Primary",
 
   mouse: "Mouse",

@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Rnd, type ResizeEnable } from "react-rnd";
 import {
   effectiveSectionHeight,
   layoutToPixels,
   pixelsToLayout,
-  SECTION_HEADER_HEIGHT_PX,
+  sectionHeaderHeightPx,
   toggleSectionMinimized,
   type SectionId,
   type SectionLayout,
@@ -117,13 +117,29 @@ export function ResizableSection({
   const { t } = useTranslation();
   const updateSettings = useAppStore((s) => s.updateSettings);
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
+  const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
   const surface = getSurfaceColors(appBgColor);
   const interactingRef = useRef(false);
   const lastValidRef = useRef<PixelRect | null>(null);
+  const headerResizeRef = useRef<{
+    startY: number;
+    startTop: number;
+    startHeight: number;
+    bottom: number;
+    width: number;
+    x: number;
+  } | null>(null);
   const isMinimized = layout.minimized ?? false;
   const showPanelControls = id !== "input-row";
+  const headerHeight = sectionHeaderHeightPx(largeHeaders);
+  const iconSize = largeHeaders ? "lg" : "sm";
+  const iconClass = largeHeaders ? "h-7 w-7" : "h-3.5 w-3.5";
   const pixels = layoutToPixels(layout, containerWidth, containerHeight);
-  const effectiveHeight = effectiveSectionHeight(layout, containerHeight);
+  const effectiveHeight = effectiveSectionHeight(
+    layout,
+    containerHeight,
+    largeHeaders,
+  );
   const [position, setPosition] = useState({ x: pixels.x, y: pixels.y });
   const [size, setSize] = useState({
     width: pixels.width,
@@ -158,7 +174,7 @@ export function ResizableSection({
   };
 
   const applyRect = (candidate: PixelRect, persist: boolean) => {
-    const minHeight = isMinimized ? SECTION_HEADER_HEIGHT_PX : MIN_SECTION_HEIGHT;
+    const minHeight = isMinimized ? headerHeight : MIN_SECTION_HEIGHT;
     const adjusted = adjustRect(
       candidate,
       siblingRects,
@@ -168,7 +184,7 @@ export function ResizableSection({
       minHeight,
     );
 
-    const height = isMinimized ? SECTION_HEADER_HEIGHT_PX : adjusted.height;
+    const height = isMinimized ? headerHeight : adjusted.height;
     const finalCandidate = { ...adjusted, height };
     const finalRect = fitsWithoutOverlap(finalCandidate, siblingRects)
       ? finalCandidate
@@ -202,7 +218,10 @@ export function ResizableSection({
   };
 
   const handleToggleMinimize = () => {
-    onLayoutChange(id, toggleSectionMinimized(layout, containerHeight));
+    onLayoutChange(
+      id,
+      toggleSectionMinimized(layout, containerHeight, largeHeaders),
+    );
   };
 
   const handleClose = () => {
@@ -218,9 +237,67 @@ export function ResizableSection({
     }
   };
 
+  const onHeaderResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!largeHeaders || isMinimized) return;
+    if ((event.target as HTMLElement).closest(".section-no-drag")) return;
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    startInteract();
+    headerResizeRef.current = {
+      startY: event.clientY,
+      startTop: position.y,
+      startHeight: size.height,
+      bottom: position.y + size.height,
+      width: size.width,
+      x: position.x,
+    };
+  };
+
+  const onHeaderResizePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = headerResizeRef.current;
+    if (!drag) return;
+
+    // Drag up → taller section (top moves up, bottom fixed).
+    const delta = event.clientY - drag.startY;
+    const nextTop = drag.startTop + delta;
+    const nextHeight = drag.bottom - nextTop;
+    applyRect(
+      {
+        x: drag.x,
+        y: nextTop,
+        width: drag.width,
+        height: nextHeight,
+      },
+      false,
+    );
+  };
+
+  const onHeaderResizePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!headerResizeRef.current) return;
+    headerResizeRef.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Already released.
+    }
+    applyRect(
+      {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+      },
+      true,
+    );
+    endInteract();
+  };
+
   const edgeHandle = <EdgeHitArea />;
-  const minHeight = isMinimized ? SECTION_HEADER_HEIGHT_PX : MIN_SECTION_HEIGHT;
-  const maxHeight = isMinimized ? SECTION_HEADER_HEIGHT_PX : undefined;
+  const minHeight = isMinimized ? headerHeight : MIN_SECTION_HEIGHT;
+  const maxHeight = isMinimized ? headerHeight : undefined;
+  const headerCursor = largeHeaders && !isMinimized ? "ns-resize" : "grab";
+  const headerDragClass = largeHeaders ? "" : "section-drag-handle";
 
   return (
     <Rnd
@@ -232,6 +309,7 @@ export function ResizableSection({
       maxHeight={maxHeight}
       dragHandleClassName="section-drag-handle"
       cancel=".section-no-drag"
+      disableDragging={largeHeaders}
       enableResizing={isMinimized ? DISABLE_RESIZE : ENABLE_RESIZE}
       resizeHandleStyles={resizeHandleStyles}
       resizeHandleComponent={{
@@ -299,11 +377,20 @@ export function ResizableSection({
         style={{ backgroundColor: surface.panelBg, borderColor: surface.panelBorder }}
       >
         <div
-          className="section-drag-handle flex h-7 shrink-0 cursor-grab items-center justify-between border-b px-2 active:cursor-grabbing"
-          style={{ backgroundColor: surface.panelHeaderBg, borderColor: surface.panelBorder }}
+          className={`${headerDragClass} flex shrink-0 items-center justify-between border-b px-2 active:cursor-grabbing`}
+          style={{
+            height: headerHeight,
+            backgroundColor: surface.panelHeaderBg,
+            borderColor: surface.panelBorder,
+            cursor: headerCursor,
+          }}
+          onPointerDown={largeHeaders ? onHeaderResizePointerDown : undefined}
+          onPointerMove={largeHeaders ? onHeaderResizePointerMove : undefined}
+          onPointerUp={largeHeaders ? onHeaderResizePointerUp : undefined}
+          onPointerCancel={largeHeaders ? onHeaderResizePointerUp : undefined}
         >
           <span
-            className="truncate text-xs font-medium"
+            className={`truncate font-medium ${largeHeaders ? "text-sm" : "text-xs"}`}
             style={{ color: surface.panelMutedText }}
           >
             {t(SECTION_TITLE_KEY[id])}
@@ -316,15 +403,20 @@ export function ResizableSection({
                 <IconActionButton
                   label={isMinimized ? t("expand") : t("minimizeSection")}
                   onClick={handleToggleMinimize}
+                  size={iconSize}
                 >
                   {isMinimized ? (
-                    <ExpandIcon className="h-3.5 w-3.5" />
+                    <ExpandIcon className={iconClass} />
                   ) : (
-                    <MinimizeIcon className="h-3.5 w-3.5" />
+                    <MinimizeIcon className={iconClass} />
                   )}
                 </IconActionButton>
-                <IconActionButton label={t("close")} onClick={handleClose}>
-                  <CloseIcon className="h-3.5 w-3.5" />
+                <IconActionButton
+                  label={t("close")}
+                  onClick={handleClose}
+                  size={iconSize}
+                >
+                  <CloseIcon className={iconClass} />
                 </IconActionButton>
               </div>
             )

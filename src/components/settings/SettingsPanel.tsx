@@ -242,6 +242,20 @@ export function SettingsPanel() {
                 );
               })}
             </ul>
+            <div className="mt-3">
+              <ToggleRow
+                label={t("largeHeaders")}
+                checked={settings.largeHeaders}
+                onChange={(checked) => updateSettings({ largeHeaders: checked })}
+                surface={surface}
+              />
+              <p
+                className="mt-1 px-1 text-xs"
+                style={{ color: surface.panelMutedText }}
+              >
+                {t("largeHeadersHint")}
+              </p>
+            </div>
           </SettingsSection>
 
           <SettingsSection title={t("appearance")} surface={surface}>

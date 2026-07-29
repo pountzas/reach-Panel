@@ -1,4 +1,4 @@
-import { type CSSProperties } from "react";
+import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { exit } from "@tauri-apps/plugin-process";
 import { ResizableSplitPane } from "./ResizableSplitPane";
@@ -19,6 +19,11 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { CollapseIcon, CloseIcon, SettingsIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { CollapsedFab } from "./CollapsedFab";
+import {
+  appHeaderHeightPx,
+  clampWindowHeightRatio,
+  computeContentHeightRatio,
+} from "../../lib/sectionLayouts";
 
 function InputRowPanel() {
   const { settings, updateSettings } = useAppStore();
@@ -48,9 +53,36 @@ function InputRowPanel() {
   );
 }
 
+function monitorRegionHeight(
+  monitors: { id: number; height: number; is_primary: boolean }[],
+  monitorId: number,
+): number {
+  const monitor =
+    monitors.find((m) => m.id === monitorId) ??
+    monitors.find((m) => m.is_primary) ??
+    monitors[0];
+  if (!monitor) return window.innerHeight;
+  // Match Rust compute_window_layout: dual-monitor = full work area; single = bottom half.
+  return monitors.length >= 2 ? monitor.height : monitor.height / 2;
+}
+
+function contentHeightRatioFromSettings(settings: {
+  quickActionsVisible: boolean;
+  phrasesVisible: boolean;
+  windowHeightRatio?: number;
+}): number {
+  const contentRatio = computeContentHeightRatio({
+    quickActions: settings.quickActionsVisible,
+    phrases: settings.phrasesVisible,
+  });
+  if (settings.windowHeightRatio == null) return contentRatio;
+  return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
+}
+
 export function AppShell() {
   const {
     settings,
+    monitors,
     showSettings,
     showMacroBuilder,
     showHeadTrackingWizard,
@@ -59,12 +91,64 @@ export function AppShell() {
     setShowSettings,
     toggleCollapsed,
     updateSettings,
+    applyWindowHeightRatioLive,
     isAnimatingWindow,
   } = useAppStore();
   const { t } = useTranslation();
+  const largeHeaders = settings.largeHeaders;
+  const headerHeight = appHeaderHeightPx(largeHeaders);
+  const iconSize = largeHeaders ? "lg" : "sm";
+  const iconClass = largeHeaders ? "h-7 w-7" : "h-4 w-4";
+  const windowResizeRef = useRef<{
+    startY: number;
+    startRatio: number;
+    regionHeight: number;
+    latestRatio: number;
+  } | null>(null);
 
   const handleCloseApp = () => {
     void exit(0);
+  };
+
+  const onWindowHeaderPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!largeHeaders) return;
+    if ((event.target as HTMLElement).closest(".section-no-drag")) return;
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const regionHeight = monitorRegionHeight(monitors, settings.accessibilityMonitorId);
+    const startRatio = contentHeightRatioFromSettings(settings);
+    windowResizeRef.current = {
+      startY: event.clientY,
+      startRatio,
+      regionHeight,
+      latestRatio: startRatio,
+    };
+  };
+
+  const onWindowHeaderPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    const drag = windowResizeRef.current;
+    if (!drag) return;
+
+    // Drag up → taller window (bottom edge fixed).
+    const delta = event.clientY - drag.startY;
+    const nextRatio = clampWindowHeightRatio(
+      drag.startRatio - delta / drag.regionHeight,
+    );
+    drag.latestRatio = nextRatio;
+    void applyWindowHeightRatioLive(nextRatio);
+  };
+
+  const onWindowHeaderPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
+    const drag = windowResizeRef.current;
+    if (!drag) return;
+    windowResizeRef.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Already released.
+    }
+    void updateSettings({ windowHeightRatio: drag.latestRatio });
   };
 
   if (settings.collapsed) {
@@ -99,35 +183,46 @@ export function AppShell() {
 
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         <header
-          className="flex shrink-0 items-center justify-between px-3 py-2"
+          className="flex shrink-0 items-center justify-between px-3"
           style={{
+            height: headerHeight,
             backgroundColor: settings.headerBgColor ?? "#1e293b",
             color: settings.headerTextColor ?? "#ffffff",
+            cursor: largeHeaders ? "ns-resize" : undefined,
           }}
+          onPointerDown={largeHeaders ? onWindowHeaderPointerDown : undefined}
+          onPointerMove={largeHeaders ? onWindowHeaderPointerMove : undefined}
+          onPointerUp={largeHeaders ? onWindowHeaderPointerUp : undefined}
+          onPointerCancel={largeHeaders ? onWindowHeaderPointerUp : undefined}
         >
-          <span className="font-semibold">{t("appTitle")}</span>
-          <div className="flex gap-1">
+          <span className={`font-semibold ${largeHeaders ? "text-lg" : ""}`}>
+            {t("appTitle")}
+          </span>
+          <div className="section-no-drag flex gap-1">
             <IconActionButton
               label={t("collapse")}
               onClick={toggleCollapsed}
               disabled={isAnimatingWindow}
               className="rounded bg-white/20 hover:bg-white/30"
+              size={iconSize}
             >
-              <CollapseIcon />
+              <CollapseIcon className={iconClass} />
             </IconActionButton>
             <IconActionButton
               label={t("settings")}
               onClick={() => setShowSettings(true)}
               className="rounded bg-white/20 hover:bg-white/30"
+              size={iconSize}
             >
-              <SettingsIcon />
+              <SettingsIcon className={iconClass} />
             </IconActionButton>
             <IconActionButton
               label={t("close")}
               onClick={handleCloseApp}
               className="rounded bg-white/20 hover:bg-white/30"
+              size={iconSize}
             >
-              <CloseIcon />
+              <CloseIcon className={iconClass} />
             </IconActionButton>
           </div>
         </header>

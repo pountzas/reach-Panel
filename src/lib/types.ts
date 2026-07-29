@@ -53,6 +53,16 @@ export interface AppSettings {
   inputAreaCompact: boolean;
   /** When false, hides drag lock, precision, and scroll buttons on the trackpad. */
   mouseBottomRowVisible: boolean;
+  /**
+   * Doubles header heights and header chrome buttons, and turns non-button
+   * header areas into vertical resize grips (sections + OS window).
+   */
+  largeHeaders: boolean;
+  /**
+   * Optional override for OS window height as a fraction of the monitor region.
+   * Combined with visibility-based content ratio via Math.max.
+   */
+  windowHeightRatio?: number;
 }
 
 export interface ProfileFileInfo {
@@ -165,4 +175,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   inputRowRightRatio: 0.28,
   inputAreaCompact: false,
   mouseBottomRowVisible: true,
+  largeHeaders: false,
 };

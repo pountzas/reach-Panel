@@ -10,6 +10,12 @@ export interface SectionLayout {
 }
 
 export const SECTION_HEADER_HEIGHT_PX = 28;
+export const SECTION_HEADER_HEIGHT_LARGE_PX = 56;
+export const APP_HEADER_HEIGHT_PX = 48;
+export const APP_HEADER_HEIGHT_LARGE_PX = 96;
+/** Clamp for optional user-dragged OS window height ratio. */
+export const WINDOW_HEIGHT_RATIO_MIN = 0.5;
+export const WINDOW_HEIGHT_RATIO_MAX = 1;
 
 export type SectionLayouts = Partial<Record<SectionId, SectionLayout>>;
 
@@ -27,7 +33,19 @@ const QUICK_ACTIONS_HEIGHT_RATIO = 0.1;
 const PHRASES_HEIGHT_RATIO = 0.38;
 const GAP_HEIGHT_RATIO = GAP_PCT / 100;
 /** Minimum window height so header + input-row stay usable. */
-const MIN_CONTENT_HEIGHT_RATIO = 0.5;
+const MIN_CONTENT_HEIGHT_RATIO = WINDOW_HEIGHT_RATIO_MIN;
+
+export function sectionHeaderHeightPx(largeHeaders: boolean): number {
+  return largeHeaders ? SECTION_HEADER_HEIGHT_LARGE_PX : SECTION_HEADER_HEIGHT_PX;
+}
+
+export function appHeaderHeightPx(largeHeaders: boolean): number {
+  return largeHeaders ? APP_HEADER_HEIGHT_LARGE_PX : APP_HEADER_HEIGHT_PX;
+}
+
+export function clampWindowHeightRatio(ratio: number): number {
+  return Math.max(WINDOW_HEIGHT_RATIO_MIN, Math.min(WINDOW_HEIGHT_RATIO_MAX, ratio));
+}
 
 /**
  * Fraction of the full keyboard region height needed for the currently
@@ -65,16 +83,17 @@ function clampLayout(layout: SectionLayout): SectionLayout {
   };
 }
 
-function headerHeightPct(containerHeight: number): number {
-  return (SECTION_HEADER_HEIGHT_PX / containerHeight) * 100;
+function headerHeightPct(containerHeight: number, largeHeaders = false): number {
+  return (sectionHeaderHeightPx(largeHeaders) / containerHeight) * 100;
 }
 
 export function effectiveSectionHeight(
   layout: SectionLayout,
   containerHeight: number,
+  largeHeaders = false,
 ): number {
   if (layout.minimized) {
-    return SECTION_HEADER_HEIGHT_PX;
+    return sectionHeaderHeightPx(largeHeaders);
   }
   return (layout.hPct / 100) * containerHeight;
 }
@@ -82,6 +101,7 @@ export function effectiveSectionHeight(
 export function toggleSectionMinimized(
   layout: SectionLayout,
   containerHeight: number,
+  largeHeaders = false,
 ): SectionLayout {
   if (layout.minimized) {
     return {
@@ -94,7 +114,7 @@ export function toggleSectionMinimized(
     ...layout,
     minimized: true,
     expandedHPct: layout.hPct,
-    hPct: headerHeightPct(containerHeight),
+    hPct: headerHeightPct(containerHeight, largeHeaders),
   };
 }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  appHeaderHeightPx,
   computeDefaultSectionLayouts,
   hasStaleGap,
   layoutToPixels,
@@ -10,8 +11,7 @@ import {
 } from "../../lib/sectionLayouts";
 import type { PixelRect } from "../../lib/sectionSnap";
 import { ResizableSection } from "./ResizableSection";
-
-const HEADER_HEIGHT_ESTIMATE = 48;
+import { useAppStore } from "../../stores/appStore";
 
 interface SectionCanvasProps {
   quickActionsVisible: boolean;
@@ -23,13 +23,6 @@ interface SectionCanvasProps {
   inputRow: ReactNode;
 }
 
-function fallbackCanvasSize() {
-  return {
-    width: Math.max(320, window.innerWidth),
-    height: Math.max(200, window.innerHeight - HEADER_HEIGHT_ESTIMATE),
-  };
-}
-
 export function SectionCanvas({
   quickActionsVisible,
   phrasesVisible,
@@ -39,6 +32,16 @@ export function SectionCanvas({
   phrases,
   inputRow,
 }: SectionCanvasProps) {
+  const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
+  const headerEstimate = appHeaderHeightPx(largeHeaders);
+
+  const fallbackCanvasSize = useCallback(() => {
+    return {
+      width: Math.max(320, window.innerWidth),
+      height: Math.max(200, window.innerHeight - headerEstimate),
+    };
+  }, [headerEstimate]);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState(fallbackCanvasSize);
   const [liveRects, setLiveRects] = useState<Partial<Record<SectionId, PixelRect>>>({});
@@ -57,7 +60,7 @@ export function SectionCanvas({
     } else {
       setContainerSize(fallbackCanvasSize());
     }
-  }, []);
+  }, [fallbackCanvasSize]);
 
   useEffect(() => {
     updateSize();
