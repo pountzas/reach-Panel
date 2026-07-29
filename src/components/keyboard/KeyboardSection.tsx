@@ -15,7 +15,8 @@ export function KeyboardSection() {
   const showSynth = settings.keyboardSectionMode === "synthesizer";
   const compact = settings.inputAreaCompact;
   const showToggle = settings.keyboardModeToggleVisible && !compact;
-  const showDictation = !showSynth && settings.dictationVisible !== false;
+  const showDictation =
+    !showSynth && settings.dictationVisible !== false && !compact;
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
   const showToolbar = showDictation || showToggle || showSuggestions;
 
