@@ -21,7 +21,7 @@ import {
 } from "../lib/types";
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { notify } from "../lib/notify";
-import { isSpeechPrivacyError } from "../lib/speechPrivacy";
+import { isStickySpeechError } from "../lib/speechPrivacy";
 
 /** Avoid re-toasting the same backend error until it clears. */
 let lastAnnouncedError: string | null = null;
@@ -31,6 +31,17 @@ let typingLanguageSwitchInFlight = false;
 
 const LANGUAGE_CHANGE_NO_TARGET_FALLBACK =
   "No target application to switch language. Click into the app you want to type in first.";
+
+export type DictationState = "idle" | "listening" | "processing";
+
+export interface SttCapability {
+  engine: "winrt" | "whisper" | null;
+  whisperReady: boolean;
+  whisperDownloading: boolean;
+  winrtSupported: boolean;
+  online: boolean;
+  canDictate: boolean;
+}
 
 interface AppStore {
   profileFiles: ProfileFileInfo[];
@@ -46,6 +57,8 @@ interface AppStore {
   stickyModifiers: string[];
   physicalKeyState: PhysicalKeyState;
   lastError: string | null;
+  dictationState: DictationState;
+  sttCapability: SttCapability | null;
   showSettings: boolean;
   showMacroBuilder: boolean;
   showHeadTrackingWizard: boolean;
@@ -76,6 +89,12 @@ interface AppStore {
   applySuggestion: (word: string) => Promise<void>;
   setLastError: (error: string | null) => void;
   pollError: () => Promise<void>;
+  setDictationState: (state: DictationState) => void;
+  setSttCapability: (capability: SttCapability | null) => void;
+  refreshSttCapability: () => Promise<void>;
+  ensureWhisperModel: () => Promise<void>;
+  toggleDictation: () => Promise<void>;
+  stopDictation: () => Promise<void>;
   setShowSettings: (show: boolean) => void;
   setShowMacroBuilder: (show: boolean) => void;
   setShowHeadTrackingWizard: (show: boolean) => void;
@@ -159,6 +178,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   stickyModifiers: [],
   physicalKeyState: DEFAULT_PHYSICAL_KEY_STATE,
   lastError: null,
+  dictationState: "idle",
+  sttCapability: null,
   showSettings: false,
   showMacroBuilder: false,
   showHeadTrackingWizard: false,
@@ -237,6 +258,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const previousTypingLanguage = settings.typingLanguage;
     const next = { ...settings, ...partial };
     set({ settings: next });
+    if (partial.keyboardSectionMode === "synthesizer") {
+      await get().stopDictation();
+    }
     if (syncToSystem && typingLanguageChanged) {
       // Soft CommandResult — does not throw; must check success or the UI
       // optimistically flips language and never surfaces a toast.
@@ -276,6 +300,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       settingsJson: JSON.stringify(get().settings),
     });
     if (typingLanguageChanged) {
+      await get().stopDictation();
       set({ typedBuffer: "", suggestions: [] });
     }
     if (uiLanguageChanged) {
@@ -283,12 +308,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await get().loadPhrases();
       await get().loadSuggestions();
     }
-    if (partial.accessibilityMonitorId !== undefined || partial.collapsed !== undefined) {
+    {
       const current = get().settings;
-      await invoke("cmd_apply_window_layout", {
-        monitorId: current.accessibilityMonitorId,
-        collapsed: current.collapsed,
-      });
+      if (
+        partial.accessibilityMonitorId !== undefined ||
+        partial.collapsed !== undefined ||
+        (current.collapsed && partial.dictationVisible !== undefined)
+      ) {
+        await invoke("cmd_apply_window_layout", {
+          monitorId: current.accessibilityMonitorId,
+          collapsed: current.collapsed,
+          collapsedDictation:
+            current.collapsed && current.dictationVisible !== false,
+        });
+      }
     }
   },
 
@@ -440,8 +473,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       set({ lastError: null });
       return;
     }
-    // Sticky overlay only for speech-privacy; everything else → toast.
-    if (isSpeechPrivacyError(error)) {
+    // Sticky overlay for actionable speech errors; everything else → toast.
+    if (isStickySpeechError(error)) {
       lastAnnouncedError = error;
       set({ lastError: error });
       return;
@@ -456,6 +489,117 @@ export const useAppStore = create<AppStore>((set, get) => ({
   pollError: async () => {
     const error = await invoke<string | null>("get_last_error");
     get().setLastError(error);
+  },
+
+  setDictationState: (state) => set({ dictationState: state }),
+
+  setSttCapability: (capability) => set({ sttCapability: capability }),
+
+  refreshSttCapability: async () => {
+    try {
+      const status = await invoke<{
+        state: DictationState;
+        engine: "winrt" | "whisper" | null;
+        whisperReady: boolean;
+        whisperDownloading: boolean;
+        winrtSupported: boolean;
+        online: boolean;
+        canDictate: boolean;
+      }>("cmd_get_stt_status", {
+        language: get().settings.typingLanguage,
+      });
+      set({
+        dictationState: status.state,
+        sttCapability: {
+          engine: status.engine,
+          whisperReady: status.whisperReady,
+          whisperDownloading: status.whisperDownloading,
+          winrtSupported: status.winrtSupported,
+          online: status.online,
+          canDictate: status.canDictate,
+        },
+      });
+    } catch {
+      set({
+        sttCapability: {
+          engine: null,
+          whisperReady: false,
+          whisperDownloading: false,
+          winrtSupported: false,
+          online: false,
+          canDictate: false,
+        },
+      });
+    }
+  },
+
+  ensureWhisperModel: async () => {
+    try {
+      set({
+        sttCapability: get().sttCapability
+          ? { ...get().sttCapability!, whisperDownloading: true }
+          : {
+              engine: null,
+              whisperReady: false,
+              whisperDownloading: true,
+              winrtSupported: false,
+              online: false,
+              canDictate: false,
+            },
+      });
+      await invoke("cmd_ensure_whisper_model");
+      await get().refreshSttCapability();
+    } catch (error) {
+      set({
+        lastError:
+          error instanceof Error ? error.message : String(error),
+      });
+      await get().refreshSttCapability();
+    }
+  },
+
+  stopDictation: async () => {
+    if (get().dictationState === "idle") return;
+    // Optimistic: clear listening UI immediately so the mic toggle feels responsive
+    // even when Whisper was mid-transcription (common on Greek / offline path).
+    set({ dictationState: "idle" });
+    try {
+      await invoke("cmd_stop_dictation");
+    } catch (error) {
+      set({
+        lastError:
+          error instanceof Error ? error.message : String(error),
+      });
+    }
+  },
+
+  toggleDictation: async () => {
+    const { dictationState, settings, sttCapability } = get();
+    if (dictationState === "listening" || dictationState === "processing") {
+      await get().stopDictation();
+      return;
+    }
+    if (sttCapability && !sttCapability.canDictate) {
+      set({
+        lastError: sttCapability.winrtSupported
+          ? "WHISPER_MODEL: Local speech model is not ready yet."
+          : "WHISPER_UNSUPPORTED: Windows speech recognition does not support this language.",
+      });
+      return;
+    }
+    try {
+      await invoke("cmd_start_dictation", { language: settings.typingLanguage });
+      set({ dictationState: "listening" });
+      await get().pollError();
+      await get().refreshSttCapability();
+    } catch (error) {
+      set({ dictationState: "idle" });
+      set({
+        lastError:
+          error instanceof Error ? error.message : String(error),
+      });
+      await get().refreshSttCapability();
+    }
   },
 
   syncWindowFocusable: async () => {
@@ -503,11 +647,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
         await invoke("cmd_animate_window_layout", {
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
+          collapsedDictation: next.dictationVisible !== false,
         });
       } else {
         await invoke("cmd_animate_window_layout", {
           monitorId: settings.accessibilityMonitorId,
           collapsed: false,
+          collapsedDictation: false,
         });
         set({ settings: next });
         await invoke("cmd_update_profile_settings", {

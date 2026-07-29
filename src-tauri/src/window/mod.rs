@@ -21,6 +21,8 @@ pub struct WindowLayout {
 
 const COLLAPSED_SIZE: u32 = 56;
 const COLLAPSED_MARGIN: u32 = 16;
+/// Gap between stacked collapsed FABs (expand + dictation).
+const COLLAPSED_FAB_GAP: u32 = 12;
 pub const COLLAPSE_ANIMATION_MS: u64 = 400;
 pub const COLLAPSE_ANIMATION_FRAME_MS: u64 = 60;
 
@@ -50,6 +52,7 @@ pub fn compute_window_layout(
     monitors: &[MonitorInfo],
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<WindowLayout, String> {
     let monitor = monitors
         .iter()
@@ -74,10 +77,15 @@ pub fn compute_window_layout(
     };
 
     if collapsed {
+        let collapsed_h = if collapsed_dictation {
+            COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP
+        } else {
+            COLLAPSED_SIZE
+        };
         x += w as i32 - COLLAPSED_SIZE as i32 - COLLAPSED_MARGIN as i32;
-        y += h as i32 - COLLAPSED_SIZE as i32 - COLLAPSED_MARGIN as i32;
+        y += h as i32 - collapsed_h as i32 - COLLAPSED_MARGIN as i32;
         w = COLLAPSED_SIZE;
-        h = COLLAPSED_SIZE;
+        h = collapsed_h;
     }
 
     Ok(WindowLayout {
@@ -107,7 +115,7 @@ mod tests {
     #[test]
     fn collapsed_single_monitor_bottom_right() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
-        let layout = compute_window_layout(&monitors, 0, true).unwrap();
+        let layout = compute_window_layout(&monitors, 0, true, false).unwrap();
 
         assert_eq!(layout.width, COLLAPSED_SIZE);
         assert_eq!(layout.height, COLLAPSED_SIZE);
@@ -116,12 +124,24 @@ mod tests {
     }
 
     #[test]
+    fn collapsed_with_dictation_is_taller() {
+        let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
+        let layout = compute_window_layout(&monitors, 0, true, true).unwrap();
+        let expected_h = COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP;
+
+        assert_eq!(layout.width, COLLAPSED_SIZE);
+        assert_eq!(layout.height, expected_h);
+        assert_eq!(layout.x, 1920 - 56 - 16);
+        assert_eq!(layout.y, 540 + 540 - expected_h as i32 - 16);
+    }
+
+    #[test]
     fn collapsed_multi_monitor_bottom_right() {
         let monitors = vec![
             sample_monitor(0, 0, 0, 1920, 1080),
             sample_monitor(1, 1920, 0, 1920, 1080),
         ];
-        let layout = compute_window_layout(&monitors, 1, true).unwrap();
+        let layout = compute_window_layout(&monitors, 1, true, false).unwrap();
 
         assert_eq!(layout.width, COLLAPSED_SIZE);
         assert_eq!(layout.height, COLLAPSED_SIZE);

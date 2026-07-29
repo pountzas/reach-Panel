@@ -18,7 +18,7 @@ export function SynthVolumeControl({
   const { t } = useTranslation();
 
   return (
-    <div className="flex shrink-0 items-center gap-2 px-4">
+    <div className="flex h-8 shrink-0 items-center gap-2">
       <ModeToggleGroup>
         <ModeToggleButton
           active={muted}

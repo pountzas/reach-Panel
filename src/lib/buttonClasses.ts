@@ -2,9 +2,12 @@
 export const PRESSABLE_BUTTON_CLASS =
   "rounded-lg border border-slate-300 font-semibold shadow-sm transition active:scale-95";
 
+/** Shared height for keyboard-section toolbar controls (mic, spectrum, mode toggles). */
+export const KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS = "h-8";
+
 /** Base classes for icon mode-toggle segments (keyboard/synth, mouse/numpad). */
 export const MODE_TOGGLE_BUTTON_CLASS =
-  "group relative flex items-center justify-center p-2 transition-colors";
+  "group relative flex h-full min-h-0 items-center justify-center px-2 transition-colors";
 
 export function modeToggleActiveClass(active: boolean) {
   return active ? "bg-slate-700 text-white" : "bg-white text-slate-700";
