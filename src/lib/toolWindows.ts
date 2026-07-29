@@ -11,6 +11,14 @@ export type ToolWindowLabel = (typeof TOOL_WINDOW_LABELS)[number];
 
 export const PROFILE_UPDATED_EVENT = "profile-updated";
 
+/** Child tool windows emit this so main owns open/close and destroy sync. */
+export const TOOL_WINDOW_REQUEST_EVENT = "tool-window-request";
+
+export type ToolWindowRequest = {
+  label: ToolWindowLabel;
+  show: boolean;
+};
+
 export const TOOL_WINDOW_SIZE = { width: 900, height: 700 } as const;
 
 export const TOOL_WINDOW_TITLES: Record<ToolWindowLabel, string> = {

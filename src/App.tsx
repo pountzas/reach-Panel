@@ -11,7 +11,9 @@ import { computeContentHeightRatio } from "./lib/sectionLayouts";
 import {
   isToolWindowLabel,
   PROFILE_UPDATED_EVENT,
+  TOOL_WINDOW_REQUEST_EVENT,
   type ToolWindowLabel,
+  type ToolWindowRequest,
 } from "./lib/toolWindows";
 import { useAppStore } from "./stores/appStore";
 
@@ -131,6 +133,28 @@ function MainApp() {
       listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
         if (event.payload?.source === WebviewWindow.getCurrent().label) return;
         void useAppStore.getState().loadProfileFiles();
+      }),
+    );
+
+    unlisteners.push(
+      listen<ToolWindowRequest>(TOOL_WINDOW_REQUEST_EVENT, (event) => {
+        const { label, show } = event.payload;
+        const store = useAppStore.getState();
+        switch (label) {
+          case "settings":
+            store.setShowSettings(show);
+            break;
+          case "macro-builder":
+            store.setShowMacroBuilder(show);
+            break;
+          case "head-tracking":
+            store.setShowHeadTrackingWizard(show);
+            break;
+          default: {
+            const _exhaustive: never = label;
+            return _exhaustive;
+          }
+        }
       }),
     );
 

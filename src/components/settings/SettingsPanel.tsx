@@ -581,7 +581,6 @@ export function SettingsPanel() {
                 style={secondaryButtonStyle}
                 onClick={() => {
                   setShowMacroBuilder(true);
-                  setShowSettings(false);
                 }}
               >
                 {t("macroBuilder")}
@@ -592,7 +591,6 @@ export function SettingsPanel() {
                 style={secondaryButtonStyle}
                 onClick={() => {
                   setShowHeadTrackingWizard(true);
-                  setShowSettings(false);
                 }}
               >
                 {t("headTracking")}

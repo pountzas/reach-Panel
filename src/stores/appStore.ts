@@ -31,6 +31,7 @@ import {
   PROFILE_UPDATED_EVENT,
   resolveMonitor,
   syncMainForToolWindows,
+  TOOL_WINDOW_REQUEST_EVENT,
   TOOL_WINDOW_TITLES,
   type ToolWindowLabel,
 } from "../lib/toolWindows";
@@ -225,6 +226,13 @@ async function setToolWindowVisible(
   label: ToolWindowLabel,
   show: boolean,
 ) {
+  // Child webviews must not open/close tools themselves: destroy → syncMain
+  // listeners would die with that webview (e.g. Settings opening Macro Builder).
+  if (WebviewWindow.getCurrent().label !== "main") {
+    await emit(TOOL_WINDOW_REQUEST_EVENT, { label, show });
+    return;
+  }
+
   const flag = TOOL_WINDOW_FLAG[label];
   if (show) {
     const { monitors, settings } = get();
