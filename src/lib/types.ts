@@ -2,8 +2,10 @@ import type { SectionLayouts } from "./sectionLayouts";
 import type { MouseSpeed } from "./mouseSpeed";
 import type { ColorProfileId } from "./colorProfiles";
 import { COLOR_PROFILE_PRESETS } from "./colorProfiles";
+import type { SynthOctaveCount } from "./music/octaveCount";
 
 export type { MouseSpeed };
+export type { SynthOctaveCount };
 export type MousePanelMode = "mouse" | "numpad";
 export type MousePanelSide = "left" | "right";
 export type FnKeyMode = "one-shot" | "latched";
@@ -47,6 +49,8 @@ export interface AppSettings {
   keyboardModeToggleVisible: boolean;
   synthesizerVolume?: number;
   synthesizerMuted?: boolean;
+  /** Number of piano octaves starting at C3 (2 → C3–C5, 3 → C3–C6, 4 → C3–C7). */
+  synthesizerOctaveCount?: SynthOctaveCount;
   /** Fraction of input-row width used by the mouse / numpad panel (0–1). */
   inputRowRightRatio?: number;
   /** When true, hides section toolbars and suggestions for more keyboard/trackpad area. */
@@ -172,6 +176,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   keyboardModeToggleVisible: false,
   synthesizerVolume: 70,
   synthesizerMuted: false,
+  synthesizerOctaveCount: 2,
   inputRowRightRatio: 0.28,
   inputAreaCompact: false,
   mouseBottomRowVisible: true,

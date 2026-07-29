@@ -1,7 +1,13 @@
-import { KeyboardIcon, SynthesizerIcon } from "../common/SectionIcons";
+import {
+  KeyboardIcon,
+  MouseIcon,
+  SynthesizerIcon,
+  TeachIcon,
+} from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { SynthVolumeControl } from "./SynthVolumeControl";
+import { OctaveCountSwitch } from "./OctaveCountSwitch";
 import { DictationButton } from "./DictationButton";
 import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
 import { useAppStore } from "../../stores/appStore";
@@ -10,7 +16,11 @@ import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
 
 export function KeyboardSection() {
-  const { settings, updateSettings } = useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
+  const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const enableMusicTeaching = useAppStore((s) => s.enableMusicTeaching);
+  const disableMusicTeaching = useAppStore((s) => s.disableMusicTeaching);
   const { t } = useTranslation();
   const showSynth = settings.keyboardSectionMode === "synthesizer";
   const compact = settings.inputAreaCompact;
@@ -35,12 +45,56 @@ export function KeyboardSection() {
             >
               {showDictation && <DictationButton />}
               {showSynth && showToggle && (
-                <SynthVolumeControl
-                  volume={settings.synthesizerVolume ?? 70}
-                  muted={settings.synthesizerMuted ?? false}
-                  onVolumeChange={(synthesizerVolume) => updateSettings({ synthesizerVolume })}
-                  onMutedChange={(synthesizerMuted) => updateSettings({ synthesizerMuted })}
-                />
+                <>
+                  <ModeToggleGroup>
+                    <ModeToggleButton
+                      active={musicTeachingEnabled}
+                      position="only"
+                      label={musicTeachingEnabled ? t("stopTeaching") : t("teachMusic")}
+                      onClick={() => {
+                        if (musicTeachingEnabled) {
+                          void disableMusicTeaching();
+                        } else {
+                          void enableMusicTeaching();
+                        }
+                      }}
+                    >
+                      <TeachIcon className="h-4 w-4" />
+                    </ModeToggleButton>
+                  </ModeToggleGroup>
+                  <OctaveCountSwitch
+                    value={settings.synthesizerOctaveCount}
+                    onChange={(synthesizerOctaveCount) =>
+                      updateSettings({ synthesizerOctaveCount })
+                    }
+                  />
+                  <ModeToggleGroup>
+                    <ModeToggleButton
+                      active={settings.mouseVisible}
+                      position="only"
+                      label={
+                        settings.mouseVisible
+                          ? t("hideMouseSection")
+                          : t("showMouseSection")
+                      }
+                      onClick={() =>
+                        updateSettings({ mouseVisible: !settings.mouseVisible })
+                      }
+                    >
+                      <MouseIcon className="h-4 w-4" />
+                    </ModeToggleButton>
+                  </ModeToggleGroup>
+                  <SynthVolumeControl
+                    volume={settings.synthesizerVolume ?? 70}
+                    muted={settings.synthesizerMuted ?? false}
+                    onVolumeChange={(synthesizerVolume) =>
+                      updateSettings({ synthesizerVolume })
+                    }
+                    onMutedChange={(synthesizerMuted) =>
+                      updateSettings({ synthesizerMuted })
+                    }
+                  />
+                </>
               )}
               {showToggle && (
                 <ModeToggleGroup>

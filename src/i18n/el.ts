@@ -37,6 +37,8 @@ export const el: Record<keyof typeof en, string> = {
 
   showMouseSection: "Εμφάνιση τμήματος ποντικιού",
 
+  hideMouseSection: "Απόκρυψη τμήματος ποντικιού",
+
   speed: "Ταχύτητα",
 
   speedSlow: "Αργή",
@@ -205,6 +207,36 @@ export const el: Record<keyof typeof en, string> = {
   mute: "Σίγαση",
 
   unmute: "Ξεσίγαση",
+
+  teachMusic: "Διδασκαλία",
+
+  stopTeaching: "Διακοπή διδασκαλίας",
+
+  musicLesson: "Μάθημα μουσικής",
+
+  selectSong: "Τραγούδι",
+
+  restartLesson: "Επανεκκίνηση",
+
+  playSong: "Αναπαραγωγή",
+
+  stopSong: "Διακοπή",
+
+  playingNote: "Παίζει",
+
+  waitingForNote: "Παίξε",
+
+  lessonComplete: "Το τραγούδι ολοκληρώθηκε!",
+
+  upcomingNotes: "Επόμενες νότες",
+
+  songNeedsOctaves: "Αυτό το τραγούδι χρειάζεται {count} οκτάβες",
+
+  octaveCount2: "2 οκτάβες",
+
+  octaveCount3: "3 οκτάβες",
+
+  octaveCount4: "4 οκτάβες",
 
   showKeyboardModeToggle: "Εμφάνιση εναλλαγής πληκτρολογίου / συνθετητή",
 

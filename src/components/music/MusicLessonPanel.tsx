@@ -4,19 +4,28 @@ import { getSurfaceColors } from "../../lib/colorProfiles";
 import { BUILT_IN_SONGS, getSongById, songRequiredOctaveCount } from "../../lib/music/songs";
 import { resolveSynthOctaveCount } from "../../lib/music/octaveCount";
 
+/** Fixed slot width so the strip can keep the active note centered. */
+const NOTE_SLOT_REM = 2.75;
+const NOTE_GAP_REM = 0.75;
+
 export function MusicLessonPanel() {
   const settings = useAppStore((s) => s.settings);
   const musicSongId = useAppStore((s) => s.musicSongId);
   const musicNoteIndex = useAppStore((s) => s.musicNoteIndex);
+  const musicPlaybackActive = useAppStore((s) => s.musicPlaybackActive);
   const setMusicSongId = useAppStore((s) => s.setMusicSongId);
   const restartMusicLesson = useAppStore((s) => s.restartMusicLesson);
+  const startMusicPlayback = useAppStore((s) => s.startMusicPlayback);
+  const stopMusicPlayback = useAppStore((s) => s.stopMusicPlayback);
   const { t } = useTranslation();
   const surface = getSurfaceColors(settings.appBgColor);
 
   const song = getSongById(musicSongId);
   const total = song?.notes.length ?? 0;
   const completed = total > 0 && musicNoteIndex >= total;
-  const currentNote = song && !completed ? song.notes[musicNoteIndex] : null;
+  const focusIndex = completed
+    ? Math.max(0, total - 1)
+    : Math.min(musicNoteIndex, Math.max(0, total - 1));
   const progressLabel =
     total === 0
       ? "0 / 0"
@@ -25,10 +34,12 @@ export function MusicLessonPanel() {
         : `${musicNoteIndex + 1} / ${total}`;
   const octaveCount = resolveSynthOctaveCount(settings.synthesizerOctaveCount);
   const neededOctaves = song ? songRequiredOctaveCount(song) : 2;
+  const stripOffsetRem =
+    focusIndex * (NOTE_SLOT_REM + NOTE_GAP_REM) + NOTE_SLOT_REM / 2;
 
   return (
     <div
-      className="flex h-full flex-col gap-2 overflow-auto rounded-xl border p-2"
+      className="flex h-full flex-col gap-2 overflow-hidden rounded-xl border p-2"
       style={{
         backgroundColor: surface.panelBg,
         borderColor: surface.panelBorder,
@@ -37,18 +48,40 @@ export function MusicLessonPanel() {
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-semibold">{t("musicLesson")}</span>
-        <button
-          type="button"
-          className="rounded-md border px-2 py-1 text-xs font-medium"
-          style={{
-            borderColor: surface.panelBorder,
-            backgroundColor: surface.panelBg,
-            color: surface.panelText,
-          }}
-          onClick={() => restartMusicLesson()}
-        >
-          {t("restartLesson")}
-        </button>
+        <div className="flex flex-wrap items-center gap-1">
+          <button
+            type="button"
+            className="rounded-md border px-2 py-1 text-xs font-medium"
+            style={{
+              borderColor: surface.panelBorder,
+              backgroundColor: musicPlaybackActive ? "#fde68a" : surface.panelBg,
+              color: surface.panelText,
+            }}
+            onClick={() => {
+              if (musicPlaybackActive) {
+                stopMusicPlayback();
+              } else {
+                startMusicPlayback();
+              }
+            }}
+            disabled={!song || song.notes.length === 0}
+          >
+            {musicPlaybackActive ? t("stopSong") : t("playSong")}
+          </button>
+          <button
+            type="button"
+            className="rounded-md border px-2 py-1 text-xs font-medium"
+            style={{
+              borderColor: surface.panelBorder,
+              backgroundColor: surface.panelBg,
+              color: surface.panelText,
+            }}
+            onClick={() => restartMusicLesson()}
+            disabled={musicPlaybackActive}
+          >
+            {t("restartLesson")}
+          </button>
+        </div>
       </div>
 
       <label className="flex flex-col gap-1 text-xs" style={{ color: surface.panelMutedText }}>
@@ -61,6 +94,7 @@ export function MusicLessonPanel() {
             color: surface.panelText,
           }}
           value={musicSongId ?? ""}
+          disabled={musicPlaybackActive}
           onChange={(event) => {
             void setMusicSongId(event.target.value);
           }}
@@ -85,13 +119,8 @@ export function MusicLessonPanel() {
               {song.composer}
             </span>
           )}
-          {completed ? (
+          {completed && (
             <p className="mt-1 text-sm font-semibold text-emerald-600">{t("lessonComplete")}</p>
-          ) : (
-            <p className="mt-1 text-sm">
-              {t("waitingForNote")}:{" "}
-              <span className="font-semibold tabular-nums">{currentNote}</span>
-            </p>
           )}
           {neededOctaves > octaveCount && (
             <p className="text-xs text-amber-700">
@@ -101,24 +130,41 @@ export function MusicLessonPanel() {
         </div>
       )}
 
-      {!completed && song && (
+      {song && song.notes.length > 0 && (
         <div
-          className="mt-auto flex flex-wrap gap-1 rounded-md border p-2 text-xs"
+          className="music-note-strip relative mt-auto h-16 overflow-hidden rounded-md border"
           style={{ borderColor: surface.panelBorder }}
           aria-label={t("upcomingNotes")}
         >
-          {song.notes.slice(musicNoteIndex, musicNoteIndex + 12).map((note, index) => (
-            <span
-              key={`${note}-${musicNoteIndex + index}`}
-              className={`rounded px-1.5 py-0.5 tabular-nums ${index === 0 ? "font-bold ring-1 ring-amber-400" : ""}`}
-              style={{
-                backgroundColor: index === 0 ? "#fde68a" : "transparent",
-                color: surface.panelText,
-              }}
-            >
-              {note}
-            </span>
-          ))}
+          <div
+            className="music-note-strip-track absolute inset-y-0 flex items-center"
+            style={{
+              left: "50%",
+              gap: `${NOTE_GAP_REM}rem`,
+              transform: `translateX(-${stripOffsetRem}rem)`,
+            }}
+          >
+            {song.notes.map((note, index) => {
+              const isActive = !completed && index === musicNoteIndex;
+              const isPast = completed || index < musicNoteIndex;
+              return (
+                <span
+                  key={`${note.pitch}-${index}`}
+                  className={`music-note-chip flex shrink-0 items-center justify-center rounded-md tabular-nums ${
+                    isActive ? "music-note-chip-active font-bold" : "text-sm"
+                  }`}
+                  style={{
+                    width: `${NOTE_SLOT_REM}rem`,
+                    color: surface.panelText,
+                    opacity: isActive ? 1 : isPast ? 0.35 : 0.55,
+                    backgroundColor: isActive ? "#fde68a" : "transparent",
+                  }}
+                >
+                  {note.pitch}
+                </span>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

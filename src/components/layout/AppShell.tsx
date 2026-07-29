@@ -7,6 +7,7 @@ import { MousePanel } from "../mouse/MousePanel";
 import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
+import { MusicLessonPanel } from "../music/MusicLessonPanel";
 import { AppToaster } from "../common/AppToaster";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { UpdatePrompt } from "../common/UpdatePrompt";
@@ -88,12 +89,16 @@ export function AppShell() {
     updateSettings,
     applyWindowHeightRatioLive,
     isAnimatingWindow,
+    musicTeachingEnabled,
   } = useAppStore();
   const { t } = useTranslation();
   const largeHeaders = settings.largeHeaders;
   const headerHeight = appHeaderHeightPx(largeHeaders);
   const iconSize = largeHeaders ? "lg" : "sm";
   const iconClass = largeHeaders ? "h-7 w-7" : "h-4 w-4";
+  const showMusicLesson =
+    musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
+  const phrasesSlotVisible = settings.phrasesVisible || showMusicLesson;
   const windowResizeRef = useRef<{
     startY: number;
     startRatio: number;
@@ -228,11 +233,11 @@ export function AppShell() {
           <ErrorBanner />
           <SectionCanvas
             quickActionsVisible={settings.quickActionsVisible}
-            phrasesVisible={settings.phrasesVisible}
+            phrasesVisible={phrasesSlotVisible}
             savedLayouts={settings.sectionLayouts}
             onLayoutsChange={(sectionLayouts) => updateSettings({ sectionLayouts })}
             quickActions={<QuickActionsBar />}
-            phrases={<PhrasePanel />}
+            phrases={showMusicLesson ? <MusicLessonPanel /> : <PhrasePanel />}
             inputRow={<InputRowPanel />}
           />
         </div>

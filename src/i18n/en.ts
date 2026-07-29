@@ -33,6 +33,8 @@
 
   showMouseSection: "Show mouse section",
 
+  hideMouseSection: "Hide mouse section",
+
   speed: "Speed",
 
   speedSlow: "Slow",
@@ -201,6 +203,36 @@
   mute: "Mute",
 
   unmute: "Unmute",
+
+  teachMusic: "Teach",
+
+  stopTeaching: "Stop teaching",
+
+  musicLesson: "Music lesson",
+
+  selectSong: "Song",
+
+  restartLesson: "Restart",
+
+  playSong: "Play",
+
+  stopSong: "Stop",
+
+  playingNote: "Playing",
+
+  waitingForNote: "Play",
+
+  lessonComplete: "Song complete!",
+
+  upcomingNotes: "Upcoming notes",
+
+  songNeedsOctaves: "This song needs {count} octaves",
+
+  octaveCount2: "2 octaves",
+
+  octaveCount3: "3 octaves",
+
+  octaveCount4: "4 octaves",
 
   showKeyboardModeToggle: "Show keyboard / synthesizer toggle",
 

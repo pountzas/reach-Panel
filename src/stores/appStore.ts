@@ -21,6 +21,8 @@ import {
   ProfileFileInfo,
   QuickAction,
 } from "../lib/types";
+import { resolveSynthOctaveCount } from "../lib/music/octaveCount";
+import { getSongById, songRequiredOctaveCount } from "../lib/music/songs";
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
@@ -108,6 +110,13 @@ interface AppStore {
   showMacroBuilder: boolean;
   showHeadTrackingWizard: boolean;
   keyboardLayout: string;
+  /** Session-only: guided piano teaching replaces Phrases while on. */
+  musicTeachingEnabled: boolean;
+  musicSongId: string | null;
+  musicNoteIndex: number;
+  /** Session-only: demo playback of the selected song. */
+  musicPlaybackActive: boolean;
+  phrasesVisibleBeforeTeaching: boolean | null;
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
@@ -150,6 +159,15 @@ interface AppStore {
   syncWindowFocusable: () => Promise<void>;
   loadKeyboardLayout: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
+  enableMusicTeaching: () => Promise<void>;
+  disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
+  setMusicSongId: (songId: string) => Promise<void>;
+  restartMusicLesson: () => void;
+  reportMusicKeyPlayed: (keyId: string) => void;
+  startMusicPlayback: () => void;
+  stopMusicPlayback: () => void;
+  setMusicPlaybackNoteIndex: (index: number) => void;
+  finishMusicPlayback: () => void;
   isAnimatingWindow: boolean;
   pendingUpdate: Update | null;
   updateCheckStatus: "idle" | "checking" | "upToDate" | "error";
@@ -192,6 +210,7 @@ function parseSettings(json: string): AppSettings {
       uiLanguage,
       colorProfile,
       mousePanelSide,
+      synthesizerOctaveCount: resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -305,6 +324,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   showMacroBuilder: false,
   showHeadTrackingWizard: false,
   keyboardLayout: "QWERTY",
+  musicTeachingEnabled: false,
+  musicSongId: "twinkle",
+  musicNoteIndex: 0,
+  musicPlaybackActive: false,
+  phrasesVisibleBeforeTeaching: null,
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -394,7 +418,35 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const uiLanguageChanged =
       partial.uiLanguage !== undefined && partial.uiLanguage !== settings.uiLanguage;
     const previousTypingLanguage = settings.typingLanguage;
-    const next = { ...settings, ...partial };
+    let next = {
+      ...settings,
+      ...partial,
+      ...(partial.synthesizerOctaveCount !== undefined
+        ? {
+            synthesizerOctaveCount: resolveSynthOctaveCount(
+              partial.synthesizerOctaveCount,
+            ),
+          }
+        : {}),
+    };
+
+    const leavingSynthesizer =
+      partial.keyboardSectionMode !== undefined &&
+      partial.keyboardSectionMode !== "synthesizer" &&
+      get().musicTeachingEnabled;
+    if (leavingSynthesizer) {
+      const before = get().phrasesVisibleBeforeTeaching;
+      set({
+        musicTeachingEnabled: false,
+        musicNoteIndex: 0,
+        musicPlaybackActive: false,
+        phrasesVisibleBeforeTeaching: null,
+      });
+      if (before !== null) {
+        next = { ...next, phrasesVisible: before };
+      }
+    }
+
     set({ settings: next });
     if (partial.keyboardSectionMode === "synthesizer") {
       await get().stopDictation();
@@ -812,6 +864,103 @@ export const useAppStore = create<AppStore>((set, get) => ({
   loadKeyboardLayout: async () => {
     const keyboardLayout = await invoke<string>("cmd_get_keyboard_layout");
     set({ keyboardLayout });
+  },
+
+  enableMusicTeaching: async () => {
+    const { settings, musicTeachingEnabled, musicSongId } = get();
+    if (musicTeachingEnabled) return;
+    set({
+      musicTeachingEnabled: true,
+      phrasesVisibleBeforeTeaching: settings.phrasesVisible,
+      musicNoteIndex: 0,
+      musicSongId: musicSongId ?? "twinkle",
+    });
+    const song = getSongById(get().musicSongId);
+    const patch: Partial<AppSettings> = {};
+    if (!settings.phrasesVisible) {
+      patch.phrasesVisible = true;
+    }
+    if (song) {
+      const needed = songRequiredOctaveCount(song);
+      const current = resolveSynthOctaveCount(settings.synthesizerOctaveCount);
+      if (current < needed) {
+        patch.synthesizerOctaveCount = needed;
+      }
+    }
+    if (Object.keys(patch).length > 0) {
+      await get().updateSettings(patch);
+    }
+  },
+
+  disableMusicTeaching: async (options) => {
+    if (!get().musicTeachingEnabled && get().phrasesVisibleBeforeTeaching === null) {
+      if (options?.hidePhrases) {
+        await get().updateSettings({ phrasesVisible: false });
+      }
+      return;
+    }
+    const before = get().phrasesVisibleBeforeTeaching;
+    set({
+      musicTeachingEnabled: false,
+      musicNoteIndex: 0,
+      musicPlaybackActive: false,
+      phrasesVisibleBeforeTeaching: null,
+    });
+    if (options?.hidePhrases) {
+      await get().updateSettings({ phrasesVisible: false });
+      return;
+    }
+    if (before !== null && before !== get().settings.phrasesVisible) {
+      await get().updateSettings({ phrasesVisible: before });
+    }
+  },
+
+  setMusicSongId: async (songId) => {
+    const song = getSongById(songId);
+    if (!song) return;
+    set({ musicSongId: songId, musicNoteIndex: 0, musicPlaybackActive: false });
+    const needed = songRequiredOctaveCount(song);
+    const current = resolveSynthOctaveCount(get().settings.synthesizerOctaveCount);
+    if (current < needed) {
+      await get().updateSettings({ synthesizerOctaveCount: needed });
+    }
+  },
+
+  restartMusicLesson: () => {
+    set({ musicNoteIndex: 0, musicPlaybackActive: false });
+  },
+
+  reportMusicKeyPlayed: (keyId) => {
+    const { musicTeachingEnabled, musicPlaybackActive, musicSongId, musicNoteIndex } =
+      get();
+    if (!musicTeachingEnabled || musicPlaybackActive) return;
+    const song = getSongById(musicSongId);
+    if (!song) return;
+    if (musicNoteIndex >= song.notes.length) return;
+    if (song.notes[musicNoteIndex]?.pitch !== keyId) return;
+    set({ musicNoteIndex: musicNoteIndex + 1 });
+  },
+
+  startMusicPlayback: () => {
+    if (!get().musicTeachingEnabled) return;
+    const song = getSongById(get().musicSongId);
+    if (!song || song.notes.length === 0) return;
+    set({ musicPlaybackActive: true, musicNoteIndex: 0 });
+  },
+
+  stopMusicPlayback: () => {
+    if (!get().musicPlaybackActive) return;
+    set({ musicPlaybackActive: false });
+  },
+
+  setMusicPlaybackNoteIndex: (index) => {
+    if (!get().musicPlaybackActive) return;
+    set({ musicNoteIndex: index });
+  },
+
+  finishMusicPlayback: () => {
+    if (!get().musicPlaybackActive) return;
+    set({ musicPlaybackActive: false, musicNoteIndex: 0 });
   },
 
   toggleCollapsed: async () => {
