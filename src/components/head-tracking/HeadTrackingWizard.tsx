@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useHeadTracking } from "../../hooks/useHeadTracking";
 import { useAppStore } from "../../stores/appStore";
+import { getSurfaceColors } from "../../lib/colorProfiles";
 import { INTERNAL_PROFILE_ID, type HeadTrackingSettings } from "../../lib/types";
 
 const DEFAULT_HT: HeadTrackingSettings = {
@@ -42,27 +43,55 @@ export function HeadTrackingWizard() {
     setShowHeadTrackingWizard(false);
   };
 
+  const surface = getSurfaceColors(settings.appBgColor);
+  const headerBg = settings.headerBgColor ?? "#1e293b";
+  const headerText = settings.headerTextColor ?? "#ffffff";
+  const secondaryButtonStyle: CSSProperties = {
+    backgroundColor: surface.panelButtonBg,
+    borderColor: surface.panelBorder,
+    color: surface.panelText,
+  };
+  const activeModeStyle: CSSProperties = {
+    backgroundColor: "#2563eb",
+    color: "#ffffff",
+  };
+
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
-      <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
+    <div
+      className="flex h-full w-full flex-col overflow-hidden"
+      style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
+    >
+      <div
+        className="flex shrink-0 items-center justify-between px-4 py-3"
+        style={{ backgroundColor: headerBg, color: headerText }}
+      >
         <h2 className="text-lg font-bold">Head Tracking Calibration</h2>
-        <button type="button" onClick={() => setShowHeadTrackingWizard(false)}>
+        <button
+          type="button"
+          className="rounded bg-white/20 px-3 py-1 text-sm hover:bg-white/30"
+          onClick={() => setShowHeadTrackingWizard(false)}
+        >
           Close
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto p-4"
+        style={{ color: surface.panelText }}
+      >
         <div className="mb-4 flex gap-2">
           <button
             type="button"
-            className={`rounded-lg px-4 py-2 ${mode === "touch" ? "bg-blue-600 text-white" : "bg-slate-100"}`}
+            className="rounded-lg border px-4 py-2"
+            style={mode === "touch" ? activeModeStyle : secondaryButtonStyle}
             onClick={() => setMode("touch")}
           >
             Touch Mode
           </button>
           <button
             type="button"
-            className={`rounded-lg px-4 py-2 ${mode === "head" ? "bg-blue-600 text-white" : "bg-slate-100"}`}
+            className="rounded-lg border px-4 py-2"
+            style={mode === "head" ? activeModeStyle : secondaryButtonStyle}
             onClick={() => setMode("head")}
           >
             Head Mode
@@ -77,7 +106,7 @@ export function HeadTrackingWizard() {
               muted
               playsInline
             />
-            <p className="mb-3 text-sm text-slate-600">
+            <p className="mb-3 text-sm" style={{ color: surface.panelMutedText }}>
               Look straight ahead, then press Calibrate. Move your head to control the cursor.
             </p>
             <button
@@ -120,7 +149,11 @@ export function HeadTrackingWizard() {
           </>
         )}
 
-        <button type="button" className="rounded-lg bg-blue-600 px-4 py-2 text-white" onClick={save}>
+        <button
+          type="button"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-white"
+          onClick={save}
+        >
           Save
         </button>
       </div>

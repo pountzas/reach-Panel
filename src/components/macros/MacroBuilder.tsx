@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { v4 as uuidv4 } from "../../lib/uuid";
 import { useAppStore, getMacroSteps } from "../../stores/appStore";
+import { getSurfaceColors } from "../../lib/colorProfiles";
 import { INTERNAL_PROFILE_ID, type MacroDef, type MacroStep } from "../../lib/types";
 
 export function MacroBuilder() {
   const {
     macros,
+    settings,
     loadMacros,
     saveActiveProfile,
     setShowMacroBuilder,
@@ -77,70 +79,147 @@ export function MacroBuilder() {
     await saveActiveProfile();
   };
 
+  const surface = getSurfaceColors(settings.appBgColor);
+  const headerBg = settings.headerBgColor ?? "#1e293b";
+  const headerText = settings.headerTextColor ?? "#ffffff";
+  const secondaryButtonStyle: CSSProperties = {
+    backgroundColor: surface.panelButtonBg,
+    borderColor: surface.panelBorder,
+    color: surface.panelText,
+  };
+  const fieldStyle: CSSProperties = {
+    backgroundColor: surface.insetBg,
+    borderColor: surface.insetBorder,
+    color: surface.panelText,
+  };
+  const insetStyle: CSSProperties = {
+    backgroundColor: surface.insetBg,
+    color: surface.insetText,
+  };
+
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
-      <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
+    <div
+      className="flex h-full w-full flex-col overflow-hidden"
+      style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
+    >
+      <div
+        className="flex shrink-0 items-center justify-between px-4 py-3"
+        style={{ backgroundColor: headerBg, color: headerText }}
+      >
         <h2 className="text-lg font-bold">Macro Builder</h2>
-        <button type="button" onClick={() => setShowMacroBuilder(false)}>
+        <button
+          type="button"
+          className="rounded bg-white/20 px-3 py-1 text-sm hover:bg-white/30"
+          onClick={() => setShowMacroBuilder(false)}
+        >
           Close
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto p-4"
+        style={{ color: surface.panelText }}
+      >
         <input
           className="mb-3 w-full rounded border px-3 py-2"
+          style={fieldStyle}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Macro name"
         />
 
         <div className="mb-3 flex flex-wrap gap-2">
-          <button type="button" className="rounded bg-slate-100 px-3 py-1 text-sm" onClick={() => addStep("open_program", { target: "chrome" })}>
+          <button
+            type="button"
+            className="rounded border px-3 py-1 text-sm"
+            style={secondaryButtonStyle}
+            onClick={() => addStep("open_program", { target: "chrome" })}
+          >
             + Open Chrome
           </button>
-          <button type="button" className="rounded bg-slate-100 px-3 py-1 text-sm" onClick={() => addStep("wait", { ms: 2000 })}>
+          <button
+            type="button"
+            className="rounded border px-3 py-1 text-sm"
+            style={secondaryButtonStyle}
+            onClick={() => addStep("wait", { ms: 2000 })}
+          >
             + Wait 2s
           </button>
-          <button type="button" className="rounded bg-slate-100 px-3 py-1 text-sm" onClick={() => addStep("open_url", { url: "https://youtube.com" })}>
+          <button
+            type="button"
+            className="rounded border px-3 py-1 text-sm"
+            style={secondaryButtonStyle}
+            onClick={() => addStep("open_url", { url: "https://youtube.com" })}
+          >
             + Open YouTube
           </button>
-          <button type="button" className="rounded bg-slate-100 px-3 py-1 text-sm" onClick={() => addStep("speak", { text: "Opening YouTube" })}>
+          <button
+            type="button"
+            className="rounded border px-3 py-1 text-sm"
+            style={secondaryButtonStyle}
+            onClick={() => addStep("speak", { text: "Opening YouTube" })}
+          >
             + Speak
           </button>
         </div>
 
         <ol className="mb-4 space-y-1 text-sm">
           {steps.map((s, i) => (
-            <li key={s.id} className="rounded bg-slate-50 px-2 py-1">
+            <li key={s.id} className="rounded px-2 py-1" style={insetStyle}>
               {i + 1}. {s.action_type}: {s.payload_json}
             </li>
           ))}
         </ol>
 
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="rounded-lg bg-blue-600 px-4 py-2 text-white" onClick={save}>
+          <button
+            type="button"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-white"
+            onClick={save}
+          >
             Save
           </button>
-          <button type="button" className="rounded-lg bg-green-600 px-4 py-2 text-white" onClick={run}>
+          <button
+            type="button"
+            className="rounded-lg bg-green-600 px-4 py-2 text-white"
+            onClick={run}
+          >
             Run
           </button>
-          <button type="button" className="rounded-lg bg-slate-200 px-4 py-2" onClick={doExport}>
+          <button
+            type="button"
+            className="rounded-lg border px-4 py-2"
+            style={secondaryButtonStyle}
+            onClick={doExport}
+          >
             Export
           </button>
         </div>
 
         {exportJson && (
-          <textarea className="mt-3 w-full rounded border p-2 text-xs" rows={4} readOnly value={exportJson} />
+          <textarea
+            className="mt-3 w-full rounded border p-2 text-xs"
+            style={fieldStyle}
+            rows={4}
+            readOnly
+            value={exportJson}
+          />
         )}
 
         <textarea
           className="mt-3 w-full rounded border p-2 text-xs"
+          style={fieldStyle}
           rows={3}
           placeholder="Paste JSON to import"
           value={importJson}
           onChange={(e) => setImportJson(e.target.value)}
         />
-        <button type="button" className="mt-2 rounded-lg bg-slate-200 px-4 py-2" onClick={doImport}>
+        <button
+          type="button"
+          className="mt-2 rounded-lg border px-4 py-2"
+          style={secondaryButtonStyle}
+          onClick={doImport}
+        >
           Import
         </button>
       </div>
