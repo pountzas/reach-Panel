@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { usePressableButton } from "../../hooks/usePressableButton";
-import { HoverTooltip } from "../common/ModeToggle";
+import { HoverTooltip } from "../common/HoverTooltip";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import {

@@ -18,6 +18,7 @@ export function InputAreaViewButtons() {
         onClick={() => updateSettings({ inputAreaCompact: false })}
         className={!compact ? "bg-black/10" : ""}
         size={iconSize}
+        tooltipPlacement="below"
       >
         <CompactViewIcon className={iconClass} />
       </IconActionButton>
@@ -26,6 +27,7 @@ export function InputAreaViewButtons() {
         onClick={() => updateSettings({ inputAreaCompact: true })}
         className={compact ? "bg-black/10" : ""}
         size={iconSize}
+        tooltipPlacement="below"
       >
         <ExpandedViewIcon className={iconClass} />
       </IconActionButton>

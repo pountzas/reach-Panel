@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import { HoverTooltip } from "./ModeToggle";
+import {
+  HoverTooltip,
+  type HoverTooltipPlacement,
+} from "./HoverTooltip";
 
 export type IconActionButtonSize = "sm" | "lg";
 
@@ -11,6 +14,8 @@ interface IconActionButtonProps {
   className?: string;
   /** Default `sm` (24×24). Use `lg` for large-headers chrome (48×48). */
   size?: IconActionButtonSize;
+  /** Default `above`. Use `below` for top-edge header actions. */
+  tooltipPlacement?: HoverTooltipPlacement;
 }
 
 export function IconActionButton({
@@ -20,6 +25,7 @@ export function IconActionButton({
   children,
   className = "",
   size = "sm",
+  tooltipPlacement = "above",
 }: IconActionButtonProps) {
   const sizeClass = size === "lg" ? "h-12 w-12" : "h-6 w-6";
 
@@ -32,7 +38,7 @@ export function IconActionButton({
       aria-label={label}
     >
       {children}
-      <HoverTooltip label={label} />
+      <HoverTooltip label={label} placement={tooltipPlacement} />
     </button>
   );
 }
