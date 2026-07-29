@@ -9,6 +9,7 @@
     "core:window:allow-close",
     "core:window:allow-set-focus",
     "core:window:allow-set-focusable",
+    "core:window:allow-set-enabled",
     "core:window:allow-show",
     "core:window:allow-set-always-on-top",
     "core:window:allow-set-position",

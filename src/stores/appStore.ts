@@ -30,6 +30,7 @@ import {
   openToolWindow,
   PROFILE_UPDATED_EVENT,
   resolveMonitor,
+  syncMainForToolWindows,
   TOOL_WINDOW_TITLES,
   type ToolWindowLabel,
 } from "../lib/toolWindows";
@@ -234,6 +235,7 @@ async function setToolWindowVisible(
         monitor,
         onDestroyed: () => {
           set({ [flag]: false });
+          void syncMainForToolWindows();
           void get().syncWindowFocusable();
         },
       });
@@ -243,12 +245,14 @@ async function setToolWindowVisible(
       const message = error instanceof Error ? error.message : String(error);
       notify.error(message);
     }
+    void syncMainForToolWindows();
     void get().syncWindowFocusable();
     return;
   }
 
   set({ [flag]: false });
   await closeToolWindow(label);
+  void syncMainForToolWindows();
   void get().syncWindowFocusable();
 }
 

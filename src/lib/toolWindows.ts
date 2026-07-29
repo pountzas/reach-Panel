@@ -45,6 +45,23 @@ export function resolveMonitor(
   );
 }
 
+async function anyToolWindowOpen(): Promise<boolean> {
+  for (const label of TOOL_WINDOW_LABELS) {
+    if (await WebviewWindow.getByLabel(label)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Disable main while any tool window is open so it cannot be used underneath. */
+export async function syncMainForToolWindows(): Promise<void> {
+  const main = await WebviewWindow.getByLabel("main");
+  if (!main) return;
+  const blocked = await anyToolWindowOpen();
+  await main.setEnabled(!blocked);
+}
+
 export async function openToolWindow(
   label: ToolWindowLabel,
   options: {
@@ -55,7 +72,9 @@ export async function openToolWindow(
 ): Promise<void> {
   const existing = await WebviewWindow.getByLabel(label);
   if (existing) {
+    await existing.setAlwaysOnTop(true);
     await existing.setFocus();
+    await syncMainForToolWindows();
     return;
   }
 
@@ -70,6 +89,8 @@ export async function openToolWindow(
     width,
     height,
     ...(position ? { x: position.x, y: position.y } : { center: true }),
+    // Owned by main: stays above main in z-order on Windows.
+    parent: "main",
     decorations: false,
     transparent: true,
     alwaysOnTop: true,
@@ -90,10 +111,21 @@ export async function openToolWindow(
     });
   });
 
+  await webview.setAlwaysOnTop(true);
+  await webview.setFocusable(true);
+  await webview.setFocus();
+  await syncMainForToolWindows();
+
   if (options.onDestroyed) {
     const onDestroyed = options.onDestroyed;
     void webview.once("tauri://destroyed", () => {
-      onDestroyed();
+      void syncMainForToolWindows().finally(() => {
+        onDestroyed();
+      });
+    });
+  } else {
+    void webview.once("tauri://destroyed", () => {
+      void syncMainForToolWindows();
     });
   }
 }
@@ -103,8 +135,10 @@ export async function closeToolWindow(label: ToolWindowLabel): Promise<void> {
   if (existing) {
     await existing.close();
   }
+  await syncMainForToolWindows();
 }
 
 export async function closeAllToolWindows(): Promise<void> {
   await Promise.all(TOOL_WINDOW_LABELS.map((label) => closeToolWindow(label)));
+  await syncMainForToolWindows();
 }
