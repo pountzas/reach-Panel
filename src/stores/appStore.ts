@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { emit } from "@tauri-apps/api/event";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { checkForUpdate } from "../lib/updater";
 import {
@@ -23,6 +25,15 @@ import { resolveColorProfile } from "../lib/colorProfiles";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import { clampWindowHeightRatio, computeContentHeightRatio } from "../lib/sectionLayouts";
+import {
+  closeToolWindow,
+  openToolWindow,
+  PROFILE_UPDATED_EVENT,
+  resolveMonitor,
+  syncMainForToolWindows,
+  TOOL_WINDOW_TITLES,
+  type ToolWindowLabel,
+} from "../lib/toolWindows";
 
 /** Avoid re-toasting the same backend error until it clears. */
 let lastAnnouncedError: string | null = null;
@@ -199,6 +210,52 @@ function buildDefaultSettings(
   };
 }
 
+const TOOL_WINDOW_FLAG: Record<
+  ToolWindowLabel,
+  "showSettings" | "showMacroBuilder" | "showHeadTrackingWizard"
+> = {
+  settings: "showSettings",
+  "macro-builder": "showMacroBuilder",
+  "head-tracking": "showHeadTrackingWizard",
+};
+
+async function setToolWindowVisible(
+  get: () => AppStore,
+  set: (partial: Partial<AppStore>) => void,
+  label: ToolWindowLabel,
+  show: boolean,
+) {
+  const flag = TOOL_WINDOW_FLAG[label];
+  if (show) {
+    const { monitors, settings } = get();
+    const monitor = resolveMonitor(monitors, settings.accessibilityMonitorId);
+    try {
+      await openToolWindow(label, {
+        title: TOOL_WINDOW_TITLES[label],
+        monitor,
+        onDestroyed: () => {
+          set({ [flag]: false });
+          void syncMainForToolWindows();
+          void get().syncWindowFocusable();
+        },
+      });
+      set({ [flag]: true });
+    } catch (error) {
+      set({ [flag]: false });
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+    void syncMainForToolWindows();
+    void get().syncWindowFocusable();
+    return;
+  }
+
+  set({ [flag]: false });
+  await closeToolWindow(label);
+  void syncMainForToolWindows();
+  void get().syncWindowFocusable();
+}
+
 async function loadProfileData(
   set: (partial: Partial<AppStore>) => void,
   get: () => AppStore,
@@ -212,15 +269,20 @@ async function loadProfileData(
     ? parseSettings(active.settings_json)
     : DEFAULT_SETTINGS;
   set({ settings });
-  await invoke("cmd_set_system_language", { language: settings.typingLanguage });
-  await get().pollKeyboardState();
+  const isMainWindow = WebviewWindow.getCurrent().label === "main";
+  if (isMainWindow) {
+    await invoke("cmd_set_system_language", { language: settings.typingLanguage });
+    await get().pollKeyboardState();
+  }
   await get().loadQuickActions();
   await get().loadPhrases();
   await get().loadMacros();
-  await syncWindowLayoutFromSettings(
-    get().settings,
-    options?.animateLayout === true,
-  );
+  if (isMainWindow) {
+    await syncWindowLayoutFromSettings(
+      get().settings,
+      options?.animateLayout === true,
+    );
+  }
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -288,11 +350,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
     });
     await loadProfileData(set, get, { animateLayout: true });
     await get().loadSuggestions();
+    await emit(PROFILE_UPDATED_EVENT, {
+      source: WebviewWindow.getCurrent().label,
+    });
   },
 
   createProfileFile: async (filename, name) => {
     await invoke("cmd_create_profile_file", { filename, name });
     await get().loadProfileFiles();
+    await emit(PROFILE_UPDATED_EVENT, {
+      source: WebviewWindow.getCurrent().label,
+    });
   },
 
   deleteProfileFile: async (filename) => {
@@ -368,6 +436,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await invoke("cmd_update_profile_settings", {
       profileId: INTERNAL_PROFILE_ID,
       settingsJson: JSON.stringify(get().settings),
+    });
+    await emit(PROFILE_UPDATED_EVENT, {
+      source: WebviewWindow.getCurrent().label,
     });
     if (typingLanguageChanged) {
       await get().stopDictation();
@@ -724,24 +795,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   syncWindowFocusable: async () => {
-    const { showSettings, showMacroBuilder, showHeadTrackingWizard, pendingUpdate } =
-      get();
-    const needsFocus =
-      showSettings || showMacroBuilder || showHeadTrackingWizard || pendingUpdate !== null;
+    const needsFocus = get().pendingUpdate !== null;
     await invoke("cmd_set_window_focusable", { focusable: needsFocus });
   },
 
   setShowSettings: (show) => {
-    set({ showSettings: show });
-    void get().syncWindowFocusable();
+    void setToolWindowVisible(get, set, "settings", show);
   },
   setShowMacroBuilder: (show) => {
-    set({ showMacroBuilder: show });
-    void get().syncWindowFocusable();
+    void setToolWindowVisible(get, set, "macro-builder", show);
   },
   setShowHeadTrackingWizard: (show) => {
-    set({ showHeadTrackingWizard: show });
-    void get().syncWindowFocusable();
+    void setToolWindowVisible(get, set, "head-tracking", show);
   },
 
   loadKeyboardLayout: async () => {

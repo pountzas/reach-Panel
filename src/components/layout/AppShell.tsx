@@ -10,9 +10,6 @@ import { PhrasePanel } from "../phrases/PhrasePanel";
 import { AppToaster } from "../common/AppToaster";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { UpdatePrompt } from "../common/UpdatePrompt";
-import { SettingsPanel } from "../settings/SettingsPanel";
-import { MacroBuilder } from "../macros/MacroBuilder";
-import { HeadTrackingWizard } from "../head-tracking/HeadTrackingWizard";
 import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -24,6 +21,7 @@ import {
   clampWindowHeightRatio,
   computeContentHeightRatio,
 } from "../../lib/sectionLayouts";
+import { closeAllToolWindows } from "../../lib/toolWindows";
 
 function InputRowPanel() {
   const { settings, updateSettings } = useAppStore();
@@ -83,9 +81,6 @@ export function AppShell() {
   const {
     settings,
     monitors,
-    showSettings,
-    showMacroBuilder,
-    showHeadTrackingWizard,
     pendingUpdate,
     setPendingUpdate,
     setShowSettings,
@@ -107,7 +102,9 @@ export function AppShell() {
   } | null>(null);
 
   const handleCloseApp = () => {
-    void exit(0);
+    void closeAllToolWindows().finally(() => {
+      void exit(0);
+    });
   };
 
   const onWindowHeaderPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
@@ -240,9 +237,6 @@ export function AppShell() {
           />
         </div>
 
-        {showSettings && <SettingsPanel />}
-        {showMacroBuilder && <MacroBuilder />}
-        {showHeadTrackingWizard && <HeadTrackingWizard />}
         {pendingUpdate && (
           <UpdatePrompt
             update={pendingUpdate}

@@ -1,11 +1,21 @@
 import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { AppShell } from "./components/layout/AppShell";
+import { SettingsPanel } from "./components/settings/SettingsPanel";
+import { MacroBuilder } from "./components/macros/MacroBuilder";
+import { HeadTrackingWizard } from "./components/head-tracking/HeadTrackingWizard";
+import { AppToaster } from "./components/common/AppToaster";
 import { computeContentHeightRatio } from "./lib/sectionLayouts";
+import {
+  isToolWindowLabel,
+  PROFILE_UPDATED_EVENT,
+  type ToolWindowLabel,
+} from "./lib/toolWindows";
 import { useAppStore } from "./stores/appStore";
 
-function App() {
+function MainApp() {
   const {
     loadProfileFiles,
     loadMonitors,
@@ -117,6 +127,13 @@ function App() {
       ),
     );
 
+    unlisteners.push(
+      listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
+        if (event.payload?.source === WebviewWindow.getCurrent().label) return;
+        void useAppStore.getState().loadProfileFiles();
+      }),
+    );
+
     return () => {
       void Promise.all(unlisteners).then((stops) => {
         for (const stop of stops) stop();
@@ -132,6 +149,63 @@ function App() {
   ]);
 
   return <AppShell />;
+}
+
+function ToolApp({ label }: { label: ToolWindowLabel }) {
+  const { loadProfileFiles, loadMonitors } = useAppStore();
+
+  useEffect(() => {
+    const init = async () => {
+      await loadProfileFiles();
+      await loadMonitors();
+      const win = WebviewWindow.getCurrent();
+      await win.setAlwaysOnTop(true);
+      await win.setFocusable(true);
+    };
+    void init();
+  }, [loadMonitors, loadProfileFiles]);
+
+  useEffect(() => {
+    const unlisten = listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
+      if (event.payload?.source === WebviewWindow.getCurrent().label) return;
+      void useAppStore.getState().loadProfileFiles();
+    });
+    return () => {
+      void unlisten.then((stop) => stop());
+    };
+  }, []);
+
+  let panel;
+  switch (label) {
+    case "settings":
+      panel = <SettingsPanel />;
+      break;
+    case "macro-builder":
+      panel = <MacroBuilder />;
+      break;
+    case "head-tracking":
+      panel = <HeadTrackingWizard />;
+      break;
+    default: {
+      const _exhaustive: never = label;
+      return _exhaustive;
+    }
+  }
+
+  return (
+    <>
+      {panel}
+      <AppToaster />
+    </>
+  );
+}
+
+function App() {
+  const label = WebviewWindow.getCurrent().label;
+  if (isToolWindowLabel(label)) {
+    return <ToolApp label={label} />;
+  }
+  return <MainApp />;
 }
 
 export default App;
