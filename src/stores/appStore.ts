@@ -245,10 +245,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       partial.uiLanguage !== undefined && partial.uiLanguage !== settings.uiLanguage;
     const next = { ...settings, ...partial };
     set({ settings: next });
-    if (
-      partial.keyboardSectionMode === "synthesizer" ||
-      partial.collapsed === true
-    ) {
+    if (partial.keyboardSectionMode === "synthesizer") {
       await get().stopDictation();
     }
     if (syncToSystem && typingLanguageChanged) {
@@ -267,10 +264,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await get().loadPhrases();
       await get().loadSuggestions();
     }
-    if (partial.accessibilityMonitorId !== undefined || partial.collapsed !== undefined) {
+    if (
+      partial.accessibilityMonitorId !== undefined ||
+      partial.collapsed !== undefined ||
+      (next.collapsed && partial.dictationVisible !== undefined)
+    ) {
       await invoke("cmd_apply_window_layout", {
         monitorId: next.accessibilityMonitorId,
         collapsed: next.collapsed,
+        collapsedDictation:
+          next.collapsed && next.dictationVisible !== false,
       });
     }
   },
@@ -574,11 +577,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
         await invoke("cmd_animate_window_layout", {
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
+          collapsedDictation: next.dictationVisible !== false,
         });
       } else {
         await invoke("cmd_animate_window_layout", {
           monitorId: settings.accessibilityMonitorId,
           collapsed: false,
+          collapsedDictation: false,
         });
         set({ settings: next });
         await invoke("cmd_update_profile_settings", {

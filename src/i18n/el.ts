@@ -54,6 +54,8 @@ export const el: Record<keyof typeof en, string> = {
 
   showSuggestionsBar: "Εμφάνιση προτάσεων",
 
+  showDictationControl: "Εμφάνιση υπαγόρευσης (μικρόφωνο)",
+
   opacity: "Διαφάνεια",
 
   appLanguage: "Γλώσσα εφαρμογής",

@@ -27,6 +27,8 @@ function App() {
       await invoke("cmd_apply_window_layout", {
         monitorId: settings.accessibilityMonitorId,
         collapsed: settings.collapsed,
+        collapsedDictation:
+          settings.collapsed && settings.dictationVisible !== false,
       });
       await loadKeyboardLayout();
       await pollKeyboardState();

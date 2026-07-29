@@ -212,9 +212,10 @@ async fn apply_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
     let monitors = list_monitors();
-    let layout = compute_window_layout(&monitors, monitor_id, collapsed)?;
+    let layout = compute_window_layout(&monitors, monitor_id, collapsed, collapsed_dictation)?;
     set_window_layout(app, layout).await
 }
 
@@ -259,12 +260,14 @@ async fn animate_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
     let monitors = list_monitors();
-    let target = compute_window_layout(&monitors, monitor_id, collapsed)?;
+    let target =
+        compute_window_layout(&monitors, monitor_id, collapsed, collapsed_dictation)?;
     let from = get_current_window_layout(&window)?;
 
     let steps = window::COLLAPSE_ANIMATION_MS / window::COLLAPSE_ANIMATION_FRAME_MS;
@@ -307,8 +310,9 @@ async fn cmd_apply_window_layout(
     app: tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, collapsed).await
+    apply_window_layout(&app, monitor_id, collapsed, collapsed_dictation).await
 }
 
 #[tauri::command]
@@ -316,8 +320,9 @@ async fn cmd_animate_window_layout(
     app: tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
-    animate_window_layout(&app, monitor_id, collapsed).await
+    animate_window_layout(&app, monitor_id, collapsed, collapsed_dictation).await
 }
 
 #[tauri::command]
@@ -325,7 +330,7 @@ async fn cmd_move_window_to_monitor(
     app: tauri::AppHandle,
     monitor_id: u32,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, false).await
+    apply_window_layout(&app, monitor_id, false, false).await
 }
 
 #[tauri::command]
@@ -353,8 +358,9 @@ async fn cmd_set_collapsed(
     app: tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, collapsed).await
+    apply_window_layout(&app, monitor_id, collapsed, collapsed_dictation).await
 }
 
 #[tauri::command]

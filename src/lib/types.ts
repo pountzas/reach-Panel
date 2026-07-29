@@ -35,6 +35,8 @@ export interface AppSettings {
   quickActionsVisible: boolean;
   phrasesVisible: boolean;
   suggestionsVisible: boolean;
+  /** When false, hides the toolbar mic / dictation control. */
+  dictationVisible: boolean;
   emergencyVisible: boolean;
   accessibilityMonitorId: number;
   collapsed: boolean;
@@ -149,6 +151,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   quickActionsVisible: true,
   phrasesVisible: true,
   suggestionsVisible: true,
+  dictationVisible: true,
   emergencyVisible: true,
   accessibilityMonitorId: 0,
   collapsed: false,

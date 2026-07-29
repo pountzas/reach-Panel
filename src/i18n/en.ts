@@ -50,6 +50,8 @@
 
   showSuggestionsBar: "Show suggestions bar",
 
+  showDictationControl: "Show dictation (mic)",
+
   opacity: "Opacity",
 
   appLanguage: "App language",
