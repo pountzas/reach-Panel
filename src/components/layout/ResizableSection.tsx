@@ -404,6 +404,7 @@ export function ResizableSection({
                   label={isMinimized ? t("expand") : t("minimizeSection")}
                   onClick={handleToggleMinimize}
                   size={iconSize}
+                  tooltipPlacement="below"
                 >
                   {isMinimized ? (
                     <ExpandIcon className={iconClass} />
@@ -415,6 +416,7 @@ export function ResizableSection({
                   label={t("close")}
                   onClick={handleClose}
                   size={iconSize}
+                  tooltipPlacement="below"
                 >
                   <CloseIcon className={iconClass} />
                 </IconActionButton>

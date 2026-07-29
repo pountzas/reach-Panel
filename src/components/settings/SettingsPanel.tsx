@@ -197,6 +197,7 @@ export function SettingsPanel() {
           label={t("close")}
           onClick={() => setShowSettings(false)}
           className="rounded bg-white/20 hover:bg-white/30"
+          tooltipPlacement="below"
         >
           <CloseIcon />
         </IconActionButton>

@@ -202,6 +202,7 @@ export function AppShell() {
               disabled={isAnimatingWindow}
               className="rounded bg-white/20 hover:bg-white/30"
               size={iconSize}
+              tooltipPlacement="below"
             >
               <CollapseIcon className={iconClass} />
             </IconActionButton>
@@ -210,6 +211,7 @@ export function AppShell() {
               onClick={() => setShowSettings(true)}
               className="rounded bg-white/20 hover:bg-white/30"
               size={iconSize}
+              tooltipPlacement="below"
             >
               <SettingsIcon className={iconClass} />
             </IconActionButton>
@@ -218,6 +220,7 @@ export function AppShell() {
               onClick={handleCloseApp}
               className="rounded bg-white/20 hover:bg-white/30"
               size={iconSize}
+              tooltipPlacement="below"
             >
               <CloseIcon className={iconClass} />
             </IconActionButton>
