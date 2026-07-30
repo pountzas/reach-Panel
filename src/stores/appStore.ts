@@ -435,6 +435,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   saveActiveProfile: async () => {
     await invoke("cmd_save_active_profile_file");
+    await emit(PROFILE_UPDATED_EVENT, {
+      source: WebviewWindow.getCurrent().label,
+    });
   },
 
   pickBackgroundImage: async () => {
