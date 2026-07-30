@@ -7,6 +7,7 @@ import { MousePanel } from "../mouse/MousePanel";
 import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
+import { MusicLessonPanel } from "../music/MusicLessonPanel";
 import { AppToaster } from "../common/AppToaster";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { UpdatePrompt } from "../common/UpdatePrompt";
@@ -27,26 +28,25 @@ function InputRowPanel() {
   const { settings, updateSettings } = useAppStore();
   const mouseSide = settings.mousePanelSide ?? "right";
   const mouseRatio = settings.inputRowRightRatio ?? 0.28;
+  const mouseVisible = settings.mouseVisible;
 
+  // Always keep KeyboardSection in the same split-pane slot so synth playback
+  // is not remounted when show/hide mouse toggles. 5-octave mode sets
+  // mouseVisible=false the same way the hide button does.
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
-      {settings.mouseVisible ? (
-        <ResizableSplitPane
-          ratioSide={mouseSide === "left" ? "left" : "right"}
-          rightRatio={mouseRatio}
-          onRightRatioChange={(inputRowRightRatio) =>
-            updateSettings({ inputRowRightRatio })
-          }
-          minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
-          minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
-          left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
-          right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
-        />
-      ) : (
-        <div className="min-h-0 flex-1">
-          <KeyboardSection />
-        </div>
-      )}
+      <ResizableSplitPane
+        ratioSide={mouseSide === "left" ? "left" : "right"}
+        rightRatio={mouseRatio}
+        onRightRatioChange={(inputRowRightRatio) =>
+          updateSettings({ inputRowRightRatio })
+        }
+        minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
+        minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
+        sizedPaneCollapsed={!mouseVisible}
+        left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
+        right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
+      />
     </div>
   );
 }
@@ -88,12 +88,16 @@ export function AppShell() {
     updateSettings,
     applyWindowHeightRatioLive,
     isAnimatingWindow,
+    musicTeachingEnabled,
   } = useAppStore();
   const { t } = useTranslation();
   const largeHeaders = settings.largeHeaders;
   const headerHeight = appHeaderHeightPx(largeHeaders);
   const iconSize = largeHeaders ? "lg" : "sm";
   const iconClass = largeHeaders ? "h-7 w-7" : "h-4 w-4";
+  const showMusicLesson =
+    musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
+  const phrasesSlotVisible = settings.phrasesVisible || showMusicLesson;
   const windowResizeRef = useRef<{
     startY: number;
     startRatio: number;
@@ -231,11 +235,11 @@ export function AppShell() {
           <ErrorBanner />
           <SectionCanvas
             quickActionsVisible={settings.quickActionsVisible}
-            phrasesVisible={settings.phrasesVisible}
+            phrasesVisible={phrasesSlotVisible}
             savedLayouts={settings.sectionLayouts}
             onLayoutsChange={(sectionLayouts) => updateSettings({ sectionLayouts })}
             quickActions={<QuickActionsBar />}
-            phrases={<PhrasePanel />}
+            phrases={showMusicLesson ? <MusicLessonPanel /> : <PhrasePanel />}
             inputRow={<InputRowPanel />}
           />
         </div>

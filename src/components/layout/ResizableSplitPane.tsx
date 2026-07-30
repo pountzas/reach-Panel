@@ -20,6 +20,11 @@ interface ResizableSplitPaneProps {
   minLeftWidth?: number;
   minRightWidth?: number;
   maxRightRatio?: number;
+  /**
+   * When true, collapses the sized pane (and splitter) without unmounting
+   * either child — keeps React identity of the flex sibling stable.
+   */
+  sizedPaneCollapsed?: boolean;
 }
 
 export function ResizableSplitPane({
@@ -31,6 +36,7 @@ export function ResizableSplitPane({
   minLeftWidth = DEFAULT_MIN_LEFT,
   minRightWidth = DEFAULT_MIN_RIGHT,
   maxRightRatio = DEFAULT_MAX_SIZED_RATIO,
+  sizedPaneCollapsed = false,
 }: ResizableSplitPaneProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,6 +60,7 @@ export function ResizableSplitPane({
   );
 
   const clampToBounds = useCallback(() => {
+    if (sizedPaneCollapsed) return;
     const container = containerRef.current;
     if (!container) return;
 
@@ -64,7 +71,7 @@ export function ResizableSplitPane({
     if (rightRatio > maxSized || rightRatio < minSized) {
       onRightRatioChange(clamp(rightRatio, minSized, maxSized));
     }
-  }, [onRightRatioChange, ratioBounds, rightRatio]);
+  }, [onRightRatioChange, ratioBounds, rightRatio, sizedPaneCollapsed]);
 
   useEffect(() => {
     clampToBounds();
@@ -117,37 +124,67 @@ export function ResizableSplitPane({
   const leftFlex = ratioSide === "left" ? rightRatio : 1 - rightRatio;
   const rightFlex = ratioSide === "left" ? 1 - rightRatio : rightRatio;
   const maxSizedPercent = Math.round(maxRightRatio * 100);
+  const leftCollapsed = sizedPaneCollapsed && ratioSide === "left";
+  const rightCollapsed = sizedPaneCollapsed && ratioSide === "right";
+  // When the sized pane is collapsed, the remaining pane must fill like a
+  // solo flex-1 child (same as the old mouse-hide path), not keep its ratio.
+  const collapsedPaneStyle = {
+    flex: "0 0 0px",
+    width: 0,
+    minWidth: 0,
+    maxWidth: 0,
+    overflow: "hidden",
+    visibility: "hidden" as const,
+    pointerEvents: "none" as const,
+  };
+  const fullPaneStyle = { flex: "1 1 0%", minWidth: 0 };
 
   return (
     <div ref={containerRef} className="flex min-h-0 flex-1 items-stretch">
       <div
         className="min-h-0 min-w-0"
-        style={{ flex: `${leftFlex} 1 0`, minWidth: minLeftWidth }}
+        style={
+          leftCollapsed
+            ? collapsedPaneStyle
+            : sizedPaneCollapsed
+              ? fullPaneStyle
+              : { flex: `${leftFlex} 1 0`, minWidth: minLeftWidth }
+        }
+        aria-hidden={leftCollapsed || undefined}
       >
         {left}
       </div>
-      <div
-        role="separator"
-        aria-orientation="vertical"
-        aria-label={t("resizeInputRow")}
-        aria-valuemin={0}
-        aria-valuemax={maxSizedPercent}
-        aria-valuenow={Math.round(rightRatio * 100)}
-        className="group z-20 flex shrink-0 cursor-col-resize items-stretch px-0.5"
-        style={{ width: SPLITTER_WIDTH }}
-        onPointerDown={onSplitterPointerDown}
-        onPointerMove={onSplitterPointerMove}
-        onPointerUp={onSplitterPointerUp}
-        onPointerCancel={onSplitterPointerUp}
-        onLostPointerCapture={() => {
-          dragStateRef.current = null;
-        }}
-      >
-        <div className="w-0.5 flex-1 rounded-full bg-slate-300 transition-colors group-hover:bg-slate-500 group-active:bg-slate-600" />
-      </div>
+      {!sizedPaneCollapsed && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t("resizeInputRow")}
+          aria-valuemin={0}
+          aria-valuemax={maxSizedPercent}
+          aria-valuenow={Math.round(rightRatio * 100)}
+          className="group z-20 flex shrink-0 cursor-col-resize items-stretch px-0.5"
+          style={{ width: SPLITTER_WIDTH }}
+          onPointerDown={onSplitterPointerDown}
+          onPointerMove={onSplitterPointerMove}
+          onPointerUp={onSplitterPointerUp}
+          onPointerCancel={onSplitterPointerUp}
+          onLostPointerCapture={() => {
+            dragStateRef.current = null;
+          }}
+        >
+          <div className="w-0.5 flex-1 rounded-full bg-slate-300 transition-colors group-hover:bg-slate-500 group-active:bg-slate-600" />
+        </div>
+      )}
       <div
         className="min-h-0 min-w-0"
-        style={{ flex: `${rightFlex} 1 0`, minWidth: minRightWidth }}
+        style={
+          rightCollapsed
+            ? collapsedPaneStyle
+            : sizedPaneCollapsed
+              ? fullPaneStyle
+              : { flex: `${rightFlex} 1 0`, minWidth: minRightWidth }
+        }
+        aria-hidden={rightCollapsed || undefined}
       >
         {right}
       </div>

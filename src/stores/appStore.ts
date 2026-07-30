@@ -21,6 +21,18 @@ import {
   ProfileFileInfo,
   QuickAction,
 } from "../lib/types";
+import {
+  isWidePianoOctaveCount,
+  resolveSynthOctaveCount,
+  resolveSynthStartOctave,
+} from "../lib/music/octaveCount";
+import { BUILT_IN_SONGS, getSongById, songPianoRangeFit } from "../lib/music/songs";
+import type { ImportedMusicSong } from "../lib/music/importTypes";
+import {
+  parseMusicFilePayload,
+  type MusicFilePayload,
+} from "../lib/music/parseMusicFile";
+import { isImportedMusicSong } from "../lib/music/parseJsonSong";
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
@@ -109,6 +121,17 @@ interface AppStore {
   showMacroBuilder: boolean;
   showHeadTrackingWizard: boolean;
   keyboardLayout: string;
+  /** Session-only: guided piano teaching replaces Phrases while on. */
+  musicTeachingEnabled: boolean;
+  musicSongId: string | null;
+  musicNoteIndex: number;
+  /** Session-only: demo playback of the selected song. */
+  musicPlaybackActive: boolean;
+  phrasesVisibleBeforeTeaching: boolean | null;
+  /** Session-only: restore mouse after leaving 5-octave (wide) piano mode. */
+  mouseVisibleBeforeWidePiano: boolean | null;
+  /** Persisted imported songs (app data library). */
+  importedSongs: ImportedMusicSong[];
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
@@ -151,6 +174,18 @@ interface AppStore {
   syncWindowFocusable: () => Promise<void>;
   loadKeyboardLayout: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
+  enableMusicTeaching: () => Promise<void>;
+  disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
+  setMusicSongId: (songId: string) => Promise<void>;
+  restartMusicLesson: () => void;
+  reportMusicKeyPlayed: (keyId: string) => void;
+  startMusicPlayback: () => void;
+  stopMusicPlayback: () => void;
+  setMusicPlaybackNoteIndex: (index: number) => void;
+  finishMusicPlayback: () => void;
+  loadImportedSongs: () => Promise<void>;
+  importMusicSongsFromFile: () => Promise<void>;
+  deleteImportedSong: (id: string) => Promise<void>;
   isAnimatingWindow: boolean;
   pendingUpdate: Update | null;
   updateCheckStatus: "idle" | "checking" | "upToDate" | "error";
@@ -193,6 +228,15 @@ function parseSettings(json: string): AppSettings {
       uiLanguage,
       colorProfile,
       mousePanelSide,
+      synthesizerOctaveCount: resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
+      synthesizerStartOctave: resolveSynthStartOctave(
+        parsed.synthesizerStartOctave,
+        resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
+      ),
+      // 5-octave mode always uses the mouse-hide setting path.
+      ...(isWidePianoOctaveCount(parsed.synthesizerOctaveCount)
+        ? { mouseVisible: false }
+        : {}),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -313,6 +357,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   showMacroBuilder: false,
   showHeadTrackingWizard: false,
   keyboardLayout: "QWERTY",
+  musicTeachingEnabled: false,
+  musicSongId: "twinkle",
+  musicNoteIndex: 0,
+  musicPlaybackActive: false,
+  phrasesVisibleBeforeTeaching: null,
+  mouseVisibleBeforeWidePiano: null,
+  importedSongs: [],
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -402,7 +453,65 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const uiLanguageChanged =
       partial.uiLanguage !== undefined && partial.uiLanguage !== settings.uiLanguage;
     const previousTypingLanguage = settings.typingLanguage;
-    const next = { ...settings, ...partial };
+    let next = {
+      ...settings,
+      ...partial,
+      ...(partial.synthesizerOctaveCount !== undefined
+        ? {
+            synthesizerOctaveCount: resolveSynthOctaveCount(
+              partial.synthesizerOctaveCount,
+            ),
+          }
+        : {}),
+    };
+    if (
+      partial.synthesizerStartOctave !== undefined ||
+      partial.synthesizerOctaveCount !== undefined
+    ) {
+      next = {
+        ...next,
+        synthesizerStartOctave: resolveSynthStartOctave(
+          next.synthesizerStartOctave,
+          resolveSynthOctaveCount(next.synthesizerOctaveCount),
+        ),
+      };
+    }
+
+    // 5-octave mode uses the same path as the mouse-hide button (mouseVisible).
+    const wasWide = isWidePianoOctaveCount(settings.synthesizerOctaveCount);
+    const nowWide = isWidePianoOctaveCount(next.synthesizerOctaveCount);
+    if (nowWide) {
+      if (next.mouseVisible) {
+        if (get().mouseVisibleBeforeWidePiano === null) {
+          set({ mouseVisibleBeforeWidePiano: settings.mouseVisible });
+        }
+        next = { ...next, mouseVisible: false };
+      }
+    } else if (wasWide && partial.synthesizerOctaveCount !== undefined) {
+      const restore = get().mouseVisibleBeforeWidePiano;
+      set({ mouseVisibleBeforeWidePiano: null });
+      if (restore !== null && partial.mouseVisible === undefined) {
+        next = { ...next, mouseVisible: restore };
+      }
+    }
+
+    const leavingSynthesizer =
+      partial.keyboardSectionMode !== undefined &&
+      partial.keyboardSectionMode !== "synthesizer" &&
+      get().musicTeachingEnabled;
+    if (leavingSynthesizer) {
+      const before = get().phrasesVisibleBeforeTeaching;
+      set({
+        musicTeachingEnabled: false,
+        musicNoteIndex: 0,
+        musicPlaybackActive: false,
+        phrasesVisibleBeforeTeaching: null,
+      });
+      if (before !== null) {
+        next = { ...next, phrasesVisible: before };
+      }
+    }
+
     set({ settings: next });
     if (partial.keyboardSectionMode === "synthesizer") {
       await get().stopDictation();
@@ -820,6 +929,161 @@ export const useAppStore = create<AppStore>((set, get) => ({
   loadKeyboardLayout: async () => {
     const keyboardLayout = await invoke<string>("cmd_get_keyboard_layout");
     set({ keyboardLayout });
+  },
+
+  enableMusicTeaching: async () => {
+    const { settings, musicTeachingEnabled, musicSongId, importedSongs } = get();
+    if (musicTeachingEnabled) return;
+    set({
+      musicTeachingEnabled: true,
+      phrasesVisibleBeforeTeaching: settings.phrasesVisible,
+      musicNoteIndex: 0,
+      musicSongId: musicSongId ?? "twinkle",
+    });
+    const song = getSongById(get().musicSongId, importedSongs);
+    const patch: Partial<AppSettings> = {};
+    if (!settings.phrasesVisible) {
+      patch.phrasesVisible = true;
+    }
+    if (song) {
+      const fit = songPianoRangeFit(song);
+      if (fit) {
+        patch.synthesizerOctaveCount = fit.octaveCount;
+        patch.synthesizerStartOctave = fit.startOctave;
+      }
+    }
+    if (Object.keys(patch).length > 0) {
+      await get().updateSettings(patch);
+    }
+  },
+
+  disableMusicTeaching: async (options) => {
+    if (!get().musicTeachingEnabled && get().phrasesVisibleBeforeTeaching === null) {
+      if (options?.hidePhrases) {
+        await get().updateSettings({ phrasesVisible: false });
+      }
+      return;
+    }
+    const before = get().phrasesVisibleBeforeTeaching;
+    set({
+      musicTeachingEnabled: false,
+      musicNoteIndex: 0,
+      musicPlaybackActive: false,
+      phrasesVisibleBeforeTeaching: null,
+    });
+    if (options?.hidePhrases) {
+      await get().updateSettings({ phrasesVisible: false });
+      return;
+    }
+    if (before !== null && before !== get().settings.phrasesVisible) {
+      await get().updateSettings({ phrasesVisible: before });
+    }
+  },
+
+  setMusicSongId: async (songId) => {
+    const song = getSongById(songId, get().importedSongs);
+    if (!song) return;
+    set({ musicSongId: songId, musicNoteIndex: 0, musicPlaybackActive: false });
+    const fit = songPianoRangeFit(song);
+    if (fit) {
+      await get().updateSettings({
+        synthesizerOctaveCount: fit.octaveCount,
+        synthesizerStartOctave: fit.startOctave,
+      });
+    }
+  },
+
+  restartMusicLesson: () => {
+    set({ musicNoteIndex: 0, musicPlaybackActive: false });
+  },
+
+  reportMusicKeyPlayed: (keyId) => {
+    const { musicTeachingEnabled, musicPlaybackActive, musicSongId, musicNoteIndex, importedSongs } =
+      get();
+    if (!musicTeachingEnabled || musicPlaybackActive) return;
+    const song = getSongById(musicSongId, importedSongs);
+    if (!song) return;
+    if (musicNoteIndex >= song.notes.length) return;
+    if (song.notes[musicNoteIndex]?.pitch !== keyId) return;
+    set({ musicNoteIndex: musicNoteIndex + 1 });
+  },
+
+  startMusicPlayback: () => {
+    if (!get().musicTeachingEnabled) return;
+    const song = getSongById(get().musicSongId, get().importedSongs);
+    if (!song || song.notes.length === 0) return;
+    set({ musicPlaybackActive: true, musicNoteIndex: 0 });
+  },
+
+  stopMusicPlayback: () => {
+    if (!get().musicPlaybackActive) return;
+    set({ musicPlaybackActive: false });
+  },
+
+  setMusicPlaybackNoteIndex: (index) => {
+    if (!get().musicPlaybackActive) return;
+    set({ musicNoteIndex: index });
+  },
+
+  finishMusicPlayback: () => {
+    if (!get().musicPlaybackActive) return;
+    set({ musicPlaybackActive: false, musicNoteIndex: 0 });
+  },
+
+  loadImportedSongs: async () => {
+    try {
+      const songs = await invoke<ImportedMusicSong[]>("cmd_list_imported_songs");
+      set({
+        importedSongs: Array.isArray(songs)
+          ? songs.filter((song) => song && typeof song.id === "string")
+          : [],
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  importMusicSongsFromFile: async () => {
+    try {
+      const path = await invoke<string | null>("cmd_pick_music_song_file");
+      if (!path) return;
+      const payload = await invoke<MusicFilePayload>("cmd_read_music_file", { path });
+      const songs = await parseMusicFilePayload(payload);
+      for (const song of songs) {
+        await invoke("cmd_upsert_imported_song", { song });
+      }
+      await get().loadImportedSongs();
+      const last = songs[songs.length - 1];
+      if (last) {
+        await get().setMusicSongId(last.id);
+      }
+      notify.success(
+        songs.length === 1
+          ? `Imported “${songs[0]!.title}”`
+          : `Imported ${songs.length} songs`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  deleteImportedSong: async (id) => {
+    const song = get().importedSongs.find((entry) => entry.id === id);
+    if (!song || !isImportedMusicSong(song)) return;
+    try {
+      get().stopMusicPlayback();
+      await invoke("cmd_delete_imported_song", { id });
+      await get().loadImportedSongs();
+      if (get().musicSongId === id) {
+        await get().setMusicSongId(BUILT_IN_SONGS[0]?.id ?? "twinkle");
+      }
+      notify.success(`Deleted “${song.title}”`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
   },
 
   toggleCollapsed: async () => {

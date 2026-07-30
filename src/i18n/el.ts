@@ -37,6 +37,8 @@ export const el: Record<keyof typeof en, string> = {
 
   showMouseSection: "Εμφάνιση τμήματος ποντικιού",
 
+  hideMouseSection: "Απόκρυψη τμήματος ποντικιού",
+
   speed: "Ταχύτητα",
 
   speedSlow: "Αργή",
@@ -205,6 +207,63 @@ export const el: Record<keyof typeof en, string> = {
   mute: "Σίγαση",
 
   unmute: "Ξεσίγαση",
+
+  teachMusic: "Διδασκαλία",
+
+  stopTeaching: "Διακοπή διδασκαλίας",
+
+  musicLesson: "Μάθημα μουσικής",
+
+  selectSong: "Τραγούδι",
+
+  restartLesson: "Επανεκκίνηση",
+
+  playSong: "Αναπαραγωγή",
+
+  stopSong: "Διακοπή",
+
+  loadSong: "Φόρτωση",
+
+  deleteSong: "Διαγραφή",
+
+  confirmDeleteSong: "Διαγραφή εισαγμένου τραγουδιού «{title}»;",
+
+  builtInSongs: "Ενσωματωμένα",
+
+  importedSongs: "Εισαγμένα",
+
+  playingNote: "Παίζει",
+
+  waitingForNote: "Παίξε",
+
+  lessonComplete: "Το τραγούδι ολοκληρώθηκε!",
+
+  upcomingNotes: "Επόμενες νότες",
+
+  songNeedsOctaves: "Μετακινήστε το πιάνο στο {range} για να καλύψει το τραγούδι",
+
+  songWiderThanPiano:
+    "Το τραγούδι είναι μεγαλύτερο από 5 οκτάβες — κάποιες νότες είναι εκτός. Χρησιμοποιήστε ◀ ▶ για μετατόπιση.",
+
+  pianoRange: "Πιάνο",
+
+  songRange: "Τραγούδι",
+
+  shiftPianoLower: "Μετατόπιση πιάνου χαμηλότερα",
+
+  shiftPianoHigher: "Μετατόπιση πιάνου ψηλότερα",
+
+  octavesShort: "οκτάβες",
+
+  mouseHiddenForWidePiano: "Το ποντίκι κρύβεται με 5 οκτάβες",
+
+  octaveCount2: "2 οκτάβες",
+
+  octaveCount3: "3 οκτάβες",
+
+  octaveCount4: "4 οκτάβες",
+
+  octaveCount5: "5 οκτάβες",
 
   showKeyboardModeToggle: "Εμφάνιση εναλλαγής πληκτρολογίου / συνθετητή",
 

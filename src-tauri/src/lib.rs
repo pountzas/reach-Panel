@@ -1,6 +1,7 @@
 mod db;
 mod input;
 mod macros;
+mod music;
 mod prediction;
 mod profiles;
 mod stt;
@@ -495,6 +496,69 @@ fn cmd_pick_background_image(app: tauri::AppHandle) -> Result<Option<String>, St
     pick_background_image(&app)
 }
 
+fn pick_music_song_file(app: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    window
+        .set_always_on_top(false)
+        .map_err(|e| e.to_string())?;
+    let _restore = RestoreAlwaysOnTop(app.clone());
+
+    let file = rfd::FileDialog::new()
+        .add_filter(
+            "Music songs",
+            &["json", "mid", "midi", "xml", "musicxml", "mxl"],
+        )
+        .add_filter("JSON", &["json"])
+        .add_filter("MIDI", &["mid", "midi"])
+        .add_filter("MusicXML", &["xml", "musicxml", "mxl"])
+        .set_parent(&window)
+        .pick_file();
+
+    Ok(file.map(|p| p.to_string_lossy().into_owned()))
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MusicFilePayload {
+    path: String,
+    content_base64: String,
+}
+
+#[tauri::command]
+fn cmd_pick_music_song_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    pick_music_song_file(&app)
+}
+
+#[tauri::command]
+fn cmd_read_music_file(path: String) -> Result<MusicFilePayload, String> {
+    let bytes = music::read_music_file_bytes(&path)?;
+    Ok(MusicFilePayload {
+        path,
+        content_base64: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes),
+    })
+}
+
+#[tauri::command]
+fn cmd_list_imported_songs(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    Ok(serde_json::Value::Array(music::list_imported_songs(&app)?))
+}
+
+#[tauri::command]
+fn cmd_upsert_imported_song(
+    app: tauri::AppHandle,
+    song: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    music::upsert_imported_song(&app, song)
+}
+
+#[tauri::command]
+fn cmd_delete_imported_song(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    music::delete_imported_song(&app, &id)
+}
+
 #[tauri::command]
 fn cmd_update_profile_settings(
     profile_id: String,
@@ -834,6 +898,11 @@ pub fn run() {
             cmd_wipe_active_profile,
             cmd_get_windows_ui_language,
             cmd_pick_background_image,
+            cmd_pick_music_song_file,
+            cmd_read_music_file,
+            cmd_list_imported_songs,
+            cmd_upsert_imported_song,
+            cmd_delete_imported_song,
             cmd_update_profile_settings,
             cmd_get_quick_actions,
             cmd_save_quick_action,

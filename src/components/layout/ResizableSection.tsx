@@ -116,8 +116,18 @@ export function ResizableSection({
 }: ResizableSectionProps) {
   const { t } = useTranslation();
   const updateSettings = useAppStore((s) => s.updateSettings);
+  const disableMusicTeaching = useAppStore((s) => s.disableMusicTeaching);
+  const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const keyboardSectionMode = useAppStore((s) => s.settings.keyboardSectionMode);
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
+  const showMusicLesson =
+    id === "phrases" &&
+    musicTeachingEnabled &&
+    keyboardSectionMode === "synthesizer";
+  const sectionTitleKey: TranslationKey = showMusicLesson
+    ? "musicLesson"
+    : SECTION_TITLE_KEY[id];
   const surface = getSurfaceColors(appBgColor);
   const interactingRef = useRef(false);
   const lastValidRef = useRef<PixelRect | null>(null);
@@ -230,10 +240,19 @@ export function ResizableSection({
         updateSettings({ quickActionsVisible: false });
         break;
       case "phrases":
-        updateSettings({ phrasesVisible: false });
+        if (musicTeachingEnabled) {
+          void disableMusicTeaching({ hidePhrases: true });
+        } else {
+          updateSettings({ phrasesVisible: false });
+        }
         break;
-      default:
+      case "input-row":
         break;
+      default: {
+        const _exhaustive: never = id;
+        void _exhaustive;
+        break;
+      }
     }
   };
 
@@ -393,7 +412,7 @@ export function ResizableSection({
             className={`truncate font-medium ${largeHeaders ? "text-sm" : "text-xs"}`}
             style={{ color: surface.panelMutedText }}
           >
-            {t(SECTION_TITLE_KEY[id])}
+            {t(sectionTitleKey)}
           </span>
           {id === "input-row" ? (
             <InputAreaViewButtons />
