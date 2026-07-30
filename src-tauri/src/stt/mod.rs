@@ -9,7 +9,7 @@ mod winrt;
 #[cfg(not(target_os = "windows"))]
 mod stub;
 
-use route::{can_dictate, select_engine, RouteDecision, SttEngine};
+use route::{can_dictate, prefer_cloud_stt, select_engine, RouteDecision, SttEngine};
 use serde::Serialize;
 use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
@@ -74,7 +74,8 @@ pub fn start_dictation(
         let online = network::is_online();
         let winrt_supported = winrt::is_language_supported(language);
         let groq_configured = groq::is_configured(groq_api_key);
-        match select_engine(online, winrt_supported, groq_configured) {
+        let prefer_cloud = prefer_cloud_stt(language);
+        match select_engine(online, winrt_supported, groq_configured, prefer_cloud) {
             RouteDecision::Use(SttEngine::WinRt) => {
                 winrt::start_dictation(language, app)?;
                 if let Ok(mut guard) = router().lock() {
@@ -100,7 +101,7 @@ pub fn start_dictation(
                         "GROQ_API: Dictation requires an internet connection."
                     );
                 }
-                if !winrt_supported {
+                if prefer_cloud || !winrt_supported {
                     anyhow::bail!(
                         "GROQ_KEY: Windows speech recognition does not support this language. Add a free Groq API key in Settings to dictate."
                     );
@@ -150,14 +151,20 @@ pub fn get_status(language: Option<&str>, groq_api_key: Option<&str>) -> SttStat
         let lang = language.unwrap_or("en");
         let winrt_supported = winrt::is_language_supported(lang);
         let groq_configured = groq::is_configured(groq_api_key);
-        let preferred = select_engine(online, winrt_supported, groq_configured);
+        let prefer_cloud = prefer_cloud_stt(lang);
+        let preferred = select_engine(online, winrt_supported, groq_configured, prefer_cloud);
         let engine = match preferred {
             RouteDecision::Use(e) => Some(engine_name(e).to_string()),
             RouteDecision::Unavailable => None,
         };
 
         let (state, active_language) = if groq::is_active() {
-            (SttState::Listening, groq::active_language())
+            let state = if groq::is_processing() {
+                SttState::Processing
+            } else {
+                SttState::Listening
+            };
+            (state, groq::active_language())
         } else {
             let status = winrt::get_status();
             (status.state, status.language)
@@ -176,7 +183,7 @@ pub fn get_status(language: Option<&str>, groq_api_key: Option<&str>) -> SttStat
             groq_configured,
             winrt_supported,
             online,
-            can_dictate: can_dictate(online, winrt_supported, groq_configured),
+            can_dictate: can_dictate(online, winrt_supported, groq_configured, prefer_cloud),
         }
     }
     #[cfg(not(target_os = "windows"))]

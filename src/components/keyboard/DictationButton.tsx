@@ -16,6 +16,7 @@ export function DictationButton() {
   const { t } = useTranslation();
   const listening = dictationState === "listening" || dictationState === "processing";
   const canDictate = sttCapability?.canDictate ?? false;
+  const captureAudio = sttCapability?.engine !== "groq";
   // Never disable while a session is active — stop must always be clickable.
   const disabled = !listening && !canDictate;
 
@@ -36,7 +37,7 @@ export function DictationButton() {
 
   return (
     <>
-      <DictationVisualizer active={listening} />
+      <DictationVisualizer active={listening} captureAudio={captureAudio} />
       <ModeToggleGroup>
         <ModeToggleButton
           active={listening}

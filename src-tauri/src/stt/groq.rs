@@ -17,15 +17,16 @@ use tauri::AppHandle;
 const GROQ_TRANSCRIPTIONS_URL: &str = "https://api.groq.com/openai/v1/audio/transcriptions";
 const GROQ_MODEL: &str = "whisper-large-v3-turbo";
 const TARGET_SAMPLE_RATE: u32 = 16_000;
-/// Slightly longer than the old tiny-Whisper path to reduce short billable chunks.
-const MIN_SPEECH_SECS: f32 = 1.0;
-const SILENCE_SECS: f32 = 1.4;
+const MIN_SPEECH_SECS: f32 = 0.8;
+const SILENCE_SECS: f32 = 1.0;
 const MAX_UTTERANCE_SECS: f32 = 28.0;
-const ENERGY_THRESHOLD: f32 = 0.012;
+/// Low enough for quiet mics / shared WASAPI capture levels.
+const ENERGY_THRESHOLD: f32 = 0.004;
 
 struct GroqRuntime {
     session: Option<GroqSession>,
     lingering_worker: Option<JoinHandle<()>>,
+    processing: bool,
 }
 
 /// WASAPI streams are thread-safe in practice; cpal marks them !Send for cross-platform reasons.
@@ -49,8 +50,22 @@ fn runtime() -> &'static Mutex<GroqRuntime> {
         Mutex::new(GroqRuntime {
             session: None,
             lingering_worker: None,
+            processing: false,
         })
     })
+}
+
+fn set_processing(active: bool) {
+    if let Ok(mut guard) = runtime().lock() {
+        guard.processing = active;
+    }
+}
+
+pub fn is_processing() -> bool {
+    runtime()
+        .lock()
+        .map(|g| g.processing)
+        .unwrap_or(false)
 }
 
 /// Resolve API key from settings value, then `GROQ_API_KEY` env.
@@ -219,6 +234,7 @@ fn worker_loop(
     let mut speech_started: Option<Instant> = None;
     let mut last_voice = Instant::now();
     let mut cursor = 0usize;
+    let mut peak_energy = 0.0f32;
 
     while !stop_flag.load(Ordering::SeqCst) {
         thread::sleep(Duration::from_millis(80));
@@ -229,12 +245,16 @@ fn worker_loop(
         if snapshot.len() <= cursor {
             continue;
         }
-        let new_slice = &snapshot[cursor..];
-        let energy = rms(new_slice);
+        // Score only the newest slice so trailing silence does not dilute RMS.
+        let window = TARGET_SAMPLE_RATE as usize / 10; // ~100ms
+        let start = snapshot.len().saturating_sub(window).max(cursor);
+        let energy = rms(&snapshot[start..]);
+        peak_energy = peak_energy.max(energy);
         let now = Instant::now();
         if energy >= ENERGY_THRESHOLD {
             if speech_started.is_none() {
                 speech_started = Some(now);
+                eprintln!("[stt/groq] speech start energy={energy:.4}");
             }
             last_voice = now;
         }
@@ -257,27 +277,45 @@ fn worker_loop(
             let end = end.max(cursor);
             let chunk = snapshot[cursor..end].to_vec();
             cursor = end;
+            // Drop consumed audio so the buffer does not grow forever.
+            if let Ok(mut buf) = samples.lock() {
+                if cursor > 0 && cursor <= buf.len() {
+                    buf.drain(0..cursor);
+                    cursor = 0;
+                }
+            }
             speech_started = None;
-            if chunk.len() as f32 / TARGET_SAMPLE_RATE as f32 >= MIN_SPEECH_SECS * 0.8 {
+            let flushed_peak = peak_energy;
+            peak_energy = 0.0;
+            let chunk_secs = chunk.len() as f32 / TARGET_SAMPLE_RATE as f32;
+            if chunk_secs >= MIN_SPEECH_SECS * 0.7 {
+                eprintln!(
+                    "[stt/groq] flush {chunk_secs:.2}s peak={flushed_peak:.4} lang={language}"
+                );
+                set_processing(true);
                 emit_state(&app, SttState::Processing, Some(language.clone()));
                 match transcribe(&api_key, &chunk, &language) {
                     Ok(text) => {
+                        eprintln!("[stt/groq] transcript len={}", text.chars().count());
                         if !stop_flag.load(Ordering::SeqCst) {
                             handle_result(&app, &text);
                         }
                     }
                     Err(err) => {
+                        eprintln!("[stt/groq] transcribe error: {err}");
                         if !stop_flag.load(Ordering::SeqCst) {
                             emit_error(&app, err.to_string());
                         }
                     }
                 }
+                set_processing(false);
                 if !stop_flag.load(Ordering::SeqCst) {
                     emit_state(&app, SttState::Listening, Some(language.clone()));
                 }
             }
         }
     }
+    set_processing(false);
     // Do not flush remainder on stop — keep the mic toggle responsive.
 }
 
@@ -311,6 +349,7 @@ fn transcribe(api_key: &str, audio: &[f32], language: &str) -> Result<String> {
             "Content-Type",
             &format!("multipart/form-data; boundary={boundary}"),
         )
+        .timeout(Duration::from_secs(60))
         .send_bytes(&body);
 
     match response {
@@ -413,6 +452,7 @@ pub fn stop_dictation() -> Result<()> {
 
     session.stop_flag.store(true, Ordering::SeqCst);
     drop(session._stream);
+    set_processing(false);
     emit_state(&session.app_handle, SttState::Idle, None);
 
     if let Some(worker) = session.worker.take() {
