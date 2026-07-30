@@ -180,25 +180,28 @@
   dictationErrorSpeechPrivacy:
     "Online speech recognition is turned off in Windows. Turn it on in Privacy & security → Speech, then try again. (This is not a microphone permission prompt.)",
 
-  dictationErrorWhisperModel:
-    "The local speech model isn’t ready yet. Download it to dictate offline or in languages Windows doesn’t support (such as Greek).",
+  dictationErrorGroqKey:
+    "Windows speech recognition doesn’t support this language. Add a free Groq API key in Settings to dictate (console.groq.com).",
 
-  dictationErrorWinrtUnsupported:
-    "Windows speech recognition doesn’t support this language. Download the local speech model to dictate.",
+  dictationErrorGroqApi:
+    "Cloud dictation failed. Check your internet connection and Groq API key, then try again.",
 
   dictationUnavailableUnsupported:
-    "Dictation unavailable — download the local speech model for this language",
+    "Dictation unavailable — add a free Groq API key in Settings for this language",
 
   dictationUnavailableOffline:
-    "Dictation unavailable offline — download the local speech model",
-
-  dictationDownloadModel: "Download speech model",
-
-  dictationDownloadingModel: "Downloading speech model…",
+    "Dictation unavailable — an internet connection is required",
 
   dictationOpenSpeechSettings: "Open Speech settings",
 
   dictationOpenSpeechLanguageSettings: "Install speech language",
+
+  dictationOpenAppSettings: "Open Settings",
+
+  groqApiKeyLabel: "Groq API key (cloud dictation)",
+
+  groqApiKeyHint:
+    "Needed for languages Windows doesn’t support (e.g. Greek). Get a free key at console.groq.com. You can also set the GROQ_API_KEY environment variable.",
 
   mute: "Mute",
 

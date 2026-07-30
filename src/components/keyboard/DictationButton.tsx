@@ -16,18 +16,18 @@ export function DictationButton() {
   const { t } = useTranslation();
   const listening = dictationState === "listening" || dictationState === "processing";
   const canDictate = sttCapability?.canDictate ?? false;
-  const downloading = sttCapability?.whisperDownloading ?? false;
+  const captureAudio = sttCapability?.engine !== "groq";
   // Never disable while a session is active — stop must always be clickable.
   const disabled = !listening && !canDictate;
 
   useEffect(() => {
     void refreshSttCapability();
-  }, [refreshSttCapability, settings.typingLanguage]);
+  }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
 
   let label = listening ? t("dictationStop") : t("dictationStart");
   if (disabled) {
-    if (downloading) {
-      label = t("dictationDownloadingModel");
+    if (!sttCapability?.online) {
+      label = t("dictationUnavailableOffline");
     } else if (sttCapability && !sttCapability.winrtSupported) {
       label = t("dictationUnavailableUnsupported");
     } else {
@@ -37,7 +37,7 @@ export function DictationButton() {
 
   return (
     <>
-      <DictationVisualizer active={listening} />
+      <DictationVisualizer active={listening} captureAudio={captureAudio} />
       <ModeToggleGroup>
         <ModeToggleButton
           active={listening}

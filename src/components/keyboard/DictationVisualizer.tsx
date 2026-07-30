@@ -8,10 +8,15 @@ const MAX_BAR = 22;
 
 interface DictationVisualizerProps {
   active: boolean;
+  /** When false, animate idle bars only — do not open a second mic stream (needed for Groq/cpal). */
+  captureAudio?: boolean;
 }
 
 /** Cursor-chat-style mic waveform: centered vertical bars driven by live audio. */
-export function DictationVisualizer({ active }: DictationVisualizerProps) {
+export function DictationVisualizer({
+  active,
+  captureAudio = true,
+}: DictationVisualizerProps) {
   const [levels, setLevels] = useState<number[]>(() =>
     Array.from({ length: BAR_COUNT }, () => 0.08),
   );
@@ -37,6 +42,30 @@ export function DictationVisualizer({ active }: DictationVisualizerProps) {
       smoothRef.current = Array.from({ length: BAR_COUNT }, () => 0.08);
       setLevels(smoothRef.current.slice());
       return;
+    }
+
+    // Groq/cpal owns the mic — a second getUserMedia stream can silence WASAPI capture.
+    if (!captureAudio) {
+      let cancelled = false;
+      const tick = () => {
+        if (cancelled) return;
+        const next = smoothRef.current.map((prev, i) => {
+          const shimmer =
+            0.08 + 0.06 * Math.sin(performance.now() / 220 + i * 0.55);
+          return prev + (shimmer - prev) * 0.25;
+        });
+        smoothRef.current = next;
+        setLevels(next.slice());
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+      return () => {
+        cancelled = true;
+        if (rafRef.current !== null) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
+      };
     }
 
     let cancelled = false;
@@ -125,7 +154,7 @@ export function DictationVisualizer({ active }: DictationVisualizerProps) {
         audioRef.current = null;
       }
     };
-  }, [active]);
+  }, [active, captureAudio]);
 
   if (!active) {
     return null;

@@ -3,13 +3,13 @@ mod network;
 mod route;
 
 #[cfg(target_os = "windows")]
-mod whisper;
+mod groq;
 #[cfg(target_os = "windows")]
 mod winrt;
 #[cfg(not(target_os = "windows"))]
 mod stub;
 
-use route::{can_dictate, select_engine, RouteDecision, SttEngine};
+use route::{can_dictate, prefer_cloud_stt, select_engine, RouteDecision, SttEngine};
 use serde::Serialize;
 use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
@@ -27,27 +27,18 @@ pub enum SttState {
 pub struct SttStatus {
     pub state: SttState,
     pub language: Option<String>,
-    /// Active or preferred engine for the current conditions: "winrt" | "whisper" | null
+    /// Active or preferred engine for the current conditions: "winrt" | "groq" | null
     pub engine: Option<String>,
-    pub whisper_ready: bool,
-    pub whisper_downloading: bool,
+    pub groq_configured: bool,
     pub winrt_supported: bool,
     pub online: bool,
     pub can_dictate: bool,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WhisperDownloadEvent {
-    pub progress: f64,
-    pub ready: bool,
-    pub error: Option<String>,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ActiveBackend {
     WinRt,
-    Whisper,
+    Groq,
 }
 
 struct RouterState {
@@ -63,40 +54,28 @@ fn router() -> &'static Mutex<RouterState> {
 fn engine_name(engine: SttEngine) -> &'static str {
     match engine {
         SttEngine::WinRt => "winrt",
-        SttEngine::Whisper => "whisper",
+        SttEngine::Groq => "groq",
     }
 }
 
 #[cfg(target_os = "windows")]
-pub fn init(app_data_dir: &std::path::Path, app: AppHandle) {
-    let model_dir = app_data_dir.join("whisper");
-    whisper::init(model_dir);
-    // Kick off model download in the background so Greek/offline work when ready.
-    std::thread::spawn(move || {
-        let _ = whisper::ensure_model(app);
-    });
-}
+pub fn init(_app_data_dir: &std::path::Path, _app: AppHandle) {}
 
 #[cfg(not(target_os = "windows"))]
 pub fn init(_app_data_dir: &std::path::Path, _app: AppHandle) {}
 
-#[cfg(target_os = "windows")]
-pub fn ensure_whisper_model(app: AppHandle) -> anyhow::Result<()> {
-    whisper::ensure_model(app)
-}
-
-#[cfg(not(target_os = "windows"))]
-pub fn ensure_whisper_model(_app: AppHandle) -> anyhow::Result<()> {
-    anyhow::bail!("Whisper is only available on Windows in this build")
-}
-
-pub fn start_dictation(language: &str, app: AppHandle) -> anyhow::Result<()> {
+pub fn start_dictation(
+    language: &str,
+    groq_api_key: Option<&str>,
+    app: AppHandle,
+) -> anyhow::Result<()> {
     #[cfg(target_os = "windows")]
     {
         let online = network::is_online();
         let winrt_supported = winrt::is_language_supported(language);
-        let whisper_ready = whisper::is_ready();
-        match select_engine(online, winrt_supported, whisper_ready) {
+        let groq_configured = groq::is_configured(groq_api_key);
+        let prefer_cloud = prefer_cloud_stt(language);
+        match select_engine(online, winrt_supported, groq_configured, prefer_cloud) {
             RouteDecision::Use(SttEngine::WinRt) => {
                 winrt::start_dictation(language, app)?;
                 if let Ok(mut guard) = router().lock() {
@@ -104,27 +83,36 @@ pub fn start_dictation(language: &str, app: AppHandle) -> anyhow::Result<()> {
                 }
                 Ok(())
             }
-            RouteDecision::Use(SttEngine::Whisper) => {
-                whisper::start_dictation(language, app)?;
+            RouteDecision::Use(SttEngine::Groq) => {
+                let key = groq::resolve_api_key(groq_api_key).ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "GROQ_KEY: Add a free Groq API key in Settings to dictate in this language."
+                    )
+                })?;
+                groq::start_dictation(language, &key, app)?;
                 if let Ok(mut guard) = router().lock() {
-                    guard.active = Some(ActiveBackend::Whisper);
+                    guard.active = Some(ActiveBackend::Groq);
                 }
                 Ok(())
             }
             RouteDecision::Unavailable => {
-                if !winrt_supported {
+                if !online {
                     anyhow::bail!(
-                        "WHISPER_MODEL: Windows speech recognition does not support this language. Download the local speech model to dictate."
+                        "GROQ_API: Dictation requires an internet connection."
                     );
                 }
-                anyhow::bail!(
-                    "WHISPER_MODEL: Local speech model is not ready yet. Download it to dictate while offline."
-                );
+                if prefer_cloud || !winrt_supported {
+                    anyhow::bail!(
+                        "GROQ_KEY: Windows speech recognition does not support this language. Add a free Groq API key in Settings to dictate."
+                    );
+                }
+                anyhow::bail!("Dictation is unavailable right now.");
             }
         }
     }
     #[cfg(not(target_os = "windows"))]
     {
+        let _ = groq_api_key;
         stub::start_dictation(language, app)
     }
 }
@@ -137,13 +125,12 @@ pub fn stop_dictation() -> anyhow::Result<()> {
             Some(ActiveBackend::WinRt) => {
                 winrt::stop_dictation()?;
             }
-            Some(ActiveBackend::Whisper) => {
-                whisper::stop_dictation()?;
+            Some(ActiveBackend::Groq) => {
+                groq::stop_dictation()?;
             }
             None => {
-                // Best-effort cleanup if state was lost.
                 let _ = winrt::stop_dictation();
-                let _ = whisper::stop_dictation();
+                let _ = groq::stop_dictation();
             }
         }
         if let Ok(mut guard) = router().lock() {
@@ -157,34 +144,35 @@ pub fn stop_dictation() -> anyhow::Result<()> {
     }
 }
 
-pub fn get_status(language: Option<&str>) -> SttStatus {
+pub fn get_status(language: Option<&str>, groq_api_key: Option<&str>) -> SttStatus {
     #[cfg(target_os = "windows")]
     {
         let online = network::is_online();
         let lang = language.unwrap_or("en");
         let winrt_supported = winrt::is_language_supported(lang);
-        let whisper_ready = whisper::is_ready();
-        let whisper_downloading = whisper::is_downloading();
-        let preferred = select_engine(online, winrt_supported, whisper_ready);
+        let groq_configured = groq::is_configured(groq_api_key);
+        let prefer_cloud = prefer_cloud_stt(lang);
+        let preferred = select_engine(online, winrt_supported, groq_configured, prefer_cloud);
         let engine = match preferred {
             RouteDecision::Use(e) => Some(engine_name(e).to_string()),
             RouteDecision::Unavailable => None,
         };
 
-        let (state, active_language) = if whisper::is_active() {
-            (
-                SttState::Listening,
-                whisper::active_language(),
-            )
+        let (state, active_language) = if groq::is_active() {
+            let state = if groq::is_processing() {
+                SttState::Processing
+            } else {
+                SttState::Listening
+            };
+            (state, groq::active_language())
         } else {
             let status = winrt::get_status();
             (status.state, status.language)
         };
 
-        // If actively listening, report the engine in use.
         let engine = match router().lock().ok().and_then(|g| g.active) {
             Some(ActiveBackend::WinRt) => Some("winrt".to_string()),
-            Some(ActiveBackend::Whisper) => Some("whisper".to_string()),
+            Some(ActiveBackend::Groq) => Some("groq".to_string()),
             None => engine,
         };
 
@@ -192,27 +180,25 @@ pub fn get_status(language: Option<&str>) -> SttStatus {
             state,
             language: active_language,
             engine,
-            whisper_ready,
-            whisper_downloading,
+            groq_configured,
             winrt_supported,
             online,
-            can_dictate: can_dictate(online, winrt_supported, whisper_ready),
+            can_dictate: can_dictate(online, winrt_supported, groq_configured, prefer_cloud),
         }
     }
     #[cfg(not(target_os = "windows"))]
     {
         let _ = language;
+        let _ = groq_api_key;
         let status = stub::get_status();
         SttStatus {
             state: status.state,
             language: status.language,
             engine: None,
-            whisper_ready: false,
-            whisper_downloading: false,
+            groq_configured: false,
             winrt_supported: false,
             online: network::is_online(),
             can_dictate: false,
         }
     }
 }
-

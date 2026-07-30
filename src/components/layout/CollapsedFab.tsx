@@ -25,17 +25,16 @@ export function CollapsedFab() {
   const showDictation = settings.dictationVisible !== false;
   const listening = dictationState === "listening" || dictationState === "processing";
   const canDictate = sttCapability?.canDictate ?? false;
-  const downloading = sttCapability?.whisperDownloading ?? false;
   const dictationDisabled = !listening && !canDictate;
 
   useEffect(() => {
     void refreshSttCapability();
-  }, [refreshSttCapability, settings.typingLanguage]);
+  }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
 
   let dictationLabel = listening ? t("dictationStop") : t("dictationStart");
   if (dictationDisabled) {
-    if (downloading) {
-      dictationLabel = t("dictationDownloadingModel");
+    if (!sttCapability?.online) {
+      dictationLabel = t("dictationUnavailableOffline");
     } else if (sttCapability && !sttCapability.winrtSupported) {
       dictationLabel = t("dictationUnavailableUnsupported");
     } else {

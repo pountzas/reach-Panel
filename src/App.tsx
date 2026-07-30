@@ -26,7 +26,6 @@ function MainApp() {
     checkForUpdates,
     setDictationState,
     refreshSttCapability,
-    setSttCapability,
     appendTyped,
     loadSuggestions,
     setLastError,
@@ -80,7 +79,7 @@ function MainApp() {
     unlisteners.push(
       listen<{ state: "idle" | "listening" | "processing" }>("stt-state", (event) => {
         // Ignore late listening/processing events after the user already stopped
-        // (Whisper worker could still emit while winding down).
+        // (Groq worker could still emit while winding down).
         if (
           event.payload.state !== "idle" &&
           useAppStore.getState().dictationState === "idle"
@@ -105,31 +104,6 @@ function MainApp() {
         setLastError(event.payload.message);
         void refreshSttCapability();
       }),
-    );
-
-    unlisteners.push(
-      listen<{ progress: number; ready: boolean; error: string | null }>(
-        "stt-whisper-download",
-        (event) => {
-          const current = useAppStore.getState().sttCapability;
-          setSttCapability({
-            engine: current?.engine ?? null,
-            whisperReady: event.payload.ready,
-            whisperDownloading: !event.payload.ready && !event.payload.error,
-            winrtSupported: current?.winrtSupported ?? false,
-            online: current?.online ?? false,
-            canDictate:
-              event.payload.ready ||
-              ((current?.online ?? false) && (current?.winrtSupported ?? false)),
-          });
-          if (event.payload.error) {
-            setLastError(`WHISPER_MODEL: ${event.payload.error}`);
-          }
-          if (event.payload.ready) {
-            void refreshSttCapability();
-          }
-        },
-      ),
     );
 
     unlisteners.push(
@@ -172,7 +146,6 @@ function MainApp() {
     refreshSttCapability,
     setDictationState,
     setLastError,
-    setSttCapability,
   ]);
 
   return <AppShell />;
