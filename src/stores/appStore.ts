@@ -93,9 +93,8 @@ async function syncWindowLayoutFromSettings(
 export type DictationState = "idle" | "listening" | "processing";
 
 export interface SttCapability {
-  engine: "winrt" | "whisper" | null;
-  whisperReady: boolean;
-  whisperDownloading: boolean;
+  engine: "winrt" | "groq" | null;
+  groqConfigured: boolean;
   winrtSupported: boolean;
   online: boolean;
   canDictate: boolean;
@@ -165,7 +164,6 @@ interface AppStore {
   setDictationState: (state: DictationState) => void;
   setSttCapability: (capability: SttCapability | null) => void;
   refreshSttCapability: () => Promise<void>;
-  ensureWhisperModel: () => Promise<void>;
   toggleDictation: () => Promise<void>;
   stopDictation: () => Promise<void>;
   setShowSettings: (show: boolean) => void;
@@ -560,6 +558,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (typingLanguageChanged) {
       await get().stopDictation();
       set({ typedBuffer: "", suggestions: [] });
+      await get().refreshSttCapability();
+    }
+    if (partial.groqApiKey !== undefined) {
+      await get().refreshSttCapability();
     }
     if (uiLanguageChanged) {
       set({ typedBuffer: "", suggestions: [] });
@@ -806,23 +808,23 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   refreshSttCapability: async () => {
     try {
+      const settingsKey = get().settings.groqApiKey?.trim() || null;
       const status = await invoke<{
         state: DictationState;
-        engine: "winrt" | "whisper" | null;
-        whisperReady: boolean;
-        whisperDownloading: boolean;
+        engine: "winrt" | "groq" | null;
+        groqConfigured: boolean;
         winrtSupported: boolean;
         online: boolean;
         canDictate: boolean;
       }>("cmd_get_stt_status", {
         language: get().settings.typingLanguage,
+        groqApiKey: settingsKey,
       });
       set({
         dictationState: status.state,
         sttCapability: {
           engine: status.engine,
-          whisperReady: status.whisperReady,
-          whisperDownloading: status.whisperDownloading,
+          groqConfigured: status.groqConfigured,
           winrtSupported: status.winrtSupported,
           online: status.online,
           canDictate: status.canDictate,
@@ -832,8 +834,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       set({
         sttCapability: {
           engine: null,
-          whisperReady: false,
-          whisperDownloading: false,
+          groqConfigured: false,
           winrtSupported: false,
           online: false,
           canDictate: false,
@@ -842,35 +843,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  ensureWhisperModel: async () => {
-    try {
-      set({
-        sttCapability: get().sttCapability
-          ? { ...get().sttCapability!, whisperDownloading: true }
-          : {
-              engine: null,
-              whisperReady: false,
-              whisperDownloading: true,
-              winrtSupported: false,
-              online: false,
-              canDictate: false,
-            },
-      });
-      await invoke("cmd_ensure_whisper_model");
-      await get().refreshSttCapability();
-    } catch (error) {
-      set({
-        lastError:
-          error instanceof Error ? error.message : String(error),
-      });
-      await get().refreshSttCapability();
-    }
-  },
-
   stopDictation: async () => {
     if (get().dictationState === "idle") return;
     // Optimistic: clear listening UI immediately so the mic toggle feels responsive
-    // even when Whisper was mid-transcription (common on Greek / offline path).
+    // even when Groq was mid-transcription (common on Greek path).
     set({ dictationState: "idle" });
     try {
       await invoke("cmd_stop_dictation");
@@ -890,14 +866,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
     if (sttCapability && !sttCapability.canDictate) {
       set({
-        lastError: sttCapability.winrtSupported
-          ? "WHISPER_MODEL: Local speech model is not ready yet."
-          : "WHISPER_UNSUPPORTED: Windows speech recognition does not support this language.",
+        lastError: !sttCapability.online
+          ? "GROQ_API: Dictation requires an internet connection."
+          : sttCapability.winrtSupported
+            ? "GROQ_API: Dictation is unavailable right now."
+            : "GROQ_KEY: Windows speech recognition does not support this language. Add a free Groq API key in Settings to dictate.",
       });
       return;
     }
     try {
-      await invoke("cmd_start_dictation", { language: settings.typingLanguage });
+      await invoke("cmd_start_dictation", {
+        language: settings.typingLanguage,
+        groqApiKey: settings.groqApiKey?.trim() || null,
+      });
       set({ dictationState: "listening" });
       await get().pollError();
       await get().refreshSttCapability();

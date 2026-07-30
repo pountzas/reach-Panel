@@ -12,11 +12,10 @@ import {
 
 /**
  * Sticky overlay for actionable speech/setup errors (privacy, language pack,
- * Whisper model). All other errors are routed to toasts via the store.
+ * Groq API key). All other errors are routed to toasts via the store.
  */
 export function ErrorBanner() {
-  const { lastError, setLastError, ensureWhisperModel, sttCapability } =
-    useAppStore();
+  const { lastError, setLastError, setShowSettings } = useAppStore();
   const { t } = useTranslation();
 
   if (!lastError || !isStickySpeechError(lastError)) {
@@ -33,11 +32,11 @@ export function ErrorBanner() {
     case "language":
       displayMessage = t("dictationErrorNoLanguage");
       break;
-    case "whisperModel":
-      displayMessage = t("dictationErrorWhisperModel");
+    case "groqKey":
+      displayMessage = t("dictationErrorGroqKey");
       break;
-    case "winrtUnsupported":
-      displayMessage = t("dictationErrorWinrtUnsupported");
+    case "groqApi":
+      displayMessage = message || t("dictationErrorGroqApi");
       break;
     case null:
       break;
@@ -56,7 +55,6 @@ export function ErrorBanner() {
     }
   };
 
-  const downloading = sttCapability?.whisperDownloading ?? false;
   const kindForActions: SpeechErrorKind = kind;
 
   return (
@@ -87,17 +85,13 @@ export function ErrorBanner() {
               {t("dictationOpenSpeechLanguageSettings")}
             </button>
           )}
-          {(kindForActions === "whisperModel" ||
-            kindForActions === "winrtUnsupported") && (
+          {kindForActions === "groqKey" && (
             <button
               type="button"
-              className="rounded bg-red-700 px-2 py-0.5 font-semibold text-white disabled:opacity-60"
-              disabled={downloading}
-              onClick={() => void ensureWhisperModel()}
+              className="rounded bg-red-700 px-2 py-0.5 font-semibold text-white"
+              onClick={() => setShowSettings(true)}
             >
-              {downloading
-                ? t("dictationDownloadingModel")
-                : t("dictationDownloadModel")}
+              {t("dictationOpenAppSettings")}
             </button>
           )}
           <button

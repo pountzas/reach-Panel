@@ -1,4 +1,4 @@
-//! Shared STT event emitters used by WinRT and Whisper backends.
+//! Shared STT event emitters used by WinRT and Groq backends.
 
 use super::SttState;
 use crate::input::type_text;
@@ -51,7 +51,7 @@ pub fn handle_result(app: &AppHandle, text: &str) {
     if text.is_empty() {
         return;
     }
-    // Whisper sometimes emits tokens like "[Blank audio]" / "(silence)".
+    // Cloud STT sometimes emits tokens like "[Blank audio]" / "(silence)".
     let lower = text.to_lowercase();
     if lower.contains("blank audio")
         || lower == "[silence]"

@@ -511,6 +511,24 @@ export function SettingsPanel() {
                 surface={surface}
               />
             </div>
+            <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
+              {t("groqApiKeyLabel")}
+              <input
+                type="password"
+                autoComplete="off"
+                spellCheck={false}
+                className="mt-1 w-full rounded border px-2 py-1.5 text-sm outline-none"
+                style={{
+                  backgroundColor: surface.panelButtonBg,
+                  borderColor: surface.panelBorder,
+                  color: surface.panelText,
+                }}
+                value={settings.groqApiKey ?? ""}
+                onChange={(e) => void updateSettings({ groqApiKey: e.target.value })}
+                placeholder="gsk_…"
+              />
+              <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
+            </label>
             {!settings.keyboardModeToggleVisible && (
               <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
                 {t("keyboardSectionMode")}

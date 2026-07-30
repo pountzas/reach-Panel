@@ -1,36 +1,30 @@
-//! Local Whisper STT (whisper-rs + ggml-tiny) for offline / unsupported languages.
+//! Cloud Groq Whisper STT for languages Windows SpeechRecognition does not support.
 
 use super::events::{emit_error, emit_state, handle_result};
-use super::route::whisper_language_hint;
-use super::{SttState, WhisperDownloadEvent};
-use anyhow::{anyhow, Context, Result};
+use super::route::groq_language_hint;
+use super::SttState;
+use anyhow::{anyhow, Result};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, StreamConfig};
-use std::fs::{self, File};
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use serde::Deserialize;
+use std::io::Write;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter};
-use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
+use tauri::AppHandle;
 
-const MODEL_FILE: &str = "ggml-tiny.bin";
-const MODEL_URL: &str =
-    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin";
+const GROQ_TRANSCRIPTIONS_URL: &str = "https://api.groq.com/openai/v1/audio/transcriptions";
+const GROQ_MODEL: &str = "whisper-large-v3-turbo";
 const TARGET_SAMPLE_RATE: u32 = 16_000;
-const MIN_SPEECH_SECS: f32 = 0.7;
-const SILENCE_SECS: f32 = 1.1;
+/// Slightly longer than the old tiny-Whisper path to reduce short billable chunks.
+const MIN_SPEECH_SECS: f32 = 1.0;
+const SILENCE_SECS: f32 = 1.4;
 const MAX_UTTERANCE_SECS: f32 = 28.0;
 const ENERGY_THRESHOLD: f32 = 0.012;
 
-struct WhisperRuntime {
-    model_dir: PathBuf,
-    ctx: Option<Arc<WhisperContext>>,
-    download_in_progress: bool,
-    session: Option<WhisperSession>,
-    /// Worker still finishing after stop; joined before the next start.
+struct GroqRuntime {
+    session: Option<GroqSession>,
     lingering_worker: Option<JoinHandle<()>>,
 }
 
@@ -40,7 +34,7 @@ struct SendStream(cpal::Stream);
 // SAFETY: On Windows (WASAPI) the stream is only used from the owning session and dropped once.
 unsafe impl Send for SendStream {}
 
-struct WhisperSession {
+struct GroqSession {
     language: String,
     app_handle: AppHandle,
     stop_flag: Arc<AtomicBool>,
@@ -48,189 +42,46 @@ struct WhisperSession {
     _stream: SendStream,
 }
 
-static RUNTIME: OnceLock<Mutex<WhisperRuntime>> = OnceLock::new();
+static RUNTIME: OnceLock<Mutex<GroqRuntime>> = OnceLock::new();
 
-fn runtime() -> &'static Mutex<WhisperRuntime> {
+fn runtime() -> &'static Mutex<GroqRuntime> {
     RUNTIME.get_or_init(|| {
-        Mutex::new(WhisperRuntime {
-            model_dir: PathBuf::new(),
-            ctx: None,
-            download_in_progress: false,
+        Mutex::new(GroqRuntime {
             session: None,
             lingering_worker: None,
         })
     })
 }
 
-pub fn init(model_dir: PathBuf) {
-    if let Ok(mut guard) = runtime().lock() {
-        guard.model_dir = model_dir;
-        let path = guard.model_dir.join(MODEL_FILE);
-        if path.is_file() {
-            match load_context(&path) {
-                Ok(ctx) => guard.ctx = Some(Arc::new(ctx)),
-                Err(err) => eprintln!("[stt/whisper] failed to load model: {err}"),
-            }
-        }
+/// Resolve API key from settings value, then `GROQ_API_KEY` env.
+pub fn resolve_api_key(from_settings: Option<&str>) -> Option<String> {
+    if let Some(key) = from_settings.map(str::trim).filter(|s| !s.is_empty()) {
+        return Some(key.to_string());
     }
+    std::env::var("GROQ_API_KEY")
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
 }
 
-fn model_path(dir: &Path) -> PathBuf {
-    dir.join(MODEL_FILE)
+pub fn is_configured(from_settings: Option<&str>) -> bool {
+    resolve_api_key(from_settings).is_some()
 }
 
-fn load_context(path: &Path) -> Result<WhisperContext> {
-    WhisperContext::new_with_params(
-        path.to_str().ok_or_else(|| anyhow!("Invalid model path"))?,
-        WhisperContextParameters::default(),
-    )
-    .map_err(|e| anyhow!("Failed to load Whisper model: {e}"))
-}
-
-pub fn is_ready() -> bool {
-    runtime()
-        .lock()
-        .map(|g| g.ctx.is_some())
-        .unwrap_or(false)
-}
-
-pub fn is_downloading() -> bool {
-    runtime()
-        .lock()
-        .map(|g| g.download_in_progress)
-        .unwrap_or(false)
-}
-
-/// Ensure the ggml-tiny model is downloaded and loaded. Emits progress events.
-pub fn ensure_model(app: AppHandle) -> Result<()> {
-    let (model_dir, already_ready) = {
+pub fn start_dictation(language: &str, api_key: &str, app: AppHandle) -> Result<()> {
+    {
         let mut guard = runtime()
             .lock()
-            .map_err(|_| anyhow!("Whisper runtime lock poisoned"))?;
-        if guard.model_dir.as_os_str().is_empty() {
-            return Err(anyhow!("Whisper model directory not initialized"));
-        }
-        if guard.ctx.is_some() {
-            return Ok(());
-        }
-        if guard.download_in_progress {
-            return Ok(());
-        }
-        guard.download_in_progress = true;
-        (guard.model_dir.clone(), false)
-    };
-    let _ = already_ready;
-
-    let path = model_path(&model_dir);
-    let app_progress = app.clone();
-
-    let result = (|| -> Result<()> {
-        fs::create_dir_all(&model_dir)?;
-        if !path.is_file() {
-            download_model(&path, &app_progress)?;
-        }
-        let ctx = load_context(&path)?;
-        let mut guard = runtime()
-            .lock()
-            .map_err(|_| anyhow!("Whisper runtime lock poisoned"))?;
-        guard.ctx = Some(Arc::new(ctx));
-        guard.download_in_progress = false;
-        let _ = app_progress.emit(
-            "stt-whisper-download",
-            WhisperDownloadEvent {
-                progress: 1.0,
-                ready: true,
-                error: None,
-            },
-        );
-        Ok(())
-    })();
-
-    if let Err(err) = &result {
-        if let Ok(mut guard) = runtime().lock() {
-            guard.download_in_progress = false;
-        }
-        let _ = app.emit(
-            "stt-whisper-download",
-            WhisperDownloadEvent {
-                progress: 0.0,
-                ready: false,
-                error: Some(err.to_string()),
-            },
-        );
-    }
-    result
-}
-
-fn download_model(path: &Path, app: &AppHandle) -> Result<()> {
-    let partial = path.with_extension("bin.partial");
-    if partial.exists() {
-        let _ = fs::remove_file(&partial);
-    }
-
-    let response = ureq::get(MODEL_URL)
-        .call()
-        .map_err(|e| anyhow!("WHISPER_MODEL: Failed to download speech model: {e}"))?;
-    let total = response
-        .header("Content-Length")
-        .and_then(|v| v.parse::<u64>().ok())
-        .unwrap_or(0);
-
-    let mut reader = response.into_reader();
-    let mut file = File::create(&partial).context("Failed to create model file")?;
-    let mut buffer = [0u8; 64 * 1024];
-    let mut downloaded = 0u64;
-    let mut last_emit = Instant::now();
-
-    loop {
-        let n = reader.read(&mut buffer)?;
-        if n == 0 {
-            break;
-        }
-        file.write_all(&buffer[..n])?;
-        downloaded += n as u64;
-        if last_emit.elapsed() >= Duration::from_millis(200) {
-            let progress = if total > 0 {
-                (downloaded as f64 / total as f64).clamp(0.0, 0.99)
-            } else {
-                0.0
-            };
-            let _ = app.emit(
-                "stt-whisper-download",
-                WhisperDownloadEvent {
-                    progress,
-                    ready: false,
-                    error: None,
-                },
-            );
-            last_emit = Instant::now();
-        }
-    }
-    file.flush()?;
-    drop(file);
-    fs::rename(&partial, path).context("Failed to finalize model download")?;
-    Ok(())
-}
-
-pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
-    let ctx = {
-        let mut guard = runtime()
-            .lock()
-            .map_err(|_| anyhow!("Whisper runtime lock poisoned"))?;
+            .map_err(|_| anyhow!("Groq runtime lock poisoned"))?;
         if guard.session.is_some() {
             return Err(anyhow!("Dictation is already active"));
         }
         let lingering = guard.lingering_worker.take();
-        let ctx = guard
-            .ctx
-            .clone()
-            .ok_or_else(|| anyhow!("WHISPER_MODEL: Local speech model is not ready yet."))?;
         drop(guard);
         if let Some(worker) = lingering {
             let _ = worker.join();
         }
-        ctx
-    };
+    }
 
     let host = cpal::default_host();
     let device = host
@@ -282,14 +133,15 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
         .map_err(|e| anyhow!("Failed to start microphone: {e}"))?;
 
     let lang = language.to_string();
-    let whisper_lang = whisper_language_hint(language).to_string();
+    let groq_lang = groq_language_hint(language).to_string();
+    let api_key = api_key.to_string();
     let stop_worker = Arc::clone(&stop_flag);
     let samples_worker = Arc::clone(&samples);
     let app_worker = app.clone();
     let worker = thread::spawn(move || {
         worker_loop(
-            ctx,
-            whisper_lang,
+            api_key,
+            groq_lang,
             samples_worker,
             stop_worker,
             app_worker,
@@ -299,8 +151,8 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     {
         let mut guard = runtime()
             .lock()
-            .map_err(|_| anyhow!("Whisper runtime lock poisoned"))?;
-        guard.session = Some(WhisperSession {
+            .map_err(|_| anyhow!("Groq runtime lock poisoned"))?;
+        guard.session = Some(GroqSession {
             language: lang.clone(),
             app_handle: app.clone(),
             stop_flag,
@@ -325,7 +177,7 @@ where
     T: cpal::Sample + cpal::SizedSample + Send + 'static,
     F: Fn(T) -> f32 + Send + 'static,
 {
-    let err_fn = |err| eprintln!("[stt/whisper] mic stream error: {err}");
+    let err_fn = |err| eprintln!("[stt/groq] mic stream error: {err}");
     let stream = device
         .build_input_stream(
             config,
@@ -343,7 +195,6 @@ where
                 let resampled = resample_linear(&mono, input_rate, TARGET_SAMPLE_RATE);
                 if let Ok(mut buf) = samples.lock() {
                     buf.extend(resampled);
-                    // Cap buffer to ~60s to avoid unbounded growth.
                     let max = TARGET_SAMPLE_RATE as usize * 60;
                     if buf.len() > max {
                         let drain = buf.len() - max;
@@ -359,7 +210,7 @@ where
 }
 
 fn worker_loop(
-    ctx: Arc<WhisperContext>,
+    api_key: String,
     language: String,
     samples: Arc<Mutex<Vec<f32>>>,
     stop_flag: Arc<AtomicBool>,
@@ -409,7 +260,7 @@ fn worker_loop(
             speech_started = None;
             if chunk.len() as f32 / TARGET_SAMPLE_RATE as f32 >= MIN_SPEECH_SECS * 0.8 {
                 emit_state(&app, SttState::Processing, Some(language.clone()));
-                match transcribe(&ctx, &chunk, &language) {
+                match transcribe(&api_key, &chunk, &language) {
                     Ok(text) => {
                         if !stop_flag.load(Ordering::SeqCst) {
                             handle_result(&app, &text);
@@ -427,56 +278,133 @@ fn worker_loop(
             }
         }
     }
-    // Do not flush/transcribe remainder on stop — that blocked the UI toggle for seconds
-    // on Greek/Whisper sessions. Dropping audio on cancel is the expected UX.
+    // Do not flush remainder on stop — keep the mic toggle responsive.
 }
 
-fn transcribe(ctx: &WhisperContext, audio: &[f32], language: &str) -> Result<String> {
+#[derive(Debug, Deserialize)]
+struct GroqTranscriptionResponse {
+    text: Option<String>,
+    error: Option<GroqApiError>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GroqApiError {
+    message: Option<String>,
+}
+
+fn transcribe(api_key: &str, audio: &[f32], language: &str) -> Result<String> {
     if audio.is_empty() {
         return Ok(String::new());
     }
-    let mut state = ctx
-        .create_state()
-        .map_err(|e| anyhow!("Failed to create Whisper state: {e}"))?;
-    let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
-    params.set_language(Some(language));
-    params.set_print_special(false);
-    params.set_print_progress(false);
-    params.set_print_realtime(false);
-    params.set_print_timestamps(false);
-    params.set_suppress_blank(true);
-    params.set_no_speech_thold(0.5);
-    params.set_n_threads(num_cpus_hint());
+    let wav = encode_wav_pcm16(audio, TARGET_SAMPLE_RATE);
+    let boundary = format!("----ReachPanel{}", std::process::id());
+    let mut body = Vec::new();
+    write_multipart_field(&mut body, &boundary, "model", GROQ_MODEL)?;
+    write_multipart_field(&mut body, &boundary, "language", language)?;
+    write_multipart_field(&mut body, &boundary, "response_format", "json")?;
+    write_multipart_file(&mut body, &boundary, "file", "audio.wav", "audio/wav", &wav)?;
+    write!(body, "--{boundary}--\r\n")?;
 
-    state
-        .full(params, audio)
-        .map_err(|e| anyhow!("Whisper transcription failed: {e}"))?;
+    let response = ureq::post(GROQ_TRANSCRIPTIONS_URL)
+        .set("Authorization", &format!("Bearer {api_key}"))
+        .set(
+            "Content-Type",
+            &format!("multipart/form-data; boundary={boundary}"),
+        )
+        .send_bytes(&body);
 
-    let mut out = String::new();
-    for segment in state.as_iter() {
-        let trimmed = segment.to_string().trim().to_string();
-        if trimmed.is_empty() {
-            continue;
+    match response {
+        Ok(resp) => {
+            let parsed: GroqTranscriptionResponse = resp
+                .into_json()
+                .map_err(|e| anyhow!("GROQ_API: Failed to parse response: {e}"))?;
+            if let Some(err) = parsed.error {
+                let msg = err.message.unwrap_or_else(|| "Unknown API error".into());
+                return Err(map_groq_http_error(401, &msg));
+            }
+            Ok(parsed.text.unwrap_or_default().trim().to_string())
         }
-        if !out.is_empty() {
-            out.push(' ');
+        Err(ureq::Error::Status(code, resp)) => {
+            let body = resp.into_string().unwrap_or_default();
+            let message = serde_json::from_str::<GroqTranscriptionResponse>(&body)
+                .ok()
+                .and_then(|p| p.error.and_then(|e| e.message))
+                .unwrap_or(body);
+            Err(map_groq_http_error(code, &message))
         }
-        out.push_str(&trimmed);
+        Err(e) => Err(anyhow!("GROQ_API: Network error: {e}")),
     }
-    Ok(out)
 }
 
-fn num_cpus_hint() -> i32 {
-    std::thread::available_parallelism()
-        .map(|n| n.get().clamp(1, 4) as i32)
-        .unwrap_or(2)
+fn map_groq_http_error(code: u16, message: &str) -> anyhow::Error {
+    let lower = message.to_lowercase();
+    if code == 401 || code == 403 || lower.contains("invalid api key") || lower.contains("unauthorized")
+    {
+        return anyhow!(
+            "GROQ_KEY: Groq API key is missing or invalid. Add a free key in Settings (or set GROQ_API_KEY)."
+        );
+    }
+    if code == 429 {
+        return anyhow!("GROQ_API: Groq rate limit reached. Wait a moment and try again.");
+    }
+    anyhow!("GROQ_API: {message}")
+}
+
+fn write_multipart_field(body: &mut Vec<u8>, boundary: &str, name: &str, value: &str) -> Result<()> {
+    write!(
+        body,
+        "--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n"
+    )?;
+    Ok(())
+}
+
+fn write_multipart_file(
+    body: &mut Vec<u8>,
+    boundary: &str,
+    name: &str,
+    filename: &str,
+    content_type: &str,
+    data: &[u8],
+) -> Result<()> {
+    write!(
+        body,
+        "--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"; filename=\"{filename}\"\r\nContent-Type: {content_type}\r\n\r\n"
+    )?;
+    body.extend_from_slice(data);
+    write!(body, "\r\n")?;
+    Ok(())
+}
+
+fn encode_wav_pcm16(samples: &[f32], sample_rate: u32) -> Vec<u8> {
+    let num_samples = samples.len() as u32;
+    let data_size = num_samples * 2;
+    let mut out = Vec::with_capacity(44 + data_size as usize);
+    out.extend_from_slice(b"RIFF");
+    out.extend_from_slice(&(36 + data_size).to_le_bytes());
+    out.extend_from_slice(b"WAVE");
+    out.extend_from_slice(b"fmt ");
+    out.extend_from_slice(&16u32.to_le_bytes()); // PCM chunk size
+    out.extend_from_slice(&1u16.to_le_bytes()); // PCM format
+    out.extend_from_slice(&1u16.to_le_bytes()); // mono
+    out.extend_from_slice(&sample_rate.to_le_bytes());
+    out.extend_from_slice(&(sample_rate * 2).to_le_bytes()); // byte rate
+    out.extend_from_slice(&2u16.to_le_bytes()); // block align
+    out.extend_from_slice(&16u16.to_le_bytes()); // bits per sample
+    out.extend_from_slice(b"data");
+    out.extend_from_slice(&data_size.to_le_bytes());
+    for &s in samples {
+        let clamped = s.clamp(-1.0, 1.0);
+        let i = (clamped * i16::MAX as f32) as i16;
+        out.extend_from_slice(&i.to_le_bytes());
+    }
+    out
 }
 
 pub fn stop_dictation() -> Result<()> {
     let mut session = {
         let mut guard = runtime()
             .lock()
-            .map_err(|_| anyhow!("Whisper runtime lock poisoned"))?;
+            .map_err(|_| anyhow!("Groq runtime lock poisoned"))?;
         match guard.session.take() {
             Some(s) => s,
             None => return Ok(()),
@@ -484,13 +412,9 @@ pub fn stop_dictation() -> Result<()> {
     };
 
     session.stop_flag.store(true, Ordering::SeqCst);
-    // Drop stream immediately so capture/visual feedback stop even if the worker
-    // is mid-transcribe.
     drop(session._stream);
     emit_state(&session.app_handle, SttState::Idle, None);
 
-    // Keep the join handle so the next start can wait if needed, without blocking
-    // this stop command on a long Whisper decode.
     if let Some(worker) = session.worker.take() {
         if let Ok(mut guard) = runtime().lock() {
             if let Some(prev) = guard.lingering_worker.take() {
@@ -559,7 +483,7 @@ fn resample_linear(input: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {
 
 #[cfg(test)]
 mod tests {
-    use super::resample_linear;
+    use super::{encode_wav_pcm16, resample_linear, resolve_api_key};
 
     #[test]
     fn resample_identity() {
@@ -572,5 +496,24 @@ mod tests {
         let input = vec![0.0, 1.0, 0.0, -1.0];
         let out = resample_linear(&input, 8000, 16000);
         assert_eq!(out.len(), 8);
+    }
+
+    #[test]
+    fn wav_header_size() {
+        let samples = vec![0.0f32; 160];
+        let wav = encode_wav_pcm16(&samples, 16000);
+        assert_eq!(&wav[0..4], b"RIFF");
+        assert_eq!(&wav[8..12], b"WAVE");
+        assert_eq!(wav.len(), 44 + 160 * 2);
+    }
+
+    #[test]
+    fn resolve_key_prefers_settings() {
+        assert_eq!(
+            resolve_api_key(Some("  settings-key  ")).as_deref(),
+            Some("settings-key")
+        );
+        assert_eq!(resolve_api_key(Some("")).as_deref(), None);
+        assert_eq!(resolve_api_key(Some("   ")).as_deref(), None);
     }
 }

@@ -39,6 +39,8 @@ export interface AppSettings {
   suggestionsVisible: boolean;
   /** When false, hides the toolbar mic / dictation control. */
   dictationVisible: boolean;
+  /** Free Groq API key for cloud dictation when Windows speech packs are unavailable (e.g. Greek). */
+  groqApiKey?: string;
   emergencyVisible: boolean;
   accessibilityMonitorId: number;
   collapsed: boolean;
@@ -168,6 +170,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   phrasesVisible: false,
   suggestionsVisible: false,
   dictationVisible: false,
+  groqApiKey: "",
   emergencyVisible: false,
   accessibilityMonitorId: 0,
   collapsed: false,

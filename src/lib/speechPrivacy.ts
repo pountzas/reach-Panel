@@ -1,13 +1,13 @@
 const SPEECH_PRIVACY_PREFIX = "SPEECH_PRIVACY:";
 const SPEECH_LANGUAGE_PREFIX = "SPEECH_LANGUAGE:";
-const WHISPER_MODEL_PREFIX = "WHISPER_MODEL:";
-const WHISPER_UNSUPPORTED_PREFIX = "WHISPER_UNSUPPORTED:";
+const GROQ_KEY_PREFIX = "GROQ_KEY:";
+const GROQ_API_PREFIX = "GROQ_API:";
 
 export type SpeechErrorKind =
   | "privacy"
   | "language"
-  | "whisperModel"
-  | "winrtUnsupported"
+  | "groqKey"
+  | "groqApi"
   | null;
 
 /** Privacy toggle for online speech recognition. */
@@ -31,16 +31,16 @@ export function parseSpeechError(lastError: string): {
       kind: "language",
     };
   }
-  if (lastError.startsWith(WHISPER_MODEL_PREFIX)) {
+  if (lastError.startsWith(GROQ_KEY_PREFIX)) {
     return {
-      message: lastError.slice(WHISPER_MODEL_PREFIX.length).trim(),
-      kind: "whisperModel",
+      message: lastError.slice(GROQ_KEY_PREFIX.length).trim(),
+      kind: "groqKey",
     };
   }
-  if (lastError.startsWith(WHISPER_UNSUPPORTED_PREFIX)) {
+  if (lastError.startsWith(GROQ_API_PREFIX)) {
     return {
-      message: lastError.slice(WHISPER_UNSUPPORTED_PREFIX.length).trim(),
-      kind: "winrtUnsupported",
+      message: lastError.slice(GROQ_API_PREFIX.length).trim(),
+      kind: "groqApi",
     };
   }
   const lower = lastError.toLowerCase();
@@ -56,8 +56,8 @@ export function parseSpeechError(lastError: string): {
   ) {
     return { message: lastError, kind: "language" };
   }
-  if (lower.includes("local speech model") || lower.includes("whisper")) {
-    return { message: lastError, kind: "whisperModel" };
+  if (lower.includes("groq api key") || lower.includes("groq key")) {
+    return { message: lastError, kind: "groqKey" };
   }
   return { message: lastError, kind: null };
 }
@@ -68,7 +68,8 @@ export function parseSpeechError(lastError: string): {
  */
 export function isStickySpeechError(error: string | null | undefined): boolean {
   if (!error) return false;
-  return parseSpeechError(error).kind !== null;
+  const kind = parseSpeechError(error).kind;
+  return kind === "privacy" || kind === "language" || kind === "groqKey";
 }
 
 /** @deprecated Prefer isStickySpeechError — privacy is one of several sticky kinds. */
