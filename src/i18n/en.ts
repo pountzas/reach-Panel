@@ -8,9 +8,19 @@
 
   minimizeSection: "Minimize",
 
+  dockSection: "Dock section",
+
+  undockSection: "Undock section",
+
   settings: "Settings",
 
   close: "Close",
+
+  add: "Add",
+
+  appNotInstalled: "{app} is not installed.",
+
+  installApp: "Install",
 
   profile: "Profile",
 
@@ -333,6 +343,14 @@
   quickActionAdd: "Add action",
 
   quickActionDelete: "Delete",
+
+  quickActionSearchApps: "Search installed programs…",
+
+  quickActionBrowse: "Browse…",
+
+  quickActionLoadingApps: "Loading installed programs…",
+
+  quickActionNoApps: "No matching programs found.",
 
   settingsAbout: "About",
 

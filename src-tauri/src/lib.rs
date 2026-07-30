@@ -1,4 +1,6 @@
 mod db;
+mod icons;
+mod installed_apps;
 mod input;
 mod macros;
 mod music;
@@ -531,6 +533,34 @@ fn cmd_pick_music_song_file(app: tauri::AppHandle) -> Result<Option<String>, Str
 }
 
 #[tauri::command]
+fn cmd_list_installed_apps() -> Result<Vec<installed_apps::InstalledApp>, String> {
+    installed_apps::list_installed_apps()
+}
+
+fn pick_app_executable(app: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let window = app
+        .get_webview_window("settings")
+        .or_else(|| app.get_webview_window("main"))
+        .ok_or_else(|| "No window found".to_string())?;
+
+    let _ = window.set_always_on_top(false);
+    let _restore = RestoreAlwaysOnTop(app.clone());
+
+    let file = rfd::FileDialog::new()
+        .add_filter("Programs", &["exe"])
+        .set_title("Select application")
+        .set_parent(&window)
+        .pick_file();
+
+    Ok(file.map(|p| p.to_string_lossy().into_owned()))
+}
+
+#[tauri::command]
+fn cmd_pick_app_executable(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    pick_app_executable(&app)
+}
+
+#[tauri::command]
 fn cmd_read_music_file(path: String) -> Result<MusicFilePayload, String> {
     let bytes = music::read_music_file_bytes(&path)?;
     Ok(MusicFilePayload {
@@ -610,6 +640,17 @@ fn cmd_launch_quick_action(
         _ => return Err("Unknown action type".to_string()),
     }
     Ok(())
+}
+
+/// Returns a PNG data-URL for an installed app icon, or null when unavailable.
+#[tauri::command]
+fn cmd_get_app_icon(target: String) -> Option<String> {
+    icons::app_icon_data_url(&target)
+}
+
+#[tauri::command]
+fn cmd_is_app_installed(target: String) -> bool {
+    icons::is_app_installed(&target)
 }
 
 #[tauri::command]
@@ -902,6 +943,8 @@ pub fn run() {
             cmd_get_windows_ui_language,
             cmd_pick_background_image,
             cmd_pick_music_song_file,
+            cmd_list_installed_apps,
+            cmd_pick_app_executable,
             cmd_read_music_file,
             cmd_list_imported_songs,
             cmd_upsert_imported_song,
@@ -911,6 +954,8 @@ pub fn run() {
             cmd_save_quick_action,
             cmd_delete_quick_action,
             cmd_launch_quick_action,
+            cmd_get_app_icon,
+            cmd_is_app_installed,
             cmd_get_phrases,
             cmd_get_phrase_categories,
             cmd_use_phrase,

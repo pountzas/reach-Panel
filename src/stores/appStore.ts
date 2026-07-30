@@ -37,6 +37,7 @@ import { resolveColorProfile } from "../lib/colorProfiles";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import { clampWindowHeightRatio, computeContentHeightRatio } from "../lib/sectionLayouts";
+import { resolveSectionStack } from "../lib/sectionStack";
 import {
   closeToolWindow,
   openToolWindow,
@@ -226,6 +227,7 @@ function parseSettings(json: string): AppSettings {
       uiLanguage,
       colorProfile,
       mousePanelSide,
+      sectionStack: resolveSectionStack(parsed.sectionStack, parsed.sectionLayouts),
       synthesizerOctaveCount: resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
       synthesizerStartOctave: resolveSynthStartOctave(
         parsed.synthesizerStartOctave,

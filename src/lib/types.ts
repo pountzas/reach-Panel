@@ -1,4 +1,4 @@
-import type { SectionLayouts } from "./sectionLayouts";
+import type { LegacySectionLayouts, SectionStackState } from "./sectionStack";
 import type { MouseSpeed } from "./mouseSpeed";
 import type { ColorProfileId } from "./colorProfiles";
 import { COLOR_PROFILE_PRESETS } from "./colorProfiles";
@@ -20,7 +20,10 @@ export interface AppSettings {
   mousePanelMode: MousePanelMode;
   mousePanelSide: MousePanelSide;
   keyboardFontSize?: number;
-  sectionLayouts?: SectionLayouts;
+  /** Docked stack + float-layer layout (preferred). */
+  sectionStack?: SectionStackState;
+  /** Legacy free-float layouts; migrated into sectionStack on load. */
+  sectionLayouts?: LegacySectionLayouts;
   keyboardBgColor?: string;
   keyboardKeyColor?: string;
   keyTextColor?: string;
@@ -161,7 +164,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mousePanelMode: "mouse",
   mousePanelSide: "right",
   keyboardFontSize: 18,
-  sectionLayouts: {},
   backgroundImageOpacity: 0.35,
   mouseSpeed: "medium",
   precisionMode: false,

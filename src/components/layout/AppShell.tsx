@@ -236,8 +236,9 @@ export function AppShell() {
           <SectionCanvas
             quickActionsVisible={settings.quickActionsVisible}
             phrasesVisible={phrasesSlotVisible}
-            savedLayouts={settings.sectionLayouts}
-            onLayoutsChange={(sectionLayouts) => updateSettings({ sectionLayouts })}
+            savedStack={settings.sectionStack}
+            legacyLayouts={settings.sectionLayouts}
+            onStackChange={(sectionStack) => updateSettings({ sectionStack })}
             quickActions={<QuickActionsBar />}
             phrases={showMusicLesson ? <MusicLessonPanel /> : <PhrasePanel />}
             inputRow={<InputRowPanel />}
