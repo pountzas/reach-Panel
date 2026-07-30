@@ -12,9 +12,19 @@ export const el: Record<keyof typeof en, string> = {
 
   minimizeSection: "Σμίκρυνση",
 
+  dockSection: "Πρόσδεση ενότητας",
+
+  undockSection: "Αποδέσμευση ενότητας",
+
   settings: "Ρυθμίσεις",
 
   close: "Κλείσιμο",
+
+  add: "Προσθήκη",
+
+  appNotInstalled: "Το {app} δεν είναι εγκατεστημένο.",
+
+  installApp: "Εγκατάσταση",
 
   profile: "Προφίλ",
 
@@ -338,6 +348,14 @@ export const el: Record<keyof typeof en, string> = {
   quickActionAdd: "Προσθήκη ενέργειας",
 
   quickActionDelete: "Διαγραφή",
+
+  quickActionSearchApps: "Αναζήτηση εγκατεστημένων προγραμμάτων…",
+
+  quickActionBrowse: "Εξερεύνηση…",
+
+  quickActionLoadingApps: "Φόρτωση εγκατεστημένων προγραμμάτων…",
+
+  quickActionNoApps: "Δεν βρέθηκαν προγράμματα.",
 
   settingsAbout: "Σχετικά",
 
