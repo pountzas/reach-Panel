@@ -7,18 +7,22 @@ import {
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { SynthVolumeControl } from "./SynthVolumeControl";
-import { OctaveCountSwitch } from "./OctaveCountSwitch";
+import { PianoRangeControl } from "./PianoRangeControl";
 import { DictationButton } from "./DictationButton";
 import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
+import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
+import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const musicSongId = useAppStore((s) => s.musicSongId);
+  const importedSongs = useAppStore((s) => s.importedSongs);
   const enableMusicTeaching = useAppStore((s) => s.enableMusicTeaching);
   const disableMusicTeaching = useAppStore((s) => s.disableMusicTeaching);
   const { t } = useTranslation();
@@ -29,6 +33,18 @@ export function KeyboardSection() {
     !showSynth && settings.dictationVisible !== false && !compact;
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
   const showToolbar = showDictation || showToggle || showSuggestions;
+  const song = musicTeachingEnabled
+    ? getSongById(musicSongId, importedSongs)
+    : null;
+  const songFit = song ? songPianoRangeFit(song) : null;
+  const songRangeLabel = songFit
+    ? `${songFit.songMinId}–${songFit.songMaxId}`
+    : null;
+  const octaveCount = resolveSynthOctaveCount(settings.synthesizerOctaveCount);
+  const startOctave = resolveSynthStartOctave(
+    settings.synthesizerStartOctave,
+    octaveCount,
+  );
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
@@ -62,24 +78,39 @@ export function KeyboardSection() {
                       <TeachIcon className="h-4 w-4" />
                     </ModeToggleButton>
                   </ModeToggleGroup>
-                  <OctaveCountSwitch
-                    value={settings.synthesizerOctaveCount}
-                    onChange={(synthesizerOctaveCount) =>
-                      updateSettings({ synthesizerOctaveCount })
+                  <PianoRangeControl
+                    octaveCount={settings.synthesizerOctaveCount}
+                    startOctave={settings.synthesizerStartOctave}
+                    songRangeLabel={songRangeLabel}
+                    onStartOctaveChange={(synthesizerStartOctave) =>
+                      updateSettings({ synthesizerStartOctave })
                     }
+                    onOctaveCountChange={(synthesizerOctaveCount) => {
+                      const center = startOctave + octaveCount / 2;
+                      const synthesizerStartOctave = Math.round(
+                        center - synthesizerOctaveCount / 2,
+                      );
+                      updateSettings({
+                        synthesizerOctaveCount,
+                        synthesizerStartOctave,
+                      });
+                    }}
                   />
                   <ModeToggleGroup>
                     <ModeToggleButton
                       active={settings.mouseVisible}
                       position="only"
                       label={
-                        settings.mouseVisible
-                          ? t("hideMouseSection")
-                          : t("showMouseSection")
+                        isWidePianoOctaveCount(settings.synthesizerOctaveCount)
+                          ? t("mouseHiddenForWidePiano")
+                          : settings.mouseVisible
+                            ? t("hideMouseSection")
+                            : t("showMouseSection")
                       }
                       onClick={() =>
                         updateSettings({ mouseVisible: !settings.mouseVisible })
                       }
+                      disabled={isWidePianoOctaveCount(settings.synthesizerOctaveCount)}
                     >
                       <MouseIcon className="h-4 w-4" />
                     </ModeToggleButton>

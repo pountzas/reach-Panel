@@ -1,5 +1,6 @@
-import { requiredOctaveCount } from "./pianoKeys";
+import { requiredOctaveCount, fitPianoRangeToPitches } from "./pianoKeys";
 import type { SynthOctaveCount } from "./octaveCount";
+import type { PianoRangeFit } from "./pianoKeys";
 
 /**
  * Built-in beginner melodies for teaching mode (v1).
@@ -203,7 +204,11 @@ export function songPitches(song: MusicSong): string[] {
 }
 
 export function songRequiredOctaveCount(song: MusicSong): SynthOctaveCount {
-  return requiredOctaveCount(songPitches(song)) ?? 4;
+  return requiredOctaveCount(songPitches(song)) ?? 5;
+}
+
+export function songPianoRangeFit(song: MusicSong): PianoRangeFit | null {
+  return fitPianoRangeToPitches(songPitches(song));
 }
 
 /** Seconds for one quarter-note beat at the song tempo. */

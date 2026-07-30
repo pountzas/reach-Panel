@@ -21,8 +21,12 @@ import {
   ProfileFileInfo,
   QuickAction,
 } from "../lib/types";
-import { resolveSynthOctaveCount } from "../lib/music/octaveCount";
-import { BUILT_IN_SONGS, getSongById, songRequiredOctaveCount } from "../lib/music/songs";
+import {
+  isWidePianoOctaveCount,
+  resolveSynthOctaveCount,
+  resolveSynthStartOctave,
+} from "../lib/music/octaveCount";
+import { BUILT_IN_SONGS, getSongById, songPianoRangeFit } from "../lib/music/songs";
 import type { ImportedMusicSong } from "../lib/music/importTypes";
 import {
   parseMusicFilePayload,
@@ -123,6 +127,8 @@ interface AppStore {
   /** Session-only: demo playback of the selected song. */
   musicPlaybackActive: boolean;
   phrasesVisibleBeforeTeaching: boolean | null;
+  /** Session-only: restore mouse after leaving 5-octave (wide) piano mode. */
+  mouseVisibleBeforeWidePiano: boolean | null;
   /** Persisted imported songs (app data library). */
   importedSongs: ImportedMusicSong[];
   loadProfileFiles: () => Promise<void>;
@@ -222,6 +228,14 @@ function parseSettings(json: string): AppSettings {
       colorProfile,
       mousePanelSide,
       synthesizerOctaveCount: resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
+      synthesizerStartOctave: resolveSynthStartOctave(
+        parsed.synthesizerStartOctave,
+        resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
+      ),
+      // 5-octave mode always uses the mouse-hide setting path.
+      ...(isWidePianoOctaveCount(parsed.synthesizerOctaveCount)
+        ? { mouseVisible: false }
+        : {}),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -340,6 +354,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   musicNoteIndex: 0,
   musicPlaybackActive: false,
   phrasesVisibleBeforeTeaching: null,
+  mouseVisibleBeforeWidePiano: null,
   importedSongs: [],
   isAnimatingWindow: false,
   pendingUpdate: null,
@@ -441,6 +456,36 @@ export const useAppStore = create<AppStore>((set, get) => ({
           }
         : {}),
     };
+    if (
+      partial.synthesizerStartOctave !== undefined ||
+      partial.synthesizerOctaveCount !== undefined
+    ) {
+      next = {
+        ...next,
+        synthesizerStartOctave: resolveSynthStartOctave(
+          next.synthesizerStartOctave,
+          resolveSynthOctaveCount(next.synthesizerOctaveCount),
+        ),
+      };
+    }
+
+    // 5-octave mode uses the same path as the mouse-hide button (mouseVisible).
+    const wasWide = isWidePianoOctaveCount(settings.synthesizerOctaveCount);
+    const nowWide = isWidePianoOctaveCount(next.synthesizerOctaveCount);
+    if (nowWide) {
+      if (next.mouseVisible) {
+        if (get().mouseVisibleBeforeWidePiano === null) {
+          set({ mouseVisibleBeforeWidePiano: settings.mouseVisible });
+        }
+        next = { ...next, mouseVisible: false };
+      }
+    } else if (wasWide && partial.synthesizerOctaveCount !== undefined) {
+      const restore = get().mouseVisibleBeforeWidePiano;
+      set({ mouseVisibleBeforeWidePiano: null });
+      if (restore !== null && partial.mouseVisible === undefined) {
+        next = { ...next, mouseVisible: restore };
+      }
+    }
 
     const leavingSynthesizer =
       partial.keyboardSectionMode !== undefined &&
@@ -893,10 +938,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       patch.phrasesVisible = true;
     }
     if (song) {
-      const needed = songRequiredOctaveCount(song);
-      const current = resolveSynthOctaveCount(settings.synthesizerOctaveCount);
-      if (current < needed) {
-        patch.synthesizerOctaveCount = needed;
+      const fit = songPianoRangeFit(song);
+      if (fit) {
+        patch.synthesizerOctaveCount = fit.octaveCount;
+        patch.synthesizerStartOctave = fit.startOctave;
       }
     }
     if (Object.keys(patch).length > 0) {
@@ -931,10 +976,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const song = getSongById(songId, get().importedSongs);
     if (!song) return;
     set({ musicSongId: songId, musicNoteIndex: 0, musicPlaybackActive: false });
-    const needed = songRequiredOctaveCount(song);
-    const current = resolveSynthOctaveCount(get().settings.synthesizerOctaveCount);
-    if (current < needed) {
-      await get().updateSettings({ synthesizerOctaveCount: needed });
+    const fit = songPianoRangeFit(song);
+    if (fit) {
+      await get().updateSettings({
+        synthesizerOctaveCount: fit.octaveCount,
+        synthesizerStartOctave: fit.startOctave,
+      });
     }
   },
 

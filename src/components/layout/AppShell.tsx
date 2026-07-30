@@ -28,26 +28,25 @@ function InputRowPanel() {
   const { settings, updateSettings } = useAppStore();
   const mouseSide = settings.mousePanelSide ?? "right";
   const mouseRatio = settings.inputRowRightRatio ?? 0.28;
+  const mouseVisible = settings.mouseVisible;
 
+  // Always keep KeyboardSection in the same split-pane slot so synth playback
+  // is not remounted when show/hide mouse toggles. 5-octave mode sets
+  // mouseVisible=false the same way the hide button does.
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
-      {settings.mouseVisible ? (
-        <ResizableSplitPane
-          ratioSide={mouseSide === "left" ? "left" : "right"}
-          rightRatio={mouseRatio}
-          onRightRatioChange={(inputRowRightRatio) =>
-            updateSettings({ inputRowRightRatio })
-          }
-          minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
-          minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
-          left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
-          right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
-        />
-      ) : (
-        <div className="min-h-0 flex-1">
-          <KeyboardSection />
-        </div>
-      )}
+      <ResizableSplitPane
+        ratioSide={mouseSide === "left" ? "left" : "right"}
+        rightRatio={mouseRatio}
+        onRightRatioChange={(inputRowRightRatio) =>
+          updateSettings({ inputRowRightRatio })
+        }
+        minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
+        minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
+        sizedPaneCollapsed={!mouseVisible}
+        left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
+        right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
+      />
     </div>
   );
 }

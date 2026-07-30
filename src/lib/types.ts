@@ -49,8 +49,10 @@ export interface AppSettings {
   keyboardModeToggleVisible: boolean;
   synthesizerVolume?: number;
   synthesizerMuted?: boolean;
-  /** Number of piano octaves starting at C3 (2 → C3–C5, 3 → C3–C6, 4 → C3–C7). */
+  /** Piano window width in octaves (C-to-C). Combined with synthesizerStartOctave. */
   synthesizerOctaveCount?: SynthOctaveCount;
+  /** Lowest C of the piano window (e.g. 2 → C2–C(2+count)). */
+  synthesizerStartOctave?: number;
   /** Fraction of input-row width used by the mouse / numpad panel (0–1). */
   inputRowRightRatio?: number;
   /** When true, hides section toolbars and suggestions for more keyboard/trackpad area. */
@@ -177,6 +179,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   synthesizerVolume: 70,
   synthesizerMuted: false,
   synthesizerOctaveCount: 2,
+  synthesizerStartOctave: 3,
   inputRowRightRatio: 0.28,
   inputAreaCompact: false,
   mouseBottomRowVisible: true,

@@ -4,9 +4,13 @@ import { getSurfaceColors } from "../../lib/colorProfiles";
 import {
   BUILT_IN_SONGS,
   getSongById,
-  songRequiredOctaveCount,
+  songPianoRangeFit,
 } from "../../lib/music/songs";
-import { resolveSynthOctaveCount } from "../../lib/music/octaveCount";
+import {
+  pianoRangeLabel,
+  resolveSynthOctaveCount,
+  resolveSynthStartOctave,
+} from "../../lib/music/octaveCount";
 import { isImportedMusicSong } from "../../lib/music/parseJsonSong";
 
 /** Fixed slot width so the strip can keep the active note centered. */
@@ -42,7 +46,15 @@ export function MusicLessonPanel() {
         ? `${total} / ${total}`
         : `${musicNoteIndex + 1} / ${total}`;
   const octaveCount = resolveSynthOctaveCount(settings.synthesizerOctaveCount);
-  const neededOctaves = song ? songRequiredOctaveCount(song) : 2;
+  const startOctave = resolveSynthStartOctave(
+    settings.synthesizerStartOctave,
+    octaveCount,
+  );
+  const songFit = song ? songPianoRangeFit(song) : null;
+  const keyboardRange = pianoRangeLabel(startOctave, octaveCount);
+  const songRangeLabel = songFit
+    ? `${songFit.songMinId}–${songFit.songMaxId}`
+    : null;
   const stripOffsetRem =
     focusIndex * (NOTE_SLOT_REM + NOTE_GAP_REM) + NOTE_SLOT_REM / 2;
 
@@ -179,11 +191,24 @@ export function MusicLessonPanel() {
           {completed && (
             <p className="mt-1 text-sm font-semibold text-emerald-600">{t("lessonComplete")}</p>
           )}
-          {neededOctaves > octaveCount && (
-            <p className="text-xs text-amber-700">
-              {t("songNeedsOctaves").replace("{count}", String(neededOctaves))}
+          {songRangeLabel && (
+            <p className="text-xs" style={{ color: surface.panelMutedText }}>
+              {t("songRange")}: {songRangeLabel} · {t("pianoRange")}: {keyboardRange}
             </p>
           )}
+          {songFit && !songFit.fitsCompletely && (
+            <p className="text-xs text-amber-700">{t("songWiderThanPiano")}</p>
+          )}
+          {songFit?.fitsCompletely &&
+            (startOctave !== songFit.startOctave ||
+              octaveCount !== songFit.octaveCount) && (
+              <p className="text-xs text-amber-700">
+                {t("songNeedsOctaves").replace(
+                  "{range}",
+                  pianoRangeLabel(songFit.startOctave, songFit.octaveCount),
+                )}
+              </p>
+            )}
         </div>
       )}
 

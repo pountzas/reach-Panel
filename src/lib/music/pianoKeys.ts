@@ -1,6 +1,8 @@
 import {
   resolveSynthOctaveCount,
-  SYNTH_START_OCTAVE,
+  resolveSynthStartOctave,
+  SYNTH_MAX_START_OCTAVE,
+  SYNTH_MIN_START_OCTAVE,
   type SynthOctaveCount,
 } from "./octaveCount";
 
@@ -28,12 +30,22 @@ const NOTE_SEMITONES: Record<string, number> = {
   B: 11,
 };
 
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const;
+
 export type PianoKey = {
   id: string;
   label: string;
   freq: number;
   isBlack: boolean;
   leftRatio?: number;
+};
+
+export type PianoRangeFit = {
+  startOctave: number;
+  octaveCount: SynthOctaveCount;
+  fitsCompletely: boolean;
+  songMinId: string;
+  songMaxId: string;
 };
 
 export function parseNoteId(noteId: string): { note: string; octave: number } | null {
@@ -51,6 +63,13 @@ export function noteIdToMidi(noteId: string): number | null {
   return (parsed.octave + 1) * 12 + NOTE_SEMITONES[parsed.note]!;
 }
 
+export function midiToNoteId(midi: number): string {
+  const rounded = Math.round(midi);
+  const name = NOTE_NAMES[((rounded % 12) + 12) % 12]!;
+  const octave = Math.floor(rounded / 12) - 1;
+  return `${name}${octave}`;
+}
+
 export function midiToFreq(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12);
 }
@@ -61,9 +80,10 @@ export function noteToMidi(note: string, octave: number): number {
 
 export function buildPianoKeys(
   octaveCountInput: number = 2,
-  startOctave: number = SYNTH_START_OCTAVE,
+  startOctaveInput?: number,
 ): { whiteKeys: PianoKey[]; blackKeys: PianoKey[] } {
   const octaveCount = resolveSynthOctaveCount(octaveCountInput);
+  const startOctave = resolveSynthStartOctave(startOctaveInput, octaveCount);
   const whiteKeys: PianoKey[] = [];
   const blackKeys: PianoKey[] = [];
 
@@ -103,28 +123,84 @@ export function buildPianoKeys(
   return { whiteKeys, blackKeys };
 }
 
-export function maxMidiForOctaveCount(octaveCount: SynthOctaveCount): number {
-  return noteToMidi("C", SYNTH_START_OCTAVE + octaveCount);
+export function windowMinMidi(startOctave: number, _octaveCount: SynthOctaveCount): number {
+  return noteToMidi("C", startOctave);
 }
 
-export function minMidiForKeyboard(): number {
-  return noteToMidi("C", SYNTH_START_OCTAVE);
+export function windowMaxMidi(startOctave: number, octaveCount: SynthOctaveCount): number {
+  return noteToMidi("C", startOctave + octaveCount);
 }
 
-/** Smallest octave count (2–4) that can play every note in `noteIds`, or null if impossible. */
-export function requiredOctaveCount(noteIds: string[]): SynthOctaveCount | null {
-  let maxMidi = minMidiForKeyboard();
+function pitchBounds(noteIds: string[]): { minMidi: number; maxMidi: number } | null {
+  let minMidi = Number.POSITIVE_INFINITY;
+  let maxMidi = Number.NEGATIVE_INFINITY;
   for (const id of noteIds) {
     const midi = noteIdToMidi(id);
-    if (midi == null) return null;
-    if (midi < minMidiForKeyboard()) return null;
+    if (midi == null) continue;
+    minMidi = Math.min(minMidi, midi);
     maxMidi = Math.max(maxMidi, midi);
   }
+  if (!Number.isFinite(minMidi) || !Number.isFinite(maxMidi)) return null;
+  return { minMidi, maxMidi };
+}
 
-  for (const count of [2, 3, 4] as const) {
-    if (maxMidi <= maxMidiForOctaveCount(count)) {
-      return count;
+/**
+ * Choose the smallest 2–5 octave C-to-C window that covers the pitches.
+ * If the song is wider than 5 octaves, use a centered 5-octave window.
+ */
+export function fitPianoRangeToPitches(noteIds: string[]): PianoRangeFit | null {
+  const bounds = pitchBounds(noteIds);
+  if (!bounds) return null;
+  const { minMidi, maxMidi } = bounds;
+  const songMinId = midiToNoteId(minMidi);
+  const songMaxId = midiToNoteId(maxMidi);
+  const span = maxMidi - minMidi;
+
+  for (const octaveCount of [2, 3, 4, 5] as const) {
+    const windowSpan = octaveCount * 12;
+    if (span > windowSpan) continue;
+
+    // Prefer the lowest window that covers both ends (more bass room).
+    for (
+      let startOctave = SYNTH_MIN_START_OCTAVE;
+      startOctave <= SYNTH_MAX_START_OCTAVE;
+      startOctave++
+    ) {
+      if (
+        windowMinMidi(startOctave, octaveCount) <= minMidi &&
+        windowMaxMidi(startOctave, octaveCount) >= maxMidi
+      ) {
+        return {
+          startOctave,
+          octaveCount,
+          fitsCompletely: true,
+          songMinId,
+          songMaxId,
+        };
+      }
     }
   }
-  return null;
+
+  // Wider than 5 octaves: center a 5-octave window on the song.
+  const octaveCount = 5 as const;
+  const mid = (minMidi + maxMidi) / 2;
+  const idealStartMidi = mid - (octaveCount * 12) / 2;
+  let startOctave = Math.round(idealStartMidi / 12) - 1;
+  startOctave = Math.min(
+    SYNTH_MAX_START_OCTAVE,
+    Math.max(SYNTH_MIN_START_OCTAVE, startOctave),
+  );
+
+  return {
+    startOctave,
+    octaveCount,
+    fitsCompletely: false,
+    songMinId,
+    songMaxId,
+  };
+}
+
+/** @deprecated Prefer fitPianoRangeToPitches — kept for call sites needing only count. */
+export function requiredOctaveCount(noteIds: string[]): SynthOctaveCount | null {
+  return fitPianoRangeToPitches(noteIds)?.octaveCount ?? null;
 }

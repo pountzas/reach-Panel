@@ -113,6 +113,7 @@ fn default_settings_json(ui_language: &str) -> serde_json::Value {
         "synthesizerVolume": 70,
         "synthesizerMuted": false,
         "synthesizerOctaveCount": 2,
+        "synthesizerStartOctave": 3,
         "inputRowRightRatio": 0.28,
         "inputAreaCompact": false,
         "mouseBottomRowVisible": true,

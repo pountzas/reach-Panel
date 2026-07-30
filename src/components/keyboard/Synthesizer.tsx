@@ -3,9 +3,24 @@ import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { getSynthBlackKeyColors } from "../../lib/colorProfiles";
 import { findKeyIdAtPoint } from "../../lib/synthHitTest";
-import { resolveSynthOctaveCount } from "../../lib/music/octaveCount";
-import { buildPianoKeys, type PianoKey } from "../../lib/music/pianoKeys";
+import { resolveSynthOctaveCount, resolveSynthStartOctave } from "../../lib/music/octaveCount";
+import {
+  buildPianoKeys,
+  midiToFreq,
+  noteIdToMidi,
+  type PianoKey,
+} from "../../lib/music/pianoKeys";
 import { getSongById, songBeatSeconds } from "../../lib/music/songs";
+
+/** Keep short allegro notes audible even when slot spacing is very tight. */
+const MIN_PLAYBACK_SOUND_SEC = 0.1;
+const PLAYBACK_LOOKAHEAD_SEC = 0.3;
+const PLAYBACK_PUMP_MS = 40;
+
+/** Brief linger so quick wrong taps are still visible. */
+const WRONG_KEY_FLASH_MS = 280;
+const WRONG_WHITE_COLOR = "#fecaca";
+const WRONG_BLACK_COLOR = "#dc2626";
 
 function computePianoMetrics(containerHeight: number) {
   if (containerHeight <= 0) {
@@ -15,6 +30,16 @@ function computePianoMetrics(containerHeight: number) {
   const available = containerHeight - padding;
   const whiteKeyHeight = Math.max(28, Math.floor(available));
   return { whiteKeyHeight, blackKeyHeightRatio: 0.62 };
+}
+
+function frequencyForPitch(
+  pitch: string,
+  keys: Map<string, PianoKey>,
+): number | null {
+  const onKeyboard = keys.get(pitch);
+  if (onKeyboard) return onKeyboard.freq;
+  const midi = noteIdToMidi(pitch);
+  return midi != null ? midiToFreq(midi) : null;
 }
 
 type ActiveVoice = {
@@ -47,11 +72,20 @@ export function Synthesizer() {
   const masterGainRef = useRef<GainNode | null>(null);
   const activePointers = useRef<Map<number, ActivePointer>>(new Map());
   const playbackTimersRef = useRef<number[]>([]);
+  const playbackIntervalRef = useRef<number | null>(null);
   const playbackOscillatorsRef = useRef<OscillatorNode[]>([]);
+  const wrongKeyTimersRef = useRef<Map<string, number>>(new Map());
+  const wrongKeysRef = useRef<Set<string>>(new Set());
+  const targetKeyIdRef = useRef<string | null>(null);
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set());
   const [playbackKeyId, setPlaybackKeyId] = useState<string | null>(null);
+  const [wrongKeys, setWrongKeys] = useState<Set<string>>(() => new Set());
 
   const octaveCount = resolveSynthOctaveCount(settings.synthesizerOctaveCount);
+  const startOctave = resolveSynthStartOctave(
+    settings.synthesizerStartOctave,
+    octaveCount,
+  );
 
   const targetKeyId = useMemo(() => {
     if (!musicTeachingEnabled) return null;
@@ -60,11 +94,77 @@ export function Synthesizer() {
     if (musicNoteIndex >= song.notes.length) return null;
     return song.notes[musicNoteIndex]?.pitch ?? null;
   }, [importedSongs, musicTeachingEnabled, musicSongId, musicNoteIndex]);
+  targetKeyIdRef.current = targetKeyId;
+
+  const syncWrongKeys = useCallback((next: Set<string>) => {
+    wrongKeysRef.current = next;
+    setWrongKeys(next);
+  }, []);
+
+  const clearWrongKeyFlash = useCallback(
+    (keyId: string) => {
+      const existing = wrongKeyTimersRef.current.get(keyId);
+      if (existing != null) {
+        window.clearTimeout(existing);
+        wrongKeyTimersRef.current.delete(keyId);
+      }
+      if (!wrongKeysRef.current.has(keyId)) return;
+      const next = new Set(wrongKeysRef.current);
+      next.delete(keyId);
+      syncWrongKeys(next);
+    },
+    [syncWrongKeys],
+  );
+
+  const markWrongKey = useCallback(
+    (keyId: string) => {
+      const existing = wrongKeyTimersRef.current.get(keyId);
+      if (existing != null) {
+        window.clearTimeout(existing);
+        wrongKeyTimersRef.current.delete(keyId);
+      }
+      if (wrongKeysRef.current.has(keyId)) return;
+      const next = new Set(wrongKeysRef.current);
+      next.add(keyId);
+      syncWrongKeys(next);
+    },
+    [syncWrongKeys],
+  );
+
+  const flashWrongKeyOnRelease = useCallback(
+    (keyId: string) => {
+      if (!wrongKeysRef.current.has(keyId)) return;
+      const existing = wrongKeyTimersRef.current.get(keyId);
+      if (existing != null) {
+        window.clearTimeout(existing);
+      }
+      const timer = window.setTimeout(() => {
+        wrongKeyTimersRef.current.delete(keyId);
+        if (!wrongKeysRef.current.has(keyId)) return;
+        const next = new Set(wrongKeysRef.current);
+        next.delete(keyId);
+        syncWrongKeys(next);
+      }, WRONG_KEY_FLASH_MS);
+      wrongKeyTimersRef.current.set(keyId, timer);
+    },
+    [syncWrongKeys],
+  );
+
+  useEffect(() => {
+    if (musicTeachingEnabled) return;
+    for (const timer of wrongKeyTimersRef.current.values()) {
+      window.clearTimeout(timer);
+    }
+    wrongKeyTimersRef.current.clear();
+    syncWrongKeys(new Set());
+  }, [musicTeachingEnabled, syncWrongKeys]);
 
   const volumeLevel = useMemo(() => {
     if (settings.synthesizerMuted) return 0;
     return (settings.synthesizerVolume ?? 70) / 100;
   }, [settings.synthesizerMuted, settings.synthesizerVolume]);
+  const volumeLevelRef = useRef(volumeLevel);
+  volumeLevelRef.current = volumeLevel;
 
   const whiteKeyCount = octaveCount * 7 + 1;
   const { whiteKeyHeight, blackKeyHeightRatio } = computePianoMetrics(height);
@@ -72,8 +172,8 @@ export function Synthesizer() {
   const blackKeyHeight = whiteKeyHeight * blackKeyHeightRatio;
 
   const { whiteKeys, blackKeys } = useMemo(
-    () => buildPianoKeys(octaveCount),
-    [octaveCount],
+    () => buildPianoKeys(octaveCount, startOctave),
+    [octaveCount, startOctave],
   );
   const keyById = useMemo(() => {
     const map = new Map<string, PianoKey>();
@@ -82,6 +182,8 @@ export function Synthesizer() {
     }
     return map;
   }, [whiteKeys, blackKeys]);
+  const keyByIdRef = useRef(keyById);
+  keyByIdRef.current = keyById;
 
   const ensureAudio = useCallback(async () => {
     if (!audioRef.current) {
@@ -93,10 +195,13 @@ export function Synthesizer() {
       await audioRef.current.resume();
     }
     if (masterGainRef.current) {
-      masterGainRef.current.gain.setValueAtTime(volumeLevel, audioRef.current.currentTime);
+      masterGainRef.current.gain.setValueAtTime(
+        volumeLevelRef.current,
+        audioRef.current.currentTime,
+      );
     }
     return audioRef.current;
-  }, [volumeLevel]);
+  }, []);
 
   useEffect(() => {
     const ctx = audioRef.current;
@@ -116,6 +221,10 @@ export function Synthesizer() {
   }, []);
 
   const clearPlaybackSchedule = useCallback(() => {
+    if (playbackIntervalRef.current != null) {
+      window.clearInterval(playbackIntervalRef.current);
+      playbackIntervalRef.current = null;
+    }
     for (const timer of playbackTimersRef.current) {
       window.clearTimeout(timer);
     }
@@ -165,9 +274,10 @@ export function Synthesizer() {
 
       stopVoice(active.voice);
       activePointers.current.delete(pointerId);
+      flashWrongKeyOnRelease(active.keyId);
       syncPressedKeys();
     },
-    [stopVoice, syncPressedKeys],
+    [flashWrongKeyOnRelease, stopVoice, syncPressedKeys],
   );
 
   const setPointerKey = useCallback(
@@ -180,6 +290,7 @@ export function Synthesizer() {
       if (current) {
         stopVoice(current.voice);
         activePointers.current.delete(pointerId);
+        flashWrongKeyOnRelease(current.keyId);
       }
 
       if (keyId) {
@@ -187,12 +298,28 @@ export function Synthesizer() {
         if (!key) return;
         const voice = await startVoice(key.freq);
         activePointers.current.set(pointerId, { keyId, voice });
+        const teaching = useAppStore.getState().musicTeachingEnabled;
+        const target = targetKeyIdRef.current;
+        if (teaching && target && keyId !== target) {
+          markWrongKey(keyId);
+        } else {
+          clearWrongKeyFlash(keyId);
+        }
         reportMusicKeyPlayed(keyId);
       }
 
       syncPressedKeys();
     },
-    [keyById, reportMusicKeyPlayed, startVoice, stopVoice, syncPressedKeys],
+    [
+      clearWrongKeyFlash,
+      flashWrongKeyOnRelease,
+      keyById,
+      markWrongKey,
+      reportMusicKeyPlayed,
+      startVoice,
+      stopVoice,
+      syncPressedKeys,
+    ],
   );
 
   const updatePointerFromEvent = useCallback(
@@ -241,12 +368,17 @@ export function Synthesizer() {
 
   useEffect(() => {
     const pointers = activePointers.current;
+    const wrongTimers = wrongKeyTimersRef.current;
     return () => {
       for (const entry of pointers.values()) {
         stopVoice(entry.voice);
       }
       pointers.clear();
       clearPlaybackSchedule();
+      for (const timer of wrongTimers.values()) {
+        window.clearTimeout(timer);
+      }
+      wrongTimers.clear();
     };
   }, [clearPlaybackSchedule, stopVoice]);
 
@@ -263,6 +395,65 @@ export function Synthesizer() {
     }
 
     let cancelled = false;
+    let noteIndex = 0;
+    let nextNoteCtxTime = 0;
+    let playbackEndCtxTime = 0;
+
+    const scheduleNote = (
+      ctx: AudioContext,
+      pitch: string,
+      index: number,
+      startAt: number,
+      slotSec: number,
+    ) => {
+      // Fast passages (allegro 16ths ~150ms) need a floor or the triangle
+      // attack/release never becomes audible.
+      const soundSec = Math.max(MIN_PLAYBACK_SOUND_SEC, slotSec * 0.88);
+      const attackSec = Math.min(0.012, soundSec * 0.2);
+      const releaseSec = Math.min(0.07, soundSec * 0.35);
+      const delayMs = Math.max(0, (startAt - ctx.currentTime) * 1000);
+      playbackEndCtxTime = Math.max(playbackEndCtxTime, startAt + soundSec);
+
+      playbackTimersRef.current.push(
+        window.setTimeout(() => {
+          if (cancelled) return;
+          setMusicPlaybackNoteIndex(index);
+          setPlaybackKeyId(pitch);
+        }, delayMs),
+      );
+      playbackTimersRef.current.push(
+        window.setTimeout(() => {
+          if (cancelled) return;
+          setPlaybackKeyId((current) => (current === pitch ? null : current));
+        }, delayMs + soundSec * 1000),
+      );
+
+      const freq = frequencyForPitch(pitch, keyByIdRef.current);
+      if (freq == null) return;
+
+      const master = masterGainRef.current ?? ctx.destination;
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = "triangle";
+      oscillator.frequency.value = freq;
+      gain.gain.setValueAtTime(0.001, startAt);
+      gain.gain.exponentialRampToValueAtTime(0.28, startAt + attackSec);
+      gain.gain.setValueAtTime(
+        0.28,
+        startAt + Math.max(attackSec, soundSec - releaseSec),
+      );
+      gain.gain.exponentialRampToValueAtTime(0.001, startAt + soundSec);
+      oscillator.connect(gain);
+      gain.connect(master);
+      oscillator.start(startAt);
+      oscillator.stop(startAt + soundSec + 0.04);
+      oscillator.onended = () => {
+        playbackOscillatorsRef.current = playbackOscillatorsRef.current.filter(
+          (node) => node !== oscillator,
+        );
+      };
+      playbackOscillatorsRef.current.push(oscillator);
+    };
 
     const run = async () => {
       const ctx = await ensureAudio();
@@ -270,62 +461,35 @@ export function Synthesizer() {
 
       clearPlaybackSchedule();
       const beatSec = songBeatSeconds(song);
-      let t = ctx.currentTime + 0.05;
-      const timers: number[] = [];
-      const oscillators: OscillatorNode[] = [];
-      const master = masterGainRef.current ?? ctx.destination;
+      nextNoteCtxTime = ctx.currentTime + 0.05;
+      playbackEndCtxTime = nextNoteCtxTime;
 
-      song.notes.forEach((note, index) => {
-        const slotSec = Math.max(0.05, note.beats * beatSec);
-        const soundSec = Math.max(0.04, slotSec * 0.82);
-        const startAt = t;
-        const key = keyById.get(note.pitch);
-        const delayMs = Math.max(0, (startAt - ctx.currentTime) * 1000);
-
-        timers.push(
-          window.setTimeout(() => {
-            if (cancelled) return;
-            setMusicPlaybackNoteIndex(index);
-            setPlaybackKeyId(note.pitch);
-          }, delayMs),
-        );
-
-        timers.push(
-          window.setTimeout(() => {
-            if (cancelled) return;
-            setPlaybackKeyId((current) => (current === note.pitch ? null : current));
-          }, delayMs + soundSec * 1000),
-        );
-
-        if (key) {
-          const oscillator = ctx.createOscillator();
-          const gain = ctx.createGain();
-          oscillator.type = "triangle";
-          oscillator.frequency.value = key.freq;
-          gain.gain.setValueAtTime(0.001, startAt);
-          gain.gain.exponentialRampToValueAtTime(0.22, startAt + 0.015);
-          gain.gain.setValueAtTime(0.22, startAt + Math.max(0.02, soundSec - 0.06));
-          gain.gain.exponentialRampToValueAtTime(0.001, startAt + soundSec);
-          oscillator.connect(gain);
-          gain.connect(master);
-          oscillator.start(startAt);
-          oscillator.stop(startAt + soundSec + 0.05);
-          oscillators.push(oscillator);
+      const pump = () => {
+        if (cancelled) return;
+        const horizon = ctx.currentTime + PLAYBACK_LOOKAHEAD_SEC;
+        while (noteIndex < song.notes.length && nextNoteCtxTime <= horizon) {
+          const note = song.notes[noteIndex]!;
+          const slotSec = Math.max(0.05, note.beats * beatSec);
+          scheduleNote(ctx, note.pitch, noteIndex, nextNoteCtxTime, slotSec);
+          nextNoteCtxTime += slotSec;
+          noteIndex += 1;
         }
 
-        t += slotSec;
-      });
-
-      timers.push(
-        window.setTimeout(() => {
-          if (cancelled) return;
+        if (
+          noteIndex >= song.notes.length &&
+          ctx.currentTime >= playbackEndCtxTime
+        ) {
+          if (playbackIntervalRef.current != null) {
+            window.clearInterval(playbackIntervalRef.current);
+            playbackIntervalRef.current = null;
+          }
           setPlaybackKeyId(null);
           finishMusicPlayback();
-        }, Math.max(0, (t - ctx.currentTime) * 1000)),
-      );
+        }
+      };
 
-      playbackTimersRef.current = timers;
-      playbackOscillatorsRef.current = oscillators;
+      pump();
+      playbackIntervalRef.current = window.setInterval(pump, PLAYBACK_PUMP_MS);
     };
 
     void run();
@@ -334,12 +498,12 @@ export function Synthesizer() {
       cancelled = true;
       clearPlaybackSchedule();
     };
+    // Only restart when playback session identity changes — not on volume/layout/key map churn.
   }, [
     clearPlaybackSchedule,
     ensureAudio,
     finishMusicPlayback,
     importedSongs,
-    keyById,
     musicPlaybackActive,
     musicSongId,
     musicTeachingEnabled,
@@ -358,9 +522,16 @@ export function Synthesizer() {
   const renderWhiteKey = (key: PianoKey) => {
     const isPressed = pressedKeys.has(key.id) || playbackKeyId === key.id;
     const isTarget = targetKeyId === key.id;
+    const isWrong = wrongKeys.has(key.id);
     let backgroundColor = whiteKeyColor;
-    if (isPressed) backgroundColor = pressedWhiteColor;
+    if (isWrong) backgroundColor = WRONG_WHITE_COLOR;
+    else if (isPressed) backgroundColor = pressedWhiteColor;
     else if (isTarget) backgroundColor = highlightWhiteColor;
+    const ringClass = isWrong
+      ? "border-red-500 ring-2 ring-red-400 ring-inset"
+      : isTarget
+        ? "border-amber-500 ring-2 ring-amber-400 ring-inset"
+        : "border-slate-300";
     return (
       <button
         key={key.id}
@@ -368,7 +539,8 @@ export function Synthesizer() {
         aria-label={key.id}
         data-piano-key-id={key.id}
         data-piano-target={isTarget ? "true" : undefined}
-        className={`relative min-w-0 flex-1 rounded-b-lg border font-semibold shadow-sm transition-transform ${isPressed ? "key-pressed" : ""} ${isTarget ? "border-amber-500 ring-2 ring-amber-400 ring-inset" : "border-slate-300"}`}
+        data-piano-wrong={isWrong ? "true" : undefined}
+        className={`relative min-w-0 flex-1 rounded-b-lg border font-semibold shadow-sm transition-transform ${isPressed || isWrong ? "key-pressed" : ""} ${ringClass}`}
         style={{
           height: whiteKeyHeight,
           fontSize: settings.keyboardFontSize ?? 14,
@@ -386,9 +558,16 @@ export function Synthesizer() {
   const renderBlackKey = (key: PianoKey) => {
     const isPressed = pressedKeys.has(key.id) || playbackKeyId === key.id;
     const isTarget = targetKeyId === key.id;
+    const isWrong = wrongKeys.has(key.id);
     let backgroundColor = blackKeyColor;
-    if (isPressed) backgroundColor = pressedBlackColor;
+    if (isWrong) backgroundColor = WRONG_BLACK_COLOR;
+    else if (isPressed) backgroundColor = pressedBlackColor;
     else if (isTarget) backgroundColor = highlightBlackColor;
+    const ringClass = isWrong
+      ? "border-red-300 ring-2 ring-red-300"
+      : isTarget
+        ? "border-amber-300 ring-2 ring-amber-300"
+        : "border-slate-900";
     return (
       <button
         key={key.id}
@@ -396,7 +575,8 @@ export function Synthesizer() {
         aria-label={key.id}
         data-piano-key-id={key.id}
         data-piano-target={isTarget ? "true" : undefined}
-        className={`absolute top-0 z-10 rounded-b-md border font-semibold shadow-md transition-transform ${isPressed ? "key-pressed" : ""} ${isTarget ? "border-amber-300 ring-2 ring-amber-300" : "border-slate-900"}`}
+        data-piano-wrong={isWrong ? "true" : undefined}
+        className={`absolute top-0 z-10 rounded-b-md border font-semibold shadow-md transition-transform ${isPressed || isWrong ? "key-pressed" : ""} ${ringClass}`}
         style={{
           left: `${(key.leftRatio ?? 0) * 100}%`,
           transform: "translateX(-50%)",

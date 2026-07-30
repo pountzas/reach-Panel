@@ -236,13 +236,30 @@
 
   upcomingNotes: "Upcoming notes",
 
-  songNeedsOctaves: "This song needs {count} octaves",
+  songNeedsOctaves: "Move the piano to {range} to cover this song",
+
+  songWiderThanPiano:
+    "This song is wider than 5 octaves — some notes are outside the piano window. Use ◀ ▶ to shift.",
+
+  pianoRange: "Piano",
+
+  songRange: "Song",
+
+  shiftPianoLower: "Shift piano lower",
+
+  shiftPianoHigher: "Shift piano higher",
+
+  octavesShort: "octaves",
+
+  mouseHiddenForWidePiano: "Mouse hidden while using 5 octaves",
 
   octaveCount2: "2 octaves",
 
   octaveCount3: "3 octaves",
 
   octaveCount4: "4 octaves",
+
+  octaveCount5: "5 octaves",
 
   showKeyboardModeToggle: "Show keyboard / synthesizer toggle",
 

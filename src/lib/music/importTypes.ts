@@ -81,10 +81,12 @@ export function onsetsToNoteEvents(
     const pitch = flattenChordToTop(group.pitches);
     if (!pitch) continue;
     const nextOnset = groups[i + 1]?.onset;
+    // Keep onset-to-onset spacing so fast MIDI (e.g. allegro 16ths) retains
+    // its tempo. Sound length is handled at playback time with a minimum.
     const slot =
       nextOnset != null
-        ? Math.max(group.duration, nextOnset - group.onset)
-        : group.duration;
+        ? Math.max(1e-4, nextOnset - group.onset)
+        : Math.max(group.duration, 0.05);
     const beats = normalizeBeats(slot);
     if (beats == null) continue;
     notes.push({ pitch, beats });
