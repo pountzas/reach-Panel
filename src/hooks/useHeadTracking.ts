@@ -12,6 +12,13 @@ export function useHeadTracking(
   const baseline = useRef<{ x: number; y: number } | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const rafRef = useRef<number>(0);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const onMoveRef = useRef(onMove);
+  const settingsRef = useRef(settings);
+  const ipcPendingRef = useRef(false);
+
+  onMoveRef.current = onMove;
+  settingsRef.current = settings;
 
   const startCamera = useCallback(async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -27,6 +34,8 @@ export function useHeadTracking(
     if (videoRef.current?.srcObject) {
       const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
       tracks.forEach((t) => t.stop());
+    }
+    if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -51,14 +60,20 @@ export function useHeadTracking(
   useEffect(() => {
     if (!enabled || !calibrated) return;
 
-    const track = async () => {
-      if (videoRef.current && videoRef.current.readyState >= 2) {
-        const canvas = document.createElement("canvas");
-        canvas.width = 64;
-        canvas.height = 48;
+    if (!canvasRef.current) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 64;
+      canvas.height = 48;
+      canvasRef.current = canvas;
+    }
+
+    const track = () => {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      if (canvas && video && video.readyState >= 2) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
-          ctx.drawImage(videoRef.current, 0, 0, 64, 48);
+          ctx.drawImage(video, 0, 0, 64, 48);
           const data = ctx.getImageData(0, 0, 64, 48).data;
           let sumX = 0;
           let sumY = 0;
@@ -74,17 +89,23 @@ export function useHeadTracking(
               }
             }
           }
-          if (count > 0 && baseline.current) {
+          if (count > 0 && baseline.current && !ipcPendingRef.current) {
+            const ht = settingsRef.current;
             const cx = sumX / count / 64;
             const cy = sumY / count / 48;
             const dx = cx - baseline.current.x;
             const dy = cy - baseline.current.y;
-            if (Math.abs(dx) > settings.deadZone || Math.abs(dy) > settings.deadZone) {
-              const moveX = Math.round(dx * settings.sensitivity * 20 * settings.acceleration);
-              const moveY = Math.round(dy * settings.sensitivity * 20 * settings.acceleration);
+            if (Math.abs(dx) > ht.deadZone || Math.abs(dy) > ht.deadZone) {
+              const moveX = Math.round(dx * ht.sensitivity * 20 * ht.acceleration);
+              const moveY = Math.round(dy * ht.sensitivity * 20 * ht.acceleration);
               if (moveX !== 0 || moveY !== 0) {
-                onMove(moveX, moveY);
-                await invoke("cmd_head_tracking_move", { dx: moveX, dy: moveY });
+                onMoveRef.current(moveX, moveY);
+                ipcPendingRef.current = true;
+                void invoke("cmd_head_tracking_move", { dx: moveX, dy: moveY }).finally(
+                  () => {
+                    ipcPendingRef.current = false;
+                  },
+                );
               }
             }
           }
@@ -96,7 +117,7 @@ export function useHeadTracking(
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [enabled, calibrated, settings, onMove]);
+  }, [enabled, calibrated]);
 
   return { videoRef, calibrating, calibrated, calibrate, setCalibrated };
 }

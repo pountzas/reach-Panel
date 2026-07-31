@@ -13,9 +13,13 @@ const DEFAULT_HT: HeadTrackingSettings = {
   calibrated: false,
 };
 
+function noopMove(_dx: number, _dy: number) {}
+
 export function HeadTrackingWizard() {
-  const { settings, updateSettings, saveActiveProfile, setShowHeadTrackingWizard } =
-    useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
+  const saveActiveProfile = useAppStore((s) => s.saveActiveProfile);
+  const setShowHeadTrackingWizard = useAppStore((s) => s.setShowHeadTrackingWizard);
   const [htSettings, setHtSettings] = useState<HeadTrackingSettings>(DEFAULT_HT);
   const [mode, setMode] = useState<"touch" | "head">(
     settings.headTrackingEnabled ? "head" : "touch",
@@ -24,7 +28,7 @@ export function HeadTrackingWizard() {
   const { videoRef, calibrated, calibrate } = useHeadTracking(
     mode === "head",
     htSettings,
-    () => {},
+    noopMove,
   );
 
   useEffect(() => {

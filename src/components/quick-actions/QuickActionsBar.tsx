@@ -87,7 +87,9 @@ async function isAnyProbeInstalled(probes: string[]): Promise<boolean> {
 
 export function QuickActionsBar() {
   const { t } = useTranslation();
-  const { quickActions, settings, setShowSettings } = useAppStore();
+  const quickActions = useAppStore((s) => s.quickActions);
+  const settings = useAppStore((s) => s.settings);
+  const setShowSettings = useAppStore((s) => s.setShowSettings);
   const surface = getSurfaceColors(settings.appBgColor);
   const [missingInstalls, setMissingInstalls] = useState<InstallableApp[]>([]);
 

@@ -60,8 +60,30 @@ let typingLanguageSwitchInFlight = false;
 /** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
 let liveHeightRatioPreview: number | null = null;
 
+/** Coalesce live window-resize layout IPC to one apply per animation frame. */
+let liveHeightRatioRaf: number | null = null;
+let liveHeightRatioPending: number | null = null;
+let liveHeightRatioInFlight = false;
+
 const LANGUAGE_CHANGE_FALLBACK =
   "Could not switch keyboard language.";
+
+function physicalKeyStateEqual(a: PhysicalKeyState, b: PhysicalKeyState): boolean {
+  return (
+    a.capsLock === b.capsLock &&
+    a.shift === b.shift &&
+    a.ctrl === b.ctrl &&
+    a.alt === b.alt &&
+    a.win === b.win &&
+    a.systemLanguage === b.systemLanguage &&
+    a.keyboardLayout === b.keyboardLayout &&
+    a.systemKlid === b.systemKlid &&
+    a.systemHkl === b.systemHkl &&
+    a.hasInputTarget === b.hasInputTarget &&
+    a.pressedVks.length === b.pressedVks.length &&
+    a.pressedVks.every((vk, i) => vk === b.pressedVks[i])
+  );
+}
 
 function heightRatioFromSettings(settings: AppSettings): number {
   const contentRatio = computeContentHeightRatio({
@@ -636,13 +658,46 @@ export const useAppStore = create<AppStore>((set, get) => ({
     ) {
       return;
     }
-    liveHeightRatioPreview = heightRatio;
-    await invoke("cmd_apply_window_layout", {
-      monitorId: settings.accessibilityMonitorId,
-      collapsed: false,
-      collapsedDictation: false,
-      heightRatio,
+    liveHeightRatioPending = heightRatio;
+    if (liveHeightRatioRaf !== null || liveHeightRatioInFlight) return;
+
+    await new Promise<void>((resolve) => {
+      liveHeightRatioRaf = requestAnimationFrame(() => {
+        liveHeightRatioRaf = null;
+        resolve();
+      });
     });
+
+    const pending = liveHeightRatioPending;
+    liveHeightRatioPending = null;
+    if (pending === null) return;
+    if (
+      liveHeightRatioPreview !== null &&
+      Math.abs(liveHeightRatioPreview - pending) < 0.002
+    ) {
+      return;
+    }
+
+    const latest = get().settings;
+    if (latest.collapsed) return;
+    liveHeightRatioPreview = pending;
+    liveHeightRatioInFlight = true;
+    try {
+      await invoke("cmd_apply_window_layout", {
+        monitorId: latest.accessibilityMonitorId,
+        collapsed: false,
+        collapsedDictation: false,
+        heightRatio: pending,
+      });
+    } finally {
+      liveHeightRatioInFlight = false;
+      // Flush any ratio queued while the previous invoke was in flight.
+      if (liveHeightRatioPending !== null) {
+        const queued = liveHeightRatioPending;
+        liveHeightRatioPending = null;
+        void get().applyWindowHeightRatioLive(queued);
+      }
+    }
   },
 
   resetSettingsToDefaults: async () => {
@@ -709,15 +764,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const next = await invoke<PhysicalKeyState>("cmd_get_keyboard_state");
     const { physicalKeyState: prev, settings, keyboardLayout } = get();
 
-    const keysUnchanged =
-      prev.capsLock === next.capsLock &&
-      prev.shift === next.shift &&
-      prev.ctrl === next.ctrl &&
-      prev.alt === next.alt &&
-      prev.win === next.win &&
-      prev.pressedVks.length === next.pressedVks.length &&
-      prev.pressedVks.every((vk, i) => vk === next.pressedVks[i]);
-
     // Sync from the focused/target app so Win+Space / Alt+Shift updates our layout.
     // Skip while a language-button switch is in flight.
     const typingLanguageUnchanged =
@@ -728,10 +774,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
       prev.systemHkl === next.systemHkl &&
       prev.systemKlid === next.systemKlid;
 
-    if (keysUnchanged && typingLanguageUnchanged && layoutUnchanged) {
-      if (prev.hasInputTarget !== next.hasInputTarget) {
-        set({ physicalKeyState: next });
-      }
+    if (
+      physicalKeyStateEqual(prev, next) &&
+      typingLanguageUnchanged &&
+      layoutUnchanged
+    ) {
       return;
     }
 

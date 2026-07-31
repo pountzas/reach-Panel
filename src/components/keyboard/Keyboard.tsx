@@ -20,28 +20,26 @@ import { computeKeyMetrics } from "../../lib/keyMetrics";
 import type { OnscreenLayout } from "../../lib/types";
 
 export function Keyboard() {
-  const {
-    settings,
-    keyboardLayout,
-    stickyModifiers,
-    physicalKeyState,
-    toggleSticky,
-    pollKeyboardState,
-    clearSticky,
-    clearStickyExceptFn,
-    appendTyped,
-    backspaceTyped,
-    setTypedBuffer,
-    loadSuggestions,
-    pollError,
-    inputMethods,
-    layoutKeyLabels,
-    languagePickerOpen,
-    setLanguagePickerOpen,
-    selectTypingInputMethod,
-    loadInputMethods,
-    updateSettings,
-  } = useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const keyboardLayout = useAppStore((s) => s.keyboardLayout);
+  const stickyModifiers = useAppStore((s) => s.stickyModifiers);
+  const physicalKeyState = useAppStore((s) => s.physicalKeyState);
+  const toggleSticky = useAppStore((s) => s.toggleSticky);
+  const pollKeyboardState = useAppStore((s) => s.pollKeyboardState);
+  const clearSticky = useAppStore((s) => s.clearSticky);
+  const clearStickyExceptFn = useAppStore((s) => s.clearStickyExceptFn);
+  const appendTyped = useAppStore((s) => s.appendTyped);
+  const backspaceTyped = useAppStore((s) => s.backspaceTyped);
+  const setTypedBuffer = useAppStore((s) => s.setTypedBuffer);
+  const loadSuggestions = useAppStore((s) => s.loadSuggestions);
+  const pollError = useAppStore((s) => s.pollError);
+  const inputMethods = useAppStore((s) => s.inputMethods);
+  const layoutKeyLabels = useAppStore((s) => s.layoutKeyLabels);
+  const languagePickerOpen = useAppStore((s) => s.languagePickerOpen);
+  const setLanguagePickerOpen = useAppStore((s) => s.setLanguagePickerOpen);
+  const selectTypingInputMethod = useAppStore((s) => s.selectTypingInputMethod);
+  const loadInputMethods = useAppStore((s) => s.loadInputMethods);
+  const updateSettings = useAppStore((s) => s.updateSettings);
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const { t } = useTranslation();
