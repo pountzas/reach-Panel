@@ -67,13 +67,34 @@
 
   showSuggestionsBar: "Show suggestions bar",
 
+  predictionDictionaries: "Prediction dictionaries",
+
+  predictionDictionariesHint:
+    "English is included. Download other languages as needed. Suggestions follow typing language.",
+
+  wordPackInstalled: "Installed",
+
+  wordPackNotInstalled: "Not installed",
+
+  wordPackInstall: "Install",
+
+  wordPackUninstall: "Remove",
+
+  wordPackInstalling: "Installing…",
+
+  wordPackRequired: "Required",
+
+  wordPackInstallFailed: "Could not install dictionary",
+
+  wordPackUninstallFailed: "Could not remove dictionary",
+
   showDictationControl: "Show dictation (mic)",
 
   opacity: "Opacity",
 
   appLanguage: "App language",
 
-  appLanguageHint: "Menus, phrases, predictions, and speech",
+  appLanguageHint: "Menus, phrases, and speech",
 
   typingLanguage: "Typing language",
 

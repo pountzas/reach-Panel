@@ -32,6 +32,7 @@ export function Keyboard() {
   const backspaceTyped = useAppStore((s) => s.backspaceTyped);
   const setTypedBuffer = useAppStore((s) => s.setTypedBuffer);
   const loadSuggestions = useAppStore((s) => s.loadSuggestions);
+  const recordTypedWord = useAppStore((s) => s.recordTypedWord);
   const pollError = useAppStore((s) => s.pollError);
   const inputMethods = useAppStore((s) => s.inputMethods);
   const layoutKeyLabels = useAppStore((s) => s.layoutKeyLabels);
@@ -109,6 +110,7 @@ export function Keyboard() {
     }
 
     if (key === "enter") {
+      await recordTypedWord();
       setTypedBuffer("");
       await invoke("cmd_press_key", {
         request: { key: "enter", modifiers: [...activeModifiers] },
@@ -120,6 +122,7 @@ export function Keyboard() {
     }
 
     if (key === "space") {
+      await recordTypedWord();
       appendTyped(" ");
       await invoke("cmd_press_key", {
         request: { key: "space", modifiers: [...activeModifiers] },

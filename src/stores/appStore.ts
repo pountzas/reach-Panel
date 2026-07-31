@@ -198,6 +198,7 @@ interface AppStore {
   clearStickyExceptFn: () => void;
   loadSuggestions: () => Promise<void>;
   applySuggestion: (word: string) => Promise<void>;
+  recordTypedWord: () => Promise<void>;
   setLastError: (error: string | null) => void;
   pollError: () => Promise<void>;
   setDictationState: (state: DictationState) => void;
@@ -940,7 +941,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const results = await invoke<{ word: string }[]>("cmd_get_suggestions", {
       profileId: INTERNAL_PROFILE_ID,
       prefix,
-      language: settings.uiLanguage,
+      language: settings.typingLanguage || "en",
     });
     set({ suggestions: results.map((r) => r.word) });
   },
@@ -948,16 +949,38 @@ export const useAppStore = create<AppStore>((set, get) => ({
   applySuggestion: async (word) => {
     const { settings, typedBuffer } = get();
     const parts = typedBuffer.split(/\s+/);
+    const prefix = parts[parts.length - 1] ?? "";
     parts[parts.length - 1] = word;
     const next = parts.join(" ") + " ";
     set({ typedBuffer: next });
-    await invoke("cmd_type_text", { text: word + " " });
+
+    const lowerWord = word.toLowerCase();
+    const lowerPrefix = prefix.toLowerCase();
+    let remainder = word;
+    if (lowerWord.startsWith(lowerPrefix) && prefix.length > 0) {
+      remainder = word.slice(prefix.length);
+    }
+    await invoke("cmd_type_text", { text: remainder + " " });
     await invoke("cmd_record_word", {
       profileId: INTERNAL_PROFILE_ID,
       word,
-      language: settings.uiLanguage,
+      language: settings.typingLanguage || "en",
     });
     await get().loadSuggestions();
+  },
+
+  recordTypedWord: async () => {
+    const { settings, typedBuffer } = get();
+    if (!settings.predictionEnabled) return;
+    const parts = typedBuffer.trimEnd().split(/\s+/);
+    const word = parts[parts.length - 1] ?? "";
+    if (word.length < 2) return;
+    if (!/^[\p{L}][\p{L}'’-]*$/u.test(word)) return;
+    await invoke("cmd_record_word", {
+      profileId: INTERNAL_PROFILE_ID,
+      word,
+      language: settings.typingLanguage || "en",
+    });
   },
 
   setLastError: (error) => {

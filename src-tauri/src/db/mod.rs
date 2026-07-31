@@ -208,6 +208,17 @@ impl Database {
                 language TEXT NOT NULL,
                 frequency INTEGER NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS pack_words (
+                language TEXT NOT NULL,
+                word TEXT NOT NULL,
+                frequency INTEGER NOT NULL,
+                PRIMARY KEY (language, word)
+            );
+            CREATE TABLE IF NOT EXISTS installed_packs (
+                language TEXT PRIMARY KEY,
+                version INTEGER NOT NULL,
+                installed_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS usage_statistics (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 profile_id TEXT NOT NULL,
@@ -458,50 +469,6 @@ impl Database {
                     ],
                 )?;
             }
-        }
-
-        let words = [
-            ("hello", "en", 100),
-            ("help", "en", 90),
-            ("helicopter", "en", 10),
-            ("water", "en", 80),
-            ("thank", "en", 70),
-            ("thanks", "en", 65),
-            ("please", "en", 60),
-            ("γεια", "el", 100),
-            ("βοήθεια", "el", 90),
-            ("νερό", "el", 80),
-            ("hallo", "de", 100),
-            ("hilfe", "de", 90),
-            ("wasser", "de", 80),
-            ("danke", "de", 70),
-            ("bitte", "de", 60),
-            ("bonjour", "fr", 100),
-            ("aide", "fr", 90),
-            ("eau", "fr", 80),
-            ("merci", "fr", 70),
-            ("s’il", "fr", 60),
-            ("ciao", "it", 100),
-            ("aiuto", "it", 90),
-            ("acqua", "it", 80),
-            ("grazie", "it", 70),
-            ("per favore", "it", 60),
-            ("hola", "es", 100),
-            ("ayuda", "es", 90),
-            ("agua", "es", 80),
-            ("gracias", "es", 70),
-            ("por favor", "es", 60),
-            ("olá", "pt", 100),
-            ("ajuda", "pt", 90),
-            ("água", "pt", 80),
-            ("obrigado", "pt", 70),
-            ("por favor", "pt", 60),
-        ];
-        for (word, lang, freq) in words {
-            conn.execute(
-                "INSERT INTO predictions (profile_id, word, language, frequency) VALUES (?1,?2,?3,?4)",
-                params![profile_id, word, lang, freq],
-            )?;
         }
 
         let macro_id = Uuid::new_v4().to_string();
@@ -856,17 +823,102 @@ impl Database {
     pub fn get_predictions(&self, profile_id: &str, prefix: &str, language: &str, limit: i32) -> Result<Vec<PredictionEntry>> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
         let pattern = format!("{prefix}%");
-        let mut stmt = conn.prepare(
-            "SELECT word, language, frequency FROM predictions WHERE profile_id = ?1 AND language = ?2 AND word LIKE ?3 ORDER BY frequency DESC LIMIT ?4",
-        )?;
-        let rows = stmt.query_map(params![profile_id, language, pattern, limit], |row| {
-            Ok(PredictionEntry {
-                word: row.get(0)?,
-                language: row.get(1)?,
-                frequency: row.get(2)?,
+        let mut scores: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+
+        {
+            let mut stmt = conn.prepare(
+                "SELECT word, frequency FROM pack_words WHERE language = ?1 AND word LIKE ?2",
+            )?;
+            let rows = stmt.query_map(params![language, pattern], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
+            })?;
+            for row in rows {
+                let (word, freq) = row?;
+                scores.insert(word, i64::from(freq));
+            }
+        }
+
+        {
+            let mut stmt = conn.prepare(
+                "SELECT word, frequency FROM predictions WHERE profile_id = ?1 AND language = ?2 AND word LIKE ?3",
+            )?;
+            let rows = stmt.query_map(params![profile_id, language, pattern], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
+            })?;
+            for row in rows {
+                let (word, freq) = row?;
+                let entry = scores.entry(word).or_insert(0);
+                *entry += i64::from(freq) * 1000;
+            }
+        }
+
+        let mut ranked: Vec<(String, i64)> = scores.into_iter().collect();
+        ranked.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        ranked.truncate(limit.max(0) as usize);
+
+        Ok(ranked
+            .into_iter()
+            .map(|(word, score)| PredictionEntry {
+                word,
+                language: language.to_string(),
+                frequency: score.min(i64::from(i32::MAX)) as i32,
             })
-        })?;
+            .collect())
+    }
+
+    pub fn list_installed_packs(&self) -> Result<Vec<(String, i32)>> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let mut stmt = conn.prepare(
+            "SELECT language, version FROM installed_packs ORDER BY language",
+        )?;
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn is_pack_installed(&self, language: &str) -> Result<bool> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM installed_packs WHERE language = ?1",
+            params![language],
+            |row| row.get(0),
+        )?;
+        Ok(count > 0)
+    }
+
+    pub fn import_word_pack(
+        &self,
+        language: &str,
+        version: i32,
+        words: &[(String, i32)],
+    ) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let tx = conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM pack_words WHERE language = ?1", params![language])?;
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO pack_words (language, word, frequency) VALUES (?1,?2,?3)",
+            )?;
+            for (word, freq) in words {
+                stmt.execute(params![language, word, freq])?;
+            }
+        }
+        tx.execute(
+            "INSERT INTO installed_packs (language, version, installed_at) VALUES (?1,?2,?3)
+             ON CONFLICT(language) DO UPDATE SET version = excluded.version, installed_at = excluded.installed_at",
+            params![language, version, Utc::now().to_rfc3339()],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn uninstall_word_pack(&self, language: &str) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        conn.execute("DELETE FROM pack_words WHERE language = ?1", params![language])?;
+        conn.execute(
+            "DELETE FROM installed_packs WHERE language = ?1",
+            params![language],
+        )?;
+        Ok(())
     }
 
     pub fn record_word_usage(&self, profile_id: &str, word: &str, language: &str) -> Result<()> {

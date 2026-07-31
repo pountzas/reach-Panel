@@ -71,13 +71,34 @@ export const el: Record<keyof typeof en, string> = {
 
   showSuggestionsBar: "Εμφάνιση προτάσεων",
 
+  predictionDictionaries: "Λεξικά πρόβλεψης",
+
+  predictionDictionariesHint:
+    "Τα Αγγλικά περιλαμβάνονται. Κατεβάστε άλλες γλώσσες όπως χρειάζεται. Οι προτάσεις ακολουθούν τη γλώσσα πληκτρολόγησης.",
+
+  wordPackInstalled: "Εγκατεστημένο",
+
+  wordPackNotInstalled: "Μη εγκατεστημένο",
+
+  wordPackInstall: "Εγκατάσταση",
+
+  wordPackUninstall: "Αφαίρεση",
+
+  wordPackInstalling: "Εγκατάσταση…",
+
+  wordPackRequired: "Απαιτείται",
+
+  wordPackInstallFailed: "Αποτυχία εγκατάστασης λεξικού",
+
+  wordPackUninstallFailed: "Αποτυχία αφαίρεσης λεξικού",
+
   showDictationControl: "Εμφάνιση υπαγόρευσης (μικρόφωνο)",
 
   opacity: "Διαφάνεια",
 
   appLanguage: "Γλώσσα εφαρμογής",
 
-  appLanguageHint: "Μενού, φράσεις, προτάσεις και ομιλία",
+  appLanguageHint: "Μενού, φράσεις και ομιλία",
 
   typingLanguage: "Γλώσσα πληκτρολογίου",
 
