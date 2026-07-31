@@ -129,6 +129,14 @@ interface AppStore {
   profileFiles: ProfileFileInfo[];
   activeProfileFile: string | null;
   settings: AppSettings;
+  /**
+   * Bumped whenever profile settings are reloaded from the backend.
+   * In-flight full-settings writers capture this and abort if it changes,
+   * so a stale window cannot clobber a newer profile load/switch.
+   */
+  settingsEpoch: number;
+  /** False until the first profile load finishes; blocks persist of DEFAULT_SETTINGS. */
+  profileHydrated: boolean;
   monitors: MonitorInfo[];
   quickActions: QuickAction[];
   phrases: Phrase[];
@@ -350,7 +358,7 @@ async function loadProfileData(
   const settings = active
     ? parseSettings(active.settings_json)
     : DEFAULT_SETTINGS;
-  set({ settings });
+  set({ settings, settingsEpoch: get().settingsEpoch + 1 });
   const isMainWindow = WebviewWindow.getCurrent().label === "main";
   if (isMainWindow) {
     await invoke("cmd_set_system_language", { language: settings.typingLanguage });
@@ -367,10 +375,28 @@ async function loadProfileData(
   }
 }
 
+/** Persist full settings only if this window's profile epoch is still current. */
+async function persistSettingsIfCurrent(
+  get: () => AppStore,
+  epoch: number,
+  settings: AppSettings,
+): Promise<boolean> {
+  if (!get().profileHydrated || get().settingsEpoch !== epoch) {
+    return false;
+  }
+  await invoke("cmd_update_profile_settings", {
+    profileId: INTERNAL_PROFILE_ID,
+    settingsJson: JSON.stringify(settings),
+  });
+  return get().profileHydrated && get().settingsEpoch === epoch;
+}
+
 export const useAppStore = create<AppStore>((set, get) => ({
   profileFiles: [],
   activeProfileFile: null,
   settings: DEFAULT_SETTINGS,
+  settingsEpoch: 0,
+  profileHydrated: false,
   monitors: [],
   quickActions: [],
   phrases: [],
@@ -431,9 +457,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
       activeProfileFile: activeProfileFile || profileFiles[0]?.filename || null,
     });
     await loadProfileData(set, get);
+    set({ profileHydrated: true });
   },
 
   setProfileFile: async (filename) => {
+    // Invalidate in-flight full-settings writers before the backend switch.
+    set({ settingsEpoch: get().settingsEpoch + 1 });
     await invoke("cmd_load_profile_file", { filename });
     set({
       activeProfileFile: filename,
@@ -481,6 +510,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   updateSettings: async (partial, options) => {
+    if (!get().profileHydrated) {
+      return;
+    }
+    const epoch = get().settingsEpoch;
     const { settings } = get();
     const syncToSystem = options?.syncToSystem ?? true;
     const typingLanguageChanged =
@@ -548,6 +581,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     }
 
+    if (get().settingsEpoch !== epoch) {
+      return;
+    }
     set({ settings: next });
     if (partial.keyboardSectionMode === "synthesizer") {
       await get().stopDictation();
@@ -565,9 +601,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
           klid: method?.klid ?? null,
         });
         if (!result.success) {
-          set({
-            settings: { ...get().settings, typingLanguage: previousTypingLanguage },
-          });
+          if (get().settingsEpoch === epoch) {
+            set({
+              settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+            });
+          }
           const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
           lastAnnouncedError = message;
           notify.error(message, { id: "typing-language-switch" });
@@ -576,9 +614,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
         lastAnnouncedError = null;
         await get().refreshLayoutKeyLabels();
       } catch (error) {
-        set({
-          settings: { ...get().settings, typingLanguage: previousTypingLanguage },
-        });
+        if (get().settingsEpoch === epoch) {
+          set({
+            settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+          });
+        }
         const message =
           error instanceof Error
             ? error.message
@@ -590,10 +630,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
         typingLanguageSwitchInFlight = false;
       }
     }
-    await invoke("cmd_update_profile_settings", {
-      profileId: INTERNAL_PROFILE_ID,
-      settingsJson: JSON.stringify(get().settings),
-    });
+    if (get().settingsEpoch !== epoch) {
+      return;
+    }
+    const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+    if (!persisted) {
+      return;
+    }
     await emit(PROFILE_UPDATED_EVENT, {
       source: WebviewWindow.getCurrent().label,
     });
@@ -761,6 +804,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     })),
 
   pollKeyboardState: async () => {
+    const epoch = get().settingsEpoch;
     const next = await invoke<PhysicalKeyState>("cmd_get_keyboard_state");
     const { physicalKeyState: prev, settings, keyboardLayout } = get();
 
@@ -782,6 +826,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
 
+    if (get().settingsEpoch !== epoch) {
+      return;
+    }
+
     set({
       physicalKeyState: next,
       keyboardLayout: next.keyboardLayout,
@@ -795,10 +843,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     if (!typingLanguageUnchanged) {
-      await invoke("cmd_update_profile_settings", {
-        profileId: INTERNAL_PROFILE_ID,
-        settingsJson: JSON.stringify(get().settings),
-      });
+      const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+      if (!persisted) {
+        return;
+      }
       set({ typedBuffer: "", suggestions: [] });
     }
   },
@@ -811,6 +859,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setLanguagePickerOpen: (open) => set({ languagePickerOpen: open }),
 
   selectTypingInputMethod: async (method) => {
+    const epoch = get().settingsEpoch;
     const previousTypingLanguage = get().settings.typingLanguage;
     typingLanguageSwitchInFlight = true;
     set({ languagePickerOpen: false });
@@ -824,6 +873,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         notify.error(message, { id: "typing-language-switch" });
         return;
       }
+      if (get().settingsEpoch !== epoch) {
+        return;
+      }
       set({
         settings: {
           ...get().settings,
@@ -831,10 +883,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         },
         keyboardLayout: method.layoutName,
       });
-      await invoke("cmd_update_profile_settings", {
-        profileId: INTERNAL_PROFILE_ID,
-        settingsJson: JSON.stringify(get().settings),
-      });
+      const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+      if (!persisted) {
+        return;
+      }
       await emit(PROFILE_UPDATED_EVENT, {
         source: WebviewWindow.getCurrent().label,
       });
@@ -1201,6 +1253,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (get().isAnimatingWindow) {
       return;
     }
+    const epoch = get().settingsEpoch;
     const { settings } = get();
     const collapsed = !settings.collapsed;
     const next = { ...settings, collapsed };
@@ -1208,11 +1261,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ isAnimatingWindow: true });
     try {
       if (collapsed) {
+        if (get().settingsEpoch !== epoch) {
+          return;
+        }
         set({ settings: next });
-        await invoke("cmd_update_profile_settings", {
-          profileId: INTERNAL_PROFILE_ID,
-          settingsJson: JSON.stringify(next),
-        });
+        const persisted = await persistSettingsIfCurrent(get, epoch, next);
+        if (!persisted) {
+          return;
+        }
         await invoke("cmd_animate_window_layout", {
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
@@ -1226,11 +1282,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
           collapsedDictation: false,
           heightRatio: heightRatioFromSettings(settings),
         });
+        if (get().settingsEpoch !== epoch) {
+          return;
+        }
         set({ settings: next });
-        await invoke("cmd_update_profile_settings", {
-          profileId: INTERNAL_PROFILE_ID,
-          settingsJson: JSON.stringify(next),
-        });
+        await persistSettingsIfCurrent(get, epoch, next);
       }
     } finally {
       set({ isAnimatingWindow: false });
