@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import type { QuickAction } from "./types";
 
 const iconCache = new Map<string, string | null>();
@@ -18,6 +18,19 @@ export function urlFaviconSrc(target: string): string | null {
   } catch {
     return null;
   }
+}
+
+function toIconSrc(raw: string | null): string | null {
+  if (!raw) return null;
+  if (
+    raw.startsWith("data:") ||
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("asset:")
+  ) {
+    return raw;
+  }
+  return convertFileSrc(raw);
 }
 
 /**
@@ -40,9 +53,10 @@ export async function resolveQuickActionIcon(
       src = urlFaviconSrc(action.target);
     } else if (action.action_type === "app") {
       try {
-        src = await invoke<string | null>("cmd_get_app_icon", {
+        const pathOrUrl = await invoke<string | null>("cmd_get_app_icon", {
           target: action.target,
         });
+        src = toIconSrc(pathOrUrl);
       } catch {
         src = null;
       }

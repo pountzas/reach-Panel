@@ -1,17 +1,29 @@
 //! Resolve and extract icons for Quick Actions (Windows app icons).
 
+use std::collections::hash_map::DefaultHasher;
+use std::fs;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
+use tauri::{AppHandle, Manager};
 
-/// Returns a `data:image/png;base64,...` URL for an app target, or `None` if unavailable.
-pub fn app_icon_data_url(target: &str) -> Option<String> {
+/// Returns a filesystem path to a cached PNG icon for `convertFileSrc`, or `None`.
+pub fn app_icon_cached_path(app: &AppHandle, target: &str) -> Option<String> {
     #[cfg(windows)]
     {
         let path = resolve_app_path(target)?;
-        extract_file_icon_png_data_url(&path).ok()
+        let cache_dir = icon_cache_dir(app).ok()?;
+        let key = icon_cache_key(&path);
+        let cache_file = cache_dir.join(format!("{key}.png"));
+        if cache_file.is_file() {
+            return Some(cache_file.to_string_lossy().into_owned());
+        }
+        let png = extract_file_icon_png(&path).ok()?;
+        fs::write(&cache_file, png).ok()?;
+        Some(cache_file.to_string_lossy().into_owned())
     }
     #[cfg(not(windows))]
     {
-        let _ = target;
+        let _ = (app, target);
         None
     }
 }
@@ -27,6 +39,41 @@ pub fn is_app_installed(target: &str) -> bool {
         let _ = target;
         false
     }
+}
+
+/// Resolve a quick-action app target to an existing `.exe` path when possible.
+pub fn resolve_launch_app_path(target: &str) -> Option<PathBuf> {
+    #[cfg(windows)]
+    {
+        resolve_app_path(target)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = target;
+        None
+    }
+}
+
+fn icon_cache_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("icon-cache");
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir)
+}
+
+fn icon_cache_key(path: &Path) -> String {
+    let mut hasher = DefaultHasher::new();
+    path.hash(&mut hasher);
+    if let Ok(meta) = fs::metadata(path) {
+        if let Ok(modified) = meta.modified() {
+            modified.hash(&mut hasher);
+        }
+        meta.len().hash(&mut hasher);
+    }
+    format!("{:016x}", hasher.finish())
 }
 
 #[cfg(windows)]
@@ -167,8 +214,7 @@ fn resolve_from_app_paths_registry(exe_name: &str) -> Option<PathBuf> {
 }
 
 #[cfg(windows)]
-fn extract_file_icon_png_data_url(path: &Path) -> Result<String, String> {
-    use base64::Engine;
+fn extract_file_icon_png(path: &Path) -> Result<Vec<u8>, String> {
     use image::{ImageBuffer, ImageFormat, Rgba};
     use std::io::Cursor;
     use std::os::windows::ffi::OsStrExt;
@@ -260,7 +306,6 @@ fn extract_file_icon_png_data_url(path: &Path) -> Result<String, String> {
         let mut png_bytes = Cursor::new(Vec::new());
         img.write_to(&mut png_bytes, ImageFormat::Png)
             .map_err(|e| e.to_string())?;
-        let encoded = base64::engine::general_purpose::STANDARD.encode(png_bytes.into_inner());
-        Ok(format!("data:image/png;base64,{encoded}"))
+        Ok(png_bytes.into_inner())
     }
 }
