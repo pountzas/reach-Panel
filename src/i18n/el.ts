@@ -81,7 +81,13 @@ export const el: Record<keyof typeof en, string> = {
 
   typingLanguage: "Γλώσσα πληκτρολογίου",
 
-  typingLanguageHint: "Εισαγωγή κειμένου και διάταξη πλήκτρων",
+  typingLanguageHint: "Γλώσσα πληκτρολογίου Windows για πληκτρολόγηση",
+
+  onscreenLayout: "Διάταξη οθόνης",
+
+  onscreenLayoutHint: "Διάταξη πλήκτρων στο εικονικό πληκτρολόγιο",
+
+  onscreenLayoutAuto: "Αυτόματο (ακολουθεί Windows)",
 
   languageEnglish: "English",
 

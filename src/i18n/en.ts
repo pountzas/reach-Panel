@@ -77,7 +77,13 @@
 
   typingLanguage: "Typing language",
 
-  typingLanguageHint: "Keyboard input and on-screen key layout",
+  typingLanguageHint: "Windows keyboard language used for typing",
+
+  onscreenLayout: "On-screen layout",
+
+  onscreenLayoutHint: "Key arrangement shown on the virtual keyboard",
+
+  onscreenLayoutAuto: "Auto (follow Windows)",
 
   languageEnglish: "English",
 
