@@ -54,6 +54,11 @@ where
 fn culture_prefix(language: &str) -> &str {
     match language {
         "el" => "el",
+        "de" => "de",
+        "fr" => "fr",
+        "it" => "it",
+        "es" => "es",
+        "pt" => "pt",
         _ => "en",
     }
 }

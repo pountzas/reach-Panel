@@ -89,6 +89,16 @@
 
   languageGreek: "Greek",
 
+  languageGerman: "German",
+
+  languageFrench: "French",
+
+  languageItalian: "Italian",
+
+  languageSpanish: "Spanish",
+
+  languagePortuguese: "Portuguese",
+
   resetSettings: "Reset settings to defaults",
 
   resetSettingsHint:

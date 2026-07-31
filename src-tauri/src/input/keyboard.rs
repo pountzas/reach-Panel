@@ -427,12 +427,13 @@ fn lang_id_display_name(lang_id: u32) -> String {
     lang_id_to_iso_tag(lang_id).to_uppercase()
 }
 
-/// App chrome locales only (`en` / `el`); unsupported → `en`.
+/// App chrome locales only (`en` / `el` / `de` / `fr` / `it` / `es` / `pt`); unsupported → `en`.
 pub fn windows_ui_language() -> String {
     use windows::Win32::Globalization::GetUserDefaultUILanguage;
     let lang_id = unsafe { GetUserDefaultUILanguage() } as u32;
-    match lang_id_to_iso_tag(lang_id).as_str() {
-        "el" => "el".to_string(),
+    let tag = lang_id_to_iso_tag(lang_id);
+    match tag.as_str() {
+        "el" | "de" | "fr" | "it" | "es" | "pt" => tag,
         _ => "en".to_string(),
     }
 }

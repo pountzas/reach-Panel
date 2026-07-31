@@ -93,6 +93,16 @@ export const el: Record<keyof typeof en, string> = {
 
   languageGreek: "Ελληνικά",
 
+  languageGerman: "Γερμανικά",
+
+  languageFrench: "Γαλλικά",
+
+  languageItalian: "Ιταλικά",
+
+  languageSpanish: "Ισπανικά",
+
+  languagePortuguese: "Πορτογαλικά",
+
   resetSettings: "Επαναφορά ρυθμίσεων",
 
   resetSettingsHint:

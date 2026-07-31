@@ -250,15 +250,96 @@ impl Database {
             .collect();
 
         for profile_id in profile_ids {
-            self.seed_greek_phrases_if_missing(conn, &profile_id)?;
+            for (language, phrases) in Self::locale_seed_phrases() {
+                self.seed_locale_phrases_if_missing(conn, &profile_id, language, phrases)?;
+            }
         }
         Ok(())
     }
 
-    fn seed_greek_phrases_if_missing(&self, conn: &Connection, profile_id: &str) -> Result<()> {
+    /// Default phrase packs for non-English UI locales (same 6-intent matrix as English).
+    fn locale_seed_phrases() -> &'static [(&'static str, &'static [(&'static str, &'static str, bool, bool)])]
+    {
+        &[
+            (
+                "el",
+                &[
+                    ("Χρειάζομαι βοήθεια", "both", false, true),
+                    ("Χρειάζομαι νερό", "both", true, false),
+                    ("Κουράστηκα", "speak", false, false),
+                    ("Ευχαριστώ", "speak", true, false),
+                    ("Πονάω", "both", false, true),
+                    ("Έλα εδώ παρακαλώ", "both", false, true),
+                ],
+            ),
+            (
+                "de",
+                &[
+                    ("Ich brauche Hilfe", "both", false, true),
+                    ("Ich brauche Wasser", "both", true, false),
+                    ("Ich bin müde", "speak", false, false),
+                    ("Danke", "speak", true, false),
+                    ("Ich habe Schmerzen", "both", false, true),
+                    ("Komm bitte her", "both", false, true),
+                ],
+            ),
+            (
+                "fr",
+                &[
+                    ("J’ai besoin d’aide", "both", false, true),
+                    ("J’ai besoin d’eau", "both", true, false),
+                    ("Je suis fatigué", "speak", false, false),
+                    ("Merci", "speak", true, false),
+                    ("J’ai mal", "both", false, true),
+                    ("Viens ici s’il te plaît", "both", false, true),
+                ],
+            ),
+            (
+                "it",
+                &[
+                    ("Ho bisogno di aiuto", "both", false, true),
+                    ("Ho bisogno di acqua", "both", true, false),
+                    ("Sono stanco", "speak", false, false),
+                    ("Grazie", "speak", true, false),
+                    ("Ho dolore", "both", false, true),
+                    ("Vieni qui per favore", "both", false, true),
+                ],
+            ),
+            (
+                "es",
+                &[
+                    ("Necesito ayuda", "both", false, true),
+                    ("Necesito agua", "both", true, false),
+                    ("Estoy cansado", "speak", false, false),
+                    ("Gracias", "speak", true, false),
+                    ("Me duele", "both", false, true),
+                    ("Ven aquí por favor", "both", false, true),
+                ],
+            ),
+            (
+                "pt",
+                &[
+                    ("Preciso de ajuda", "both", false, true),
+                    ("Preciso de água", "both", true, false),
+                    ("Estou cansado", "speak", false, false),
+                    ("Obrigado", "speak", true, false),
+                    ("Estou com dor", "both", false, true),
+                    ("Vem cá por favor", "both", false, true),
+                ],
+            ),
+        ]
+    }
+
+    fn seed_locale_phrases_if_missing(
+        &self,
+        conn: &Connection,
+        profile_id: &str,
+        language: &str,
+        phrases: &[(&str, &str, bool, bool)],
+    ) -> Result<()> {
         let count: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM phrases WHERE profile_id = ?1 AND language = 'el'",
-            [profile_id],
+            "SELECT COUNT(*) FROM phrases WHERE profile_id = ?1 AND language = ?2",
+            params![profile_id, language],
             |r| r.get(0),
         )?;
         if count > 0 {
@@ -276,16 +357,8 @@ impl Database {
             |r| r.get(0),
         )?;
 
-        let phrases = [
-            ("Χρειάζομαι βοήθεια", "both", false, true),
-            ("Χρειάζομαι νερό", "both", true, false),
-            ("Κουράστηκα", "speak", false, false),
-            ("Ευχαριστώ", "speak", true, false),
-            ("Πονάω", "both", false, true),
-            ("Έλα εδώ παρακαλώ", "both", false, true),
-        ];
         for (text, action, fav, emergency) in phrases {
-            let category = if emergency {
+            let category = if *emergency {
                 &emergency_cat
             } else {
                 &basic_cat
@@ -298,9 +371,9 @@ impl Database {
                     category,
                     text,
                     action,
-                    fav as i32,
-                    emergency as i32,
-                    "el"
+                    *fav as i32,
+                    *emergency as i32,
+                    language
                 ],
             )?;
         }
@@ -368,29 +441,23 @@ impl Database {
             )?;
         }
 
-        let greek_phrases = [
-            ("Χρειάζομαι βοήθεια", "both", false, true),
-            ("Χρειάζομαι νερό", "both", true, false),
-            ("Κουράστηκα", "speak", false, false),
-            ("Ευχαριστώ", "speak", true, false),
-            ("Πονάω", "both", false, true),
-            ("Έλα εδώ παρακαλώ", "both", false, true),
-        ];
-        for (text, action, fav, emergency) in greek_phrases {
-            let category = if emergency { &emergency_cat } else { &cat_id };
-            conn.execute(
-                "INSERT INTO phrases (id, profile_id, category_id, text, action, is_favorite, is_emergency, language) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
-                params![
-                    Uuid::new_v4().to_string(),
-                    profile_id,
-                    category,
-                    text,
-                    action,
-                    fav as i32,
-                    emergency as i32,
-                    "el"
-                ],
-            )?;
+        for (language, phrases) in Self::locale_seed_phrases() {
+            for (text, action, fav, emergency) in *phrases {
+                let category = if *emergency { &emergency_cat } else { &cat_id };
+                conn.execute(
+                    "INSERT INTO phrases (id, profile_id, category_id, text, action, is_favorite, is_emergency, language) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
+                    params![
+                        Uuid::new_v4().to_string(),
+                        profile_id,
+                        category,
+                        *text,
+                        *action,
+                        *fav as i32,
+                        *emergency as i32,
+                        language
+                    ],
+                )?;
+            }
         }
 
         let words = [
@@ -404,6 +471,31 @@ impl Database {
             ("γεια", "el", 100),
             ("βοήθεια", "el", 90),
             ("νερό", "el", 80),
+            ("hallo", "de", 100),
+            ("hilfe", "de", 90),
+            ("wasser", "de", 80),
+            ("danke", "de", 70),
+            ("bitte", "de", 60),
+            ("bonjour", "fr", 100),
+            ("aide", "fr", 90),
+            ("eau", "fr", 80),
+            ("merci", "fr", 70),
+            ("s’il", "fr", 60),
+            ("ciao", "it", 100),
+            ("aiuto", "it", 90),
+            ("acqua", "it", 80),
+            ("grazie", "it", 70),
+            ("per favore", "it", 60),
+            ("hola", "es", 100),
+            ("ayuda", "es", 90),
+            ("agua", "es", 80),
+            ("gracias", "es", 70),
+            ("por favor", "es", 60),
+            ("olá", "pt", 100),
+            ("ajuda", "pt", 90),
+            ("água", "pt", 80),
+            ("obrigado", "pt", 70),
+            ("por favor", "pt", 60),
         ];
         for (word, lang, freq) in words {
             conn.execute(

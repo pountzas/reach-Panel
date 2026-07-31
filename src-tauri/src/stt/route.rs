@@ -58,6 +58,11 @@ pub fn can_dictate(
 pub fn groq_language_hint(language: &str) -> &'static str {
     match language {
         "el" => "el",
+        "de" => "de",
+        "fr" => "fr",
+        "it" => "it",
+        "es" => "es",
+        "pt" => "pt",
         _ => "en",
     }
 }
@@ -66,6 +71,11 @@ pub fn groq_language_hint(language: &str) -> &'static str {
 pub fn winrt_language_tag(language: &str) -> &'static str {
     match language {
         "el" => "el-GR",
+        "de" => "de-DE",
+        "fr" => "fr-FR",
+        "it" => "it-IT",
+        "es" => "es-ES",
+        "pt" => "pt-PT",
         _ => "en-US",
     }
 }
@@ -152,9 +162,20 @@ mod tests {
     fn language_mappings() {
         assert!(prefer_cloud_stt("el"));
         assert!(!prefer_cloud_stt("en"));
+        assert!(!prefer_cloud_stt("de"));
         assert_eq!(groq_language_hint("el"), "el");
         assert_eq!(groq_language_hint("en"), "en");
+        assert_eq!(groq_language_hint("de"), "de");
+        assert_eq!(groq_language_hint("fr"), "fr");
+        assert_eq!(groq_language_hint("it"), "it");
+        assert_eq!(groq_language_hint("es"), "es");
+        assert_eq!(groq_language_hint("pt"), "pt");
         assert_eq!(winrt_language_tag("el"), "el-GR");
         assert_eq!(winrt_language_tag("en"), "en-US");
+        assert_eq!(winrt_language_tag("de"), "de-DE");
+        assert_eq!(winrt_language_tag("fr"), "fr-FR");
+        assert_eq!(winrt_language_tag("it"), "it-IT");
+        assert_eq!(winrt_language_tag("es"), "es-ES");
+        assert_eq!(winrt_language_tag("pt"), "pt-PT");
     }
 }

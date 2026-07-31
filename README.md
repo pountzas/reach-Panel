@@ -34,8 +34,8 @@ _Replace with captures from your release build when ready — see [docs/images/R
 - Adjustable on-screen keyboard (size, spacing, colors, opacity)
 - Fn key on the bottom row maps number keys 1–0 and `-` `=` to F1–F12
 - Keyboard / synthesizer mode toggle with two-octave piano keyboard
-- Language switch key with country flag icons (EN ↔ EL)
-- Predictive text (English + Greek) with disable toggle
+- Language switch key with country flag icons (follows installed Windows keyboards)
+- Predictive text (English, Greek, German, French, Italian, Spanish, Portuguese) with disable toggle
 - Macro builder with JSON import/export
 
 ### Mouse
@@ -53,8 +53,8 @@ _Replace with captures from your release build when ready — see [docs/images/R
 ### Voice dictation (Windows)
 
 - Mic control on the keyboard toolbar (enable **Show dictation (mic)** in Settings)
-- Uses the **typing language** (EN ↔ EL), not the UI language
-- **English:** Windows Speech Recognition (WinRT) when the speech language pack is installed and online speech is allowed
+- Uses the **typing language**, not the UI language
+- **English and Western European languages (DE, FR, IT, ES, PT):** Windows Speech Recognition (WinRT) when the speech language pack is installed and online speech is allowed
 - **Greek and other languages without a Windows speech pack:** [Groq](https://groq.com) cloud Whisper (`whisper-large-v3-turbo`) over the internet
 
 #### Set up Groq for Greek dictation
@@ -65,16 +65,16 @@ _Replace with captures from your release build when ready — see [docs/images/R
 4. Under the keyboard / dictation options, paste the key into **Groq API key (cloud dictation)**.
 5. Set **typing language** to Greek (EL), enable the mic control if needed, then start dictation.
 
-You can also set the `GROQ_API_KEY` environment variable instead of (or as a fallback for) the Settings field. An internet connection is required for cloud dictation. English WinRT dictation does not need a Groq key.
+You can also set the `GROQ_API_KEY` environment variable instead of (or as a fallback for) the Settings field. An internet connection is required for cloud dictation. WinRT dictation for English and Western European languages does not need a Groq key.
 
-If Windows online speech is off, open **Settings → Privacy & security → Speech** and turn on **Online speech recognition**. For English speech packs, use **Settings → Time & language → Speech**.
+If Windows online speech is off, open **Settings → Privacy & security → Speech** and turn on **Online speech recognition**. For speech packs, use **Settings → Time & language → Speech**.
 
 ### Profiles & accessibility
 
 - Profiles (Child, Parent, Therapist)
 - Multi-monitor detection and positioning
 - Head tracking calibration wizard (webcam-based)
-- English and Greek UI
+- UI languages: English, Greek, German, French, Italian, Spanish, Portuguese
 
 ## Requirements
 

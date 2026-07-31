@@ -131,7 +131,14 @@ export function Keyboard() {
     }
 
     const usedFn = fnActive && isFnMappedKey(keyDef.key);
-    const output = resolveKeyOutput(keyDef, physicalKeyState.capsLock, shiftActive, fnActive);
+    const typingLocale = settings.typingLanguage || "en";
+    const output = resolveKeyOutput(
+      keyDef,
+      physicalKeyState.capsLock,
+      shiftActive,
+      fnActive,
+      typingLocale,
+    );
     if (output.length === 1) appendTyped(output);
     await invoke("cmd_press_key", {
       request: { key: output, modifiers: [...activeModifiers] },
@@ -158,7 +165,13 @@ export function Keyboard() {
               return (
                 <KeyButton
                   key={`${ri}-${k.key}-${k.label}-${ci}`}
-                  label={displayLabel(k, physicalKeyState.capsLock, shiftActive, fnActive)}
+                  label={displayLabel(
+                    k,
+                    physicalKeyState.capsLock,
+                    shiftActive,
+                    fnActive,
+                    settings.typingLanguage || "en",
+                  )}
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}

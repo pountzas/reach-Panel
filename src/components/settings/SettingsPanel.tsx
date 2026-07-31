@@ -586,6 +586,11 @@ export function SettingsPanel() {
               >
                 <option value="en">{t("languageEnglish")}</option>
                 <option value="el">{t("languageGreek")}</option>
+                <option value="de">{t("languageGerman")}</option>
+                <option value="fr">{t("languageFrench")}</option>
+                <option value="it">{t("languageItalian")}</option>
+                <option value="es">{t("languageSpanish")}</option>
+                <option value="pt">{t("languagePortuguese")}</option>
               </ThemedSelect>
               <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
                 {t("appLanguageHint")}
