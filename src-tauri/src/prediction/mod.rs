@@ -19,5 +19,5 @@ pub fn record_usage(db: &Database, profile_id: &str, word: &str, language: &str)
 }
 
 pub fn get_installed_languages() -> Vec<String> {
-    vec!["en".to_string(), "el".to_string()]
+    crate::input::get_installed_language_tags()
 }

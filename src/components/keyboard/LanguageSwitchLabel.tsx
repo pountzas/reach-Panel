@@ -1,10 +1,5 @@
 import { Flag } from "svg-flags";
-import { nextLanguage } from "../../lib/keyboardLayouts";
-
-const LANGUAGE_FLAG: Record<string, string> = {
-  en: "gb",
-  el: "gr",
-};
+import { flagCodeForLanguage, languageDisplayCode } from "../../lib/keyboardLayouts";
 
 interface LanguageSwitchLabelProps {
   currentLanguage: string;
@@ -15,19 +10,20 @@ export function LanguageSwitchLabel({
   currentLanguage,
   fontSize,
 }: LanguageSwitchLabelProps) {
-  const target = nextLanguage(currentLanguage);
-  const flagCode = LANGUAGE_FLAG[target] ?? "gb";
+  const flagCode = flagCodeForLanguage(currentLanguage);
+  const code = languageDisplayCode(currentLanguage);
 
   return (
     <span className="flex items-center justify-center gap-1">
       <Flag
         country={flagCode}
-        width={Math.max(20, fontSize + 4)}
-        alt={target === "el" ? "Greek" : "English"}
+        width={Math.max(18, fontSize + 2)}
+        alt={code}
         showBorder
         borderWidth={1}
       />
-      <span className="sr-only">{target === "el" ? "Greek" : "English"}</span>
+      <span className="text-[0.85em] font-semibold leading-none">{code}</span>
+      <span className="sr-only">{code}</span>
     </span>
   );
 }

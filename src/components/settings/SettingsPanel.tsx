@@ -1,4 +1,4 @@
-﻿import { useState, type CSSProperties, type ReactNode } from "react";
+﻿import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -9,9 +9,10 @@ import {
   type ColorProfileId,
   type SurfaceColors,
 } from "../../lib/colorProfiles";
-import type { FnKeyMode } from "../../lib/types";
+import type { FnKeyMode, OnscreenLayout } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
+import { ONSCREEN_LAYOUT_OPTIONS } from "../../lib/keyboardLayouts";
 import { SettingsSection } from "./SettingsSection";
 import { AboutSection } from "./AboutSection";
 import { CloseIcon } from "../common/SectionIcons";
@@ -138,11 +139,25 @@ export function SettingsPanel() {
     checkForUpdates,
     updateCheckStatus,
     stopDictation,
+    inputMethods,
+    loadInputMethods,
+    selectTypingInputMethod,
+    physicalKeyState,
   } = useAppStore();
   const { t } = useTranslation();
   const [newProfileName, setNewProfileName] = useState("");
 
+  useEffect(() => {
+    void loadInputMethods();
+  }, [loadInputMethods]);
+
   if (!settings) return null;
+
+  const activeTypingValue = String(
+    inputMethods.find((m) => m.hkl === physicalKeyState.systemHkl)?.hkl ??
+      inputMethods.find((m) => m.langTag === settings.typingLanguage)?.hkl ??
+      "",
+  );
 
   const surface = getSurfaceColors(settings.appBgColor);
   const headerBg = settings.headerBgColor ?? "#1e293b";
@@ -576,18 +591,49 @@ export function SettingsPanel() {
                 {t("appLanguageHint")}
               </span>
             </label>
-            <label className="block text-sm" style={{ color: surface.panelText }}>
+            <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
               {t("typingLanguage")}
               <ThemedSelect
-                value={settings.typingLanguage}
-                onChange={(v) => updateSettings({ typingLanguage: v })}
+                value={activeTypingValue}
+                onChange={(v) => {
+                  const method = inputMethods.find((m) => String(m.hkl) === v);
+                  if (method) {
+                    void selectTypingInputMethod(method);
+                  }
+                }}
                 surface={surface}
               >
-                <option value="en">{t("languageEnglish")}</option>
-                <option value="el">{t("languageGreek")}</option>
+                {inputMethods.length === 0 ? (
+                  <option value="">{settings.typingLanguage.toUpperCase()}</option>
+                ) : (
+                  inputMethods.map((m) => (
+                    <option key={`${m.hkl}-${m.klid}`} value={String(m.hkl)}>
+                      {m.displayName} ({m.layoutName})
+                    </option>
+                  ))
+                )}
               </ThemedSelect>
               <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
                 {t("typingLanguageHint")}
+              </span>
+            </label>
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("onscreenLayout")}
+              <ThemedSelect
+                value={settings.onscreenLayout ?? "auto"}
+                onChange={(v) =>
+                  void updateSettings({ onscreenLayout: v as OnscreenLayout })
+                }
+                surface={surface}
+              >
+                {ONSCREEN_LAYOUT_OPTIONS.map((layout) => (
+                  <option key={layout} value={layout}>
+                    {layout === "auto" ? t("onscreenLayoutAuto") : layout}
+                  </option>
+                ))}
+              </ThemedSelect>
+              <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
+                {t("onscreenLayoutHint")}
               </span>
             </label>
           </SettingsSection>

@@ -6,7 +6,9 @@ import type { Update } from "@tauri-apps/plugin-updater";
 import { checkForUpdate } from "../lib/updater";
 import {
   DEFAULT_PHYSICAL_KEY_STATE,
-  PhysicalKeyState,
+  type InputMethod,
+  type LayoutKeyLabel,
+  type PhysicalKeyState,
 } from "../lib/keyboardLayouts";
 import {
   AppSettings,
@@ -58,8 +60,8 @@ let typingLanguageSwitchInFlight = false;
 /** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
 let liveHeightRatioPreview: number | null = null;
 
-const LANGUAGE_CHANGE_NO_TARGET_FALLBACK =
-  "No target application to switch language. Click into the app you want to type in first.";
+const LANGUAGE_CHANGE_FALLBACK =
+  "Could not switch keyboard language.";
 
 function heightRatioFromSettings(settings: AppSettings): number {
   const contentRatio = computeContentHeightRatio({
@@ -121,6 +123,9 @@ interface AppStore {
   showMacroBuilder: boolean;
   showHeadTrackingWizard: boolean;
   keyboardLayout: string;
+  inputMethods: InputMethod[];
+  layoutKeyLabels: LayoutKeyLabel[];
+  languagePickerOpen: boolean;
   /** Session-only: guided piano teaching replaces Phrases while on. */
   musicTeachingEnabled: boolean;
   musicSongId: string | null;
@@ -155,7 +160,10 @@ interface AppStore {
   backspaceTyped: () => void;
   toggleSticky: (modifier: string) => void;
   pollKeyboardState: () => Promise<void>;
-  toggleLanguage: () => Promise<void>;
+  loadInputMethods: () => Promise<void>;
+  setLanguagePickerOpen: (open: boolean) => void;
+  selectTypingInputMethod: (method: InputMethod) => Promise<void>;
+  refreshLayoutKeyLabels: (hkl?: number) => Promise<void>;
   clearSticky: () => void;
   clearStickyExceptFn: () => void;
   loadSuggestions: () => Promise<void>;
@@ -357,6 +365,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   showMacroBuilder: false,
   showHeadTrackingWizard: false,
   keyboardLayout: "QWERTY",
+  inputMethods: [],
+  layoutKeyLabels: [],
+  languagePickerOpen: false,
   musicTeachingEnabled: false,
   musicSongId: "twinkle",
   musicNoteIndex: 0,
@@ -524,20 +535,24 @@ export const useAppStore = create<AppStore>((set, get) => ({
       // optimistically flips language and never surfaces a toast.
       typingLanguageSwitchInFlight = true;
       try {
+        const method = get().inputMethods.find(
+          (m) => m.langTag === partial.typingLanguage,
+        );
         const result = await invoke<CommandResult>("cmd_set_system_language", {
           language: partial.typingLanguage!,
+          klid: method?.klid ?? null,
         });
         if (!result.success) {
           set({
             settings: { ...get().settings, typingLanguage: previousTypingLanguage },
           });
-          const message = result.error?.trim() || LANGUAGE_CHANGE_NO_TARGET_FALLBACK;
+          const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
           lastAnnouncedError = message;
-          // Stable id so this toast reappears every failed switch (not only once).
-          notify.error(message, { id: "typing-language-no-target" });
+          notify.error(message, { id: "typing-language-switch" });
           return;
         }
         lastAnnouncedError = null;
+        await get().refreshLayoutKeyLabels();
       } catch (error) {
         set({
           settings: { ...get().settings, typingLanguage: previousTypingLanguage },
@@ -545,9 +560,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         const message =
           error instanceof Error
             ? error.message
-            : String(error || LANGUAGE_CHANGE_NO_TARGET_FALLBACK);
+            : String(error || LANGUAGE_CHANGE_FALLBACK);
         lastAnnouncedError = message;
-        notify.error(message, { id: "typing-language-no-target" });
+        notify.error(message, { id: "typing-language-switch" });
         return;
       } finally {
         typingLanguageSwitchInFlight = false;
@@ -703,12 +718,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
       prev.pressedVks.length === next.pressedVks.length &&
       prev.pressedVks.every((vk, i) => vk === next.pressedVks[i]);
 
-    // Sync from the focused/target app so Alt+Shift updates our layout.
+    // Sync from the focused/target app so Win+Space / Alt+Shift updates our layout.
     // Skip while a language-button switch is in flight.
     const typingLanguageUnchanged =
       typingLanguageSwitchInFlight ||
       settings.typingLanguage === next.systemLanguage;
-    const layoutUnchanged = keyboardLayout === next.keyboardLayout;
+    const layoutUnchanged =
+      keyboardLayout === next.keyboardLayout &&
+      prev.systemHkl === next.systemHkl &&
+      prev.systemKlid === next.systemKlid;
 
     if (keysUnchanged && typingLanguageUnchanged && layoutUnchanged) {
       if (prev.hasInputTarget !== next.hasInputTarget) {
@@ -725,6 +743,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         : { settings: { ...settings, typingLanguage: next.systemLanguage } }),
     });
 
+    if (!layoutUnchanged) {
+      await get().refreshLayoutKeyLabels(next.systemHkl);
+    }
+
     if (!typingLanguageUnchanged) {
       await invoke("cmd_update_profile_settings", {
         profileId: INTERNAL_PROFILE_ID,
@@ -734,11 +756,67 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  toggleLanguage: async () => {
-    const { settings } = get();
-    const next = settings.typingLanguage === "en" ? "el" : "en";
-    await get().updateSettings({ typingLanguage: next });
-    await get().pollKeyboardState();
+  loadInputMethods: async () => {
+    const inputMethods = await invoke<InputMethod[]>("cmd_get_input_methods");
+    set({ inputMethods });
+  },
+
+  setLanguagePickerOpen: (open) => set({ languagePickerOpen: open }),
+
+  selectTypingInputMethod: async (method) => {
+    const previousTypingLanguage = get().settings.typingLanguage;
+    typingLanguageSwitchInFlight = true;
+    set({ languagePickerOpen: false });
+    try {
+      const result = await invoke<CommandResult>("cmd_set_input_method", {
+        hkl: method.hkl,
+      });
+      if (!result.success) {
+        const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
+        lastAnnouncedError = message;
+        notify.error(message, { id: "typing-language-switch" });
+        return;
+      }
+      set({
+        settings: {
+          ...get().settings,
+          typingLanguage: method.langTag,
+        },
+        keyboardLayout: method.layoutName,
+      });
+      await invoke("cmd_update_profile_settings", {
+        profileId: INTERNAL_PROFILE_ID,
+        settingsJson: JSON.stringify(get().settings),
+      });
+      await emit(PROFILE_UPDATED_EVENT, {
+        source: WebviewWindow.getCurrent().label,
+      });
+      if (previousTypingLanguage !== method.langTag) {
+        await get().stopDictation();
+        set({ typedBuffer: "", suggestions: [] });
+        await get().refreshSttCapability();
+      }
+      await get().refreshLayoutKeyLabels(method.hkl);
+      await get().pollKeyboardState();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : String(error || LANGUAGE_CHANGE_FALLBACK);
+      lastAnnouncedError = message;
+      notify.error(message, { id: "typing-language-switch" });
+    } finally {
+      typingLanguageSwitchInFlight = false;
+    }
+  },
+
+  refreshLayoutKeyLabels: async (hkl?: number) => {
+    const targetHkl = hkl ?? get().physicalKeyState.systemHkl;
+    const layoutKeyLabels = await invoke<LayoutKeyLabel[]>(
+      "cmd_get_layout_key_labels",
+      { hkl: targetHkl || null },
+    );
+    set({ layoutKeyLabels });
   },
 
   clearSticky: () => set({ stickyModifiers: [] }),

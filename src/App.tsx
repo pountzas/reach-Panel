@@ -22,6 +22,8 @@ function MainApp() {
     loadProfileFiles,
     loadMonitors,
     loadKeyboardLayout,
+    loadInputMethods,
+    refreshLayoutKeyLabels,
     pollKeyboardState,
     checkForUpdates,
     setDictationState,
@@ -49,6 +51,8 @@ function MainApp() {
         }),
       });
       await loadKeyboardLayout();
+      await loadInputMethods();
+      await refreshLayoutKeyLabels();
       await pollKeyboardState();
       await invoke("cmd_set_always_on_top", { enabled: true });
       await invoke("cmd_set_window_focusable", { focusable: false });
@@ -61,6 +65,8 @@ function MainApp() {
     loadImportedSongs,
     loadMonitors,
     loadKeyboardLayout,
+    loadInputMethods,
+    refreshLayoutKeyLabels,
     pollKeyboardState,
     checkForUpdates,
     refreshSttCapability,

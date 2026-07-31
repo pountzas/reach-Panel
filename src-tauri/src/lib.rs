@@ -14,10 +14,11 @@ use db::{
     Database, MacroDef, MacroStep, Phrase, Profile, QuickAction,
 };
 use input::{
-    get_keyboard_layout, get_keyboard_state, get_cursor_position, mouse_click,
-    mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
-    press_key, press_media_key, set_system_language, type_text, windows_ui_language,
-    KeyPressRequest, KeyboardState,
+    get_cursor_position, get_input_methods, get_keyboard_layout, get_keyboard_state,
+    get_layout_key_labels, mouse_click, mouse_double_click, mouse_scroll, move_cursor_absolute,
+    move_cursor_relative, press_combo, press_key, press_media_key, set_input_method_by_hkl,
+    set_input_method_by_language, set_system_language, type_text, windows_ui_language,
+    InputMethod, KeyPressRequest, KeyboardState, LayoutKeyLabel,
 };
 #[cfg(target_os = "windows")]
 use input::focus_target;
@@ -132,8 +133,16 @@ fn cmd_get_keyboard_state() -> KeyboardState {
 }
 
 #[tauri::command]
-fn cmd_set_system_language(language: String, state: State<AppState>) -> CommandResult {
-    match set_system_language(&language) {
+fn cmd_set_system_language(
+    language: String,
+    klid: Option<String>,
+    state: State<AppState>,
+) -> CommandResult {
+    let result = match klid.as_deref() {
+        Some(k) if !k.is_empty() => set_input_method_by_language(&language, Some(k)),
+        _ => set_system_language(&language),
+    };
+    match result {
         Ok(()) => {
             set_error(&state, None);
             ok()
@@ -143,6 +152,30 @@ fn cmd_set_system_language(language: String, state: State<AppState>) -> CommandR
             err(e)
         }
     }
+}
+
+#[tauri::command]
+fn cmd_get_input_methods() -> Vec<InputMethod> {
+    get_input_methods()
+}
+
+#[tauri::command]
+fn cmd_set_input_method(hkl: u64, state: State<AppState>) -> CommandResult {
+    match set_input_method_by_hkl(hkl) {
+        Ok(()) => {
+            set_error(&state, None);
+            ok()
+        }
+        Err(e) => {
+            set_error(&state, Some(e.to_string()));
+            err(e)
+        }
+    }
+}
+
+#[tauri::command]
+fn cmd_get_layout_key_labels(hkl: Option<u64>) -> Vec<LayoutKeyLabel> {
+    get_layout_key_labels(hkl)
 }
 
 #[tauri::command]
@@ -919,6 +952,9 @@ pub fn run() {
             cmd_get_keyboard_layout,
             cmd_get_keyboard_state,
             cmd_set_system_language,
+            cmd_get_input_methods,
+            cmd_set_input_method,
+            cmd_get_layout_key_labels,
             cmd_move_cursor_relative,
             cmd_move_cursor_absolute,
             cmd_get_cursor_position,

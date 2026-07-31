@@ -21,6 +21,16 @@ pub struct KeyPressRequest {
     pub modifiers: Vec<String>,
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InputMethod {
+    pub hkl: u64,
+    pub lang_tag: String,
+    pub display_name: String,
+    pub layout_name: String,
+    pub klid: String,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KeyboardState {
@@ -32,7 +42,17 @@ pub struct KeyboardState {
     pub pressed_vks: Vec<u16>,
     pub system_language: String,
     pub keyboard_layout: String,
+    pub system_klid: String,
+    pub system_hkl: u64,
     pub has_input_target: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LayoutKeyLabel {
+    pub key: String,
+    pub label: String,
+    pub shift_label: Option<String>,
 }
 
 fn unsupported<T>() -> Result<T> {
@@ -67,6 +87,8 @@ pub fn get_keyboard_state() -> KeyboardState {
         pressed_vks: vec![],
         system_language: "en".to_string(),
         keyboard_layout: "QWERTY".to_string(),
+        system_klid: "00000409".to_string(),
+        system_hkl: 0x0409,
         has_input_target: false,
     }
 }
@@ -79,8 +101,34 @@ pub fn windows_ui_language() -> String {
     "en".to_string()
 }
 
+pub fn get_input_methods() -> Vec<InputMethod> {
+    vec![InputMethod {
+        hkl: 0x0409,
+        lang_tag: "en".to_string(),
+        display_name: "English".to_string(),
+        layout_name: "QWERTY".to_string(),
+        klid: "00000409".to_string(),
+    }]
+}
+
+pub fn get_installed_language_tags() -> Vec<String> {
+    vec!["en".to_string()]
+}
+
 pub fn set_system_language(_lang: &str) -> Result<()> {
     unsupported()
+}
+
+pub fn set_input_method_by_language(_lang: &str, _klid: Option<&str>) -> Result<()> {
+    unsupported()
+}
+
+pub fn set_input_method_by_hkl(_hkl_value: u64) -> Result<()> {
+    unsupported()
+}
+
+pub fn get_layout_key_labels(_hkl_value: Option<u64>) -> Vec<LayoutKeyLabel> {
+    Vec::new()
 }
 
 pub fn move_cursor_relative(_dx: i32, _dy: i32) -> Result<()> {
