@@ -1,22 +1,20 @@
 # Accessibility Requirements
 
-## Personas
+## Who it's for
 
-### Child (primary)
-- 7-year-old with complete tetraplegia
-- Good head, eye, and pointing-finger movement
-- Long attention span; comfortable with touchscreen tablets
-- Needs large keys, simple navigation, emergency phrases
+ReachPanel is for people who cannot use a physical keyboard and need touch-first control of a Windows PC. It was originally built for a child with complete tetraplegia so he can do schoolwork on a touch-capable laptop.
 
-### Adult
-- Full feature set, smaller keys acceptable, macro and layout customization
+Typical needs:
 
-### Therapist / Caregiver
-- Profile management, emergency phrase visibility toggle, monitor selection, calibration
+- Large keys, simple navigation, and emergency phrases
+- Good use of head, eye, and pointing-finger movement on a touchscreen
+- Single touch laptop at school, or a secondary touch display at distance when available
+
+Caregivers can manage named profiles, emergency phrase visibility, monitor selection, and head-tracking calibration in Settings.
 
 ## Layout Wireframes
 
-### Layout A (default)
+### Layout A (default — mouse right)
 ```
 +---------------------------------------------------+
 | Quick Actions                                     |
@@ -38,29 +36,14 @@
 +---------------------------------------------------+
 ```
 
-### Layout C (floating mouse)
-```
-+---------------------------------------------------+
-| Quick Actions                                     |
-+---------------------------------------------------+
-| Keyboard (full width)                             |
-+---------------------------------------------------+
-| Suggestions                                       |
-+---------------------------------------------------+
-
-  +------------------+
-  | Floating Mouse   |
-  +------------------+
-```
-
 ## Acceptance Criteria
 
 | Feature | Criteria |
 |---------|----------|
 | Keyboard injection | Types into Notepad, Chrome, Word, Teams, Explorer |
 | Sticky keys | Ctrl stays active until next key or toggle off |
-| Mouse trackpad | Move, click, scroll from wheelchair touchscreen |
-| Mouse placement | Right, left, floating; persisted per profile |
+| Mouse trackpad | Move, click, scroll from the accessibility touchscreen |
+| Mouse placement | Right or left next to the keyboard; persisted per profile |
 | Quick actions | Launch exe and URL targets |
 | Phrases | Type, speak, or both; favorites and emergency toggle |
 | TTS | Offline via Windows SAPI installed voices |
@@ -68,9 +51,9 @@
 | Macros | Multi-step sequences; JSON import/export |
 | Head tracking | Calibration wizard; touch/head mode toggle |
 | Multi-monitor | List displays; position app on accessibility screen |
-| Profiles | Child, Parent, Therapist with separate settings |
+| Profiles | Named saved profiles with separate settings |
 
 ## Known Limitations
 
 - Input injection does not work into elevated (admin) applications or UAC prompts
-- Eye tracking and AutoHotkey import are future phases
+- Eye tracking, AutoHotkey import, and an Android tablet companion (connects to this Windows app to control the PC) are future phases

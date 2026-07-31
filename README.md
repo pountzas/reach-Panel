@@ -1,6 +1,6 @@
 # ReachPanel
 
-Assistive virtual keyboard and mouse for Windows — built for users with severe motor disabilities who operate a wheelchair-mounted touchscreen while applications run on a laptop display.
+Assistive virtual keyboard and mouse for Windows — built for people who cannot use a physical keyboard and need touch-first control of a PC.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-lightgrey)]()
@@ -8,13 +8,22 @@ Assistive virtual keyboard and mouse for Windows — built for users with severe
 
 Built with Tauri, React, Rust, and SQLite.
 
+## Why it exists
+
+ReachPanel was created for my nephew, who has tetraplegia, so he can do schoolwork on a touch-capable laptop without relying on a physical keyboard or trackpad. The same tools help others with severe motor disabilities type, move the pointer, launch apps, and speak preset phrases.
+
+## Intended setup
+
+- **Single monitor:** works on a touch laptop alone (common at school). The panel sits on the same display as your apps.
+- **Multi-monitor (recommended):** put ReachPanel on a secondary touchscreen at a comfortable distance (desk or wheelchair mount) while apps run on the primary display. Use Settings to pick the accessibility screen.
+
 ## Download (Windows)
 
 Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Panel/releases) page.
 
 1. Download the latest `.msi` or `.exe` installer for Windows.
 2. Run the installer. On older Windows builds, you may need the [WebView2 runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
-3. Open the app on your accessibility monitor (wheelchair-mounted touchscreen), select a profile in Settings, and position the window on the correct display.
+3. Open the app, select a profile in Settings, and — if you have more than one display — position the window on your touch / accessibility screen.
 
 > **macOS builds are experimental.** CI produces `.dmg` bundles, but input injection and TTS still require Windows APIs for full functionality. See [Roadmap](#roadmap).
 
@@ -24,8 +33,6 @@ Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Pan
 |-------------|------------------|----------|
 | ![Main keyboard layout](docs/images/keyboard.png) | ![Virtual trackpad](docs/images/trackpad.png) | ![Settings panel](docs/images/settings.png) |
 
-_Replace with captures from your release build when ready — see [docs/images/README.md](docs/images/README.md)._
-
 ## Features
 
 ### Keyboard
@@ -33,15 +40,16 @@ _Replace with captures from your release build when ready — see [docs/images/R
 - System-wide keyboard injection with sticky modifiers
 - Adjustable on-screen keyboard (size, spacing, colors, opacity)
 - Fn key on the bottom row maps number keys 1–0 and `-` `=` to F1–F12
-- Keyboard / synthesizer mode toggle with two-octave piano keyboard
+- Keyboard / synthesizer mode toggle (2–5 octave piano, teaching / partiture lessons)
 - Language switch key with country flag icons (follows installed Windows keyboards)
 - Predictive text (English, Greek, German, French, Italian, Spanish, Portuguese) with disable toggle
 - Macro builder with JSON import/export
+- Compact input area and large-header layout options for easier touch targeting
 
 ### Mouse
 
-- Virtual trackpad with left/right/floating placement
-- Move, click, scroll from the accessibility touchscreen
+- Virtual trackpad with left or right placement next to the keyboard
+- Move, click, scroll from the touchscreen
 - Toggle between trackpad and on-screen numeric keypad
 
 ### Communication
@@ -49,6 +57,8 @@ _Replace with captures from your release build when ready — see [docs/images/R
 - Quick Actions bar (launch apps and URLs)
 - Communication phrases with TTS (Windows SAPI)
 - Emergency phrase section with show/hide toggle
+- Docked section stack; Quick Actions and Phrases can undock when needed
+- Collapse the panel to a branded circle FAB and expand again
 
 ### Voice dictation (Windows)
 
@@ -71,9 +81,10 @@ If Windows online speech is off, open **Settings → Privacy & security → Spee
 
 ### Profiles & accessibility
 
-- Profiles (Child, Parent, Therapist)
+- Named saved profiles with separate settings
 - Multi-monitor detection and positioning
 - Head tracking calibration wizard (webcam-based)
+- In-app update checks
 - UI languages: English, Greek, German, French, Italian, Spanish, Portuguese
 
 ## Requirements
@@ -128,10 +139,11 @@ Windows and macOS bundles are built in CI. Windows installers are published auto
 | `src-tauri/src/stt/` | Voice dictation (WinRT speech recognition; Groq cloud fallback) |
 | `src-tauri/src/db/` | SQLite persistence (profiles, phrases, macros) |
 | `src-tauri/src/prediction/` | Predictive text suggestions |
-| `docs/accessibility-requirements.md` | Personas and acceptance criteria |
+| `docs/accessibility-requirements.md` | Intended users and acceptance criteria |
 
 ## Roadmap
 
+- Android tablet companion that connects to this Windows app and controls the PC
 - Eye tracking support
 - AutoHotkey macro import
 - macOS port: CGEvent input, AVSpeechSynthesizer, native monitor APIs (experimental CI builds in progress)

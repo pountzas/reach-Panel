@@ -120,7 +120,7 @@ After cloning or forking, maintainers should ensure:
 
 ## Accessibility changes
 
-Changes that affect usability for people with motor disabilities should align with [docs/accessibility-requirements.md](docs/accessibility-requirements.md). Mention which persona (Child, Adult, Therapist) is affected in your PR description.
+Changes that affect usability for people with motor disabilities should align with [docs/accessibility-requirements.md](docs/accessibility-requirements.md). Note accessibility impact in your PR description.
 
 ## Code style
 

@@ -10,9 +10,9 @@ Use a [Conventional Commits](https://www.conventionalcommits.org/) **PR title** 
 
 <!-- Link issue if applicable: Fixes #123 -->
 
-## Persona / accessibility impact
+## Accessibility impact
 
-<!-- Child, Adult, Therapist — or N/A for internal changes -->
+<!-- How this affects touch-first / motor-disability users — or N/A for internal changes -->
 
 ## Test plan
 
