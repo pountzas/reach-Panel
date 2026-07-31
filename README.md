@@ -50,6 +50,25 @@ _Replace with captures from your release build when ready — see [docs/images/R
 - Communication phrases with TTS (Windows SAPI)
 - Emergency phrase section with show/hide toggle
 
+### Voice dictation (Windows)
+
+- Mic control on the keyboard toolbar (enable **Show dictation (mic)** in Settings)
+- Uses the **typing language** (EN ↔ EL), not the UI language
+- **English:** Windows Speech Recognition (WinRT) when the speech language pack is installed and online speech is allowed
+- **Greek and other languages without a Windows speech pack:** [Groq](https://groq.com) cloud Whisper (`whisper-large-v3-turbo`) over the internet
+
+#### Set up Groq for Greek dictation
+
+1. Create a free account at [console.groq.com](https://console.groq.com).
+2. Open **API Keys** and create a key (starts with `gsk_…`).
+3. In ReachPanel, open **Settings**.
+4. Under the keyboard / dictation options, paste the key into **Groq API key (cloud dictation)**.
+5. Set **typing language** to Greek (EL), enable the mic control if needed, then start dictation.
+
+You can also set the `GROQ_API_KEY` environment variable instead of (or as a fallback for) the Settings field. An internet connection is required for cloud dictation. English WinRT dictation does not need a Groq key.
+
+If Windows online speech is off, open **Settings → Privacy & security → Speech** and turn on **Online speech recognition**. For English speech packs, use **Settings → Time & language → Speech**.
+
 ### Profiles & accessibility
 
 - Profiles (Child, Parent, Therapist)
@@ -106,6 +125,7 @@ Windows and macOS bundles are built in CI. Windows installers are published auto
 | `src-tauri/src/input/` | Platform keyboard/mouse injection (Windows `SendInput`; macOS stubs) |
 | `src-tauri/src/window/` | Monitor enumeration (Windows APIs; macOS stub) |
 | `src-tauri/src/tts/` | Text-to-speech (Windows SAPI / WinRT; macOS stub) |
+| `src-tauri/src/stt/` | Voice dictation (WinRT speech recognition; Groq cloud fallback) |
 | `src-tauri/src/db/` | SQLite persistence (profiles, phrases, macros) |
 | `src-tauri/src/prediction/` | Predictive text suggestions |
 | `docs/accessibility-requirements.md` | Personas and acceptance criteria |
@@ -120,6 +140,8 @@ Windows and macOS bundles are built in CI. Windows installers are published auto
 
 - Input injection does not work into elevated (admin) applications or UAC prompts
 - macOS bundles lack system-wide input and TTS until the native backends land
+- Voice dictation is Windows-only; Greek (and other WinRT-unsupported languages) need a Groq API key and internet
+- Cloud dictation is utterance-based (speak, pause) rather than fully continuous streaming
 
 ## Contributing
 

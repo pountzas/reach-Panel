@@ -1,4 +1,4 @@
-﻿import { useState, type CSSProperties, type ReactNode } from "react";
+﻿import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -9,10 +9,14 @@ import {
   type ColorProfileId,
   type SurfaceColors,
 } from "../../lib/colorProfiles";
-import type { FnKeyMode } from "../../lib/types";
+import type { FnKeyMode, OnscreenLayout } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
+import { notify } from "../../lib/notify";
+import { ONSCREEN_LAYOUT_OPTIONS } from "../../lib/keyboardLayouts";
 import { SettingsSection } from "./SettingsSection";
 import { AboutSection } from "./AboutSection";
+import { CloseIcon } from "../common/SectionIcons";
+import { IconActionButton } from "../common/IconActionButton";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -123,19 +127,37 @@ export function SettingsPanel() {
     activeProfileFile,
     setProfileFile,
     createProfileFile,
+    deleteProfileFile,
+    saveActiveProfile,
     pickBackgroundImage,
     monitors,
     setShowSettings,
     setShowMacroBuilder,
     setShowHeadTrackingWizard,
     resetSettingsToDefaults,
+    wipeActiveProfile,
     checkForUpdates,
     updateCheckStatus,
+    stopDictation,
+    inputMethods,
+    loadInputMethods,
+    selectTypingInputMethod,
+    physicalKeyState,
   } = useAppStore();
   const { t } = useTranslation();
   const [newProfileName, setNewProfileName] = useState("");
 
+  useEffect(() => {
+    void loadInputMethods();
+  }, [loadInputMethods]);
+
   if (!settings) return null;
+
+  const activeTypingValue = String(
+    inputMethods.find((m) => m.hkl === physicalKeyState.systemHkl)?.hkl ??
+      inputMethods.find((m) => m.langTag === settings.typingLanguage)?.hkl ??
+      "",
+  );
 
   const surface = getSurfaceColors(settings.appBgColor);
   const headerBg = settings.headerBgColor ?? "#1e293b";
@@ -146,27 +168,57 @@ export function SettingsPanel() {
     color: surface.panelText,
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div
-        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl shadow-xl"
-        style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
-      >
-        <div
-          className="flex shrink-0 items-center justify-between px-5 py-3"
-          style={{ backgroundColor: headerBg, color: headerText }}
-        >
-          <h2 className="text-lg font-bold">{t("settings")}</h2>
-          <button
-            type="button"
-            className="rounded px-3 py-1 text-sm bg-white/20"
-            onClick={() => setShowSettings(false)}
-          >
-            {t("close")}
-          </button>
-        </div>
+  const handleSaveProfile = async () => {
+    try {
+      await saveActiveProfile();
+      notify.success(t("profileSaved"));
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : String(error));
+    }
+  };
 
-        <div className="space-y-5 overflow-y-auto p-5">
+  const handleDeleteProfile = async () => {
+    if (!activeProfileFile) return;
+    if (!window.confirm(t("deleteProfileConfirm"))) return;
+    try {
+      await deleteProfileFile(activeProfileFile);
+      notify.success(t("profileDeleted"));
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const handleWipeProfile = async () => {
+    if (!window.confirm(t("wipeProfileConfirm"))) return;
+    try {
+      await wipeActiveProfile();
+      notify.success(t("profileWiped"));
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  return (
+    <div
+      className="flex h-full w-full flex-col overflow-hidden"
+      style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
+    >
+      <div
+        className="flex shrink-0 items-center justify-between px-5 py-3"
+        style={{ backgroundColor: headerBg, color: headerText }}
+      >
+        <h2 className="text-lg font-bold">{t("settings")}</h2>
+        <IconActionButton
+          label={t("close")}
+          onClick={() => setShowSettings(false)}
+          className="rounded bg-white/20 hover:bg-white/30"
+          tooltipPlacement="below"
+        >
+          <CloseIcon />
+        </IconActionButton>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
           <SettingsSection title={t("profile")} surface={surface}>
             <ThemedSelect
               value={activeProfileFile ?? ""}
@@ -180,6 +232,25 @@ export function SettingsPanel() {
                 </option>
               ))}
             </ThemedSelect>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-sm"
+                style={{ backgroundColor: headerBg, color: headerText }}
+                onClick={() => void handleSaveProfile()}
+              >
+                {t("saveProfile")}
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700"
+                style={{ backgroundColor: surface.insetBg }}
+                onClick={() => void handleDeleteProfile()}
+                disabled={!activeProfileFile}
+              >
+                {t("deleteProfile")}
+              </button>
+            </div>
             <div className="mt-3 flex gap-2">
               <input
                 className="min-w-0 flex-1 rounded border px-2 py-1.5 text-sm"
@@ -238,6 +309,20 @@ export function SettingsPanel() {
                 );
               })}
             </ul>
+            <div className="mt-3">
+              <ToggleRow
+                label={t("largeHeaders")}
+                checked={settings.largeHeaders}
+                onChange={(checked) => updateSettings({ largeHeaders: checked })}
+                surface={surface}
+              />
+              <p
+                className="mt-1 px-1 text-xs"
+                style={{ color: surface.panelMutedText }}
+              >
+                {t("largeHeadersHint")}
+              </p>
+            </div>
           </SettingsSection>
 
           <SettingsSection title={t("appearance")} surface={surface}>
@@ -428,6 +513,37 @@ export function SettingsPanel() {
                 surface={surface}
               />
             </div>
+            <div className="mt-3">
+              <ToggleRow
+                label={t("showDictationControl")}
+                checked={settings.dictationVisible !== false}
+                onChange={(checked) => {
+                  if (!checked) {
+                    void stopDictation();
+                  }
+                  void updateSettings({ dictationVisible: checked });
+                }}
+                surface={surface}
+              />
+            </div>
+            <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
+              {t("groqApiKeyLabel")}
+              <input
+                type="password"
+                autoComplete="off"
+                spellCheck={false}
+                className="mt-1 w-full rounded border px-2 py-1.5 text-sm outline-none"
+                style={{
+                  backgroundColor: surface.panelButtonBg,
+                  borderColor: surface.panelBorder,
+                  color: surface.panelText,
+                }}
+                value={settings.groqApiKey ?? ""}
+                onChange={(e) => void updateSettings({ groqApiKey: e.target.value })}
+                placeholder="gsk_…"
+              />
+              <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
+            </label>
             {!settings.keyboardModeToggleVisible && (
               <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
                 {t("keyboardSectionMode")}
@@ -447,21 +563,78 @@ export function SettingsPanel() {
             )}
           </SettingsSection>
 
+          <SettingsSection title={t("mouse")} surface={surface}>
+            <ToggleRow
+              label={t("showMouseBottomRow")}
+              checked={settings.mouseBottomRowVisible}
+              onChange={(checked) => updateSettings({ mouseBottomRowVisible: checked })}
+              surface={surface}
+            />
+          </SettingsSection>
+
           <SettingsSection title={t("quickActions")} surface={surface}>
             <QuickActionEditor surface={surface} />
           </SettingsSection>
 
           <SettingsSection title={t("settingsGeneral")} surface={surface}>
-            <label className="block text-sm" style={{ color: surface.panelText }}>
-              {t("appTypingLanguage")}
+            <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
+              {t("appLanguage")}
               <ThemedSelect
-                value={settings.language}
-                onChange={(v) => updateSettings({ language: v })}
+                value={settings.uiLanguage}
+                onChange={(v) => updateSettings({ uiLanguage: v })}
                 surface={surface}
               >
                 <option value="en">{t("languageEnglish")}</option>
                 <option value="el">{t("languageGreek")}</option>
               </ThemedSelect>
+              <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
+                {t("appLanguageHint")}
+              </span>
+            </label>
+            <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
+              {t("typingLanguage")}
+              <ThemedSelect
+                value={activeTypingValue}
+                onChange={(v) => {
+                  const method = inputMethods.find((m) => String(m.hkl) === v);
+                  if (method) {
+                    void selectTypingInputMethod(method);
+                  }
+                }}
+                surface={surface}
+              >
+                {inputMethods.length === 0 ? (
+                  <option value="">{settings.typingLanguage.toUpperCase()}</option>
+                ) : (
+                  inputMethods.map((m) => (
+                    <option key={`${m.hkl}-${m.klid}`} value={String(m.hkl)}>
+                      {m.displayName} ({m.layoutName})
+                    </option>
+                  ))
+                )}
+              </ThemedSelect>
+              <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
+                {t("typingLanguageHint")}
+              </span>
+            </label>
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("onscreenLayout")}
+              <ThemedSelect
+                value={settings.onscreenLayout ?? "auto"}
+                onChange={(v) =>
+                  void updateSettings({ onscreenLayout: v as OnscreenLayout })
+                }
+                surface={surface}
+              >
+                {ONSCREEN_LAYOUT_OPTIONS.map((layout) => (
+                  <option key={layout} value={layout}>
+                    {layout === "auto" ? t("onscreenLayoutAuto") : layout}
+                  </option>
+                ))}
+              </ThemedSelect>
+              <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
+                {t("onscreenLayoutHint")}
+              </span>
             </label>
           </SettingsSection>
 
@@ -472,7 +645,6 @@ export function SettingsPanel() {
                 className="rounded-lg border px-3 py-2 text-sm"
                 style={secondaryButtonStyle}
                 onClick={() => {
-                  setShowSettings(false);
                   setShowMacroBuilder(true);
                 }}
               >
@@ -483,7 +655,6 @@ export function SettingsPanel() {
                 className="rounded-lg border px-3 py-2 text-sm"
                 style={secondaryButtonStyle}
                 onClick={() => {
-                  setShowSettings(false);
                   setShowHeadTrackingWizard(true);
                 }}
               >
@@ -497,16 +668,20 @@ export function SettingsPanel() {
                 className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
                 style={secondaryButtonStyle}
                 disabled={updateCheckStatus === "checking"}
-                onClick={() => void checkForUpdates()}
+                onClick={() => {
+                  void (async () => {
+                    await checkForUpdates();
+                    const status = useAppStore.getState().updateCheckStatus;
+                    if (status === "upToDate") {
+                      notify.success(t("updateUpToDate"));
+                    } else if (status === "error") {
+                      notify.error(t("updateCheckFailed"));
+                    }
+                  })();
+                }}
               >
                 {updateCheckStatus === "checking" ? t("updatePreparing") : t("checkForUpdates")}
               </button>
-              {updateCheckStatus === "upToDate" && (
-                <p className="mt-1 text-xs text-green-700">{t("updateUpToDate")}</p>
-              )}
-              {updateCheckStatus === "error" && (
-                <p className="mt-1 text-xs text-red-700">{t("updateCheckFailed")}</p>
-              )}
             </div>
 
             <button
@@ -515,10 +690,21 @@ export function SettingsPanel() {
               style={{ backgroundColor: surface.insetBg }}
               onClick={() => void resetSettingsToDefaults()}
             >
-              {t("resetSettings")}
+              {t("resetUi")}
             </button>
             <p className="mt-1 text-xs" style={{ color: surface.panelMutedText }}>
-              {t("resetSettingsHint")}
+              {t("resetUiHint")}
+            </p>
+            <button
+              type="button"
+              className="mt-3 w-full rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700"
+              style={{ backgroundColor: surface.insetBg }}
+              onClick={() => void handleWipeProfile()}
+            >
+              {t("wipeProfile")}
+            </button>
+            <p className="mt-1 text-xs" style={{ color: surface.panelMutedText }}>
+              {t("wipeProfileHint")}
             </p>
           </SettingsSection>
 
@@ -526,7 +712,6 @@ export function SettingsPanel() {
             <AboutSection surface={surface} />
           </SettingsSection>
         </div>
-      </div>
     </div>
   );
 }

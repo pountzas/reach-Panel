@@ -1,110 +1,48 @@
-export type SectionId = "quick-actions" | "phrases" | "input-row";
-
-export interface SectionLayout {
-  xPct: number;
-  yPct: number;
-  wPct: number;
-  hPct: number;
-}
-
-export type SectionLayouts = Partial<Record<SectionId, SectionLayout>>;
-
-export interface SectionVisibility {
-  quickActions: boolean;
-  phrases: boolean;
-}
+export const SECTION_HEADER_HEIGHT_PX = 28;
+export const SECTION_HEADER_HEIGHT_LARGE_PX = 56;
+export const APP_HEADER_HEIGHT_PX = 48;
+export const APP_HEADER_HEIGHT_LARGE_PX = 96;
+/** Clamp for optional user-dragged OS window height ratio. */
+export const WINDOW_HEIGHT_RATIO_MIN = 0.5;
+export const WINDOW_HEIGHT_RATIO_MAX = 1;
 
 const GAP_PCT = 1;
-const MIN_W_PCT = 15;
-const MIN_H_PCT = 10;
+const QUICK_ACTIONS_HEIGHT_RATIO = 0.1;
+const PHRASES_HEIGHT_RATIO = 0.38;
+const GAP_HEIGHT_RATIO = GAP_PCT / 100;
+const MIN_CONTENT_HEIGHT_RATIO = WINDOW_HEIGHT_RATIO_MIN;
 
-function clampLayout(layout: SectionLayout): SectionLayout {
-  const wPct = Math.max(MIN_W_PCT, Math.min(100 - GAP_PCT * 2, layout.wPct));
-  const hPct = Math.max(MIN_H_PCT, Math.min(100 - GAP_PCT * 2, layout.hPct));
-  const xPct = Math.max(GAP_PCT, Math.min(100 - wPct - GAP_PCT, layout.xPct));
-  const yPct = Math.max(GAP_PCT, Math.min(100 - hPct - GAP_PCT, layout.yPct));
-  return { xPct, yPct, wPct, hPct };
+export function sectionHeaderHeightPx(largeHeaders: boolean): number {
+  return largeHeaders ? SECTION_HEADER_HEIGHT_LARGE_PX : SECTION_HEADER_HEIGHT_PX;
 }
 
-export function computeDefaultSectionLayouts(
-  visible: SectionVisibility,
-): Record<SectionId, SectionLayout> {
-  const layouts = {} as Record<SectionId, SectionLayout>;
-  let y = GAP_PCT;
+export function appHeaderHeightPx(largeHeaders: boolean): number {
+  return largeHeaders ? APP_HEADER_HEIGHT_LARGE_PX : APP_HEADER_HEIGHT_PX;
+}
 
-  if (visible.quickActions) {
-    layouts["quick-actions"] = {
-      xPct: GAP_PCT,
-      yPct: y,
-      wPct: 100 - GAP_PCT * 2,
-      hPct: 10,
-    };
-    y += 10 + GAP_PCT;
+export function clampWindowHeightRatio(ratio: number): number {
+  return Math.max(WINDOW_HEIGHT_RATIO_MIN, Math.min(WINDOW_HEIGHT_RATIO_MAX, ratio));
+}
+
+/**
+ * Fraction of the full keyboard region height needed for the currently
+ * visible sections. All visible → 1.0; hiding phrases/QA shrinks the window.
+ */
+export function computeContentHeightRatio(visible: {
+  quickActions: boolean;
+  phrases: boolean;
+}): number {
+  if (visible.quickActions && visible.phrases) {
+    return 1;
   }
 
-  if (visible.phrases) {
-    layouts.phrases = {
-      xPct: GAP_PCT,
-      yPct: y,
-      wPct: 100 - GAP_PCT * 2,
-      hPct: 38,
-    };
-    y += 38 + GAP_PCT;
+  let ratio = 1;
+  if (!visible.phrases) {
+    ratio -= PHRASES_HEIGHT_RATIO + GAP_HEIGHT_RATIO;
+  }
+  if (!visible.quickActions) {
+    ratio -= QUICK_ACTIONS_HEIGHT_RATIO + GAP_HEIGHT_RATIO;
   }
 
-  layouts["input-row"] = {
-    xPct: GAP_PCT,
-    yPct: y,
-    wPct: 100 - GAP_PCT * 2,
-    hPct: Math.max(20, 100 - y - GAP_PCT),
-  };
-
-  return layouts;
-}
-
-export function resolveSectionLayouts(
-  saved: SectionLayouts | undefined,
-  visible: SectionVisibility,
-): Record<SectionId, SectionLayout> {
-  const defaults = computeDefaultSectionLayouts(visible);
-  const resolved = { ...defaults };
-
-  if (saved) {
-    for (const id of Object.keys(defaults) as SectionId[]) {
-      if (saved[id]) {
-        resolved[id] = clampLayout(saved[id]!);
-      }
-    }
-  }
-
-  return resolved;
-}
-
-export function layoutToPixels(
-  layout: SectionLayout,
-  containerWidth: number,
-  containerHeight: number,
-) {
-  return {
-    x: (layout.xPct / 100) * containerWidth,
-    y: (layout.yPct / 100) * containerHeight,
-    width: (layout.wPct / 100) * containerWidth,
-    height: (layout.hPct / 100) * containerHeight,
-  };
-}
-
-export function pixelsToLayout(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  containerWidth: number,
-  containerHeight: number,
-): SectionLayout {
-  return {
-    xPct: (x / containerWidth) * 100,
-    yPct: (y / containerHeight) * 100,
-    wPct: (width / containerWidth) * 100,
-    hPct: (height / containerHeight) * 100,
-  };
+  return Math.max(MIN_CONTENT_HEIGHT_RATIO, Math.min(1, ratio));
 }

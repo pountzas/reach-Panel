@@ -3,88 +3,24 @@ import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { getSynthBlackKeyColors } from "../../lib/colorProfiles";
 import { findKeyIdAtPoint } from "../../lib/synthHitTest";
+import { resolveSynthOctaveCount, resolveSynthStartOctave } from "../../lib/music/octaveCount";
+import {
+  buildPianoKeys,
+  midiToFreq,
+  noteIdToMidi,
+  type PianoKey,
+} from "../../lib/music/pianoKeys";
+import { getSongById, songBeatSeconds } from "../../lib/music/songs";
 
-const WHITE_NOTES = ["C", "D", "E", "F", "G", "A", "B"] as const;
-const BLACK_AFTER_WHITE: Record<number, string> = {
-  0: "C#",
-  1: "D#",
-  3: "F#",
-  4: "G#",
-  5: "A#",
-};
+/** Keep short allegro notes audible even when slot spacing is very tight. */
+const MIN_PLAYBACK_SOUND_SEC = 0.1;
+const PLAYBACK_LOOKAHEAD_SEC = 0.3;
+const PLAYBACK_PUMP_MS = 40;
 
-const START_OCTAVE = 3;
-const OCTAVE_COUNT = 2;
-
-type PianoKey = {
-  id: string;
-  label: string;
-  freq: number;
-  isBlack: boolean;
-  leftRatio?: number;
-};
-
-function noteToMidi(note: string, octave: number): number {
-  const semitones: Record<string, number> = {
-    C: 0,
-    "C#": 1,
-    D: 2,
-    "D#": 3,
-    E: 4,
-    F: 5,
-    "F#": 6,
-    G: 7,
-    "G#": 8,
-    A: 9,
-    "A#": 10,
-    B: 11,
-  };
-  return (octave + 1) * 12 + semitones[note];
-}
-
-function midiToFreq(midi: number): number {
-  return 440 * 2 ** ((midi - 69) / 12);
-}
-
-function buildPianoKeys(): { whiteKeys: PianoKey[]; blackKeys: PianoKey[] } {
-  const whiteKeys: PianoKey[] = [];
-  const blackKeys: PianoKey[] = [];
-
-  for (let octave = START_OCTAVE; octave < START_OCTAVE + OCTAVE_COUNT; octave++) {
-    for (let i = 0; i < WHITE_NOTES.length; i++) {
-      const note = WHITE_NOTES[i];
-      const id = `${note}${octave}`;
-      whiteKeys.push({
-        id,
-        label: note,
-        freq: midiToFreq(noteToMidi(note, octave)),
-        isBlack: false,
-      });
-
-      const blackNote = BLACK_AFTER_WHITE[i];
-      if (blackNote) {
-        const globalWhiteIndex = (octave - START_OCTAVE) * 7 + i;
-        blackKeys.push({
-          id: `${blackNote}${octave}`,
-          label: blackNote,
-          freq: midiToFreq(noteToMidi(blackNote, octave)),
-          isBlack: true,
-          leftRatio: (globalWhiteIndex + 1) / (OCTAVE_COUNT * 7 + 1),
-        });
-      }
-    }
-  }
-
-  const topC = START_OCTAVE + OCTAVE_COUNT;
-  whiteKeys.push({
-    id: `C${topC}`,
-    label: "C",
-    freq: midiToFreq(noteToMidi("C", topC)),
-    isBlack: false,
-  });
-
-  return { whiteKeys, blackKeys };
-}
+/** Brief linger so quick wrong taps are still visible. */
+const WRONG_KEY_FLASH_MS = 280;
+const WRONG_WHITE_COLOR = "#fecaca";
+const WRONG_BLACK_COLOR = "#dc2626";
 
 function computePianoMetrics(containerHeight: number) {
   if (containerHeight <= 0) {
@@ -94,6 +30,16 @@ function computePianoMetrics(containerHeight: number) {
   const available = containerHeight - padding;
   const whiteKeyHeight = Math.max(28, Math.floor(available));
   return { whiteKeyHeight, blackKeyHeightRatio: 0.62 };
+}
+
+function frequencyForPitch(
+  pitch: string,
+  keys: Map<string, PianoKey>,
+): number | null {
+  const onKeyboard = keys.get(pitch);
+  if (onKeyboard) return onKeyboard.freq;
+  const midi = noteIdToMidi(pitch);
+  return midi != null ? midiToFreq(midi) : null;
 }
 
 type ActiveVoice = {
@@ -111,25 +57,124 @@ function pressedKeysFromPointers(activePointers: Map<number, ActivePointer>): Se
 }
 
 export function Synthesizer() {
-  const { settings } = useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const musicPlaybackActive = useAppStore((s) => s.musicPlaybackActive);
+  const musicSongId = useAppStore((s) => s.musicSongId);
+  const musicNoteIndex = useAppStore((s) => s.musicNoteIndex);
+  const importedSongs = useAppStore((s) => s.importedSongs);
+  const reportMusicKeyPlayed = useAppStore((s) => s.reportMusicKeyPlayed);
+  const setMusicPlaybackNoteIndex = useAppStore((s) => s.setMusicPlaybackNoteIndex);
+  const finishMusicPlayback = useAppStore((s) => s.finishMusicPlayback);
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const pianoRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
   const activePointers = useRef<Map<number, ActivePointer>>(new Map());
+  const playbackTimersRef = useRef<number[]>([]);
+  const playbackIntervalRef = useRef<number | null>(null);
+  const playbackOscillatorsRef = useRef<OscillatorNode[]>([]);
+  const wrongKeyTimersRef = useRef<Map<string, number>>(new Map());
+  const wrongKeysRef = useRef<Set<string>>(new Set());
+  const targetKeyIdRef = useRef<string | null>(null);
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set());
+  const [playbackKeyId, setPlaybackKeyId] = useState<string | null>(null);
+  const [wrongKeys, setWrongKeys] = useState<Set<string>>(() => new Set());
+
+  const octaveCount = resolveSynthOctaveCount(settings.synthesizerOctaveCount);
+  const startOctave = resolveSynthStartOctave(
+    settings.synthesizerStartOctave,
+    octaveCount,
+  );
+
+  const targetKeyId = useMemo(() => {
+    if (!musicTeachingEnabled) return null;
+    const song = getSongById(musicSongId, importedSongs);
+    if (!song) return null;
+    if (musicNoteIndex >= song.notes.length) return null;
+    return song.notes[musicNoteIndex]?.pitch ?? null;
+  }, [importedSongs, musicTeachingEnabled, musicSongId, musicNoteIndex]);
+  targetKeyIdRef.current = targetKeyId;
+
+  const syncWrongKeys = useCallback((next: Set<string>) => {
+    wrongKeysRef.current = next;
+    setWrongKeys(next);
+  }, []);
+
+  const clearWrongKeyFlash = useCallback(
+    (keyId: string) => {
+      const existing = wrongKeyTimersRef.current.get(keyId);
+      if (existing != null) {
+        window.clearTimeout(existing);
+        wrongKeyTimersRef.current.delete(keyId);
+      }
+      if (!wrongKeysRef.current.has(keyId)) return;
+      const next = new Set(wrongKeysRef.current);
+      next.delete(keyId);
+      syncWrongKeys(next);
+    },
+    [syncWrongKeys],
+  );
+
+  const markWrongKey = useCallback(
+    (keyId: string) => {
+      const existing = wrongKeyTimersRef.current.get(keyId);
+      if (existing != null) {
+        window.clearTimeout(existing);
+        wrongKeyTimersRef.current.delete(keyId);
+      }
+      if (wrongKeysRef.current.has(keyId)) return;
+      const next = new Set(wrongKeysRef.current);
+      next.add(keyId);
+      syncWrongKeys(next);
+    },
+    [syncWrongKeys],
+  );
+
+  const flashWrongKeyOnRelease = useCallback(
+    (keyId: string) => {
+      if (!wrongKeysRef.current.has(keyId)) return;
+      const existing = wrongKeyTimersRef.current.get(keyId);
+      if (existing != null) {
+        window.clearTimeout(existing);
+      }
+      const timer = window.setTimeout(() => {
+        wrongKeyTimersRef.current.delete(keyId);
+        if (!wrongKeysRef.current.has(keyId)) return;
+        const next = new Set(wrongKeysRef.current);
+        next.delete(keyId);
+        syncWrongKeys(next);
+      }, WRONG_KEY_FLASH_MS);
+      wrongKeyTimersRef.current.set(keyId, timer);
+    },
+    [syncWrongKeys],
+  );
+
+  useEffect(() => {
+    if (musicTeachingEnabled) return;
+    for (const timer of wrongKeyTimersRef.current.values()) {
+      window.clearTimeout(timer);
+    }
+    wrongKeyTimersRef.current.clear();
+    syncWrongKeys(new Set());
+  }, [musicTeachingEnabled, syncWrongKeys]);
 
   const volumeLevel = useMemo(() => {
     if (settings.synthesizerMuted) return 0;
     return (settings.synthesizerVolume ?? 70) / 100;
   }, [settings.synthesizerMuted, settings.synthesizerVolume]);
+  const volumeLevelRef = useRef(volumeLevel);
+  volumeLevelRef.current = volumeLevel;
 
-  const whiteKeyCount = OCTAVE_COUNT * 7 + 1;
+  const whiteKeyCount = octaveCount * 7 + 1;
   const { whiteKeyHeight, blackKeyHeightRatio } = computePianoMetrics(height);
   const blackKeyWidthRatio = (100 / whiteKeyCount) * 0.58;
   const blackKeyHeight = whiteKeyHeight * blackKeyHeightRatio;
 
-  const { whiteKeys, blackKeys } = useMemo(() => buildPianoKeys(), []);
+  const { whiteKeys, blackKeys } = useMemo(
+    () => buildPianoKeys(octaveCount, startOctave),
+    [octaveCount, startOctave],
+  );
   const keyById = useMemo(() => {
     const map = new Map<string, PianoKey>();
     for (const key of [...whiteKeys, ...blackKeys]) {
@@ -137,6 +182,8 @@ export function Synthesizer() {
     }
     return map;
   }, [whiteKeys, blackKeys]);
+  const keyByIdRef = useRef(keyById);
+  keyByIdRef.current = keyById;
 
   const ensureAudio = useCallback(async () => {
     if (!audioRef.current) {
@@ -148,10 +195,13 @@ export function Synthesizer() {
       await audioRef.current.resume();
     }
     if (masterGainRef.current) {
-      masterGainRef.current.gain.setValueAtTime(volumeLevel, audioRef.current.currentTime);
+      masterGainRef.current.gain.setValueAtTime(
+        volumeLevelRef.current,
+        audioRef.current.currentTime,
+      );
     }
     return audioRef.current;
-  }, [volumeLevel]);
+  }, []);
 
   useEffect(() => {
     const ctx = audioRef.current;
@@ -168,6 +218,31 @@ export function Synthesizer() {
     voice.gain.gain.setValueAtTime(voice.gain.gain.value, ctx.currentTime);
     voice.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
     voice.oscillator.stop(ctx.currentTime + 0.1);
+  }, []);
+
+  const clearPlaybackSchedule = useCallback(() => {
+    if (playbackIntervalRef.current != null) {
+      window.clearInterval(playbackIntervalRef.current);
+      playbackIntervalRef.current = null;
+    }
+    for (const timer of playbackTimersRef.current) {
+      window.clearTimeout(timer);
+    }
+    playbackTimersRef.current = [];
+    const ctx = audioRef.current;
+    for (const oscillator of playbackOscillatorsRef.current) {
+      try {
+        if (ctx) {
+          oscillator.stop(ctx.currentTime);
+        } else {
+          oscillator.stop();
+        }
+      } catch {
+        // Already stopped.
+      }
+    }
+    playbackOscillatorsRef.current = [];
+    setPlaybackKeyId(null);
   }, []);
 
   const startVoice = useCallback(
@@ -199,19 +274,23 @@ export function Synthesizer() {
 
       stopVoice(active.voice);
       activePointers.current.delete(pointerId);
+      flashWrongKeyOnRelease(active.keyId);
       syncPressedKeys();
     },
-    [stopVoice, syncPressedKeys],
+    [flashWrongKeyOnRelease, stopVoice, syncPressedKeys],
   );
 
   const setPointerKey = useCallback(
     async (pointerId: number, keyId: string | null) => {
+      if (useAppStore.getState().musicPlaybackActive) return;
+
       const current = activePointers.current.get(pointerId);
       if (current?.keyId === keyId) return;
 
       if (current) {
         stopVoice(current.voice);
         activePointers.current.delete(pointerId);
+        flashWrongKeyOnRelease(current.keyId);
       }
 
       if (keyId) {
@@ -219,11 +298,28 @@ export function Synthesizer() {
         if (!key) return;
         const voice = await startVoice(key.freq);
         activePointers.current.set(pointerId, { keyId, voice });
+        const teaching = useAppStore.getState().musicTeachingEnabled;
+        const target = targetKeyIdRef.current;
+        if (teaching && target && keyId !== target) {
+          markWrongKey(keyId);
+        } else {
+          clearWrongKeyFlash(keyId);
+        }
+        reportMusicKeyPlayed(keyId);
       }
 
       syncPressedKeys();
     },
-    [keyById, startVoice, stopVoice, syncPressedKeys],
+    [
+      clearWrongKeyFlash,
+      flashWrongKeyOnRelease,
+      keyById,
+      markWrongKey,
+      reportMusicKeyPlayed,
+      startVoice,
+      stopVoice,
+      syncPressedKeys,
+    ],
   );
 
   const updatePointerFromEvent = useCallback(
@@ -272,35 +368,184 @@ export function Synthesizer() {
 
   useEffect(() => {
     const pointers = activePointers.current;
+    const wrongTimers = wrongKeyTimersRef.current;
     return () => {
       for (const entry of pointers.values()) {
         stopVoice(entry.voice);
       }
       pointers.clear();
+      clearPlaybackSchedule();
+      for (const timer of wrongTimers.values()) {
+        window.clearTimeout(timer);
+      }
+      wrongTimers.clear();
     };
-  }, [stopVoice]);
+  }, [clearPlaybackSchedule, stopVoice]);
+
+  useEffect(() => {
+    if (!musicPlaybackActive || !musicTeachingEnabled) {
+      clearPlaybackSchedule();
+      return;
+    }
+
+    const song = getSongById(musicSongId, importedSongs);
+    if (!song || song.notes.length === 0) {
+      finishMusicPlayback();
+      return;
+    }
+
+    let cancelled = false;
+    let noteIndex = 0;
+    let nextNoteCtxTime = 0;
+    let playbackEndCtxTime = 0;
+
+    const scheduleNote = (
+      ctx: AudioContext,
+      pitch: string,
+      index: number,
+      startAt: number,
+      slotSec: number,
+    ) => {
+      // Fast passages (allegro 16ths ~150ms) need a floor or the triangle
+      // attack/release never becomes audible.
+      const soundSec = Math.max(MIN_PLAYBACK_SOUND_SEC, slotSec * 0.88);
+      const attackSec = Math.min(0.012, soundSec * 0.2);
+      const releaseSec = Math.min(0.07, soundSec * 0.35);
+      const delayMs = Math.max(0, (startAt - ctx.currentTime) * 1000);
+      playbackEndCtxTime = Math.max(playbackEndCtxTime, startAt + soundSec);
+
+      playbackTimersRef.current.push(
+        window.setTimeout(() => {
+          if (cancelled) return;
+          setMusicPlaybackNoteIndex(index);
+          setPlaybackKeyId(pitch);
+        }, delayMs),
+      );
+      playbackTimersRef.current.push(
+        window.setTimeout(() => {
+          if (cancelled) return;
+          setPlaybackKeyId((current) => (current === pitch ? null : current));
+        }, delayMs + soundSec * 1000),
+      );
+
+      const freq = frequencyForPitch(pitch, keyByIdRef.current);
+      if (freq == null) return;
+
+      const master = masterGainRef.current ?? ctx.destination;
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = "triangle";
+      oscillator.frequency.value = freq;
+      gain.gain.setValueAtTime(0.001, startAt);
+      gain.gain.exponentialRampToValueAtTime(0.28, startAt + attackSec);
+      gain.gain.setValueAtTime(
+        0.28,
+        startAt + Math.max(attackSec, soundSec - releaseSec),
+      );
+      gain.gain.exponentialRampToValueAtTime(0.001, startAt + soundSec);
+      oscillator.connect(gain);
+      gain.connect(master);
+      oscillator.start(startAt);
+      oscillator.stop(startAt + soundSec + 0.04);
+      oscillator.onended = () => {
+        playbackOscillatorsRef.current = playbackOscillatorsRef.current.filter(
+          (node) => node !== oscillator,
+        );
+      };
+      playbackOscillatorsRef.current.push(oscillator);
+    };
+
+    const run = async () => {
+      const ctx = await ensureAudio();
+      if (cancelled) return;
+
+      clearPlaybackSchedule();
+      const beatSec = songBeatSeconds(song);
+      nextNoteCtxTime = ctx.currentTime + 0.05;
+      playbackEndCtxTime = nextNoteCtxTime;
+
+      const pump = () => {
+        if (cancelled) return;
+        const horizon = ctx.currentTime + PLAYBACK_LOOKAHEAD_SEC;
+        while (noteIndex < song.notes.length && nextNoteCtxTime <= horizon) {
+          const note = song.notes[noteIndex]!;
+          const slotSec = Math.max(0.05, note.beats * beatSec);
+          scheduleNote(ctx, note.pitch, noteIndex, nextNoteCtxTime, slotSec);
+          nextNoteCtxTime += slotSec;
+          noteIndex += 1;
+        }
+
+        if (
+          noteIndex >= song.notes.length &&
+          ctx.currentTime >= playbackEndCtxTime
+        ) {
+          if (playbackIntervalRef.current != null) {
+            window.clearInterval(playbackIntervalRef.current);
+            playbackIntervalRef.current = null;
+          }
+          setPlaybackKeyId(null);
+          finishMusicPlayback();
+        }
+      };
+
+      pump();
+      playbackIntervalRef.current = window.setInterval(pump, PLAYBACK_PUMP_MS);
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+      clearPlaybackSchedule();
+    };
+    // Only restart when playback session identity changes — not on volume/layout/key map churn.
+  }, [
+    clearPlaybackSchedule,
+    ensureAudio,
+    finishMusicPlayback,
+    importedSongs,
+    musicPlaybackActive,
+    musicSongId,
+    musicTeachingEnabled,
+    setMusicPlaybackNoteIndex,
+  ]);
 
   const whiteKeyColor = settings.keyboardKeyColor ?? "#fafafa";
   const pressedWhiteColor = "#e2e8f0";
+  const highlightWhiteColor = "#fde68a";
   const { base: blackKeyColor, pressed: pressedBlackColor } = getSynthBlackKeyColors(
     settings.colorProfile,
     settings.keyTextColor,
   );
+  const highlightBlackColor = "#d97706";
 
   const renderWhiteKey = (key: PianoKey) => {
-    const isPressed = pressedKeys.has(key.id);
+    const isPressed = pressedKeys.has(key.id) || playbackKeyId === key.id;
+    const isTarget = targetKeyId === key.id;
+    const isWrong = wrongKeys.has(key.id);
+    let backgroundColor = whiteKeyColor;
+    if (isWrong) backgroundColor = WRONG_WHITE_COLOR;
+    else if (isPressed) backgroundColor = pressedWhiteColor;
+    else if (isTarget) backgroundColor = highlightWhiteColor;
+    const ringClass = isWrong
+      ? "border-red-500 ring-2 ring-red-400 ring-inset"
+      : isTarget
+        ? "border-amber-500 ring-2 ring-amber-400 ring-inset"
+        : "border-slate-300";
     return (
       <button
         key={key.id}
         type="button"
         aria-label={key.id}
         data-piano-key-id={key.id}
-        className={`relative min-w-0 flex-1 rounded-b-lg border border-slate-300 font-semibold shadow-sm transition-transform ${isPressed ? "key-pressed" : ""}`}
+        data-piano-target={isTarget ? "true" : undefined}
+        data-piano-wrong={isWrong ? "true" : undefined}
+        className={`relative min-w-0 flex-1 rounded-b-lg border font-semibold shadow-sm transition-transform ${isPressed || isWrong ? "key-pressed" : ""} ${ringClass}`}
         style={{
           height: whiteKeyHeight,
           fontSize: settings.keyboardFontSize ?? 14,
           color: settings.keyTextColor ?? "#475569",
-          backgroundColor: isPressed ? pressedWhiteColor : whiteKeyColor,
+          backgroundColor,
         }}
       >
         <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2">
@@ -311,14 +556,27 @@ export function Synthesizer() {
   };
 
   const renderBlackKey = (key: PianoKey) => {
-    const isPressed = pressedKeys.has(key.id);
+    const isPressed = pressedKeys.has(key.id) || playbackKeyId === key.id;
+    const isTarget = targetKeyId === key.id;
+    const isWrong = wrongKeys.has(key.id);
+    let backgroundColor = blackKeyColor;
+    if (isWrong) backgroundColor = WRONG_BLACK_COLOR;
+    else if (isPressed) backgroundColor = pressedBlackColor;
+    else if (isTarget) backgroundColor = highlightBlackColor;
+    const ringClass = isWrong
+      ? "border-red-300 ring-2 ring-red-300"
+      : isTarget
+        ? "border-amber-300 ring-2 ring-amber-300"
+        : "border-slate-900";
     return (
       <button
         key={key.id}
         type="button"
         aria-label={key.id}
         data-piano-key-id={key.id}
-        className={`absolute top-0 z-10 rounded-b-md border border-slate-900 font-semibold shadow-md transition-transform ${isPressed ? "key-pressed" : ""}`}
+        data-piano-target={isTarget ? "true" : undefined}
+        data-piano-wrong={isWrong ? "true" : undefined}
+        className={`absolute top-0 z-10 rounded-b-md border font-semibold shadow-md transition-transform ${isPressed || isWrong ? "key-pressed" : ""} ${ringClass}`}
         style={{
           left: `${(key.leftRatio ?? 0) * 100}%`,
           transform: "translateX(-50%)",
@@ -326,7 +584,7 @@ export function Synthesizer() {
           height: blackKeyHeight,
           fontSize: Math.max(10, (settings.keyboardFontSize ?? 18) * 0.55),
           color: "#f8fafc",
-          backgroundColor: isPressed ? pressedBlackColor : blackKeyColor,
+          backgroundColor,
         }}
       />
     );

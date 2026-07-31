@@ -1,85 +1,159 @@
-import { type CSSProperties } from "react";
+import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { exit } from "@tauri-apps/plugin-process";
 import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
 import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
+import { MusicLessonPanel } from "../music/MusicLessonPanel";
+import { AppToaster } from "../common/AppToaster";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { UpdatePrompt } from "../common/UpdatePrompt";
-import { SettingsPanel } from "../settings/SettingsPanel";
-import { MacroBuilder } from "../macros/MacroBuilder";
-import { HeadTrackingWizard } from "../head-tracking/HeadTrackingWizard";
 import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+import { CollapseIcon, CloseIcon, SettingsIcon } from "../common/SectionIcons";
+import { IconActionButton } from "../common/IconActionButton";
+import { CollapsedFab } from "./CollapsedFab";
+import {
+  appHeaderHeightPx,
+  clampWindowHeightRatio,
+  computeContentHeightRatio,
+} from "../../lib/sectionLayouts";
+import { closeAllToolWindows } from "../../lib/toolWindows";
 
 function InputRowPanel() {
   const { settings, updateSettings } = useAppStore();
   const mouseSide = settings.mousePanelSide ?? "right";
   const mouseRatio = settings.inputRowRightRatio ?? 0.28;
+  const mouseVisible = settings.mouseVisible;
 
+  // Always keep KeyboardSection in the same split-pane slot so synth playback
+  // is not remounted when show/hide mouse toggles. 5-octave mode sets
+  // mouseVisible=false the same way the hide button does.
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
-      {settings.mouseVisible ? (
-        <ResizableSplitPane
-          ratioSide={mouseSide === "left" ? "left" : "right"}
-          rightRatio={mouseRatio}
-          onRightRatioChange={(inputRowRightRatio) =>
-            updateSettings({ inputRowRightRatio })
-          }
-          minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
-          minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
-          left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
-          right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
-        />
-      ) : (
-        <div className="min-h-0 flex-1">
-          <KeyboardSection />
-        </div>
-      )}
+      <ResizableSplitPane
+        ratioSide={mouseSide === "left" ? "left" : "right"}
+        rightRatio={mouseRatio}
+        onRightRatioChange={(inputRowRightRatio) =>
+          updateSettings({ inputRowRightRatio })
+        }
+        minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
+        minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
+        sizedPaneCollapsed={!mouseVisible}
+        left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
+        right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
+      />
     </div>
   );
+}
+
+function monitorRegionHeight(
+  monitors: { id: number; height: number; is_primary: boolean }[],
+  monitorId: number,
+): number {
+  const monitor =
+    monitors.find((m) => m.id === monitorId) ??
+    monitors.find((m) => m.is_primary) ??
+    monitors[0];
+  if (!monitor) return window.innerHeight;
+  // Match Rust compute_window_layout: dual-monitor = full work area; single = bottom half.
+  return monitors.length >= 2 ? monitor.height : monitor.height / 2;
+}
+
+function contentHeightRatioFromSettings(settings: {
+  quickActionsVisible: boolean;
+  phrasesVisible: boolean;
+  windowHeightRatio?: number;
+}): number {
+  const contentRatio = computeContentHeightRatio({
+    quickActions: settings.quickActionsVisible,
+    phrases: settings.phrasesVisible,
+  });
+  if (settings.windowHeightRatio == null) return contentRatio;
+  return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
 }
 
 export function AppShell() {
   const {
     settings,
-    showSettings,
-    showMacroBuilder,
-    showHeadTrackingWizard,
+    monitors,
     pendingUpdate,
     setPendingUpdate,
     setShowSettings,
     toggleCollapsed,
     updateSettings,
+    applyWindowHeightRatioLive,
     isAnimatingWindow,
+    musicTeachingEnabled,
   } = useAppStore();
   const { t } = useTranslation();
+  const largeHeaders = settings.largeHeaders;
+  const headerHeight = appHeaderHeightPx(largeHeaders);
+  const iconSize = largeHeaders ? "lg" : "sm";
+  const iconClass = largeHeaders ? "h-7 w-7" : "h-4 w-4";
+  const showMusicLesson =
+    musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
+  const phrasesSlotVisible = settings.phrasesVisible || showMusicLesson;
+  const windowResizeRef = useRef<{
+    startY: number;
+    startRatio: number;
+    regionHeight: number;
+    latestRatio: number;
+  } | null>(null);
+
+  const handleCloseApp = () => {
+    void closeAllToolWindows().finally(() => {
+      void exit(0);
+    });
+  };
+
+  const onWindowHeaderPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!largeHeaders) return;
+    if ((event.target as HTMLElement).closest(".section-no-drag")) return;
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const regionHeight = monitorRegionHeight(monitors, settings.accessibilityMonitorId);
+    const startRatio = contentHeightRatioFromSettings(settings);
+    windowResizeRef.current = {
+      startY: event.clientY,
+      startRatio,
+      regionHeight,
+      latestRatio: startRatio,
+    };
+  };
+
+  const onWindowHeaderPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    const drag = windowResizeRef.current;
+    if (!drag) return;
+
+    // Drag up → taller window (bottom edge fixed).
+    const delta = event.clientY - drag.startY;
+    const nextRatio = clampWindowHeightRatio(
+      drag.startRatio - delta / drag.regionHeight,
+    );
+    drag.latestRatio = nextRatio;
+    void applyWindowHeightRatioLive(nextRatio);
+  };
+
+  const onWindowHeaderPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
+    const drag = windowResizeRef.current;
+    if (!drag) return;
+    windowResizeRef.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Already released.
+    }
+    void updateSettings({ windowHeightRatio: drag.latestRatio });
+  };
 
   if (settings.collapsed) {
-    return (
-      <div
-        className="flex items-center justify-between px-4"
-        style={{
-          width: "100vw",
-          height: "100vh",
-          backgroundColor: settings.headerBgColor ?? "#1e293b",
-          color: settings.headerTextColor ?? "#ffffff",
-        }}
-      >
-        <span className="font-semibold">{t("appTitle")}</span>
-        <button
-          type="button"
-          className="rounded-lg bg-white/20 px-4 py-2 disabled:opacity-50"
-          onClick={toggleCollapsed}
-          disabled={isAnimatingWindow}
-        >
-          {t("expand")}
-        </button>
-      </div>
-    );
+    return <CollapsedFab />;
   }
 
   const shellStyle: CSSProperties = {
@@ -110,55 +184,74 @@ export function AppShell() {
 
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         <header
-          className="flex shrink-0 items-center justify-between px-3 py-2"
+          className="flex shrink-0 items-center justify-between px-3"
           style={{
+            height: headerHeight,
             backgroundColor: settings.headerBgColor ?? "#1e293b",
             color: settings.headerTextColor ?? "#ffffff",
+            cursor: largeHeaders ? "ns-resize" : undefined,
           }}
+          onPointerDown={largeHeaders ? onWindowHeaderPointerDown : undefined}
+          onPointerMove={largeHeaders ? onWindowHeaderPointerMove : undefined}
+          onPointerUp={largeHeaders ? onWindowHeaderPointerUp : undefined}
+          onPointerCancel={largeHeaders ? onWindowHeaderPointerUp : undefined}
         >
-          <span className="font-semibold">{t("appTitle")}</span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="rounded px-3 py-1 text-sm bg-white/20 disabled:opacity-50"
+          <span className={`font-semibold ${largeHeaders ? "text-lg" : ""}`}>
+            {t("appTitle")}
+          </span>
+          <div className="section-no-drag flex gap-1">
+            <IconActionButton
+              label={t("collapse")}
               onClick={toggleCollapsed}
               disabled={isAnimatingWindow}
+              className="rounded bg-white/20 hover:bg-white/30"
+              size={iconSize}
+              tooltipPlacement="below"
             >
-              {t("collapse")}
-            </button>
-            <button
-              type="button"
-              className="rounded px-3 py-1 text-sm bg-white/20"
+              <CollapseIcon className={iconClass} />
+            </IconActionButton>
+            <IconActionButton
+              label={t("settings")}
               onClick={() => setShowSettings(true)}
+              className="rounded bg-white/20 hover:bg-white/30"
+              size={iconSize}
+              tooltipPlacement="below"
             >
-              {t("settings")}
-            </button>
+              <SettingsIcon className={iconClass} />
+            </IconActionButton>
+            <IconActionButton
+              label={t("close")}
+              onClick={handleCloseApp}
+              className="rounded bg-white/20 hover:bg-white/30"
+              size={iconSize}
+              tooltipPlacement="below"
+            >
+              <CloseIcon className={iconClass} />
+            </IconActionButton>
           </div>
         </header>
 
-        <ErrorBanner />
-
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ErrorBanner />
           <SectionCanvas
             quickActionsVisible={settings.quickActionsVisible}
-            phrasesVisible={settings.phrasesVisible}
-            savedLayouts={settings.sectionLayouts}
-            onLayoutsChange={(sectionLayouts) => updateSettings({ sectionLayouts })}
+            phrasesVisible={phrasesSlotVisible}
+            savedStack={settings.sectionStack}
+            legacyLayouts={settings.sectionLayouts}
+            onStackChange={(sectionStack) => updateSettings({ sectionStack })}
             quickActions={<QuickActionsBar />}
-            phrases={<PhrasePanel />}
+            phrases={showMusicLesson ? <MusicLessonPanel /> : <PhrasePanel />}
             inputRow={<InputRowPanel />}
           />
         </div>
 
-        {showSettings && <SettingsPanel />}
-        {showMacroBuilder && <MacroBuilder />}
-        {showHeadTrackingWizard && <HeadTrackingWizard />}
         {pendingUpdate && (
           <UpdatePrompt
             update={pendingUpdate}
             onDismiss={() => setPendingUpdate(null)}
           />
         )}
+        <AppToaster />
       </div>
     </div>
   );

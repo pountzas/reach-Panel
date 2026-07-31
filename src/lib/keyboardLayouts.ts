@@ -15,6 +15,23 @@ export interface PhysicalKeyState {
   pressedVks: number[];
   systemLanguage: string;
   keyboardLayout: string;
+  systemKlid: string;
+  systemHkl: number;
+  hasInputTarget: boolean;
+}
+
+export interface InputMethod {
+  hkl: number;
+  langTag: string;
+  displayName: string;
+  layoutName: string;
+  klid: string;
+}
+
+export interface LayoutKeyLabel {
+  key: string;
+  label: string;
+  shiftLabel?: string | null;
 }
 
 export const DEFAULT_PHYSICAL_KEY_STATE: PhysicalKeyState = {
@@ -26,6 +43,9 @@ export const DEFAULT_PHYSICAL_KEY_STATE: PhysicalKeyState = {
   pressedVks: [],
   systemLanguage: "en",
   keyboardLayout: "QWERTY",
+  systemKlid: "00000409",
+  systemHkl: 0x0409,
+  hasInputTarget: false,
 };
 
 const SPECIAL_VK: Record<string, number> = {
@@ -340,20 +360,71 @@ export const GREEK_ROWS: KeyDef[][] = [
   ],
 ];
 
-export const LANGUAGE_OPTIONS = ["en", "el"] as const;
-export type KeyboardLanguage = (typeof LANGUAGE_OPTIONS)[number];
+export const ONSCREEN_LAYOUT_OPTIONS = [
+  "auto",
+  "QWERTY",
+  "QWERTZ",
+  "AZERTY",
+  "Greek",
+] as const;
 
-export function nextLanguage(current: string): KeyboardLanguage {
-  const idx = LANGUAGE_OPTIONS.indexOf(current as KeyboardLanguage);
-  return LANGUAGE_OPTIONS[(idx + 1) % LANGUAGE_OPTIONS.length];
+export type OnscreenLayoutOption = (typeof ONSCREEN_LAYOUT_OPTIONS)[number];
+
+/** Resolve which OSK layout to paint (`auto` follows Windows). */
+export function resolveOnscreenLayout(
+  preference: string | undefined,
+  windowsLayout: string,
+  language: string,
+): Exclude<OnscreenLayoutOption, "auto"> {
+  if (
+    preference &&
+    preference !== "auto" &&
+    (ONSCREEN_LAYOUT_OPTIONS as readonly string[]).includes(preference)
+  ) {
+    return preference as Exclude<OnscreenLayoutOption, "auto">;
+  }
+  if (windowsLayout === "QWERTZ" || windowsLayout === "AZERTY" || windowsLayout === "Greek") {
+    return windowsLayout;
+  }
+  if (windowsLayout === "QWERTY") return "QWERTY";
+  if (language === "el") return "Greek";
+  if (language === "de") return "QWERTZ";
+  if (language === "fr") return "AZERTY";
+  return "QWERTY";
 }
 
-export function languageSwitchLabel(current: string): string {
-  return nextLanguage(current) === "el" ? "EL" : "EN";
+/** Apply ToUnicodeEx / layout-map labels onto the QWERTY physical key grid. */
+export function applyLayoutKeyLabels(
+  rows: KeyDef[][],
+  labels: LayoutKeyLabel[],
+): KeyDef[][] {
+  if (!labels.length) return rows;
+  const byKey = new Map(labels.map((l) => [l.key.toLowerCase(), l]));
+  return rows.map((row) =>
+    row.map((k) => {
+      if (k.modifier || k.key.length > 1) return k;
+      const mapped = byKey.get(k.key.toLowerCase());
+      if (!mapped) return k;
+      return {
+        ...k,
+        key: mapped.label,
+        label: mapped.label,
+        shiftLabel: mapped.shiftLabel ?? k.shiftLabel,
+      };
+    }),
+  );
 }
 
-export function getLayoutRows(layoutName: string, language: string): KeyDef[][] {
-  if (language === "el") return GREEK_ROWS;
+export function getLayoutRows(
+  layoutName: string,
+  language: string,
+  layoutLabels?: LayoutKeyLabel[],
+): KeyDef[][] {
+  // Live Windows glyphs only when following the active system layout (auto mode).
+  if (layoutLabels && layoutLabels.length > 0) {
+    return applyLayoutKeyLabels(QWERTY_ROWS, layoutLabels);
+  }
+  if (layoutName === "Greek" || language === "el") return GREEK_ROWS;
   if (layoutName === "AZERTY") {
     return QWERTY_ROWS.map((row) =>
       row.map((k) => {
@@ -368,5 +439,66 @@ export function getLayoutRows(layoutName: string, language: string): KeyDef[][] 
       }),
     );
   }
+  if (layoutName === "QWERTZ") {
+    return QWERTY_ROWS.map((row) =>
+      row.map((k) => {
+        const qwertzMap: Record<string, { label: string; shiftLabel?: string }> = {
+          y: { label: "z" },
+          z: { label: "y" },
+          ";": { label: "ö" },
+          "'": { label: "ä" },
+          "[": { label: "ü" },
+          "]": { label: "+" },
+          "-": { label: "ß", shiftLabel: "?" },
+          "/": { label: "-", shiftLabel: "_" },
+        };
+        const mapped = qwertzMap[k.key.toLowerCase()];
+        if (!mapped) return k;
+        return {
+          ...k,
+          key: mapped.label,
+          label: mapped.label,
+          shiftLabel: mapped.shiftLabel ?? k.shiftLabel,
+        };
+      }),
+    );
+  }
   return QWERTY_ROWS;
+}
+
+/** ISO language tag → svg-flags country code for the Lang key. */
+export function flagCodeForLanguage(langTag: string): string {
+  const primary = langTag.toLowerCase().split("-")[0] ?? "en";
+  const map: Record<string, string> = {
+    en: "gb",
+    el: "gr",
+    de: "de",
+    fr: "fr",
+    es: "es",
+    it: "it",
+    pt: "pt",
+    ru: "ru",
+    tr: "tr",
+    pl: "pl",
+    nl: "nl",
+    ja: "jp",
+    zh: "cn",
+    ko: "kr",
+    ar: "sa",
+    hu: "hu",
+    cs: "cz",
+    sk: "sk",
+    hr: "hr",
+    ro: "ro",
+    uk: "ua",
+    fi: "fi",
+    sv: "se",
+    no: "no",
+    da: "dk",
+  };
+  return map[primary] ?? "gb";
+}
+
+export function languageDisplayCode(langTag: string): string {
+  return (langTag.split("-")[0] ?? langTag).toUpperCase();
 }

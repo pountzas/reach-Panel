@@ -83,6 +83,44 @@ pub struct PredictionEntry {
     pub frequency: i32,
 }
 
+fn default_settings_json(ui_language: &str) -> serde_json::Value {
+    serde_json::json!({
+        "colorProfile": "dark-grey",
+        "opacity": 0.95,
+        "uiLanguage": ui_language,
+        "typingLanguage": "en",
+        "mouseVisible": true,
+        "mousePanelMode": "mouse",
+        "mousePanelSide": "right",
+        "keyboardFontSize": 18,
+        "sectionLayouts": {},
+        "backgroundImageOpacity": 0.35,
+        "mouseSpeed": "medium",
+        "precisionMode": false,
+        "predictionEnabled": false,
+        "quickActionsVisible": false,
+        "phrasesVisible": false,
+        "suggestionsVisible": false,
+        "dictationVisible": false,
+        "emergencyVisible": false,
+        "accessibilityMonitorId": 0,
+        "collapsed": false,
+        "headTrackingEnabled": false,
+        "mouseAutoHide": false,
+        "fnKeyMode": "one-shot",
+        "keyboardSectionMode": "keyboard",
+        "keyboardModeToggleVisible": false,
+        "synthesizerVolume": 70,
+        "synthesizerMuted": false,
+        "synthesizerOctaveCount": 2,
+        "synthesizerStartOctave": 3,
+        "inputRowRightRatio": 0.28,
+        "inputAreaCompact": false,
+        "mouseBottomRowVisible": true,
+        "largeHeaders": false
+    })
+}
+
 impl Database {
     pub fn new(app_data_dir: PathBuf) -> Result<Self> {
         std::fs::create_dir_all(&app_data_dir)?;
@@ -105,6 +143,11 @@ impl Database {
 
         if !db_path.exists() && legacy_path.exists() {
             std::fs::rename(&legacy_path, &db_path)?;
+        } else if db_path.exists() && legacy_path.exists() {
+            eprintln!(
+                "Both {DB_FILE} and {LEGACY_DB_FILE} exist in {}; using {DB_FILE} and leaving the legacy database untouched.",
+                app_data_dir.display()
+            );
         }
 
         Ok(db_path)
@@ -399,7 +442,12 @@ impl Database {
         Ok(())
     }
 
-    pub fn ensure_internal_profile(&self, id: &str, name: &str) -> Result<()> {
+    pub fn ensure_internal_profile(
+        &self,
+        id: &str,
+        name: &str,
+        ui_language: &str,
+    ) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
         let exists: i64 = conn.query_row(
             "SELECT COUNT(*) FROM profiles WHERE id = ?1",
@@ -408,29 +456,7 @@ impl Database {
         )?;
         if exists == 0 {
             let now = Utc::now().to_rfc3339();
-            let settings = serde_json::json!({
-                "colorProfile": "light-grey",
-                "opacity": 0.95,
-                "language": "en",
-                "mouseVisible": true,
-                "mousePanelMode": "mouse",
-                "mousePanelSide": "right",
-                "keyboardFontSize": 18,
-                "sectionLayouts": {},
-                "mouseSpeed": "medium",
-                "precisionMode": false,
-                "predictionEnabled": true,
-                "quickActionsVisible": true,
-                "phrasesVisible": true,
-                "suggestionsVisible": true,
-                "emergencyVisible": true,
-                "accessibilityMonitorId": 0,
-                "collapsed": false,
-                "headTrackingEnabled": false,
-                "fnKeyMode": "one-shot",
-                "keyboardSectionMode": "keyboard",
-                "keyboardModeToggleVisible": true
-            });
+            let settings = default_settings_json(ui_language);
             conn.execute(
                 "INSERT INTO profiles (id, name, settings_json, created_at) VALUES (?1, ?2, ?3, ?4)",
                 params![id, name, settings.to_string(), now],
@@ -445,32 +471,15 @@ impl Database {
         Ok(())
     }
 
-    pub fn reset_profile_to_defaults(&self, profile_id: &str, name: &str) -> Result<()> {
+    pub fn reset_profile_to_defaults(
+        &self,
+        profile_id: &str,
+        name: &str,
+        ui_language: &str,
+    ) -> Result<()> {
         self.clear_profile_data(profile_id)?;
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
-        let settings = serde_json::json!({
-            "colorProfile": "light-grey",
-            "opacity": 0.95,
-            "language": "en",
-            "mouseVisible": true,
-            "mousePanelMode": "mouse",
-            "mousePanelSide": "right",
-            "keyboardFontSize": 18,
-            "sectionLayouts": {},
-            "mouseSpeed": "medium",
-            "precisionMode": false,
-            "predictionEnabled": true,
-            "quickActionsVisible": true,
-            "phrasesVisible": true,
-            "suggestionsVisible": true,
-            "emergencyVisible": true,
-            "accessibilityMonitorId": 0,
-            "collapsed": false,
-            "headTrackingEnabled": false,
-            "fnKeyMode": "one-shot",
-            "keyboardSectionMode": "keyboard",
-            "keyboardModeToggleVisible": true
-        });
+        let settings = default_settings_json(ui_language);
         conn.execute(
             "UPDATE profiles SET name = ?1, settings_json = ?2 WHERE id = ?3",
             params![name, settings.to_string(), profile_id],

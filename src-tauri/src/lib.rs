@@ -1,8 +1,12 @@
 mod db;
+mod icons;
+mod installed_apps;
 mod input;
 mod macros;
+mod music;
 mod prediction;
 mod profiles;
+mod stt;
 mod tts;
 mod window;
 
@@ -10,17 +14,20 @@ use db::{
     Database, MacroDef, MacroStep, Phrase, Profile, QuickAction,
 };
 use input::{
-    get_keyboard_layout, get_keyboard_state, get_cursor_position, mouse_click,
-    mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
-    press_key, press_media_key, set_system_language, type_text, KeyPressRequest, KeyboardState,
+    get_cursor_position, get_input_methods, get_keyboard_layout, get_keyboard_state,
+    get_layout_key_labels, mouse_click, mouse_double_click, mouse_scroll, move_cursor_absolute,
+    move_cursor_relative, press_combo, press_key, press_media_key, set_input_method_by_hkl,
+    set_input_method_by_language, set_system_language, type_text, windows_ui_language,
+    InputMethod, KeyPressRequest, KeyboardState, LayoutKeyLabel,
 };
 #[cfg(target_os = "windows")]
 use input::focus_target;
 use prediction::{get_installed_languages, get_suggestions, record_usage};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::{Manager, State};
+use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
+use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{compute_window_layout, list_monitors, MonitorInfo, WindowLayout};
@@ -126,8 +133,16 @@ fn cmd_get_keyboard_state() -> KeyboardState {
 }
 
 #[tauri::command]
-fn cmd_set_system_language(language: String, state: State<AppState>) -> CommandResult {
-    match set_system_language(&language) {
+fn cmd_set_system_language(
+    language: String,
+    klid: Option<String>,
+    state: State<AppState>,
+) -> CommandResult {
+    let result = match klid.as_deref() {
+        Some(k) if !k.is_empty() => set_input_method_by_language(&language, Some(k)),
+        _ => set_system_language(&language),
+    };
+    match result {
         Ok(()) => {
             set_error(&state, None);
             ok()
@@ -137,6 +152,30 @@ fn cmd_set_system_language(language: String, state: State<AppState>) -> CommandR
             err(e)
         }
     }
+}
+
+#[tauri::command]
+fn cmd_get_input_methods() -> Vec<InputMethod> {
+    get_input_methods()
+}
+
+#[tauri::command]
+fn cmd_set_input_method(hkl: u64, state: State<AppState>) -> CommandResult {
+    match set_input_method_by_hkl(hkl) {
+        Ok(()) => {
+            set_error(&state, None);
+            ok()
+        }
+        Err(e) => {
+            set_error(&state, Some(e.to_string()));
+            err(e)
+        }
+    }
+}
+
+#[tauri::command]
+fn cmd_get_layout_key_labels(hkl: Option<u64>) -> Vec<LayoutKeyLabel> {
+    get_layout_key_labels(hkl)
 }
 
 #[tauri::command]
@@ -208,9 +247,12 @@ async fn apply_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
+    height_ratio: f32,
 ) -> Result<(), String> {
     let monitors = list_monitors();
-    let layout = compute_window_layout(&monitors, monitor_id, collapsed)?;
+    let layout =
+        compute_window_layout(&monitors, monitor_id, collapsed, collapsed_dictation, height_ratio)?;
     set_window_layout(app, layout).await
 }
 
@@ -255,12 +297,20 @@ async fn animate_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
+    height_ratio: f32,
 ) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
     let monitors = list_monitors();
-    let target = compute_window_layout(&monitors, monitor_id, collapsed)?;
+    let target = compute_window_layout(
+        &monitors,
+        monitor_id,
+        collapsed,
+        collapsed_dictation,
+        height_ratio,
+    )?;
     let from = get_current_window_layout(&window)?;
 
     let steps = window::COLLAPSE_ANIMATION_MS / window::COLLAPSE_ANIMATION_FRAME_MS;
@@ -303,8 +353,17 @@ async fn cmd_apply_window_layout(
     app: tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
+    height_ratio: f32,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, collapsed).await
+    apply_window_layout(
+        &app,
+        monitor_id,
+        collapsed,
+        collapsed_dictation,
+        height_ratio,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -312,16 +371,26 @@ async fn cmd_animate_window_layout(
     app: tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
+    height_ratio: f32,
 ) -> Result<(), String> {
-    animate_window_layout(&app, monitor_id, collapsed).await
+    animate_window_layout(
+        &app,
+        monitor_id,
+        collapsed,
+        collapsed_dictation,
+        height_ratio,
+    )
+    .await
 }
 
 #[tauri::command]
 async fn cmd_move_window_to_monitor(
     app: tauri::AppHandle,
     monitor_id: u32,
+    height_ratio: f32,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, false).await
+    apply_window_layout(&app, monitor_id, false, false, height_ratio).await
 }
 
 #[tauri::command]
@@ -349,8 +418,17 @@ async fn cmd_set_collapsed(
     app: tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
+    collapsed_dictation: bool,
+    height_ratio: f32,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, collapsed).await
+    apply_window_layout(
+        &app,
+        monitor_id,
+        collapsed,
+        collapsed_dictation,
+        height_ratio,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -396,6 +474,27 @@ fn cmd_create_profile_file(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn cmd_delete_profile_file(filename: String, state: State<AppState>) -> Result<String, String> {
+    state
+        .profiles
+        .delete_profile_file(&state.db, &filename)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_wipe_active_profile(state: State<AppState>) -> Result<(), String> {
+    state
+        .profiles
+        .wipe_active_profile(&state.db)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_get_windows_ui_language() -> String {
+    windows_ui_language()
+}
+
 /// Temporarily drops always-on-top so native file dialogs appear above the app window.
 struct RestoreAlwaysOnTop(tauri::AppHandle);
 
@@ -428,6 +527,97 @@ fn pick_background_image(app: &tauri::AppHandle) -> Result<Option<String>, Strin
 #[tauri::command]
 fn cmd_pick_background_image(app: tauri::AppHandle) -> Result<Option<String>, String> {
     pick_background_image(&app)
+}
+
+fn pick_music_song_file(app: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    window
+        .set_always_on_top(false)
+        .map_err(|e| e.to_string())?;
+    let _restore = RestoreAlwaysOnTop(app.clone());
+
+    let file = rfd::FileDialog::new()
+        .add_filter(
+            "Music songs",
+            &["json", "mid", "midi", "xml", "musicxml", "mxl"],
+        )
+        .add_filter("JSON", &["json"])
+        .add_filter("MIDI", &["mid", "midi"])
+        .add_filter("MusicXML", &["xml", "musicxml", "mxl"])
+        .set_parent(&window)
+        .pick_file();
+
+    Ok(file.map(|p| p.to_string_lossy().into_owned()))
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MusicFilePayload {
+    path: String,
+    content_base64: String,
+}
+
+#[tauri::command]
+fn cmd_pick_music_song_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    pick_music_song_file(&app)
+}
+
+#[tauri::command]
+fn cmd_list_installed_apps() -> Result<Vec<installed_apps::InstalledApp>, String> {
+    installed_apps::list_installed_apps()
+}
+
+fn pick_app_executable(app: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let window = app
+        .get_webview_window("settings")
+        .or_else(|| app.get_webview_window("main"))
+        .ok_or_else(|| "No window found".to_string())?;
+
+    let _ = window.set_always_on_top(false);
+    let _restore = RestoreAlwaysOnTop(app.clone());
+
+    let file = rfd::FileDialog::new()
+        .add_filter("Programs", &["exe"])
+        .set_title("Select application")
+        .set_parent(&window)
+        .pick_file();
+
+    Ok(file.map(|p| p.to_string_lossy().into_owned()))
+}
+
+#[tauri::command]
+fn cmd_pick_app_executable(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    pick_app_executable(&app)
+}
+
+#[tauri::command]
+fn cmd_read_music_file(path: String) -> Result<MusicFilePayload, String> {
+    let bytes = music::read_music_file_bytes(&path)?;
+    Ok(MusicFilePayload {
+        path,
+        content_base64: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes),
+    })
+}
+
+#[tauri::command]
+fn cmd_list_imported_songs(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    Ok(serde_json::Value::Array(music::list_imported_songs(&app)?))
+}
+
+#[tauri::command]
+fn cmd_upsert_imported_song(
+    app: tauri::AppHandle,
+    song: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    music::upsert_imported_song(&app, song)
+}
+
+#[tauri::command]
+fn cmd_delete_imported_song(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    music::delete_imported_song(&app, &id)
 }
 
 #[tauri::command]
@@ -483,6 +673,17 @@ fn cmd_launch_quick_action(
         _ => return Err("Unknown action type".to_string()),
     }
     Ok(())
+}
+
+/// Returns a PNG data-URL for an installed app icon, or null when unavailable.
+#[tauri::command]
+fn cmd_get_app_icon(target: String) -> Option<String> {
+    icons::app_icon_data_url(&target)
+}
+
+#[tauri::command]
+fn cmd_is_app_installed(target: String) -> bool {
+    icons::is_app_installed(&target)
 }
 
 #[tauri::command]
@@ -560,6 +761,52 @@ fn cmd_validate_tts() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn cmd_start_dictation(
+    language: String,
+    groq_api_key: Option<String>,
+    app: AppHandle,
+) -> Result<(), String> {
+    start_dictation(&language, groq_api_key.as_deref(), app).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_stop_dictation() -> Result<(), String> {
+    stop_dictation().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_get_stt_status(
+    language: Option<String>,
+    groq_api_key: Option<String>,
+) -> Result<SttStatus, String> {
+    Ok(get_stt_status(
+        language.as_deref(),
+        groq_api_key.as_deref(),
+    ))
+}
+
+/// Opens a Windows Settings page (e.g. `ms-settings:privacy-speech`).
+#[tauri::command]
+fn cmd_open_windows_settings(uri: String) -> Result<(), String> {
+    if !uri.starts_with("ms-settings:") {
+        return Err("Only ms-settings: URIs are allowed".to_string());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", &uri])
+            .spawn()
+            .map_err(|e| format!("Failed to open Windows Settings: {e}"))?;
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = uri;
+        Err("Windows Settings are only available on Windows".to_string())
+    }
+}
+
+#[tauri::command]
 fn cmd_get_suggestions(
     profile_id: String,
     prefix: String,
@@ -571,7 +818,14 @@ fn cmd_get_suggestions(
 
 #[tauri::command]
 fn cmd_record_word(profile_id: String, word: String, language: String, state: State<AppState>) -> Result<(), String> {
-    record_usage(&state.db, &profile_id, &word, &language).map_err(|e| e.to_string())
+    record_usage(&state.db, &profile_id, &word, &language).map_err(|e| e.to_string())?;
+    if profile_id == INTERNAL_PROFILE_ID {
+        state
+            .profiles
+            .save_active_profile(&state.db)
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -622,7 +876,12 @@ fn cmd_export_macro(macro_id: String, state: State<AppState>) -> Result<String, 
 
 #[tauri::command]
 fn cmd_import_macro(json: String, state: State<AppState>) -> Result<MacroDef, String> {
-    macros::import_macro(&state.db, &json).map_err(|e| e.to_string())
+    let macro_def = macros::import_macro(&state.db, &json).map_err(|e| e.to_string())?;
+    state
+        .profiles
+        .save_active_profile(&state.db)
+        .map_err(|e| e.to_string())?;
+    Ok(macro_def)
 }
 
 #[tauri::command]
@@ -672,6 +931,8 @@ pub fn run() {
                 last_error: Mutex::new(None),
             });
 
+            stt::init(&app_data_dir, app.handle().clone());
+
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_decorations(false);
                 let _ = window.set_shadow(false);
@@ -691,6 +952,9 @@ pub fn run() {
             cmd_get_keyboard_layout,
             cmd_get_keyboard_state,
             cmd_set_system_language,
+            cmd_get_input_methods,
+            cmd_set_input_method,
+            cmd_get_layout_key_labels,
             cmd_move_cursor_relative,
             cmd_move_cursor_absolute,
             cmd_get_cursor_position,
@@ -710,12 +974,24 @@ pub fn run() {
             cmd_load_profile_file,
             cmd_save_active_profile_file,
             cmd_create_profile_file,
+            cmd_delete_profile_file,
+            cmd_wipe_active_profile,
+            cmd_get_windows_ui_language,
             cmd_pick_background_image,
+            cmd_pick_music_song_file,
+            cmd_list_installed_apps,
+            cmd_pick_app_executable,
+            cmd_read_music_file,
+            cmd_list_imported_songs,
+            cmd_upsert_imported_song,
+            cmd_delete_imported_song,
             cmd_update_profile_settings,
             cmd_get_quick_actions,
             cmd_save_quick_action,
             cmd_delete_quick_action,
             cmd_launch_quick_action,
+            cmd_get_app_icon,
+            cmd_is_app_installed,
             cmd_get_phrases,
             cmd_get_phrase_categories,
             cmd_use_phrase,
@@ -724,6 +1000,10 @@ pub fn run() {
             cmd_list_voices,
             cmd_get_tts_status,
             cmd_validate_tts,
+            cmd_start_dictation,
+            cmd_stop_dictation,
+            cmd_get_stt_status,
+            cmd_open_windows_settings,
             cmd_get_suggestions,
             cmd_record_word,
             cmd_get_languages,

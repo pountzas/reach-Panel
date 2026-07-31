@@ -1,13 +1,18 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { emit } from "@tauri-apps/api/event";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { checkForUpdate } from "../lib/updater";
 import {
   DEFAULT_PHYSICAL_KEY_STATE,
-  PhysicalKeyState,
+  type InputMethod,
+  type LayoutKeyLabel,
+  type PhysicalKeyState,
 } from "../lib/keyboardLayouts";
 import {
   AppSettings,
+  CommandResult,
   DEFAULT_SETTINGS,
   INTERNAL_PROFILE_ID,
   MacroDef,
@@ -18,7 +23,85 @@ import {
   ProfileFileInfo,
   QuickAction,
 } from "../lib/types";
+import {
+  isWidePianoOctaveCount,
+  resolveSynthOctaveCount,
+  resolveSynthStartOctave,
+} from "../lib/music/octaveCount";
+import { BUILT_IN_SONGS, getSongById, songPianoRangeFit } from "../lib/music/songs";
+import type { ImportedMusicSong } from "../lib/music/importTypes";
+import {
+  parseMusicFilePayload,
+  type MusicFilePayload,
+} from "../lib/music/parseMusicFile";
+import { isImportedMusicSong } from "../lib/music/parseJsonSong";
 import { resolveColorProfile } from "../lib/colorProfiles";
+import { notify } from "../lib/notify";
+import { isStickySpeechError } from "../lib/speechPrivacy";
+import { clampWindowHeightRatio, computeContentHeightRatio } from "../lib/sectionLayouts";
+import { resolveSectionStack } from "../lib/sectionStack";
+import {
+  closeToolWindow,
+  openToolWindow,
+  PROFILE_UPDATED_EVENT,
+  resolveMonitor,
+  syncMainForToolWindows,
+  TOOL_WINDOW_REQUEST_EVENT,
+  TOOL_WINDOW_TITLES,
+  type ToolWindowLabel,
+} from "../lib/toolWindows";
+
+/** Avoid re-toasting the same backend error until it clears. */
+let lastAnnouncedError: string | null = null;
+
+/** Block OS→UI language sync while a typing-language switch is in flight. */
+let typingLanguageSwitchInFlight = false;
+
+/** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
+let liveHeightRatioPreview: number | null = null;
+
+const LANGUAGE_CHANGE_FALLBACK =
+  "Could not switch keyboard language.";
+
+function heightRatioFromSettings(settings: AppSettings): number {
+  const contentRatio = computeContentHeightRatio({
+    quickActions: settings.quickActionsVisible,
+    phrases: settings.phrasesVisible,
+  });
+  if (settings.windowHeightRatio == null) {
+    return contentRatio;
+  }
+  return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
+}
+
+async function syncWindowLayoutFromSettings(
+  settings: AppSettings,
+  preferAnimate: boolean,
+) {
+  const args = {
+    monitorId: settings.accessibilityMonitorId,
+    collapsed: settings.collapsed,
+    collapsedDictation:
+      settings.collapsed && settings.dictationVisible !== false,
+    heightRatio: heightRatioFromSettings(settings),
+  };
+  // Animate height like phrases/QA toggles; apply for collapsed / cold load.
+  if (preferAnimate && !settings.collapsed) {
+    await invoke("cmd_animate_window_layout", args);
+  } else {
+    await invoke("cmd_apply_window_layout", args);
+  }
+}
+
+export type DictationState = "idle" | "listening" | "processing";
+
+export interface SttCapability {
+  engine: "winrt" | "groq" | null;
+  groqConfigured: boolean;
+  winrtSupported: boolean;
+  online: boolean;
+  canDictate: boolean;
+}
 
 interface AppStore {
   profileFiles: ProfileFileInfo[];
@@ -34,18 +117,38 @@ interface AppStore {
   stickyModifiers: string[];
   physicalKeyState: PhysicalKeyState;
   lastError: string | null;
+  dictationState: DictationState;
+  sttCapability: SttCapability | null;
   showSettings: boolean;
   showMacroBuilder: boolean;
   showHeadTrackingWizard: boolean;
   keyboardLayout: string;
+  inputMethods: InputMethod[];
+  layoutKeyLabels: LayoutKeyLabel[];
+  languagePickerOpen: boolean;
+  /** Session-only: guided piano teaching replaces Phrases while on. */
+  musicTeachingEnabled: boolean;
+  musicSongId: string | null;
+  musicNoteIndex: number;
+  /** Session-only: demo playback of the selected song. */
+  musicPlaybackActive: boolean;
+  phrasesVisibleBeforeTeaching: boolean | null;
+  /** Session-only: restore mouse after leaving 5-octave (wide) piano mode. */
+  mouseVisibleBeforeWidePiano: boolean | null;
+  /** Persisted imported songs (app data library). */
+  importedSongs: ImportedMusicSong[];
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
+  deleteProfileFile: (filename: string) => Promise<void>;
   updateSettings: (
     partial: Partial<AppSettings>,
     options?: { syncToSystem?: boolean },
   ) => Promise<void>;
+  /** Live-preview OS window height while dragging the main header (no persist). */
+  applyWindowHeightRatioLive: (ratio: number) => Promise<void>;
   resetSettingsToDefaults: () => Promise<void>;
+  wipeActiveProfile: () => Promise<void>;
   loadMonitors: () => Promise<void>;
   loadQuickActions: () => Promise<void>;
   loadPhrases: () => Promise<void>;
@@ -57,19 +160,39 @@ interface AppStore {
   backspaceTyped: () => void;
   toggleSticky: (modifier: string) => void;
   pollKeyboardState: () => Promise<void>;
-  toggleLanguage: () => Promise<void>;
+  loadInputMethods: () => Promise<void>;
+  setLanguagePickerOpen: (open: boolean) => void;
+  selectTypingInputMethod: (method: InputMethod) => Promise<void>;
+  refreshLayoutKeyLabels: (hkl?: number) => Promise<void>;
   clearSticky: () => void;
   clearStickyExceptFn: () => void;
   loadSuggestions: () => Promise<void>;
   applySuggestion: (word: string) => Promise<void>;
   setLastError: (error: string | null) => void;
   pollError: () => Promise<void>;
+  setDictationState: (state: DictationState) => void;
+  setSttCapability: (capability: SttCapability | null) => void;
+  refreshSttCapability: () => Promise<void>;
+  toggleDictation: () => Promise<void>;
+  stopDictation: () => Promise<void>;
   setShowSettings: (show: boolean) => void;
   setShowMacroBuilder: (show: boolean) => void;
   setShowHeadTrackingWizard: (show: boolean) => void;
   syncWindowFocusable: () => Promise<void>;
   loadKeyboardLayout: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
+  enableMusicTeaching: () => Promise<void>;
+  disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
+  setMusicSongId: (songId: string) => Promise<void>;
+  restartMusicLesson: () => void;
+  reportMusicKeyPlayed: (keyId: string) => void;
+  startMusicPlayback: () => void;
+  stopMusicPlayback: () => void;
+  setMusicPlaybackNoteIndex: (index: number) => void;
+  finishMusicPlayback: () => void;
+  loadImportedSongs: () => Promise<void>;
+  importMusicSongsFromFile: () => Promise<void>;
+  deleteImportedSong: (id: string) => Promise<void>;
   isAnimatingWindow: boolean;
   pendingUpdate: Update | null;
   updateCheckStatus: "idle" | "checking" | "upToDate" | "error";
@@ -79,31 +202,124 @@ interface AppStore {
 
 function parseSettings(json: string): AppSettings {
   try {
-    const { theme, mouseSide, ...parsed } = JSON.parse(json) as Partial<AppSettings> & {
+    const { theme, mouseSide, language: legacyLanguage, ...parsed } = JSON.parse(
+      json,
+    ) as Partial<AppSettings> & {
       theme?: unknown;
       mouseSide?: "left" | "right" | "floating";
+      language?: string;
     };
     const colorProfile = resolveColorProfile({ ...parsed, theme });
     const mousePanelSide =
       parsed.mousePanelSide ??
       (mouseSide === "left" ? "left" : DEFAULT_SETTINGS.mousePanelSide);
-    return { ...DEFAULT_SETTINGS, ...parsed, colorProfile, mousePanelSide };
+    const typingLanguage =
+      parsed.typingLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.typingLanguage;
+    const uiLanguage = parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
+    // Older profile files may omit keys that previously defaulted to "on".
+    // Keep that behavior for existing installs; new profiles write explicit values.
+    const legacyFill: Partial<AppSettings> = {
+      predictionEnabled: parsed.predictionEnabled ?? true,
+      quickActionsVisible: parsed.quickActionsVisible ?? true,
+      phrasesVisible: parsed.phrasesVisible ?? true,
+      suggestionsVisible: parsed.suggestionsVisible ?? true,
+      dictationVisible: parsed.dictationVisible ?? true,
+      emergencyVisible: parsed.emergencyVisible ?? true,
+      keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,
+    };
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+      ...legacyFill,
+      typingLanguage,
+      uiLanguage,
+      colorProfile,
+      mousePanelSide,
+      sectionStack: resolveSectionStack(parsed.sectionStack, parsed.sectionLayouts),
+      synthesizerOctaveCount: resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
+      synthesizerStartOctave: resolveSynthStartOctave(
+        parsed.synthesizerStartOctave,
+        resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
+      ),
+      // 5-octave mode always uses the mouse-hide setting path.
+      ...(isWidePianoOctaveCount(parsed.synthesizerOctaveCount)
+        ? { mouseVisible: false }
+        : {}),
+    };
   } catch {
     return DEFAULT_SETTINGS;
   }
 }
 
-function buildDefaultSettings(monitors: MonitorInfo[]): AppSettings {
+function buildDefaultSettings(
+  monitors: MonitorInfo[],
+  uiLanguage: string = DEFAULT_SETTINGS.uiLanguage,
+): AppSettings {
   const primary = monitors.find((m) => m.is_primary) ?? monitors[0];
   return {
     ...DEFAULT_SETTINGS,
+    uiLanguage,
     accessibilityMonitorId: primary?.id ?? DEFAULT_SETTINGS.accessibilityMonitorId,
   };
+}
+
+const TOOL_WINDOW_FLAG: Record<
+  ToolWindowLabel,
+  "showSettings" | "showMacroBuilder" | "showHeadTrackingWizard"
+> = {
+  settings: "showSettings",
+  "macro-builder": "showMacroBuilder",
+  "head-tracking": "showHeadTrackingWizard",
+};
+
+async function setToolWindowVisible(
+  get: () => AppStore,
+  set: (partial: Partial<AppStore>) => void,
+  label: ToolWindowLabel,
+  show: boolean,
+) {
+  // Child webviews must not open/close tools themselves: destroy → syncMain
+  // listeners would die with that webview (e.g. Settings opening Macro Builder).
+  if (WebviewWindow.getCurrent().label !== "main") {
+    await emit(TOOL_WINDOW_REQUEST_EVENT, { label, show });
+    return;
+  }
+
+  const flag = TOOL_WINDOW_FLAG[label];
+  if (show) {
+    const { monitors, settings } = get();
+    const monitor = resolveMonitor(monitors, settings.accessibilityMonitorId);
+    try {
+      await openToolWindow(label, {
+        title: TOOL_WINDOW_TITLES[label],
+        monitor,
+        onDestroyed: () => {
+          set({ [flag]: false });
+          void syncMainForToolWindows();
+          void get().syncWindowFocusable();
+        },
+      });
+      set({ [flag]: true });
+    } catch (error) {
+      set({ [flag]: false });
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+    void syncMainForToolWindows();
+    void get().syncWindowFocusable();
+    return;
+  }
+
+  set({ [flag]: false });
+  await closeToolWindow(label);
+  void syncMainForToolWindows();
+  void get().syncWindowFocusable();
 }
 
 async function loadProfileData(
   set: (partial: Partial<AppStore>) => void,
   get: () => AppStore,
+  options?: { animateLayout?: boolean },
 ) {
   const profiles = await invoke<{ id: string; settings_json: string }[]>(
     "cmd_get_profiles",
@@ -113,11 +329,20 @@ async function loadProfileData(
     ? parseSettings(active.settings_json)
     : DEFAULT_SETTINGS;
   set({ settings });
-  await invoke("cmd_set_system_language", { language: settings.language });
-  await get().pollKeyboardState();
+  const isMainWindow = WebviewWindow.getCurrent().label === "main";
+  if (isMainWindow) {
+    await invoke("cmd_set_system_language", { language: settings.typingLanguage });
+    await get().pollKeyboardState();
+  }
   await get().loadQuickActions();
   await get().loadPhrases();
   await get().loadMacros();
+  if (isMainWindow) {
+    await syncWindowLayoutFromSettings(
+      get().settings,
+      options?.animateLayout === true,
+    );
+  }
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -134,10 +359,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
   stickyModifiers: [],
   physicalKeyState: DEFAULT_PHYSICAL_KEY_STATE,
   lastError: null,
+  dictationState: "idle",
+  sttCapability: null,
   showSettings: false,
   showMacroBuilder: false,
   showHeadTrackingWizard: false,
   keyboardLayout: "QWERTY",
+  inputMethods: [],
+  layoutKeyLabels: [],
+  languagePickerOpen: false,
+  musicTeachingEnabled: false,
+  musicSongId: "twinkle",
+  musicNoteIndex: 0,
+  musicPlaybackActive: false,
+  phrasesVisibleBeforeTeaching: null,
+  mouseVisibleBeforeWidePiano: null,
+  importedSongs: [],
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -181,17 +418,37 @@ export const useAppStore = create<AppStore>((set, get) => ({
       typedBuffer: "",
       stickyModifiers: [],
     });
-    await loadProfileData(set, get);
+    await loadProfileData(set, get, { animateLayout: true });
     await get().loadSuggestions();
+    await emit(PROFILE_UPDATED_EVENT, {
+      source: WebviewWindow.getCurrent().label,
+    });
   },
 
   createProfileFile: async (filename, name) => {
     await invoke("cmd_create_profile_file", { filename, name });
     await get().loadProfileFiles();
+    await emit(PROFILE_UPDATED_EVENT, {
+      source: WebviewWindow.getCurrent().label,
+    });
+  },
+
+  deleteProfileFile: async (filename) => {
+    const nextActive = await invoke<string>("cmd_delete_profile_file", { filename });
+    set({
+      typedBuffer: "",
+      stickyModifiers: [],
+      activeProfileFile: nextActive,
+    });
+    await get().loadProfileFiles();
+    await get().loadSuggestions();
   },
 
   saveActiveProfile: async () => {
     await invoke("cmd_save_active_profile_file");
+    await emit(PROFILE_UPDATED_EVENT, {
+      source: WebviewWindow.getCurrent().label,
+    });
   },
 
   pickBackgroundImage: async () => {
@@ -204,33 +461,204 @@ export const useAppStore = create<AppStore>((set, get) => ({
   updateSettings: async (partial, options) => {
     const { settings } = get();
     const syncToSystem = options?.syncToSystem ?? true;
-    const languageChanged =
-      partial.language !== undefined && partial.language !== settings.language;
-    const next = { ...settings, ...partial };
+    const typingLanguageChanged =
+      partial.typingLanguage !== undefined &&
+      partial.typingLanguage !== settings.typingLanguage;
+    const uiLanguageChanged =
+      partial.uiLanguage !== undefined && partial.uiLanguage !== settings.uiLanguage;
+    const previousTypingLanguage = settings.typingLanguage;
+    let next = {
+      ...settings,
+      ...partial,
+      ...(partial.synthesizerOctaveCount !== undefined
+        ? {
+            synthesizerOctaveCount: resolveSynthOctaveCount(
+              partial.synthesizerOctaveCount,
+            ),
+          }
+        : {}),
+    };
+    if (
+      partial.synthesizerStartOctave !== undefined ||
+      partial.synthesizerOctaveCount !== undefined
+    ) {
+      next = {
+        ...next,
+        synthesizerStartOctave: resolveSynthStartOctave(
+          next.synthesizerStartOctave,
+          resolveSynthOctaveCount(next.synthesizerOctaveCount),
+        ),
+      };
+    }
+
+    // 5-octave mode uses the same path as the mouse-hide button (mouseVisible).
+    const wasWide = isWidePianoOctaveCount(settings.synthesizerOctaveCount);
+    const nowWide = isWidePianoOctaveCount(next.synthesizerOctaveCount);
+    if (nowWide) {
+      if (next.mouseVisible) {
+        if (get().mouseVisibleBeforeWidePiano === null) {
+          set({ mouseVisibleBeforeWidePiano: settings.mouseVisible });
+        }
+        next = { ...next, mouseVisible: false };
+      }
+    } else if (wasWide && partial.synthesizerOctaveCount !== undefined) {
+      const restore = get().mouseVisibleBeforeWidePiano;
+      set({ mouseVisibleBeforeWidePiano: null });
+      if (restore !== null && partial.mouseVisible === undefined) {
+        next = { ...next, mouseVisible: restore };
+      }
+    }
+
+    const leavingSynthesizer =
+      partial.keyboardSectionMode !== undefined &&
+      partial.keyboardSectionMode !== "synthesizer" &&
+      get().musicTeachingEnabled;
+    if (leavingSynthesizer) {
+      const before = get().phrasesVisibleBeforeTeaching;
+      set({
+        musicTeachingEnabled: false,
+        musicNoteIndex: 0,
+        musicPlaybackActive: false,
+        phrasesVisibleBeforeTeaching: null,
+      });
+      if (before !== null) {
+        next = { ...next, phrasesVisible: before };
+      }
+    }
+
     set({ settings: next });
-    if (syncToSystem && languageChanged) {
-      await invoke("cmd_set_system_language", { language: partial.language! });
+    if (partial.keyboardSectionMode === "synthesizer") {
+      await get().stopDictation();
+    }
+    if (syncToSystem && typingLanguageChanged) {
+      // Soft CommandResult — does not throw; must check success or the UI
+      // optimistically flips language and never surfaces a toast.
+      typingLanguageSwitchInFlight = true;
+      try {
+        const method = get().inputMethods.find(
+          (m) => m.langTag === partial.typingLanguage,
+        );
+        const result = await invoke<CommandResult>("cmd_set_system_language", {
+          language: partial.typingLanguage!,
+          klid: method?.klid ?? null,
+        });
+        if (!result.success) {
+          set({
+            settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+          });
+          const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
+          lastAnnouncedError = message;
+          notify.error(message, { id: "typing-language-switch" });
+          return;
+        }
+        lastAnnouncedError = null;
+        await get().refreshLayoutKeyLabels();
+      } catch (error) {
+        set({
+          settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+        });
+        const message =
+          error instanceof Error
+            ? error.message
+            : String(error || LANGUAGE_CHANGE_FALLBACK);
+        lastAnnouncedError = message;
+        notify.error(message, { id: "typing-language-switch" });
+        return;
+      } finally {
+        typingLanguageSwitchInFlight = false;
+      }
     }
     await invoke("cmd_update_profile_settings", {
       profileId: INTERNAL_PROFILE_ID,
-      settingsJson: JSON.stringify(next),
+      settingsJson: JSON.stringify(get().settings),
     });
-    if (languageChanged) {
+    await emit(PROFILE_UPDATED_EVENT, {
+      source: WebviewWindow.getCurrent().label,
+    });
+    if (typingLanguageChanged) {
+      await get().stopDictation();
+      set({ typedBuffer: "", suggestions: [] });
+      await get().refreshSttCapability();
+    }
+    if (partial.groqApiKey !== undefined) {
+      await get().refreshSttCapability();
+    }
+    if (uiLanguageChanged) {
       set({ typedBuffer: "", suggestions: [] });
       await get().loadPhrases();
       await get().loadSuggestions();
     }
-    if (partial.accessibilityMonitorId !== undefined || partial.collapsed !== undefined) {
-      await invoke("cmd_apply_window_layout", {
-        monitorId: next.accessibilityMonitorId,
-        collapsed: next.collapsed,
-      });
+    {
+      const current = get().settings;
+      const visibilityChanged =
+        partial.phrasesVisible !== undefined ||
+        partial.quickActionsVisible !== undefined;
+      if (
+        partial.accessibilityMonitorId !== undefined ||
+        partial.collapsed !== undefined ||
+        partial.windowHeightRatio !== undefined ||
+        (current.collapsed && partial.dictationVisible !== undefined)
+      ) {
+        if (partial.windowHeightRatio !== undefined) {
+          liveHeightRatioPreview = null;
+        }
+        await invoke("cmd_apply_window_layout", {
+          monitorId: current.accessibilityMonitorId,
+          collapsed: current.collapsed,
+          collapsedDictation:
+            current.collapsed && current.dictationVisible !== false,
+          heightRatio: heightRatioFromSettings(current),
+        });
+      } else if (visibilityChanged && !current.collapsed) {
+        await invoke("cmd_animate_window_layout", {
+          monitorId: current.accessibilityMonitorId,
+          collapsed: false,
+          collapsedDictation: false,
+          heightRatio: heightRatioFromSettings(current),
+        });
+      }
     }
+  },
+
+  applyWindowHeightRatioLive: async (ratio) => {
+    const { settings } = get();
+    if (settings.collapsed) return;
+    const heightRatio = Math.max(
+      computeContentHeightRatio({
+        quickActions: settings.quickActionsVisible,
+        phrases: settings.phrasesVisible,
+      }),
+      clampWindowHeightRatio(ratio),
+    );
+    if (
+      liveHeightRatioPreview !== null &&
+      Math.abs(liveHeightRatioPreview - heightRatio) < 0.002
+    ) {
+      return;
+    }
+    liveHeightRatioPreview = heightRatio;
+    await invoke("cmd_apply_window_layout", {
+      monitorId: settings.accessibilityMonitorId,
+      collapsed: false,
+      collapsedDictation: false,
+      heightRatio,
+    });
   },
 
   resetSettingsToDefaults: async () => {
     const { monitors } = get();
-    await get().updateSettings(buildDefaultSettings(monitors));
+    const uiLanguage = await invoke<string>("cmd_get_windows_ui_language");
+    await get().updateSettings(buildDefaultSettings(monitors, uiLanguage));
+  },
+
+  wipeActiveProfile: async () => {
+    await invoke("cmd_wipe_active_profile");
+    set({
+      typedBuffer: "",
+      stickyModifiers: [],
+    });
+    await loadProfileData(set, get, { animateLayout: true });
+    await get().loadSuggestions();
   },
 
   loadMonitors: async () => {
@@ -250,7 +678,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const [phrases, phraseCategories] = await Promise.all([
       invoke<Phrase[]>("cmd_get_phrases", {
         profileId: INTERNAL_PROFILE_ID,
-        language: settings.language,
+        language: settings.uiLanguage,
       }),
       invoke<PhraseCategory[]>("cmd_get_phrase_categories", {
         profileId: INTERNAL_PROFILE_ID,
@@ -290,38 +718,105 @@ export const useAppStore = create<AppStore>((set, get) => ({
       prev.pressedVks.length === next.pressedVks.length &&
       prev.pressedVks.every((vk, i) => vk === next.pressedVks[i]);
 
-    const languageUnchanged = settings.language === next.systemLanguage;
-    const layoutUnchanged = keyboardLayout === next.keyboardLayout;
+    // Sync from the focused/target app so Win+Space / Alt+Shift updates our layout.
+    // Skip while a language-button switch is in flight.
+    const typingLanguageUnchanged =
+      typingLanguageSwitchInFlight ||
+      settings.typingLanguage === next.systemLanguage;
+    const layoutUnchanged =
+      keyboardLayout === next.keyboardLayout &&
+      prev.systemHkl === next.systemHkl &&
+      prev.systemKlid === next.systemKlid;
 
-    if (keysUnchanged && languageUnchanged && layoutUnchanged) {
+    if (keysUnchanged && typingLanguageUnchanged && layoutUnchanged) {
+      if (prev.hasInputTarget !== next.hasInputTarget) {
+        set({ physicalKeyState: next });
+      }
       return;
     }
 
     set({
       physicalKeyState: next,
       keyboardLayout: next.keyboardLayout,
-      ...(languageUnchanged
+      ...(typingLanguageUnchanged
         ? {}
-        : { settings: { ...settings, language: next.systemLanguage } }),
+        : { settings: { ...settings, typingLanguage: next.systemLanguage } }),
     });
 
-    if (!languageUnchanged) {
+    if (!layoutUnchanged) {
+      await get().refreshLayoutKeyLabels(next.systemHkl);
+    }
+
+    if (!typingLanguageUnchanged) {
       await invoke("cmd_update_profile_settings", {
         profileId: INTERNAL_PROFILE_ID,
         settingsJson: JSON.stringify(get().settings),
       });
       set({ typedBuffer: "", suggestions: [] });
-      await get().loadPhrases();
-      await get().loadSuggestions();
     }
   },
 
-  toggleLanguage: async () => {
-    const { settings } = get();
-    const next = settings.language === "en" ? "el" : "en";
-    await get().updateSettings({ language: next });
-    await get().pollKeyboardState();
-    await get().pollError();
+  loadInputMethods: async () => {
+    const inputMethods = await invoke<InputMethod[]>("cmd_get_input_methods");
+    set({ inputMethods });
+  },
+
+  setLanguagePickerOpen: (open) => set({ languagePickerOpen: open }),
+
+  selectTypingInputMethod: async (method) => {
+    const previousTypingLanguage = get().settings.typingLanguage;
+    typingLanguageSwitchInFlight = true;
+    set({ languagePickerOpen: false });
+    try {
+      const result = await invoke<CommandResult>("cmd_set_input_method", {
+        hkl: method.hkl,
+      });
+      if (!result.success) {
+        const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
+        lastAnnouncedError = message;
+        notify.error(message, { id: "typing-language-switch" });
+        return;
+      }
+      set({
+        settings: {
+          ...get().settings,
+          typingLanguage: method.langTag,
+        },
+        keyboardLayout: method.layoutName,
+      });
+      await invoke("cmd_update_profile_settings", {
+        profileId: INTERNAL_PROFILE_ID,
+        settingsJson: JSON.stringify(get().settings),
+      });
+      await emit(PROFILE_UPDATED_EVENT, {
+        source: WebviewWindow.getCurrent().label,
+      });
+      if (previousTypingLanguage !== method.langTag) {
+        await get().stopDictation();
+        set({ typedBuffer: "", suggestions: [] });
+        await get().refreshSttCapability();
+      }
+      await get().refreshLayoutKeyLabels(method.hkl);
+      await get().pollKeyboardState();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : String(error || LANGUAGE_CHANGE_FALLBACK);
+      lastAnnouncedError = message;
+      notify.error(message, { id: "typing-language-switch" });
+    } finally {
+      typingLanguageSwitchInFlight = false;
+    }
+  },
+
+  refreshLayoutKeyLabels: async (hkl?: number) => {
+    const targetHkl = hkl ?? get().physicalKeyState.systemHkl;
+    const layoutKeyLabels = await invoke<LayoutKeyLabel[]>(
+      "cmd_get_layout_key_labels",
+      { hkl: targetHkl || null },
+    );
+    set({ layoutKeyLabels });
   },
 
   clearSticky: () => set({ stickyModifiers: [] }),
@@ -346,7 +841,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const results = await invoke<{ word: string }[]>("cmd_get_suggestions", {
       profileId: INTERNAL_PROFILE_ID,
       prefix,
-      language: settings.language,
+      language: settings.uiLanguage,
     });
     set({ suggestions: results.map((r) => r.word) });
   },
@@ -361,41 +856,298 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await invoke("cmd_record_word", {
       profileId: INTERNAL_PROFILE_ID,
       word,
-      language: settings.language,
+      language: settings.uiLanguage,
     });
     await get().loadSuggestions();
   },
 
-  setLastError: (error) => set({ lastError: error }),
+  setLastError: (error) => {
+    if (!error) {
+      lastAnnouncedError = null;
+      set({ lastError: null });
+      return;
+    }
+    // Sticky overlay for actionable speech errors; everything else → toast.
+    if (isStickySpeechError(error)) {
+      lastAnnouncedError = error;
+      set({ lastError: error });
+      return;
+    }
+    if (lastAnnouncedError === error) {
+      return;
+    }
+    lastAnnouncedError = error;
+    notify.error(error);
+    set({ lastError: null });
+  },
   pollError: async () => {
     const error = await invoke<string | null>("get_last_error");
-    set({ lastError: error });
+    get().setLastError(error);
+  },
+
+  setDictationState: (state) => set({ dictationState: state }),
+
+  setSttCapability: (capability) => set({ sttCapability: capability }),
+
+  refreshSttCapability: async () => {
+    try {
+      const settingsKey = get().settings.groqApiKey?.trim() || null;
+      const status = await invoke<{
+        state: DictationState;
+        engine: "winrt" | "groq" | null;
+        groqConfigured: boolean;
+        winrtSupported: boolean;
+        online: boolean;
+        canDictate: boolean;
+      }>("cmd_get_stt_status", {
+        language: get().settings.typingLanguage,
+        groqApiKey: settingsKey,
+      });
+      set({
+        dictationState: status.state,
+        sttCapability: {
+          engine: status.engine,
+          groqConfigured: status.groqConfigured,
+          winrtSupported: status.winrtSupported,
+          online: status.online,
+          canDictate: status.canDictate,
+        },
+      });
+    } catch {
+      set({
+        sttCapability: {
+          engine: null,
+          groqConfigured: false,
+          winrtSupported: false,
+          online: false,
+          canDictate: false,
+        },
+      });
+    }
+  },
+
+  stopDictation: async () => {
+    if (get().dictationState === "idle") return;
+    // Optimistic: clear listening UI immediately so the mic toggle feels responsive
+    // even when Groq was mid-transcription (common on Greek path).
+    set({ dictationState: "idle" });
+    try {
+      await invoke("cmd_stop_dictation");
+    } catch (error) {
+      set({
+        lastError:
+          error instanceof Error ? error.message : String(error),
+      });
+    }
+  },
+
+  toggleDictation: async () => {
+    const { dictationState, settings, sttCapability } = get();
+    if (dictationState === "listening" || dictationState === "processing") {
+      await get().stopDictation();
+      return;
+    }
+    if (sttCapability && !sttCapability.canDictate) {
+      set({
+        lastError: !sttCapability.online
+          ? "GROQ_API: Dictation requires an internet connection."
+          : sttCapability.winrtSupported
+            ? "GROQ_API: Dictation is unavailable right now."
+            : "GROQ_KEY: Windows speech recognition does not support this language. Add a free Groq API key in Settings to dictate.",
+      });
+      return;
+    }
+    try {
+      await invoke("cmd_start_dictation", {
+        language: settings.typingLanguage,
+        groqApiKey: settings.groqApiKey?.trim() || null,
+      });
+      set({ dictationState: "listening" });
+      await get().pollError();
+      await get().refreshSttCapability();
+    } catch (error) {
+      set({ dictationState: "idle" });
+      set({
+        lastError:
+          error instanceof Error ? error.message : String(error),
+      });
+      await get().refreshSttCapability();
+    }
   },
 
   syncWindowFocusable: async () => {
-    const { showSettings, showMacroBuilder, showHeadTrackingWizard, pendingUpdate } =
-      get();
-    const needsFocus =
-      showSettings || showMacroBuilder || showHeadTrackingWizard || pendingUpdate !== null;
+    const needsFocus = get().pendingUpdate !== null;
     await invoke("cmd_set_window_focusable", { focusable: needsFocus });
   },
 
   setShowSettings: (show) => {
-    set({ showSettings: show });
-    void get().syncWindowFocusable();
+    void setToolWindowVisible(get, set, "settings", show);
   },
   setShowMacroBuilder: (show) => {
-    set({ showMacroBuilder: show });
-    void get().syncWindowFocusable();
+    void setToolWindowVisible(get, set, "macro-builder", show);
   },
   setShowHeadTrackingWizard: (show) => {
-    set({ showHeadTrackingWizard: show });
-    void get().syncWindowFocusable();
+    void setToolWindowVisible(get, set, "head-tracking", show);
   },
 
   loadKeyboardLayout: async () => {
     const keyboardLayout = await invoke<string>("cmd_get_keyboard_layout");
     set({ keyboardLayout });
+  },
+
+  enableMusicTeaching: async () => {
+    const { settings, musicTeachingEnabled, musicSongId, importedSongs } = get();
+    if (musicTeachingEnabled) return;
+    set({
+      musicTeachingEnabled: true,
+      phrasesVisibleBeforeTeaching: settings.phrasesVisible,
+      musicNoteIndex: 0,
+      musicSongId: musicSongId ?? "twinkle",
+    });
+    const song = getSongById(get().musicSongId, importedSongs);
+    const patch: Partial<AppSettings> = {};
+    if (!settings.phrasesVisible) {
+      patch.phrasesVisible = true;
+    }
+    if (song) {
+      const fit = songPianoRangeFit(song);
+      if (fit) {
+        patch.synthesizerOctaveCount = fit.octaveCount;
+        patch.synthesizerStartOctave = fit.startOctave;
+      }
+    }
+    if (Object.keys(patch).length > 0) {
+      await get().updateSettings(patch);
+    }
+  },
+
+  disableMusicTeaching: async (options) => {
+    if (!get().musicTeachingEnabled && get().phrasesVisibleBeforeTeaching === null) {
+      if (options?.hidePhrases) {
+        await get().updateSettings({ phrasesVisible: false });
+      }
+      return;
+    }
+    const before = get().phrasesVisibleBeforeTeaching;
+    set({
+      musicTeachingEnabled: false,
+      musicNoteIndex: 0,
+      musicPlaybackActive: false,
+      phrasesVisibleBeforeTeaching: null,
+    });
+    if (options?.hidePhrases) {
+      await get().updateSettings({ phrasesVisible: false });
+      return;
+    }
+    if (before !== null && before !== get().settings.phrasesVisible) {
+      await get().updateSettings({ phrasesVisible: before });
+    }
+  },
+
+  setMusicSongId: async (songId) => {
+    const song = getSongById(songId, get().importedSongs);
+    if (!song) return;
+    set({ musicSongId: songId, musicNoteIndex: 0, musicPlaybackActive: false });
+    const fit = songPianoRangeFit(song);
+    if (fit) {
+      await get().updateSettings({
+        synthesizerOctaveCount: fit.octaveCount,
+        synthesizerStartOctave: fit.startOctave,
+      });
+    }
+  },
+
+  restartMusicLesson: () => {
+    set({ musicNoteIndex: 0, musicPlaybackActive: false });
+  },
+
+  reportMusicKeyPlayed: (keyId) => {
+    const { musicTeachingEnabled, musicPlaybackActive, musicSongId, musicNoteIndex, importedSongs } =
+      get();
+    if (!musicTeachingEnabled || musicPlaybackActive) return;
+    const song = getSongById(musicSongId, importedSongs);
+    if (!song) return;
+    if (musicNoteIndex >= song.notes.length) return;
+    if (song.notes[musicNoteIndex]?.pitch !== keyId) return;
+    set({ musicNoteIndex: musicNoteIndex + 1 });
+  },
+
+  startMusicPlayback: () => {
+    if (!get().musicTeachingEnabled) return;
+    const song = getSongById(get().musicSongId, get().importedSongs);
+    if (!song || song.notes.length === 0) return;
+    set({ musicPlaybackActive: true, musicNoteIndex: 0 });
+  },
+
+  stopMusicPlayback: () => {
+    if (!get().musicPlaybackActive) return;
+    set({ musicPlaybackActive: false });
+  },
+
+  setMusicPlaybackNoteIndex: (index) => {
+    if (!get().musicPlaybackActive) return;
+    set({ musicNoteIndex: index });
+  },
+
+  finishMusicPlayback: () => {
+    if (!get().musicPlaybackActive) return;
+    set({ musicPlaybackActive: false, musicNoteIndex: 0 });
+  },
+
+  loadImportedSongs: async () => {
+    try {
+      const songs = await invoke<ImportedMusicSong[]>("cmd_list_imported_songs");
+      set({
+        importedSongs: Array.isArray(songs)
+          ? songs.filter((song) => song && typeof song.id === "string")
+          : [],
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  importMusicSongsFromFile: async () => {
+    try {
+      const path = await invoke<string | null>("cmd_pick_music_song_file");
+      if (!path) return;
+      const payload = await invoke<MusicFilePayload>("cmd_read_music_file", { path });
+      const songs = await parseMusicFilePayload(payload);
+      for (const song of songs) {
+        await invoke("cmd_upsert_imported_song", { song });
+      }
+      await get().loadImportedSongs();
+      const last = songs[songs.length - 1];
+      if (last) {
+        await get().setMusicSongId(last.id);
+      }
+      notify.success(
+        songs.length === 1
+          ? `Imported “${songs[0]!.title}”`
+          : `Imported ${songs.length} songs`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  deleteImportedSong: async (id) => {
+    const song = get().importedSongs.find((entry) => entry.id === id);
+    if (!song || !isImportedMusicSong(song)) return;
+    try {
+      get().stopMusicPlayback();
+      await invoke("cmd_delete_imported_song", { id });
+      await get().loadImportedSongs();
+      if (get().musicSongId === id) {
+        await get().setMusicSongId(BUILT_IN_SONGS[0]?.id ?? "twinkle");
+      }
+      notify.success(`Deleted “${song.title}”`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
   },
 
   toggleCollapsed: async () => {
@@ -417,11 +1169,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
         await invoke("cmd_animate_window_layout", {
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
+          collapsedDictation: next.dictationVisible !== false,
+          heightRatio: heightRatioFromSettings(next),
         });
       } else {
         await invoke("cmd_animate_window_layout", {
           monitorId: settings.accessibilityMonitorId,
           collapsed: false,
+          collapsedDictation: false,
+          heightRatio: heightRatioFromSettings(settings),
         });
         set({ settings: next });
         await invoke("cmd_update_profile_settings", {

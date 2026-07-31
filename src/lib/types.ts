@@ -1,22 +1,33 @@
-import type { SectionLayouts } from "./sectionLayouts";
+import type { LegacySectionLayouts, SectionStackState } from "./sectionStack";
 import type { MouseSpeed } from "./mouseSpeed";
 import type { ColorProfileId } from "./colorProfiles";
+import { COLOR_PROFILE_PRESETS } from "./colorProfiles";
+import type { SynthOctaveCount } from "./music/octaveCount";
 
 export type { MouseSpeed };
+export type { SynthOctaveCount };
 export type MousePanelMode = "mouse" | "numpad";
 export type MousePanelSide = "left" | "right";
 export type FnKeyMode = "one-shot" | "latched";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
+/** On-screen key arrangement; `auto` follows the active Windows keyboard layout. */
+export type OnscreenLayout = "auto" | "QWERTY" | "QWERTZ" | "AZERTY" | "Greek";
 
 export interface AppSettings {
   colorProfile: ColorProfileId;
   opacity: number;
-  language: string;
+  uiLanguage: string;
+  typingLanguage: string;
+  /** Preferred on-screen key layout (independent of Windows typing language when not auto). */
+  onscreenLayout?: OnscreenLayout;
   mouseVisible: boolean;
   mousePanelMode: MousePanelMode;
   mousePanelSide: MousePanelSide;
   keyboardFontSize?: number;
-  sectionLayouts?: SectionLayouts;
+  /** Docked stack + float-layer layout (preferred). */
+  sectionStack?: SectionStackState;
+  /** Legacy free-float layouts; migrated into sectionStack on load. */
+  sectionLayouts?: LegacySectionLayouts;
   keyboardBgColor?: string;
   keyboardKeyColor?: string;
   keyTextColor?: string;
@@ -33,6 +44,10 @@ export interface AppSettings {
   quickActionsVisible: boolean;
   phrasesVisible: boolean;
   suggestionsVisible: boolean;
+  /** When false, hides the toolbar mic / dictation control. */
+  dictationVisible: boolean;
+  /** Free Groq API key for cloud dictation when Windows speech packs are unavailable (e.g. Greek). */
+  groqApiKey?: string;
   emergencyVisible: boolean;
   accessibilityMonitorId: number;
   collapsed: boolean;
@@ -43,8 +58,26 @@ export interface AppSettings {
   keyboardModeToggleVisible: boolean;
   synthesizerVolume?: number;
   synthesizerMuted?: boolean;
+  /** Piano window width in octaves (C-to-C). Combined with synthesizerStartOctave. */
+  synthesizerOctaveCount?: SynthOctaveCount;
+  /** Lowest C of the piano window (e.g. 2 → C2–C(2+count)). */
+  synthesizerStartOctave?: number;
   /** Fraction of input-row width used by the mouse / numpad panel (0–1). */
   inputRowRightRatio?: number;
+  /** When true, hides section toolbars and suggestions for more keyboard/trackpad area. */
+  inputAreaCompact: boolean;
+  /** When false, hides drag lock, precision, and scroll buttons on the trackpad. */
+  mouseBottomRowVisible: boolean;
+  /**
+   * Doubles header heights and header chrome buttons, and turns non-button
+   * header areas into vertical resize grips (sections + OS window).
+   */
+  largeHeaders: boolean;
+  /**
+   * Optional override for OS window height as a fraction of the monitor region.
+   * Combined with visibility-based content ratio via Math.max.
+   */
+  windowHeightRatio?: number;
 }
 
 export interface ProfileFileInfo {
@@ -126,37 +159,39 @@ export interface HeadTrackingSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  colorProfile: "light-grey",
+  colorProfile: "dark-grey",
+  ...COLOR_PROFILE_PRESETS["dark-grey"],
   opacity: 0.95,
-  language: "en",
+  uiLanguage: "en",
+  typingLanguage: "en",
+  onscreenLayout: "auto",
   mouseVisible: true,
   mousePanelMode: "mouse",
   mousePanelSide: "right",
   keyboardFontSize: 18,
-  sectionLayouts: {},
-  keyboardBgColor: "#d1d5db",
-  keyboardKeyColor: "#f3f4f6",
-  keyTextColor: "#374151",
-  appBgColor: "#e5e7eb",
-  headerBgColor: "#6b7280",
-  headerTextColor: "#ffffff",
-  mousePanelBgColor: "#e5e7eb",
   backgroundImageOpacity: 0.35,
   mouseSpeed: "medium",
   precisionMode: false,
-  predictionEnabled: true,
-  quickActionsVisible: true,
-  phrasesVisible: true,
-  suggestionsVisible: true,
-  emergencyVisible: true,
+  predictionEnabled: false,
+  quickActionsVisible: false,
+  phrasesVisible: false,
+  suggestionsVisible: false,
+  dictationVisible: false,
+  groqApiKey: "",
+  emergencyVisible: false,
   accessibilityMonitorId: 0,
   collapsed: false,
   headTrackingEnabled: false,
   mouseAutoHide: false,
   fnKeyMode: "one-shot",
   keyboardSectionMode: "keyboard",
-  keyboardModeToggleVisible: true,
+  keyboardModeToggleVisible: false,
   synthesizerVolume: 70,
   synthesizerMuted: false,
+  synthesizerOctaveCount: 2,
+  synthesizerStartOctave: 3,
   inputRowRightRatio: 0.28,
+  inputAreaCompact: false,
+  mouseBottomRowVisible: true,
+  largeHeaders: false,
 };

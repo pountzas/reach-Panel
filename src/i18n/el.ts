@@ -10,13 +10,30 @@ export const el: Record<keyof typeof en, string> = {
 
   expand: "Ανάπτυξη",
 
+  minimizeSection: "Σμίκρυνση",
+
+  dockSection: "Πρόσδεση ενότητας",
+
+  undockSection: "Αποδέσμευση ενότητας",
+
   settings: "Ρυθμίσεις",
 
   close: "Κλείσιμο",
 
+  add: "Προσθήκη",
+
+  appNotInstalled: "Το {app} δεν είναι εγκατεστημένο.",
+
+  installApp: "Εγκατάσταση",
+
   profile: "Προφίλ",
 
   accessibilityScreen: "Οθόνη προσβασιμότητας",
+
+  largeHeaders: "Μεγάλα headers για εύκολη αλλαγή μεγέθους",
+
+  largeHeadersHint:
+    "Διπλασιάζει το ύψος των headers και τα κουμπιά τους. Σύρετε την κενή περιοχή του header για να αλλάξετε το ύψος ενότητας ή παραθύρου.",
 
   primary: "Κύρια",
 
@@ -29,6 +46,8 @@ export const el: Record<keyof typeof en, string> = {
   mousePanelRight: "Δεξιά του πληκτρολογίου",
 
   showMouseSection: "Εμφάνιση τμήματος ποντικιού",
+
+  hideMouseSection: "Απόκρυψη τμήματος ποντικιού",
 
   speed: "Ταχύτητα",
 
@@ -52,9 +71,23 @@ export const el: Record<keyof typeof en, string> = {
 
   showSuggestionsBar: "Εμφάνιση προτάσεων",
 
+  showDictationControl: "Εμφάνιση υπαγόρευσης (μικρόφωνο)",
+
   opacity: "Διαφάνεια",
 
-  appTypingLanguage: "Γλώσσα εφαρμογής & πληκτρολογίου",
+  appLanguage: "Γλώσσα εφαρμογής",
+
+  appLanguageHint: "Μενού, φράσεις, προτάσεις και ομιλία",
+
+  typingLanguage: "Γλώσσα πληκτρολογίου",
+
+  typingLanguageHint: "Γλώσσα πληκτρολογίου Windows για πληκτρολόγηση",
+
+  onscreenLayout: "Διάταξη οθόνης",
+
+  onscreenLayoutHint: "Διάταξη πλήκτρων στο εικονικό πληκτρολόγιο",
+
+  onscreenLayoutAuto: "Αυτόματο (ακολουθεί Windows)",
 
   languageEnglish: "English",
 
@@ -65,6 +98,32 @@ export const el: Record<keyof typeof en, string> = {
   resetSettingsHint:
 
     "Επαναφέρει διάταξη, θέση οθόνης, μεγέθη πάνελ και όλες τις ρυθμίσεις στις προεπιλογές.",
+
+  resetUi: "Επαναφορά διεπαφής",
+
+  resetUiHint:
+    "Επαναφέρει όλες τις ρυθμίσεις (θέμα, ορατότητα, διάταξη, γλώσσες) στις προεπιλογές. Διατηρεί γρήγορες ενέργειες, μακροεντολές, φράσεις και προβλέψεις.",
+
+  wipeProfile: "Εκκαθάριση προφίλ",
+
+  wipeProfileHint:
+    "Διαγράφει γρήγορες ενέργειες, μακροεντολές, φράσεις, προβλέψεις και παρακολούθηση κεφαλής, και επαναφέρει όλες τις ρυθμίσεις.",
+
+  wipeProfileConfirm:
+    "Εκκαθάριση αυτού του προφίλ; Όλες οι γρήγορες ενέργειες, μακροεντολές, φράσεις, προβλέψεις και ρυθμίσεις θα επαναφερθούν.",
+
+  saveProfile: "Αποθήκευση προφίλ",
+
+  profileSaved: "Το προφίλ αποθηκεύτηκε.",
+
+  deleteProfile: "Διαγραφή προφίλ",
+
+  deleteProfileConfirm:
+    "Διαγραφή αυτού του προφίλ; Αν είναι ενεργό, θα δημιουργηθεί νέο προεπιλεγμένο προφίλ.",
+
+  profileDeleted: "Το προφίλ διαγράφηκε.",
+
+  profileWiped: "Το προφίλ εκκαθαρίστηκε.",
 
   layoutEdit: "Επεξεργασία διάταξης",
 
@@ -126,13 +185,114 @@ export const el: Record<keyof typeof en, string> = {
 
   synthesizerVolume: "Ένταση",
 
+  dictationStart: "Έναρξη υπαγόρευσης",
+
+  dictationStop: "Διακοπή υπαγόρευσης",
+
+  dictationListening: "Ακούει…",
+
+  dictationErrorNoLanguage:
+    "Η αναγνώριση ομιλίας για αυτή τη γλώσσα πληκτρολόγησης δεν είναι εγκατεστημένη. Προσθέστε το πακέτο ομιλίας στις Ρυθμίσεις Windows → Ώρα και γλώσσα → Ομιλία (ή Γλώσσα και περιοχή) και δοκιμάστε ξανά.",
+
+  dictationErrorUnavailable:
+    "Η υπαγόρευση φωνής είναι διαθέσιμη μόνο στα Windows.",
+
+  dictationErrorSpeechPrivacy:
+    "Η διαδικτυακή αναγνώριση ομιλίας είναι απενεργοποιημένη στα Windows. Ενεργοποιήστε την στις Ρυθμίσεις → Απόρρητο και ασφάλεια → Ομιλία και δοκιμάστε ξανά. (Δεν είναι αίτημα άδειας μικροφώνου.)",
+
+  dictationErrorGroqKey:
+    "Η αναγνώριση ομιλίας των Windows δεν υποστηρίζει αυτή τη γλώσσα. Προσθέστε ένα δωρεάν κλειδί Groq στις Ρυθμίσεις για υπαγόρευση (console.groq.com).",
+
+  dictationErrorGroqApi:
+    "Η υπαγόρευση cloud απέτυχε. Ελέγξτε τη σύνδεση στο διαδίκτυο και το κλειδί Groq και δοκιμάστε ξανά.",
+
+  dictationUnavailableUnsupported:
+    "Η υπαγόρευση δεν είναι διαθέσιμη — προσθέστε ένα δωρεάν κλειδί Groq στις Ρυθμίσεις για αυτή τη γλώσσα",
+
+  dictationUnavailableOffline:
+    "Η υπαγόρευση δεν είναι διαθέσιμη — απαιτείται σύνδεση στο διαδίκτυο",
+
+  dictationOpenSpeechSettings: "Άνοιγμα ρυθμίσεων ομιλίας",
+
+  dictationOpenSpeechLanguageSettings: "Εγκατάσταση γλώσσας ομιλίας",
+
+  dictationOpenAppSettings: "Άνοιγμα ρυθμίσεων",
+
+  groqApiKeyLabel: "Κλειδί Groq API (υπαγόρευση cloud)",
+
+  groqApiKeyHint:
+    "Απαιτείται για γλώσσες που δεν υποστηρίζουν τα Windows (π.χ. ελληνικά). Δωρεάν κλειδί στο console.groq.com. Μπορείτε επίσης να ορίσετε τη μεταβλητή περιβάλλοντος GROQ_API_KEY.",
+
   mute: "Σίγαση",
 
   unmute: "Ξεσίγαση",
 
+  teachMusic: "Διδασκαλία",
+
+  stopTeaching: "Διακοπή διδασκαλίας",
+
+  musicLesson: "Μάθημα μουσικής",
+
+  selectSong: "Τραγούδι",
+
+  restartLesson: "Επανεκκίνηση",
+
+  playSong: "Αναπαραγωγή",
+
+  stopSong: "Διακοπή",
+
+  loadSong: "Φόρτωση",
+
+  deleteSong: "Διαγραφή",
+
+  confirmDeleteSong: "Διαγραφή εισαγμένου τραγουδιού «{title}»;",
+
+  builtInSongs: "Ενσωματωμένα",
+
+  importedSongs: "Εισαγμένα",
+
+  playingNote: "Παίζει",
+
+  waitingForNote: "Παίξε",
+
+  lessonComplete: "Το τραγούδι ολοκληρώθηκε!",
+
+  upcomingNotes: "Επόμενες νότες",
+
+  songNeedsOctaves: "Μετακινήστε το πιάνο στο {range} για να καλύψει το τραγούδι",
+
+  songWiderThanPiano:
+    "Το τραγούδι είναι μεγαλύτερο από 5 οκτάβες — κάποιες νότες είναι εκτός. Χρησιμοποιήστε ◀ ▶ για μετατόπιση.",
+
+  pianoRange: "Πιάνο",
+
+  songRange: "Τραγούδι",
+
+  shiftPianoLower: "Μετατόπιση πιάνου χαμηλότερα",
+
+  shiftPianoHigher: "Μετατόπιση πιάνου ψηλότερα",
+
+  octavesShort: "οκτάβες",
+
+  mouseHiddenForWidePiano: "Το ποντίκι κρύβεται με 5 οκτάβες",
+
+  octaveCount2: "2 οκτάβες",
+
+  octaveCount3: "3 οκτάβες",
+
+  octaveCount4: "4 οκτάβες",
+
+  octaveCount5: "5 οκτάβες",
+
   showKeyboardModeToggle: "Εμφάνιση εναλλαγής πληκτρολογίου / συνθετητή",
 
   keyboardSectionMode: "Λειτουργία τμήματος πληκτρολογίου",
+
+  inputAreaNormal: "Κανονική προβολή",
+
+  inputAreaCompact: "Μεγιστοποίηση πληκτρολογίου και trackpad",
+
+  showMouseBottomRow: "Εμφάνιση σειράς drag, precision & scroll",
 
   resizeInputRow: "Αλλαγή μεγέθους πληκτρολογίου και ποντικιού",
 
@@ -194,6 +354,14 @@ export const el: Record<keyof typeof en, string> = {
   quickActionAdd: "Προσθήκη ενέργειας",
 
   quickActionDelete: "Διαγραφή",
+
+  quickActionSearchApps: "Αναζήτηση εγκατεστημένων προγραμμάτων…",
+
+  quickActionBrowse: "Εξερεύνηση…",
+
+  quickActionLoadingApps: "Φόρτωση εγκατεστημένων προγραμμάτων…",
+
+  quickActionNoApps: "Δεν βρέθηκαν προγράμματα.",
 
   settingsAbout: "Σχετικά",
 
