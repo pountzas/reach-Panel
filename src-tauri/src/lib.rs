@@ -22,7 +22,10 @@ use input::{
 };
 #[cfg(target_os = "windows")]
 use input::focus_target;
-use prediction::{get_installed_languages, get_suggestions, record_usage};
+use prediction::{
+    ensure_english_pack, get_installed_languages, get_suggestions, install_word_pack,
+    list_word_packs, record_usage, uninstall_word_pack, WordPackInfo,
+};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
@@ -939,6 +942,30 @@ fn cmd_record_word(profile_id: String, word: String, language: String, state: St
 }
 
 #[tauri::command]
+fn cmd_list_word_packs(state: State<AppState>) -> Result<Vec<WordPackInfo>, String> {
+    list_word_packs(&state.db).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_install_word_pack(
+    language: String,
+    app: tauri::AppHandle,
+    state: State<AppState>,
+) -> Result<Vec<WordPackInfo>, String> {
+    install_word_pack(&app, &state.db, &language).map_err(|e| e.to_string())?;
+    list_word_packs(&state.db).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_uninstall_word_pack(
+    language: String,
+    state: State<AppState>,
+) -> Result<Vec<WordPackInfo>, String> {
+    uninstall_word_pack(&state.db, &language).map_err(|e| e.to_string())?;
+    list_word_packs(&state.db).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn cmd_get_languages() -> Vec<String> {
     get_installed_languages()
 }
@@ -1042,6 +1069,13 @@ pub fn run() {
                 last_error: Mutex::new(None),
             });
 
+            {
+                let state = app.state::<AppState>();
+                if let Err(e) = ensure_english_pack(app.handle(), &state.db) {
+                    eprintln!("Failed to install bundled English word pack: {e}");
+                }
+            }
+
             stt::init(&app_data_dir, app.handle().clone());
 
             if let Some(window) = app.get_webview_window("main") {
@@ -1117,6 +1151,9 @@ pub fn run() {
             cmd_open_windows_settings,
             cmd_get_suggestions,
             cmd_record_word,
+            cmd_list_word_packs,
+            cmd_install_word_pack,
+            cmd_uninstall_word_pack,
             cmd_get_languages,
             cmd_get_macros,
             cmd_get_macro_steps,

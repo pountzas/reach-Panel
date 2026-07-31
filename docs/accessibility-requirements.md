@@ -47,7 +47,7 @@ Caregivers can manage named profiles, emergency phrase visibility, monitor selec
 | Quick actions | Launch exe and URL targets |
 | Phrases | Type, speak, or both; favorites and emergency toggle |
 | TTS | Offline via Windows SAPI installed voices |
-| Prediction | Top suggestions per language; disable toggle |
+| Prediction | Offline word packs (English bundled; other languages downloadable); learn on typed words; disable toggle |
 | Macros | Multi-step sequences; JSON import/export |
 | Head tracking | Calibration wizard; touch/head mode toggle |
 | Multi-monitor | List displays; position app on accessibility screen |

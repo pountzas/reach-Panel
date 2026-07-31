@@ -68,13 +68,34 @@ export const pt: Record<keyof typeof en, string> = {
 
   showSuggestionsBar: "Mostrar barra de sugestões",
 
+  predictionDictionaries: "Dicionários de previsão",
+
+  predictionDictionariesHint:
+    "O inglês está incluído. Baixe outros idiomas conforme necessário. As sugestões seguem o idioma de digitação.",
+
+  wordPackInstalled: "Instalado",
+
+  wordPackNotInstalled: "Não instalado",
+
+  wordPackInstall: "Instalar",
+
+  wordPackUninstall: "Remover",
+
+  wordPackInstalling: "A instalar…",
+
+  wordPackRequired: "Obrigatório",
+
+  wordPackInstallFailed: "Não foi possível instalar o dicionário",
+
+  wordPackUninstallFailed: "Não foi possível remover o dicionário",
+
   showDictationControl: "Mostrar ditado (microfone)",
 
   opacity: "Opacidade",
 
   appLanguage: "Idioma da aplicação",
 
-  appLanguageHint: "Menus, frases, previsões e voz",
+  appLanguageHint: "Menus, frases e voz",
 
   typingLanguage: "Idioma de escrita",
 

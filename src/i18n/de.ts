@@ -68,13 +68,34 @@ export const de: Record<keyof typeof en, string> = {
 
   showSuggestionsBar: "Vorschlagsleiste anzeigen",
 
+  predictionDictionaries: "Vorhersage-Wörterbücher",
+
+  predictionDictionariesHint:
+    "Englisch ist enthalten. Andere Sprachen bei Bedarf herunterladen. Vorschläge folgen der Tipp-Sprache.",
+
+  wordPackInstalled: "Installiert",
+
+  wordPackNotInstalled: "Nicht installiert",
+
+  wordPackInstall: "Installieren",
+
+  wordPackUninstall: "Entfernen",
+
+  wordPackInstalling: "Wird installiert…",
+
+  wordPackRequired: "Erforderlich",
+
+  wordPackInstallFailed: "Wörterbuch konnte nicht installiert werden",
+
+  wordPackUninstallFailed: "Wörterbuch konnte nicht entfernt werden",
+
   showDictationControl: "Diktat anzeigen (Mikrofon)",
 
   opacity: "Deckkraft",
 
   appLanguage: "App-Sprache",
 
-  appLanguageHint: "Menüs, Phrasen, Vorhersagen und Sprache",
+  appLanguageHint: "Menüs, Phrasen und Sprache",
 
   typingLanguage: "Eingabesprache",
 

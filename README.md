@@ -41,7 +41,7 @@ Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Pan
 - Fn key on the bottom row maps number keys 1–0 and `-` `=` to F1–F12
 - Keyboard / synthesizer mode toggle with two-octave piano keyboard
 - Language switch key with country flag icons (follows installed Windows keyboards)
-- Predictive text (English, Greek, German, French, Italian, Spanish, Portuguese) with disable toggle
+- Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle
 - `Macro builder with JSON import/export
 
 
@@ -150,7 +150,9 @@ Windows and macOS bundles are built in CI. Windows installers are published auto
 | `src-tauri/src/tts/`                 | Text-to-speech (Windows SAPI / WinRT; macOS stub)                    |
 | `src-tauri/src/stt/`                 | Voice dictation (WinRT speech recognition; Groq cloud fallback)      |
 | `src-tauri/src/db/`                  | SQLite persistence (profiles, phrases, macros)                       |
-| `src-tauri/src/prediction/`          | Predictive text suggestions                                          |
+| `src-tauri/src/prediction/`          | Predictive text + word-pack install/download                         |
+| `src-tauri/resources/wordpacks/`     | Bundled English dictionary                                           |
+| `wordpacks-dist/`                    | Downloadable packs for GitHub `wordpacks-v1` release                 |
 | `docs/accessibility-requirements.md` | Personas and acceptance criteria                                     |
 
 
