@@ -50,14 +50,30 @@ export function KeyboardSection() {
     <div className="flex h-full min-w-0 flex-1 flex-col">
       {showToolbar && (
         <div
-          className={`relative z-20 flex items-center justify-between gap-2 overflow-visible pr-1 ${compact ? "pt-2" : "pt-6"}`}
+          className={`relative z-20 flex items-center overflow-visible pr-1 ${compact ? "pt-2" : "pt-6"} ${showDictation || showToggle ? "justify-end gap-2" : "justify-center"}`}
         >
-          <div className="min-w-0 flex-1 pl-1.5">
-            {showSuggestions && <SuggestionsBar />}
-          </div>
+          {showSuggestions && (
+            <div
+              className={
+                showDictation || showToggle
+                  ? "pointer-events-none absolute inset-x-0 flex justify-center"
+                  : "min-w-0 max-w-full"
+              }
+            >
+              <div
+                className={
+                  showDictation || showToggle
+                    ? "pointer-events-auto min-w-0 max-w-[min(100%,calc(100%-11rem))] px-1"
+                    : "min-w-0 max-w-full"
+                }
+              >
+                <SuggestionsBar />
+              </div>
+            </div>
+          )}
           {(showDictation || showToggle) && (
             <div
-              className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
+              className={`relative z-10 flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
             >
               {showDictation && <DictationButton />}
               {showSynth && showToggle && (

@@ -1,45 +1,34 @@
 import { useAppStore } from "../../stores/appStore";
-import { useTranslation } from "../../hooks/useTranslation";
+import { getSurfaceColors } from "../../lib/colorProfiles";
+import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 
 export function SuggestionsBar() {
-  const { suggestions, settings, applySuggestion, updateSettings } = useAppStore();
-  const { t } = useTranslation();
+  const { suggestions, settings, applySuggestion } = useAppStore();
+  const surface = getSurfaceColors(settings.appBgColor);
+  const bgColor = settings.keyboardKeyColor ?? "#f3f4f6";
+  const textColor = settings.keyTextColor ?? "#374151";
 
-  if (!settings.predictionEnabled && suggestions.length === 0) {
-    return (
-      <div className="flex min-w-0 items-center gap-2 overflow-hidden py-1 pl-1">
-        <span className="shrink-0 text-xs text-slate-500">{t("predictionsOff")}</span>
-        <button
-          type="button"
-          className="shrink-0 text-xs text-blue-600"
-          onClick={() => updateSettings({ predictionEnabled: true })}
-        >
-          {t("enable")}
-        </button>
-      </div>
-    );
+  if (suggestions.length === 0) {
+    return null;
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto py-1 pl-1">
-      <span className="shrink-0 text-xs font-medium text-slate-500">{t("suggest")}</span>
+    <div className="flex min-w-0 max-w-full items-center justify-center gap-2.5 overflow-x-auto py-1">
       {suggestions.map((word) => (
         <button
           key={word}
           type="button"
-          className="shrink-0 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+          className={`${PRESSABLE_BUTTON_CLASS} shrink-0 rounded-full px-4 py-1.5 text-base`}
+          style={{
+            backgroundColor: bgColor,
+            color: textColor,
+            borderColor: surface.panelBorder,
+          }}
           onClick={() => applySuggestion(word)}
         >
           {word}
         </button>
       ))}
-      <button
-        type="button"
-        className="shrink-0 text-xs text-slate-500"
-        onClick={() => updateSettings({ predictionEnabled: false })}
-      >
-        {t("turnOff")}
-      </button>
     </div>
   );
 }
