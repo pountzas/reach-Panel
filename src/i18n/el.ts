@@ -233,6 +233,8 @@ export const el: Record<keyof typeof en, string> = {
 
   musicLesson: "Μάθημα μουσικής",
 
+  partiture: "Παρτιτούρα",
+
   selectSong: "Τραγούδι",
 
   restartLesson: "Επανεκκίνηση",
