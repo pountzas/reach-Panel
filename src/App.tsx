@@ -35,8 +35,11 @@ function MainApp() {
   const loadImportedSongs = useAppStore((s) => s.loadImportedSongs);
 
   useEffect(() => {
+    let cancelled = false;
+    let pollId: number | null = null;
     const init = async () => {
       await loadProfileFiles();
+      if (cancelled) return;
       await loadImportedSongs();
       await loadMonitors();
       const { settings } = useAppStore.getState();
@@ -58,8 +61,19 @@ function MainApp() {
       await invoke("cmd_set_window_focusable", { focusable: false });
       void checkForUpdates();
       await refreshSttCapability();
+      if (cancelled) return;
+      // Start polling only after profile hydration so DEFAULT_SETTINGS cannot
+      // be persisted over the active profile file on startup.
+      pollId = window.setInterval(() => {
+        if (document.hidden) return;
+        void pollKeyboardState();
+      }, KEYBOARD_POLL_MS);
     };
-    init();
+    void init();
+    return () => {
+      cancelled = true;
+      if (pollId !== null) window.clearInterval(pollId);
+    };
   }, [
     loadProfileFiles,
     loadImportedSongs,
@@ -71,14 +85,6 @@ function MainApp() {
     checkForUpdates,
     refreshSttCapability,
   ]);
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      if (document.hidden) return;
-      void pollKeyboardState();
-    }, KEYBOARD_POLL_MS);
-    return () => window.clearInterval(id);
-  }, [pollKeyboardState]);
 
   useEffect(() => {
     const unlisteners: Array<Promise<() => void>> = [];
