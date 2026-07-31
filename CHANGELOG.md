@@ -5,6 +5,29 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 (2026-07-31)
+
+## What's Changed
+* feat: collapse window to branded bottom-right circle FAB by @pountzas in https://github.com/pountzas/reach-Panel/pull/66
+* feat: add compact input area toggle and trackpad controls by @pountzas in https://github.com/pountzas/reach-Panel/pull/67
+* Separate app UI language from typing language by @pountzas in https://github.com/pountzas/reach-Panel/pull/68
+* feat: add voice dictation with WinRT speech recognition by @pountzas in https://github.com/pountzas/reach-Panel/pull/75
+* feat: react-hot-toast notifications and stable section layout by @pountzas in https://github.com/pountzas/reach-Panel/pull/77
+* feat: large headers mode for easier height resize by @pountzas in https://github.com/pountzas/reach-Panel/pull/78
+* chore(deps): bump the npm-minor-and-patch group across 1 directory with 6 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/76
+* chore(deps): bump the cargo-minor-and-patch group across 1 directory with 5 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/74
+* feat: tighten default profile settings and add save/delete/wipe by @pountzas in https://github.com/pountzas/reach-Panel/pull/79
+* feat: open settings and tools in separate OS windows by @pountzas in https://github.com/pountzas/reach-Panel/pull/80
+* fix: tool window theme and settings blocking by @pountzas in https://github.com/pountzas/reach-Panel/pull/81
+* fix: show header action hover labels below controls by @pountzas in https://github.com/pountzas/reach-Panel/pull/82
+* feat: sliding piano range and clearer teaching playback by @pountzas in https://github.com/pountzas/reach-Panel/pull/83
+* feat: replace local Whisper dictation with Groq cloud STT by @pountzas in https://github.com/pountzas/reach-Panel/pull/84
+* feat: docked section stack with undock, and icon-based quick actions by @pountzas in https://github.com/pountzas/reach-Panel/pull/85
+* feat: detect and switch Windows keyboard languages and on-screen layouts by @pountzas in https://github.com/pountzas/reach-Panel/pull/86
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.5.1...v0.6.0
+
 ## 0.5.1 (2026-07-09)
 
 ## What's Changed
