@@ -1,21 +1,12 @@
 # ReachPanel
 
-Assistive virtual keyboard and mouse for Windows — built for people who cannot use a physical keyboard and need touch-first control of a PC.
+Assistive virtual keyboard and mouse for Windows — built for users with severe motor disabilities who operate a wheelchair-mounted touchscreen while applications run on a laptop display.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform: Windows](https://img.shields.io/badge/platform-Windows-lightgrey)]()
-[![Build](https://github.com/pountzas/reach-Panel/actions/workflows/build.yml/badge.svg)](https://github.com/pountzas/reach-Panel/actions/workflows/build.yml)
+[License: MIT](LICENSE)
+[Platform: Windows]()
+[Build](https://github.com/pountzas/reach-Panel/actions/workflows/build.yml)
 
 Built with Tauri, React, Rust, and SQLite.
-
-## Why it exists
-
-ReachPanel was created for my nephew, who has tetraplegia, so he can do schoolwork on a touch-capable laptop without relying on a physical keyboard or trackpad. The same tools help others with severe motor disabilities type, move the pointer, launch apps, and speak preset phrases.
-
-## Intended setup
-
-- **Single monitor:** works on a touch laptop alone (common at school). The panel sits on the same display as your apps.
-- **Multi-monitor (recommended):** put ReachPanel on a secondary touchscreen at a comfortable distance (desk or wheelchair mount) while apps run on the primary display. Use Settings to pick the accessibility screen.
 
 ## Download (Windows)
 
@@ -23,42 +14,53 @@ Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Pan
 
 1. Download the latest `.msi` or `.exe` installer for Windows.
 2. Run the installer. On older Windows builds, you may need the [WebView2 runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
-3. Open the app, select a profile in Settings, and — if you have more than one display — position the window on your touch / accessibility screen.
+3. Open the app on your accessibility monitor (wheelchair-mounted touchscreen), select a profile in Settings, and position the window on the correct display.
 
 > **macOS builds are experimental.** CI produces `.dmg` bundles, but input injection and TTS still require Windows APIs for full functionality. See [Roadmap](#roadmap).
 
+
+
 ## Screenshots
 
-| Main layout | Virtual trackpad | Settings |
-|-------------|------------------|----------|
-| ![Main keyboard layout](docs/images/keyboard.png) | ![Virtual trackpad](docs/images/trackpad.png) | ![Settings panel](docs/images/settings.png) |
+
+| Main layout          | Virtual trackpad | Settings       |
+| -------------------- | ---------------- | -------------- |
+| Main keyboard layout | Virtual trackpad | Settings panel |
+
+
+*Replace with captures from your release build when ready — see [docs/images/README.md](docs/images/README.md).*
 
 ## Features
+
+
 
 ### Keyboard
 
 - System-wide keyboard injection with sticky modifiers
 - Adjustable on-screen keyboard (size, spacing, colors, opacity)
 - Fn key on the bottom row maps number keys 1–0 and `-` `=` to F1–F12
-- Keyboard / synthesizer mode toggle (2–5 octave piano, teaching / partiture lessons)
+- Keyboard / synthesizer mode toggle with two-octave piano keyboard
 - Language switch key with country flag icons (follows installed Windows keyboards)
 - Predictive text (English, Greek, German, French, Italian, Spanish, Portuguese) with disable toggle
-- Macro builder with JSON import/export
-- Compact input area and large-header layout options for easier touch targeting
+- `Macro builder with JSON import/export
+
+
 
 ### Mouse
 
-- Virtual trackpad with left or right placement next to the keyboard
-- Move, click, scroll from the touchscreen
+- Virtual trackpad with left/right/floating placement
+- Move, click, scroll from the accessibility touchscreen
 - Toggle between trackpad and on-screen numeric keypad
+
+
 
 ### Communication
 
 - Quick Actions bar (launch apps and URLs)
 - Communication phrases with TTS (Windows SAPI)
 - Emergency phrase section with show/hide toggle
-- Docked section stack; Quick Actions and Phrases can undock when needed
-- Collapse the panel to a branded circle FAB and expand again
+
+
 
 ### Voice dictation (Windows)
 
@@ -66,6 +68,8 @@ Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Pan
 - Uses the **typing language**, not the UI language
 - **English and Western European languages (DE, FR, IT, ES, PT):** Windows Speech Recognition (WinRT) when the speech language pack is installed and online speech is allowed
 - **Greek and other languages without a Windows speech pack:** [Groq](https://groq.com) cloud Whisper (`whisper-large-v3-turbo`) over the internet
+
+
 
 #### Set up Groq for Greek dictation
 
@@ -81,11 +85,12 @@ If Windows online speech is off, open **Settings → Privacy & security → Spee
 
 ### Profiles & accessibility
 
-- Named saved profiles with separate settings
+- Profiles (Child, Parent, Therapist)
 - Multi-monitor detection and positioning
 - Head tracking calibration wizard (webcam-based)
-- In-app update checks
 - UI languages: English, Greek, German, French, Italian, Spanish, Portuguese
+
+
 
 ## Requirements
 
@@ -98,6 +103,8 @@ For development:
 - Node.js 18+
 - Rust (via [rustup](https://rustup.rs/))
 - Visual Studio Build Tools with the C++ workload
+
+
 
 ## Development
 
@@ -112,6 +119,8 @@ For Rust builds on Windows, ensure the MSVC environment is active. If `link.exe`
 "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 ```
 
+
+
 ## Build from source
 
 ```bash
@@ -124,29 +133,36 @@ Installers and executables are written to:
 src-tauri/target/release/bundle/
 ```
 
+
+
 ## Releases
 
 Windows and macOS bundles are built in CI. Windows installers are published automatically when a [release-please](https://github.com/googleapis/release-please) Release PR is merged on `main`. Development happens on `dev`; merging `dev` → `main` opens the Release PR. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full branch and versioning workflow.
 
 ## Architecture
 
-| Path | Responsibility |
-|------|----------------|
-| `src/` | React frontend (keyboard, mouse, phrases, settings, head tracking) |
-| `src-tauri/src/input/` | Platform keyboard/mouse injection (Windows `SendInput`; macOS stubs) |
-| `src-tauri/src/window/` | Monitor enumeration (Windows APIs; macOS stub) |
-| `src-tauri/src/tts/` | Text-to-speech (Windows SAPI / WinRT; macOS stub) |
-| `src-tauri/src/stt/` | Voice dictation (WinRT speech recognition; Groq cloud fallback) |
-| `src-tauri/src/db/` | SQLite persistence (profiles, phrases, macros) |
-| `src-tauri/src/prediction/` | Predictive text suggestions |
-| `docs/accessibility-requirements.md` | Intended users and acceptance criteria |
+
+| Path                                 | Responsibility                                                       |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| `src/`                               | React frontend (keyboard, mouse, phrases, settings, head tracking)   |
+| `src-tauri/src/input/`               | Platform keyboard/mouse injection (Windows `SendInput`; macOS stubs) |
+| `src-tauri/src/window/`              | Monitor enumeration (Windows APIs; macOS stub)                       |
+| `src-tauri/src/tts/`                 | Text-to-speech (Windows SAPI / WinRT; macOS stub)                    |
+| `src-tauri/src/stt/`                 | Voice dictation (WinRT speech recognition; Groq cloud fallback)      |
+| `src-tauri/src/db/`                  | SQLite persistence (profiles, phrases, macros)                       |
+| `src-tauri/src/prediction/`          | Predictive text suggestions                                          |
+| `docs/accessibility-requirements.md` | Personas and acceptance criteria                                     |
+
+
+
 
 ## Roadmap
 
-- Android tablet companion that connects to this Windows app and controls the PC
 - Eye tracking support
 - AutoHotkey macro import
 - macOS port: CGEvent input, AVSpeechSynthesizer, native monitor APIs (experimental CI builds in progress)
+
+
 
 ## Known limitations
 
@@ -154,6 +170,8 @@ Windows and macOS bundles are built in CI. Windows installers are published auto
 - macOS bundles lack system-wide input and TTS until the native backends land
 - Voice dictation is Windows-only; Greek (and other WinRT-unsupported languages) need a Groq API key and internet
 - Cloud dictation is utterance-based (speak, pause) rather than fully continuous streaming
+
+
 
 ## Contributing
 
