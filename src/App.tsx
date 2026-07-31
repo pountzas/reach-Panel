@@ -17,22 +17,22 @@ import {
 } from "./lib/toolWindows";
 import { useAppStore } from "./stores/appStore";
 
+const KEYBOARD_POLL_MS = 100;
+
 function MainApp() {
-  const {
-    loadProfileFiles,
-    loadMonitors,
-    loadKeyboardLayout,
-    loadInputMethods,
-    refreshLayoutKeyLabels,
-    pollKeyboardState,
-    checkForUpdates,
-    setDictationState,
-    refreshSttCapability,
-    appendTyped,
-    loadSuggestions,
-    setLastError,
-    loadImportedSongs,
-  } = useAppStore();
+  const loadProfileFiles = useAppStore((s) => s.loadProfileFiles);
+  const loadMonitors = useAppStore((s) => s.loadMonitors);
+  const loadKeyboardLayout = useAppStore((s) => s.loadKeyboardLayout);
+  const loadInputMethods = useAppStore((s) => s.loadInputMethods);
+  const refreshLayoutKeyLabels = useAppStore((s) => s.refreshLayoutKeyLabels);
+  const pollKeyboardState = useAppStore((s) => s.pollKeyboardState);
+  const checkForUpdates = useAppStore((s) => s.checkForUpdates);
+  const setDictationState = useAppStore((s) => s.setDictationState);
+  const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
+  const appendTyped = useAppStore((s) => s.appendTyped);
+  const loadSuggestions = useAppStore((s) => s.loadSuggestions);
+  const setLastError = useAppStore((s) => s.setLastError);
+  const loadImportedSongs = useAppStore((s) => s.loadImportedSongs);
 
   useEffect(() => {
     const init = async () => {
@@ -74,8 +74,9 @@ function MainApp() {
 
   useEffect(() => {
     const id = window.setInterval(() => {
+      if (document.hidden) return;
       void pollKeyboardState();
-    }, 50);
+    }, KEYBOARD_POLL_MS);
     return () => window.clearInterval(id);
   }, [pollKeyboardState]);
 
@@ -158,7 +159,8 @@ function MainApp() {
 }
 
 function ToolApp({ label }: { label: ToolWindowLabel }) {
-  const { loadProfileFiles, loadMonitors } = useAppStore();
+  const loadProfileFiles = useAppStore((s) => s.loadProfileFiles);
+  const loadMonitors = useAppStore((s) => s.loadMonitors);
 
   useEffect(() => {
     const init = async () => {

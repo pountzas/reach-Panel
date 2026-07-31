@@ -25,7 +25,8 @@ import {
 import { closeAllToolWindows } from "../../lib/toolWindows";
 
 function InputRowPanel() {
-  const { settings, updateSettings } = useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
   const mouseSide = settings.mousePanelSide ?? "right";
   const mouseRatio = settings.inputRowRightRatio ?? 0.28;
   const mouseVisible = settings.mouseVisible;
@@ -78,18 +79,16 @@ function contentHeightRatioFromSettings(settings: {
 }
 
 export function AppShell() {
-  const {
-    settings,
-    monitors,
-    pendingUpdate,
-    setPendingUpdate,
-    setShowSettings,
-    toggleCollapsed,
-    updateSettings,
-    applyWindowHeightRatioLive,
-    isAnimatingWindow,
-    musicTeachingEnabled,
-  } = useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const monitors = useAppStore((s) => s.monitors);
+  const pendingUpdate = useAppStore((s) => s.pendingUpdate);
+  const setPendingUpdate = useAppStore((s) => s.setPendingUpdate);
+  const setShowSettings = useAppStore((s) => s.setShowSettings);
+  const toggleCollapsed = useAppStore((s) => s.toggleCollapsed);
+  const updateSettings = useAppStore((s) => s.updateSettings);
+  const applyWindowHeightRatioLive = useAppStore((s) => s.applyWindowHeightRatioLive);
+  const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
+  const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const { t } = useTranslation();
   const largeHeaders = settings.largeHeaders;
   const headerHeight = appHeaderHeightPx(largeHeaders);
@@ -104,6 +103,7 @@ export function AppShell() {
     regionHeight: number;
     latestRatio: number;
   } | null>(null);
+  const resizeRafRef = useRef<number | null>(null);
 
   const handleCloseApp = () => {
     void closeAllToolWindows().finally(() => {
@@ -137,13 +137,23 @@ export function AppShell() {
       drag.startRatio - delta / drag.regionHeight,
     );
     drag.latestRatio = nextRatio;
-    void applyWindowHeightRatioLive(nextRatio);
+    if (resizeRafRef.current !== null) return;
+    resizeRafRef.current = requestAnimationFrame(() => {
+      resizeRafRef.current = null;
+      const current = windowResizeRef.current;
+      if (!current) return;
+      void applyWindowHeightRatioLive(current.latestRatio);
+    });
   };
 
   const onWindowHeaderPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
     const drag = windowResizeRef.current;
     if (!drag) return;
     windowResizeRef.current = null;
+    if (resizeRafRef.current !== null) {
+      cancelAnimationFrame(resizeRafRef.current);
+      resizeRafRef.current = null;
+    }
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
     } catch {
