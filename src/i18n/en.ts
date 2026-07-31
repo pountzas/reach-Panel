@@ -229,6 +229,8 @@
 
   musicLesson: "Music lesson",
 
+  partiture: "Partiture",
+
   selectSong: "Song",
 
   restartLesson: "Restart",

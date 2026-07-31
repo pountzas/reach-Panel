@@ -12,6 +12,7 @@ import {
   resolveSynthStartOctave,
 } from "../../lib/music/octaveCount";
 import { isImportedMusicSong } from "../../lib/music/parseJsonSong";
+import { PartitureView } from "./PartitureView";
 
 /** Fixed slot width so the strip can keep the active note centered. */
 const NOTE_SLOT_REM = 2.75;
@@ -67,154 +68,165 @@ export function MusicLessonPanel() {
         color: surface.panelText,
       }}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-semibold">{t("musicLesson")}</span>
-        <div className="flex flex-wrap items-center gap-1">
-          <button
-            type="button"
-            className="rounded-md border px-2 py-1 text-xs font-medium"
-            style={{
-              borderColor: surface.panelBorder,
-              backgroundColor: surface.panelBg,
-              color: surface.panelText,
-            }}
-            onClick={() => void importMusicSongsFromFile()}
-            disabled={musicPlaybackActive}
+      <div className="grid min-h-0 flex-1 grid-cols-2 gap-2">
+        <div className="flex min-h-0 flex-col gap-2 overflow-auto">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-semibold">{t("musicLesson")}</span>
+            <div className="flex flex-wrap items-center gap-1">
+              <button
+                type="button"
+                className="rounded-md border px-2 py-1 text-xs font-medium"
+                style={{
+                  borderColor: surface.panelBorder,
+                  backgroundColor: surface.panelBg,
+                  color: surface.panelText,
+                }}
+                onClick={() => void importMusicSongsFromFile()}
+                disabled={musicPlaybackActive}
+              >
+                {t("loadSong")}
+              </button>
+              <button
+                type="button"
+                className="rounded-md border px-2 py-1 text-xs font-medium"
+                style={{
+                  borderColor: surface.panelBorder,
+                  backgroundColor: musicPlaybackActive ? "#fde68a" : surface.panelBg,
+                  color: surface.panelText,
+                }}
+                onClick={() => {
+                  if (musicPlaybackActive) {
+                    stopMusicPlayback();
+                  } else {
+                    startMusicPlayback();
+                  }
+                }}
+                disabled={!song || song.notes.length === 0}
+              >
+                {musicPlaybackActive ? t("stopSong") : t("playSong")}
+              </button>
+              <button
+                type="button"
+                className="rounded-md border px-2 py-1 text-xs font-medium"
+                style={{
+                  borderColor: surface.panelBorder,
+                  backgroundColor: surface.panelBg,
+                  color: surface.panelText,
+                }}
+                onClick={() => restartMusicLesson()}
+                disabled={musicPlaybackActive}
+              >
+                {t("restartLesson")}
+              </button>
+              {selectedIsImported && (
+                <button
+                  type="button"
+                  className="rounded-md border px-2 py-1 text-xs font-medium"
+                  style={{
+                    borderColor: surface.panelBorder,
+                    backgroundColor: surface.panelBg,
+                    color: surface.panelText,
+                  }}
+                  onClick={() => {
+                    if (!song) return;
+                    const ok = window.confirm(
+                      t("confirmDeleteSong").replace("{title}", song.title),
+                    );
+                    if (ok) {
+                      void deleteImportedSong(song.id);
+                    }
+                  }}
+                  disabled={musicPlaybackActive}
+                >
+                  {t("deleteSong")}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <label
+            className="flex flex-col gap-1 text-xs"
+            style={{ color: surface.panelMutedText }}
           >
-            {t("loadSong")}
-          </button>
-          <button
-            type="button"
-            className="rounded-md border px-2 py-1 text-xs font-medium"
-            style={{
-              borderColor: surface.panelBorder,
-              backgroundColor: musicPlaybackActive ? "#fde68a" : surface.panelBg,
-              color: surface.panelText,
-            }}
-            onClick={() => {
-              if (musicPlaybackActive) {
-                stopMusicPlayback();
-              } else {
-                startMusicPlayback();
-              }
-            }}
-            disabled={!song || song.notes.length === 0}
-          >
-            {musicPlaybackActive ? t("stopSong") : t("playSong")}
-          </button>
-          <button
-            type="button"
-            className="rounded-md border px-2 py-1 text-xs font-medium"
-            style={{
-              borderColor: surface.panelBorder,
-              backgroundColor: surface.panelBg,
-              color: surface.panelText,
-            }}
-            onClick={() => restartMusicLesson()}
-            disabled={musicPlaybackActive}
-          >
-            {t("restartLesson")}
-          </button>
-          {selectedIsImported && (
-            <button
-              type="button"
-              className="rounded-md border px-2 py-1 text-xs font-medium"
+            <span>{t("selectSong")}</span>
+            <select
+              className="rounded-md border px-2 py-1.5 text-sm"
               style={{
                 borderColor: surface.panelBorder,
                 backgroundColor: surface.panelBg,
                 color: surface.panelText,
               }}
-              onClick={() => {
-                if (!song) return;
-                const ok = window.confirm(
-                  t("confirmDeleteSong").replace("{title}", song.title),
-                );
-                if (ok) {
-                  void deleteImportedSong(song.id);
-                }
-              }}
+              value={musicSongId ?? ""}
               disabled={musicPlaybackActive}
+              onChange={(event) => {
+                void setMusicSongId(event.target.value);
+              }}
             >
-              {t("deleteSong")}
-            </button>
-          )}
-        </div>
-      </div>
+              <optgroup label={t("builtInSongs")}>
+                {BUILT_IN_SONGS.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.title}
+                    {entry.composer ? ` — ${entry.composer}` : ""}
+                  </option>
+                ))}
+              </optgroup>
+              {importedSongs.length > 0 && (
+                <optgroup label={t("importedSongs")}>
+                  {importedSongs.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.title}
+                      {entry.composer ? ` — ${entry.composer}` : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </label>
 
-      <label className="flex flex-col gap-1 text-xs" style={{ color: surface.panelMutedText }}>
-        <span>{t("selectSong")}</span>
-        <select
-          className="rounded-md border px-2 py-1.5 text-sm"
-          style={{
-            borderColor: surface.panelBorder,
-            backgroundColor: surface.panelBg,
-            color: surface.panelText,
-          }}
-          value={musicSongId ?? ""}
-          disabled={musicPlaybackActive}
-          onChange={(event) => {
-            void setMusicSongId(event.target.value);
-          }}
-        >
-          <optgroup label={t("builtInSongs")}>
-            {BUILT_IN_SONGS.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.title}
-                {entry.composer ? ` — ${entry.composer}` : ""}
-              </option>
-            ))}
-          </optgroup>
-          {importedSongs.length > 0 && (
-            <optgroup label={t("importedSongs")}>
-              {importedSongs.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.title}
-                  {entry.composer ? ` — ${entry.composer}` : ""}
-                </option>
-              ))}
-            </optgroup>
-          )}
-        </select>
-      </label>
-
-      {song && (
-        <div className="flex flex-col gap-1 text-sm">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <span className="font-medium">{song.title}</span>
-            <span style={{ color: surface.panelMutedText }}>{progressLabel}</span>
-          </div>
-          {song.composer && (
-            <span className="text-xs" style={{ color: surface.panelMutedText }}>
-              {song.composer}
-            </span>
-          )}
-          {completed && (
-            <p className="mt-1 text-sm font-semibold text-emerald-600">{t("lessonComplete")}</p>
-          )}
-          {songRangeLabel && (
-            <p className="text-xs" style={{ color: surface.panelMutedText }}>
-              {t("songRange")}: {songRangeLabel} · {t("pianoRange")}: {keyboardRange}
-            </p>
-          )}
-          {songFit && !songFit.fitsCompletely && (
-            <p className="text-xs text-amber-700">{t("songWiderThanPiano")}</p>
-          )}
-          {songFit?.fitsCompletely &&
-            (startOctave !== songFit.startOctave ||
-              octaveCount !== songFit.octaveCount) && (
-              <p className="text-xs text-amber-700">
-                {t("songNeedsOctaves").replace(
-                  "{range}",
-                  pianoRangeLabel(songFit.startOctave, songFit.octaveCount),
+          {song && (
+            <div className="flex flex-col gap-1 text-sm">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="font-medium">{song.title}</span>
+                <span style={{ color: surface.panelMutedText }}>{progressLabel}</span>
+              </div>
+              {song.composer && (
+                <span className="text-xs" style={{ color: surface.panelMutedText }}>
+                  {song.composer}
+                </span>
+              )}
+              {completed && (
+                <p className="mt-1 text-sm font-semibold text-emerald-600">
+                  {t("lessonComplete")}
+                </p>
+              )}
+              {songRangeLabel && (
+                <p className="text-xs" style={{ color: surface.panelMutedText }}>
+                  {t("songRange")}: {songRangeLabel} · {t("pianoRange")}: {keyboardRange}
+                </p>
+              )}
+              {songFit && !songFit.fitsCompletely && (
+                <p className="text-xs text-amber-700">{t("songWiderThanPiano")}</p>
+              )}
+              {songFit?.fitsCompletely &&
+                (startOctave !== songFit.startOctave ||
+                  octaveCount !== songFit.octaveCount) && (
+                  <p className="text-xs text-amber-700">
+                    {t("songNeedsOctaves").replace(
+                      "{range}",
+                      pianoRangeLabel(songFit.startOctave, songFit.octaveCount),
+                    )}
+                  </p>
                 )}
-              </p>
-            )}
+            </div>
+          )}
         </div>
-      )}
+
+        <PartitureView song={song} activeIndex={focusIndex} completed={completed} />
+      </div>
 
       {song && song.notes.length > 0 && (
         <div
-          className="music-note-strip relative mt-auto h-16 overflow-hidden rounded-md border"
+          className="music-note-strip relative h-16 shrink-0 overflow-hidden rounded-md border"
           style={{ borderColor: surface.panelBorder }}
           aria-label={t("upcomingNotes")}
         >
