@@ -238,17 +238,19 @@ fn worker_loop(
 
     while !stop_flag.load(Ordering::SeqCst) {
         thread::sleep(Duration::from_millis(80));
-        let snapshot = match samples.lock() {
-            Ok(buf) => buf.clone(),
+
+        // Score energy under the lock without cloning the full buffer every tick.
+        let energy = match samples.lock() {
+            Ok(buf) => {
+                if buf.len() <= cursor {
+                    continue;
+                }
+                let window = TARGET_SAMPLE_RATE as usize / 10; // ~100ms
+                let start = buf.len().saturating_sub(window).max(cursor);
+                rms(&buf[start..])
+            }
             Err(_) => continue,
         };
-        if snapshot.len() <= cursor {
-            continue;
-        }
-        // Score only the newest slice so trailing silence does not dilute RMS.
-        let window = TARGET_SAMPLE_RATE as usize / 10; // ~100ms
-        let start = snapshot.len().saturating_sub(window).max(cursor);
-        let energy = rms(&snapshot[start..]);
         peak_energy = peak_energy.max(energy);
         let now = Instant::now();
         if energy >= ENERGY_THRESHOLD {
@@ -271,19 +273,26 @@ fn worker_loop(
             if stop_flag.load(Ordering::SeqCst) {
                 break;
             }
-            let end = snapshot.len().saturating_sub(
-                (silence_secs.min(SILENCE_SECS) * TARGET_SAMPLE_RATE as f32) as usize,
-            );
-            let end = end.max(cursor);
-            let chunk = snapshot[cursor..end].to_vec();
-            cursor = end;
-            // Drop consumed audio so the buffer does not grow forever.
-            if let Ok(mut buf) = samples.lock() {
-                if cursor > 0 && cursor <= buf.len() {
-                    buf.drain(0..cursor);
-                    cursor = 0;
+            let silence_trim =
+                (silence_secs.min(SILENCE_SECS) * TARGET_SAMPLE_RATE as f32) as usize;
+            let chunk = match samples.lock() {
+                Ok(mut buf) => {
+                    if buf.len() <= cursor {
+                        None
+                    } else {
+                        let end = buf.len().saturating_sub(silence_trim).max(cursor);
+                        let chunk = buf[cursor..end].to_vec();
+                        // Drop consumed audio so the buffer does not grow forever.
+                        buf.drain(0..end);
+                        cursor = 0;
+                        Some(chunk)
+                    }
                 }
-            }
+                Err(_) => None,
+            };
+            let Some(chunk) = chunk else {
+                continue;
+            };
             speech_started = None;
             let flushed_peak = peak_energy;
             peak_energy = 0.0;

@@ -83,14 +83,16 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     let tag = winrt_language_tag(language);
     require_language_supported(tag)?;
 
-    let mut guard = runtime()
-        .lock()
-        .map_err(|_| anyhow!("Dictation runtime lock poisoned"))?;
-
-    if guard.session.is_some() {
-        return Err(anyhow!("Dictation is already active"));
+    {
+        let guard = runtime()
+            .lock()
+            .map_err(|_| anyhow!("Dictation runtime lock poisoned"))?;
+        if guard.session.is_some() {
+            return Err(anyhow!("Dictation is already active"));
+        }
     }
 
+    // Build recognizer and await WinRT ops without holding the global mutex.
     let win_lang = Language::CreateLanguage(&HSTRING::from(tag))?;
     let recognizer = SpeechRecognizer::Create(&win_lang)?;
 
@@ -99,6 +101,7 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
         .get()
         .map_err(|e| anyhow!("Failed to compile speech constraints: {e}"))?;
     if compilation.Status()? != SpeechRecognitionResultStatus::Success {
+        let _ = recognizer.Close();
         return Err(anyhow!(
             "Speech recognition constraints failed to compile for '{tag}'"
         ));
@@ -145,9 +148,24 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     ))?;
 
     let start = session.StartAsync()?;
-    start
-        .get()
-        .map_err(|e| map_stt_error(format!("Failed to start dictation: {e}")))?;
+    if let Err(e) = start.get() {
+        let _ = session.RemoveResultGenerated(result_token);
+        let _ = session.RemoveCompleted(completed_token);
+        let _ = recognizer.Close();
+        return Err(map_stt_error(format!("Failed to start dictation: {e}")));
+    }
+
+    let mut guard = runtime()
+        .lock()
+        .map_err(|_| anyhow!("Dictation runtime lock poisoned"))?;
+    if guard.session.is_some() {
+        drop(guard);
+        let _ = session.StopAsync().and_then(|op| op.get());
+        let _ = session.RemoveResultGenerated(result_token);
+        let _ = session.RemoveCompleted(completed_token);
+        let _ = recognizer.Close();
+        return Err(anyhow!("Dictation is already active"));
+    }
 
     guard.app_handle = Some(app.clone());
     guard.session = Some(ActiveSession {
@@ -162,15 +180,19 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
 }
 
 pub fn stop_dictation() -> Result<()> {
-    let mut guard = runtime()
-        .lock()
-        .map_err(|_| anyhow!("Dictation runtime lock poisoned"))?;
-
-    let Some(active) = guard.session.take() else {
-        return Ok(());
+    let (active, app) = {
+        let mut guard = runtime()
+            .lock()
+            .map_err(|_| anyhow!("Dictation runtime lock poisoned"))?;
+        let active = match guard.session.take() {
+            Some(active) => active,
+            None => return Ok(()),
+        };
+        let app = guard.app_handle.clone();
+        (active, app)
     };
 
-    let app = guard.app_handle.clone();
+    // Await StopAsync without holding the global mutex.
     let session = active.recognizer.ContinuousRecognitionSession()?;
     let stop = session.StopAsync()?;
     let _ = stop.get();

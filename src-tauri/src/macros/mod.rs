@@ -3,7 +3,6 @@ use crate::input::{press_combo, press_key, type_text, KeyPressRequest};
 use crate::tts::{speak_text, TtsSettings};
 use anyhow::Result;
 use serde_json::Value;
-use std::thread;
 use std::time::Duration;
 use tauri_plugin_opener::OpenerExt;
 
@@ -25,6 +24,16 @@ fn profile_language(db: &Database, profile_id: &str) -> String {
         .unwrap_or_else(|| "en".to_string())
 }
 
+async fn run_blocking<T, F>(f: F) -> Result<T>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T> + Send + 'static,
+{
+    tokio::task::spawn_blocking(f)
+        .await
+        .map_err(|e| anyhow::anyhow!("blocking task join failed: {e}"))?
+}
+
 pub async fn run_macro(
     app: &tauri::AppHandle,
     db: &Database,
@@ -40,7 +49,8 @@ pub async fn run_macro(
         match step.action_type.as_str() {
             "type_text" => {
                 if let Some(text) = payload.get("text").and_then(|v| v.as_str()) {
-                    type_text(text)?;
+                    let text = text.to_string();
+                    run_blocking(move || type_text(&text)).await?;
                 }
             }
             "key_press" => {
@@ -54,10 +64,14 @@ pub async fn run_macro(
                             .collect()
                     })
                     .unwrap_or_default();
-                press_key(KeyPressRequest {
-                    key: key.to_string(),
-                    modifiers,
-                })?;
+                let key = key.to_string();
+                run_blocking(move || {
+                    press_key(KeyPressRequest {
+                        key,
+                        modifiers,
+                    })
+                })
+                .await?;
             }
             "key_combo" => {
                 let keys: Vec<String> = payload
@@ -69,7 +83,7 @@ pub async fn run_macro(
                             .collect()
                     })
                     .unwrap_or_default();
-                press_combo(keys)?;
+                run_blocking(move || press_combo(keys)).await?;
             }
             "open_program" => {
                 if let Some(target) = payload.get("target").and_then(|v| v.as_str()) {
@@ -83,18 +97,23 @@ pub async fn run_macro(
             }
             "wait" => {
                 let ms = payload.get("ms").and_then(|v| v.as_u64()).unwrap_or(1000);
-                thread::sleep(Duration::from_millis(ms));
+                tokio::time::sleep(Duration::from_millis(ms)).await;
             }
             "speak" => {
                 if let Some(text) = payload.get("text").and_then(|v| v.as_str()) {
-                    speak_text(
-                        text,
-                        TtsSettings {
-                            rate: 0,
-                            volume: 100,
-                            language: language.clone(),
-                        },
-                    )?;
+                    let text = text.to_string();
+                    let language = language.clone();
+                    run_blocking(move || {
+                        speak_text(
+                            &text,
+                            TtsSettings {
+                                rate: 0,
+                                volume: 100,
+                                language,
+                            },
+                        )
+                    })
+                    .await?;
                 }
             }
             _ => {}

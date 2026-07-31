@@ -525,8 +525,10 @@ fn pick_background_image(app: &tauri::AppHandle) -> Result<Option<String>, Strin
 }
 
 #[tauri::command]
-fn cmd_pick_background_image(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    pick_background_image(&app)
+async fn cmd_pick_background_image(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || pick_background_image(&app))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 fn pick_music_song_file(app: &tauri::AppHandle) -> Result<Option<String>, String> {
@@ -564,13 +566,17 @@ struct MusicFilePayload {
 }
 
 #[tauri::command]
-fn cmd_pick_music_song_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    pick_music_song_file(&app)
+async fn cmd_pick_music_song_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || pick_music_song_file(&app))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn cmd_list_installed_apps() -> Result<Vec<installed_apps::InstalledApp>, String> {
-    installed_apps::list_installed_apps()
+async fn cmd_list_installed_apps() -> Result<Vec<installed_apps::InstalledApp>, String> {
+    tokio::task::spawn_blocking(installed_apps::list_installed_apps)
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 fn pick_app_executable(app: &tauri::AppHandle) -> Result<Option<String>, String> {
@@ -592,8 +598,10 @@ fn pick_app_executable(app: &tauri::AppHandle) -> Result<Option<String>, String>
 }
 
 #[tauri::command]
-fn cmd_pick_app_executable(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    pick_app_executable(&app)
+async fn cmd_pick_app_executable(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || pick_app_executable(&app))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -790,45 +798,55 @@ fn cmd_get_phrase_categories(profile_id: String, state: State<AppState>) -> Resu
 }
 
 #[tauri::command]
-fn cmd_use_phrase(
+async fn cmd_use_phrase(
     text: String,
     action: String,
     language: String,
-    _state: State<AppState>,
+    _state: State<'_, AppState>,
 ) -> Result<(), String> {
-    if action == "type" || action == "both" {
-        type_text(&text).map_err(|e| e.to_string())?;
-    }
-    if action == "speak" || action == "both" {
+    tokio::task::spawn_blocking(move || {
+        if action == "type" || action == "both" {
+            type_text(&text).map_err(|e| e.to_string())?;
+        }
+        if action == "speak" || action == "both" {
+            speak_text(
+                &text,
+                TtsSettings {
+                    rate: 0,
+                    volume: 100,
+                    language,
+                },
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn cmd_speak(text: String, rate: i32, volume: u16, language: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
         speak_text(
             &text,
             TtsSettings {
-                rate: 0,
-                volume: 100,
+                rate,
+                volume,
                 language,
             },
         )
-        .map_err(|e| e.to_string())?;
-    }
-    Ok(())
+        .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn cmd_speak(text: String, rate: i32, volume: u16, language: String) -> Result<(), String> {
-    speak_text(
-        &text,
-        TtsSettings {
-            rate,
-            volume,
-            language,
-        },
-    )
-    .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_stop_speaking() -> Result<(), String> {
-    stop_speaking().map_err(|e| e.to_string())
+async fn cmd_stop_speaking() -> Result<(), String> {
+    tokio::task::spawn_blocking(|| stop_speaking().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -847,17 +865,23 @@ fn cmd_validate_tts() -> Result<(), String> {
 }
 
 #[tauri::command]
-fn cmd_start_dictation(
+async fn cmd_start_dictation(
     language: String,
     groq_api_key: Option<String>,
     app: AppHandle,
 ) -> Result<(), String> {
-    start_dictation(&language, groq_api_key.as_deref(), app).map_err(|e| e.to_string())
+    tokio::task::spawn_blocking(move || {
+        start_dictation(&language, groq_api_key.as_deref(), app).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn cmd_stop_dictation() -> Result<(), String> {
-    stop_dictation().map_err(|e| e.to_string())
+async fn cmd_stop_dictation() -> Result<(), String> {
+    tokio::task::spawn_blocking(|| stop_dictation().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -1004,13 +1028,14 @@ pub fn run() {
             let app_data_dir = app
                 .path()
                 .app_data_dir()
-                .expect("failed to resolve app data dir");
-            let db = Database::new(app_data_dir.clone()).expect("failed to initialize database");
-            let profiles =
-                ProfileStore::new(&app_data_dir).expect("failed to initialize profile store");
+                .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
+            let db = Database::new(app_data_dir.clone())
+                .map_err(|e| format!("failed to initialize database: {e}"))?;
+            let profiles = ProfileStore::new(&app_data_dir)
+                .map_err(|e| format!("failed to initialize profile store: {e}"))?;
             profiles
                 .ensure_default_profile_file(&db)
-                .expect("failed to load default profile file");
+                .map_err(|e| format!("failed to load default profile file: {e}"))?;
             app.manage(AppState {
                 db,
                 profiles,
