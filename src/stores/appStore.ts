@@ -249,11 +249,13 @@ function parseSettings(json: string): AppSettings {
     const uiLanguage = parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
     // Older profile files may omit keys that previously defaulted to "on".
     // Keep that behavior for existing installs; new profiles write explicit values.
+    // Suggestions bar show/hide and prediction stay in sync.
+    const suggestionsVisible = parsed.suggestionsVisible ?? true;
     const legacyFill: Partial<AppSettings> = {
-      predictionEnabled: parsed.predictionEnabled ?? true,
+      predictionEnabled: suggestionsVisible,
       quickActionsVisible: parsed.quickActionsVisible ?? true,
       phrasesVisible: parsed.phrasesVisible ?? true,
-      suggestionsVisible: parsed.suggestionsVisible ?? true,
+      suggestionsVisible,
       dictationVisible: parsed.dictationVisible ?? true,
       emergencyVisible: parsed.emergencyVisible ?? true,
       keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,
@@ -534,6 +536,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
           }
         : {}),
     };
+    // Suggestions bar visibility and prediction stay in sync: show ⇒ enable, hide ⇒ disable.
+    if (
+      partial.suggestionsVisible !== undefined &&
+      partial.predictionEnabled === undefined
+    ) {
+      next = { ...next, predictionEnabled: partial.suggestionsVisible };
+    } else if (
+      partial.predictionEnabled !== undefined &&
+      partial.suggestionsVisible === undefined
+    ) {
+      next = { ...next, suggestionsVisible: partial.predictionEnabled };
+    }
     if (
       partial.synthesizerStartOctave !== undefined ||
       partial.synthesizerOctaveCount !== undefined
@@ -652,6 +666,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (uiLanguageChanged) {
       set({ typedBuffer: "", suggestions: [] });
       await get().loadPhrases();
+      await get().loadSuggestions();
+    }
+    if (
+      partial.predictionEnabled !== undefined ||
+      partial.suggestionsVisible !== undefined
+    ) {
       await get().loadSuggestions();
     }
     {
