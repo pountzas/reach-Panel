@@ -1,0 +1,8 @@
+# Tauri MCP Server configuration for this project
+# https://github.com/dirvine/tauri-mcp
+
+auto_discover = true
+session_management = true
+event_streaming = false
+performance_profiling = false
+network_interception = false
