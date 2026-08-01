@@ -644,9 +644,10 @@ impl Database {
 
     pub fn insert_prediction(&self, profile_id: &str, entry: &PredictionEntry) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let word = entry.word.to_lowercase();
         conn.execute(
             "INSERT INTO predictions (profile_id, word, language, frequency) VALUES (?1,?2,?3,?4)",
-            params![profile_id, entry.word, entry.language, entry.frequency],
+            params![profile_id, word, entry.language, entry.frequency],
         )?;
         Ok(())
     }
@@ -829,7 +830,7 @@ impl Database {
 
         {
             let mut stmt = conn.prepare(
-                "SELECT word, frequency FROM pack_words WHERE language = ?1 AND LOWER(word) LIKE ?2",
+                "SELECT word, frequency FROM pack_words WHERE language = ?1 AND word LIKE ?2",
             )?;
             let rows = stmt.query_map(params![language, pattern], |row| {
                 Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
@@ -842,7 +843,7 @@ impl Database {
 
         {
             let mut stmt = conn.prepare(
-                "SELECT word, frequency FROM predictions WHERE profile_id = ?1 AND language = ?2 AND LOWER(word) LIKE ?3",
+                "SELECT word, frequency FROM predictions WHERE profile_id = ?1 AND language = ?2 AND word LIKE ?3",
             )?;
             let rows = stmt.query_map(params![profile_id, language, pattern], |row| {
                 Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
