@@ -208,6 +208,17 @@ impl Database {
                 language TEXT NOT NULL,
                 frequency INTEGER NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS pack_words (
+                language TEXT NOT NULL,
+                word TEXT NOT NULL,
+                frequency INTEGER NOT NULL,
+                PRIMARY KEY (language, word)
+            );
+            CREATE TABLE IF NOT EXISTS installed_packs (
+                language TEXT PRIMARY KEY,
+                version INTEGER NOT NULL,
+                installed_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS usage_statistics (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 profile_id TEXT NOT NULL,
@@ -250,15 +261,96 @@ impl Database {
             .collect();
 
         for profile_id in profile_ids {
-            self.seed_greek_phrases_if_missing(conn, &profile_id)?;
+            for (language, phrases) in Self::locale_seed_phrases() {
+                self.seed_locale_phrases_if_missing(conn, &profile_id, language, phrases)?;
+            }
         }
         Ok(())
     }
 
-    fn seed_greek_phrases_if_missing(&self, conn: &Connection, profile_id: &str) -> Result<()> {
+    /// Default phrase packs for non-English UI locales (same 6-intent matrix as English).
+    fn locale_seed_phrases() -> &'static [(&'static str, &'static [(&'static str, &'static str, bool, bool)])]
+    {
+        &[
+            (
+                "el",
+                &[
+                    ("Χρειάζομαι βοήθεια", "both", false, true),
+                    ("Χρειάζομαι νερό", "both", true, false),
+                    ("Κουράστηκα", "speak", false, false),
+                    ("Ευχαριστώ", "speak", true, false),
+                    ("Πονάω", "both", false, true),
+                    ("Έλα εδώ παρακαλώ", "both", false, true),
+                ],
+            ),
+            (
+                "de",
+                &[
+                    ("Ich brauche Hilfe", "both", false, true),
+                    ("Ich brauche Wasser", "both", true, false),
+                    ("Ich bin müde", "speak", false, false),
+                    ("Danke", "speak", true, false),
+                    ("Ich habe Schmerzen", "both", false, true),
+                    ("Komm bitte her", "both", false, true),
+                ],
+            ),
+            (
+                "fr",
+                &[
+                    ("J’ai besoin d’aide", "both", false, true),
+                    ("J’ai besoin d’eau", "both", true, false),
+                    ("Je suis fatigué", "speak", false, false),
+                    ("Merci", "speak", true, false),
+                    ("J’ai mal", "both", false, true),
+                    ("Viens ici s’il te plaît", "both", false, true),
+                ],
+            ),
+            (
+                "it",
+                &[
+                    ("Ho bisogno di aiuto", "both", false, true),
+                    ("Ho bisogno di acqua", "both", true, false),
+                    ("Sono stanco", "speak", false, false),
+                    ("Grazie", "speak", true, false),
+                    ("Ho dolore", "both", false, true),
+                    ("Vieni qui per favore", "both", false, true),
+                ],
+            ),
+            (
+                "es",
+                &[
+                    ("Necesito ayuda", "both", false, true),
+                    ("Necesito agua", "both", true, false),
+                    ("Estoy cansado", "speak", false, false),
+                    ("Gracias", "speak", true, false),
+                    ("Me duele", "both", false, true),
+                    ("Ven aquí por favor", "both", false, true),
+                ],
+            ),
+            (
+                "pt",
+                &[
+                    ("Preciso de ajuda", "both", false, true),
+                    ("Preciso de água", "both", true, false),
+                    ("Estou cansado", "speak", false, false),
+                    ("Obrigado", "speak", true, false),
+                    ("Estou com dor", "both", false, true),
+                    ("Vem cá por favor", "both", false, true),
+                ],
+            ),
+        ]
+    }
+
+    fn seed_locale_phrases_if_missing(
+        &self,
+        conn: &Connection,
+        profile_id: &str,
+        language: &str,
+        phrases: &[(&str, &str, bool, bool)],
+    ) -> Result<()> {
         let count: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM phrases WHERE profile_id = ?1 AND language = 'el'",
-            [profile_id],
+            "SELECT COUNT(*) FROM phrases WHERE profile_id = ?1 AND language = ?2",
+            params![profile_id, language],
             |r| r.get(0),
         )?;
         if count > 0 {
@@ -276,16 +368,8 @@ impl Database {
             |r| r.get(0),
         )?;
 
-        let phrases = [
-            ("Χρειάζομαι βοήθεια", "both", false, true),
-            ("Χρειάζομαι νερό", "both", true, false),
-            ("Κουράστηκα", "speak", false, false),
-            ("Ευχαριστώ", "speak", true, false),
-            ("Πονάω", "both", false, true),
-            ("Έλα εδώ παρακαλώ", "both", false, true),
-        ];
         for (text, action, fav, emergency) in phrases {
-            let category = if emergency {
+            let category = if *emergency {
                 &emergency_cat
             } else {
                 &basic_cat
@@ -298,9 +382,9 @@ impl Database {
                     category,
                     text,
                     action,
-                    fav as i32,
-                    emergency as i32,
-                    "el"
+                    *fav as i32,
+                    *emergency as i32,
+                    language
                 ],
             )?;
         }
@@ -368,48 +452,23 @@ impl Database {
             )?;
         }
 
-        let greek_phrases = [
-            ("Χρειάζομαι βοήθεια", "both", false, true),
-            ("Χρειάζομαι νερό", "both", true, false),
-            ("Κουράστηκα", "speak", false, false),
-            ("Ευχαριστώ", "speak", true, false),
-            ("Πονάω", "both", false, true),
-            ("Έλα εδώ παρακαλώ", "both", false, true),
-        ];
-        for (text, action, fav, emergency) in greek_phrases {
-            let category = if emergency { &emergency_cat } else { &cat_id };
-            conn.execute(
-                "INSERT INTO phrases (id, profile_id, category_id, text, action, is_favorite, is_emergency, language) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
-                params![
-                    Uuid::new_v4().to_string(),
-                    profile_id,
-                    category,
-                    text,
-                    action,
-                    fav as i32,
-                    emergency as i32,
-                    "el"
-                ],
-            )?;
-        }
-
-        let words = [
-            ("hello", "en", 100),
-            ("help", "en", 90),
-            ("helicopter", "en", 10),
-            ("water", "en", 80),
-            ("thank", "en", 70),
-            ("thanks", "en", 65),
-            ("please", "en", 60),
-            ("γεια", "el", 100),
-            ("βοήθεια", "el", 90),
-            ("νερό", "el", 80),
-        ];
-        for (word, lang, freq) in words {
-            conn.execute(
-                "INSERT INTO predictions (profile_id, word, language, frequency) VALUES (?1,?2,?3,?4)",
-                params![profile_id, word, lang, freq],
-            )?;
+        for (language, phrases) in Self::locale_seed_phrases() {
+            for (text, action, fav, emergency) in *phrases {
+                let category = if *emergency { &emergency_cat } else { &cat_id };
+                conn.execute(
+                    "INSERT INTO phrases (id, profile_id, category_id, text, action, is_favorite, is_emergency, language) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
+                    params![
+                        Uuid::new_v4().to_string(),
+                        profile_id,
+                        category,
+                        *text,
+                        *action,
+                        *fav as i32,
+                        *emergency as i32,
+                        language
+                    ],
+                )?;
+            }
         }
 
         let macro_id = Uuid::new_v4().to_string();
@@ -585,9 +644,10 @@ impl Database {
 
     pub fn insert_prediction(&self, profile_id: &str, entry: &PredictionEntry) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let word = entry.word.to_lowercase();
         conn.execute(
             "INSERT INTO predictions (profile_id, word, language, frequency) VALUES (?1,?2,?3,?4)",
-            params![profile_id, entry.word, entry.language, entry.frequency],
+            params![profile_id, word, entry.language, entry.frequency],
         )?;
         Ok(())
     }
@@ -763,18 +823,122 @@ impl Database {
 
     pub fn get_predictions(&self, profile_id: &str, prefix: &str, language: &str, limit: i32) -> Result<Vec<PredictionEntry>> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
-        let pattern = format!("{prefix}%");
-        let mut stmt = conn.prepare(
-            "SELECT word, language, frequency FROM predictions WHERE profile_id = ?1 AND language = ?2 AND word LIKE ?3 ORDER BY frequency DESC LIMIT ?4",
-        )?;
-        let rows = stmt.query_map(params![profile_id, language, pattern, limit], |row| {
-            Ok(PredictionEntry {
-                word: row.get(0)?,
-                language: row.get(1)?,
-                frequency: row.get(2)?,
+        let pattern = format!("{}%", prefix.to_lowercase());
+        let mut pack_freq: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+        let mut profile_usage: std::collections::HashMap<String, i64> =
+            std::collections::HashMap::new();
+
+        {
+            let mut stmt = conn.prepare(
+                "SELECT word, frequency FROM pack_words WHERE language = ?1 AND word LIKE ?2",
+            )?;
+            let rows = stmt.query_map(params![language, pattern], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
+            })?;
+            for row in rows {
+                let (word, freq) = row?;
+                pack_freq.insert(word, i64::from(freq));
+            }
+        }
+
+        {
+            let mut stmt = conn.prepare(
+                "SELECT word, frequency FROM predictions WHERE profile_id = ?1 AND language = ?2 AND word LIKE ?3",
+            )?;
+            let rows = stmt.query_map(params![profile_id, language, pattern], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
+            })?;
+            for row in rows {
+                let (word, freq) = row?;
+                profile_usage.insert(word, i64::from(freq));
+            }
+        }
+
+        let mut ranked: Vec<(String, i64, i64)> = pack_freq
+            .keys()
+            .chain(profile_usage.keys())
+            .cloned()
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .map(|word| {
+                let usage = profile_usage.get(&word).copied().unwrap_or(0);
+                let pack = pack_freq.get(&word).copied().unwrap_or(0);
+                (word, usage, pack)
             })
-        })?;
+            .collect();
+        ranked.sort_by(|a, b| {
+            b.1.cmp(&a.1)
+                .then_with(|| b.2.cmp(&a.2))
+                .then_with(|| a.0.cmp(&b.0))
+        });
+        ranked.truncate(limit.max(0) as usize);
+
+        Ok(ranked
+            .into_iter()
+            .map(|(word, usage, pack)| PredictionEntry {
+                word,
+                language: language.to_string(),
+                frequency: (usage.saturating_mul(1000).saturating_add(pack))
+                    .min(i64::from(i32::MAX)) as i32,
+            })
+            .collect())
+    }
+
+    pub fn list_installed_packs(&self) -> Result<Vec<(String, i32)>> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let mut stmt = conn.prepare(
+            "SELECT language, version FROM installed_packs ORDER BY language",
+        )?;
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn is_pack_installed(&self, language: &str) -> Result<bool> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM installed_packs WHERE language = ?1",
+            params![language],
+            |row| row.get(0),
+        )?;
+        Ok(count > 0)
+    }
+
+    pub fn import_word_pack(
+        &self,
+        language: &str,
+        version: i32,
+        words: &[(String, i32)],
+    ) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let tx = conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM pack_words WHERE language = ?1", params![language])?;
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO pack_words (language, word, frequency) VALUES (?1,?2,?3)",
+            )?;
+            for (word, freq) in words {
+                stmt.execute(params![language, word, freq])?;
+            }
+        }
+        tx.execute(
+            "INSERT INTO installed_packs (language, version, installed_at) VALUES (?1,?2,?3)
+             ON CONFLICT(language) DO UPDATE SET version = excluded.version, installed_at = excluded.installed_at",
+            params![language, version, Utc::now().to_rfc3339()],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn uninstall_word_pack(&self, language: &str) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
+        let tx = conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM pack_words WHERE language = ?1", params![language])?;
+        tx.execute(
+            "DELETE FROM installed_packs WHERE language = ?1",
+            params![language],
+        )?;
+        tx.commit()?;
+        Ok(())
     }
 
     pub fn record_word_usage(&self, profile_id: &str, word: &str, language: &str) -> Result<()> {

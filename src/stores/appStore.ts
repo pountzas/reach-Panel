@@ -60,8 +60,30 @@ let typingLanguageSwitchInFlight = false;
 /** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
 let liveHeightRatioPreview: number | null = null;
 
+/** Coalesce live window-resize layout IPC to one apply per animation frame. */
+let liveHeightRatioRaf: number | null = null;
+let liveHeightRatioPending: number | null = null;
+let liveHeightRatioInFlight = false;
+
 const LANGUAGE_CHANGE_FALLBACK =
   "Could not switch keyboard language.";
+
+function physicalKeyStateEqual(a: PhysicalKeyState, b: PhysicalKeyState): boolean {
+  return (
+    a.capsLock === b.capsLock &&
+    a.shift === b.shift &&
+    a.ctrl === b.ctrl &&
+    a.alt === b.alt &&
+    a.win === b.win &&
+    a.systemLanguage === b.systemLanguage &&
+    a.keyboardLayout === b.keyboardLayout &&
+    a.systemKlid === b.systemKlid &&
+    a.systemHkl === b.systemHkl &&
+    a.hasInputTarget === b.hasInputTarget &&
+    a.pressedVks.length === b.pressedVks.length &&
+    a.pressedVks.every((vk, i) => vk === b.pressedVks[i])
+  );
+}
 
 function heightRatioFromSettings(settings: AppSettings): number {
   const contentRatio = computeContentHeightRatio({
@@ -107,6 +129,14 @@ interface AppStore {
   profileFiles: ProfileFileInfo[];
   activeProfileFile: string | null;
   settings: AppSettings;
+  /**
+   * Bumped whenever profile settings are reloaded from the backend.
+   * In-flight full-settings writers capture this and abort if it changes,
+   * so a stale window cannot clobber a newer profile load/switch.
+   */
+  settingsEpoch: number;
+  /** False until the first profile load finishes; blocks persist of DEFAULT_SETTINGS. */
+  profileHydrated: boolean;
   monitors: MonitorInfo[];
   quickActions: QuickAction[];
   phrases: Phrase[];
@@ -168,6 +198,7 @@ interface AppStore {
   clearStickyExceptFn: () => void;
   loadSuggestions: () => Promise<void>;
   applySuggestion: (word: string) => Promise<void>;
+  recordTypedWord: () => Promise<void>;
   setLastError: (error: string | null) => void;
   pollError: () => Promise<void>;
   setDictationState: (state: DictationState) => void;
@@ -330,7 +361,7 @@ async function loadProfileData(
   const settings = active
     ? parseSettings(active.settings_json)
     : DEFAULT_SETTINGS;
-  set({ settings });
+  set({ settings, settingsEpoch: get().settingsEpoch + 1 });
   const isMainWindow = WebviewWindow.getCurrent().label === "main";
   if (isMainWindow) {
     await invoke("cmd_set_system_language", { language: settings.typingLanguage });
@@ -347,10 +378,50 @@ async function loadProfileData(
   }
 }
 
+/** Persist full settings only if this window's profile epoch is still current. */
+async function persistSettingsIfCurrent(
+  get: () => AppStore,
+  epoch: number,
+  settings: AppSettings,
+): Promise<boolean> {
+  if (!get().profileHydrated || get().settingsEpoch !== epoch) {
+    return false;
+  }
+  await invoke("cmd_update_profile_settings", {
+    profileId: INTERNAL_PROFILE_ID,
+    settingsJson: JSON.stringify(settings),
+  });
+  return get().profileHydrated && get().settingsEpoch === epoch;
+}
+
+/**
+ * If `word` matches `prefix` case-insensitively, return the unmatched suffix
+ * of `word`. Length is measured by folding characters one at a time so
+ * case-fold expansions (e.g. İ → i̇) do not desync the slice index.
+ * Returns null when there is no case-insensitive prefix match (caller should
+ * delete + retype), or the full word when prefix is empty.
+ */
+function suggestionSuffixAfterPrefix(word: string, prefix: string): string | null {
+  if (prefix.length === 0) return word;
+  const target = prefix.toLowerCase();
+  let i = 0;
+  let folded = "";
+  while (i < word.length && folded.length < target.length) {
+    folded += word[i]!.toLowerCase();
+    i += 1;
+  }
+  if (folded === target || folded.startsWith(target)) {
+    return word.slice(i);
+  }
+  return null;
+}
+
 export const useAppStore = create<AppStore>((set, get) => ({
   profileFiles: [],
   activeProfileFile: null,
   settings: DEFAULT_SETTINGS,
+  settingsEpoch: 0,
+  profileHydrated: false,
   monitors: [],
   quickActions: [],
   phrases: [],
@@ -411,9 +482,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
       activeProfileFile: activeProfileFile || profileFiles[0]?.filename || null,
     });
     await loadProfileData(set, get);
+    set({ profileHydrated: true });
   },
 
   setProfileFile: async (filename) => {
+    // Invalidate in-flight full-settings writers before the backend switch.
+    set({ settingsEpoch: get().settingsEpoch + 1 });
     await invoke("cmd_load_profile_file", { filename });
     set({
       activeProfileFile: filename,
@@ -461,6 +535,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   updateSettings: async (partial, options) => {
+    if (!get().profileHydrated) {
+      return;
+    }
+    const epoch = get().settingsEpoch;
     const { settings } = get();
     const syncToSystem = options?.syncToSystem ?? true;
     const typingLanguageChanged =
@@ -540,6 +618,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     }
 
+    if (get().settingsEpoch !== epoch) {
+      return;
+    }
     set({ settings: next });
     if (partial.keyboardSectionMode === "synthesizer") {
       await get().stopDictation();
@@ -557,9 +638,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
           klid: method?.klid ?? null,
         });
         if (!result.success) {
-          set({
-            settings: { ...get().settings, typingLanguage: previousTypingLanguage },
-          });
+          if (get().settingsEpoch === epoch) {
+            set({
+              settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+            });
+          }
           const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
           lastAnnouncedError = message;
           notify.error(message, { id: "typing-language-switch" });
@@ -568,9 +651,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
         lastAnnouncedError = null;
         await get().refreshLayoutKeyLabels();
       } catch (error) {
-        set({
-          settings: { ...get().settings, typingLanguage: previousTypingLanguage },
-        });
+        if (get().settingsEpoch === epoch) {
+          set({
+            settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+          });
+        }
         const message =
           error instanceof Error
             ? error.message
@@ -582,10 +667,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
         typingLanguageSwitchInFlight = false;
       }
     }
-    await invoke("cmd_update_profile_settings", {
-      profileId: INTERNAL_PROFILE_ID,
-      settingsJson: JSON.stringify(get().settings),
-    });
+    if (get().settingsEpoch !== epoch) {
+      return;
+    }
+    const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+    if (!persisted) {
+      return;
+    }
     await emit(PROFILE_UPDATED_EVENT, {
       source: WebviewWindow.getCurrent().label,
     });
@@ -656,13 +744,51 @@ export const useAppStore = create<AppStore>((set, get) => ({
     ) {
       return;
     }
-    liveHeightRatioPreview = heightRatio;
-    await invoke("cmd_apply_window_layout", {
-      monitorId: settings.accessibilityMonitorId,
-      collapsed: false,
-      collapsedDictation: false,
-      heightRatio,
+    liveHeightRatioPending = heightRatio;
+    if (liveHeightRatioRaf !== null || liveHeightRatioInFlight) return;
+
+    await new Promise<void>((resolve) => {
+      liveHeightRatioRaf = requestAnimationFrame(() => {
+        liveHeightRatioRaf = null;
+        resolve();
+      });
     });
+
+    const pending = liveHeightRatioPending;
+    liveHeightRatioPending = null;
+    if (pending === null) return;
+    if (
+      liveHeightRatioPreview !== null &&
+      Math.abs(liveHeightRatioPreview - pending) < 0.002
+    ) {
+      return;
+    }
+
+    const latest = get().settings;
+    if (latest.collapsed) return;
+    liveHeightRatioPreview = pending;
+    liveHeightRatioInFlight = true;
+    try {
+      await invoke("cmd_apply_window_layout", {
+        monitorId: latest.accessibilityMonitorId,
+        collapsed: false,
+        collapsedDictation: false,
+        heightRatio: pending,
+      });
+    } catch {
+      // Rejected ratio must not block near-equal retries.
+      if (liveHeightRatioPreview === pending) {
+        liveHeightRatioPreview = null;
+      }
+    } finally {
+      liveHeightRatioInFlight = false;
+      // Flush any ratio queued while the previous invoke was in flight.
+      if (liveHeightRatioPending !== null) {
+        const queued = liveHeightRatioPending;
+        liveHeightRatioPending = null;
+        void get().applyWindowHeightRatioLive(queued);
+      }
+    }
   },
 
   resetSettingsToDefaults: async () => {
@@ -726,17 +852,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     })),
 
   pollKeyboardState: async () => {
+    const epoch = get().settingsEpoch;
     const next = await invoke<PhysicalKeyState>("cmd_get_keyboard_state");
     const { physicalKeyState: prev, settings, keyboardLayout } = get();
-
-    const keysUnchanged =
-      prev.capsLock === next.capsLock &&
-      prev.shift === next.shift &&
-      prev.ctrl === next.ctrl &&
-      prev.alt === next.alt &&
-      prev.win === next.win &&
-      prev.pressedVks.length === next.pressedVks.length &&
-      prev.pressedVks.every((vk, i) => vk === next.pressedVks[i]);
 
     // Sync from the focused/target app so Win+Space / Alt+Shift updates our layout.
     // Skip while a language-button switch is in flight.
@@ -748,10 +866,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
       prev.systemHkl === next.systemHkl &&
       prev.systemKlid === next.systemKlid;
 
-    if (keysUnchanged && typingLanguageUnchanged && layoutUnchanged) {
-      if (prev.hasInputTarget !== next.hasInputTarget) {
-        set({ physicalKeyState: next });
-      }
+    if (
+      physicalKeyStateEqual(prev, next) &&
+      typingLanguageUnchanged &&
+      layoutUnchanged
+    ) {
+      return;
+    }
+
+    if (get().settingsEpoch !== epoch) {
       return;
     }
 
@@ -768,10 +891,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     if (!typingLanguageUnchanged) {
-      await invoke("cmd_update_profile_settings", {
-        profileId: INTERNAL_PROFILE_ID,
-        settingsJson: JSON.stringify(get().settings),
-      });
+      const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+      if (!persisted) {
+        return;
+      }
       set({ typedBuffer: "", suggestions: [] });
     }
   },
@@ -784,6 +907,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setLanguagePickerOpen: (open) => set({ languagePickerOpen: open }),
 
   selectTypingInputMethod: async (method) => {
+    const epoch = get().settingsEpoch;
     const previousTypingLanguage = get().settings.typingLanguage;
     typingLanguageSwitchInFlight = true;
     set({ languagePickerOpen: false });
@@ -797,6 +921,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         notify.error(message, { id: "typing-language-switch" });
         return;
       }
+      if (get().settingsEpoch !== epoch) {
+        return;
+      }
       set({
         settings: {
           ...get().settings,
@@ -804,10 +931,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         },
         keyboardLayout: method.layoutName,
       });
-      await invoke("cmd_update_profile_settings", {
-        profileId: INTERNAL_PROFILE_ID,
-        settingsJson: JSON.stringify(get().settings),
-      });
+      const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+      if (!persisted) {
+        return;
+      }
       await emit(PROFILE_UPDATED_EVENT, {
         source: WebviewWindow.getCurrent().label,
       });
@@ -861,7 +988,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const results = await invoke<{ word: string }[]>("cmd_get_suggestions", {
       profileId: INTERNAL_PROFILE_ID,
       prefix,
-      language: settings.uiLanguage,
+      language: settings.typingLanguage || "en",
     });
     set({ suggestions: results.map((r) => r.word) });
   },
@@ -869,16 +996,42 @@ export const useAppStore = create<AppStore>((set, get) => ({
   applySuggestion: async (word) => {
     const { settings, typedBuffer } = get();
     const parts = typedBuffer.split(/\s+/);
+    const prefix = parts[parts.length - 1] ?? "";
     parts[parts.length - 1] = word;
     const next = parts.join(" ") + " ";
     set({ typedBuffer: next });
-    await invoke("cmd_type_text", { text: word + " " });
+
+    const suffix = suggestionSuffixAfterPrefix(word, prefix);
+    if (suffix !== null) {
+      await invoke("cmd_type_text", { text: suffix + " " });
+    } else {
+      for (let i = 0; i < prefix.length; i++) {
+        await invoke("cmd_press_key", {
+          request: { key: "backspace", modifiers: [] },
+        });
+      }
+      await invoke("cmd_type_text", { text: word + " " });
+    }
     await invoke("cmd_record_word", {
       profileId: INTERNAL_PROFILE_ID,
       word,
-      language: settings.uiLanguage,
+      language: settings.typingLanguage || "en",
     });
     await get().loadSuggestions();
+  },
+
+  recordTypedWord: async () => {
+    const { settings, typedBuffer } = get();
+    if (!settings.predictionEnabled) return;
+    const parts = typedBuffer.trimEnd().split(/\s+/);
+    const word = parts[parts.length - 1] ?? "";
+    if (word.length < 2) return;
+    if (!/^[\p{L}][\p{L}'’-]*$/u.test(word)) return;
+    await invoke("cmd_record_word", {
+      profileId: INTERNAL_PROFILE_ID,
+      word,
+      language: settings.typingLanguage || "en",
+    });
   },
 
   setLastError: (error) => {
@@ -1174,6 +1327,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (get().isAnimatingWindow) {
       return;
     }
+    const epoch = get().settingsEpoch;
     const { settings } = get();
     const collapsed = !settings.collapsed;
     const next = { ...settings, collapsed };
@@ -1181,11 +1335,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ isAnimatingWindow: true });
     try {
       if (collapsed) {
+        if (get().settingsEpoch !== epoch) {
+          return;
+        }
         set({ settings: next });
-        await invoke("cmd_update_profile_settings", {
-          profileId: INTERNAL_PROFILE_ID,
-          settingsJson: JSON.stringify(next),
-        });
+        const persisted = await persistSettingsIfCurrent(get, epoch, next);
+        if (!persisted) {
+          return;
+        }
         await invoke("cmd_animate_window_layout", {
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
@@ -1199,11 +1356,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
           collapsedDictation: false,
           heightRatio: heightRatioFromSettings(settings),
         });
+        if (get().settingsEpoch !== epoch) {
+          return;
+        }
         set({ settings: next });
-        await invoke("cmd_update_profile_settings", {
-          profileId: INTERNAL_PROFILE_ID,
-          settingsJson: JSON.stringify(next),
-        });
+        await persistSettingsIfCurrent(get, epoch, next);
       }
     } finally {
       set({ isAnimatingWindow: false });

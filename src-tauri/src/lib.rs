@@ -22,7 +22,10 @@ use input::{
 };
 #[cfg(target_os = "windows")]
 use input::focus_target;
-use prediction::{get_installed_languages, get_suggestions, record_usage};
+use prediction::{
+    ensure_english_pack, get_installed_languages, get_suggestions, install_word_pack,
+    list_word_packs, record_usage, uninstall_word_pack, WordPackInfo,
+};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
@@ -525,8 +528,10 @@ fn pick_background_image(app: &tauri::AppHandle) -> Result<Option<String>, Strin
 }
 
 #[tauri::command]
-fn cmd_pick_background_image(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    pick_background_image(&app)
+async fn cmd_pick_background_image(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || pick_background_image(&app))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 fn pick_music_song_file(app: &tauri::AppHandle) -> Result<Option<String>, String> {
@@ -550,7 +555,10 @@ fn pick_music_song_file(app: &tauri::AppHandle) -> Result<Option<String>, String
         .set_parent(&window)
         .pick_file();
 
-    Ok(file.map(|p| p.to_string_lossy().into_owned()))
+    Ok(file.map(|p| {
+        music::allow_music_read_path(&p);
+        p.to_string_lossy().into_owned()
+    }))
 }
 
 #[derive(Debug, Serialize)]
@@ -561,13 +569,17 @@ struct MusicFilePayload {
 }
 
 #[tauri::command]
-fn cmd_pick_music_song_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    pick_music_song_file(&app)
+async fn cmd_pick_music_song_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || pick_music_song_file(&app))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn cmd_list_installed_apps() -> Result<Vec<installed_apps::InstalledApp>, String> {
-    installed_apps::list_installed_apps()
+async fn cmd_list_installed_apps() -> Result<Vec<installed_apps::InstalledApp>, String> {
+    tokio::task::spawn_blocking(installed_apps::list_installed_apps)
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 fn pick_app_executable(app: &tauri::AppHandle) -> Result<Option<String>, String> {
@@ -589,13 +601,15 @@ fn pick_app_executable(app: &tauri::AppHandle) -> Result<Option<String>, String>
 }
 
 #[tauri::command]
-fn cmd_pick_app_executable(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    pick_app_executable(&app)
+async fn cmd_pick_app_executable(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || pick_app_executable(&app))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn cmd_read_music_file(path: String) -> Result<MusicFilePayload, String> {
-    let bytes = music::read_music_file_bytes(&path)?;
+fn cmd_read_music_file(app: tauri::AppHandle, path: String) -> Result<MusicFilePayload, String> {
+    let bytes = music::read_music_file_bytes(&app, &path)?;
     Ok(MusicFilePayload {
         path,
         content_base64: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes),
@@ -654,6 +668,120 @@ fn cmd_delete_quick_action(id: String, state: State<AppState>) -> Result<(), Str
     state.db.delete_quick_action(&id).map_err(|e| e.to_string())
 }
 
+fn validate_quick_action_url(target: &str) -> Result<String, String> {
+    let trimmed = target.trim();
+    if trimmed.is_empty() {
+        return Err("URL target is empty".to_string());
+    }
+    if trimmed.contains('\0') {
+        return Err("URL target is invalid".to_string());
+    }
+
+    let lower = trimmed.to_ascii_lowercase();
+    if lower.starts_with("https://")
+        || lower.starts_with("http://")
+        || lower.starts_with("mailto:")
+        || lower.starts_with("ms-settings:")
+    {
+        return Ok(trimmed.to_string());
+    }
+
+    // Bare hosts from the editor (e.g. "youtube.com") — open as https.
+    if is_host_shaped_url_target(trimmed) {
+        return Ok(format!("https://{trimmed}"));
+    }
+
+    Err("URL scheme not allowed".to_string())
+}
+
+/// Accepts host-shaped targets like `example.com`, `example.com:443/path?q=1`.
+fn is_host_shaped_url_target(trimmed: &str) -> bool {
+    if trimmed.contains('\\') || trimmed.contains("://") {
+        return false;
+    }
+    if !trimmed
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || ".-:_/?#=&%+".contains(c))
+    {
+        return false;
+    }
+
+    let host_port = trimmed
+        .split(['/', '?', '#'])
+        .next()
+        .unwrap_or(trimmed);
+    if host_port.is_empty() {
+        return false;
+    }
+
+    let host = if let Some((name, port)) = host_port.rsplit_once(':') {
+        if port.is_empty() || !port.chars().all(|c| c.is_ascii_digit()) {
+            return false;
+        }
+        name
+    } else {
+        host_port
+    };
+
+    let labels: Vec<&str> = host.split('.').collect();
+    labels.len() >= 2
+        && labels.iter().all(|label| {
+            !label.is_empty()
+                && label
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '-')
+        })
+}
+
+fn validate_quick_action_app(target: &str) -> Result<String, String> {
+    let trimmed = target.trim();
+    if trimmed.is_empty() {
+        return Err("App target is empty".to_string());
+    }
+    if trimmed.contains('\0') || trimmed.contains("..") {
+        return Err("App target is invalid".to_string());
+    }
+
+    let lower = trimmed.to_ascii_lowercase();
+    const BLOCKED_SUFFIXES: &[&str] = &[
+        ".bat", ".cmd", ".ps1", ".vbs", ".js", ".jse", ".wsf", ".msi", ".scr", ".com", ".lnk",
+    ];
+    for suffix in BLOCKED_SUFFIXES {
+        if lower.ends_with(suffix) {
+            return Err("Executable type not allowed".to_string());
+        }
+    }
+
+    if trimmed.contains('\\') || trimmed.contains('/') {
+        if !lower.ends_with(".exe") {
+            return Err("Only .exe app paths are allowed".to_string());
+        }
+        let path = std::path::PathBuf::from(trimmed);
+        if !path.is_file() {
+            return Err("Application not found".to_string());
+        }
+        return Ok(trimmed.to_string());
+    }
+
+    if !trimmed
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_')
+    {
+        return Err("Invalid app name".to_string());
+    }
+
+    if let Some(resolved) = icons::resolve_launch_app_path(trimmed) {
+        return Ok(resolved.to_string_lossy().into_owned());
+    }
+
+    let path = if lower.ends_with(".exe") {
+        trimmed.to_string()
+    } else {
+        format!("{trimmed}.exe")
+    };
+    Err(format!("Application not found: {path}"))
+}
+
 #[tauri::command]
 fn cmd_launch_quick_action(
     app: tauri::AppHandle,
@@ -661,24 +789,27 @@ fn cmd_launch_quick_action(
     target: String,
 ) -> Result<(), String> {
     match action_type.as_str() {
-        "url" => app.opener().open_url(&target, None::<&str>).map_err(|e| e.to_string())?,
+        "url" => {
+            let url = validate_quick_action_url(&target)?;
+            app.opener()
+                .open_url(&url, None::<&str>)
+                .map_err(|e| e.to_string())?;
+        }
         "app" => {
-            let path = if target.contains('\\') || target.contains('/') {
-                target
-            } else {
-                format!("{target}.exe")
-            };
-            app.opener().open_path(&path, None::<&str>).map_err(|e| e.to_string())?;
+            let path = validate_quick_action_app(&target)?;
+            app.opener()
+                .open_path(&path, None::<&str>)
+                .map_err(|e| e.to_string())?;
         }
         _ => return Err("Unknown action type".to_string()),
     }
     Ok(())
 }
 
-/// Returns a PNG data-URL for an installed app icon, or null when unavailable.
+/// Returns a cached PNG path for an installed app icon (for `convertFileSrc`), or null.
 #[tauri::command]
-fn cmd_get_app_icon(target: String) -> Option<String> {
-    icons::app_icon_data_url(&target)
+fn cmd_get_app_icon(app: tauri::AppHandle, target: String) -> Option<String> {
+    icons::app_icon_cached_path(&app, &target)
 }
 
 #[tauri::command]
@@ -704,45 +835,55 @@ fn cmd_get_phrase_categories(profile_id: String, state: State<AppState>) -> Resu
 }
 
 #[tauri::command]
-fn cmd_use_phrase(
+async fn cmd_use_phrase(
     text: String,
     action: String,
     language: String,
-    _state: State<AppState>,
+    _state: State<'_, AppState>,
 ) -> Result<(), String> {
-    if action == "type" || action == "both" {
-        type_text(&text).map_err(|e| e.to_string())?;
-    }
-    if action == "speak" || action == "both" {
+    tokio::task::spawn_blocking(move || {
+        if action == "type" || action == "both" {
+            type_text(&text).map_err(|e| e.to_string())?;
+        }
+        if action == "speak" || action == "both" {
+            speak_text(
+                &text,
+                TtsSettings {
+                    rate: 0,
+                    volume: 100,
+                    language,
+                },
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn cmd_speak(text: String, rate: i32, volume: u16, language: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
         speak_text(
             &text,
             TtsSettings {
-                rate: 0,
-                volume: 100,
+                rate,
+                volume,
                 language,
             },
         )
-        .map_err(|e| e.to_string())?;
-    }
-    Ok(())
+        .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn cmd_speak(text: String, rate: i32, volume: u16, language: String) -> Result<(), String> {
-    speak_text(
-        &text,
-        TtsSettings {
-            rate,
-            volume,
-            language,
-        },
-    )
-    .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_stop_speaking() -> Result<(), String> {
-    stop_speaking().map_err(|e| e.to_string())
+async fn cmd_stop_speaking() -> Result<(), String> {
+    tokio::task::spawn_blocking(|| stop_speaking().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -761,17 +902,23 @@ fn cmd_validate_tts() -> Result<(), String> {
 }
 
 #[tauri::command]
-fn cmd_start_dictation(
+async fn cmd_start_dictation(
     language: String,
     groq_api_key: Option<String>,
     app: AppHandle,
 ) -> Result<(), String> {
-    start_dictation(&language, groq_api_key.as_deref(), app).map_err(|e| e.to_string())
+    tokio::task::spawn_blocking(move || {
+        start_dictation(&language, groq_api_key.as_deref(), app).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn cmd_stop_dictation() -> Result<(), String> {
-    stop_dictation().map_err(|e| e.to_string())
+async fn cmd_stop_dictation() -> Result<(), String> {
+    tokio::task::spawn_blocking(|| stop_dictation().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -826,6 +973,34 @@ fn cmd_record_word(profile_id: String, word: String, language: String, state: St
             .map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+#[tauri::command]
+fn cmd_list_word_packs(state: State<AppState>) -> Result<Vec<WordPackInfo>, String> {
+    list_word_packs(&state.db).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn cmd_install_word_pack(
+    language: String,
+    app: tauri::AppHandle,
+) -> Result<Vec<WordPackInfo>, String> {
+    tokio::task::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        install_word_pack(&app, &state.db, &language).map_err(|e| e.to_string())?;
+        list_word_packs(&state.db).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn cmd_uninstall_word_pack(
+    language: String,
+    state: State<AppState>,
+) -> Result<Vec<WordPackInfo>, String> {
+    uninstall_word_pack(&state.db, &language).map_err(|e| e.to_string())?;
+    list_word_packs(&state.db).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -918,18 +1093,26 @@ pub fn run() {
             let app_data_dir = app
                 .path()
                 .app_data_dir()
-                .expect("failed to resolve app data dir");
-            let db = Database::new(app_data_dir.clone()).expect("failed to initialize database");
-            let profiles =
-                ProfileStore::new(&app_data_dir).expect("failed to initialize profile store");
+                .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
+            let db = Database::new(app_data_dir.clone())
+                .map_err(|e| format!("failed to initialize database: {e}"))?;
+            let profiles = ProfileStore::new(&app_data_dir)
+                .map_err(|e| format!("failed to initialize profile store: {e}"))?;
             profiles
                 .ensure_default_profile_file(&db)
-                .expect("failed to load default profile file");
+                .map_err(|e| format!("failed to load default profile file: {e}"))?;
             app.manage(AppState {
                 db,
                 profiles,
                 last_error: Mutex::new(None),
             });
+
+            {
+                let state = app.state::<AppState>();
+                if let Err(e) = ensure_english_pack(app.handle(), &state.db) {
+                    eprintln!("Failed to install bundled English word pack: {e}");
+                }
+            }
 
             stt::init(&app_data_dir, app.handle().clone());
 
@@ -1006,6 +1189,9 @@ pub fn run() {
             cmd_open_windows_settings,
             cmd_get_suggestions,
             cmd_record_word,
+            cmd_list_word_packs,
+            cmd_install_word_pack,
+            cmd_uninstall_word_pack,
             cmd_get_languages,
             cmd_get_macros,
             cmd_get_macro_steps,

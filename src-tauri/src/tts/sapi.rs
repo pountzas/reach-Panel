@@ -14,6 +14,11 @@ const ONECORE_VOICES: PCWSTR =
 fn language_lcids(language: &str) -> &'static [&'static str] {
     match language {
         "el" => &["408", "0408", "41008"],
+        "de" => &["407", "0407"],
+        "fr" => &["40C", "040C"],
+        "it" => &["410", "0410"],
+        "es" => &["40A", "040A", "C0A", "0C0A"],
+        "pt" => &["816", "0816", "416", "0416"],
         _ => &["409", "0409", "1033"],
     }
 }
@@ -21,6 +26,11 @@ fn language_lcids(language: &str) -> &'static [&'static str] {
 fn language_prefix(language: &str) -> &'static str {
     match language {
         "el" => "el",
+        "de" => "de",
+        "fr" => "fr",
+        "it" => "it",
+        "es" => "es",
+        "pt" => "pt",
         _ => "en",
     }
 }
@@ -147,7 +157,15 @@ pub fn speak_text(text: &str, settings: &TtsSettings) -> Result<()> {
 
 pub fn list_voices() -> Result<Vec<String>> {
     let mut voices = Vec::new();
-    for (lang, label) in [("en", "English"), ("el", "Greek")] {
+    for (lang, label) in [
+        ("en", "English"),
+        ("el", "Greek"),
+        ("de", "German"),
+        ("fr", "French"),
+        ("it", "Italian"),
+        ("es", "Spanish"),
+        ("pt", "Portuguese"),
+    ] {
         unsafe {
             let installed = find_voice_token(lang)?.is_some();
             voices.push(format!(

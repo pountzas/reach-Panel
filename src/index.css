@@ -103,6 +103,44 @@ button {
   animation: music-note-pulse 1.1s ease-in-out infinite;
 }
 
+.partiture-track {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.partiture-note {
+  transition: opacity 220ms ease;
+}
+
+.partiture-note-head {
+  transition:
+    stroke-width 220ms ease,
+    fill 220ms ease;
+}
+
+.partiture-note-ring {
+  opacity: 0;
+  transform-origin: center;
+  transform-box: fill-box;
+  transition: opacity 180ms ease;
+}
+
+.partiture-note-active .partiture-note-ring {
+  opacity: 0.95;
+  animation: partiture-ring-pulse 1.05s ease-in-out infinite;
+}
+
+@keyframes partiture-ring-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .mouse-speed-slider {
   -webkit-appearance: none;
   appearance: none;

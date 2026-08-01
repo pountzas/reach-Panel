@@ -17,49 +17,70 @@ import {
 } from "./lib/toolWindows";
 import { useAppStore } from "./stores/appStore";
 
+const KEYBOARD_POLL_MS = 100;
+
 function MainApp() {
-  const {
-    loadProfileFiles,
-    loadMonitors,
-    loadKeyboardLayout,
-    loadInputMethods,
-    refreshLayoutKeyLabels,
-    pollKeyboardState,
-    checkForUpdates,
-    setDictationState,
-    refreshSttCapability,
-    appendTyped,
-    loadSuggestions,
-    setLastError,
-    loadImportedSongs,
-  } = useAppStore();
+  const loadProfileFiles = useAppStore((s) => s.loadProfileFiles);
+  const loadMonitors = useAppStore((s) => s.loadMonitors);
+  const loadKeyboardLayout = useAppStore((s) => s.loadKeyboardLayout);
+  const loadInputMethods = useAppStore((s) => s.loadInputMethods);
+  const refreshLayoutKeyLabels = useAppStore((s) => s.refreshLayoutKeyLabels);
+  const pollKeyboardState = useAppStore((s) => s.pollKeyboardState);
+  const checkForUpdates = useAppStore((s) => s.checkForUpdates);
+  const setDictationState = useAppStore((s) => s.setDictationState);
+  const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
+  const appendTyped = useAppStore((s) => s.appendTyped);
+  const loadSuggestions = useAppStore((s) => s.loadSuggestions);
+  const setLastError = useAppStore((s) => s.setLastError);
+  const loadImportedSongs = useAppStore((s) => s.loadImportedSongs);
 
   useEffect(() => {
+    let cancelled = false;
+    let pollId: number | null = null;
     const init = async () => {
-      await loadProfileFiles();
-      await loadImportedSongs();
-      await loadMonitors();
-      const { settings } = useAppStore.getState();
-      await invoke("cmd_apply_window_layout", {
-        monitorId: settings.accessibilityMonitorId,
-        collapsed: settings.collapsed,
-        collapsedDictation:
-          settings.collapsed && settings.dictationVisible !== false,
-        heightRatio: computeContentHeightRatio({
-          quickActions: settings.quickActionsVisible,
-          phrases: settings.phrasesVisible,
-        }),
-      });
-      await loadKeyboardLayout();
-      await loadInputMethods();
-      await refreshLayoutKeyLabels();
-      await pollKeyboardState();
-      await invoke("cmd_set_always_on_top", { enabled: true });
-      await invoke("cmd_set_window_focusable", { focusable: false });
-      void checkForUpdates();
-      await refreshSttCapability();
+      try {
+        await loadProfileFiles();
+        if (cancelled) return;
+        await loadImportedSongs();
+        await loadMonitors();
+        const { settings } = useAppStore.getState();
+        await invoke("cmd_apply_window_layout", {
+          monitorId: settings.accessibilityMonitorId,
+          collapsed: settings.collapsed,
+          collapsedDictation:
+            settings.collapsed && settings.dictationVisible !== false,
+          heightRatio: computeContentHeightRatio({
+            quickActions: settings.quickActionsVisible,
+            phrases: settings.phrasesVisible,
+          }),
+        });
+        await loadKeyboardLayout();
+        await loadInputMethods();
+        await refreshLayoutKeyLabels();
+        await pollKeyboardState();
+        await invoke("cmd_set_always_on_top", { enabled: true });
+        await invoke("cmd_set_window_focusable", { focusable: false });
+        void checkForUpdates();
+        await refreshSttCapability();
+      } catch (error) {
+        if (!cancelled) {
+          setLastError(error instanceof Error ? error.message : String(error));
+        }
+      } finally {
+        if (cancelled) return;
+        // Start polling even if earlier setup steps failed so keyboard state
+        // stays fresh; profile hydration errors are surfaced via setLastError.
+        pollId = window.setInterval(() => {
+          if (document.hidden) return;
+          void pollKeyboardState();
+        }, KEYBOARD_POLL_MS);
+      }
     };
-    init();
+    void init();
+    return () => {
+      cancelled = true;
+      if (pollId !== null) window.clearInterval(pollId);
+    };
   }, [
     loadProfileFiles,
     loadImportedSongs,
@@ -70,14 +91,8 @@ function MainApp() {
     pollKeyboardState,
     checkForUpdates,
     refreshSttCapability,
+    setLastError,
   ]);
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      void pollKeyboardState();
-    }, 50);
-    return () => window.clearInterval(id);
-  }, [pollKeyboardState]);
 
   useEffect(() => {
     const unlisteners: Array<Promise<() => void>> = [];
@@ -158,7 +173,8 @@ function MainApp() {
 }
 
 function ToolApp({ label }: { label: ToolWindowLabel }) {
-  const { loadProfileFiles, loadMonitors } = useAppStore();
+  const loadProfileFiles = useAppStore((s) => s.loadProfileFiles);
+  const loadMonitors = useAppStore((s) => s.loadMonitors);
 
   useEffect(() => {
     const init = async () => {

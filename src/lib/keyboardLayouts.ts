@@ -168,10 +168,13 @@ export function resolveLetterCase(
   key: string,
   capsLock: boolean,
   shift: boolean,
+  locale = "en",
 ): string {
   if (!isLetterKey(key)) return key;
   const upper = capsLock !== shift;
-  return upper ? key.toLocaleUpperCase("el") : key.toLocaleLowerCase("el");
+  return upper
+    ? key.toLocaleUpperCase(locale)
+    : key.toLocaleLowerCase(locale);
 }
 
 export function resolveKeyOutput(
@@ -179,6 +182,7 @@ export function resolveKeyOutput(
   capsLock: boolean,
   shift: boolean,
   fnActive: boolean,
+  locale = "en",
 ): string {
   if (keyDef.modifier || keyDef.key.length > 1) return keyDef.key;
   if (fnActive) {
@@ -186,7 +190,7 @@ export function resolveKeyOutput(
     if (fnKey) return fnKey;
   }
   if (isLetterKey(keyDef.key)) {
-    return resolveLetterCase(keyDef.key, capsLock, shift);
+    return resolveLetterCase(keyDef.key, capsLock, shift, locale);
   }
   if (shift && keyDef.shiftLabel) return keyDef.shiftLabel;
   return keyDef.key;
@@ -197,6 +201,7 @@ export function displayLabel(
   capsLock: boolean,
   shift: boolean,
   fnActive: boolean,
+  locale = "en",
 ): string {
   if (keyDef.modifier || keyDef.key.length > 1) return keyDef.label;
   if (fnActive) {
@@ -204,7 +209,7 @@ export function displayLabel(
     if (fnKey) return fnKey;
   }
   if (isLetterKey(keyDef.key)) {
-    return resolveLetterCase(keyDef.key, capsLock, shift);
+    return resolveLetterCase(keyDef.key, capsLock, shift, locale);
   }
   if (shift && keyDef.shiftLabel) return keyDef.shiftLabel;
   return keyDef.label;

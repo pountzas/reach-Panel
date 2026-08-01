@@ -33,7 +33,8 @@ const NUMPAD_KEYS: NumpadKeyDef[] = [
 ];
 
 export function NumKeypad() {
-  const { settings, pollError } = useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const pollError = useAppStore((s) => s.pollError);
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const { keyHeight, spacing } = computeKeyMetrics(height, NUMPAD_ROW_COUNT);
   const fontSize = settings.keyboardFontSize ?? 18;

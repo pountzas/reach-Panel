@@ -16,15 +16,11 @@ body:
     validations:
       required: true
 
-  - type: checkboxes
-    id: personas
+  - type: textarea
+    id: who
     attributes:
-      label: Affected personas
-      description: Who benefits most from this change?
-      options:
-        - label: Child (primary user)
-        - label: Adult
-        - label: Therapist / Caregiver
+      label: Who benefits
+      description: Which users or situations does this help (e.g. school laptop, secondary touchscreen, caregivers)?
 
   - type: textarea
     id: solution

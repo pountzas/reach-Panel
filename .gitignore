@@ -26,3 +26,9 @@ dist-ssr
 # Rust / Tauri
 src-tauri/target/
 src-tauri/.tauri/
+
+# Local patched tauri-mcp source (binary installed via cargo)
+.cursor/tauri-mcp/
+
+# Git worktrees
+.worktrees/

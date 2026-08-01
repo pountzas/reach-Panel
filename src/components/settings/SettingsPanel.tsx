@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -116,6 +117,131 @@ function ThemedSelect({
     >
       {children}
     </select>
+  );
+}
+
+type WordPackInfo = {
+  language: string;
+  installed: boolean;
+  version: number | null;
+  bundled: boolean;
+};
+
+function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
+  const { t } = useTranslation();
+  const [packs, setPacks] = useState<WordPackInfo[]>([]);
+  const [busyLang, setBusyLang] = useState<string | null>(null);
+
+  const languageLabel = (lang: string): string => {
+    const keys: Record<string, TranslationKey> = {
+      en: "languageEnglish",
+      el: "languageGreek",
+      de: "languageGerman",
+      fr: "languageFrench",
+      it: "languageItalian",
+      es: "languageSpanish",
+      pt: "languagePortuguese",
+    };
+    const key = keys[lang];
+    return key ? t(key) : lang;
+  };
+
+  const refresh = async () => {
+    const list = await invoke<WordPackInfo[]>("cmd_list_word_packs");
+    setPacks(list);
+  };
+
+  useEffect(() => {
+    void refresh().catch((error) => {
+      notify.error(error instanceof Error ? error.message : String(error));
+    });
+  }, []);
+
+  const install = async (language: string) => {
+    setBusyLang(language);
+    try {
+      const list = await invoke<WordPackInfo[]>("cmd_install_word_pack", { language });
+      setPacks(list);
+    } catch (error) {
+      notify.error(
+        `${t("wordPackInstallFailed")}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    } finally {
+      setBusyLang(null);
+    }
+  };
+
+  const uninstall = async (language: string) => {
+    setBusyLang(language);
+    try {
+      const list = await invoke<WordPackInfo[]>("cmd_uninstall_word_pack", { language });
+      setPacks(list);
+    } catch (error) {
+      notify.error(
+        `${t("wordPackUninstallFailed")}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    } finally {
+      setBusyLang(null);
+    }
+  };
+
+  return (
+    <div className="mt-4">
+      <div className="text-sm font-medium" style={{ color: surface.panelText }}>
+        {t("predictionDictionaries")}
+      </div>
+      <p className="mt-1 text-xs opacity-80" style={{ color: surface.panelText }}>
+        {t("predictionDictionariesHint")}
+      </p>
+      <ul className="mt-2 space-y-2">
+        {packs.map((pack) => {
+          const busy = busyLang === pack.language;
+          return (
+            <li
+              key={pack.language}
+              className="flex items-center justify-between gap-2 rounded border px-2 py-1.5 text-sm"
+              style={{
+                borderColor: surface.panelBorder,
+                backgroundColor: surface.panelButtonBg,
+                color: surface.panelText,
+              }}
+            >
+              <div className="min-w-0">
+                <div className="font-medium">{languageLabel(pack.language)}</div>
+                <div className="text-xs opacity-75">
+                  {pack.installed
+                    ? pack.bundled
+                      ? `${t("wordPackInstalled")} · ${t("wordPackRequired")}`
+                      : t("wordPackInstalled")
+                    : t("wordPackNotInstalled")}
+                </div>
+              </div>
+              {pack.bundled ? null : pack.installed ? (
+                <button
+                  type="button"
+                  className="shrink-0 rounded border px-2 py-1 text-xs"
+                  style={{ borderColor: surface.panelBorder, color: surface.panelText }}
+                  disabled={busy}
+                  onClick={() => void uninstall(pack.language)}
+                >
+                  {busy ? t("wordPackUninstalling") : t("wordPackUninstall")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="shrink-0 rounded border px-2 py-1 text-xs"
+                  style={{ borderColor: surface.panelBorder, color: surface.panelText }}
+                  disabled={busy}
+                  onClick={() => void install(pack.language)}
+                >
+                  {busy ? t("wordPackInstalling") : t("wordPackInstall")}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -491,6 +617,7 @@ export function SettingsPanel() {
                 surface={surface}
               />
             </div>
+            <WordPackDictionaries surface={surface} />
           </SettingsSection>
 
           <SettingsSection title={t("keyboard")} surface={surface}>
@@ -586,6 +713,11 @@ export function SettingsPanel() {
               >
                 <option value="en">{t("languageEnglish")}</option>
                 <option value="el">{t("languageGreek")}</option>
+                <option value="de">{t("languageGerman")}</option>
+                <option value="fr">{t("languageFrench")}</option>
+                <option value="it">{t("languageItalian")}</option>
+                <option value="es">{t("languageSpanish")}</option>
+                <option value="pt">{t("languagePortuguese")}</option>
               </ThemedSelect>
               <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
                 {t("appLanguageHint")}

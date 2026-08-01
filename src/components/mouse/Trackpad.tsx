@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
@@ -91,7 +91,8 @@ function TrackpadButton({
 }
 
 export function Trackpad() {
-  const { settings, pollError } = useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const pollError = useAppStore((s) => s.pollError);
   const { ref, width } = useContainerSize<HTMLDivElement>();
   const compact = settings.inputAreaCompact;
   const showBottomRow = settings.mouseBottomRowVisible;
@@ -100,6 +101,9 @@ export function Trackpad() {
   const [precision, setPrecision] = useState(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
+  const pendingDelta = useRef({ dx: 0, dy: 0 });
+  const rafId = useRef<number | null>(null);
+  const ipcInFlight = useRef(false);
   const keyBgColor = settings.keyboardKeyColor ?? "#ffffff";
   const keyTextColor = settings.keyTextColor ?? "#1e293b";
   const surface = getSurfaceColors(settings.appBgColor);
@@ -109,28 +113,58 @@ export function Trackpad() {
     (precision || settings.precisionMode ? 0.4 : 1) *
     (settings.mouseCustomSpeed ?? 1);
 
+  useEffect(() => {
+    return () => {
+      if (rafId.current !== null) cancelAnimationFrame(rafId.current);
+    };
+  }, []);
+
+  const flushPendingMove = () => {
+    rafId.current = null;
+    if (ipcInFlight.current) {
+      rafId.current = requestAnimationFrame(flushPendingMove);
+      return;
+    }
+    const { dx, dy } = pendingDelta.current;
+    if (dx === 0 && dy === 0) return;
+    pendingDelta.current = { dx: 0, dy: 0 };
+    ipcInFlight.current = true;
+    void invoke("cmd_move_cursor_relative", { dx, dy })
+      .catch(() => {})
+      .finally(() => {
+        ipcInFlight.current = false;
+      });
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     lastPos.current = { x: e.clientX, y: e.clientY };
     dragging.current = true;
+    pendingDelta.current = { dx: 0, dy: 0 };
   };
 
-  const onPointerMove = async (e: React.PointerEvent) => {
+  const onPointerMove = (e: React.PointerEvent) => {
     if (!dragging.current || !lastPos.current) return;
     const dx = Math.round((e.clientX - lastPos.current.x) * speed);
     const dy = Math.round((e.clientY - lastPos.current.y) * speed);
-    if (dx !== 0 || dy !== 0) {
-      await invoke("cmd_move_cursor_relative", { dx, dy });
-      await pollError();
-    }
     lastPos.current = { x: e.clientX, y: e.clientY };
+    if (dx === 0 && dy === 0) return;
+    pendingDelta.current.dx += dx;
+    pendingDelta.current.dy += dy;
+    if (rafId.current === null) {
+      rafId.current = requestAnimationFrame(flushPendingMove);
+    }
   };
 
   const onPointerUp = () => {
     dragging.current = false;
     lastPos.current = null;
+    if (rafId.current !== null) {
+      cancelAnimationFrame(rafId.current);
+      rafId.current = null;
+    }
+    flushPendingMove();
   };
-
   const buttonProps = { iconSize, paddingY, bgColor: keyBgColor, textColor: keyTextColor };
 
   return (
