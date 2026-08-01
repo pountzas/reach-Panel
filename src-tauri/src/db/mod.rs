@@ -822,46 +822,63 @@ impl Database {
 
     pub fn get_predictions(&self, profile_id: &str, prefix: &str, language: &str, limit: i32) -> Result<Vec<PredictionEntry>> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
-        let pattern = format!("{prefix}%");
-        let mut scores: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+        let pattern = format!("{}%", prefix.to_lowercase());
+        let mut pack_freq: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+        let mut profile_usage: std::collections::HashMap<String, i64> =
+            std::collections::HashMap::new();
 
         {
             let mut stmt = conn.prepare(
-                "SELECT word, frequency FROM pack_words WHERE language = ?1 AND word LIKE ?2",
+                "SELECT word, frequency FROM pack_words WHERE language = ?1 AND LOWER(word) LIKE ?2",
             )?;
             let rows = stmt.query_map(params![language, pattern], |row| {
                 Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
             })?;
             for row in rows {
                 let (word, freq) = row?;
-                scores.insert(word, i64::from(freq));
+                pack_freq.insert(word, i64::from(freq));
             }
         }
 
         {
             let mut stmt = conn.prepare(
-                "SELECT word, frequency FROM predictions WHERE profile_id = ?1 AND language = ?2 AND word LIKE ?3",
+                "SELECT word, frequency FROM predictions WHERE profile_id = ?1 AND language = ?2 AND LOWER(word) LIKE ?3",
             )?;
             let rows = stmt.query_map(params![profile_id, language, pattern], |row| {
                 Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
             })?;
             for row in rows {
                 let (word, freq) = row?;
-                let entry = scores.entry(word).or_insert(0);
-                *entry += i64::from(freq) * 1000;
+                profile_usage.insert(word, i64::from(freq));
             }
         }
 
-        let mut ranked: Vec<(String, i64)> = scores.into_iter().collect();
-        ranked.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        let mut ranked: Vec<(String, i64, i64)> = pack_freq
+            .keys()
+            .chain(profile_usage.keys())
+            .cloned()
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .map(|word| {
+                let usage = profile_usage.get(&word).copied().unwrap_or(0);
+                let pack = pack_freq.get(&word).copied().unwrap_or(0);
+                (word, usage, pack)
+            })
+            .collect();
+        ranked.sort_by(|a, b| {
+            b.1.cmp(&a.1)
+                .then_with(|| b.2.cmp(&a.2))
+                .then_with(|| a.0.cmp(&b.0))
+        });
         ranked.truncate(limit.max(0) as usize);
 
         Ok(ranked
             .into_iter()
-            .map(|(word, score)| PredictionEntry {
+            .map(|(word, usage, pack)| PredictionEntry {
                 word,
                 language: language.to_string(),
-                frequency: score.min(i64::from(i32::MAX)) as i32,
+                frequency: (usage.saturating_mul(1000).saturating_add(pack))
+                    .min(i64::from(i32::MAX)) as i32,
             })
             .collect())
     }
@@ -913,11 +930,13 @@ impl Database {
 
     pub fn uninstall_word_pack(&self, language: &str) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
-        conn.execute("DELETE FROM pack_words WHERE language = ?1", params![language])?;
-        conn.execute(
+        let tx = conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM pack_words WHERE language = ?1", params![language])?;
+        tx.execute(
             "DELETE FROM installed_packs WHERE language = ?1",
             params![language],
         )?;
+        tx.commit()?;
         Ok(())
     }
 

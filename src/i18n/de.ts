@@ -83,6 +83,8 @@ export const de: Record<keyof typeof en, string> = {
 
   wordPackInstalling: "Wird installiert…",
 
+  wordPackUninstalling: "Wird entfernt…",
+
   wordPackRequired: "Erforderlich",
 
   wordPackInstallFailed: "Wörterbuch konnte nicht installiert werden",

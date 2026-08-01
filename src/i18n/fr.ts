@@ -83,6 +83,8 @@ export const fr: Record<keyof typeof en, string> = {
 
   wordPackInstalling: "Installation…",
 
+  wordPackUninstalling: "Suppression…",
+
   wordPackRequired: "Obligatoire",
 
   wordPackInstallFailed: "Impossible d’installer le dictionnaire",
@@ -107,7 +109,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   onscreenLayoutAuto: "Auto (suivre Windows)",
 
-  languageEnglish: "English",
+  languageEnglish: "Anglais",
 
   languageGreek: "Grec",
 
@@ -311,7 +313,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   octaveCount5: "5 octaves",
 
-  showKeyboardModeToggle: "Afficher le bascule clavier / synthétiseur",
+  showKeyboardModeToggle: "Afficher la bascule clavier / synthétiseur",
 
   keyboardSectionMode: "Mode de la section clavier",
 

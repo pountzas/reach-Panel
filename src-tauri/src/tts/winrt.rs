@@ -96,7 +96,7 @@ fn wait_for_playback(
     cancel: &AtomicBool,
 ) -> Result<()> {
     let mut was_playing = false;
-    for _ in 0..500 {
+    loop {
         if cancel.load(Ordering::SeqCst) {
             return Ok(());
         }
@@ -116,7 +116,6 @@ fn wait_for_playback(
         }
         thread::sleep(Duration::from_millis(100));
     }
-    Ok(())
 }
 
 fn clear_playback_if_current(cancel: &Arc<AtomicBool>) {

@@ -392,6 +392,28 @@ async function persistSettingsIfCurrent(
   return get().profileHydrated && get().settingsEpoch === epoch;
 }
 
+/**
+ * If `word` matches `prefix` case-insensitively, return the unmatched suffix
+ * of `word`. Length is measured by folding characters one at a time so
+ * case-fold expansions (e.g. İ → i̇) do not desync the slice index.
+ * Returns null when there is no case-insensitive prefix match (caller should
+ * delete + retype), or the full word when prefix is empty.
+ */
+function suggestionSuffixAfterPrefix(word: string, prefix: string): string | null {
+  if (prefix.length === 0) return word;
+  const target = prefix.toLowerCase();
+  let i = 0;
+  let folded = "";
+  while (i < word.length && folded.length < target.length) {
+    folded += word[i]!.toLowerCase();
+    i += 1;
+  }
+  if (folded === target || folded.startsWith(target)) {
+    return word.slice(i);
+  }
+  return null;
+}
+
 export const useAppStore = create<AppStore>((set, get) => ({
   profileFiles: [],
   activeProfileFile: null,
@@ -733,6 +755,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
         collapsedDictation: false,
         heightRatio: pending,
       });
+    } catch {
+      // Rejected ratio must not block near-equal retries.
+      if (liveHeightRatioPreview === pending) {
+        liveHeightRatioPreview = null;
+      }
     } finally {
       liveHeightRatioInFlight = false;
       // Flush any ratio queued while the previous invoke was in flight.
@@ -954,13 +981,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const next = parts.join(" ") + " ";
     set({ typedBuffer: next });
 
-    const lowerWord = word.toLowerCase();
-    const lowerPrefix = prefix.toLowerCase();
-    let remainder = word;
-    if (lowerWord.startsWith(lowerPrefix) && prefix.length > 0) {
-      remainder = word.slice(prefix.length);
+    const suffix = suggestionSuffixAfterPrefix(word, prefix);
+    if (suffix !== null) {
+      await invoke("cmd_type_text", { text: suffix + " " });
+    } else {
+      for (let i = 0; i < prefix.length; i++) {
+        await invoke("cmd_press_key", {
+          request: { key: "backspace", modifiers: [] },
+        });
+      }
+      await invoke("cmd_type_text", { text: word + " " });
     }
-    await invoke("cmd_type_text", { text: remainder + " " });
     await invoke("cmd_record_word", {
       profileId: INTERNAL_PROFILE_ID,
       word,

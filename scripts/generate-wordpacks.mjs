@@ -15,12 +15,19 @@ const LANGS = {
 const LIMIT = 8000;
 const VERSION = 1;
 
-function fetchText(url) {
+const MAX_REDIRECTS = 5;
+
+function fetchText(url, redirectsLeft = MAX_REDIRECTS) {
   return new Promise((resolve, reject) => {
     https
       .get(url, (res) => {
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          fetchText(res.headers.location).then(resolve, reject);
+          if (redirectsLeft <= 0) {
+            reject(new Error(`Too many redirects for ${url}`));
+            res.resume();
+            return;
+          }
+          fetchText(res.headers.location, redirectsLeft - 1).then(resolve, reject);
           return;
         }
         if (res.statusCode !== 200) {

@@ -83,6 +83,8 @@ export const it: Record<keyof typeof en, string> = {
 
   wordPackInstalling: "Installazione…",
 
+  wordPackUninstalling: "Rimozione…",
+
   wordPackRequired: "Obbligatorio",
 
   wordPackInstallFailed: "Impossibile installare il dizionario",
@@ -107,7 +109,7 @@ export const it: Record<keyof typeof en, string> = {
 
   onscreenLayoutAuto: "Auto (segui Windows)",
 
-  languageEnglish: "English",
+  languageEnglish: "Inglese",
 
   languageGreek: "Greco",
 

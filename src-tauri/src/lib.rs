@@ -687,16 +687,50 @@ fn validate_quick_action_url(target: &str) -> Result<String, String> {
     }
 
     // Bare hosts from the editor (e.g. "youtube.com") — open as https.
-    if !lower.contains("://")
-        && !trimmed.contains('\\')
-        && trimmed
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || ".-:_/?#=&%+".contains(c))
-    {
+    if is_host_shaped_url_target(trimmed) {
         return Ok(format!("https://{trimmed}"));
     }
 
     Err("URL scheme not allowed".to_string())
+}
+
+/// Accepts host-shaped targets like `example.com`, `example.com:443/path?q=1`.
+fn is_host_shaped_url_target(trimmed: &str) -> bool {
+    if trimmed.contains('\\') || trimmed.contains("://") {
+        return false;
+    }
+    if !trimmed
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || ".-:_/?#=&%+".contains(c))
+    {
+        return false;
+    }
+
+    let host_port = trimmed
+        .split(['/', '?', '#'])
+        .next()
+        .unwrap_or(trimmed);
+    if host_port.is_empty() {
+        return false;
+    }
+
+    let host = if let Some((name, port)) = host_port.rsplit_once(':') {
+        if port.is_empty() || !port.chars().all(|c| c.is_ascii_digit()) {
+            return false;
+        }
+        name
+    } else {
+        host_port
+    };
+
+    let labels: Vec<&str> = host.split('.').collect();
+    labels.len() >= 2
+        && labels.iter().all(|label| {
+            !label.is_empty()
+                && label
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '-')
+        })
 }
 
 fn validate_quick_action_app(target: &str) -> Result<String, String> {
@@ -947,13 +981,17 @@ fn cmd_list_word_packs(state: State<AppState>) -> Result<Vec<WordPackInfo>, Stri
 }
 
 #[tauri::command]
-fn cmd_install_word_pack(
+async fn cmd_install_word_pack(
     language: String,
     app: tauri::AppHandle,
-    state: State<AppState>,
 ) -> Result<Vec<WordPackInfo>, String> {
-    install_word_pack(&app, &state.db, &language).map_err(|e| e.to_string())?;
-    list_word_packs(&state.db).map_err(|e| e.to_string())
+    tokio::task::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        install_word_pack(&app, &state.db, &language).map_err(|e| e.to_string())?;
+        list_word_packs(&state.db).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

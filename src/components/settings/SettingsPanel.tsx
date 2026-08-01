@@ -120,11 +120,16 @@ function ThemedSelect({
   );
 }
 
+type WordPackInfo = {
+  language: string;
+  installed: boolean;
+  version: number | null;
+  bundled: boolean;
+};
+
 function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
   const { t } = useTranslation();
-  const [packs, setPacks] = useState<
-    { language: string; installed: boolean; version: number | null; bundled: boolean }[]
-  >([]);
+  const [packs, setPacks] = useState<WordPackInfo[]>([]);
   const [busyLang, setBusyLang] = useState<string | null>(null);
 
   const languageLabel = (lang: string): string => {
@@ -142,9 +147,7 @@ function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
   };
 
   const refresh = async () => {
-    const list = await invoke<
-      { language: string; installed: boolean; version: number | null; bundled: boolean }[]
-    >("cmd_list_word_packs");
+    const list = await invoke<WordPackInfo[]>("cmd_list_word_packs");
     setPacks(list);
   };
 
@@ -157,9 +160,7 @@ function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
   const install = async (language: string) => {
     setBusyLang(language);
     try {
-      const list = await invoke<
-        { language: string; installed: boolean; version: number | null; bundled: boolean }[]
-      >("cmd_install_word_pack", { language });
+      const list = await invoke<WordPackInfo[]>("cmd_install_word_pack", { language });
       setPacks(list);
     } catch (error) {
       notify.error(
@@ -173,9 +174,7 @@ function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
   const uninstall = async (language: string) => {
     setBusyLang(language);
     try {
-      const list = await invoke<
-        { language: string; installed: boolean; version: number | null; bundled: boolean }[]
-      >("cmd_uninstall_word_pack", { language });
+      const list = await invoke<WordPackInfo[]>("cmd_uninstall_word_pack", { language });
       setPacks(list);
     } catch (error) {
       notify.error(
@@ -225,7 +224,7 @@ function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
                   disabled={busy}
                   onClick={() => void uninstall(pack.language)}
                 >
-                  {busy ? t("wordPackInstalling") : t("wordPackUninstall")}
+                  {busy ? t("wordPackUninstalling") : t("wordPackUninstall")}
                 </button>
               ) : (
                 <button

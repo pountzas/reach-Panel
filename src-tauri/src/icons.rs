@@ -18,7 +18,18 @@ pub fn app_icon_cached_path(app: &AppHandle, target: &str) -> Option<String> {
             return Some(cache_file.to_string_lossy().into_owned());
         }
         let png = extract_file_icon_png(&path).ok()?;
-        fs::write(&cache_file, png).ok()?;
+        let tmp = cache_dir.join(format!(
+            "{key}.{}.tmp",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        fs::write(&tmp, &png).ok()?;
+        if fs::rename(&tmp, &cache_file).is_err() {
+            let _ = fs::remove_file(&tmp);
+            return None;
+        }
         Some(cache_file.to_string_lossy().into_owned())
     }
     #[cfg(not(windows))]
@@ -54,6 +65,8 @@ pub fn resolve_launch_app_path(target: &str) -> Option<PathBuf> {
     }
 }
 
+const ICON_CACHE_RETENTION: std::time::Duration = std::time::Duration::from_secs(30 * 24 * 60 * 60);
+
 fn icon_cache_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app
         .path()
@@ -61,7 +74,30 @@ fn icon_cache_dir(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|e| e.to_string())?
         .join("icon-cache");
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    prune_icon_cache(&dir);
     Ok(dir)
+}
+
+fn prune_icon_cache(dir: &Path) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    let now = std::time::SystemTime::now();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Ok(modified) = entry.metadata().and_then(|m| m.modified()) else {
+            continue;
+        };
+        let Ok(age) = now.duration_since(modified) else {
+            continue;
+        };
+        if age > ICON_CACHE_RETENTION {
+            let _ = fs::remove_file(path);
+        }
+    }
 }
 
 fn icon_cache_key(path: &Path) -> String {

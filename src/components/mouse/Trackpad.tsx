@@ -121,11 +121,13 @@ export function Trackpad() {
 
   const flushPendingMove = () => {
     rafId.current = null;
+    if (ipcInFlight.current) {
+      rafId.current = requestAnimationFrame(flushPendingMove);
+      return;
+    }
     const { dx, dy } = pendingDelta.current;
-    pendingDelta.current = { dx: 0, dy: 0 };
     if (dx === 0 && dy === 0) return;
-    // Drop this frame's delta if a prior invoke is still in flight (no backlog).
-    if (ipcInFlight.current) return;
+    pendingDelta.current = { dx: 0, dy: 0 };
     ipcInFlight.current = true;
     void invoke("cmd_move_cursor_relative", { dx, dy })
       .catch(() => {})

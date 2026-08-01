@@ -1,7 +1,10 @@
 # Tauri MCP Server configuration for this project
 # https://github.com/dirvine/tauri-mcp
+#
+# auto_discover: opt-in only. Enable after you trust this workspace checkout;
+# do not turn on by default for every clone.
 
-auto_discover = true
+auto_discover = false
 session_management = true
 event_streaming = false
 performance_profiling = false

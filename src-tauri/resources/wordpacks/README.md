@@ -8,7 +8,7 @@ Offline frequency dictionaries used by ReachPanel predictive text.
 {
   "language": "en",
   "version": 1,
-  "words": [["the", 23135851162], ["hello", 12345]]
+  "words": [["the", 22761659], ["hello", 12345]]
 }
 ```
 

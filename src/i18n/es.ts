@@ -83,6 +83,8 @@ export const es: Record<keyof typeof en, string> = {
 
   wordPackInstalling: "Instalando…",
 
+  wordPackUninstalling: "Quitando…",
+
   wordPackRequired: "Obligatorio",
 
   wordPackInstallFailed: "No se pudo instalar el diccionario",

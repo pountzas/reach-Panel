@@ -71,7 +71,7 @@ export function useHeadTracking(
       const canvas = canvasRef.current;
       const video = videoRef.current;
       if (canvas && video && video.readyState >= 2) {
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (ctx) {
           ctx.drawImage(video, 0, 0, 64, 48);
           const data = ctx.getImageData(0, 0, 64, 48).data;

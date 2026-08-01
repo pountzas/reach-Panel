@@ -24,6 +24,7 @@ struct ActiveSession {
 struct DictationRuntime {
     session: Option<ActiveSession>,
     app_handle: Option<AppHandle>,
+    starting: bool,
 }
 
 impl Default for DictationRuntime {
@@ -31,6 +32,7 @@ impl Default for DictationRuntime {
         Self {
             session: None,
             app_handle: None,
+            starting: false,
         }
     }
 }
@@ -77,6 +79,16 @@ fn require_language_supported(tag: &str) -> Result<()> {
     ))
 }
 
+struct StartingFlagGuard;
+
+impl Drop for StartingFlagGuard {
+    fn drop(&mut self) {
+        if let Ok(mut guard) = runtime().lock() {
+            guard.starting = false;
+        }
+    }
+}
+
 pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     ensure_winrt()?;
 
@@ -84,13 +96,15 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     require_language_supported(tag)?;
 
     {
-        let guard = runtime()
+        let mut guard = runtime()
             .lock()
             .map_err(|_| anyhow!("Dictation runtime lock poisoned"))?;
-        if guard.session.is_some() {
+        if guard.session.is_some() || guard.starting {
             return Err(anyhow!("Dictation is already active"));
         }
+        guard.starting = true;
     }
+    let _starting_guard = StartingFlagGuard;
 
     // Build recognizer and await WinRT ops without holding the global mutex.
     let win_lang = Language::CreateLanguage(&HSTRING::from(tag))?;

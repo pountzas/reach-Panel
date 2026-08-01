@@ -86,6 +86,8 @@ export const el: Record<keyof typeof en, string> = {
 
   wordPackInstalling: "Εγκατάσταση…",
 
+  wordPackUninstalling: "Αφαίρεση…",
+
   wordPackRequired: "Απαιτείται",
 
   wordPackInstallFailed: "Αποτυχία εγκατάστασης λεξικού",

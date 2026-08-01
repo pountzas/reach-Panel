@@ -243,11 +243,12 @@ fn worker_loop(
         let energy = match samples.lock() {
             Ok(buf) => {
                 if buf.len() <= cursor {
-                    continue;
+                    0.0
+                } else {
+                    let window = TARGET_SAMPLE_RATE as usize / 10; // ~100ms
+                    let start = buf.len().saturating_sub(window).max(cursor);
+                    rms(&buf[start..])
                 }
-                let window = TARGET_SAMPLE_RATE as usize / 10; // ~100ms
-                let start = buf.len().saturating_sub(window).max(cursor);
-                rms(&buf[start..])
             }
             Err(_) => continue,
         };

@@ -147,8 +147,10 @@ fn download_pack(app: &AppHandle, language: &str) -> Result<WordPackFile> {
 
     let url = format!("{PACK_DOWNLOAD_BASE}/{language}.json");
     let body = http_get_text(&url)?;
+    let pack: WordPackFile = serde_json::from_str(&body)
+        .map_err(|e| anyhow!("Invalid word pack JSON from {url}: {e}"))?;
     fs::write(&dest, &body)?;
-    serde_json::from_str(&body).map_err(|e| anyhow!("Invalid word pack JSON from {url}: {e}"))
+    Ok(pack)
 }
 
 fn read_pack_file(path: &Path) -> Result<WordPackFile> {
@@ -158,7 +160,14 @@ fn read_pack_file(path: &Path) -> Result<WordPackFile> {
 }
 
 fn http_get_text(url: &str) -> Result<String> {
-    let response = ureq::get(url)
+    use std::time::Duration;
+
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(15))
+        .timeout(Duration::from_secs(60))
+        .build();
+    let response = agent
+        .get(url)
         .call()
         .map_err(|e| anyhow!("Download failed ({url}): {e}"))?;
     response

@@ -60,6 +60,7 @@ export function Keyboard() {
   );
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
   const fontSize = settings.keyboardFontSize ?? 18;
+  const typingLocale = settings.typingLanguage || "en";
 
   const clearModifiersAfterKey = (usedFn: boolean) => {
     if (settings.fnKeyMode === "latched") {
@@ -134,7 +135,6 @@ export function Keyboard() {
     }
 
     const usedFn = fnActive && isFnMappedKey(keyDef.key);
-    const typingLocale = settings.typingLanguage || "en";
     const output = resolveKeyOutput(
       keyDef,
       physicalKeyState.capsLock,
@@ -173,7 +173,7 @@ export function Keyboard() {
                     physicalKeyState.capsLock,
                     shiftActive,
                     fnActive,
-                    settings.typingLanguage || "en",
+                    typingLocale,
                   )}
                   width={k.width}
                   size={keyHeight}

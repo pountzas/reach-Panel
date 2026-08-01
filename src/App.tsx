@@ -38,36 +38,43 @@ function MainApp() {
     let cancelled = false;
     let pollId: number | null = null;
     const init = async () => {
-      await loadProfileFiles();
-      if (cancelled) return;
-      await loadImportedSongs();
-      await loadMonitors();
-      const { settings } = useAppStore.getState();
-      await invoke("cmd_apply_window_layout", {
-        monitorId: settings.accessibilityMonitorId,
-        collapsed: settings.collapsed,
-        collapsedDictation:
-          settings.collapsed && settings.dictationVisible !== false,
-        heightRatio: computeContentHeightRatio({
-          quickActions: settings.quickActionsVisible,
-          phrases: settings.phrasesVisible,
-        }),
-      });
-      await loadKeyboardLayout();
-      await loadInputMethods();
-      await refreshLayoutKeyLabels();
-      await pollKeyboardState();
-      await invoke("cmd_set_always_on_top", { enabled: true });
-      await invoke("cmd_set_window_focusable", { focusable: false });
-      void checkForUpdates();
-      await refreshSttCapability();
-      if (cancelled) return;
-      // Start polling only after profile hydration so DEFAULT_SETTINGS cannot
-      // be persisted over the active profile file on startup.
-      pollId = window.setInterval(() => {
-        if (document.hidden) return;
-        void pollKeyboardState();
-      }, KEYBOARD_POLL_MS);
+      try {
+        await loadProfileFiles();
+        if (cancelled) return;
+        await loadImportedSongs();
+        await loadMonitors();
+        const { settings } = useAppStore.getState();
+        await invoke("cmd_apply_window_layout", {
+          monitorId: settings.accessibilityMonitorId,
+          collapsed: settings.collapsed,
+          collapsedDictation:
+            settings.collapsed && settings.dictationVisible !== false,
+          heightRatio: computeContentHeightRatio({
+            quickActions: settings.quickActionsVisible,
+            phrases: settings.phrasesVisible,
+          }),
+        });
+        await loadKeyboardLayout();
+        await loadInputMethods();
+        await refreshLayoutKeyLabels();
+        await pollKeyboardState();
+        await invoke("cmd_set_always_on_top", { enabled: true });
+        await invoke("cmd_set_window_focusable", { focusable: false });
+        void checkForUpdates();
+        await refreshSttCapability();
+      } catch (error) {
+        if (!cancelled) {
+          setLastError(error instanceof Error ? error.message : String(error));
+        }
+      } finally {
+        if (cancelled) return;
+        // Start polling even if earlier setup steps failed so keyboard state
+        // stays fresh; profile hydration errors are surfaced via setLastError.
+        pollId = window.setInterval(() => {
+          if (document.hidden) return;
+          void pollKeyboardState();
+        }, KEYBOARD_POLL_MS);
+      }
     };
     void init();
     return () => {
@@ -84,6 +91,7 @@ function MainApp() {
     pollKeyboardState,
     checkForUpdates,
     refreshSttCapability,
+    setLastError,
   ]);
 
   useEffect(() => {

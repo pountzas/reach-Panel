@@ -91,8 +91,8 @@ export function chooseDisplayOctaveShift(pitches: string[]): number {
   // Staff center ≈ B4 (diatonic 4*7+6 = 34)
   const staffCenter = 4 * 7 + 6;
   const delta = median - staffCenter;
-  if (delta >= 7) return 1; // mostly below staff → draw up (8vb)
-  if (delta <= -7) return -1; // mostly above staff → draw down (8va)
+  if (delta >= 7) return -1; // mostly above staff → draw down (8va)
+  if (delta <= -7) return 1; // mostly below staff → draw up (8vb)
   return 0;
 }
 

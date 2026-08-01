@@ -82,6 +82,8 @@
 
   wordPackInstalling: "Installing…",
 
+  wordPackUninstalling: "Removing…",
+
   wordPackRequired: "Required",
 
   wordPackInstallFailed: "Could not install dictionary",

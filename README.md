@@ -3,7 +3,7 @@
 Assistive virtual keyboard and mouse for Windows — built for users with severe motor disabilities who operate a wheelchair-mounted touchscreen while applications run on a laptop display.
 
 [License: MIT](LICENSE)
-[Platform: Windows]()
+[Platform: Windows](#requirements)
 [Build](https://github.com/pountzas/reach-Panel/actions/workflows/build.yml)
 
 Built with Tauri, React, Rust, and SQLite.
@@ -42,7 +42,7 @@ Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Pan
 - Keyboard / synthesizer mode toggle with two-octave piano keyboard
 - Language switch key with country flag icons (follows installed Windows keyboards)
 - Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle
-- `Macro builder with JSON import/export
+- Macro builder with JSON import/export
 
 
 
@@ -153,7 +153,7 @@ Windows and macOS bundles are built in CI. Windows installers are published auto
 | `src-tauri/src/prediction/`          | Predictive text + word-pack install/download                         |
 | `src-tauri/resources/wordpacks/`     | Bundled English dictionary                                           |
 | `wordpacks-dist/`                    | Downloadable packs for GitHub `wordpacks-v1` release                 |
-| `docs/accessibility-requirements.md` | Personas and acceptance criteria                                     |
+| `docs/accessibility-requirements.md` | Target users and acceptance criteria                                 |
 
 
 

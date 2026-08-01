@@ -2,10 +2,10 @@
   "mcpServers": {
     "tauri-mcp": {
       "type": "stdio",
-      "command": "C:\\Users\\nik\\.cargo\\bin\\tauri-mcp.exe",
+      "command": "tauri-mcp",
       "args": [
         "--config",
-        "C:\\Users\\nik\\accessibility-keyboard\\tauri-mcp.toml",
+        "tauri-mcp.toml",
         "--log-level",
         "info",
         "serve"

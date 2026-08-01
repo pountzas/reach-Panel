@@ -117,18 +117,18 @@ fn is_under_dir(path: &Path, root: &Path) -> bool {
     path.starts_with(root)
 }
 
-fn path_is_allowed(app: &AppHandle, canonical: &Path) -> Result<bool, String> {
+fn path_is_allowed(app: &AppHandle, canonical: &Path, original: &Path) -> Result<bool, String> {
     let music_root = music_dir(app)?;
     let music_root = music_root
         .canonicalize()
         .unwrap_or(music_root);
-    if is_under_dir(canonical, &music_root) {
+    if is_under_dir(canonical, &music_root) || is_under_dir(original, &music_root) {
         return Ok(true);
     }
     let guard = allowed_read_paths()
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
-    Ok(guard.contains(canonical))
+    Ok(guard.contains(canonical) || guard.contains(original))
 }
 
 /// Read a music import file after allowlist + size checks.
@@ -150,7 +150,7 @@ pub fn read_music_file_bytes(app: &AppHandle, path: &str) -> Result<Vec<u8>, Str
         .canonicalize()
         .map_err(|e| format!("Music file not found: {e}"))?;
 
-    if !path_is_allowed(app, &canonical)? {
+    if !path_is_allowed(app, &canonical, &candidate)? {
         return Err("Music file path is not allowed".to_string());
     }
 
