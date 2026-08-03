@@ -29,7 +29,7 @@ tokio = { version = "1", features = ["rt", "time"] }
 ureq = { version = "2", default-features = true, features = ["tls", "json"] }
 
 [target.'cfg(windows)'.dependencies]
-cpal = "0.15"
+cpal = "0.18"
 windows-future = "0.3"
 image = { version = "0.25", default-features = false, features = ["png"] }
 windows = { version = "0.58", features = [
