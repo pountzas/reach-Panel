@@ -26,6 +26,18 @@
 
   accessibilityScreen: "Accessibility Screen",
 
+  miniMode: "Mini Mode",
+
+  miniModeAutoDescription:
+    "On a single display or mirrored setup, the keyboard appears automatically when you tap an input field.",
+
+  miniModeForceEnable: "Enable Mini Mode on dual monitors",
+
+  miniModeTransparent: "Transparent keyboard",
+
+  miniModeTransparentDescription:
+    "Show keys with outlines only so you can see through to your apps.",
+
   largeHeaders: "Large headers for easier resize",
 
   largeHeadersHint:

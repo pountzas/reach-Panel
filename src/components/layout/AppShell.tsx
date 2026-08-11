@@ -17,12 +17,14 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { CollapseIcon, CloseIcon, SettingsIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { CollapsedFab } from "./CollapsedFab";
+import { MiniModeShell } from "./MiniModeShell";
 import {
   appHeaderHeightPx,
   clampWindowHeightRatio,
   computeContentHeightRatio,
 } from "../../lib/sectionLayouts";
 import { closeAllToolWindows } from "../../lib/toolWindows";
+import { resolveMiniModeEnabled } from "../../lib/miniMode";
 
 function InputRowPanel() {
   const settings = useAppStore((s) => s.settings);
@@ -161,6 +163,11 @@ export function AppShell() {
     }
     void updateSettings({ windowHeightRatio: drag.latestRatio });
   };
+
+  // Mini Mode: keyboard+suggestions or collapsed FAB — not the full app chrome.
+  if (monitors.length > 0 && resolveMiniModeEnabled(settings, monitors)) {
+    return <MiniModeShell />;
+  }
 
   if (settings.collapsed) {
     return <CollapsedFab />;

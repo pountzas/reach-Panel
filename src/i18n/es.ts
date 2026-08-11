@@ -27,6 +27,18 @@ export const es: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Pantalla de accesibilidad",
 
+  miniMode: "Modo Mini",
+
+  miniModeAutoDescription:
+    "En una sola pantalla o configuración reflejada, el teclado aparece automáticamente al tocar un campo de entrada.",
+
+  miniModeForceEnable: "Activar Modo Mini en monitores duales",
+
+  miniModeTransparent: "Teclado transparente",
+
+  miniModeTransparentDescription:
+    "Mostrar teclas solo con contornos para ver las aplicaciones detrás.",
+
   largeHeaders: "Encabezados grandes para redimensionar más fácilmente",
 
   largeHeadersHint:
