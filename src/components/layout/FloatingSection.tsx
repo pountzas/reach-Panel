@@ -143,12 +143,35 @@ export function FloatingSection({
       cancel=".section-no-drag"
       disableDragging={pointerDragActive}
       enableResizing={resizingEnabled}
-      style={{ touchAction: "none" }}
       resizeHandleStyles={{
-        top: { height: `${EDGE_SIZE}px`, top: 0, cursor: "ns-resize" },
-        right: { width: `${EDGE_SIZE}px`, right: 0, cursor: "ew-resize" },
-        bottom: { height: `${EDGE_SIZE}px`, bottom: 0, cursor: "ns-resize" },
-        left: { width: `${EDGE_SIZE}px`, left: 0, cursor: "ew-resize" },
+        top: {
+          height: `${EDGE_SIZE}px`,
+          top: 0,
+          cursor: "ns-resize",
+          touchAction: "none",
+        },
+        right: {
+          width: `${EDGE_SIZE}px`,
+          right: 0,
+          cursor: "ew-resize",
+          touchAction: "none",
+        },
+        bottom: {
+          height: `${EDGE_SIZE}px`,
+          bottom: 0,
+          cursor: "ns-resize",
+          touchAction: "none",
+        },
+        left: {
+          width: `${EDGE_SIZE}px`,
+          left: 0,
+          cursor: "ew-resize",
+          touchAction: "none",
+        },
+        topRight: { touchAction: "none" },
+        topLeft: { touchAction: "none" },
+        bottomRight: { touchAction: "none" },
+        bottomLeft: { touchAction: "none" },
       }}
       className={isActive ? "z-40" : "z-30"}
       onDragStart={() => {
@@ -202,6 +225,7 @@ export function FloatingSection({
             height: headerHeight,
             backgroundColor: surface.panelHeaderBg,
             borderColor: surface.panelBorder,
+            touchAction: "none",
           }}
         >
           <span
