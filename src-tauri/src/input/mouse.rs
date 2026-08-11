@@ -2,14 +2,17 @@ use anyhow::{anyhow, Result};
 use std::sync::Mutex;
 use windows::Win32::Foundation::{HWND, POINT, RECT};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    SendInput, INPUT, INPUT_0, INPUT_MOUSE, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP,
-    MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, MOUSEEVENTF_RIGHTDOWN,
-    MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_WHEEL, MOUSEEVENTF_HWHEEL, MOUSEINPUT,
+    SendInput, INPUT, INPUT_0, INPUT_MOUSE, MOUSEEVENTF_ABSOLUTE, MOUSEEVENTF_HWHEEL,
+    MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP,
+    MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_VIRTUALDESK,
+    MOUSEEVENTF_WHEEL, MOUSEINPUT,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetCursorPos, GetSystemMetrics, GetWindowRect, SetCursorPos, SM_CXVIRTUALSCREEN,
-    SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN,
+    GetCursorPos, GetSystemMetrics, GetWindowRect, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN,
+    SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN,
 };
+
+use super::cursor_highlight;
 
 struct TrackpadGestureState {
     active: bool,
@@ -30,7 +33,10 @@ static TRACKPAD_GESTURE: Mutex<TrackpadGestureState> = Mutex::new(TrackpadGestur
     last_good: None,
 });
 
-fn send_mouse(flags: windows::Win32::UI::Input::KeyboardAndMouse::MOUSE_EVENT_FLAGS, data: i32) -> Result<()> {
+fn send_mouse(
+    flags: windows::Win32::UI::Input::KeyboardAndMouse::MOUSE_EVENT_FLAGS,
+    data: i32,
+) -> Result<()> {
     let input = INPUT {
         r#type: INPUT_MOUSE,
         Anonymous: INPUT_0 {
@@ -57,7 +63,12 @@ fn virtual_screen_bounds() -> (i32, i32, i32, i32) {
         let top = GetSystemMetrics(SM_YVIRTUALSCREEN);
         let width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
         let height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-        (left, top, left + width.saturating_sub(1), top + height.saturating_sub(1))
+        (
+            left,
+            top,
+            left + width.saturating_sub(1),
+            top + height.saturating_sub(1),
+        )
     }
 }
 
@@ -66,10 +77,42 @@ fn clamp_to_virtual_screen(x: i32, y: i32) -> (i32, i32) {
     (x.clamp(left, right), y.clamp(top, bottom))
 }
 
+/// Move via SendInput absolute coords (not SetCursorPos).
+///
+/// After touchscreen input Windows sets `CURSOR_SUPPRESSED`; SetCursorPos keeps
+/// the pointer invisible, while SendInput mouse moves restore it.
+fn send_cursor_absolute(x: i32, y: i32) -> Result<()> {
+    let (left, top, right, bottom) = virtual_screen_bounds();
+    let width = (right - left).max(1);
+    let height = (bottom - top).max(1);
+    let dx = ((x - left) as i64 * 65535 / width as i64) as i32;
+    let dy = ((y - top) as i64 * 65535 / height as i64) as i32;
+
+    let input = INPUT {
+        r#type: INPUT_MOUSE,
+        Anonymous: INPUT_0 {
+            mi: MOUSEINPUT {
+                dx,
+                dy,
+                mouseData: 0,
+                dwFlags: MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    let sent = unsafe { SendInput(&[input], std::mem::size_of::<INPUT>() as i32) };
+    if sent == 0 {
+        return Err(anyhow!("SendInput absolute mouse move failed"));
+    }
+    Ok(())
+}
+
 fn set_cursor_and_remember(x: i32, y: i32, state: &mut TrackpadGestureState) -> Result<()> {
     let (x, y) = clamp_to_virtual_screen(x, y);
-    unsafe { SetCursorPos(x, y)? };
+    send_cursor_absolute(x, y)?;
     state.last_good = Some((x, y));
+    cursor_highlight::nudge(x, y);
     Ok(())
 }
 
@@ -105,6 +148,10 @@ pub fn begin_trackpad_gesture(app_hwnd: isize) -> Result<()> {
     }
 
     state.active = true;
+    cursor_highlight::set_sticky(true);
+    if let Some((x, y)) = state.last_good {
+        cursor_highlight::nudge(x, y);
+    }
     Ok(())
 }
 
@@ -113,6 +160,7 @@ pub fn end_trackpad_gesture() -> Result<()> {
         .lock()
         .map_err(|_| anyhow!("trackpad gesture lock poisoned"))?;
     state.active = false;
+    cursor_highlight::set_sticky(false);
     Ok(())
 }
 
@@ -170,7 +218,11 @@ pub fn mouse_double_click() -> Result<()> {
 }
 
 pub fn mouse_scroll(delta: i32, horizontal: bool) -> Result<()> {
-    let flags = if horizontal { MOUSEEVENTF_HWHEEL } else { MOUSEEVENTF_WHEEL };
+    let flags = if horizontal {
+        MOUSEEVENTF_HWHEEL
+    } else {
+        MOUSEEVENTF_WHEEL
+    };
     send_mouse(flags, delta)?;
     Ok(())
 }
