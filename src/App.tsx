@@ -95,6 +95,17 @@ function MainApp() {
   ]);
 
   useEffect(() => {
+    // Instant touch↔mouse layout profile switch (no debounce).
+    const onPointerDown = (event: PointerEvent) => {
+      useAppStore.getState().handlePointerInputEvent(event.pointerType);
+    };
+    window.addEventListener("pointerdown", onPointerDown, { capture: true });
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, { capture: true });
+    };
+  }, []);
+
+  useEffect(() => {
     const unlisteners: Array<Promise<() => void>> = [];
 
     unlisteners.push(

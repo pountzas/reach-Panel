@@ -20,6 +20,7 @@ import {
   MonitorInfo,
   Phrase,
   PhraseCategory,
+  PointerInputKind,
   ProfileFileInfo,
   QuickAction,
 } from "../lib/types";
@@ -50,6 +51,12 @@ import {
   TOOL_WINDOW_TITLES,
   type ToolWindowLabel,
 } from "../lib/toolWindows";
+import {
+  partialContainsLayoutFields,
+  persistLayoutForKind,
+  pointerKindFromEvent,
+  switchPointerInputKindLayout,
+} from "../lib/layoutProfiles";
 
 /** Avoid re-toasting the same backend error until it clears. */
 let lastAnnouncedError: string | null = null;
@@ -137,6 +144,8 @@ interface AppStore {
   settingsEpoch: number;
   /** False until the first profile load finishes; blocks persist of DEFAULT_SETTINGS. */
   profileHydrated: boolean;
+  /** Last pointer kind used for touch vs mouse layout profiles. */
+  pointerInputKind: PointerInputKind;
   monitors: MonitorInfo[];
   quickActions: QuickAction[];
   phrases: Phrase[];
@@ -175,6 +184,13 @@ interface AppStore {
     partial: Partial<AppSettings>,
     options?: { syncToSystem?: boolean },
   ) => Promise<void>;
+  /**
+   * Switch active layout profile by pointer kind. Persists outgoing flat
+   * layout into that kind's snapshot, then applies the incoming snapshot.
+   */
+  setPointerInputKind: (kind: PointerInputKind) => Promise<void>;
+  /** Map a DOM pointerType to PointerInputKind and switch if needed. */
+  handlePointerInputEvent: (pointerType: string) => void;
   /** Live-preview OS window height while dragging the main header (no persist). */
   applyWindowHeightRatioLive: (ratio: number) => Promise<void>;
   resetSettingsToDefaults: () => Promise<void>;
@@ -420,6 +436,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   settings: DEFAULT_SETTINGS,
   settingsEpoch: 0,
   profileHydrated: false,
+  pointerInputKind: "mouse",
   monitors: [],
   quickActions: [],
   phrases: [],
@@ -604,6 +621,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     }
 
+    if (partialContainsLayoutFields(partial)) {
+      next = persistLayoutForKind(next, get().pointerInputKind);
+    }
+
     if (get().settingsEpoch !== epoch) {
       return;
     }
@@ -706,6 +727,30 @@ export const useAppStore = create<AppStore>((set, get) => ({
         });
       }
     }
+  },
+
+  setPointerInputKind: async (kind) => {
+    const { pointerInputKind, settings, profileHydrated } = get();
+    if (kind === pointerInputKind) {
+      return;
+    }
+    const epoch = get().settingsEpoch;
+    const next = switchPointerInputKindLayout(settings, pointerInputKind, kind);
+    set({ pointerInputKind: kind, settings: next });
+    if (profileHydrated) {
+      await persistSettingsIfCurrent(get, epoch, next);
+    }
+    if (WebviewWindow.getCurrent().label === "main") {
+      void syncWindowLayoutFromSettings(next, true);
+    }
+  },
+
+  handlePointerInputEvent: (pointerType) => {
+    const kind = pointerKindFromEvent(pointerType);
+    if (kind === get().pointerInputKind) {
+      return;
+    }
+    void get().setPointerInputKind(kind);
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
