@@ -2,11 +2,11 @@ name: Build
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   build-windows:
-    if: github.head_ref == 'dev'
+    if: github.base_ref == 'dev' || github.head_ref == 'dev'
     runs-on: windows-latest
 
     steps:

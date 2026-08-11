@@ -154,7 +154,9 @@ pub fn compute_window_layout(
     mini_mode: bool,
     mini_keyboard_visible: bool,
     mini_keyboard_height_ratio: f32,
+    dpi_scale: f32,
 ) -> Result<WindowLayout, String> {
+    let dpi_scale = dpi_scale.max(1.0);
     let monitor = monitors
         .iter()
         .find(|m| m.id == monitor_id)
@@ -179,7 +181,7 @@ pub fn compute_window_layout(
         }
 
         let count = collapsed_fab_count(collapsed_dictation, collapsed_settings);
-        let (collapsed_w, collapsed_h) = compute_collapsed_dimensions(count, 1.0);
+        let (collapsed_w, collapsed_h) = compute_collapsed_dimensions(count, dpi_scale);
         return Ok(WindowLayout {
             x: monitor.x + monitor.width - collapsed_w as i32 - COLLAPSED_MARGIN as i32,
             y: monitor.y + monitor.height - collapsed_h as i32 - COLLAPSED_MARGIN as i32,
@@ -207,7 +209,7 @@ pub fn compute_window_layout(
     if collapsed {
         // FAB stays bottom-right of the full region; ignore content height_ratio.
         let count = collapsed_fab_count(collapsed_dictation, collapsed_settings);
-        let (collapsed_w, collapsed_h) = compute_collapsed_dimensions(count, 1.0);
+        let (collapsed_w, collapsed_h) = compute_collapsed_dimensions(count, dpi_scale);
         x += w as i32 - collapsed_w as i32 - COLLAPSED_MARGIN as i32;
         y += h as i32 - collapsed_h as i32 - COLLAPSED_MARGIN as i32;
         w = collapsed_w;
@@ -309,7 +311,7 @@ mod tests {
     fn collapsed_single_monitor_bottom_right() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
-            &monitors, 0, true, false, false, 0.5, false, false, MINI_KEYBOARD_HEIGHT_RATIO,
+            &monitors, 0, true, false, false, 0.5, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
         )
         .unwrap();
         let (expected_w, expected_h) =
@@ -325,7 +327,7 @@ mod tests {
     fn collapsed_with_dictation_is_taller() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
-            &monitors, 0, true, true, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO,
+            &monitors, 0, true, true, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
         )
         .unwrap();
         let (expected_w, expected_h) =
@@ -344,7 +346,7 @@ mod tests {
             sample_monitor(1, 1920, 0, 1920, 1080),
         ];
         let layout = compute_window_layout(
-            &monitors, 1, true, false, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO,
+            &monitors, 1, true, false, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
         )
         .unwrap();
         let (expected_w, expected_h) =
@@ -360,7 +362,7 @@ mod tests {
     fn expanded_full_ratio_fills_single_monitor_region() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
-            &monitors, 0, false, false, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO,
+            &monitors, 0, false, false, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
         )
         .unwrap();
 
@@ -374,7 +376,7 @@ mod tests {
     fn expanded_partial_ratio_bottom_aligned_single_monitor() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
-            &monitors, 0, false, false, false, 0.5, false, false, MINI_KEYBOARD_HEIGHT_RATIO,
+            &monitors, 0, false, false, false, 0.5, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
         )
         .unwrap();
 
@@ -393,7 +395,7 @@ mod tests {
             sample_monitor(1, 1920, 0, 1920, 1080),
         ];
         let layout = compute_window_layout(
-            &monitors, 1, false, false, false, 0.61, false, false, MINI_KEYBOARD_HEIGHT_RATIO,
+            &monitors, 1, false, false, false, 0.61, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
         )
         .unwrap();
 
@@ -417,6 +419,7 @@ mod tests {
             true,
             true,
             MINI_KEYBOARD_HEIGHT_RATIO,
+            1.0,
         )
         .unwrap();
 
@@ -442,6 +445,7 @@ mod tests {
             true,
             false,
             MINI_KEYBOARD_HEIGHT_RATIO,
+            1.0,
         )
         .unwrap();
 

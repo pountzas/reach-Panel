@@ -4,7 +4,7 @@ Thank you for helping improve ReachPanel.
 
 ## Prerequisites
 
-- Windows 10 or 11
+- **Windows 10 or 11 only** — ReachPanel does not support macOS (single-point touch breaks multi-touch layout).
 - Node.js 18+
 - Rust (via [rustup](https://rustup.rs/))
 - Visual Studio Build Tools with the C++ workload

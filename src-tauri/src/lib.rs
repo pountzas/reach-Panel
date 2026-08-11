@@ -319,6 +319,7 @@ async fn apply_window_layout(
     mini_keyboard_height_ratio: f32,
 ) -> Result<(), String> {
     let monitors = list_monitors();
+    let dpi_scale = main_window_dpi_scale(app);
     let layout = compute_window_layout(
         &monitors,
         monitor_id,
@@ -329,8 +330,16 @@ async fn apply_window_layout(
         mini_mode,
         mini_keyboard_visible,
         mini_keyboard_height_ratio,
+        dpi_scale,
     )?;
     set_window_layout(app, layout).await
+}
+
+fn main_window_dpi_scale(app: &AppHandle) -> f32 {
+    app.get_webview_window("main")
+        .and_then(|w| w.scale_factor().ok())
+        .map(|s| s as f32)
+        .unwrap_or(1.0)
 }
 
 fn get_current_window_layout(window: &tauri::WebviewWindow) -> Result<WindowLayout, String> {
@@ -364,6 +373,7 @@ async fn animate_window_layout(
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
     let monitors = list_monitors();
+    let dpi_scale = main_window_dpi_scale(app);
     let target = compute_window_layout(
         &monitors,
         monitor_id,
@@ -374,6 +384,7 @@ async fn animate_window_layout(
         mini_mode,
         mini_keyboard_visible,
         mini_keyboard_height_ratio,
+        dpi_scale,
     )?;
     let from = get_current_window_layout(&window)?;
 
