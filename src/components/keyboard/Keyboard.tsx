@@ -17,10 +17,12 @@ import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
+import { isTransparentUiActive } from "../../lib/miniMode";
 import type { OnscreenLayout } from "../../lib/types";
 
 export function Keyboard() {
   const settings = useAppStore((s) => s.settings);
+  const miniModeActive = useAppStore((s) => s.miniModeActive);
   const keyboardLayout = useAppStore((s) => s.keyboardLayout);
   const stickyModifiers = useAppStore((s) => s.stickyModifiers);
   const physicalKeyState = useAppStore((s) => s.physicalKeyState);
@@ -61,6 +63,7 @@ export function Keyboard() {
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
   const fontSize = settings.keyboardFontSize ?? 18;
   const typingLocale = settings.typingLanguage || "en";
+  const transparent = isTransparentUiActive(settings, miniModeActive);
 
   const clearModifiersAfterKey = (usedFn: boolean) => {
     if (settings.fnKeyMode === "latched") {
@@ -156,8 +159,10 @@ export function Keyboard() {
       ref={ref}
       className="relative flex h-full w-full flex-col rounded-xl p-2"
       style={{
-        backgroundColor: settings.keyboardBgColor ?? "#e8edf2",
-        opacity: settings.opacity,
+        backgroundColor: transparent
+          ? "transparent"
+          : (settings.keyboardBgColor ?? "#e8edf2"),
+        opacity: transparent ? 1 : settings.opacity,
       }}
     >
       {rows.map((row, ri) => (
@@ -182,6 +187,7 @@ export function Keyboard() {
                   bgColor={settings.keyboardKeyColor ?? "#ffffff"}
                   textColor={settings.keyTextColor ?? "#1e293b"}
                   stretch
+                  transparent={transparent}
                   active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
                   onPress={() => handleKey(k)}
                 />
@@ -236,6 +242,7 @@ export function Keyboard() {
                     bgColor={settings.keyboardKeyColor ?? "#ffffff"}
                     textColor={settings.keyTextColor ?? "#1e293b"}
                     stretch
+                    transparent={transparent}
                     active={languagePickerOpen}
                     onPress={() => handleKey(k)}
                   />

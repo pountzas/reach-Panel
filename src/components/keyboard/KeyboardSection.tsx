@@ -3,6 +3,7 @@ import {
   MouseIcon,
   SynthesizerIcon,
   TeachIcon,
+  TransparentKeyboardIcon,
 } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { SuggestionsBar } from "../common/SuggestionsBar";
@@ -19,6 +20,7 @@ import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCoun
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
+  const miniModeActive = useAppStore((s) => s.miniModeActive);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const musicSongId = useAppStore((s) => s.musicSongId);
@@ -32,7 +34,9 @@ export function KeyboardSection() {
   const showDictation =
     !showSynth && settings.dictationVisible !== false && !compact;
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
-  const showToolbar = showDictation || showToggle || showSuggestions;
+  const showTransparentToggle = miniModeActive && !showSynth && !compact;
+  const showToolbar =
+    showDictation || showToggle || showSuggestions || showTransparentToggle;
   const song = musicTeachingEnabled
     ? getSongById(musicSongId, importedSongs)
     : null;
@@ -55,11 +59,27 @@ export function KeyboardSection() {
           <div className="min-w-0 flex-1 pl-1.5">
             {showSuggestions && <SuggestionsBar />}
           </div>
-          {(showDictation || showToggle) && (
+          {(showDictation || showToggle || showTransparentToggle) && (
             <div
               className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
             >
               {showDictation && <DictationButton />}
+              {showTransparentToggle && (
+                <ModeToggleGroup>
+                  <ModeToggleButton
+                    active={Boolean(settings.miniModeTransparent)}
+                    position="only"
+                    label={t("miniModeTransparent")}
+                    onClick={() =>
+                      updateSettings({
+                        miniModeTransparent: !settings.miniModeTransparent,
+                      })
+                    }
+                  >
+                    <TransparentKeyboardIcon className="h-4 w-4" />
+                  </ModeToggleButton>
+                </ModeToggleGroup>
+              )}
               {showSynth && showToggle && (
                 <>
                   <ModeToggleGroup>

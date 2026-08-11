@@ -3,8 +3,10 @@ import { DEFAULT_SETTINGS, type MonitorInfo } from "./types";
 import {
   isMirroredSetup,
   isMiniModeEligible,
+  isTransparentUiActive,
   monitorsOverlap,
   resolveMiniModeEnabled,
+  transparentOutlineStyle,
 } from "./miniMode";
 
 const a: MonitorInfo = {
@@ -67,5 +69,34 @@ describe("miniMode", () => {
     expect(
       resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: null }, [a, b]),
     ).toBe(true);
+  });
+
+  it("transparent UI only when mini mode active and setting on", () => {
+    expect(
+      isTransparentUiActive(
+        { ...DEFAULT_SETTINGS, miniModeTransparent: true },
+        false,
+      ),
+    ).toBe(false);
+    expect(
+      isTransparentUiActive(
+        { ...DEFAULT_SETTINGS, miniModeTransparent: false },
+        true,
+      ),
+    ).toBe(false);
+    expect(
+      isTransparentUiActive(
+        { ...DEFAULT_SETTINGS, miniModeTransparent: true },
+        true,
+      ),
+    ).toBe(true);
+  });
+
+  it("transparentOutlineStyle uses transparent fill and white outline", () => {
+    const style = transparentOutlineStyle({ color: "#0f172a" });
+    expect(style.backgroundColor).toBe("transparent");
+    expect(style.border).toContain("rgba(255,255,255");
+    expect(style.textShadow).toContain("rgba(0,0,0");
+    expect(style.color).toBe("#0f172a");
   });
 });

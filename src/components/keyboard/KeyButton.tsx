@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
+import { transparentOutlineStyle } from "../../lib/miniMode";
 import { usePressableButton } from "../../hooks/usePressableButton";
 
 interface KeyButtonProps {
@@ -14,6 +15,8 @@ interface KeyButtonProps {
   stretch?: boolean;
   gridColumn?: string;
   gridRow?: string;
+  /** Mini-mode transparent outlined key styling. */
+  transparent?: boolean;
   onPress: () => void;
 }
 
@@ -29,21 +32,31 @@ export function KeyButton({
   stretch,
   gridColumn,
   gridRow,
+  transparent = false,
   onPress,
 }: KeyButtonProps) {
   const { pressedClass, pointerHandlers } = usePressableButton(active ?? false);
   const inGrid = gridColumn !== undefined && gridRow !== undefined;
 
-  const sharedStyle = {
-    fontSize,
-    color: textColor,
-    backgroundColor: bgColor,
-  };
+  const sharedStyle = transparent
+    ? {
+        ...transparentOutlineStyle({ active, color: textColor }),
+        fontSize,
+      }
+    : {
+        fontSize,
+        color: textColor,
+        backgroundColor: bgColor,
+      };
+
+  const buttonClass = transparent
+    ? `ak-action-btn rounded-lg font-semibold transition active:scale-95 ${pressedClass}`
+    : `ak-action-btn ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`;
 
   return (
     <button
       type="button"
-      className={`ak-action-btn ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`}
+      className={buttonClass}
       style={
         inGrid
           ? {

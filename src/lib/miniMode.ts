@@ -1,5 +1,6 @@
 /** Collapsed FAB geometry — keep in sync with src-tauri/src/window/mod.rs */
 
+import type { CSSProperties } from "react";
 import type { AppSettings, MonitorInfo } from "./types";
 
 export const COLLAPSED_FAB_SIZE = 56;
@@ -100,4 +101,28 @@ export function resolveMiniModeEnabled(
   if (override === true) return true;
   if (override === false) return false;
   return isMiniModeEligible(monitors);
+}
+
+/** True when mini mode is active and the transparent keyboard setting is on. */
+export function isTransparentUiActive(
+  settings: AppSettings,
+  miniModeActive: boolean,
+): boolean {
+  return Boolean(miniModeActive && settings.miniModeTransparent);
+}
+
+/** High-contrast outlined control style for transparent mini mode. */
+export function transparentOutlineStyle(
+  options: { active?: boolean; color?: string } = {},
+): CSSProperties {
+  const outlineShadow = "0 0 0 1px rgba(0,0,0,0.5)";
+  return {
+    backgroundColor: "transparent",
+    border: "2px solid rgba(255,255,255,0.9)",
+    boxShadow: options.active
+      ? `${outlineShadow}, inset 0 0 0 2px rgba(147,197,253,0.95)`
+      : outlineShadow,
+    color: options.color ?? "inherit",
+    textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+  };
 }

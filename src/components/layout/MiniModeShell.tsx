@@ -29,7 +29,10 @@ export function MiniModeShell() {
       style={{
         width: "100vw",
         height: "100vh",
-        backgroundColor: settings.appBgColor ?? "#f1f5f9",
+        backgroundColor:
+          settings.miniModeTransparent
+            ? "transparent"
+            : (settings.appBgColor ?? "#f1f5f9"),
       }}
     >
       <div className="min-h-0 flex-1">
