@@ -4,8 +4,9 @@ import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { DictationVisualizer } from "./DictationVisualizer";
+import { transparentOutlineStyle } from "../../lib/miniMode";
 
-export function DictationButton() {
+export function DictationButton({ transparentUi = false }: { transparentUi?: boolean }) {
   const {
     dictationState,
     toggleDictation,
@@ -38,18 +39,28 @@ export function DictationButton() {
   return (
     <>
       <DictationVisualizer active={listening} captureAudio={captureAudio} />
-      <ModeToggleGroup>
+      <ModeToggleGroup transparentUi={transparentUi}>
         <ModeToggleButton
           active={listening}
           position="only"
           label={label}
           disabled={disabled}
+          style={
+            transparentUi
+              ? transparentOutlineStyle({
+                  active: listening,
+                  color: "#ffffff",
+                })
+              : undefined
+          }
           activeClassName={
-            listening
-              ? "bg-red-600 text-white"
-              : disabled
-                ? "bg-slate-100 text-slate-400"
-                : "bg-white text-slate-700"
+            transparentUi
+              ? "bg-transparent text-white"
+              : listening
+                ? "bg-red-600 text-white"
+                : disabled
+                  ? "bg-slate-100 text-slate-400"
+                  : "bg-white text-slate-700"
           }
           onClick={() => void toggleDictation()}
         >

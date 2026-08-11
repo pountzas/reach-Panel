@@ -39,6 +39,8 @@ export const fr: Record<keyof typeof en, string> = {
   miniModeTransparentDescription:
     "Afficher les touches avec des contours uniquement pour voir les applications en arrière-plan.",
 
+  miniModeCollapse: "Retour au mode mini",
+
   largeHeaders: "En-têtes larges pour un redimensionnement plus facile",
 
   largeHeadersHint:

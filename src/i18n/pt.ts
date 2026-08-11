@@ -39,6 +39,8 @@ export const pt: Record<keyof typeof en, string> = {
   miniModeTransparentDescription:
     "Mostrar teclas apenas com contornos para ver as aplicações por detrás.",
 
+  miniModeCollapse: "Voltar ao modo mini",
+
   largeHeaders: "Cabeçalhos grandes para redimensionar mais facilmente",
 
   largeHeadersHint:

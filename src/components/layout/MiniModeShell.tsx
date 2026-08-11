@@ -5,7 +5,7 @@ import { CollapsedFab } from "./CollapsedFab";
 /**
  * Mini Mode UI: full-width keyboard + suggestions when visible,
  * or a 3-button collapsed FAB (Settings → Dictate → Expand) when hidden.
- * Expand reopens the keyboard until external input loses focus; does not exit Mini Mode.
+ * Expand reopens the keyboard until external input loses focus; collapse returns to the FAB stack.
  */
 export function MiniModeShell() {
   const miniModeKeyboardVisible = useAppStore((s) => s.miniModeKeyboardVisible);

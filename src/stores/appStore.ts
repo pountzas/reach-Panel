@@ -120,6 +120,7 @@ async function refreshMiniModeState(options?: { animate?: boolean }) {
       miniModeActive: true,
       miniModeKeyboardVisible: false,
       miniModeManualExpand: false,
+      miniModeSuppressAutoShow: false,
       mouseVisibleBeforeMiniMode: mouseBefore,
       settings: mouseBefore ? { ...settings, mouseVisible: false } : settings,
     });
@@ -135,6 +136,7 @@ async function refreshMiniModeState(options?: { animate?: boolean }) {
       miniModeActive: false,
       miniModeKeyboardVisible: false,
       miniModeManualExpand: false,
+      miniModeSuppressAutoShow: false,
       mouseVisibleBeforeMiniMode: null,
       settings: nextSettings,
     });
@@ -271,6 +273,8 @@ interface AppStore {
    * Expand does not exit Mini Mode.
    */
   miniModeManualExpand: boolean;
+  /** After manual collapse, skip auto-show until external focus is lost once. */
+  miniModeSuppressAutoShow: boolean;
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
@@ -327,6 +331,8 @@ interface AppStore {
   refreshMiniModeState: (options?: { animate?: boolean }) => Promise<void>;
   /** Expand FAB: reopen keyboard until external focus is lost (stay in Mini Mode). */
   expandMiniModeKeyboard: () => Promise<void>;
+  /** Collapse keyboard back to the mini-mode FAB stack. */
+  collapseMiniModeKeyboard: () => Promise<void>;
   enableMusicTeaching: () => Promise<void>;
   disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
   setMusicSongId: (songId: string) => Promise<void>;
@@ -566,6 +572,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   miniModeActive: false,
   miniModeKeyboardVisible: false,
   miniModeManualExpand: false,
+  miniModeSuppressAutoShow: false,
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -1541,6 +1548,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({
       miniModeKeyboardVisible: true,
       miniModeManualExpand: true,
+      miniModeSuppressAutoShow: false,
+    });
+    await syncMiniModeWindowLayout(true);
+  },
+
+  collapseMiniModeKeyboard: async () => {
+    if (!get().miniModeActive || get().isAnimatingWindow) {
+      return;
+    }
+    if (!get().miniModeKeyboardVisible) {
+      return;
+    }
+    set({
+      miniModeKeyboardVisible: false,
+      miniModeManualExpand: false,
+      miniModeSuppressAutoShow: true,
     });
     await syncMiniModeWindowLayout(true);
   },
@@ -1555,17 +1578,22 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   if (!state.miniModeActive) return;
   const focused = event.payload.focused;
   if (focused) {
-    if (!state.miniModeKeyboardVisible) {
+    if (!state.miniModeKeyboardVisible && !state.miniModeSuppressAutoShow) {
       useAppStore.setState({ miniModeKeyboardVisible: true });
       void syncMiniModeWindowLayout(true);
     }
     return;
   }
-  // Focus lost → hide keyboard and clear manual expand.
-  if (state.miniModeKeyboardVisible || state.miniModeManualExpand) {
+  // Focus lost → hide keyboard and clear manual expand / collapse suppression.
+  if (
+    state.miniModeKeyboardVisible ||
+    state.miniModeManualExpand ||
+    state.miniModeSuppressAutoShow
+  ) {
     useAppStore.setState({
       miniModeKeyboardVisible: false,
       miniModeManualExpand: false,
+      miniModeSuppressAutoShow: false,
     });
     void syncMiniModeWindowLayout(true);
   }

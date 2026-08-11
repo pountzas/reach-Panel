@@ -38,6 +38,8 @@
   miniModeTransparentDescription:
     "Show keys with outlines only so you can see through to your apps.",
 
+  miniModeCollapse: "Back to mini mode",
+
   largeHeaders: "Large headers for easier resize",
 
   largeHeadersHint:

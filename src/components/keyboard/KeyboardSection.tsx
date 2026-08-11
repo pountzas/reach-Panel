@@ -1,4 +1,5 @@
 import {
+  CollapseIcon,
   KeyboardIcon,
   MouseIcon,
   SynthesizerIcon,
@@ -17,10 +18,14 @@ import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
 import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
 import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
+import { isTransparentUiActive, transparentOutlineStyle } from "../../lib/miniMode";
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
   const miniModeActive = useAppStore((s) => s.miniModeActive);
+  const miniModeKeyboardVisible = useAppStore((s) => s.miniModeKeyboardVisible);
+  const collapseMiniModeKeyboard = useAppStore((s) => s.collapseMiniModeKeyboard);
+  const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const musicSongId = useAppStore((s) => s.musicSongId);
@@ -34,9 +39,19 @@ export function KeyboardSection() {
   const showDictation =
     !showSynth && settings.dictationVisible !== false && !compact;
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
+  const transparentUi = isTransparentUiActive(settings, miniModeActive);
   const showTransparentToggle = miniModeActive && !showSynth && !compact;
+  const showMiniModeCollapse =
+    miniModeActive && miniModeKeyboardVisible && !showSynth && !compact;
+  const transparentToolbarStyle = transparentUi
+    ? transparentOutlineStyle({ color: "#ffffff" })
+    : undefined;
   const showToolbar =
-    showDictation || showToggle || showSuggestions || showTransparentToggle;
+    showDictation ||
+    showToggle ||
+    showSuggestions ||
+    showTransparentToggle ||
+    showMiniModeCollapse;
   const song = musicTeachingEnabled
     ? getSongById(musicSongId, importedSongs)
     : null;
@@ -59,17 +74,45 @@ export function KeyboardSection() {
           <div className="min-w-0 flex-1 pl-1.5">
             {showSuggestions && <SuggestionsBar />}
           </div>
-          {(showDictation || showToggle || showTransparentToggle) && (
+          {(showDictation || showToggle || showTransparentToggle || showMiniModeCollapse) && (
             <div
               className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
             >
-              {showDictation && <DictationButton />}
+              {showMiniModeCollapse && (
+                <ModeToggleGroup transparentUi={transparentUi}>
+                  <ModeToggleButton
+                    active={false}
+                    position="only"
+                    label={t("miniModeCollapse")}
+                    disabled={isAnimatingWindow}
+                    style={transparentToolbarStyle}
+                    activeClassName={
+                      transparentUi ? "bg-transparent text-white" : undefined
+                    }
+                    onClick={() => void collapseMiniModeKeyboard()}
+                  >
+                    <CollapseIcon className="h-4 w-4" />
+                  </ModeToggleButton>
+                </ModeToggleGroup>
+              )}
+              {showDictation && <DictationButton transparentUi={transparentUi} />}
               {showTransparentToggle && (
-                <ModeToggleGroup>
+                <ModeToggleGroup transparentUi={transparentUi}>
                   <ModeToggleButton
                     active={Boolean(settings.miniModeTransparent)}
                     position="only"
                     label={t("miniModeTransparent")}
+                    style={
+                      transparentUi
+                        ? transparentOutlineStyle({
+                            active: Boolean(settings.miniModeTransparent),
+                            color: "#ffffff",
+                          })
+                        : undefined
+                    }
+                    activeClassName={
+                      transparentUi ? "bg-transparent text-white" : undefined
+                    }
                     onClick={() =>
                       updateSettings({
                         miniModeTransparent: !settings.miniModeTransparent,

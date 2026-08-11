@@ -39,6 +39,8 @@ export const de: Record<keyof typeof en, string> = {
   miniModeTransparentDescription:
     "Tasten nur mit Umrissen anzeigen, damit Apps darunter sichtbar bleiben.",
 
+  miniModeCollapse: "Zurück zum Mini-Modus",
+
   largeHeaders: "Große Header für einfacheres Ändern der Größe",
 
   largeHeadersHint:
