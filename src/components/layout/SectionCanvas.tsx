@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { appHeaderHeightPx } from "../../lib/sectionLayouts";
+import { usePointerDrag } from "../../lib/pointerDrag";
 import { isStackableSectionId } from "../../lib/sectionRegistry";
 import {
   SPLITTER_HIT_PX,
@@ -318,43 +319,37 @@ export function SectionCanvas({
     insertionIndexRef.current = null;
   };
 
+  const splitterDrag = usePointerDrag({
+    onMove: (event) => {
+      const split = splitterRef.current;
+      if (!split) return;
+      const delta = event.clientY - split.lastY;
+      split.lastY = event.clientY;
+      if (delta === 0) return;
+      persist(
+        applySplitterDelta(
+          stackRef.current,
+          split.upperId,
+          split.lowerId,
+          delta,
+          containerSize.height,
+          visibility,
+          largeHeaders,
+        ),
+      );
+    },
+    onEnd: () => {
+      splitterRef.current = null;
+    },
+  });
+
   const onSplitterPointerDown = (
     event: ReactPointerEvent<HTMLDivElement>,
     upperId: SectionId,
     lowerId: SectionId,
   ) => {
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
     splitterRef.current = { upperId, lowerId, lastY: event.clientY };
-  };
-
-  const onSplitterPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const split = splitterRef.current;
-    if (!split) return;
-    const delta = event.clientY - split.lastY;
-    split.lastY = event.clientY;
-    if (delta === 0) return;
-    persist(
-      applySplitterDelta(
-        stackRef.current,
-        split.upperId,
-        split.lowerId,
-        delta,
-        containerSize.height,
-        visibility,
-        largeHeaders,
-      ),
-    );
-  };
-
-  const onSplitterPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!splitterRef.current) return;
-    splitterRef.current = null;
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // already released
-    }
+    splitterDrag.onPointerDown(event);
   };
 
   const floatingIds = (Object.keys(stack.undocked) as StackableSectionId[]).filter(
@@ -405,11 +400,11 @@ export function SectionCanvas({
               top: top - SPLITTER_HIT_PX / 2,
               width: containerSize.width,
               height: SPLITTER_HIT_PX,
+              touchAction: "none",
             }}
             onPointerDown={(e) => onSplitterPointerDown(e, slot.id, lower.id)}
-            onPointerMove={onSplitterPointerMove}
-            onPointerUp={onSplitterPointerUp}
-            onPointerCancel={onSplitterPointerUp}
+            onPointerMove={splitterDrag.onPointerMove}
+            onPointerUp={splitterDrag.onPointerUp}
           />
         );
       })}
