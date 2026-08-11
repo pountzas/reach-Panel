@@ -21,6 +21,13 @@ import {
 
 const SPEED_MAP = MOUSE_SPEED_MULTIPLIERS;
 
+/** Max finger travel (CSS px) still counted as a tap rather than a drag. */
+const TAP_SLOP_PX = 14;
+/** Max press duration for a tap. */
+const TAP_MAX_MS = 350;
+/** Window after a tap in which a second tap becomes a double-click. */
+const DOUBLE_TAP_MS = 400;
+
 const COMPACT_SCALE = 0.75;
 
 function computeButtonMetrics(containerWidth: number, compact: boolean) {
@@ -101,9 +108,15 @@ export function Trackpad() {
   const [precision, setPrecision] = useState(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
+  const gestureReady = useRef(false);
+  const gestureGen = useRef(0);
   const pendingDelta = useRef({ dx: 0, dy: 0 });
   const rafId = useRef<number | null>(null);
   const ipcInFlight = useRef(false);
+  const pressStart = useRef<{ x: number; y: number; t: number } | null>(null);
+  const travelPx = useRef(0);
+  const lastTapAt = useRef(0);
+  const pendingClickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const keyBgColor = settings.keyboardKeyColor ?? "#ffffff";
   const keyTextColor = settings.keyTextColor ?? "#1e293b";
   const surface = getSurfaceColors(settings.appBgColor);
@@ -113,9 +126,23 @@ export function Trackpad() {
     (precision || settings.precisionMode ? 0.4 : 1) *
     (settings.mouseCustomSpeed ?? 1);
 
+  const clearPendingClick = () => {
+    if (pendingClickTimer.current !== null) {
+      clearTimeout(pendingClickTimer.current);
+      pendingClickTimer.current = null;
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (rafId.current !== null) cancelAnimationFrame(rafId.current);
+      clearPendingClick();
+      gestureGen.current += 1;
+      gestureReady.current = false;
+      if (dragging.current) {
+        dragging.current = false;
+        void invoke("cmd_trackpad_gesture_end").catch(() => {});
+      }
     };
   }, []);
 
@@ -136,19 +163,58 @@ export function Trackpad() {
       });
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    lastPos.current = { x: e.clientX, y: e.clientY };
-    dragging.current = true;
-    pendingDelta.current = { dx: 0, dy: 0 };
+  const fireLeftClick = async () => {
+    await invoke("cmd_mouse_click", { button: "left" });
+    await pollError();
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragging.current || !lastPos.current) return;
-    const dx = Math.round((e.clientX - lastPos.current.x) * speed);
-    const dy = Math.round((e.clientY - lastPos.current.y) * speed);
+  const fireDoubleClick = async () => {
+    await invoke("cmd_mouse_double_click");
+    await pollError();
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
     lastPos.current = { x: e.clientX, y: e.clientY };
-    if (dx === 0 && dy === 0) return;
+    pressStart.current = { x: e.clientX, y: e.clientY, t: performance.now() };
+    travelPx.current = 0;
+    pendingDelta.current = { dx: 0, dy: 0 };
+    const gen = ++gestureGen.current;
+    dragging.current = true;
+    gestureReady.current = false;
+    void invoke("cmd_trackpad_gesture_begin")
+      .then(() => {
+        if (gestureGen.current !== gen) {
+          void invoke("cmd_trackpad_gesture_end").catch(() => {});
+          return;
+        }
+        gestureReady.current = true;
+      })
+      .catch(() => {
+        if (gestureGen.current === gen) {
+          dragging.current = false;
+          gestureReady.current = false;
+        }
+      });
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current || !lastPos.current) return;
+    e.preventDefault();
+    const rawDx = e.clientX - lastPos.current.x;
+    const rawDy = e.clientY - lastPos.current.y;
+    travelPx.current += Math.hypot(rawDx, rawDy);
+    // Dragging past tap slop cancels a waiting single-click from a prior tap.
+    if (travelPx.current > TAP_SLOP_PX) {
+      clearPendingClick();
+      lastTapAt.current = 0;
+    }
+    const dx = Math.round(rawDx * speed);
+    const dy = Math.round(rawDy * speed);
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    // Wait until the backend session is active so we never GetCursorPos on a touch point.
+    if (!gestureReady.current || (dx === 0 && dy === 0)) return;
     pendingDelta.current.dx += dx;
     pendingDelta.current.dy += dy;
     if (rafId.current === null) {
@@ -156,14 +222,80 @@ export function Trackpad() {
     }
   };
 
-  const onPointerUp = () => {
+  const handleTap = () => {
+    const now = performance.now();
+    if (lastTapAt.current > 0 && now - lastTapAt.current <= DOUBLE_TAP_MS) {
+      clearPendingClick();
+      lastTapAt.current = 0;
+      void fireDoubleClick();
+      return;
+    }
+    lastTapAt.current = now;
+    clearPendingClick();
+    pendingClickTimer.current = setTimeout(() => {
+      pendingClickTimer.current = null;
+      lastTapAt.current = 0;
+      void fireLeftClick();
+    }, DOUBLE_TAP_MS);
+  };
+
+  const endGesture = () => {
+    // pointerup and lostpointercapture can both fire; end only once.
+    if (!dragging.current) return;
+    const start = pressStart.current;
+    const duration = start ? performance.now() - start.t : Number.POSITIVE_INFINITY;
+    const wasTap =
+      travelPx.current <= TAP_SLOP_PX && duration <= TAP_MAX_MS;
+
     dragging.current = false;
+    gestureReady.current = false;
     lastPos.current = null;
+    pressStart.current = null;
+    travelPx.current = 0;
+    gestureGen.current += 1;
     if (rafId.current !== null) {
       cancelAnimationFrame(rafId.current);
       rafId.current = null;
     }
-    flushPendingMove();
+
+    const endBackend = () => {
+      void invoke("cmd_trackpad_gesture_end")
+        .catch(() => {})
+        .finally(() => {
+          if (wasTap) handleTap();
+        });
+    };
+
+    const flushThenEnd = () => {
+      if (ipcInFlight.current) {
+        rafId.current = requestAnimationFrame(flushThenEnd);
+        return;
+      }
+      const { dx, dy } = pendingDelta.current;
+      if (dx === 0 && dy === 0) {
+        endBackend();
+        return;
+      }
+      pendingDelta.current = { dx: 0, dy: 0 };
+      ipcInFlight.current = true;
+      void invoke("cmd_move_cursor_relative", { dx, dy })
+        .catch(() => {})
+        .finally(() => {
+          ipcInFlight.current = false;
+          endBackend();
+        });
+    };
+
+    flushThenEnd();
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    endGesture();
+  };
+
+  const onLostPointerCapture = () => {
+    endGesture();
   };
   const buttonProps = { iconSize, paddingY, bgColor: keyBgColor, textColor: keyTextColor };
 
@@ -176,6 +308,7 @@ export function Trackpad() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onLostPointerCapture={onLostPointerCapture}
       >
         <div
           className="flex h-full items-center justify-center"

@@ -14,11 +14,12 @@ use db::{
     Database, MacroDef, MacroStep, Phrase, Profile, QuickAction,
 };
 use input::{
-    get_cursor_position, get_input_methods, get_keyboard_layout, get_keyboard_state,
-    get_layout_key_labels, mouse_click, mouse_double_click, mouse_scroll, move_cursor_absolute,
-    move_cursor_relative, press_combo, press_key, press_media_key, set_input_method_by_hkl,
-    set_input_method_by_language, set_system_language, type_text, windows_ui_language,
-    InputMethod, KeyPressRequest, KeyboardState, LayoutKeyLabel,
+    begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position, get_input_methods,
+    get_keyboard_layout, get_keyboard_state, get_layout_key_labels, mouse_click,
+    mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
+    press_key, press_media_key, set_input_method_by_hkl, set_input_method_by_language,
+    set_system_language, type_text, windows_ui_language, InputMethod, KeyPressRequest,
+    KeyboardState, LayoutKeyLabel,
 };
 #[cfg(target_os = "windows")]
 use input::focus_target;
@@ -185,6 +186,44 @@ fn cmd_get_layout_key_labels(hkl: Option<u64>) -> Vec<LayoutKeyLabel> {
 fn cmd_move_cursor_relative(dx: i32, dy: i32, state: State<AppState>) -> CommandResult {
     match move_cursor_relative(dx, dy) {
         Ok(()) => ok(),
+        Err(e) => {
+            set_error(&state, Some(e.to_string()));
+            err(e)
+        }
+    }
+}
+
+#[tauri::command]
+fn cmd_trackpad_gesture_begin(
+    window: tauri::WebviewWindow,
+    state: State<AppState>,
+) -> CommandResult {
+    let hwnd = match window.hwnd() {
+        Ok(hwnd) => hwnd.0 as isize,
+        Err(e) => {
+            set_error(&state, Some(e.to_string()));
+            return err(e);
+        }
+    };
+    match begin_trackpad_gesture(hwnd) {
+        Ok(()) => {
+            set_error(&state, None);
+            ok()
+        }
+        Err(e) => {
+            set_error(&state, Some(e.to_string()));
+            err(e)
+        }
+    }
+}
+
+#[tauri::command]
+fn cmd_trackpad_gesture_end(state: State<AppState>) -> CommandResult {
+    match end_trackpad_gesture() {
+        Ok(()) => {
+            set_error(&state, None);
+            ok()
+        }
         Err(e) => {
             set_error(&state, Some(e.to_string()));
             err(e)
@@ -1139,6 +1178,8 @@ pub fn run() {
             cmd_set_input_method,
             cmd_get_layout_key_labels,
             cmd_move_cursor_relative,
+            cmd_trackpad_gesture_begin,
+            cmd_trackpad_gesture_end,
             cmd_move_cursor_absolute,
             cmd_get_cursor_position,
             cmd_mouse_click,

@@ -1,6 +1,8 @@
 #[cfg(target_os = "windows")]
 pub mod focus_target;
 #[cfg(target_os = "windows")]
+mod cursor_highlight;
+#[cfg(target_os = "windows")]
 mod keyboard;
 #[cfg(target_os = "windows")]
 mod mouse;
