@@ -8,6 +8,9 @@ export const COLLAPSED_FAB_PAD = 10;
 /** Extra px for hover scale headroom (~5% of 56px). */
 export const FAB_HOVER_SLACK = 6;
 
+/** Default mini-mode keyboard height as fraction of full monitor height. Keep in sync with Rust. */
+export const MINI_KEYBOARD_HEIGHT_RATIO = 0.42;
+
 /** Fraction of the smaller monitor area that must overlap to count as mirrored. */
 export const MIRROR_OVERLAP_RATIO = 0.9;
 

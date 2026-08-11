@@ -309,11 +309,24 @@ async fn apply_window_layout(
     monitor_id: u32,
     collapsed: bool,
     collapsed_dictation: bool,
+    collapsed_settings: bool,
     height_ratio: f32,
+    mini_mode: bool,
+    mini_keyboard_visible: bool,
+    mini_keyboard_height_ratio: f32,
 ) -> Result<(), String> {
     let monitors = list_monitors();
-    let layout =
-        compute_window_layout(&monitors, monitor_id, collapsed, collapsed_dictation, height_ratio)?;
+    let layout = compute_window_layout(
+        &monitors,
+        monitor_id,
+        collapsed,
+        collapsed_dictation,
+        collapsed_settings,
+        height_ratio,
+        mini_mode,
+        mini_keyboard_visible,
+        mini_keyboard_height_ratio,
+    )?;
     set_window_layout(app, layout).await
 }
 
@@ -359,7 +372,11 @@ async fn animate_window_layout(
     monitor_id: u32,
     collapsed: bool,
     collapsed_dictation: bool,
+    collapsed_settings: bool,
     height_ratio: f32,
+    mini_mode: bool,
+    mini_keyboard_visible: bool,
+    mini_keyboard_height_ratio: f32,
 ) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
@@ -370,11 +387,20 @@ async fn animate_window_layout(
         monitor_id,
         collapsed,
         collapsed_dictation,
+        collapsed_settings,
         height_ratio,
+        mini_mode,
+        mini_keyboard_visible,
+        mini_keyboard_height_ratio,
     )?;
     let from = get_current_window_layout(&window)?;
 
-    let steps = window::COLLAPSE_ANIMATION_MS / window::COLLAPSE_ANIMATION_FRAME_MS;
+    let animation_ms = if mini_mode {
+        window::MINI_MODE_ANIMATION_MS
+    } else {
+        window::COLLAPSE_ANIMATION_MS
+    };
+    let steps = animation_ms / window::COLLAPSE_ANIMATION_FRAME_MS;
     for step in 0..=steps {
         let progress = step as f32 / steps as f32;
         let layout = window::interpolate_layout(from, target, progress);
@@ -416,13 +442,21 @@ async fn cmd_apply_window_layout(
     collapsed: bool,
     collapsed_dictation: bool,
     height_ratio: f32,
+    collapsed_settings: Option<bool>,
+    mini_mode: Option<bool>,
+    mini_keyboard_visible: Option<bool>,
+    mini_keyboard_height_ratio: Option<f32>,
 ) -> Result<(), String> {
     apply_window_layout(
         &app,
         monitor_id,
         collapsed,
         collapsed_dictation,
+        collapsed_settings.unwrap_or(false),
         height_ratio,
+        mini_mode.unwrap_or(false),
+        mini_keyboard_visible.unwrap_or(false),
+        mini_keyboard_height_ratio.unwrap_or(window::MINI_KEYBOARD_HEIGHT_RATIO),
     )
     .await
 }
@@ -434,13 +468,21 @@ async fn cmd_animate_window_layout(
     collapsed: bool,
     collapsed_dictation: bool,
     height_ratio: f32,
+    collapsed_settings: Option<bool>,
+    mini_mode: Option<bool>,
+    mini_keyboard_visible: Option<bool>,
+    mini_keyboard_height_ratio: Option<f32>,
 ) -> Result<(), String> {
     animate_window_layout(
         &app,
         monitor_id,
         collapsed,
         collapsed_dictation,
+        collapsed_settings.unwrap_or(false),
         height_ratio,
+        mini_mode.unwrap_or(false),
+        mini_keyboard_visible.unwrap_or(false),
+        mini_keyboard_height_ratio.unwrap_or(window::MINI_KEYBOARD_HEIGHT_RATIO),
     )
     .await
 }
@@ -451,7 +493,18 @@ async fn cmd_move_window_to_monitor(
     monitor_id: u32,
     height_ratio: f32,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, false, false, height_ratio).await
+    apply_window_layout(
+        &app,
+        monitor_id,
+        false,
+        false,
+        false,
+        height_ratio,
+        false,
+        false,
+        window::MINI_KEYBOARD_HEIGHT_RATIO,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -487,7 +540,11 @@ async fn cmd_set_collapsed(
         monitor_id,
         collapsed,
         collapsed_dictation,
+        false,
         height_ratio,
+        false,
+        false,
+        window::MINI_KEYBOARD_HEIGHT_RATIO,
     )
     .await
 }

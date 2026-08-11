@@ -41,6 +41,7 @@ import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import { clampWindowHeightRatio, computeContentHeightRatio } from "../lib/sectionLayouts";
 import { resolveSectionStack } from "../lib/sectionStack";
+import { MINI_KEYBOARD_HEIGHT_RATIO } from "../lib/miniMode";
 import {
   closeToolWindow,
   openToolWindow,
@@ -72,11 +73,29 @@ let liveHeightRatioPending: number | null = null;
 let liveHeightRatioInFlight = false;
 
 /**
- * Task 8 will animate mini-mode show/hide window layout.
- * Stub keeps focus-event wiring compilable until then.
+ * Animate mini-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
  */
 async function syncMiniModeWindowLayout() {
-  // no-op until mini mode window layout lands
+  const { settings, miniModeActive, miniModeKeyboardVisible, isAnimatingWindow } =
+    useAppStore.getState();
+  if (!miniModeActive || isAnimatingWindow) {
+    return;
+  }
+  useAppStore.setState({ isAnimatingWindow: true });
+  try {
+    await invoke("cmd_animate_window_layout", {
+      monitorId: settings.accessibilityMonitorId,
+      collapsed: !miniModeKeyboardVisible,
+      collapsedDictation: true,
+      collapsedSettings: true,
+      heightRatio: heightRatioFromSettings(settings),
+      miniMode: true,
+      miniKeyboardVisible: miniModeKeyboardVisible,
+      miniKeyboardHeightRatio: MINI_KEYBOARD_HEIGHT_RATIO,
+    });
+  } finally {
+    useAppStore.setState({ isAnimatingWindow: false });
+  }
 }
 
 const LANGUAGE_CHANGE_FALLBACK =
