@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import { emit } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { checkForUpdate } from "../lib/updater";
@@ -70,6 +70,14 @@ let liveHeightRatioPreview: number | null = null;
 let liveHeightRatioRaf: number | null = null;
 let liveHeightRatioPending: number | null = null;
 let liveHeightRatioInFlight = false;
+
+/**
+ * Task 8 will animate mini-mode show/hide window layout.
+ * Stub keeps focus-event wiring compilable until then.
+ */
+async function syncMiniModeWindowLayout() {
+  // no-op until mini mode window layout lands
+}
 
 const LANGUAGE_CHANGE_FALLBACK =
   "Could not switch keyboard language.";
@@ -175,6 +183,12 @@ interface AppStore {
   mouseVisibleBeforeWidePiano: boolean | null;
   /** Persisted imported songs (app data library). */
   importedSongs: ImportedMusicSong[];
+  /**
+   * Mini Mode shell active (Task 9). Stubbed false until eligibility + shell land.
+   */
+  miniModeActive: boolean;
+  /** Whether the mini-mode keyboard is popped (vs collapsed FAB). */
+  miniModeKeyboardVisible: boolean;
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
@@ -459,6 +473,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   phrasesVisibleBeforeTeaching: null,
   mouseVisibleBeforeWidePiano: null,
   importedSongs: [],
+  miniModeActive: false,
+  miniModeKeyboardVisible: false,
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -1388,6 +1404,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 }));
+
+/** Mini Mode: show/hide keyboard from native editable-focus events. */
+void listen<{ focused: boolean }>("input-focus-changed", (event) => {
+  const { miniModeActive } = useAppStore.getState();
+  if (!miniModeActive) return;
+  useAppStore.setState({ miniModeKeyboardVisible: event.payload.focused });
+  void syncMiniModeWindowLayout();
+});
 
 export async function getMacroSteps(macroId: string): Promise<MacroStep[]> {
   return invoke<MacroStep[]>("cmd_get_macro_steps", { macroId });

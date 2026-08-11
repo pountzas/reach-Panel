@@ -21,7 +21,6 @@ use input::{
     set_system_language, type_text, windows_ui_language, InputMethod, KeyPressRequest,
     KeyboardState, LayoutKeyLabel,
 };
-#[cfg(target_os = "windows")]
 use input::focus_target;
 use prediction::{
     ensure_english_pack, get_installed_languages, get_suggestions, install_word_pack,
@@ -1180,8 +1179,7 @@ pub fn run() {
                 let _ = window.set_shadow(false);
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
-                #[cfg(target_os = "windows")]
-                focus_target::init();
+                focus_target::init(app.handle().clone());
             }
             Ok(())
         })

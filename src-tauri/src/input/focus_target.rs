@@ -1,25 +1,37 @@
 use anyhow::Result;
-use std::sync::{Mutex, Once};
+use serde::Serialize;
+use std::sync::{Mutex, Once, OnceLock};
+use tauri::{AppHandle, Emitter};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId};
 use windows::Win32::UI::Accessibility::{SetWinEventHook, HWINEVENTHOOK};
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, EVENT_SYSTEM_FOREGROUND, GetClassNameW, GetForegroundWindow,
-    GetWindowThreadProcessId, IsWindow, IsWindowVisible, SetForegroundWindow, ShowWindow,
+    BringWindowToTop, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo, GetParent,
+    GetWindowLongW, GetWindowThreadProcessId, IsWindow, IsWindowVisible, SetForegroundWindow,
+    ShowWindow, EVENT_OBJECT_FOCUS, EVENT_SYSTEM_FOREGROUND, ES_READONLY, GUITHREADINFO, GWL_STYLE,
     SW_RESTORE, WINEVENT_OUTOFCONTEXT,
 };
 
 static TARGET_HWND: Mutex<Option<usize>> = Mutex::new(None);
 static HOOK_ONCE: Once = Once::new();
+static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
+static LAST_INPUT_FOCUSED: Mutex<Option<bool>> = Mutex::new(None);
 
-pub fn init() {
-    install_hook();
+#[derive(Debug, Clone, Serialize)]
+struct FocusChangedPayload {
+    focused: bool,
 }
 
-fn install_hook() {
+pub fn init(app: AppHandle) {
+    let _ = APP_HANDLE.set(app);
+    install_hooks();
+    reevaluate_input_focus();
+}
+
+fn install_hooks() {
     HOOK_ONCE.call_once(|| {
         unsafe {
-            let hook = SetWinEventHook(
+            let foreground = SetWinEventHook(
                 EVENT_SYSTEM_FOREGROUND,
                 EVENT_SYSTEM_FOREGROUND,
                 None,
@@ -28,9 +40,22 @@ fn install_hook() {
                 0,
                 WINEVENT_OUTOFCONTEXT,
             );
-            if !hook.is_invalid() {
+            if !foreground.is_invalid() {
                 // HWINEVENTHOOK is Copy and has no Drop impl; keep hook registered for app lifetime.
-                let _ = hook;
+                let _ = foreground;
+            }
+
+            let focus = SetWinEventHook(
+                EVENT_OBJECT_FOCUS,
+                EVENT_OBJECT_FOCUS,
+                None,
+                Some(object_focus_hook),
+                0,
+                0,
+                WINEVENT_OUTOFCONTEXT,
+            );
+            if !focus.is_invalid() {
+                let _ = focus;
             }
         }
     });
@@ -100,6 +125,124 @@ pub fn is_valid_typing_target(hwnd: HWND) -> bool {
     true
 }
 
+/// Heuristic: Win32 / browser / editor class names that typically accept text input.
+pub fn is_editable_class(class: &str) -> bool {
+    let lower = class.to_ascii_lowercase();
+    if lower == "edit" || lower == "editcomctl32" {
+        return true;
+    }
+    if lower.starts_with("richedit") {
+        return true;
+    }
+    if lower.starts_with("chrome_renderwidgethosthwnd") {
+        return true;
+    }
+    matches!(
+        lower.as_str(),
+        "internet explorer_server"
+            | "scintilla"
+            | "_wwg" // Word document window
+            | "osalsoframe" // Office content frame (legacy)
+            | "netuihwnd" // Outlook compose (heuristic)
+    )
+}
+
+fn is_readonly_edit(hwnd: HWND, class: &str) -> bool {
+    let lower = class.to_ascii_lowercase();
+    if lower != "edit" && !lower.starts_with("richedit") {
+        return false;
+    }
+    unsafe {
+        let style = GetWindowLongW(hwnd, GWL_STYLE);
+        (style & ES_READONLY) != 0
+    }
+}
+
+fn gui_thread_info() -> Option<GUITHREADINFO> {
+    unsafe {
+        let mut info = GUITHREADINFO {
+            cbSize: std::mem::size_of::<GUITHREADINFO>() as u32,
+            ..Default::default()
+        };
+        // idThread 0 → foreground thread (cross-process focus query).
+        if GetGUIThreadInfo(0, &mut info).is_err() {
+            return None;
+        }
+        Some(info)
+    }
+}
+
+fn hwnd_or_ancestor_is_editable(hwnd: HWND) -> bool {
+    let mut current = hwnd;
+    for _ in 0..8 {
+        if is_null(current) || is_our_window(current) {
+            break;
+        }
+        let class = window_class_name(current);
+        if is_editable_class(&class) {
+            return !is_readonly_edit(current, &class);
+        }
+        unsafe {
+            current = GetParent(current).unwrap_or(HWND::default());
+        }
+    }
+    false
+}
+
+/// True when an external app's focusable input-like control is active.
+fn is_editable_input_focused() -> bool {
+    unsafe {
+        let fg = GetForegroundWindow();
+        if !is_valid_typing_target(fg) {
+            return false;
+        }
+
+        let Some(info) = gui_thread_info() else {
+            return hwnd_or_ancestor_is_editable(fg) || is_editable_class(&window_class_name(fg));
+        };
+
+        // Caret in another process is a strong signal of text entry.
+        if !is_null(info.hwndCaret) && !is_our_window(info.hwndCaret) {
+            let caret_class = window_class_name(info.hwndCaret);
+            if !is_readonly_edit(info.hwndCaret, &caret_class) {
+                return true;
+            }
+        }
+
+        let focus = if !is_null(info.hwndFocus) {
+            info.hwndFocus
+        } else {
+            fg
+        };
+
+        if is_our_window(focus) {
+            return false;
+        }
+
+        hwnd_or_ancestor_is_editable(focus) || hwnd_or_ancestor_is_editable(fg)
+    }
+}
+
+fn emit_focus_changed(app: &AppHandle, focused: bool) {
+    let _ = app.emit("input-focus-changed", FocusChangedPayload { focused });
+}
+
+fn publish_input_focus(focused: bool) {
+    if let Ok(mut last) = LAST_INPUT_FOCUSED.lock() {
+        if *last == Some(focused) {
+            return;
+        }
+        *last = Some(focused);
+    }
+    if let Some(app) = APP_HANDLE.get() {
+        emit_focus_changed(app, focused);
+    }
+}
+
+fn reevaluate_input_focus() {
+    publish_input_focus(is_editable_input_focused());
+}
+
 unsafe extern "system" fn foreground_hook(
     _hook: HWINEVENTHOOK,
     event: u32,
@@ -115,12 +258,51 @@ unsafe extern "system" fn foreground_hook(
     if id_object != 0 || id_child != 0 {
         return;
     }
-    if !is_valid_typing_target(hwnd) {
+    if is_valid_typing_target(hwnd) {
+        if let Ok(mut target) = TARGET_HWND.lock() {
+            *target = Some(hwnd_to_usize(hwnd));
+        }
+    }
+    reevaluate_input_focus();
+}
+
+unsafe extern "system" fn object_focus_hook(
+    _hook: HWINEVENTHOOK,
+    event: u32,
+    hwnd: HWND,
+    _id_object: i32,
+    _id_child: i32,
+    _id_thread: u32,
+    _time: u32,
+) {
+    if event != EVENT_OBJECT_FOCUS || is_null(hwnd) {
         return;
     }
-    if let Ok(mut target) = TARGET_HWND.lock() {
-        *target = Some(hwnd_to_usize(hwnd));
+    // Keep injection target fresh when focus lands on an external window.
+    let root = {
+        let mut current = hwnd;
+        for _ in 0..16 {
+            if is_null(current) {
+                break;
+            }
+            let parent = unsafe { GetParent(current).unwrap_or(HWND::default()) };
+            if is_null(parent) {
+                break;
+            }
+            current = parent;
+        }
+        current
+    };
+    if is_valid_typing_target(root) {
+        if let Ok(mut target) = TARGET_HWND.lock() {
+            *target = Some(hwnd_to_usize(root));
+        }
+    } else if is_valid_typing_target(hwnd) {
+        if let Ok(mut target) = TARGET_HWND.lock() {
+            *target = Some(hwnd_to_usize(hwnd));
+        }
     }
+    reevaluate_input_focus();
 }
 
 pub fn get_effective_input_hwnd() -> Option<HWND> {
@@ -220,4 +402,22 @@ where
 {
     restore_target_focus()?;
     f()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_editable_class;
+
+    #[test]
+    fn editable_class_names_include_common_inputs() {
+        assert!(is_editable_class("Edit"));
+        assert!(is_editable_class("RichEdit20W"));
+        assert!(is_editable_class("RICHEDIT50W"));
+        assert!(is_editable_class("Chrome_RenderWidgetHostHWND"));
+        assert!(is_editable_class("Internet Explorer_Server"));
+        assert!(is_editable_class("Scintilla"));
+        assert!(!is_editable_class("Button"));
+        assert!(!is_editable_class("Progman"));
+        assert!(!is_editable_class("Shell_TrayWnd"));
+    }
 }

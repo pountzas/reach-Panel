@@ -5,7 +5,9 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
 pub mod focus_target {
-    pub fn init() {}
+    use tauri::AppHandle;
+
+    pub fn init(_app: AppHandle) {}
     pub fn remember_current_if_external() {}
     pub fn has_input_target() -> bool {
         false
