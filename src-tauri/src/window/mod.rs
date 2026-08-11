@@ -126,6 +126,16 @@ mod tests {
     }
 
     #[test]
+    fn monitor_for_rect_picks_largest_overlap() {
+        let monitors = vec![
+            sample_monitor(0, 0, 0, 1920, 1080),
+            sample_monitor(1, 1920, 0, 1920, 1080),
+        ];
+        let id = monitor_for_rect(&monitors, 2000, 100, 400, 300);
+        assert_eq!(id, 1);
+    }
+
+    #[test]
     fn collapsed_single_monitor_bottom_right() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(&monitors, 0, true, false, 0.5).unwrap();
@@ -213,6 +223,6 @@ mod windows;
 mod stub;
 
 #[cfg(target_os = "windows")]
-pub use windows::{get_window_bounds, list_monitors, set_window_bounds};
+pub use windows::{get_window_bounds, list_monitors, monitor_for_rect, set_window_bounds};
 #[cfg(not(target_os = "windows"))]
-pub use stub::list_monitors;
+pub use stub::{list_monitors, monitor_for_rect};

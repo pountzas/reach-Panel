@@ -285,6 +285,26 @@ fn cmd_list_monitors() -> Vec<MonitorInfo> {
     list_monitors()
 }
 
+/// Returns the monitor id that contains the largest portion of the main window.
+#[tauri::command]
+async fn cmd_get_main_window_monitor(app: tauri::AppHandle) -> Result<u32, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    let layout = get_current_window_layout(&window)?;
+    let monitors = list_monitors();
+    if monitors.is_empty() {
+        return Err("No monitors found".to_string());
+    }
+    Ok(window::monitor_for_rect(
+        &monitors,
+        layout.x,
+        layout.y,
+        layout.width as i32,
+        layout.height as i32,
+    ))
+}
+
 async fn apply_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,
@@ -1186,6 +1206,7 @@ pub fn run() {
             cmd_mouse_double_click,
             cmd_mouse_scroll,
             cmd_list_monitors,
+            cmd_get_main_window_monitor,
             cmd_apply_window_layout,
             cmd_animate_window_layout,
             cmd_move_window_to_monitor,

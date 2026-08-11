@@ -45,7 +45,6 @@ import {
   closeToolWindow,
   openToolWindow,
   PROFILE_UPDATED_EVENT,
-  resolveMonitor,
   syncMainForToolWindows,
   TOOL_WINDOW_REQUEST_EVENT,
   TOOL_WINDOW_TITLES,
@@ -334,12 +333,9 @@ async function setToolWindowVisible(
 
   const flag = TOOL_WINDOW_FLAG[label];
   if (show) {
-    const { monitors, settings } = get();
-    const monitor = resolveMonitor(monitors, settings.accessibilityMonitorId);
     try {
       await openToolWindow(label, {
         title: TOOL_WINDOW_TITLES[label],
-        monitor,
         onDestroyed: () => {
           set({ [flag]: false });
           void syncMainForToolWindows();
