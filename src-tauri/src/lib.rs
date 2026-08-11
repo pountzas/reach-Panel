@@ -1,3 +1,4 @@
+mod companion;
 mod db;
 mod icons;
 mod installed_apps;
@@ -6,6 +7,7 @@ mod macros;
 mod music;
 mod prediction;
 mod profiles;
+mod services;
 mod stt;
 mod tts;
 mod window;
@@ -29,14 +31,13 @@ use prediction::{
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
-use tauri_plugin_opener::OpenerExt;
 use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{compute_window_layout, list_monitors, MonitorInfo, WindowLayout};
 
-struct AppState {
-    db: Database,
+pub(crate) struct AppState {
+    pub(crate) db: Database,
     profiles: ProfileStore,
     last_error: Mutex<Option<String>>,
 }
@@ -668,142 +669,13 @@ fn cmd_delete_quick_action(id: String, state: State<AppState>) -> Result<(), Str
     state.db.delete_quick_action(&id).map_err(|e| e.to_string())
 }
 
-fn validate_quick_action_url(target: &str) -> Result<String, String> {
-    let trimmed = target.trim();
-    if trimmed.is_empty() {
-        return Err("URL target is empty".to_string());
-    }
-    if trimmed.contains('\0') {
-        return Err("URL target is invalid".to_string());
-    }
-
-    let lower = trimmed.to_ascii_lowercase();
-    if lower.starts_with("https://")
-        || lower.starts_with("http://")
-        || lower.starts_with("mailto:")
-        || lower.starts_with("ms-settings:")
-    {
-        return Ok(trimmed.to_string());
-    }
-
-    // Bare hosts from the editor (e.g. "youtube.com") — open as https.
-    if is_host_shaped_url_target(trimmed) {
-        return Ok(format!("https://{trimmed}"));
-    }
-
-    Err("URL scheme not allowed".to_string())
-}
-
-/// Accepts host-shaped targets like `example.com`, `example.com:443/path?q=1`.
-fn is_host_shaped_url_target(trimmed: &str) -> bool {
-    if trimmed.contains('\\') || trimmed.contains("://") {
-        return false;
-    }
-    if !trimmed
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || ".-:_/?#=&%+".contains(c))
-    {
-        return false;
-    }
-
-    let host_port = trimmed
-        .split(['/', '?', '#'])
-        .next()
-        .unwrap_or(trimmed);
-    if host_port.is_empty() {
-        return false;
-    }
-
-    let host = if let Some((name, port)) = host_port.rsplit_once(':') {
-        if port.is_empty() || !port.chars().all(|c| c.is_ascii_digit()) {
-            return false;
-        }
-        name
-    } else {
-        host_port
-    };
-
-    let labels: Vec<&str> = host.split('.').collect();
-    labels.len() >= 2
-        && labels.iter().all(|label| {
-            !label.is_empty()
-                && label
-                    .chars()
-                    .all(|c| c.is_ascii_alphanumeric() || c == '-')
-        })
-}
-
-fn validate_quick_action_app(target: &str) -> Result<String, String> {
-    let trimmed = target.trim();
-    if trimmed.is_empty() {
-        return Err("App target is empty".to_string());
-    }
-    if trimmed.contains('\0') || trimmed.contains("..") {
-        return Err("App target is invalid".to_string());
-    }
-
-    let lower = trimmed.to_ascii_lowercase();
-    const BLOCKED_SUFFIXES: &[&str] = &[
-        ".bat", ".cmd", ".ps1", ".vbs", ".js", ".jse", ".wsf", ".msi", ".scr", ".com", ".lnk",
-    ];
-    for suffix in BLOCKED_SUFFIXES {
-        if lower.ends_with(suffix) {
-            return Err("Executable type not allowed".to_string());
-        }
-    }
-
-    if trimmed.contains('\\') || trimmed.contains('/') {
-        if !lower.ends_with(".exe") {
-            return Err("Only .exe app paths are allowed".to_string());
-        }
-        let path = std::path::PathBuf::from(trimmed);
-        if !path.is_file() {
-            return Err("Application not found".to_string());
-        }
-        return Ok(trimmed.to_string());
-    }
-
-    if !trimmed
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_')
-    {
-        return Err("Invalid app name".to_string());
-    }
-
-    if let Some(resolved) = icons::resolve_launch_app_path(trimmed) {
-        return Ok(resolved.to_string_lossy().into_owned());
-    }
-
-    let path = if lower.ends_with(".exe") {
-        trimmed.to_string()
-    } else {
-        format!("{trimmed}.exe")
-    };
-    Err(format!("Application not found: {path}"))
-}
-
 #[tauri::command]
 fn cmd_launch_quick_action(
     app: tauri::AppHandle,
     action_type: String,
     target: String,
 ) -> Result<(), String> {
-    match action_type.as_str() {
-        "url" => {
-            let url = validate_quick_action_url(&target)?;
-            app.opener()
-                .open_url(&url, None::<&str>)
-                .map_err(|e| e.to_string())?;
-        }
-        "app" => {
-            let path = validate_quick_action_app(&target)?;
-            app.opener()
-                .open_path(&path, None::<&str>)
-                .map_err(|e| e.to_string())?;
-        }
-        _ => return Err("Unknown action type".to_string()),
-    }
-    Ok(())
+    services::launch_quick_action(&app, &action_type, &target)
 }
 
 /// Returns a cached PNG path for an installed app icon (for `convertFileSrc`), or null.
@@ -839,13 +711,16 @@ async fn cmd_use_phrase(
     text: String,
     action: String,
     language: String,
+    app: AppHandle,
     _state: State<'_, AppState>,
 ) -> Result<(), String> {
+    let skip_host_tts = companion_tablet_audio_active(&app);
     tokio::task::spawn_blocking(move || {
         if action == "type" || action == "both" {
             type_text(&text).map_err(|e| e.to_string())?;
         }
-        if action == "speak" || action == "both" {
+        // While companion owns audio, Speak runs on the tablet — skip host TTS.
+        if !skip_host_tts && (action == "speak" || action == "both") {
             speak_text(
                 &text,
                 TtsSettings {
@@ -863,7 +738,16 @@ async fn cmd_use_phrase(
 }
 
 #[tauri::command]
-async fn cmd_speak(text: String, rate: i32, volume: u16, language: String) -> Result<(), String> {
+async fn cmd_speak(
+    text: String,
+    rate: i32,
+    volume: u16,
+    language: String,
+    app: AppHandle,
+) -> Result<(), String> {
+    if companion_tablet_audio_active(&app) {
+        return Ok(());
+    }
     tokio::task::spawn_blocking(move || {
         speak_text(
             &text,
@@ -877,6 +761,12 @@ async fn cmd_speak(text: String, rate: i32, volume: u16, language: String) -> Re
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+fn companion_tablet_audio_active(app: &AppHandle) -> bool {
+    app.try_state::<companion::CompanionBridge>()
+        .map(|bridge| bridge.session().tablet_audio_active())
+        .unwrap_or(false)
 }
 
 #[tauri::command]
@@ -907,6 +797,12 @@ async fn cmd_start_dictation(
     groq_api_key: Option<String>,
     app: AppHandle,
 ) -> Result<(), String> {
+    if companion_tablet_audio_active(&app) || companion::dictation_is_active() {
+        return Err(
+            "Companion tablet is connected — use the tablet mic for dictation (PC mic disabled)."
+                .to_string(),
+        );
+    }
     tokio::task::spawn_blocking(move || {
         start_dictation(&language, groq_api_key.as_deref(), app).map_err(|e| e.to_string())
     })
@@ -1107,6 +1003,31 @@ pub fn run() {
                 last_error: Mutex::new(None),
             });
 
+            match companion::CompanionBridge::new(&app_data_dir) {
+                Ok(bridge) => {
+                    // Auto-start for MVP until Settings → Companion UI lands.
+                    match bridge.start(app.handle().clone(), None) {
+                        Ok(status) => {
+                            eprintln!(
+                                "[companion] bridge started on port {}",
+                                status.port
+                            );
+                            if let Ok(payload) = bridge.pairing_payload() {
+                                if let Ok(json) = serde_json::to_string(&payload) {
+                                    eprintln!("[companion] pairing payload: {json}");
+                                }
+                            }
+                        }
+                        Err(e) => eprintln!("[companion] failed to start bridge: {e}"),
+                    }
+                    app.manage(bridge);
+                }
+                Err(e) => {
+                    eprintln!("Failed to initialize companion bridge: {e}");
+                    return Err(e.into());
+                }
+            }
+
             {
                 let state = app.state::<AppState>();
                 if let Err(e) = ensure_english_pack(app.handle(), &state.db) {
@@ -1203,6 +1124,13 @@ pub fn run() {
             cmd_get_head_tracking_settings,
             cmd_save_head_tracking_settings,
             cmd_head_tracking_move,
+            companion::cmd_companion_start,
+            companion::cmd_companion_stop,
+            companion::cmd_companion_status,
+            companion::cmd_companion_pairing_payload,
+            companion::cmd_companion_refresh_pairing,
+            companion::cmd_companion_list_devices,
+            companion::cmd_companion_revoke_device,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

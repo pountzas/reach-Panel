@@ -56,4 +56,5 @@ Caregivers can manage named profiles, emergency phrase visibility, monitor selec
 ## Known Limitations
 
 - Input injection does not work into elevated (admin) applications or UAC prompts
-- Eye tracking, AutoHotkey import, and an Android tablet companion (connects to this Windows app to control the PC) are future phases
+- Eye tracking and AutoHotkey import remain future phases
+- **Tablet companion (in progress):** Android-first Expo app in `companion/` pairs over local Wi‑Fi (USB tether later) to a Rust bridge in `src-tauri/src/companion/`; tablet owns mic/TTS while connected; host-only `SendInput` injection. Design: `docs/superpowers/specs/2026-08-05-tablet-companion-design.md`

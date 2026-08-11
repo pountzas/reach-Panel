@@ -1,9 +1,9 @@
-mod events;
+pub(crate) mod events;
 mod network;
 mod route;
 
 #[cfg(target_os = "windows")]
-mod groq;
+pub(crate) mod groq;
 #[cfg(target_os = "windows")]
 mod winrt;
 #[cfg(not(target_os = "windows"))]
