@@ -456,12 +456,6 @@ mod tests {
     }
 }
 
-#[cfg(target_os = "windows")]
 mod windows;
-#[cfg(not(target_os = "windows"))]
-mod stub;
 
-#[cfg(target_os = "windows")]
 pub use windows::{get_window_bounds, list_monitors, monitor_for_rect, set_window_bounds};
-#[cfg(not(target_os = "windows"))]
-pub use stub::{list_monitors, monitor_for_rect};

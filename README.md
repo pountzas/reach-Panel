@@ -16,8 +16,6 @@ Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Pan
 2. Run the installer. On older Windows builds, you may need the [WebView2 runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
 3. Open the app on your accessibility monitor (wheelchair-mounted touchscreen), select a profile in Settings, and position the window on the correct display.
 
-> **macOS builds are experimental.** CI produces `.dmg` bundles, but input injection and TTS still require Windows APIs for full functionality. See [Roadmap](#roadmap).
-
 
 
 ## Screenshots
@@ -94,9 +92,7 @@ If Windows online speech is off, open **Settings → Privacy & security → Spee
 
 ## Requirements
 
-**Full assistive functionality: Windows 10 or 11.**
-
-macOS builds run the UI for development and testing; system-wide keyboard, mouse, and speech features are not yet implemented on macOS.
+**Windows 10 or 11 only.** ReachPanel is not supported on macOS — touchscreens on macOS expose only single-point touch, which breaks the multi-touch layout and monitor targeting this app requires.
 
 For development:
 
@@ -137,7 +133,7 @@ src-tauri/target/release/bundle/
 
 ## Releases
 
-Windows and macOS bundles are built in CI. Windows installers are published automatically when a [release-please](https://github.com/googleapis/release-please) Release PR is merged on `main`. Development happens on `dev`; merging `dev` → `main` opens the Release PR. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full branch and versioning workflow.
+Windows installers are built in CI and published automatically when a [release-please](https://github.com/googleapis/release-please) Release PR is merged on `main`. Development happens on `dev`; merging `dev` → `main` opens the Release PR. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full branch and versioning workflow.
 
 ## Architecture
 
@@ -145,9 +141,9 @@ Windows and macOS bundles are built in CI. Windows installers are published auto
 | Path                                 | Responsibility                                                       |
 | ------------------------------------ | -------------------------------------------------------------------- |
 | `src/`                               | React frontend (keyboard, mouse, phrases, settings, head tracking)   |
-| `src-tauri/src/input/`               | Platform keyboard/mouse injection (Windows `SendInput`; macOS stubs) |
-| `src-tauri/src/window/`              | Monitor enumeration (Windows APIs; macOS stub)                       |
-| `src-tauri/src/tts/`                 | Text-to-speech (Windows SAPI / WinRT; macOS stub)                    |
+| `src-tauri/src/input/`               | Keyboard/mouse injection (Windows `SendInput`)                       |
+| `src-tauri/src/window/`              | Monitor enumeration (Windows APIs)                                   |
+| `src-tauri/src/tts/`                 | Text-to-speech (Windows SAPI / WinRT)                                |
 | `src-tauri/src/stt/`                 | Voice dictation (WinRT speech recognition; Groq cloud fallback)      |
 | `src-tauri/src/db/`                  | SQLite persistence (profiles, phrases, macros)                       |
 | `src-tauri/src/prediction/`          | Predictive text + word-pack install/download                         |
@@ -162,14 +158,12 @@ Windows and macOS bundles are built in CI. Windows installers are published auto
 
 - Eye tracking support
 - AutoHotkey macro import
-- macOS port: CGEvent input, AVSpeechSynthesizer, native monitor APIs (experimental CI builds in progress)
 
 
 
 ## Known limitations
 
 - Input injection does not work into elevated (admin) applications or UAC prompts
-- macOS bundles lack system-wide input and TTS until the native backends land
 - Voice dictation is Windows-only; Greek (and other WinRT-unsupported languages) need a Groq API key and internet
 - Cloud dictation is utterance-based (speak, pause) rather than fully continuous streaming
 

@@ -10,6 +10,9 @@ mod stt;
 mod tts;
 mod window;
 
+#[cfg(not(target_os = "windows"))]
+compile_error!("ReachPanel is Windows-only. macOS is not supported.");
+
 use db::{
     Database, MacroDef, MacroStep, Phrase, Profile, QuickAction,
 };
@@ -331,22 +334,8 @@ async fn apply_window_layout(
 }
 
 fn get_current_window_layout(window: &tauri::WebviewWindow) -> Result<WindowLayout, String> {
-    #[cfg(target_os = "windows")]
-    {
-        let hwnd = window.hwnd().map_err(|e| e.to_string())?;
-        window::get_window_bounds(hwnd.0 as isize)
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let pos = window.outer_position().map_err(|e| e.to_string())?;
-        let size = window.outer_size().map_err(|e| e.to_string())?;
-        Ok(WindowLayout {
-            x: pos.x,
-            y: pos.y,
-            width: size.width,
-            height: size.height,
-        })
-    }
+    let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+    window::get_window_bounds(hwnd.0 as isize)
 }
 
 async fn set_window_layout(
@@ -354,15 +343,8 @@ async fn set_window_layout(
     layout: WindowLayout,
 ) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
-        #[cfg(target_os = "windows")]
-        {
-            let hwnd = window.hwnd().map_err(|e| e.to_string())?;
-            window::set_window_bounds(hwnd.0 as isize, layout)?;
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            apply_window_layout_tauri(&window, layout)?;
-        }
+        let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+        window::set_window_bounds(hwnd.0 as isize, layout)?;
     }
     Ok(())
 }
@@ -412,26 +394,6 @@ async fn animate_window_layout(
             .await;
         }
     }
-    Ok(())
-}
-
-#[cfg(not(target_os = "windows"))]
-fn apply_window_layout_tauri(
-    window: &tauri::WebviewWindow,
-    layout: WindowLayout,
-) -> Result<(), String> {
-    window
-        .set_position(tauri::Position::Physical(tauri::PhysicalPosition {
-            x: layout.x,
-            y: layout.y,
-        }))
-        .map_err(|e| e.to_string())?;
-    window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-            width: layout.width,
-            height: layout.height,
-        }))
-        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -520,7 +482,6 @@ async fn cmd_set_window_focusable(app: tauri::AppHandle, focusable: bool) -> Res
     if let Some(window) = app.get_webview_window("main") {
         window.set_focusable(focusable).map_err(|e| e.to_string())?;
         if !focusable {
-            #[cfg(target_os = "windows")]
             focus_target::remember_current_if_external();
         }
     }
@@ -1053,19 +1014,11 @@ fn cmd_open_windows_settings(uri: String) -> Result<(), String> {
     if !uri.starts_with("ms-settings:") {
         return Err("Only ms-settings: URIs are allowed".to_string());
     }
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("cmd")
-            .args(["/C", "start", "", &uri])
-            .spawn()
-            .map_err(|e| format!("Failed to open Windows Settings: {e}"))?;
-        Ok(())
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let _ = uri;
-        Err("Windows Settings are only available on Windows".to_string())
-    }
+    std::process::Command::new("cmd")
+        .args(["/C", "start", "", &uri])
+        .spawn()
+        .map_err(|e| format!("Failed to open Windows Settings: {e}"))?;
+    Ok(())
 }
 
 #[tauri::command]

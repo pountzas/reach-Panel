@@ -38,12 +38,6 @@ addPlatform(
   process.env.WINDOWS_INSTALLER,
   process.env.WINDOWS_SIG,
 );
-addPlatform(
-  platforms,
-  "darwin-aarch64",
-  process.env.MACOS_INSTALLER,
-  process.env.MACOS_SIG,
-);
 
 if (Object.keys(platforms).length === 0) {
   console.error("No updater platforms were configured");

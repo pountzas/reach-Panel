@@ -1,17 +1,9 @@
-#[cfg(target_os = "windows")]
-pub mod focus_target;
-#[cfg(target_os = "windows")]
-mod cursor_highlight;
-#[cfg(target_os = "windows")]
-mod keyboard;
-#[cfg(target_os = "windows")]
-mod mouse;
-#[cfg(not(target_os = "windows"))]
-mod stub;
+//! Platform keyboard/mouse injection and focus tracking (Windows).
 
-#[cfg(target_os = "windows")]
+pub mod focus_target;
+mod cursor_highlight;
+mod keyboard;
+mod mouse;
+
 pub use keyboard::*;
-#[cfg(target_os = "windows")]
 pub use mouse::*;
-#[cfg(not(target_os = "windows"))]
-pub use stub::*;
