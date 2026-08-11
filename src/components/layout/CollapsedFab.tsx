@@ -2,11 +2,12 @@ import { useEffect } from "react";
 import { MicrophoneIcon } from "../common/SectionIcons";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
-
-const FAB_SIZE = 56;
-const FAB_GAP = 12;
-/** Must stay in sync with COLLAPSED_PAD in src-tauri/src/window/mod.rs */
-const FAB_PAD = 10;
+import {
+  COLLAPSED_FAB_GAP,
+  COLLAPSED_FAB_PAD,
+  COLLAPSED_FAB_SIZE,
+  collapsedFabContentMinSize,
+} from "../../lib/miniMode";
 
 export function CollapsedFab() {
   const {
@@ -26,6 +27,8 @@ export function CollapsedFab() {
   const listening = dictationState === "listening" || dictationState === "processing";
   const canDictate = sttCapability?.canDictate ?? false;
   const dictationDisabled = !listening && !canDictate;
+  const fabCount = showDictation ? 2 : 1;
+  const contentMin = collapsedFabContentMinSize(fabCount);
 
   useEffect(() => {
     void refreshSttCapability();
@@ -44,16 +47,22 @@ export function CollapsedFab() {
 
   return (
     <div
-      className="flex h-full w-full flex-col items-center justify-center"
-      style={{ background: "transparent", gap: FAB_GAP, padding: FAB_PAD }}
+      className="flex h-full w-full flex-col items-center justify-center overflow-visible"
+      style={{
+        background: "transparent",
+        gap: COLLAPSED_FAB_GAP,
+        padding: COLLAPSED_FAB_PAD,
+        minWidth: contentMin.minWidth,
+        minHeight: contentMin.minHeight,
+      }}
     >
       {showDictation && (
         <button
           type="button"
-          className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
+          className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-[1.03] active:scale-95 disabled:opacity-50"
           style={{
-            width: FAB_SIZE,
-            height: FAB_SIZE,
+            width: COLLAPSED_FAB_SIZE,
+            height: COLLAPSED_FAB_SIZE,
             backgroundColor: listening
               ? "#dc2626"
               : dictationDisabled
@@ -70,10 +79,10 @@ export function CollapsedFab() {
       )}
       <button
         type="button"
-        className="flex items-center justify-center rounded-full font-bold shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
+        className="flex items-center justify-center rounded-full font-bold shadow-lg transition-transform hover:scale-[1.03] active:scale-95 disabled:opacity-50"
         style={{
-          width: FAB_SIZE,
-          height: FAB_SIZE,
+          width: COLLAPSED_FAB_SIZE,
+          height: COLLAPSED_FAB_SIZE,
           backgroundColor: bgColor,
           color: textColor,
           fontSize: 22,

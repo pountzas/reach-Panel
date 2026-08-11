@@ -21,11 +21,49 @@ pub struct WindowLayout {
 
 const COLLAPSED_SIZE: u32 = 56;
 const COLLAPSED_MARGIN: u32 = 16;
-/// Transparent padding around FABs so shadow + hover:scale-105 are not clipped.
-/// Keep in sync with FAB_PAD in CollapsedFab.tsx.
+/// Transparent padding around FABs so shadow + hover scale are not clipped.
+/// Keep in sync with COLLAPSED_FAB_PAD in src/lib/miniMode.ts / CollapsedFab.tsx.
 const COLLAPSED_PAD: u32 = 10;
-/// Gap between stacked collapsed FABs (expand + dictation).
+/// Gap between stacked collapsed FABs (expand + dictation + settings).
 const COLLAPSED_FAB_GAP: u32 = 12;
+/// Extra px for hover scale headroom (~5% of 56px). Keep in sync with FAB_HOVER_SLACK in miniMode.ts.
+pub const FAB_HOVER_SLACK: u32 = 6;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CollapsedFabCount {
+    One,
+    Two,
+    Three,
+}
+
+fn collapsed_hover_slack(dpi_scale: f32) -> u32 {
+    (FAB_HOVER_SLACK as f32 * dpi_scale.max(1.0)).ceil() as u32
+}
+
+fn collapsed_fab_stack_height(count: CollapsedFabCount) -> u32 {
+    match count {
+        CollapsedFabCount::One => COLLAPSED_SIZE,
+        CollapsedFabCount::Two => COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP,
+        CollapsedFabCount::Three => COLLAPSED_SIZE * 3 + COLLAPSED_FAB_GAP * 2,
+    }
+}
+
+/// Collapsed FAB window inner dimensions (width, height) including hover/DPI slack.
+pub fn compute_collapsed_dimensions(count: CollapsedFabCount, dpi_scale: f32) -> (u32, u32) {
+    let slack = collapsed_hover_slack(dpi_scale);
+    let fab_stack_h = collapsed_fab_stack_height(count);
+    let width = COLLAPSED_SIZE + 2 * COLLAPSED_PAD + slack;
+    let height = fab_stack_h + 2 * COLLAPSED_PAD + slack;
+    (width, height)
+}
+
+fn collapsed_fab_count(collapsed_dictation: bool) -> CollapsedFabCount {
+    if collapsed_dictation {
+        CollapsedFabCount::Two
+    } else {
+        CollapsedFabCount::One
+    }
+}
 pub const COLLAPSE_ANIMATION_MS: u64 = 400;
 pub const COLLAPSE_ANIMATION_FRAME_MS: u64 = 60;
 
@@ -82,13 +120,8 @@ pub fn compute_window_layout(
 
     if collapsed {
         // FAB stays bottom-right of the full region; ignore content height_ratio.
-        let fab_stack_h = if collapsed_dictation {
-            COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP
-        } else {
-            COLLAPSED_SIZE
-        };
-        let collapsed_w = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
-        let collapsed_h = fab_stack_h + 2 * COLLAPSED_PAD;
+        let count = collapsed_fab_count(collapsed_dictation);
+        let (collapsed_w, collapsed_h) = compute_collapsed_dimensions(count, 1.0);
         x += w as i32 - collapsed_w as i32 - COLLAPSED_MARGIN as i32;
         y += h as i32 - collapsed_h as i32 - COLLAPSED_MARGIN as i32;
         w = collapsed_w;
@@ -136,11 +169,38 @@ mod tests {
     }
 
     #[test]
+    fn collapsed_window_includes_hover_and_dpi_slack() {
+        let (width, height) = compute_collapsed_dimensions(CollapsedFabCount::Two, 1.5);
+        assert!(width >= 76);
+        assert!(height >= 76);
+    }
+
+    #[test]
+    fn collapsed_dimensions_one_two_three() {
+        let (one_w, one_h) = compute_collapsed_dimensions(CollapsedFabCount::One, 1.0);
+        let (two_w, two_h) = compute_collapsed_dimensions(CollapsedFabCount::Two, 1.0);
+        let (three_w, three_h) = compute_collapsed_dimensions(CollapsedFabCount::Three, 1.0);
+
+        assert_eq!(one_w, COLLAPSED_SIZE + 2 * COLLAPSED_PAD + FAB_HOVER_SLACK);
+        assert_eq!(one_h, COLLAPSED_SIZE + 2 * COLLAPSED_PAD + FAB_HOVER_SLACK);
+        assert_eq!(two_w, one_w);
+        assert_eq!(
+            two_h,
+            COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP + 2 * COLLAPSED_PAD + FAB_HOVER_SLACK
+        );
+        assert_eq!(three_w, one_w);
+        assert_eq!(
+            three_h,
+            COLLAPSED_SIZE * 3 + COLLAPSED_FAB_GAP * 2 + 2 * COLLAPSED_PAD + FAB_HOVER_SLACK
+        );
+    }
+
+    #[test]
     fn collapsed_single_monitor_bottom_right() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(&monitors, 0, true, false, 0.5).unwrap();
-        let expected_w = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
-        let expected_h = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
+        let (expected_w, expected_h) =
+            compute_collapsed_dimensions(CollapsedFabCount::One, 1.0);
 
         assert_eq!(layout.width, expected_w);
         assert_eq!(layout.height, expected_h);
@@ -152,8 +212,8 @@ mod tests {
     fn collapsed_with_dictation_is_taller() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(&monitors, 0, true, true, 1.0).unwrap();
-        let expected_w = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
-        let expected_h = COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP + 2 * COLLAPSED_PAD;
+        let (expected_w, expected_h) =
+            compute_collapsed_dimensions(CollapsedFabCount::Two, 1.0);
 
         assert_eq!(layout.width, expected_w);
         assert_eq!(layout.height, expected_h);
@@ -168,8 +228,8 @@ mod tests {
             sample_monitor(1, 1920, 0, 1920, 1080),
         ];
         let layout = compute_window_layout(&monitors, 1, true, false, 1.0).unwrap();
-        let expected_w = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
-        let expected_h = COLLAPSED_SIZE + 2 * COLLAPSED_PAD;
+        let (expected_w, expected_h) =
+            compute_collapsed_dimensions(CollapsedFabCount::One, 1.0);
 
         assert_eq!(layout.width, expected_w);
         assert_eq!(layout.height, expected_h);
