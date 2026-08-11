@@ -52,6 +52,7 @@ Caregivers can manage named profiles, emergency phrase visibility, monitor selec
 | Head tracking | Calibration wizard; touch/head mode toggle |
 | Multi-monitor | List displays; position app on accessibility screen |
 | Profiles | Named saved profiles with separate settings |
+| Mini Mode | Auto on single/mirrored displays (off by default on dual unless override); full-width bottom keyboard + suggestions on input focus; hide to Settings/Dictate/Expand FAB on focus lost; transparent outlined keys optional; tool windows center on main window’s monitor; touch vs mouse layout profiles; resize drags do not drop mid-gesture |
 
 ## Known Limitations
 
