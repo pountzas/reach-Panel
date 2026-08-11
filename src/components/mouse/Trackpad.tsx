@@ -101,6 +101,8 @@ export function Trackpad() {
   const [precision, setPrecision] = useState(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
+  const gestureReady = useRef(false);
+  const gestureGen = useRef(0);
   const pendingDelta = useRef({ dx: 0, dy: 0 });
   const rafId = useRef<number | null>(null);
   const ipcInFlight = useRef(false);
@@ -116,6 +118,12 @@ export function Trackpad() {
   useEffect(() => {
     return () => {
       if (rafId.current !== null) cancelAnimationFrame(rafId.current);
+      gestureGen.current += 1;
+      gestureReady.current = false;
+      if (dragging.current) {
+        dragging.current = false;
+        void invoke("cmd_trackpad_gesture_end").catch(() => {});
+      }
     };
   }, []);
 
@@ -136,19 +144,38 @@ export function Trackpad() {
       });
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
     lastPos.current = { x: e.clientX, y: e.clientY };
-    dragging.current = true;
     pendingDelta.current = { dx: 0, dy: 0 };
+    const gen = ++gestureGen.current;
+    dragging.current = true;
+    gestureReady.current = false;
+    void invoke("cmd_trackpad_gesture_begin")
+      .then(() => {
+        if (gestureGen.current !== gen) {
+          void invoke("cmd_trackpad_gesture_end").catch(() => {});
+          return;
+        }
+        gestureReady.current = true;
+      })
+      .catch(() => {
+        if (gestureGen.current === gen) {
+          dragging.current = false;
+          gestureReady.current = false;
+        }
+      });
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragging.current || !lastPos.current) return;
+    e.preventDefault();
     const dx = Math.round((e.clientX - lastPos.current.x) * speed);
     const dy = Math.round((e.clientY - lastPos.current.y) * speed);
     lastPos.current = { x: e.clientX, y: e.clientY };
-    if (dx === 0 && dy === 0) return;
+    // Wait until the backend session is active so we never GetCursorPos on a touch point.
+    if (!gestureReady.current || (dx === 0 && dy === 0)) return;
     pendingDelta.current.dx += dx;
     pendingDelta.current.dy += dy;
     if (rafId.current === null) {
@@ -156,14 +183,52 @@ export function Trackpad() {
     }
   };
 
-  const onPointerUp = () => {
+  const endGesture = () => {
+    // pointerup and lostpointercapture can both fire; end only once.
+    if (!dragging.current) return;
     dragging.current = false;
+    gestureReady.current = false;
     lastPos.current = null;
+    gestureGen.current += 1;
     if (rafId.current !== null) {
       cancelAnimationFrame(rafId.current);
       rafId.current = null;
     }
-    flushPendingMove();
+
+    const endBackend = () => {
+      void invoke("cmd_trackpad_gesture_end").catch(() => {});
+    };
+
+    const flushThenEnd = () => {
+      if (ipcInFlight.current) {
+        rafId.current = requestAnimationFrame(flushThenEnd);
+        return;
+      }
+      const { dx, dy } = pendingDelta.current;
+      if (dx === 0 && dy === 0) {
+        endBackend();
+        return;
+      }
+      pendingDelta.current = { dx: 0, dy: 0 };
+      ipcInFlight.current = true;
+      void invoke("cmd_move_cursor_relative", { dx, dy })
+        .catch(() => {})
+        .finally(() => {
+          ipcInFlight.current = false;
+          endBackend();
+        });
+    };
+
+    flushThenEnd();
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    endGesture();
+  };
+
+  const onLostPointerCapture = () => {
+    endGesture();
   };
   const buttonProps = { iconSize, paddingY, bgColor: keyBgColor, textColor: keyTextColor };
 
@@ -176,6 +241,7 @@ export function Trackpad() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onLostPointerCapture={onLostPointerCapture}
       >
         <div
           className="flex h-full items-center justify-center"

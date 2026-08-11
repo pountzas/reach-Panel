@@ -131,6 +131,14 @@ pub fn get_layout_key_labels(_hkl_value: Option<u64>) -> Vec<LayoutKeyLabel> {
     Vec::new()
 }
 
+pub fn begin_trackpad_gesture(_app_hwnd: isize) -> Result<()> {
+    unsupported()
+}
+
+pub fn end_trackpad_gesture() -> Result<()> {
+    unsupported()
+}
+
 pub fn move_cursor_relative(_dx: i32, _dy: i32) -> Result<()> {
     unsupported()
 }
