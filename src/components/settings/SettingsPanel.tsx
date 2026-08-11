@@ -15,6 +15,7 @@ import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
 import { ONSCREEN_LAYOUT_OPTIONS } from "../../lib/keyboardLayouts";
 import { SettingsSection } from "./SettingsSection";
+import { CompanionSection } from "./CompanionSection";
 import { AboutSection } from "./AboutSection";
 import { CloseIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
@@ -899,6 +900,14 @@ export function SettingsPanel() {
                 {t("onscreenLayoutHint")}
               </span>
             </label>
+          </SettingsSection>
+
+          <SettingsSection
+            title={t("settingsCompanion")}
+            description={t("companionDescription")}
+            surface={surface}
+          >
+            <CompanionSection surface={surface} />
           </SettingsSection>
 
           <SettingsSection title={t("settingsToolsMaintenance")} surface={surface}>

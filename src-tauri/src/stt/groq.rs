@@ -345,12 +345,42 @@ fn transcribe(api_key: &str, audio: &[f32], language: &str) -> Result<String> {
         return Ok(String::new());
     }
     let wav = encode_wav_pcm16(audio, TARGET_SAMPLE_RATE);
+    transcribe_file_bytes(api_key, &wav, "audio.wav", "audio/wav", language)
+}
+
+/// Transcribe companion-provided PCM16 LE mono audio (any sample rate; resampled lightly by length).
+pub(crate) fn transcribe_pcm16_le(
+    api_key: &str,
+    pcm16le: &[u8],
+    sample_rate: u32,
+    language: &str,
+) -> Result<String> {
+    if pcm16le.is_empty() {
+        return Ok(String::new());
+    }
+    let samples = pcm16le_to_f32(pcm16le);
+    let wav = encode_wav_pcm16(&samples, if sample_rate == 0 { TARGET_SAMPLE_RATE } else { sample_rate });
+    transcribe_file_bytes(api_key, &wav, "audio.wav", "audio/wav", language)
+}
+
+/// Transcribe an encoded audio blob (m4a/wav/webm/ogg) from the tablet mic.
+pub(crate) fn transcribe_file_bytes(
+    api_key: &str,
+    data: &[u8],
+    filename: &str,
+    mime: &str,
+    language: &str,
+) -> Result<String> {
+    if data.is_empty() {
+        return Ok(String::new());
+    }
+    let lang = groq_language_hint(language);
     let boundary = format!("----ReachPanel{}", std::process::id());
     let mut body = Vec::new();
     write_multipart_field(&mut body, &boundary, "model", GROQ_MODEL)?;
-    write_multipart_field(&mut body, &boundary, "language", language)?;
+    write_multipart_field(&mut body, &boundary, "language", lang)?;
     write_multipart_field(&mut body, &boundary, "response_format", "json")?;
-    write_multipart_file(&mut body, &boundary, "file", "audio.wav", "audio/wav", &wav)?;
+    write_multipart_file(&mut body, &boundary, "file", filename, mime, data)?;
     write!(body, "--{boundary}--\r\n")?;
 
     let response = ureq::post(GROQ_TRANSCRIPTIONS_URL)
@@ -383,6 +413,15 @@ fn transcribe(api_key: &str, audio: &[f32], language: &str) -> Result<String> {
         }
         Err(e) => Err(anyhow!("GROQ_API: Network error: {e}")),
     }
+}
+
+fn pcm16le_to_f32(pcm: &[u8]) -> Vec<f32> {
+    let mut out = Vec::with_capacity(pcm.len() / 2);
+    for chunk in pcm.chunks_exact(2) {
+        let sample = i16::from_le_bytes([chunk[0], chunk[1]]);
+        out.push(sample as f32 / i16::MAX as f32);
+    }
+    out
 }
 
 fn map_groq_http_error(code: u16, message: &str) -> anyhow::Error {
