@@ -36,6 +36,7 @@ unsafe extern "system" fn monitor_enum_proc(
             width: rect.right - rect.left,
             height: rect.bottom - rect.top,
             is_primary: info.monitorInfo.dwFlags & 1 != 0,
+            is_mirror_duplicate: false,
         });
         collector.index += 1;
     }
@@ -55,6 +56,7 @@ pub fn list_monitors() -> Vec<MonitorInfo> {
             LPARAM(&mut collector as *mut _ as isize),
         );
     }
+    super::mark_mirror_duplicates(&mut collector.monitors);
     collector.monitors
 }
 

@@ -1,10 +1,15 @@
 /** Collapsed FAB geometry — keep in sync with src-tauri/src/window/mod.rs */
 
+import type { AppSettings, MonitorInfo } from "./types";
+
 export const COLLAPSED_FAB_SIZE = 56;
 export const COLLAPSED_FAB_GAP = 12;
 export const COLLAPSED_FAB_PAD = 10;
 /** Extra px for hover scale headroom (~5% of 56px). */
 export const FAB_HOVER_SLACK = 6;
+
+/** Fraction of the smaller monitor area that must overlap to count as mirrored. */
+export const MIRROR_OVERLAP_RATIO = 0.9;
 
 export type CollapsedFabCount = 1 | 2 | 3;
 
@@ -33,4 +38,59 @@ export function collapsedFabContentMinSize(count: CollapsedFabCount): {
     minWidth: COLLAPSED_FAB_SIZE + FAB_HOVER_SLACK,
     minHeight: stackHeight + FAB_HOVER_SLACK,
   };
+}
+
+function monitorArea(m: MonitorInfo): number {
+  return Math.max(0, m.width) * Math.max(0, m.height);
+}
+
+function intersectionArea(a: MonitorInfo, b: MonitorInfo): number {
+  const ax2 = a.x + a.width;
+  const ay2 = a.y + a.height;
+  const bx2 = b.x + b.width;
+  const by2 = b.y + b.height;
+  const ix1 = Math.max(a.x, b.x);
+  const iy1 = Math.max(a.y, b.y);
+  const ix2 = Math.min(ax2, bx2);
+  const iy2 = Math.min(ay2, by2);
+  if (ix2 <= ix1 || iy2 <= iy1) return 0;
+  return (ix2 - ix1) * (iy2 - iy1);
+}
+
+/** True when work areas overlap by ≥90% of the smaller monitor area (mirrored duplicate). */
+export function monitorsOverlap(a: MonitorInfo, b: MonitorInfo): boolean {
+  const smaller = Math.min(monitorArea(a), monitorArea(b));
+  if (smaller <= 0) return false;
+  return intersectionArea(a, b) / smaller >= MIRROR_OVERLAP_RATIO;
+}
+
+/** True when two or more listed monitors significantly overlap (typical Windows mirror duplicate entries). */
+export function isMirroredSetup(monitors: MonitorInfo[]): boolean {
+  for (let i = 0; i < monitors.length; i++) {
+    for (let j = i + 1; j < monitors.length; j++) {
+      if (monitorsOverlap(monitors[i]!, monitors[j]!)) return true;
+    }
+  }
+  return false;
+}
+
+/** Mini mode is eligible on a single display or a mirrored multi-display setup. */
+export function isMiniModeEligible(monitors: MonitorInfo[]): boolean {
+  return monitors.length <= 1 || isMirroredSetup(monitors);
+}
+
+/**
+ * Resolve whether mini mode should be active.
+ * - `miniModeOverride: true` → force on
+ * - `miniModeOverride: false` → force off
+ * - `null` / `undefined` → auto (eligible = single or mirrored)
+ */
+export function resolveMiniModeEnabled(
+  settings: AppSettings,
+  monitors: MonitorInfo[],
+): boolean {
+  const override = settings.miniModeOverride;
+  if (override === true) return true;
+  if (override === false) return false;
+  return isMiniModeEligible(monitors);
 }

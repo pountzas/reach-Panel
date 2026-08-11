@@ -1,7 +1,7 @@
 use super::MonitorInfo;
 
 pub fn list_monitors() -> Vec<MonitorInfo> {
-    vec![MonitorInfo {
+    let mut monitors = vec![MonitorInfo {
         id: 0,
         name: "Primary Display".to_string(),
         x: 0,
@@ -9,7 +9,10 @@ pub fn list_monitors() -> Vec<MonitorInfo> {
         width: 1920,
         height: 1080,
         is_primary: true,
-    }]
+        is_mirror_duplicate: false,
+    }];
+    super::mark_mirror_duplicates(&mut monitors);
+    monitors
 }
 
 /// Pick the monitor with the largest intersection area against the given rect.

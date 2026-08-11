@@ -9,6 +9,53 @@ pub struct MonitorInfo {
     pub width: i32,
     pub height: i32,
     pub is_primary: bool,
+    /// True when this monitor's work area overlaps another by ≥90% (mirrored duplicate).
+    pub is_mirror_duplicate: bool,
+}
+
+/// Fraction of the smaller monitor area that must overlap to count as mirrored.
+pub const MIRROR_OVERLAP_RATIO: f64 = 0.9;
+
+fn monitor_area(m: &MonitorInfo) -> i64 {
+    (m.width.max(0) as i64) * (m.height.max(0) as i64)
+}
+
+fn intersection_area(a: &MonitorInfo, b: &MonitorInfo) -> i64 {
+    let ax2 = a.x.saturating_add(a.width);
+    let ay2 = a.y.saturating_add(a.height);
+    let bx2 = b.x.saturating_add(b.width);
+    let by2 = b.y.saturating_add(b.height);
+    let ix1 = a.x.max(b.x);
+    let iy1 = a.y.max(b.y);
+    let ix2 = ax2.min(bx2);
+    let iy2 = ay2.min(by2);
+    if ix2 > ix1 && iy2 > iy1 {
+        (ix2 - ix1) as i64 * (iy2 - iy1) as i64
+    } else {
+        0
+    }
+}
+
+/// True when work areas overlap by ≥90% of the smaller monitor area.
+pub fn monitors_overlap(a: &MonitorInfo, b: &MonitorInfo) -> bool {
+    let smaller = monitor_area(a).min(monitor_area(b));
+    if smaller <= 0 {
+        return false;
+    }
+    (intersection_area(a, b) as f64) / (smaller as f64) >= MIRROR_OVERLAP_RATIO
+}
+
+/// Mark monitors that significantly overlap another as mirror duplicates.
+pub fn mark_mirror_duplicates(monitors: &mut [MonitorInfo]) {
+    let n = monitors.len();
+    for i in 0..n {
+        for j in (i + 1)..n {
+            if monitors_overlap(&monitors[i], &monitors[j]) {
+                monitors[i].is_mirror_duplicate = true;
+                monitors[j].is_mirror_duplicate = true;
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -155,7 +202,31 @@ mod tests {
             width: w,
             height: h,
             is_primary: id == 0,
+            is_mirror_duplicate: false,
         }
+    }
+
+    #[test]
+    fn monitors_overlap_detects_mirrored_work_areas() {
+        let a = sample_monitor(0, 0, 0, 1920, 1080);
+        let b = sample_monitor(1, 0, 0, 1920, 1080);
+        assert!(monitors_overlap(&a, &b));
+
+        let side = sample_monitor(1, 1920, 0, 1920, 1080);
+        assert!(!monitors_overlap(&a, &side));
+    }
+
+    #[test]
+    fn mark_mirror_duplicates_flags_overlapping_pair() {
+        let mut monitors = vec![
+            sample_monitor(0, 0, 0, 1920, 1080),
+            sample_monitor(1, 0, 0, 1920, 1080),
+            sample_monitor(2, 1920, 0, 1920, 1080),
+        ];
+        mark_mirror_duplicates(&mut monitors);
+        assert!(monitors[0].is_mirror_duplicate);
+        assert!(monitors[1].is_mirror_duplicate);
+        assert!(!monitors[2].is_mirror_duplicate);
     }
 
     #[test]
