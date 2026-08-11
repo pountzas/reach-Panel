@@ -66,6 +66,10 @@ export function monitorsOverlap(a: MonitorInfo, b: MonitorInfo): boolean {
 
 /** True when two or more listed monitors significantly overlap (typical Windows mirror duplicate entries). */
 export function isMirroredSetup(monitors: MonitorInfo[]): boolean {
+  const hasMirrorFlag = monitors.some((m) => m.is_mirror_duplicate !== undefined);
+  if (hasMirrorFlag) {
+    return monitors.some((m) => m.is_mirror_duplicate === true);
+  }
   for (let i = 0; i < monitors.length; i++) {
     for (let j = i + 1; j < monitors.length; j++) {
       if (monitorsOverlap(monitors[i]!, monitors[j]!)) return true;

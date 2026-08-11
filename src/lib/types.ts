@@ -156,6 +156,8 @@ export interface MonitorInfo {
   width: number;
   height: number;
   is_primary: boolean;
+  /** Set by backend when this entry overlaps another monitor ≥90% (Windows mirror duplicate). */
+  is_mirror_duplicate?: boolean;
 }
 
 export interface CommandResult {
