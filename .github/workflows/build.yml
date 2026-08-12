@@ -2,11 +2,12 @@ name: Build
 
 on:
   pull_request:
-    branches: [main, dev]
+    branches: [main]
 
 jobs:
   build-windows:
-    if: github.base_ref == 'dev' || github.head_ref == 'dev'
+    # Only ship-validation builds: PRs from the integration branch into main.
+    if: github.base_ref == 'main' && github.head_ref == 'dev'
     runs-on: windows-latest
 
     steps:
