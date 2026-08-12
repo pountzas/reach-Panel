@@ -55,7 +55,11 @@ export function resolveMonitor(
 }
 
 async function getMonitors(): Promise<MonitorInfo[]> {
-  return invoke<MonitorInfo[]>("cmd_list_monitors");
+  try {
+    return await invoke<MonitorInfo[]>("cmd_list_monitors");
+  } catch {
+    return [];
+  }
 }
 
 /** Resolve the monitor that currently contains the main window. */
