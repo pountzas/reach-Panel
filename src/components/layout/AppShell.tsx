@@ -8,9 +8,7 @@ import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
 import { MusicLessonPanel } from "../music/MusicLessonPanel";
-import { AppToaster } from "../common/AppToaster";
 import { ErrorBanner } from "../common/ErrorBanner";
-import { UpdatePrompt } from "../common/UpdatePrompt";
 import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -83,8 +81,6 @@ function contentHeightRatioFromSettings(settings: {
 export function AppShell() {
   const settings = useAppStore((s) => s.settings);
   const monitors = useAppStore((s) => s.monitors);
-  const pendingUpdate = useAppStore((s) => s.pendingUpdate);
-  const setPendingUpdate = useAppStore((s) => s.setPendingUpdate);
   const setShowSettings = useAppStore((s) => s.setShowSettings);
   const toggleCollapsed = useAppStore((s) => s.toggleCollapsed);
   const updateSettings = useAppStore((s) => s.updateSettings);
@@ -261,14 +257,6 @@ export function AppShell() {
             inputRow={<InputRowPanel />}
           />
         </div>
-
-        {pendingUpdate && (
-          <UpdatePrompt
-            update={pendingUpdate}
-            onDismiss={() => setPendingUpdate(null)}
-          />
-        )}
-        <AppToaster />
       </div>
     </div>
   );
