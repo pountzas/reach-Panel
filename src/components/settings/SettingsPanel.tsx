@@ -900,7 +900,12 @@ export function SettingsPanel() {
                     if (status === "upToDate") {
                       notify.success(t("updateUpToDate"));
                     } else if (status === "error") {
-                      notify.error(t("updateCheckFailed"));
+                      const detail = useAppStore.getState().updateCheckError;
+                      notify.error(
+                        detail
+                          ? `${t("updateCheckFailed")} ${detail}`
+                          : t("updateCheckFailed"),
+                      );
                     }
                   })();
                 }}
