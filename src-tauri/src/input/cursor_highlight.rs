@@ -17,11 +17,11 @@ use windows::Win32::Graphics::Gdi::{
     PAINTSTRUCT, PS_SOLID, TRANSPARENT,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, GetClientRect, LoadCursorW, MoveWindow,
-    RegisterClassW, ShowWindow, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, IDC_ARROW, SW_HIDE,
+    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect, LoadCursorW,
+    MoveWindow, PeekMessageW, RegisterClassW, SetLayeredWindowAttributes, ShowWindow,
+    TranslateMessage, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, IDC_ARROW, MSG, PM_REMOVE, SW_HIDE,
     SW_SHOWNOACTIVATE, WM_DESTROY, WM_PAINT, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
-    WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_POPUP, SetLayeredWindowAttributes,
-    LWA_COLORKEY,
+    WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_POPUP, LWA_COLORKEY,
 };
 
 const RING_SIZE: i32 = 72;
@@ -110,6 +110,7 @@ fn run_loop(rx: mpsc::Receiver<Cmd>) {
     let mut sticky = false;
     let mut hide_at = Instant::now();
     let mut last_pos: Option<(i32, i32)> = None;
+    let mut last_applied: Option<(i32, i32)> = None;
 
     loop {
         while let Ok(cmd) = rx.try_recv() {
@@ -118,6 +119,7 @@ fn run_loop(rx: mpsc::Receiver<Cmd>) {
                     last_pos = Some((x, y));
                     hide_at = Instant::now() + HIDE_AFTER;
                     position_window(hwnd, x, y);
+                    last_applied = Some((x, y));
                     unsafe {
                         let _ = ShowWindow(hwnd, SW_SHOWNOACTIVATE);
                         let _ = UpdateWindow(hwnd);
@@ -128,7 +130,10 @@ fn run_loop(rx: mpsc::Receiver<Cmd>) {
                     if !sticky {
                         hide_at = Instant::now() + HIDE_AFTER;
                     } else if let Some((x, y)) = last_pos {
-                        position_window(hwnd, x, y);
+                        if last_applied != Some((x, y)) {
+                            position_window(hwnd, x, y);
+                            last_applied = Some((x, y));
+                        }
                         unsafe {
                             let _ = ShowWindow(hwnd, SW_SHOWNOACTIVATE);
                         }
@@ -143,16 +148,31 @@ fn run_loop(rx: mpsc::Receiver<Cmd>) {
             }
         }
 
+        pump_thread_messages();
+
         let visible = sticky || Instant::now() < hide_at;
         if !visible {
             unsafe {
                 let _ = ShowWindow(hwnd, SW_HIDE);
             }
         } else if let Some((x, y)) = last_pos {
-            position_window(hwnd, x, y);
+            if last_applied != Some((x, y)) {
+                position_window(hwnd, x, y);
+                last_applied = Some((x, y));
+            }
         }
 
         thread::sleep(Duration::from_millis(16));
+    }
+}
+
+fn pump_thread_messages() {
+    unsafe {
+        let mut msg = MSG::default();
+        while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
+            let _ = TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
     }
 }
 
