@@ -1,5 +1,7 @@
 import {
   useCallback,
+  useEffect,
+  useLayoutEffect,
   useRef,
   useSyncExternalStore,
   type PointerEvent as ReactPointerEvent,
@@ -67,31 +69,51 @@ export function usePointerDrag(options: {
     null,
   );
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+
+  useLayoutEffect(() => {
+    optionsRef.current = options;
+  });
 
   const onWindowMove = useCallback((event: PointerEvent) => {
     if (!activeRef.current || activeRef.current.pointerId !== event.pointerId) return;
     optionsRef.current.onMove(event);
   }, []);
 
-  const endDrag = useCallback((event: PointerEvent) => {
-    if (!activeRef.current || activeRef.current.pointerId !== event.pointerId) return;
+  const endDrag = useCallback((event?: PointerEvent) => {
+    const active = activeRef.current;
+    if (!active) return;
+    if (event && active.pointerId !== event.pointerId) return;
     window.removeEventListener("pointermove", onWindowMove);
     window.removeEventListener("pointerup", endDrag);
     window.removeEventListener("pointercancel", endDrag);
     try {
-      activeRef.current.captureEl?.releasePointerCapture(event.pointerId);
+      if (event) {
+        active.captureEl?.releasePointerCapture(event.pointerId);
+      } else {
+        active.captureEl?.releasePointerCapture(active.pointerId);
+      }
     } catch {
       /* already released */
     }
     activeRef.current = null;
     setPointerDragActive(false);
-    optionsRef.current.onEnd?.(event);
+    if (event) {
+      optionsRef.current.onEnd?.(event);
+    }
   }, [onWindowMove]);
+
+  useEffect(() => {
+    return () => {
+      if (activeRef.current) {
+        endDrag();
+      }
+    };
+  }, [endDrag]);
 
   const onPointerDown = useCallback(
     (event: ReactPointerEvent) => {
       if (optionsRef.current.enabled === false) return;
+      if (activeRef.current) return;
       event.preventDefault();
       const el = event.currentTarget as HTMLElement;
       el.setPointerCapture(event.pointerId);

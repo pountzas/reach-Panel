@@ -107,6 +107,8 @@ export function ResizableSplitPane({
   });
 
   const onSplitterPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (sizedPaneCollapsed) return;
+
     const container = containerRef.current;
     if (!container) return;
 

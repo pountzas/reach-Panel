@@ -75,4 +75,51 @@ describe("usePointerDrag", () => {
     expect(active.current).toBe(false);
     expect(isPointerDragActive()).toBe(false);
   });
+
+  it("does not start a drag when enabled is false", () => {
+    const onMove = vi.fn();
+    const onEnd = vi.fn();
+    const { result } = renderHook(() =>
+      usePointerDrag({ enabled: false, onMove, onEnd }),
+    );
+
+    const down = stubPointerDown();
+    act(() => {
+      result.current.onPointerDown(down as unknown as React.PointerEvent);
+    });
+
+    expect(isPointerDragActive()).toBe(false);
+    expect(onMove).not.toHaveBeenCalled();
+    expect(onEnd).not.toHaveBeenCalled();
+  });
+
+  it("ends drag on pointercancel like pointerup and calls onEnd once", () => {
+    const onMove = vi.fn();
+    const onEnd = vi.fn();
+    const { result } = renderHook(() => usePointerDrag({ onMove, onEnd }));
+
+    const down = stubPointerDown();
+    const cancel = new PointerEvent("pointercancel", {
+      pointerId: 1,
+      bubbles: true,
+    });
+
+    act(() => {
+      result.current.onPointerDown(down as unknown as React.PointerEvent);
+    });
+    expect(isPointerDragActive()).toBe(true);
+
+    act(() => {
+      window.dispatchEvent(cancel);
+    });
+
+    expect(isPointerDragActive()).toBe(false);
+    expect(onEnd).toHaveBeenCalledTimes(1);
+    expect(onEnd).toHaveBeenCalledWith(cancel);
+
+    act(() => {
+      window.dispatchEvent(cancel);
+    });
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
 });
