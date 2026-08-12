@@ -1,10 +1,21 @@
 use anyhow::Result;
 use serde::Serialize;
+use std::cell::RefCell;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, Once, OnceLock};
+use std::thread;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use windows::Win32::Foundation::HWND;
+use windows::Win32::System::Com::{
+    CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
+};
 use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId};
-use windows::Win32::UI::Accessibility::{SetWinEventHook, HWINEVENTHOOK};
+use windows::Win32::UI::Accessibility::{
+    CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationValuePattern, SetWinEventHook,
+    HWINEVENTHOOK, UIA_CONTROLTYPE_ID, UIA_ComboBoxControlTypeId, UIA_DocumentControlTypeId,
+    UIA_EditControlTypeId, UIA_TextControlTypeId, UIA_ValuePatternId,
+};
 use windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo, GetParent,
     GetWindowLongW, GetWindowThreadProcessId, IsWindow, IsWindowVisible, SetForegroundWindow,
@@ -16,6 +27,43 @@ static TARGET_HWND: Mutex<Option<usize>> = Mutex::new(None);
 static HOOK_ONCE: Once = Once::new();
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 static LAST_INPUT_FOCUSED: Mutex<Option<bool>> = Mutex::new(None);
+/// Coalesce deferred focus reevals; never call UIA inside a WinEvent hook.
+static REEVAL_WORKER_BUSY: AtomicBool = AtomicBool::new(false);
+static REEVAL_DIRTY: AtomicBool = AtomicBool::new(false);
+
+thread_local! {
+    static UIA_LOCAL: RefCell<Option<IUIAutomation>> = const { RefCell::new(None) };
+}
+
+/// Signals used to decide whether a UIA-focused control accepts text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UiaTextInputSignals {
+    pub control_type: i32,
+    pub value_writable: bool,
+    /// Chromium reports a page-level Document even when no text field is focused.
+    pub is_chromium_document: bool,
+}
+
+/// Pure classifier for UIA control signals (unit-tested without live UIA).
+pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
+    if signals.value_writable {
+        return true;
+    }
+    let ty = UIA_CONTROLTYPE_ID(signals.control_type);
+    if ty == UIA_EditControlTypeId || ty == UIA_TextControlTypeId {
+        return true;
+    }
+    if ty == UIA_DocumentControlTypeId {
+        // Word / editors: Document is the typing surface.
+        // Chromium page body is also Document — ignore unless ValuePattern is writable.
+        return !signals.is_chromium_document;
+    }
+    if ty == UIA_ComboBoxControlTypeId {
+        // Non-editable combo boxes are not text inputs; writable ValuePattern handled above.
+        return false;
+    }
+    false
+}
 
 #[derive(Debug, Clone, Serialize)]
 struct FocusChangedPayload {
@@ -189,8 +237,129 @@ fn hwnd_or_ancestor_is_editable(hwnd: HWND) -> bool {
     false
 }
 
+fn is_chromium_class(class: &str) -> bool {
+    let lower = class.to_ascii_lowercase();
+    lower.starts_with("chrome_") || lower.starts_with("chrome_widgetwin")
+}
+
+fn ensure_com_for_uia() {
+    // Per-thread: CoInitializeEx is required on each thread that uses COM/UIA.
+    // S_FALSE / RPC_E_CHANGED_MODE are fine if already initialized.
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+    }
+}
+
+fn with_uia<F, R>(f: F) -> Option<R>
+where
+    F: FnOnce(&IUIAutomation) -> R,
+{
+    UIA_LOCAL.with(|cell| {
+        let mut slot = cell.borrow_mut();
+        if slot.is_none() {
+            ensure_com_for_uia();
+            *slot = unsafe { CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER).ok() };
+        }
+        slot.as_ref().map(f)
+    })
+}
+
+fn uia_element_is_our_process(element: &IUIAutomationElement) -> bool {
+    unsafe {
+        match element.CurrentProcessId() {
+            Ok(pid) => pid as u32 == GetCurrentProcessId(),
+            Err(_) => false,
+        }
+    }
+}
+
+fn uia_element_native_class(element: &IUIAutomationElement) -> String {
+    unsafe {
+        let hwnd = element.CurrentNativeWindowHandle().unwrap_or_default();
+        if is_null(hwnd) {
+            String::new()
+        } else {
+            window_class_name(hwnd)
+        }
+    }
+}
+
+fn uia_element_value_writable(element: &IUIAutomationElement) -> bool {
+    unsafe {
+        let pattern = element
+            .GetCurrentPatternAs::<IUIAutomationValuePattern>(UIA_ValuePatternId)
+            .ok();
+        let Some(pattern) = pattern else {
+            return false;
+        };
+        match pattern.CurrentIsReadOnly() {
+            Ok(readonly) => !readonly.as_bool(),
+            Err(_) => false,
+        }
+    }
+}
+
+fn remember_hwnd_as_target(hwnd: HWND) {
+    if !is_valid_typing_target(hwnd) {
+        return;
+    }
+    if let Ok(mut target) = TARGET_HWND.lock() {
+        *target = Some(hwnd_to_usize(hwnd));
+    }
+}
+
+fn remember_uia_focus_target(element: &IUIAutomationElement) {
+    unsafe {
+        let hwnd = element.CurrentNativeWindowHandle().unwrap_or_default();
+        if !is_null(hwnd) {
+            // Prefer the native HWND; if it is a shell root, keep walking is unnecessary —
+            // is_valid_typing_target accepts non-shell HWNDs (e.g. Edit children).
+            if is_valid_typing_target(hwnd) {
+                remember_hwnd_as_target(hwnd);
+                return;
+            }
+        }
+        let fg = GetForegroundWindow();
+        if is_valid_typing_target(fg) {
+            remember_hwnd_as_target(fg);
+        }
+    }
+}
+
+fn uia_focused_is_text_input() -> Option<bool> {
+    with_uia(|automation| {
+        let element = unsafe { automation.GetFocusedElement().ok()? };
+        if uia_element_is_our_process(&element) {
+            return Some(false);
+        }
+        let control_type = unsafe { element.CurrentControlType().ok()?.0 };
+        let native_class = uia_element_native_class(&element);
+        let signals = UiaTextInputSignals {
+            control_type,
+            value_writable: uia_element_value_writable(&element),
+            is_chromium_document: is_chromium_class(&native_class),
+        };
+        let focused = uia_control_is_text_input(signals);
+        if focused {
+            remember_uia_focus_target(&element);
+        }
+        Some(focused)
+    })
+    .flatten()
+}
+
 /// True when an external app's focusable input-like control is active.
 fn is_editable_input_focused() -> bool {
+    // UI Automation covers WinUI / UWP / Search / Chromium inputs that lack
+    // classic Win32 Edit classes or hwndCaret.
+    if let Some(focused) = uia_focused_is_text_input() {
+        if focused {
+            return true;
+        }
+        // UIA answered "not a text field" — still allow Win32 heuristics below
+        // for apps with incomplete UIA trees (e.g. some legacy editors).
+    }
+
     unsafe {
         let fg = GetForegroundWindow();
         if !is_valid_typing_target(fg) {
@@ -243,6 +412,34 @@ fn reevaluate_input_focus() {
     publish_input_focus(is_editable_input_focused());
 }
 
+/// Schedule focus reevaluation off the WinEvent callback stack.
+/// Calling UI Automation inside a hook re-enters the message loop and can abort
+/// the process (STATUS_STACK_BUFFER_OVERRUN) — see GetFocusedElement crash.
+fn schedule_reevaluate_input_focus() {
+    REEVAL_DIRTY.store(true, Ordering::Release);
+    if REEVAL_WORKER_BUSY.swap(true, Ordering::AcqRel) {
+        return;
+    }
+    thread::spawn(|| {
+        loop {
+            // Leave the WinEvent / message-callback stack before touching UIA.
+            thread::sleep(Duration::from_millis(32));
+            REEVAL_DIRTY.store(false, Ordering::Release);
+            reevaluate_input_focus();
+            if !REEVAL_DIRTY.load(Ordering::Acquire) {
+                REEVAL_WORKER_BUSY.store(false, Ordering::Release);
+                // If a hook marked dirty after we cleared busy, start another worker.
+                if REEVAL_DIRTY.load(Ordering::Acquire)
+                    && !REEVAL_WORKER_BUSY.swap(true, Ordering::AcqRel)
+                {
+                    continue;
+                }
+                break;
+            }
+        }
+    });
+}
+
 unsafe extern "system" fn foreground_hook(
     _hook: HWINEVENTHOOK,
     event: u32,
@@ -263,7 +460,7 @@ unsafe extern "system" fn foreground_hook(
             *target = Some(hwnd_to_usize(hwnd));
         }
     }
-    reevaluate_input_focus();
+    schedule_reevaluate_input_focus();
 }
 
 unsafe extern "system" fn object_focus_hook(
@@ -302,7 +499,7 @@ unsafe extern "system" fn object_focus_hook(
             *target = Some(hwnd_to_usize(hwnd));
         }
     }
-    reevaluate_input_focus();
+    schedule_reevaluate_input_focus();
 }
 
 pub fn get_effective_input_hwnd() -> Option<HWND> {
@@ -406,18 +603,61 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::is_editable_class;
+    use super::{is_editable_class, uia_control_is_text_input, UiaTextInputSignals};
 
     #[test]
     fn editable_class_names_include_common_inputs() {
         assert!(is_editable_class("Edit"));
         assert!(is_editable_class("RichEdit20W"));
         assert!(is_editable_class("RICHEDIT50W"));
+        assert!(is_editable_class("RichEditD2DPT"));
         assert!(is_editable_class("Chrome_RenderWidgetHostHWND"));
         assert!(is_editable_class("Internet Explorer_Server"));
         assert!(is_editable_class("Scintilla"));
         assert!(!is_editable_class("Button"));
         assert!(!is_editable_class("Progman"));
         assert!(!is_editable_class("Shell_TrayWnd"));
+        assert!(!is_editable_class("Chrome_WidgetWin_1"));
+    }
+
+    #[test]
+    fn uia_edit_control_is_text_input() {
+        assert!(uia_control_is_text_input(UiaTextInputSignals {
+            control_type: 50004, // UIA_EditControlTypeId
+            value_writable: false,
+            is_chromium_document: false,
+        }));
+    }
+
+    #[test]
+    fn uia_writable_value_pattern_is_text_input() {
+        assert!(uia_control_is_text_input(UiaTextInputSignals {
+            control_type: 50000, // button / custom — ValuePattern decides
+            value_writable: true,
+            is_chromium_document: false,
+        }));
+    }
+
+    #[test]
+    fn uia_word_document_is_text_input_but_chromium_document_is_not() {
+        assert!(uia_control_is_text_input(UiaTextInputSignals {
+            control_type: 50030, // UIA_DocumentControlTypeId
+            value_writable: false,
+            is_chromium_document: false,
+        }));
+        assert!(!uia_control_is_text_input(UiaTextInputSignals {
+            control_type: 50030,
+            value_writable: false,
+            is_chromium_document: true,
+        }));
+    }
+
+    #[test]
+    fn uia_plain_button_is_not_text_input() {
+        assert!(!uia_control_is_text_input(UiaTextInputSignals {
+            control_type: 50000, // UIA_ButtonControlTypeId
+            value_writable: false,
+            is_chromium_document: false,
+        }));
     }
 }

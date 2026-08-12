@@ -72,25 +72,36 @@ let liveHeightRatioRaf: number | null = null;
 let liveHeightRatioPending: number | null = null;
 let liveHeightRatioInFlight = false;
 
+/** When a mini layout sync is requested during animation, retry after it finishes. */
+let pendingMiniLayoutSync: boolean | null = null;
+
 /**
  * Animate mini-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
+ * Always ends aligned with the latest `miniModeKeyboardVisible` (no squashed keyboard in FAB).
  */
 async function syncMiniModeWindowLayout(preferAnimate = true) {
-  const { settings, miniModeActive, miniModeKeyboardVisible, isAnimatingWindow } =
-    useAppStore.getState();
-  if (!miniModeActive || isAnimatingWindow) {
+  const state = useAppStore.getState();
+  if (!state.miniModeActive) {
+    pendingMiniLayoutSync = null;
     return;
   }
+  if (state.isAnimatingWindow) {
+    pendingMiniLayoutSync = preferAnimate;
+    return;
+  }
+
+  const visibleAtStart = state.miniModeKeyboardVisible;
   useAppStore.setState({ isAnimatingWindow: true });
   try {
+    const { settings } = useAppStore.getState();
     const args = {
       monitorId: settings.accessibilityMonitorId,
-      collapsed: !miniModeKeyboardVisible,
+      collapsed: !visibleAtStart,
       collapsedDictation: true,
       collapsedSettings: true,
       heightRatio: heightRatioFromSettings(settings),
       miniMode: true,
-      miniKeyboardVisible: miniModeKeyboardVisible,
+      miniKeyboardVisible: visibleAtStart,
       miniKeyboardHeightRatio: MINI_KEYBOARD_HEIGHT_RATIO,
     };
     if (preferAnimate) {
@@ -100,6 +111,17 @@ async function syncMiniModeWindowLayout(preferAnimate = true) {
     }
   } finally {
     useAppStore.setState({ isAnimatingWindow: false });
+    const latest = useAppStore.getState();
+    const queued = pendingMiniLayoutSync;
+    pendingMiniLayoutSync = null;
+    // Visibility changed mid-animation, or another sync was requested while busy.
+    if (
+      latest.miniModeActive &&
+      (queued !== null || latest.miniModeKeyboardVisible !== visibleAtStart)
+    ) {
+      const nextAnimate = queued ?? preferAnimate;
+      void syncMiniModeWindowLayout(nextAnimate);
+    }
   }
 }
 
