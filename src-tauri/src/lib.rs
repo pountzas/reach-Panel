@@ -1019,17 +1019,25 @@ fn cmd_get_stt_status(
     ))
 }
 
+/// Strict allowlist of Windows Settings pages this app may open.
+const ALLOWED_MS_SETTINGS_PAGES: &[&str] = &[
+    "ms-settings:privacy-speech",
+    "ms-settings:speech",
+];
+
 /// Opens a Windows Settings page (e.g. `ms-settings:privacy-speech`).
 #[tauri::command]
-fn cmd_open_windows_settings(uri: String) -> Result<(), String> {
-    if !uri.starts_with("ms-settings:") {
-        return Err("Only ms-settings: URIs are allowed".to_string());
+fn cmd_open_windows_settings(app: AppHandle, uri: String) -> Result<(), String> {
+    let trimmed = uri.trim();
+    if !ALLOWED_MS_SETTINGS_PAGES
+        .iter()
+        .any(|allowed| *allowed == trimmed)
+    {
+        return Err("Windows Settings page is not allowed".to_string());
     }
-    std::process::Command::new("cmd")
-        .args(["/C", "start", "", &uri])
-        .spawn()
-        .map_err(|e| format!("Failed to open Windows Settings: {e}"))?;
-    Ok(())
+    app.opener()
+        .open_url(trimmed, None::<&str>)
+        .map_err(|e| format!("Failed to open Windows Settings: {e}"))
 }
 
 #[tauri::command]
