@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use chrono::Utc;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -357,16 +357,7 @@ impl Database {
             return Ok(());
         }
 
-        let basic_cat: String = conn.query_row(
-            "SELECT id FROM phrase_categories WHERE profile_id = ?1 AND sort_order = 0 LIMIT 1",
-            [profile_id],
-            |r| r.get(0),
-        )?;
-        let emergency_cat: String = conn.query_row(
-            "SELECT id FROM phrase_categories WHERE profile_id = ?1 AND sort_order = 1 LIMIT 1",
-            [profile_id],
-            |r| r.get(0),
-        )?;
+        let (basic_cat, emergency_cat) = self.ensure_phrase_category_ids(conn, profile_id)?;
 
         for (text, action, fav, emergency) in phrases {
             let category = if *emergency {
@@ -389,6 +380,53 @@ impl Database {
             )?;
         }
         Ok(())
+    }
+
+    /// Profiles can exist without phrase categories (partial seed / older data).
+    /// Create Basic Needs (0) and Emergency (1) when missing so locale seeding cannot panic.
+    fn ensure_phrase_category_ids(
+        &self,
+        conn: &Connection,
+        profile_id: &str,
+    ) -> Result<(String, String)> {
+        let basic_cat: Option<String> = conn
+            .query_row(
+                "SELECT id FROM phrase_categories WHERE profile_id = ?1 AND sort_order = 0 LIMIT 1",
+                [profile_id],
+                |r| r.get(0),
+            )
+            .optional()?;
+        let emergency_cat: Option<String> = conn
+            .query_row(
+                "SELECT id FROM phrase_categories WHERE profile_id = ?1 AND sort_order = 1 LIMIT 1",
+                [profile_id],
+                |r| r.get(0),
+            )
+            .optional()?;
+
+        let basic_cat = match basic_cat {
+            Some(id) => id,
+            None => {
+                let id = Uuid::new_v4().to_string();
+                conn.execute(
+                    "INSERT INTO phrase_categories (id, profile_id, name, sort_order) VALUES (?1,?2,?3,?4)",
+                    params![id, profile_id, "Basic Needs", 0],
+                )?;
+                id
+            }
+        };
+        let emergency_cat = match emergency_cat {
+            Some(id) => id,
+            None => {
+                let id = Uuid::new_v4().to_string();
+                conn.execute(
+                    "INSERT INTO phrase_categories (id, profile_id, name, sort_order) VALUES (?1,?2,?3,?4)",
+                    params![id, profile_id, "Emergency", 1],
+                )?;
+                id
+            }
+        };
+        Ok((basic_cat, emergency_cat))
     }
 
     fn seed_if_empty(&self) -> Result<()> {
@@ -983,5 +1021,49 @@ impl Database {
             params![id, profile_id, settings_json],
         )?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn migrate_locale_phrases_tolerates_profile_without_categories() {
+        let dir = std::env::temp_dir().join(format!("reach-panel-db-test-{}", Uuid::new_v4()));
+        let db = Database::new(dir.clone()).expect("create db");
+        {
+            let conn = db.conn.lock().expect("lock");
+            conn.execute(
+                "INSERT INTO profiles (id, name, settings_json, created_at) VALUES (?1,?2,?3,?4)",
+                params![
+                    "orphan",
+                    "Orphan",
+                    "{}",
+                    "2020-01-01T00:00:00Z"
+                ],
+            )
+            .expect("insert orphan profile");
+        }
+        db.migrate()
+            .expect("migrate must not panic when categories are missing");
+        let conn = db.conn.lock().expect("lock");
+        let cats: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM phrase_categories WHERE profile_id = 'orphan'",
+                [],
+                |r| r.get(0),
+            )
+            .expect("count categories");
+        assert!(cats >= 2, "expected Basic Needs + Emergency categories");
+        let phrases: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM phrases WHERE profile_id = 'orphan' AND language = 'el'",
+                [],
+                |r| r.get(0),
+            )
+            .expect("count phrases");
+        assert!(phrases > 0, "expected locale phrases to be seeded");
+        let _ = std::fs::remove_dir_all(dir);
     }
 }
