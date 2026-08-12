@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde::Serialize;
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Mutex, Once, OnceLock};
+use std::sync::{Condvar, Mutex, Once, OnceLock};
 use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
@@ -28,8 +28,10 @@ static HOOK_ONCE: Once = Once::new();
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 static LAST_INPUT_FOCUSED: Mutex<Option<bool>> = Mutex::new(None);
 /// Coalesce deferred focus reevals; never call UIA inside a WinEvent hook.
-static REEVAL_WORKER_BUSY: AtomicBool = AtomicBool::new(false);
 static REEVAL_DIRTY: AtomicBool = AtomicBool::new(false);
+static REEVAL_WORKER: Once = Once::new();
+static REEVAL_LOCK: Mutex<()> = Mutex::new(());
+static REEVAL_CV: Condvar = Condvar::new();
 
 thread_local! {
     static UIA_LOCAL: RefCell<Option<IUIAutomation>> = const { RefCell::new(None) };
@@ -73,7 +75,7 @@ struct FocusChangedPayload {
 pub fn init(app: AppHandle) {
     let _ = APP_HANDLE.set(app);
     install_hooks();
-    reevaluate_input_focus();
+    schedule_reevaluate_input_focus();
 }
 
 fn install_hooks() {
@@ -238,8 +240,7 @@ fn hwnd_or_ancestor_is_editable(hwnd: HWND) -> bool {
 }
 
 fn is_chromium_class(class: &str) -> bool {
-    let lower = class.to_ascii_lowercase();
-    lower.starts_with("chrome_") || lower.starts_with("chrome_widgetwin")
+    class.to_ascii_lowercase().starts_with("chrome_")
 }
 
 fn ensure_com_for_uia() {
@@ -416,27 +417,31 @@ fn reevaluate_input_focus() {
 /// Calling UI Automation inside a hook re-enters the message loop and can abort
 /// the process (STATUS_STACK_BUFFER_OVERRUN) — see GetFocusedElement crash.
 fn schedule_reevaluate_input_focus() {
+    ensure_reeval_worker();
     REEVAL_DIRTY.store(true, Ordering::Release);
-    if REEVAL_WORKER_BUSY.swap(true, Ordering::AcqRel) {
-        return;
-    }
-    thread::spawn(|| {
-        loop {
-            // Leave the WinEvent / message-callback stack before touching UIA.
-            thread::sleep(Duration::from_millis(32));
-            REEVAL_DIRTY.store(false, Ordering::Release);
-            reevaluate_input_focus();
-            if !REEVAL_DIRTY.load(Ordering::Acquire) {
-                REEVAL_WORKER_BUSY.store(false, Ordering::Release);
-                // If a hook marked dirty after we cleared busy, start another worker.
-                if REEVAL_DIRTY.load(Ordering::Acquire)
-                    && !REEVAL_WORKER_BUSY.swap(true, Ordering::AcqRel)
-                {
-                    continue;
+    let _guard = REEVAL_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    REEVAL_CV.notify_one();
+}
+
+fn ensure_reeval_worker() {
+    REEVAL_WORKER.call_once(|| {
+        let _ = thread::Builder::new()
+            .name("focus-reeval".into())
+            .spawn(|| {
+                loop {
+                    {
+                        let guard = REEVAL_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+                        let _guard = REEVAL_CV
+                            .wait_while(guard, |_| !REEVAL_DIRTY.load(Ordering::Acquire))
+                            .unwrap_or_else(|e| e.into_inner());
+                    }
+                    // Leave the WinEvent / message-callback stack before touching UIA.
+                    // Debounce coalesces bursts onto this long-lived COM/UIA worker.
+                    thread::sleep(Duration::from_millis(32));
+                    REEVAL_DIRTY.store(false, Ordering::Release);
+                    reevaluate_input_focus();
                 }
-                break;
-            }
-        }
+            });
     });
 }
 
