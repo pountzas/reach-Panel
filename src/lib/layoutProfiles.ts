@@ -7,29 +7,25 @@ const LAYOUT_PARTIAL_KEYS = [
 ] as const satisfies ReadonlyArray<keyof AppSettings>;
 
 export function snapshotFromSettings(settings: AppSettings): LayoutSnapshot {
-  return {
-    sectionStack: settings.sectionStack,
-    inputRowRightRatio: settings.inputRowRightRatio,
-    windowHeightRatio: settings.windowHeightRatio,
-  };
+  // Build via Object.assign so union-keyed indexed writes stay assignable.
+  const snap: LayoutSnapshot = {};
+  for (const key of LAYOUT_PARTIAL_KEYS) {
+    Object.assign(snap, { [key]: settings[key] });
+  }
+  return snap;
 }
 
 export function applyLayoutSnapshot(
   settings: AppSettings,
   snap: LayoutSnapshot,
 ): AppSettings {
-  return {
-    ...settings,
-    ...(snap.sectionStack !== undefined
-      ? { sectionStack: snap.sectionStack }
-      : {}),
-    ...(snap.inputRowRightRatio !== undefined
-      ? { inputRowRightRatio: snap.inputRowRightRatio }
-      : {}),
-    ...(snap.windowHeightRatio !== undefined
-      ? { windowHeightRatio: snap.windowHeightRatio }
-      : {}),
-  };
+  const patch: Partial<AppSettings> = {};
+  for (const key of LAYOUT_PARTIAL_KEYS) {
+    if (snap[key] !== undefined) {
+      Object.assign(patch, { [key]: snap[key] });
+    }
+  }
+  return { ...settings, ...patch };
 }
 
 export function resolveActiveLayout(
