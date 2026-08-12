@@ -162,6 +162,8 @@ export interface MonitorInfo {
   is_primary: boolean;
   /** Set by backend when this entry overlaps another monitor ≥90% (Windows mirror duplicate). */
   is_mirror_duplicate?: boolean;
+  /** Effective DPI scale (96 DPI = 1.0). Physical work-area → logical for Tauri placement. */
+  scale_factor?: number;
 }
 
 export interface CommandResult {

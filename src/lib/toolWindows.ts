@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { monitorsOverlap } from "./miniMode";
 import type { MonitorInfo } from "./types";
 
 export const TOOL_WINDOW_LABELS = [
@@ -34,6 +34,12 @@ export function isToolWindowLabel(label: string): label is ToolWindowLabel {
   return (TOOL_WINDOW_LABELS as readonly string[]).includes(label);
 }
 
+/** Prefer the monitor's reported DPI scale; fall back to 1 when missing/invalid. */
+export function resolveMonitorScaleFactor(monitor: MonitorInfo): number {
+  const scale = monitor.scale_factor;
+  return scale != null && scale > 0 ? scale : 1;
+}
+
 /**
  * Win32 monitor rects are physical pixels; Tauri WebviewWindow x/y/size are
  * logical. Convert + center, clamping so the window stays on the work area.
@@ -42,7 +48,7 @@ export function centerOnMonitor(
   monitor: MonitorInfo,
   width: number,
   height: number,
-  scaleFactor = 1,
+  scaleFactor = resolveMonitorScaleFactor(monitor),
 ): { x: number; y: number; width: number; height: number } {
   const scale = scaleFactor > 0 ? scaleFactor : 1;
   const mx = monitor.x / scale;
@@ -80,9 +86,9 @@ export function resolveToolWindowMonitor(
     return candidate;
   }
 
-  // Mirrored duplicate group: pick primary if it overlaps, else largest area.
+  // Only monitors that geometrically overlap this candidate (not every mirror flag).
   const overlapping = monitors.filter(
-    (m) => m.id === candidate.id || m.is_mirror_duplicate,
+    (m) => m.id === candidate.id || monitorsOverlap(m, candidate),
   );
   return (
     overlapping.find((m) => m.is_primary) ??
@@ -105,15 +111,6 @@ async function getMonitors(): Promise<MonitorInfo[]> {
     return await invoke<MonitorInfo[]>("cmd_list_monitors");
   } catch {
     return [];
-  }
-}
-
-async function getUiScaleFactor(): Promise<number> {
-  try {
-    const factor = await getCurrentWindow().scaleFactor();
-    return factor > 0 ? factor : 1;
-  } catch {
-    return 1;
   }
 }
 
@@ -140,12 +137,11 @@ async function resolvePlacement(optionsMonitor?: MonitorInfo): Promise<{
     ? resolveToolWindowMonitor(monitors, optionsMonitor.id) ?? optionsMonitor
     : await resolveMainWindowMonitor(monitors);
   if (!monitor) return null;
-  const scaleFactor = await getUiScaleFactor();
   return centerOnMonitor(
     monitor,
     TOOL_WINDOW_SIZE.width,
     TOOL_WINDOW_SIZE.height,
-    scaleFactor,
+    resolveMonitorScaleFactor(monitor),
   );
 }
 

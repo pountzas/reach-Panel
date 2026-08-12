@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { useTranslation } from "../../hooks/useTranslation";
 import { getSurfaceColors } from "../../lib/colorProfiles";
@@ -18,11 +25,20 @@ interface UpdatePromptProps {
   onDismiss: () => void;
 }
 
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 function formatProgress(progress: UpdateProgress): number {
   if (!progress.contentLength || progress.contentLength <= 0) {
     return 0;
   }
   return Math.min(100, Math.round((progress.downloaded / progress.contentLength) * 100));
+}
+
+function focusableElements(root: HTMLElement): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (el) => el.getClientRects().length > 0,
+  );
 }
 
 export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
@@ -31,6 +47,8 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
   const surface = getSurfaceColors(settings.appBgColor);
   const headerBg = settings.headerBgColor ?? "#1e293b";
   const headerText = settings.headerTextColor ?? "#ffffff";
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<PromptState>("prompt");
   const [currentVersion, setCurrentVersion] = useState("");
   const [progress, setProgress] = useState<UpdateProgress>({
@@ -41,6 +59,49 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
   useEffect(() => {
     void getCurrentAppVersion().then(setCurrentVersion);
   }, []);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const initial = focusableElements(panel)[0] ?? panel;
+    initial.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (state === "downloading") return;
+        event.preventDefault();
+        event.stopPropagation();
+        onDismiss();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const items = focusableElements(panel);
+      if (items.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      previouslyFocused?.focus?.();
+    };
+  }, [onDismiss, state]);
 
   const handleInstall = useCallback(async () => {
     setState("downloading");
@@ -81,8 +142,20 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-2xl p-5" style={panelStyle}>
-        <h2 className="text-lg font-bold" style={{ color: surface.panelText }}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="w-full max-w-md rounded-2xl p-5 outline-none"
+        style={panelStyle}
+      >
+        <h2
+          id={titleId}
+          className="text-lg font-bold"
+          style={{ color: surface.panelText }}
+        >
           {t("updateAvailable")}
         </h2>
 

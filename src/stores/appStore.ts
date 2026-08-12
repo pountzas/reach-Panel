@@ -133,17 +133,45 @@ async function syncMiniModeWindowLayout(preferAnimate = true) {
 
 /**
  * Expand collapsed / mini FAB so UpdatePrompt has a usable window size.
+ * Waits out in-flight window animation so expand/uncollapse is not no-op'd.
  */
+async function waitForWindowAnimationIdle(
+  get: () => AppStore,
+  timeoutMs = 4000,
+): Promise<void> {
+  const started = Date.now();
+  while (get().isAnimatingWindow) {
+    if (Date.now() - started >= timeoutMs) return;
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 32);
+    });
+  }
+}
+
 async function ensureUpdatePromptVisible(get: () => AppStore) {
+  await waitForWindowAnimationIdle(get);
   const state = get();
   if (state.miniModeActive) {
     if (!state.miniModeKeyboardVisible) {
       await state.expandMiniModeKeyboard();
+      // Animation may have started after we checked; retry once if expand no-op'd.
+      if (!get().miniModeKeyboardVisible) {
+        await waitForWindowAnimationIdle(get);
+        if (!get().miniModeKeyboardVisible) {
+          await get().expandMiniModeKeyboard();
+        }
+      }
     }
     return;
   }
   if (state.settings.collapsed) {
     await state.toggleCollapsed();
+    if (get().settings.collapsed) {
+      await waitForWindowAnimationIdle(get);
+      if (get().settings.collapsed) {
+        await get().toggleCollapsed();
+      }
+    }
   }
 }
 

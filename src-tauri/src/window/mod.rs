@@ -11,6 +11,8 @@ pub struct MonitorInfo {
     pub is_primary: bool,
     /// True when this monitor's work area overlaps another by ≥90% (mirrored duplicate).
     pub is_mirror_duplicate: bool,
+    /// Effective DPI scale (96 DPI = 1.0). Used to convert physical work-area coords to logical.
+    pub scale_factor: f64,
 }
 
 /// Fraction of the smaller monitor area that must overlap to count as mirrored.
@@ -256,6 +258,7 @@ mod tests {
             height: h,
             is_primary: id == 0,
             is_mirror_duplicate: false,
+            scale_factor: 1.0,
         }
     }
 

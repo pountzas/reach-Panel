@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   centerOnMonitor,
+  resolveMonitorScaleFactor,
   resolveToolWindowMonitor,
   TOOL_WINDOW_SIZE,
 } from "./toolWindows";
@@ -35,6 +36,22 @@ describe("centerOnMonitor", () => {
       2,
     );
     expect(placed).toEqual({ x: 510, y: 190, width: 900, height: 700 });
+  });
+
+  it("uses the selected monitor scale_factor when current-window DPI would differ", () => {
+    // Secondary touchscreen @ 150% while main window might still be on a 100% display.
+    const m = monitor({
+      id: 1,
+      x: 1920,
+      y: 0,
+      width: 2880,
+      height: 1800,
+      scale_factor: 1.5,
+    });
+    const placed = centerOnMonitor(m, TOOL_WINDOW_SIZE.width, TOOL_WINDOW_SIZE.height);
+    expect(resolveMonitorScaleFactor(m)).toBe(1.5);
+    // logical work area 1920×1200
+    expect(placed).toEqual({ x: 1280 + 510, y: 250, width: 900, height: 700 });
   });
 
   it("clamps window size to fit a small logical work area", () => {
@@ -84,6 +101,45 @@ describe("resolveToolWindowMonitor", () => {
         is_mirror_duplicate: true,
       }),
     ];
+    expect(resolveToolWindowMonitor(monitors, 1)?.id).toBe(0);
+  });
+
+  it("does not pick a monitor from a separated mirrored group", () => {
+    // Two independent mirror pairs on different desks / virtual spaces.
+    const monitors = [
+      monitor({
+        id: 0,
+        is_primary: true,
+        is_mirror_duplicate: true,
+        width: 1920,
+        height: 1080,
+      }),
+      monitor({
+        id: 1,
+        is_mirror_duplicate: true,
+        width: 1280,
+        height: 720,
+      }),
+      monitor({
+        id: 2,
+        x: 5000,
+        y: 0,
+        is_mirror_duplicate: true,
+        width: 2560,
+        height: 1440,
+      }),
+      monitor({
+        id: 3,
+        x: 5000,
+        y: 0,
+        is_mirror_duplicate: true,
+        width: 1920,
+        height: 1080,
+      }),
+    ];
+    // Candidate is id 3 in the second group — must stay in that group (largest: id 2).
+    expect(resolveToolWindowMonitor(monitors, 3)?.id).toBe(2);
+    // Candidate is id 1 in the first group — prefer primary id 0, never id 2/3.
     expect(resolveToolWindowMonitor(monitors, 1)?.id).toBe(0);
   });
 
