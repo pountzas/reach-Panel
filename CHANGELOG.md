@@ -5,6 +5,24 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.2 (2026-08-01)
+
+## What's Changed
+* fix(security): harden CSP, asset scope, and IPC file/launch paths by @pountzas in https://github.com/pountzas/reach-Panel/pull/88
+* perf: cut IPC storm from keyboard poll, trackpad, and head tracking by @pountzas in https://github.com/pountzas/reach-Panel/pull/89
+* fix: unblock Tokio/IPC for speak, macros, STT, and native dialogs by @pountzas in https://github.com/pountzas/reach-Panel/pull/90
+* fix: stop profile settings from resetting on startup and switch by @pountzas in https://github.com/pountzas/reach-Panel/pull/91
+* feat: add classical songs and partiture lesson layout by @pountzas in https://github.com/pountzas/reach-Panel/pull/92
+* feat: enhance predictive text with offline word packs by @pountzas in https://github.com/pountzas/reach-Panel/pull/93
+* Dev by @pountzas in https://github.com/pountzas/reach-Panel/pull/95
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.6.1...v0.6.2
+
+## 0.6.1 (2026-07-31)
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.6.0...v0.6.1
+
 ## 0.6.0 (2026-07-31)
 
 ## What's Changed

@@ -397,6 +397,8 @@ function parseSettings(json: string): AppSettings {
     const uiLanguage = parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
     // Older profile files may omit keys that previously defaulted to "on".
     // Keep that behavior for existing installs; new profiles write explicit values.
+    // Keep predictionEnabled and suggestionsVisible independent so Mini Mode can
+    // show the "predictions off / enable" bar while the suggestions strip stays visible.
     const legacyFill: Partial<AppSettings> = {
       predictionEnabled: parsed.predictionEnabled ?? true,
       quickActionsVisible: parsed.quickActionsVisible ?? true,
@@ -840,6 +842,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (uiLanguageChanged) {
       set({ typedBuffer: "", suggestions: [] });
       await get().loadPhrases();
+      await get().loadSuggestions();
+    }
+    if (
+      partial.predictionEnabled !== undefined ||
+      partial.suggestionsVisible !== undefined
+    ) {
       await get().loadSuggestions();
     }
     {

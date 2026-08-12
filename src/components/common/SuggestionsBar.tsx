@@ -1,5 +1,7 @@
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+import { getSurfaceColors } from "../../lib/colorProfiles";
+import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 import { isTransparentUiActive, transparentOutlineStyle } from "../../lib/miniMode";
 
 export function SuggestionsBar() {
@@ -10,12 +12,22 @@ export function SuggestionsBar() {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const { t } = useTranslation();
   const transparent = isTransparentUiActive(settings, miniModeActive);
+  const surface = getSurfaceColors(settings.appBgColor);
+  const chipBgColor = settings.keyboardKeyColor ?? "#f3f4f6";
+  const chipTextColor = settings.keyTextColor ?? "#374151";
   const labelStyle = transparent
     ? { color: "#f8fafc", textShadow: "0 1px 2px rgba(0,0,0,0.8)" }
     : undefined;
-  const chipStyle = transparent
+  const transparentChipStyle = transparent
     ? transparentOutlineStyle({ color: "#f8fafc" })
     : undefined;
+  const themedChipStyle = transparent
+    ? undefined
+    : {
+        backgroundColor: chipBgColor,
+        color: chipTextColor,
+        borderColor: surface.panelBorder,
+      };
 
   if (!settings.predictionEnabled && suggestions.length === 0) {
     return (
@@ -31,8 +43,12 @@ export function SuggestionsBar() {
         </span>
         <button
           type="button"
-          className={`shrink-0 text-xs ${transparent ? "rounded-full px-2 py-0.5 font-medium" : "text-blue-600"}`}
-          style={chipStyle}
+          className={
+            transparent
+              ? "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+              : `${PRESSABLE_BUTTON_CLASS} shrink-0 rounded-full px-2 py-0.5 text-xs font-medium`
+          }
+          style={transparent ? transparentChipStyle : themedChipStyle}
           onClick={() => updateSettings({ predictionEnabled: true })}
         >
           {t("enable")}
@@ -59,9 +75,9 @@ export function SuggestionsBar() {
           className={
             transparent
               ? "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium"
-              : "shrink-0 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+              : `${PRESSABLE_BUTTON_CLASS} shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium`
           }
-          style={chipStyle}
+          style={transparent ? transparentChipStyle : themedChipStyle}
           onClick={() => applySuggestion(word)}
         >
           {word}
@@ -69,8 +85,12 @@ export function SuggestionsBar() {
       ))}
       <button
         type="button"
-        className={`shrink-0 text-xs ${transparent ? "rounded-full px-2 py-0.5 font-medium" : "text-slate-500"}`}
-        style={transparent ? chipStyle : undefined}
+        className={
+          transparent
+            ? "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+            : "shrink-0 text-xs text-slate-500"
+        }
+        style={transparent ? transparentChipStyle : undefined}
         onClick={() => updateSettings({ predictionEnabled: false })}
       >
         {t("turnOff")}
