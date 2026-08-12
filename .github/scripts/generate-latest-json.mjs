@@ -32,11 +32,25 @@ function addPlatform(platforms, platformKey, installerPath, sigPath) {
 
 const platforms = {};
 
+// Bare key: fallback for older clients and unknown bundle types.
 addPlatform(
   platforms,
   "windows-x86_64",
   process.env.WINDOWS_INSTALLER,
   process.env.WINDOWS_SIG,
+);
+// Prefixed key: tauri-plugin-updater ≥2.10 resolves NSIS installs here first.
+addPlatform(
+  platforms,
+  "windows-x86_64-nsis",
+  process.env.WINDOWS_INSTALLER,
+  process.env.WINDOWS_SIG,
+);
+addPlatform(
+  platforms,
+  "windows-x86_64-msi",
+  process.env.WINDOWS_MSI,
+  process.env.WINDOWS_MSI_SIG,
 );
 
 if (Object.keys(platforms).length === 0) {

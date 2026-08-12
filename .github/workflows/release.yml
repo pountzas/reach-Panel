@@ -109,7 +109,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          persist-credentials: false
+          # Push updater/latest.json back to main for the raw.githubusercontent.com endpoint.
+          persist-credentials: true
+          fetch-depth: 0
 
       - name: Download Windows updater artifact
         uses: actions/download-artifact@v8
@@ -136,3 +138,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ needs.release-please.outputs.tag_name }}" latest.json --clobber
+
+      # raw.githubusercontent.com is more reliable than /releases/latest/download for some networks.
+      - name: Publish latest.json for raw.githubusercontent.com endpoint
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p updater
+          cp latest.json updater/latest.json
+          git add updater/latest.json
+          if git diff --cached --quiet; then
+            echo "updater/latest.json unchanged"
+            exit 0
+          fi
+          git commit -m "chore: sync updater/latest.json for ${{ needs.release-please.outputs.tag_name }}"
+          git push origin main

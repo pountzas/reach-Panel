@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Update } from "@tauri-apps/plugin-updater";
-import { checkForUpdate } from "../lib/updater";
+import { checkForUpdate, formatUpdateCheckError } from "../lib/updater";
 import {
   DEFAULT_PHYSICAL_KEY_STATE,
   type InputMethod,
@@ -420,6 +420,8 @@ interface AppStore {
   isAnimatingWindow: boolean;
   pendingUpdate: Update | null;
   updateCheckStatus: "idle" | "checking" | "upToDate" | "error";
+  /** Populated when updateCheckStatus is "error". */
+  updateCheckError: string | null;
   setPendingUpdate: (update: Update | null) => void;
   checkForUpdates: () => Promise<void>;
 }
@@ -656,6 +658,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
+  updateCheckError: null,
 
   setPendingUpdate: (update) => {
     set({ pendingUpdate: update });
@@ -667,17 +670,30 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   checkForUpdates: async () => {
-    set({ updateCheckStatus: "checking" });
+    set({ updateCheckStatus: "checking", updateCheckError: null });
     try {
       const update = await checkForUpdate();
       if (update) {
-        set({ pendingUpdate: update, updateCheckStatus: "idle" });
+        set({
+          pendingUpdate: update,
+          updateCheckStatus: "idle",
+          updateCheckError: null,
+        });
         void ensureUpdatePromptVisible(get);
       } else {
-        set({ pendingUpdate: null, updateCheckStatus: "upToDate" });
+        set({
+          pendingUpdate: null,
+          updateCheckStatus: "upToDate",
+          updateCheckError: null,
+        });
       }
-    } catch {
-      set({ updateCheckStatus: "error" });
+    } catch (error) {
+      console.error("Update check failed", error);
+      set({
+        pendingUpdate: null,
+        updateCheckStatus: "error",
+        updateCheckError: formatUpdateCheckError(error),
+      });
     }
     void get().syncWindowFocusable();
   },
