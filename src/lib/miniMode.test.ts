@@ -5,7 +5,9 @@ import {
   isMiniModeEligible,
   isTransparentUiActive,
   monitorsOverlap,
+  nextTransparentKeyColor,
   resolveMiniModeEnabled,
+  transparentKeyPalette,
   transparentOutlineStyle,
 } from "./miniMode";
 
@@ -105,5 +107,25 @@ describe("miniMode", () => {
     expect(style.border).toContain("rgba(255,255,255");
     expect(style.textShadow).toContain("rgba(0,0,0");
     expect(style.color).toBe("#0f172a");
+  });
+
+  it("transparentOutlineStyle uses selected outline palette", () => {
+    const style = transparentOutlineStyle({ outlineColor: "silver" });
+    expect(style.border).toContain("#c0c0c0");
+    expect(style.color).toBe("#c0c0c0");
+  });
+
+  it("cycles transparent key colors", () => {
+    expect(nextTransparentKeyColor("white")).toBe("dark-gray");
+    expect(nextTransparentKeyColor("dark-gray")).toBe("silver");
+    expect(nextTransparentKeyColor("silver")).toBe("white");
+    expect(nextTransparentKeyColor(undefined)).toBe("dark-gray");
+  });
+
+  it("maps transparent key palette colors", () => {
+    expect(transparentKeyPalette("dark-gray")).toEqual({
+      border: "#4b5563",
+      text: "#4b5563",
+    });
   });
 });

@@ -45,6 +45,14 @@ export const de: Record<keyof typeof en, string> = {
   miniModeTransparentDescription:
     "Tasten nur mit Umrissen anzeigen, damit Apps darunter sichtbar bleiben.",
 
+  transparentKeyColor: "Farbe der transparenten Tasten",
+
+  transparentKeyColorWhite: "Weiß",
+
+  transparentKeyColorDarkGray: "Dunkelgrau",
+
+  transparentKeyColorSilver: "Silber",
+
   miniModeCollapse: "Zurück zum Mini-Modus",
 
   largeHeaders: "Große Header für einfacheres Ändern der Größe",

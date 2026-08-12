@@ -2,7 +2,7 @@ import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
-import { isTransparentUiActive, transparentOutlineStyle } from "../../lib/miniMode";
+import { isTransparentUiActive, transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
 
 export function SuggestionsBar() {
   const suggestions = useAppStore((s) => s.suggestions);
@@ -12,14 +12,18 @@ export function SuggestionsBar() {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const { t } = useTranslation();
   const transparent = isTransparentUiActive(settings, miniModeActive);
+  const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
   const surface = getSurfaceColors(settings.appBgColor);
   const chipBgColor = settings.keyboardKeyColor ?? "#f3f4f6";
   const chipTextColor = settings.keyTextColor ?? "#374151";
   const labelStyle = transparent
-    ? { color: "#f8fafc", textShadow: "0 1px 2px rgba(0,0,0,0.8)" }
+    ? { color: transparentPalette.text, textShadow: "0 1px 2px rgba(0,0,0,0.8)" }
     : undefined;
   const transparentChipStyle = transparent
-    ? transparentOutlineStyle({ color: "#f8fafc" })
+    ? transparentOutlineStyle({
+        color: transparentPalette.text,
+        outlineColor: settings.transparentKeyColor,
+      })
     : undefined;
   const themedChipStyle = transparent
     ? undefined

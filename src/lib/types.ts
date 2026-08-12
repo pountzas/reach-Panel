@@ -12,6 +12,8 @@ export type FnKeyMode = "one-shot" | "latched";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
 /** On-screen key arrangement; `auto` follows the active Windows keyboard layout. */
 export type OnscreenLayout = "auto" | "QWERTY" | "QWERTZ" | "AZERTY" | "Greek";
+/** Outline/label palette for transparent mini-mode keyboard. */
+export type TransparentKeyColor = "white" | "dark-gray" | "silver";
 
 export type PointerInputKind = "touch" | "mouse";
 
@@ -89,6 +91,8 @@ export interface AppSettings {
   /** null = auto, true = force on, false = force off */
   miniModeOverride?: boolean | null;
   miniModeTransparent?: boolean;
+  /** Outline/label color when transparent keyboard is active. */
+  transparentKeyColor?: TransparentKeyColor;
   touchLayout?: LayoutSnapshot;
   mouseLayout?: LayoutSnapshot;
 }
@@ -209,4 +213,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   inputAreaCompact: false,
   mouseBottomRowVisible: true,
   largeHeaders: false,
+  transparentKeyColor: "white",
 };

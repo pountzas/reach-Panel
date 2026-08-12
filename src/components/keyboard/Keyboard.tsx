@@ -17,7 +17,7 @@ import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
-import { isTransparentUiActive } from "../../lib/miniMode";
+import { isTransparentUiActive, transparentKeyPalette } from "../../lib/miniMode";
 import type { OnscreenLayout } from "../../lib/types";
 
 export function Keyboard() {
@@ -64,6 +64,10 @@ export function Keyboard() {
   const fontSize = settings.keyboardFontSize ?? 18;
   const typingLocale = settings.typingLanguage || "en";
   const transparent = isTransparentUiActive(settings, miniModeActive);
+  const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
+  const keyTextColor = transparent
+    ? transparentPalette.text
+    : (settings.keyTextColor ?? "#1e293b");
 
   const clearModifiersAfterKey = (usedFn: boolean) => {
     if (settings.fnKeyMode === "latched") {
@@ -185,9 +189,10 @@ export function Keyboard() {
                   spacing={spacing}
                   fontSize={fontSize}
                   bgColor={settings.keyboardKeyColor ?? "#ffffff"}
-                  textColor={settings.keyTextColor ?? "#1e293b"}
+                  textColor={keyTextColor}
                   stretch
                   transparent={transparent}
+                  outlineColor={settings.transparentKeyColor}
                   active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
                   onPress={() => handleKey(k)}
                 />
@@ -219,7 +224,7 @@ export function Keyboard() {
                     }}
                     onClose={() => setLanguagePickerOpen(false)}
                     fontSize={fontSize}
-                    textColor={settings.keyTextColor ?? "#1e293b"}
+                    textColor={keyTextColor}
                     bgColor={settings.keyboardKeyColor ?? "#ffffff"}
                     mutedColor="#94a3b8"
                     languageSectionLabel={t("typingLanguage")}
@@ -240,9 +245,10 @@ export function Keyboard() {
                     spacing={0}
                     fontSize={fontSize}
                     bgColor={settings.keyboardKeyColor ?? "#ffffff"}
-                    textColor={settings.keyTextColor ?? "#1e293b"}
+                    textColor={keyTextColor}
                     stretch
                     transparent={transparent}
+                    outlineColor={settings.transparentKeyColor}
                     active={languagePickerOpen}
                     onPress={() => handleKey(k)}
                   />

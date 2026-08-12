@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 import { transparentOutlineStyle } from "../../lib/miniMode";
 import { usePressableButton } from "../../hooks/usePressableButton";
+import type { TransparentKeyColor } from "../../lib/types";
 
 interface KeyButtonProps {
   label: ReactNode;
@@ -17,6 +18,7 @@ interface KeyButtonProps {
   gridRow?: string;
   /** Mini-mode transparent outlined key styling. */
   transparent?: boolean;
+  outlineColor?: TransparentKeyColor | string | null;
   onPress: () => void;
 }
 
@@ -33,6 +35,7 @@ export function KeyButton({
   gridColumn,
   gridRow,
   transparent = false,
+  outlineColor,
   onPress,
 }: KeyButtonProps) {
   const { pressedClass, pointerHandlers } = usePressableButton(active ?? false);
@@ -40,7 +43,11 @@ export function KeyButton({
 
   const sharedStyle = transparent
     ? {
-        ...transparentOutlineStyle({ active, color: textColor }),
+        ...transparentOutlineStyle({
+          active,
+          outlineColor,
+          color: textColor,
+        }),
         fontSize,
       }
     : {

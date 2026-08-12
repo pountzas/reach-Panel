@@ -10,7 +10,7 @@ import {
   type ColorProfileId,
   type SurfaceColors,
 } from "../../lib/colorProfiles";
-import type { FnKeyMode, OnscreenLayout } from "../../lib/types";
+import type { FnKeyMode, OnscreenLayout, TransparentKeyColor } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
 import { ONSCREEN_LAYOUT_OPTIONS } from "../../lib/keyboardLayouts";
@@ -18,11 +18,19 @@ import { SettingsSection } from "./SettingsSection";
 import { AboutSection } from "./AboutSection";
 import { CloseIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
+import { ToolWindowHeader } from "../common/ToolWindowHeader";
+import { TRANSPARENT_KEY_COLORS } from "../../lib/miniMode";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
   "dark-grey": "colorProfileDarkGrey",
   custom: "colorProfileCustom",
+};
+
+const TRANSPARENT_KEY_COLOR_LABEL_KEYS: Record<TransparentKeyColor, TranslationKey> = {
+  white: "transparentKeyColorWhite",
+  "dark-gray": "transparentKeyColorDarkGray",
+  silver: "transparentKeyColorSilver",
 };
 
 function fieldStyle(surface: SurfaceColors): CSSProperties {
@@ -104,18 +112,21 @@ function ThemedSelect({
   surface,
   children,
   className = "mt-1 w-full rounded border px-2 py-1.5 text-sm",
+  disabled = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   surface: SurfaceColors;
   children: ReactNode;
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <select
       className={className}
       style={fieldStyle(surface)}
       value={value}
+      disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
     >
       {children}
@@ -333,20 +344,21 @@ export function SettingsPanel() {
       className="flex h-full w-full flex-col overflow-hidden"
       style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
     >
-      <div
+      <ToolWindowHeader
         className="flex shrink-0 items-center justify-between px-5 py-3"
         style={{ backgroundColor: headerBg, color: headerText }}
-      >
-        <h2 className="text-lg font-bold">{t("settings")}</h2>
-        <IconActionButton
-          label={t("close")}
-          onClick={() => setShowSettings(false)}
-          className="rounded bg-white/20 hover:bg-white/30"
-          tooltipPlacement="below"
-        >
-          <CloseIcon />
-        </IconActionButton>
-      </div>
+        title={t("settings")}
+        actions={
+          <IconActionButton
+            label={t("close")}
+            onClick={() => setShowSettings(false)}
+            className="rounded bg-white/20 hover:bg-white/30"
+            tooltipPlacement="below"
+          >
+            <CloseIcon />
+          </IconActionButton>
+        }
+      />
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
           <SettingsSection title={t("profile")} surface={surface}>
@@ -501,6 +513,34 @@ export function SettingsPanel() {
               >
                 {t("miniModeTransparentDescription")}
               </p>
+              {Boolean(settings.miniModeTransparent) && (
+                <label
+                  className="mt-2 block text-sm"
+                  style={{
+                    color: surface.panelText,
+                    opacity: miniModeActive ? 1 : 0.5,
+                  }}
+                >
+                  {t("transparentKeyColor")}
+                  <ThemedSelect
+                    value={settings.transparentKeyColor ?? "white"}
+                    disabled={!miniModeActive}
+                    onChange={(value) =>
+                      updateSettings({
+                        transparentKeyColor: value as TransparentKeyColor,
+                      })
+                    }
+                    surface={surface}
+                    className="mt-1 w-full rounded border px-2 py-2 text-sm"
+                  >
+                    {TRANSPARENT_KEY_COLORS.map((id) => (
+                      <option key={id} value={id}>
+                        {t(TRANSPARENT_KEY_COLOR_LABEL_KEYS[id])}
+                      </option>
+                    ))}
+                  </ThemedSelect>
+                </label>
+              )}
             </div>
           </SettingsSection>
 

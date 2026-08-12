@@ -48,6 +48,14 @@ export const el: Record<keyof typeof en, string> = {
   miniModeTransparentDescription:
     "Εμφάνιση πλήκτρων μόνο με περίγραμμα ώστε να φαίνονται οι εφαρμογές από πίσω.",
 
+  transparentKeyColor: "Χρώμα διαφανών πλήκτρων",
+
+  transparentKeyColorWhite: "Λευκό",
+
+  transparentKeyColorDarkGray: "Σκούρο γκρι",
+
+  transparentKeyColorSilver: "Ασημί",
+
   miniModeCollapse: "Επιστροφή στη λειτουργία Mini",
 
   largeHeaders: "Μεγάλα headers για εύκολη αλλαγή μεγέθους",

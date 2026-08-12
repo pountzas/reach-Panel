@@ -4,8 +4,11 @@ import { v4 as uuidv4 } from "../../lib/uuid";
 import { useAppStore, getMacroSteps } from "../../stores/appStore";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import { INTERNAL_PROFILE_ID, type MacroDef, type MacroStep } from "../../lib/types";
+import { ToolWindowHeader } from "../common/ToolWindowHeader";
+import { useTranslation } from "../../hooks/useTranslation";
 
 export function MacroBuilder() {
+  const { t } = useTranslation();
   const {
     macros,
     settings,
@@ -102,19 +105,19 @@ export function MacroBuilder() {
       className="flex h-full w-full flex-col overflow-hidden"
       style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
     >
-      <div
-        className="flex shrink-0 items-center justify-between px-4 py-3"
+      <ToolWindowHeader
         style={{ backgroundColor: headerBg, color: headerText }}
-      >
-        <h2 className="text-lg font-bold">Macro Builder</h2>
-        <button
-          type="button"
-          className="rounded bg-white/20 px-3 py-1 text-sm hover:bg-white/30"
-          onClick={() => setShowMacroBuilder(false)}
-        >
-          Close
-        </button>
-      </div>
+        title="Macro Builder"
+        actions={
+          <button
+            type="button"
+            className="rounded bg-white/20 px-3 py-1 text-sm hover:bg-white/30"
+            onClick={() => setShowMacroBuilder(false)}
+          >
+            {t("close")}
+          </button>
+        }
+      />
 
       <div
         className="min-h-0 flex-1 overflow-y-auto p-4"
