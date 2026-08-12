@@ -75,6 +75,11 @@ let liveHeightRatioInFlight = false;
 /** When a mini layout sync is requested during animation, retry after it finishes. */
 let pendingMiniLayoutSync: boolean | null = null;
 
+/** Coalesce rapid touch↔mouse pointerdowns before switching layout profiles. */
+const POINTER_INPUT_KIND_DEBOUNCE_MS = 50;
+let pendingPointerInputKind: PointerInputKind | null = null;
+let pointerInputKindDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 /**
  * Animate mini-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
  * Always ends aligned with the latest `miniModeKeyboardVisible` (no squashed keyboard in FAB).
@@ -842,9 +847,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const visibilityChanged =
         partial.phrasesVisible !== undefined ||
         partial.quickActionsVisible !== undefined;
-      const miniModeSettingChanged =
-        partial.miniModeOverride !== undefined ||
-        partial.miniModeTransparent !== undefined;
+      // Transparent is CSS-only; do not trigger mini layout refresh/animation.
+      const miniModeSettingChanged = partial.miniModeOverride !== undefined;
       if (miniModeSettingChanged || partial.accessibilityMonitorId !== undefined) {
         await refreshMiniModeState({ animate: true });
       } else if (get().miniModeActive) {
@@ -909,9 +913,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
   handlePointerInputEvent: (pointerType) => {
     const kind = pointerKindFromEvent(pointerType);
     if (kind === get().pointerInputKind) {
+      // Alternating back to the current kind cancels a pending switch.
+      if (pointerInputKindDebounceTimer !== null) {
+        clearTimeout(pointerInputKindDebounceTimer);
+        pointerInputKindDebounceTimer = null;
+        pendingPointerInputKind = null;
+      }
       return;
     }
-    void get().setPointerInputKind(kind);
+    pendingPointerInputKind = kind;
+    if (pointerInputKindDebounceTimer !== null) {
+      clearTimeout(pointerInputKindDebounceTimer);
+    }
+    pointerInputKindDebounceTimer = setTimeout(() => {
+      pointerInputKindDebounceTimer = null;
+      const next = pendingPointerInputKind;
+      pendingPointerInputKind = null;
+      if (next !== null) {
+        void get().setPointerInputKind(next);
+      }
+    }, POINTER_INPUT_KIND_DEBOUNCE_MS);
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
@@ -1553,6 +1574,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     } finally {
       set({ isAnimatingWindow: false });
+      const queued = pendingMiniLayoutSync;
+      pendingMiniLayoutSync = null;
+      if (queued !== null && get().miniModeActive) {
+        void syncMiniModeWindowLayout(queued);
+      }
     }
   },
 
