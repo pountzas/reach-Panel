@@ -2,11 +2,11 @@ name: Build
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   build-windows:
-    if: github.head_ref == 'dev'
+    if: github.base_ref == 'dev' || github.head_ref == 'dev'
     runs-on: windows-latest
 
     steps:
@@ -52,51 +52,3 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
-
-  build-macos:
-    if: github.head_ref == 'dev'
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Prefetch Rust dependencies
-        shell: bash
-        run: |
-          for attempt in 1 2 3; do
-            if cargo fetch --manifest-path src-tauri/Cargo.toml; then
-              exit 0
-            fi
-            echo "cargo fetch attempt ${attempt} failed; retrying in 15s..."
-            sleep 15
-          done
-          exit 1
-
-      - name: Build Tauri app (macOS)
-        run: npm run build:tauri
-
-      - name: Upload macOS bundle
-        uses: actions/upload-artifact@v7
-        with:
-          name: macos-bundle
-          path: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/macos/*.app

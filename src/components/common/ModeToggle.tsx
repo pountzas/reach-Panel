@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   MODE_TOGGLE_BUTTON_CLASS,
   modeToggleActiveClass,
@@ -15,6 +15,7 @@ interface ModeToggleButtonProps {
   children: ReactNode;
   activeClassName?: string;
   disabled?: boolean;
+  style?: CSSProperties;
 }
 
 export function ModeToggleButton({
@@ -25,6 +26,7 @@ export function ModeToggleButton({
   children,
   activeClassName,
   disabled = false,
+  style,
 }: ModeToggleButtonProps) {
   return (
     <button
@@ -34,6 +36,7 @@ export function ModeToggleButton({
       aria-pressed={active}
       aria-label={label}
       disabled={disabled}
+      style={style}
     >
       {children}
       <HoverTooltip label={label} />
@@ -43,11 +46,14 @@ export function ModeToggleButton({
 
 interface ModeToggleGroupProps {
   children: ReactNode;
+  transparentUi?: boolean;
 }
 
-export function ModeToggleGroup({ children }: ModeToggleGroupProps) {
+export function ModeToggleGroup({ children, transparentUi = false }: ModeToggleGroupProps) {
   return (
-    <div className="relative box-border flex h-8 shrink-0 items-stretch overflow-visible rounded border border-slate-300">
+    <div
+      className={`relative box-border flex h-8 shrink-0 items-stretch overflow-visible rounded border ${transparentUi ? "border-white/80" : "border-slate-300"}`}
+    >
       {children}
     </div>
   );

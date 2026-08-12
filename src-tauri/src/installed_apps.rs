@@ -13,14 +13,7 @@ pub struct InstalledApp {
 
 /// Lists installed apps discovered via Start Menu `.lnk` shortcuts.
 pub fn list_installed_apps() -> Result<Vec<InstalledApp>, String> {
-    #[cfg(windows)]
-    {
-        list_installed_apps_windows()
-    }
-    #[cfg(not(windows))]
-    {
-        Ok(Vec::new())
-    }
+    list_installed_apps_windows()
 }
 
 #[cfg(windows)]

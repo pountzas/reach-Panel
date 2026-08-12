@@ -72,15 +72,17 @@ function ToggleRow({
   checked,
   onChange,
   surface,
+  disabled = false,
 }: {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
   surface: SurfaceColors;
+  disabled?: boolean;
 }) {
   return (
     <label
-      className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5"
+      className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
       style={{ backgroundColor: surface.insetBg }}
     >
       <span className="text-sm" style={{ color: surface.panelText }}>
@@ -89,6 +91,7 @@ function ToggleRow({
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
       />
     </label>
@@ -257,6 +260,7 @@ export function SettingsPanel() {
     saveActiveProfile,
     pickBackgroundImage,
     monitors,
+    miniModeActive,
     setShowSettings,
     setShowMacroBuilder,
     setShowHeadTrackingWizard,
@@ -447,6 +451,42 @@ export function SettingsPanel() {
                 style={{ color: surface.panelMutedText }}
               >
                 {t("largeHeadersHint")}
+              </p>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection title={t("miniMode")} surface={surface}>
+            <p
+              className="mb-3 px-1 text-xs"
+              style={{ color: surface.panelMutedText }}
+            >
+              {t("miniModeAutoDescription")}
+            </p>
+            <ToggleRow
+              label={t("miniModeForceEnable")}
+              checked={settings.miniModeOverride === true}
+              onChange={(checked) =>
+                updateSettings({
+                  miniModeOverride: checked ? true : null,
+                })
+              }
+              surface={surface}
+            />
+            <div className="mt-2">
+              <ToggleRow
+                label={t("miniModeTransparent")}
+                checked={Boolean(settings.miniModeTransparent)}
+                disabled={!miniModeActive}
+                onChange={(checked) =>
+                  updateSettings({ miniModeTransparent: checked })
+                }
+                surface={surface}
+              />
+              <p
+                className="mt-1 px-1 text-xs"
+                style={{ color: surface.panelMutedText }}
+              >
+                {t("miniModeTransparentDescription")}
               </p>
             </div>
           </SettingsSection>

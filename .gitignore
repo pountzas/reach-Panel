@@ -28,7 +28,12 @@ src-tauri/target/
 src-tauri/.tauri/
 
 # Local patched tauri-mcp source (binary installed via cargo)
-.cursor/tauri-mcp/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 
 # Git worktrees
 .worktrees/
+
+# Subagent-driven development scratch (briefs, reports, diffs)
+.superpowers/

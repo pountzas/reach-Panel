@@ -1,0 +1,27 @@
+---
+description: ReachPanel is Windows-only — never add macOS or cross-platform stubs
+alwaysApply: true
+---
+
+# Windows only
+
+ReachPanel targets **Windows only**. Do not add macOS, Linux, or generic non-Windows code paths.
+
+## Never add
+
+- `#[cfg(target_os = "macos")]`, `#[cfg(not(target_os = "windows"))]`, or `stub.rs` modules for other OSes
+- macOS CI jobs, `.dmg` / `.app` bundle targets, or `darwin-*` updater entries
+- Documentation promising macOS support or "experimental macOS builds"
+- Cross-platform fallbacks "for compile parity" on non-Windows
+
+## Why
+
+macOS touchscreens expose only **single-point touch**, which breaks multi-touch layout and monitor targeting this app relies on. The product is unusable on macOS for its accessibility use case.
+
+## Required instead
+
+- Use Windows APIs directly (Win32, WinRT) without stub indirection
+- CI and releases: **Windows only** (`nsis`, `msi`)
+- New platform-specific behavior: implement on Windows or reject the feature
+
+If asked to port to macOS, explain the single-touch limitation and decline unless the human explicitly overrides with a documented exception.

@@ -27,6 +27,20 @@ export const fr: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Écran d’accessibilité",
 
+  miniMode: "Mode Mini",
+
+  miniModeAutoDescription:
+    "Sur un seul écran ou une configuration en miroir, le clavier apparaît automatiquement lorsque vous touchez un champ de saisie.",
+
+  miniModeForceEnable: "Activer le mode Mini sur double moniteur",
+
+  miniModeTransparent: "Clavier transparent",
+
+  miniModeTransparentDescription:
+    "Afficher les touches avec des contours uniquement pour voir les applications en arrière-plan.",
+
+  miniModeCollapse: "Retour au mode mini",
+
   largeHeaders: "En-têtes larges pour un redimensionnement plus facile",
 
   largeHeadersHint:

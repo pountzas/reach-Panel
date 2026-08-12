@@ -13,6 +13,14 @@ export type KeyboardSectionMode = "keyboard" | "synthesizer";
 /** On-screen key arrangement; `auto` follows the active Windows keyboard layout. */
 export type OnscreenLayout = "auto" | "QWERTY" | "QWERTZ" | "AZERTY" | "Greek";
 
+export type PointerInputKind = "touch" | "mouse";
+
+export interface LayoutSnapshot {
+  sectionStack?: SectionStackState;
+  inputRowRightRatio?: number;
+  windowHeightRatio?: number;
+}
+
 export interface AppSettings {
   colorProfile: ColorProfileId;
   opacity: number;
@@ -78,6 +86,11 @@ export interface AppSettings {
    * Combined with visibility-based content ratio via Math.max.
    */
   windowHeightRatio?: number;
+  /** null = auto, true = force on, false = force off */
+  miniModeOverride?: boolean | null;
+  miniModeTransparent?: boolean;
+  touchLayout?: LayoutSnapshot;
+  mouseLayout?: LayoutSnapshot;
 }
 
 export interface ProfileFileInfo {
@@ -143,6 +156,8 @@ export interface MonitorInfo {
   width: number;
   height: number;
   is_primary: boolean;
+  /** Set by backend when this entry overlaps another monitor ≥90% (Windows mirror duplicate). */
+  is_mirror_duplicate?: boolean;
 }
 
 export interface CommandResult {

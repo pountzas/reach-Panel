@@ -1,14 +1,28 @@
 import { useEffect } from "react";
-import { MicrophoneIcon } from "../common/SectionIcons";
+import { MicrophoneIcon, SettingsIcon } from "../common/SectionIcons";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+import {
+  COLLAPSED_FAB_GAP,
+  COLLAPSED_FAB_PAD,
+  COLLAPSED_FAB_SIZE,
+  collapsedFabContentMinSize,
+  type CollapsedFabCount,
+} from "../../lib/miniMode";
 
-const FAB_SIZE = 56;
-const FAB_GAP = 12;
-/** Must stay in sync with COLLAPSED_PAD in src-tauri/src/window/mod.rs */
-const FAB_PAD = 10;
+export interface CollapsedFabProps {
+  /** Show Settings (gear) above Dictate / Expand (Mini Mode). */
+  showSettings?: boolean;
+  onSettings?: () => void;
+  /** When set, Expand uses this instead of toggleCollapsed (Mini Mode manual expand). */
+  onExpand?: () => void;
+}
 
-export function CollapsedFab() {
+export function CollapsedFab({
+  showSettings = false,
+  onSettings,
+  onExpand,
+}: CollapsedFabProps) {
   const {
     settings,
     toggleCollapsed,
@@ -27,6 +41,13 @@ export function CollapsedFab() {
   const canDictate = sttCapability?.canDictate ?? false;
   const dictationDisabled = !listening && !canDictate;
 
+  const fabCount = ((): CollapsedFabCount => {
+    const n = (showSettings ? 1 : 0) + (showDictation ? 1 : 0) + 1;
+    if (n === 1 || n === 2 || n === 3) return n;
+    return 3;
+  })();
+  const contentMin = collapsedFabContentMinSize(fabCount);
+
   useEffect(() => {
     void refreshSttCapability();
   }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
@@ -42,18 +63,48 @@ export function CollapsedFab() {
     }
   }
 
+  const handleExpand = () => {
+    if (onExpand) {
+      onExpand();
+      return;
+    }
+    void toggleCollapsed();
+  };
+
   return (
     <div
-      className="flex h-full w-full flex-col items-center justify-center"
-      style={{ background: "transparent", gap: FAB_GAP, padding: FAB_PAD }}
+      className="flex h-full w-full flex-col items-center justify-center overflow-visible"
+      style={{
+        background: "transparent",
+        gap: COLLAPSED_FAB_GAP,
+        padding: COLLAPSED_FAB_PAD,
+        minWidth: contentMin.minWidth,
+        minHeight: contentMin.minHeight,
+      }}
     >
+      {showSettings && (
+        <button
+          type="button"
+          className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-[1.03] active:scale-95"
+          style={{
+            width: COLLAPSED_FAB_SIZE,
+            height: COLLAPSED_FAB_SIZE,
+            backgroundColor: bgColor,
+            color: textColor,
+          }}
+          onClick={() => onSettings?.()}
+          aria-label={t("settings")}
+        >
+          <SettingsIcon className="h-6 w-6" />
+        </button>
+      )}
       {showDictation && (
         <button
           type="button"
-          className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
+          className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-[1.03] active:scale-95 disabled:opacity-50"
           style={{
-            width: FAB_SIZE,
-            height: FAB_SIZE,
+            width: COLLAPSED_FAB_SIZE,
+            height: COLLAPSED_FAB_SIZE,
             backgroundColor: listening
               ? "#dc2626"
               : dictationDisabled
@@ -70,15 +121,15 @@ export function CollapsedFab() {
       )}
       <button
         type="button"
-        className="flex items-center justify-center rounded-full font-bold shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
+        className="flex items-center justify-center rounded-full font-bold shadow-lg transition-transform hover:scale-[1.03] active:scale-95 disabled:opacity-50"
         style={{
-          width: FAB_SIZE,
-          height: FAB_SIZE,
+          width: COLLAPSED_FAB_SIZE,
+          height: COLLAPSED_FAB_SIZE,
           backgroundColor: bgColor,
           color: textColor,
           fontSize: 22,
         }}
-        onClick={toggleCollapsed}
+        onClick={handleExpand}
         disabled={isAnimatingWindow}
         aria-label={t("expand")}
       >

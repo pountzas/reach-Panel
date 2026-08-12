@@ -43,17 +43,22 @@ function MainApp() {
         if (cancelled) return;
         await loadImportedSongs();
         await loadMonitors();
-        const { settings } = useAppStore.getState();
-        await invoke("cmd_apply_window_layout", {
-          monitorId: settings.accessibilityMonitorId,
-          collapsed: settings.collapsed,
-          collapsedDictation:
-            settings.collapsed && settings.dictationVisible !== false,
-          heightRatio: computeContentHeightRatio({
-            quickActions: settings.quickActionsVisible,
-            phrases: settings.phrasesVisible,
-          }),
-        });
+        if (cancelled) return;
+        await useAppStore.getState().refreshMiniModeState({ animate: false });
+        if (cancelled) return;
+        if (!useAppStore.getState().miniModeActive) {
+          const { settings } = useAppStore.getState();
+          await invoke("cmd_apply_window_layout", {
+            monitorId: settings.accessibilityMonitorId,
+            collapsed: settings.collapsed,
+            collapsedDictation:
+              settings.collapsed && settings.dictationVisible !== false,
+            heightRatio: computeContentHeightRatio({
+              quickActions: settings.quickActionsVisible,
+              phrases: settings.phrasesVisible,
+            }),
+          });
+        }
         await loadKeyboardLayout();
         await loadInputMethods();
         await refreshLayoutKeyLabels();
@@ -93,6 +98,17 @@ function MainApp() {
     refreshSttCapability,
     setLastError,
   ]);
+
+  useEffect(() => {
+    // Instant touch↔mouse layout profile switch (no debounce).
+    const onPointerDown = (event: PointerEvent) => {
+      useAppStore.getState().handlePointerInputEvent(event.pointerType);
+    };
+    window.addEventListener("pointerdown", onPointerDown, { capture: true });
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, { capture: true });
+    };
+  }, []);
 
   useEffect(() => {
     const unlisteners: Array<Promise<() => void>> = [];
