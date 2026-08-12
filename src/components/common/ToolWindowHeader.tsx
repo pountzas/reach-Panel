@@ -9,7 +9,7 @@ interface ToolWindowHeaderProps {
   className?: string;
 }
 
-/** Undecorated tool-window chrome: long-press empty header area to move the window. */
+/** Undecorated tool-window chrome: drag header like a normal title bar. */
 export function ToolWindowHeader({
   title,
   actions,
@@ -21,13 +21,15 @@ export function ToolWindowHeader({
 
   return (
     <div
-      className={className}
+      className={`${className} cursor-grab active:cursor-grabbing`}
       style={style}
       title={t("dragToMove")}
       {...dragHandlers}
     >
-      <h2 className="text-lg font-bold">{title}</h2>
-      <div className="section-no-drag flex shrink-0 items-center gap-1">{actions}</div>
+      <h2 className="pointer-events-none text-lg font-bold select-none">{title}</h2>
+      <div className="section-no-drag flex shrink-0 cursor-default items-center gap-1">
+        {actions}
+      </div>
     </div>
   );
 }
