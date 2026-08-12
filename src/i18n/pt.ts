@@ -45,6 +45,14 @@ export const pt: Record<keyof typeof en, string> = {
   miniModeTransparentDescription:
     "Mostrar teclas apenas com contornos para ver as aplicações por detrás.",
 
+  transparentKeyColor: "Cor das teclas transparentes",
+
+  transparentKeyColorWhite: "Branco",
+
+  transparentKeyColorDarkGray: "Cinza escuro",
+
+  transparentKeyColorSilver: "Prata",
+
   miniModeCollapse: "Voltar ao Modo Mini",
 
   largeHeaders: "Cabeçalhos grandes para redimensionar mais facilmente",

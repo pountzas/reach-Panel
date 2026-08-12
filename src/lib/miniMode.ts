@@ -1,7 +1,7 @@
 /** Collapsed FAB geometry — keep in sync with src-tauri/src/window/mod.rs */
 
 import type { CSSProperties } from "react";
-import type { AppSettings, MonitorInfo } from "./types";
+import type { AppSettings, MonitorInfo, TransparentKeyColor } from "./types";
 
 export const COLLAPSED_FAB_SIZE = 56;
 export const COLLAPSED_FAB_GAP = 12;
@@ -14,6 +14,12 @@ export const MINI_KEYBOARD_HEIGHT_RATIO = 0.42;
 
 /** Fraction of the smaller monitor area that must overlap to count as mirrored. */
 export const MIRROR_OVERLAP_RATIO = 0.9;
+
+export const TRANSPARENT_KEY_COLORS: readonly TransparentKeyColor[] = [
+  "white",
+  "dark-gray",
+  "silver",
+] as const;
 
 export type CollapsedFabCount = 1 | 2 | 3;
 
@@ -112,18 +118,64 @@ export function isTransparentUiActive(
   return Boolean(miniModeActive && settings.miniModeTransparent);
 }
 
+export function resolveTransparentKeyColor(
+  id?: string | null,
+): TransparentKeyColor {
+  switch (id) {
+    case "white":
+    case "dark-gray":
+    case "silver":
+      return id;
+    default:
+      return "white";
+  }
+}
+
+export function transparentKeyPalette(id?: string | null): {
+  border: string;
+  text: string;
+} {
+  const resolved = resolveTransparentKeyColor(id);
+  switch (resolved) {
+    case "white":
+      return { border: "rgba(255,255,255,0.9)", text: "#ffffff" };
+    case "dark-gray":
+      return { border: "#4b5563", text: "#4b5563" };
+    case "silver":
+      return { border: "#c0c0c0", text: "#c0c0c0" };
+    default: {
+      const _exhaustive: never = resolved;
+      return _exhaustive;
+    }
+  }
+}
+
+export function nextTransparentKeyColor(
+  current?: string | null,
+): TransparentKeyColor {
+  const resolved = resolveTransparentKeyColor(current);
+  const idx = TRANSPARENT_KEY_COLORS.indexOf(resolved);
+  const next = TRANSPARENT_KEY_COLORS[(idx + 1) % TRANSPARENT_KEY_COLORS.length];
+  return next ?? "white";
+}
+
 /** High-contrast outlined control style for transparent mini mode. */
 export function transparentOutlineStyle(
-  options: { active?: boolean; color?: string } = {},
+  options: {
+    active?: boolean;
+    color?: string;
+    outlineColor?: TransparentKeyColor | string | null;
+  } = {},
 ): CSSProperties {
+  const palette = transparentKeyPalette(options.outlineColor);
   const outlineShadow = "0 0 0 1px rgba(0,0,0,0.5)";
   return {
     backgroundColor: "transparent",
-    border: "2px solid rgba(255,255,255,0.9)",
+    border: `2px solid ${palette.border}`,
     boxShadow: options.active
       ? `${outlineShadow}, inset 0 0 0 2px rgba(147,197,253,0.95)`
       : outlineShadow,
-    color: options.color ?? "inherit",
+    color: options.color ?? palette.text,
     textShadow: "0 1px 2px rgba(0,0,0,0.8)",
   };
 }

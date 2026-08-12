@@ -4,7 +4,7 @@ import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { DictationVisualizer } from "./DictationVisualizer";
-import { transparentOutlineStyle } from "../../lib/miniMode";
+import { transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
 
 export function DictationButton({ transparentUi = false }: { transparentUi?: boolean }) {
   const {
@@ -20,6 +20,7 @@ export function DictationButton({ transparentUi = false }: { transparentUi?: boo
   const captureAudio = sttCapability?.engine !== "groq";
   // Never disable while a session is active — stop must always be clickable.
   const disabled = !listening && !canDictate;
+  const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
 
   useEffect(() => {
     void refreshSttCapability();
@@ -39,7 +40,10 @@ export function DictationButton({ transparentUi = false }: { transparentUi?: boo
   return (
     <>
       <DictationVisualizer active={listening} captureAudio={captureAudio} />
-      <ModeToggleGroup transparentUi={transparentUi}>
+      <ModeToggleGroup
+        transparentUi={transparentUi}
+        transparentBorderColor={transparentPalette.border}
+      >
         <ModeToggleButton
           active={listening}
           position="only"
@@ -49,13 +53,14 @@ export function DictationButton({ transparentUi = false }: { transparentUi?: boo
             transparentUi
               ? transparentOutlineStyle({
                   active: listening,
-                  color: "#ffffff",
+                  color: transparentPalette.text,
+                  outlineColor: settings.transparentKeyColor,
                 })
               : undefined
           }
           activeClassName={
             transparentUi
-              ? "bg-transparent text-white"
+              ? "bg-transparent"
               : listening
                 ? "bg-red-600 text-white"
                 : disabled

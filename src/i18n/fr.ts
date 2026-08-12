@@ -45,6 +45,14 @@ export const fr: Record<keyof typeof en, string> = {
   miniModeTransparentDescription:
     "Afficher les touches avec des contours uniquement pour voir les applications en arrière-plan.",
 
+  transparentKeyColor: "Couleur des touches transparentes",
+
+  transparentKeyColorWhite: "Blanc",
+
+  transparentKeyColorDarkGray: "Gris foncé",
+
+  transparentKeyColorSilver: "Argent",
+
   miniModeCollapse: "Retour au Mode Mini",
 
   largeHeaders: "En-têtes larges pour un redimensionnement plus facile",

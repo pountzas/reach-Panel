@@ -44,6 +44,14 @@
   miniModeTransparentDescription:
     "Show keys with outlines only so you can see through to your apps.",
 
+  transparentKeyColor: "Transparent key color",
+
+  transparentKeyColorWhite: "White",
+
+  transparentKeyColorDarkGray: "Dark gray",
+
+  transparentKeyColorSilver: "Silver",
+
   miniModeCollapse: "Back to Mini Mode",
 
   largeHeaders: "Large headers for easier resize",

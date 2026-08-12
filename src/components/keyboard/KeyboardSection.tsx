@@ -18,7 +18,7 @@ import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
 import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
 import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
-import { isTransparentUiActive, transparentOutlineStyle } from "../../lib/miniMode";
+import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
@@ -43,9 +43,14 @@ export function KeyboardSection() {
   const showTransparentToggle = miniModeActive && !showSynth && !compact;
   const showMiniModeCollapse =
     miniModeActive && miniModeKeyboardVisible && !showSynth && !compact;
+  const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
   const transparentToolbarStyle = transparentUi
-    ? transparentOutlineStyle({ color: "#ffffff" })
+    ? transparentOutlineStyle({
+        color: transparentPalette.text,
+        outlineColor: settings.transparentKeyColor,
+      })
     : undefined;
+  const showTransparentColorButton = transparentUi && showTransparentToggle;
   const showToolbar =
     showDictation ||
     showToggle ||
@@ -74,12 +79,15 @@ export function KeyboardSection() {
           <div className="min-w-0 flex-1 pl-1.5">
             {showSuggestions && <SuggestionsBar />}
           </div>
-          {(showDictation || showToggle || showTransparentToggle || showMiniModeCollapse) && (
+              {(showDictation || showToggle || showTransparentToggle || showMiniModeCollapse) && (
             <div
               className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
             >
               {showMiniModeCollapse && (
-                <ModeToggleGroup transparentUi={transparentUi}>
+                <ModeToggleGroup
+                  transparentUi={transparentUi}
+                  transparentBorderColor={transparentPalette.border}
+                >
                   <ModeToggleButton
                     active={false}
                     position="only"
@@ -87,7 +95,7 @@ export function KeyboardSection() {
                     disabled={isAnimatingWindow}
                     style={transparentToolbarStyle}
                     activeClassName={
-                      transparentUi ? "bg-transparent text-white" : undefined
+                      transparentUi ? "bg-transparent" : undefined
                     }
                     onClick={() => void collapseMiniModeKeyboard()}
                   >
@@ -97,7 +105,10 @@ export function KeyboardSection() {
               )}
               {showDictation && <DictationButton transparentUi={transparentUi} />}
               {showTransparentToggle && (
-                <ModeToggleGroup transparentUi={transparentUi}>
+                <ModeToggleGroup
+                  transparentUi={transparentUi}
+                  transparentBorderColor={transparentPalette.border}
+                >
                   <ModeToggleButton
                     active={Boolean(settings.miniModeTransparent)}
                     position="only"
@@ -106,12 +117,13 @@ export function KeyboardSection() {
                       transparentUi
                         ? transparentOutlineStyle({
                             active: Boolean(settings.miniModeTransparent),
-                            color: "#ffffff",
+                            color: transparentPalette.text,
+                            outlineColor: settings.transparentKeyColor,
                           })
                         : undefined
                     }
                     activeClassName={
-                      transparentUi ? "bg-transparent text-white" : undefined
+                      transparentUi ? "bg-transparent" : undefined
                     }
                     onClick={() =>
                       updateSettings({
@@ -120,6 +132,36 @@ export function KeyboardSection() {
                     }
                   >
                     <TransparentKeyboardIcon className="h-4 w-4" />
+                  </ModeToggleButton>
+                </ModeToggleGroup>
+              )}
+              {showTransparentColorButton && (
+                <ModeToggleGroup
+                  transparentUi
+                  transparentBorderColor={transparentPalette.border}
+                >
+                  <ModeToggleButton
+                    active={false}
+                    position="only"
+                    label={t("transparentKeyColor")}
+                    style={transparentOutlineStyle({
+                      color: transparentPalette.text,
+                      outlineColor: settings.transparentKeyColor,
+                    })}
+                    activeClassName="bg-transparent"
+                    onClick={() =>
+                      updateSettings({
+                        transparentKeyColor: nextTransparentKeyColor(
+                          settings.transparentKeyColor,
+                        ),
+                      })
+                    }
+                  >
+                    <span
+                      className="block h-3.5 w-3.5 rounded-full border border-black/40"
+                      style={{ backgroundColor: transparentPalette.text }}
+                      aria-hidden
+                    />
                   </ModeToggleButton>
                 </ModeToggleGroup>
               )}
