@@ -5,6 +5,18 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.0 (2026-08-12)
+
+## What's Changed
+* fix: stabilize touch trackpad cursor and add tap-to-click by @pountzas in https://github.com/pountzas/reach-Panel/pull/100
+* chore(deps-dev): bump the npm-minor-and-patch group with 5 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/98
+* feat: mini mode layout fixes and Windows-only platform by @pountzas in https://github.com/pountzas/reach-Panel/pull/101
+* fix: address PR review findings across Mini Mode input and tooling by @pountzas in https://github.com/pountzas/reach-Panel/pull/103
+* feat: promote mini mode and Windows-only layout fixes to main by @pountzas in https://github.com/pountzas/reach-Panel/pull/102
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.6.2...v0.7.0
+
 ## 0.6.2 (2026-08-01)
 
 ## What's Changed
