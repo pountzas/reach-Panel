@@ -4,7 +4,7 @@ Thank you for helping improve ReachPanel.
 
 ## Prerequisites
 
-- Windows 10 or 11
+- **Windows 10 or 11 only** — ReachPanel does not support macOS (single-point touch breaks multi-touch layout).
 - Node.js 18+
 - Rust (via [rustup](https://rustup.rs/))
 - Visual Studio Build Tools with the C++ workload
@@ -53,9 +53,6 @@ If you do not already have a matching private key for the pubkey in the repo:
 # Use `--` so npm forwards flags to the Tauri CLI (required).
 # PowerShell (Windows):
 npm run tauri -- signer generate -w "$env:USERPROFILE\.tauri\reach-panel.key"
-
-# bash (macOS/Linux):
-npm run tauri -- signer generate -w ~/.tauri/reach-panel.key
 ```
 
 You will be prompted for an optional password. Press Enter for no password, or set one and store the same value in the `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` secret.
@@ -104,7 +101,7 @@ Releases are automated with [release-please](https://github.com/googleapis/relea
 
 1. Merge `dev` into `main` via pull request.
 2. Release-please opens or updates a **Release PR** on `main` (e.g. `chore(main): release 0.1.1`) that bumps version files and `CHANGELOG.md`.
-3. Merge the Release PR. GitHub Actions builds Windows `.exe`/`.msi` and macOS `.dmg` bundles and attaches them to the [Releases](https://github.com/pountzas/reach-Panel/releases) page.
+3. Merge the Release PR. GitHub Actions builds Windows `.exe`/`.msi` installers and attaches them to the [Releases](https://github.com/pountzas/reach-Panel/releases) page.
 
 Version is kept in sync across `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`.
 

@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { getSurfaceColors } from "../../lib/colorProfiles";
+import { usePointerDragActive } from "../../lib/pointerDrag";
 import type { TranslationKey } from "../../i18n";
 import {
   CloseIcon,
@@ -62,6 +63,7 @@ export function FloatingSection({
   const keyboardSectionMode = useAppStore((s) => s.settings.keyboardSectionMode);
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
+  const pointerDragActive = usePointerDragActive();
   const showMusicLesson =
     id === "phrases" &&
     musicTeachingEnabled &&
@@ -116,6 +118,19 @@ export function FloatingSection({
     }
   };
 
+  const resizingEnabled =
+    !pointerDragActive &&
+    !minimized && {
+      top: true,
+      right: true,
+      bottom: true,
+      left: true,
+      topRight: true,
+      topLeft: true,
+      bottomRight: true,
+      bottomLeft: true,
+    };
+
   return (
     <Rnd
       position={position}
@@ -126,25 +141,37 @@ export function FloatingSection({
       maxHeight={minimized ? headerHeight : undefined}
       dragHandleClassName="section-drag-handle"
       cancel=".section-no-drag"
-      enableResizing={
-        minimized
-          ? false
-          : {
-              top: true,
-              right: true,
-              bottom: true,
-              left: true,
-              topRight: true,
-              topLeft: true,
-              bottomRight: true,
-              bottomLeft: true,
-            }
-      }
+      disableDragging={pointerDragActive}
+      enableResizing={resizingEnabled}
       resizeHandleStyles={{
-        top: { height: `${EDGE_SIZE}px`, top: 0, cursor: "ns-resize" },
-        right: { width: `${EDGE_SIZE}px`, right: 0, cursor: "ew-resize" },
-        bottom: { height: `${EDGE_SIZE}px`, bottom: 0, cursor: "ns-resize" },
-        left: { width: `${EDGE_SIZE}px`, left: 0, cursor: "ew-resize" },
+        top: {
+          height: `${EDGE_SIZE}px`,
+          top: 0,
+          cursor: "ns-resize",
+          touchAction: "none",
+        },
+        right: {
+          width: `${EDGE_SIZE}px`,
+          right: 0,
+          cursor: "ew-resize",
+          touchAction: "none",
+        },
+        bottom: {
+          height: `${EDGE_SIZE}px`,
+          bottom: 0,
+          cursor: "ns-resize",
+          touchAction: "none",
+        },
+        left: {
+          width: `${EDGE_SIZE}px`,
+          left: 0,
+          cursor: "ew-resize",
+          touchAction: "none",
+        },
+        topRight: { touchAction: "none" },
+        topLeft: { touchAction: "none" },
+        bottomRight: { touchAction: "none" },
+        bottomLeft: { touchAction: "none" },
       }}
       className={isActive ? "z-40" : "z-30"}
       onDragStart={() => {
@@ -198,6 +225,7 @@ export function FloatingSection({
             height: headerHeight,
             backgroundColor: surface.panelHeaderBg,
             borderColor: surface.panelBorder,
+            touchAction: "none",
           }}
         >
           <span

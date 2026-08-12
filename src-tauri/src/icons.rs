@@ -8,61 +8,41 @@ use tauri::{AppHandle, Manager};
 
 /// Returns a filesystem path to a cached PNG icon for `convertFileSrc`, or `None`.
 pub fn app_icon_cached_path(app: &AppHandle, target: &str) -> Option<String> {
-    #[cfg(windows)]
-    {
-        let path = resolve_app_path(target)?;
-        let cache_dir = icon_cache_dir(app).ok()?;
-        let key = icon_cache_key(&path);
-        let cache_file = cache_dir.join(format!("{key}.png"));
+    let path = resolve_app_path(target)?;
+    let cache_dir = icon_cache_dir(app).ok()?;
+    let key = icon_cache_key(&path);
+    let cache_file = cache_dir.join(format!("{key}.png"));
+    if cache_file.is_file() {
+        return Some(cache_file.to_string_lossy().into_owned());
+    }
+    let png = extract_file_icon_png(&path).ok()?;
+    let tmp = cache_dir.join(format!(
+        "{key}.{}.tmp",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    fs::write(&tmp, &png).ok()?;
+    if fs::rename(&tmp, &cache_file).is_err() {
         if cache_file.is_file() {
+            let _ = fs::remove_file(&tmp);
             return Some(cache_file.to_string_lossy().into_owned());
         }
-        let png = extract_file_icon_png(&path).ok()?;
-        let tmp = cache_dir.join(format!(
-            "{key}.{}.tmp",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_nanos())
-                .unwrap_or(0)
-        ));
-        fs::write(&tmp, &png).ok()?;
-        if fs::rename(&tmp, &cache_file).is_err() {
-            let _ = fs::remove_file(&tmp);
-            return None;
-        }
-        Some(cache_file.to_string_lossy().into_owned())
+        let _ = fs::remove_file(&tmp);
+        return None;
     }
-    #[cfg(not(windows))]
-    {
-        let _ = (app, target);
-        None
-    }
+    Some(cache_file.to_string_lossy().into_owned())
 }
 
 /// True when the app target resolves to an existing executable on this machine.
 pub fn is_app_installed(target: &str) -> bool {
-    #[cfg(windows)]
-    {
-        resolve_app_path(target).is_some()
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = target;
-        false
-    }
+    resolve_app_path(target).is_some()
 }
 
 /// Resolve a quick-action app target to an existing `.exe` path when possible.
 pub fn resolve_launch_app_path(target: &str) -> Option<PathBuf> {
-    #[cfg(windows)]
-    {
-        resolve_app_path(target)
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = target;
-        None
-    }
+    resolve_app_path(target)
 }
 
 const ICON_CACHE_RETENTION: std::time::Duration = std::time::Duration::from_secs(30 * 24 * 60 * 60);

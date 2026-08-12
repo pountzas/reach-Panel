@@ -1,15 +1,8 @@
-{
+﻿{
   "mcpServers": {
     "tauri-mcp": {
-      "type": "stdio",
       "command": "tauri-mcp",
-      "args": [
-        "--config",
-        "tauri-mcp.toml",
-        "--log-level",
-        "info",
-        "serve"
-      ]
+      "args": ["--config", "tauri-mcp.toml", "serve"]
     }
   }
 }

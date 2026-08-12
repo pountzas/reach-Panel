@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { MonitorInfo } from "./types";
 
@@ -53,6 +54,26 @@ export function resolveMonitor(
   );
 }
 
+async function getMonitors(): Promise<MonitorInfo[]> {
+  try {
+    return await invoke<MonitorInfo[]>("cmd_list_monitors");
+  } catch {
+    return [];
+  }
+}
+
+/** Resolve the monitor that currently contains the main window. */
+export async function resolveMainWindowMonitor(
+  monitors: MonitorInfo[],
+): Promise<MonitorInfo | undefined> {
+  try {
+    const id = await invoke<number>("cmd_get_main_window_monitor");
+    return resolveMonitor(monitors, id);
+  } catch {
+    return resolveMonitor(monitors, -1);
+  }
+}
+
 async function anyToolWindowOpen(): Promise<boolean> {
   for (const label of TOOL_WINDOW_LABELS) {
     if (await WebviewWindow.getByLabel(label)) {
@@ -87,9 +108,10 @@ export async function openToolWindow(
   }
 
   const { width, height } = TOOL_WINDOW_SIZE;
-  const position = options.monitor
-    ? centerOnMonitor(options.monitor, width, height)
-    : null;
+  const monitor =
+    options.monitor ??
+    (await resolveMainWindowMonitor(await getMonitors()));
+  const position = monitor ? centerOnMonitor(monitor, width, height) : null;
 
   const webview = new WebviewWindow(label, {
     url: "/",

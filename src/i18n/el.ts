@@ -30,6 +30,26 @@ export const el: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Οθόνη προσβασιμότητας",
 
+  miniMode: "Λειτουργία Mini",
+
+  miniModeAutoDescription:
+    "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
+
+  miniModeOverrideLabel: "Λειτουργία Mini",
+
+  miniModeOverrideAuto: "Αυτόματο",
+
+  miniModeOverrideOn: "Ενεργό",
+
+  miniModeOverrideOff: "Ανενεργό",
+
+  miniModeTransparent: "Διαφανές πληκτρολόγιο",
+
+  miniModeTransparentDescription:
+    "Εμφάνιση πλήκτρων μόνο με περίγραμμα ώστε να φαίνονται οι εφαρμογές από πίσω.",
+
+  miniModeCollapse: "Επιστροφή στη λειτουργία Mini",
+
   largeHeaders: "Μεγάλα headers για εύκολη αλλαγή μεγέθους",
 
   largeHeadersHint:

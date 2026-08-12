@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import { emit } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { checkForUpdate } from "../lib/updater";
@@ -20,6 +20,7 @@ import {
   MonitorInfo,
   Phrase,
   PhraseCategory,
+  PointerInputKind,
   ProfileFileInfo,
   QuickAction,
 } from "../lib/types";
@@ -40,16 +41,22 @@ import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import { clampWindowHeightRatio, computeContentHeightRatio } from "../lib/sectionLayouts";
 import { resolveSectionStack } from "../lib/sectionStack";
+import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled } from "../lib/miniMode";
 import {
   closeToolWindow,
   openToolWindow,
   PROFILE_UPDATED_EVENT,
-  resolveMonitor,
   syncMainForToolWindows,
   TOOL_WINDOW_REQUEST_EVENT,
   TOOL_WINDOW_TITLES,
   type ToolWindowLabel,
 } from "../lib/toolWindows";
+import {
+  partialContainsLayoutFields,
+  persistLayoutForKind,
+  pointerKindFromEvent,
+  switchPointerInputKindLayout,
+} from "../lib/layoutProfiles";
 
 /** Avoid re-toasting the same backend error until it clears. */
 let lastAnnouncedError: string | null = null;
@@ -64,6 +71,119 @@ let liveHeightRatioPreview: number | null = null;
 let liveHeightRatioRaf: number | null = null;
 let liveHeightRatioPending: number | null = null;
 let liveHeightRatioInFlight = false;
+
+/** When a mini layout sync is requested during animation, retry after it finishes. */
+let pendingMiniLayoutSync: boolean | null = null;
+
+/** Coalesce rapid touch↔mouse pointerdowns before switching layout profiles. */
+const POINTER_INPUT_KIND_DEBOUNCE_MS = 50;
+let pendingPointerInputKind: PointerInputKind | null = null;
+let pointerInputKindDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Animate mini-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
+ * Always ends aligned with the latest `miniModeKeyboardVisible` (no squashed keyboard in FAB).
+ */
+async function syncMiniModeWindowLayout(preferAnimate = true) {
+  const state = useAppStore.getState();
+  if (!state.miniModeActive) {
+    pendingMiniLayoutSync = null;
+    return;
+  }
+  if (state.isAnimatingWindow) {
+    pendingMiniLayoutSync = preferAnimate;
+    return;
+  }
+
+  const visibleAtStart = state.miniModeKeyboardVisible;
+  useAppStore.setState({ isAnimatingWindow: true });
+  try {
+    const { settings } = useAppStore.getState();
+    const args = {
+      monitorId: settings.accessibilityMonitorId,
+      collapsed: !visibleAtStart,
+      collapsedDictation: true,
+      collapsedSettings: true,
+      heightRatio: heightRatioFromSettings(settings),
+      miniMode: true,
+      miniKeyboardVisible: visibleAtStart,
+      miniKeyboardHeightRatio: MINI_KEYBOARD_HEIGHT_RATIO,
+    };
+    if (preferAnimate) {
+      await invoke("cmd_animate_window_layout", args);
+    } else {
+      await invoke("cmd_apply_window_layout", args);
+    }
+  } finally {
+    useAppStore.setState({ isAnimatingWindow: false });
+    const latest = useAppStore.getState();
+    const queued = pendingMiniLayoutSync;
+    pendingMiniLayoutSync = null;
+    // Visibility changed mid-animation, or another sync was requested while busy.
+    if (
+      latest.miniModeActive &&
+      (queued !== null || latest.miniModeKeyboardVisible !== visibleAtStart)
+    ) {
+      const nextAnimate = queued ?? preferAnimate;
+      void syncMiniModeWindowLayout(nextAnimate);
+    }
+  }
+}
+
+/**
+ * Keep miniModeActive / mouseVisible in sync with settings + monitors.
+ * Enter: hide mouse panel (session restore on exit). Leave: restore layout.
+ */
+async function refreshMiniModeState(options?: { animate?: boolean }) {
+  const state = useAppStore.getState();
+  const { settings, monitors, miniModeActive: wasActive } = state;
+  const enabled =
+    monitors.length > 0 && resolveMiniModeEnabled(settings, monitors);
+  const animate = options?.animate !== false;
+
+  if (enabled && !wasActive) {
+    const mouseBefore = settings.mouseVisible;
+    useAppStore.setState({
+      miniModeActive: true,
+      miniModeKeyboardVisible: false,
+      miniModeManualExpand: false,
+      miniModeSuppressAutoShow: false,
+      mouseVisibleBeforeMiniMode: mouseBefore,
+      settings: mouseBefore ? { ...settings, mouseVisible: false } : settings,
+    });
+    await syncMiniModeWindowLayout(animate);
+    return;
+  }
+
+  if (!enabled && wasActive) {
+    const restore = state.mouseVisibleBeforeMiniMode;
+    const nextSettings =
+      restore !== null ? { ...settings, mouseVisible: restore } : settings;
+    useAppStore.setState({
+      miniModeActive: false,
+      miniModeKeyboardVisible: false,
+      miniModeManualExpand: false,
+      miniModeSuppressAutoShow: false,
+      mouseVisibleBeforeMiniMode: null,
+      settings: nextSettings,
+    });
+    await syncWindowLayoutFromSettings(nextSettings, animate);
+    return;
+  }
+
+  if (enabled) {
+    // Still active: enforce mouse panel hidden and keep window layout in sync.
+    if (settings.mouseVisible) {
+      if (state.mouseVisibleBeforeMiniMode === null) {
+        useAppStore.setState({ mouseVisibleBeforeMiniMode: true });
+      }
+      useAppStore.setState({
+        settings: { ...settings, mouseVisible: false },
+      });
+    }
+    await syncMiniModeWindowLayout(animate);
+  }
+}
 
 const LANGUAGE_CHANGE_FALLBACK =
   "Could not switch keyboard language.";
@@ -137,6 +257,8 @@ interface AppStore {
   settingsEpoch: number;
   /** False until the first profile load finishes; blocks persist of DEFAULT_SETTINGS. */
   profileHydrated: boolean;
+  /** Last pointer kind used for touch vs mouse layout profiles. */
+  pointerInputKind: PointerInputKind;
   monitors: MonitorInfo[];
   quickActions: QuickAction[];
   phrases: Phrase[];
@@ -165,8 +287,21 @@ interface AppStore {
   phrasesVisibleBeforeTeaching: boolean | null;
   /** Session-only: restore mouse after leaving 5-octave (wide) piano mode. */
   mouseVisibleBeforeWidePiano: boolean | null;
+  /** Session-only: restore mouse after leaving Mini Mode. */
+  mouseVisibleBeforeMiniMode: boolean | null;
   /** Persisted imported songs (app data library). */
   importedSongs: ImportedMusicSong[];
+  /** Mini Mode shell active (single/mirror or override). */
+  miniModeActive: boolean;
+  /** Whether the mini-mode keyboard is popped (vs collapsed FAB). */
+  miniModeKeyboardVisible: boolean;
+  /**
+   * True after Expand until external input loses focus.
+   * Expand does not exit Mini Mode.
+   */
+  miniModeManualExpand: boolean;
+  /** After manual collapse, skip auto-show until external focus is lost once. */
+  miniModeSuppressAutoShow: boolean;
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
@@ -175,6 +310,13 @@ interface AppStore {
     partial: Partial<AppSettings>,
     options?: { syncToSystem?: boolean },
   ) => Promise<void>;
+  /**
+   * Switch active layout profile by pointer kind. Persists outgoing flat
+   * layout into that kind's snapshot, then applies the incoming snapshot.
+   */
+  setPointerInputKind: (kind: PointerInputKind) => Promise<void>;
+  /** Map a DOM pointerType to PointerInputKind and switch if needed. */
+  handlePointerInputEvent: (pointerType: string) => void;
   /** Live-preview OS window height while dragging the main header (no persist). */
   applyWindowHeightRatioLive: (ratio: number) => Promise<void>;
   resetSettingsToDefaults: () => Promise<void>;
@@ -212,6 +354,12 @@ interface AppStore {
   syncWindowFocusable: () => Promise<void>;
   loadKeyboardLayout: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
+  /** Recompute mini mode from settings/monitors and sync window layout. */
+  refreshMiniModeState: (options?: { animate?: boolean }) => Promise<void>;
+  /** Expand FAB: reopen keyboard until external focus is lost (stay in Mini Mode). */
+  expandMiniModeKeyboard: () => Promise<void>;
+  /** Collapse keyboard back to the mini-mode FAB stack. */
+  collapseMiniModeKeyboard: () => Promise<void>;
   enableMusicTeaching: () => Promise<void>;
   disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
   setMusicSongId: (songId: string) => Promise<void>;
@@ -249,13 +397,13 @@ function parseSettings(json: string): AppSettings {
     const uiLanguage = parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
     // Older profile files may omit keys that previously defaulted to "on".
     // Keep that behavior for existing installs; new profiles write explicit values.
-    // Suggestions bar show/hide and prediction stay in sync.
-    const suggestionsVisible = parsed.suggestionsVisible ?? true;
+    // Keep predictionEnabled and suggestionsVisible independent so Mini Mode can
+    // show the "predictions off / enable" bar while the suggestions strip stays visible.
     const legacyFill: Partial<AppSettings> = {
-      predictionEnabled: suggestionsVisible,
+      predictionEnabled: parsed.predictionEnabled ?? true,
       quickActionsVisible: parsed.quickActionsVisible ?? true,
       phrasesVisible: parsed.phrasesVisible ?? true,
-      suggestionsVisible,
+      suggestionsVisible: parsed.suggestionsVisible ?? true,
       dictationVisible: parsed.dictationVisible ?? true,
       emergencyVisible: parsed.emergencyVisible ?? true,
       keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,
@@ -320,12 +468,9 @@ async function setToolWindowVisible(
 
   const flag = TOOL_WINDOW_FLAG[label];
   if (show) {
-    const { monitors, settings } = get();
-    const monitor = resolveMonitor(monitors, settings.accessibilityMonitorId);
     try {
       await openToolWindow(label, {
         title: TOOL_WINDOW_TITLES[label],
-        monitor,
         onDestroyed: () => {
           set({ [flag]: false });
           void syncMainForToolWindows();
@@ -371,10 +516,13 @@ async function loadProfileData(
   await get().loadPhrases();
   await get().loadMacros();
   if (isMainWindow) {
-    await syncWindowLayoutFromSettings(
-      get().settings,
-      options?.animateLayout === true,
-    );
+    await refreshMiniModeState({ animate: options?.animateLayout === true });
+    if (!get().miniModeActive) {
+      await syncWindowLayoutFromSettings(
+        get().settings,
+        options?.animateLayout === true,
+      );
+    }
   }
 }
 
@@ -422,6 +570,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   settings: DEFAULT_SETTINGS,
   settingsEpoch: 0,
   profileHydrated: false,
+  pointerInputKind: "mouse",
   monitors: [],
   quickActions: [],
   phrases: [],
@@ -447,7 +596,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   musicPlaybackActive: false,
   phrasesVisibleBeforeTeaching: null,
   mouseVisibleBeforeWidePiano: null,
+  mouseVisibleBeforeMiniMode: null,
   importedSongs: [],
+  miniModeActive: false,
+  miniModeKeyboardVisible: false,
+  miniModeManualExpand: false,
+  miniModeSuppressAutoShow: false,
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -558,18 +712,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
           }
         : {}),
     };
-    // Suggestions bar visibility and prediction stay in sync: show ⇒ enable, hide ⇒ disable.
-    if (
-      partial.suggestionsVisible !== undefined &&
-      partial.predictionEnabled === undefined
-    ) {
-      next = { ...next, predictionEnabled: partial.suggestionsVisible };
-    } else if (
-      partial.predictionEnabled !== undefined &&
-      partial.suggestionsVisible === undefined
-    ) {
-      next = { ...next, suggestionsVisible: partial.predictionEnabled };
-    }
     if (
       partial.synthesizerStartOctave !== undefined ||
       partial.synthesizerOctaveCount !== undefined
@@ -601,6 +743,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     }
 
+    // Mini Mode: keep mouse panel hidden (OS cursor stays visible).
+    if (get().miniModeActive && next.mouseVisible) {
+      if (get().mouseVisibleBeforeMiniMode === null) {
+        set({ mouseVisibleBeforeMiniMode: settings.mouseVisible });
+      }
+      next = { ...next, mouseVisible: false };
+    }
+
     const leavingSynthesizer =
       partial.keyboardSectionMode !== undefined &&
       partial.keyboardSectionMode !== "synthesizer" &&
@@ -616,6 +766,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (before !== null) {
         next = { ...next, phrasesVisible: before };
       }
+    }
+
+    if (partialContainsLayoutFields(partial)) {
+      next = persistLayoutForKind(next, get().pointerInputKind);
     }
 
     if (get().settingsEpoch !== epoch) {
@@ -701,7 +855,23 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const visibilityChanged =
         partial.phrasesVisible !== undefined ||
         partial.quickActionsVisible !== undefined;
-      if (
+      // Transparent is CSS-only; do not trigger mini layout refresh/animation.
+      const miniModeSettingChanged = partial.miniModeOverride !== undefined;
+      if (miniModeSettingChanged || partial.accessibilityMonitorId !== undefined) {
+        await refreshMiniModeState({ animate: true });
+      } else if (get().miniModeActive) {
+        if (
+          partial.collapsed !== undefined ||
+          partial.windowHeightRatio !== undefined ||
+          (current.collapsed && partial.dictationVisible !== undefined) ||
+          visibilityChanged
+        ) {
+          if (partial.windowHeightRatio !== undefined) {
+            liveHeightRatioPreview = null;
+          }
+          await syncMiniModeWindowLayout(true);
+        }
+      } else if (
         partial.accessibilityMonitorId !== undefined ||
         partial.collapsed !== undefined ||
         partial.windowHeightRatio !== undefined ||
@@ -728,9 +898,54 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
+  setPointerInputKind: async (kind) => {
+    const { pointerInputKind, settings, profileHydrated } = get();
+    if (kind === pointerInputKind) {
+      return;
+    }
+    const epoch = get().settingsEpoch;
+    const next = switchPointerInputKindLayout(settings, pointerInputKind, kind);
+    set({ pointerInputKind: kind, settings: next });
+    if (profileHydrated) {
+      await persistSettingsIfCurrent(get, epoch, next);
+    }
+    if (WebviewWindow.getCurrent().label === "main") {
+      if (get().miniModeActive) {
+        void syncMiniModeWindowLayout(true);
+      } else {
+        void syncWindowLayoutFromSettings(next, true);
+      }
+    }
+  },
+
+  handlePointerInputEvent: (pointerType) => {
+    const kind = pointerKindFromEvent(pointerType);
+    if (kind === get().pointerInputKind) {
+      // Alternating back to the current kind cancels a pending switch.
+      if (pointerInputKindDebounceTimer !== null) {
+        clearTimeout(pointerInputKindDebounceTimer);
+        pointerInputKindDebounceTimer = null;
+        pendingPointerInputKind = null;
+      }
+      return;
+    }
+    pendingPointerInputKind = kind;
+    if (pointerInputKindDebounceTimer !== null) {
+      clearTimeout(pointerInputKindDebounceTimer);
+    }
+    pointerInputKindDebounceTimer = setTimeout(() => {
+      pointerInputKindDebounceTimer = null;
+      const next = pendingPointerInputKind;
+      pendingPointerInputKind = null;
+      if (next !== null) {
+        void get().setPointerInputKind(next);
+      }
+    }, POINTER_INPUT_KIND_DEBOUNCE_MS);
+  },
+
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings } = get();
-    if (settings.collapsed) return;
+    const { settings, miniModeActive } = get();
+    if (settings.collapsed || miniModeActive) return;
     const heightRatio = Math.max(
       computeContentHeightRatio({
         quickActions: settings.quickActionsVisible,
@@ -810,6 +1025,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   loadMonitors: async () => {
     const monitors = await invoke<MonitorInfo[]>("cmd_list_monitors");
     set({ monitors });
+    if (WebviewWindow.getCurrent().label === "main" && get().profileHydrated) {
+      await refreshMiniModeState({ animate: false });
+    }
   },
 
   loadQuickActions: async () => {
@@ -1364,9 +1582,78 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     } finally {
       set({ isAnimatingWindow: false });
+      const queued = pendingMiniLayoutSync;
+      pendingMiniLayoutSync = null;
+      if (queued !== null && get().miniModeActive) {
+        void syncMiniModeWindowLayout(queued);
+      }
     }
   },
+
+  refreshMiniModeState: async (options) => {
+    await refreshMiniModeState(options);
+  },
+
+  expandMiniModeKeyboard: async () => {
+    if (!get().miniModeActive || get().isAnimatingWindow) {
+      return;
+    }
+    if (get().miniModeKeyboardVisible && get().miniModeManualExpand) {
+      return;
+    }
+    set({
+      miniModeKeyboardVisible: true,
+      miniModeManualExpand: true,
+      miniModeSuppressAutoShow: false,
+    });
+    await syncMiniModeWindowLayout(true);
+  },
+
+  collapseMiniModeKeyboard: async () => {
+    if (!get().miniModeActive || get().isAnimatingWindow) {
+      return;
+    }
+    if (!get().miniModeKeyboardVisible) {
+      return;
+    }
+    set({
+      miniModeKeyboardVisible: false,
+      miniModeManualExpand: false,
+      miniModeSuppressAutoShow: true,
+    });
+    await syncMiniModeWindowLayout(true);
+  },
 }));
+
+/**
+ * Mini Mode: show keyboard on external editable focus; hide when focus is lost.
+ * Manual Expand keeps the keyboard until focus is lost (does not exit Mini Mode).
+ */
+void listen<{ focused: boolean }>("input-focus-changed", (event) => {
+  const state = useAppStore.getState();
+  if (!state.miniModeActive) return;
+  const focused = event.payload.focused;
+  if (focused) {
+    if (!state.miniModeKeyboardVisible && !state.miniModeSuppressAutoShow) {
+      useAppStore.setState({ miniModeKeyboardVisible: true });
+      void syncMiniModeWindowLayout(true);
+    }
+    return;
+  }
+  // Focus lost → hide keyboard and clear manual expand / collapse suppression.
+  if (
+    state.miniModeKeyboardVisible ||
+    state.miniModeManualExpand ||
+    state.miniModeSuppressAutoShow
+  ) {
+    useAppStore.setState({
+      miniModeKeyboardVisible: false,
+      miniModeManualExpand: false,
+      miniModeSuppressAutoShow: false,
+    });
+    void syncMiniModeWindowLayout(true);
+  }
+});
 
 export async function getMacroSteps(macroId: string): Promise<MacroStep[]> {
   return invoke<MacroStep[]>("cmd_get_macro_steps", { macroId });

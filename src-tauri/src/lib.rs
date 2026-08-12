@@ -10,17 +10,20 @@ mod stt;
 mod tts;
 mod window;
 
+#[cfg(not(target_os = "windows"))]
+compile_error!("ReachPanel is Windows-only. macOS is not supported.");
+
 use db::{
     Database, MacroDef, MacroStep, Phrase, Profile, QuickAction,
 };
 use input::{
-    get_cursor_position, get_input_methods, get_keyboard_layout, get_keyboard_state,
-    get_layout_key_labels, mouse_click, mouse_double_click, mouse_scroll, move_cursor_absolute,
-    move_cursor_relative, press_combo, press_key, press_media_key, set_input_method_by_hkl,
-    set_input_method_by_language, set_system_language, type_text, windows_ui_language,
-    InputMethod, KeyPressRequest, KeyboardState, LayoutKeyLabel,
+    begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position, get_input_methods,
+    get_keyboard_layout, get_keyboard_state, get_layout_key_labels, mouse_click,
+    mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
+    press_key, press_media_key, set_input_method_by_hkl, set_input_method_by_language,
+    set_system_language, type_text, windows_ui_language, InputMethod, KeyPressRequest,
+    KeyboardState, LayoutKeyLabel,
 };
-#[cfg(target_os = "windows")]
 use input::focus_target;
 use prediction::{
     ensure_english_pack, get_installed_languages, get_suggestions, install_word_pack,
@@ -193,6 +196,44 @@ fn cmd_move_cursor_relative(dx: i32, dy: i32, state: State<AppState>) -> Command
 }
 
 #[tauri::command]
+fn cmd_trackpad_gesture_begin(
+    window: tauri::WebviewWindow,
+    state: State<AppState>,
+) -> CommandResult {
+    let hwnd = match window.hwnd() {
+        Ok(hwnd) => hwnd.0 as isize,
+        Err(e) => {
+            set_error(&state, Some(e.to_string()));
+            return err(e);
+        }
+    };
+    match begin_trackpad_gesture(hwnd) {
+        Ok(()) => {
+            set_error(&state, None);
+            ok()
+        }
+        Err(e) => {
+            set_error(&state, Some(e.to_string()));
+            err(e)
+        }
+    }
+}
+
+#[tauri::command]
+fn cmd_trackpad_gesture_end(state: State<AppState>) -> CommandResult {
+    match end_trackpad_gesture() {
+        Ok(()) => {
+            set_error(&state, None);
+            ok()
+        }
+        Err(e) => {
+            set_error(&state, Some(e.to_string()));
+            err(e)
+        }
+    }
+}
+
+#[tauri::command]
 fn cmd_move_cursor_absolute(x: i32, y: i32, state: State<AppState>) -> CommandResult {
     match move_cursor_absolute(x, y) {
         Ok(()) => ok(),
@@ -246,36 +287,64 @@ fn cmd_list_monitors() -> Vec<MonitorInfo> {
     list_monitors()
 }
 
+/// Returns the monitor id that contains the largest portion of the main window.
+#[tauri::command]
+async fn cmd_get_main_window_monitor(app: tauri::AppHandle) -> Result<u32, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    let layout = get_current_window_layout(&window)?;
+    let monitors = list_monitors();
+    if monitors.is_empty() {
+        return Err("No monitors found".to_string());
+    }
+    Ok(window::monitor_for_rect(
+        &monitors,
+        layout.x,
+        layout.y,
+        layout.width as i32,
+        layout.height as i32,
+    ))
+}
+
 async fn apply_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,
     collapsed: bool,
     collapsed_dictation: bool,
+    collapsed_settings: bool,
     height_ratio: f32,
+    mini_mode: bool,
+    mini_keyboard_visible: bool,
+    mini_keyboard_height_ratio: f32,
 ) -> Result<(), String> {
     let monitors = list_monitors();
-    let layout =
-        compute_window_layout(&monitors, monitor_id, collapsed, collapsed_dictation, height_ratio)?;
+    let dpi_scale = main_window_dpi_scale(app);
+    let layout = compute_window_layout(
+        &monitors,
+        monitor_id,
+        collapsed,
+        collapsed_dictation,
+        collapsed_settings,
+        height_ratio,
+        mini_mode,
+        mini_keyboard_visible,
+        mini_keyboard_height_ratio,
+        dpi_scale,
+    )?;
     set_window_layout(app, layout).await
 }
 
+fn main_window_dpi_scale(app: &AppHandle) -> f32 {
+    app.get_webview_window("main")
+        .and_then(|w| w.scale_factor().ok())
+        .map(|s| s as f32)
+        .unwrap_or(1.0)
+}
+
 fn get_current_window_layout(window: &tauri::WebviewWindow) -> Result<WindowLayout, String> {
-    #[cfg(target_os = "windows")]
-    {
-        let hwnd = window.hwnd().map_err(|e| e.to_string())?;
-        window::get_window_bounds(hwnd.0 as isize)
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let pos = window.outer_position().map_err(|e| e.to_string())?;
-        let size = window.outer_size().map_err(|e| e.to_string())?;
-        Ok(WindowLayout {
-            x: pos.x,
-            y: pos.y,
-            width: size.width,
-            height: size.height,
-        })
-    }
+    let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+    window::get_window_bounds(hwnd.0 as isize)
 }
 
 async fn set_window_layout(
@@ -283,15 +352,8 @@ async fn set_window_layout(
     layout: WindowLayout,
 ) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
-        #[cfg(target_os = "windows")]
-        {
-            let hwnd = window.hwnd().map_err(|e| e.to_string())?;
-            window::set_window_bounds(hwnd.0 as isize, layout)?;
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            apply_window_layout_tauri(&window, layout)?;
-        }
+        let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+        window::set_window_bounds(hwnd.0 as isize, layout)?;
     }
     Ok(())
 }
@@ -301,22 +363,37 @@ async fn animate_window_layout(
     monitor_id: u32,
     collapsed: bool,
     collapsed_dictation: bool,
+    collapsed_settings: bool,
     height_ratio: f32,
+    mini_mode: bool,
+    mini_keyboard_visible: bool,
+    mini_keyboard_height_ratio: f32,
 ) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
     let monitors = list_monitors();
+    let dpi_scale = main_window_dpi_scale(app);
     let target = compute_window_layout(
         &monitors,
         monitor_id,
         collapsed,
         collapsed_dictation,
+        collapsed_settings,
         height_ratio,
+        mini_mode,
+        mini_keyboard_visible,
+        mini_keyboard_height_ratio,
+        dpi_scale,
     )?;
     let from = get_current_window_layout(&window)?;
 
-    let steps = window::COLLAPSE_ANIMATION_MS / window::COLLAPSE_ANIMATION_FRAME_MS;
+    let animation_ms = if mini_mode {
+        window::MINI_MODE_ANIMATION_MS
+    } else {
+        window::COLLAPSE_ANIMATION_MS
+    };
+    let steps = animation_ms / window::COLLAPSE_ANIMATION_FRAME_MS;
     for step in 0..=steps {
         let progress = step as f32 / steps as f32;
         let layout = window::interpolate_layout(from, target, progress);
@@ -331,26 +408,6 @@ async fn animate_window_layout(
     Ok(())
 }
 
-#[cfg(not(target_os = "windows"))]
-fn apply_window_layout_tauri(
-    window: &tauri::WebviewWindow,
-    layout: WindowLayout,
-) -> Result<(), String> {
-    window
-        .set_position(tauri::Position::Physical(tauri::PhysicalPosition {
-            x: layout.x,
-            y: layout.y,
-        }))
-        .map_err(|e| e.to_string())?;
-    window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-            width: layout.width,
-            height: layout.height,
-        }))
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
 #[tauri::command]
 async fn cmd_apply_window_layout(
     app: tauri::AppHandle,
@@ -358,13 +415,21 @@ async fn cmd_apply_window_layout(
     collapsed: bool,
     collapsed_dictation: bool,
     height_ratio: f32,
+    collapsed_settings: Option<bool>,
+    mini_mode: Option<bool>,
+    mini_keyboard_visible: Option<bool>,
+    mini_keyboard_height_ratio: Option<f32>,
 ) -> Result<(), String> {
     apply_window_layout(
         &app,
         monitor_id,
         collapsed,
         collapsed_dictation,
+        collapsed_settings.unwrap_or(false),
         height_ratio,
+        mini_mode.unwrap_or(false),
+        mini_keyboard_visible.unwrap_or(false),
+        mini_keyboard_height_ratio.unwrap_or(window::MINI_KEYBOARD_HEIGHT_RATIO),
     )
     .await
 }
@@ -376,13 +441,21 @@ async fn cmd_animate_window_layout(
     collapsed: bool,
     collapsed_dictation: bool,
     height_ratio: f32,
+    collapsed_settings: Option<bool>,
+    mini_mode: Option<bool>,
+    mini_keyboard_visible: Option<bool>,
+    mini_keyboard_height_ratio: Option<f32>,
 ) -> Result<(), String> {
     animate_window_layout(
         &app,
         monitor_id,
         collapsed,
         collapsed_dictation,
+        collapsed_settings.unwrap_or(false),
         height_ratio,
+        mini_mode.unwrap_or(false),
+        mini_keyboard_visible.unwrap_or(false),
+        mini_keyboard_height_ratio.unwrap_or(window::MINI_KEYBOARD_HEIGHT_RATIO),
     )
     .await
 }
@@ -393,7 +466,18 @@ async fn cmd_move_window_to_monitor(
     monitor_id: u32,
     height_ratio: f32,
 ) -> Result<(), String> {
-    apply_window_layout(&app, monitor_id, false, false, height_ratio).await
+    apply_window_layout(
+        &app,
+        monitor_id,
+        false,
+        false,
+        false,
+        height_ratio,
+        false,
+        false,
+        window::MINI_KEYBOARD_HEIGHT_RATIO,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -409,7 +493,6 @@ async fn cmd_set_window_focusable(app: tauri::AppHandle, focusable: bool) -> Res
     if let Some(window) = app.get_webview_window("main") {
         window.set_focusable(focusable).map_err(|e| e.to_string())?;
         if !focusable {
-            #[cfg(target_os = "windows")]
             focus_target::remember_current_if_external();
         }
     }
@@ -429,7 +512,11 @@ async fn cmd_set_collapsed(
         monitor_id,
         collapsed,
         collapsed_dictation,
+        false,
         height_ratio,
+        false,
+        false,
+        window::MINI_KEYBOARD_HEIGHT_RATIO,
     )
     .await
 }
@@ -932,25 +1019,25 @@ fn cmd_get_stt_status(
     ))
 }
 
+/// Strict allowlist of Windows Settings pages this app may open.
+const ALLOWED_MS_SETTINGS_PAGES: &[&str] = &[
+    "ms-settings:privacy-speech",
+    "ms-settings:speech",
+];
+
 /// Opens a Windows Settings page (e.g. `ms-settings:privacy-speech`).
 #[tauri::command]
-fn cmd_open_windows_settings(uri: String) -> Result<(), String> {
-    if !uri.starts_with("ms-settings:") {
-        return Err("Only ms-settings: URIs are allowed".to_string());
-    }
-    #[cfg(target_os = "windows")]
+fn cmd_open_windows_settings(app: AppHandle, uri: String) -> Result<(), String> {
+    let trimmed = uri.trim();
+    if !ALLOWED_MS_SETTINGS_PAGES
+        .iter()
+        .any(|allowed| *allowed == trimmed)
     {
-        std::process::Command::new("cmd")
-            .args(["/C", "start", "", &uri])
-            .spawn()
-            .map_err(|e| format!("Failed to open Windows Settings: {e}"))?;
-        Ok(())
+        return Err("Windows Settings page is not allowed".to_string());
     }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let _ = uri;
-        Err("Windows Settings are only available on Windows".to_string())
-    }
+    app.opener()
+        .open_url(trimmed, None::<&str>)
+        .map_err(|e| format!("Failed to open Windows Settings: {e}"))
 }
 
 #[tauri::command]
@@ -1121,8 +1208,7 @@ pub fn run() {
                 let _ = window.set_shadow(false);
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
-                #[cfg(target_os = "windows")]
-                focus_target::init();
+                focus_target::init(app.handle().clone());
             }
             Ok(())
         })
@@ -1139,12 +1225,15 @@ pub fn run() {
             cmd_set_input_method,
             cmd_get_layout_key_labels,
             cmd_move_cursor_relative,
+            cmd_trackpad_gesture_begin,
+            cmd_trackpad_gesture_end,
             cmd_move_cursor_absolute,
             cmd_get_cursor_position,
             cmd_mouse_click,
             cmd_mouse_double_click,
             cmd_mouse_scroll,
             cmd_list_monitors,
+            cmd_get_main_window_monitor,
             cmd_apply_window_layout,
             cmd_animate_window_layout,
             cmd_move_window_to_monitor,

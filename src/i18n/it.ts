@@ -27,6 +27,26 @@ export const it: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Schermo di accessibilità",
 
+  miniMode: "Modalità Mini",
+
+  miniModeAutoDescription:
+    "Su un singolo display o in configurazione speculare, la tastiera appare automaticamente quando tocchi un campo di input.",
+
+  miniModeOverrideLabel: "Modalità Mini",
+
+  miniModeOverrideAuto: "Automatica",
+
+  miniModeOverrideOn: "Attiva",
+
+  miniModeOverrideOff: "Disattiva",
+
+  miniModeTransparent: "Tastiera trasparente",
+
+  miniModeTransparentDescription:
+    "Mostra i tasti solo con contorno per vedere le app sottostanti.",
+
+  miniModeCollapse: "Torna alla Modalità Mini",
+
   largeHeaders: "Intestazioni grandi per ridimensionare più facilmente",
 
   largeHeadersHint:

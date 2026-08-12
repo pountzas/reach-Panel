@@ -9,7 +9,8 @@
     "build:tauri": "tauri build",
     "build:tauri:release": "tauri build --config src-tauri/tauri.release.conf.json",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test": "vitest run"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",
@@ -31,11 +32,14 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
-    "@types/jszip": "^3.4.0",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^6.0.4",
+    "@testing-library/react": "^16.3.2",
+    "@types/jszip": "^3.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "jsdom": "^29.1.1",
     "typescript": "~6.0.3",
-    "vite": "^8.1.5"
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
   }
 }

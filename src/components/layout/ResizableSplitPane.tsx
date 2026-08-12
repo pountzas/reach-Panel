@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "../../hooks/useTranslation";
+import { usePointerDrag } from "../../lib/pointerDrag";
 
 const SPLITTER_WIDTH = 6;
 const DEFAULT_MIN_LEFT = 160;
@@ -89,36 +90,37 @@ export function ResizableSplitPane({
     };
   }, [clampToBounds]);
 
+  const splitterDrag = usePointerDrag({
+    enabled: !sizedPaneCollapsed,
+    onMove: (event) => {
+      const drag = dragStateRef.current;
+      if (!drag) return;
+
+      const rawDelta = (drag.startX - event.clientX) / drag.width;
+      const deltaRatio = ratioSide === "left" ? -rawDelta : rawDelta;
+      const { minSized, maxSized } = ratioBounds(drag.width);
+      onRightRatioChange(clamp(drag.startRatio + deltaRatio, minSized, maxSized));
+    },
+    onEnd: () => {
+      dragStateRef.current = null;
+    },
+  });
+
   const onSplitterPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (sizedPaneCollapsed) return;
+
     const container = containerRef.current;
     if (!container) return;
 
     const width = container.getBoundingClientRect().width;
     if (width <= 0) return;
 
-    event.currentTarget.setPointerCapture(event.pointerId);
     dragStateRef.current = {
       startX: event.clientX,
       startRatio: rightRatio,
       width,
     };
-  };
-
-  const onSplitterPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragStateRef.current;
-    if (!drag) return;
-
-    const rawDelta = (drag.startX - event.clientX) / drag.width;
-    const deltaRatio = ratioSide === "left" ? -rawDelta : rawDelta;
-    const { minSized, maxSized } = ratioBounds(drag.width);
-    onRightRatioChange(clamp(drag.startRatio + deltaRatio, minSized, maxSized));
-  };
-
-  const onSplitterPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    dragStateRef.current = null;
+    splitterDrag.onPointerDown(event);
   };
 
   const leftFlex = ratioSide === "left" ? rightRatio : 1 - rightRatio;
@@ -163,14 +165,10 @@ export function ResizableSplitPane({
           aria-valuemax={maxSizedPercent}
           aria-valuenow={Math.round(rightRatio * 100)}
           className="group z-20 flex shrink-0 cursor-col-resize items-stretch px-0.5"
-          style={{ width: SPLITTER_WIDTH }}
+          style={{ width: SPLITTER_WIDTH, touchAction: "none" }}
           onPointerDown={onSplitterPointerDown}
-          onPointerMove={onSplitterPointerMove}
-          onPointerUp={onSplitterPointerUp}
-          onPointerCancel={onSplitterPointerUp}
-          onLostPointerCapture={() => {
-            dragStateRef.current = null;
-          }}
+          onPointerMove={splitterDrag.onPointerMove}
+          onPointerUp={splitterDrag.onPointerUp}
         >
           <div className="w-0.5 flex-1 rounded-full bg-slate-300 transition-colors group-hover:bg-slate-500 group-active:bg-slate-600" />
         </div>

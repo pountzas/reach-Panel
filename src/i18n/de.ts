@@ -27,6 +27,26 @@ export const de: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Barrierefreiheitsbildschirm",
 
+  miniMode: "Mini-Modus",
+
+  miniModeAutoDescription:
+    "Auf einem einzelnen Display oder bei gespiegelter Einrichtung erscheint die Tastatur automatisch, wenn Sie ein Eingabefeld antippen.",
+
+  miniModeOverrideLabel: "Mini-Modus",
+
+  miniModeOverrideAuto: "Automatisch",
+
+  miniModeOverrideOn: "Ein",
+
+  miniModeOverrideOff: "Aus",
+
+  miniModeTransparent: "Transparente Tastatur",
+
+  miniModeTransparentDescription:
+    "Tasten nur mit Umrissen anzeigen, damit Apps darunter sichtbar bleiben.",
+
+  miniModeCollapse: "Zurück zum Mini-Modus",
+
   largeHeaders: "Große Header für einfacheres Ändern der Größe",
 
   largeHeadersHint:
