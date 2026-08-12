@@ -46,6 +46,7 @@ import {
   closeToolWindow,
   openToolWindow,
   PROFILE_UPDATED_EVENT,
+  resolveMonitor,
   syncMainForToolWindows,
   TOOL_WINDOW_REQUEST_EVENT,
   TOOL_WINDOW_TITLES,
@@ -127,6 +128,22 @@ async function syncMiniModeWindowLayout(preferAnimate = true) {
       const nextAnimate = queued ?? preferAnimate;
       void syncMiniModeWindowLayout(nextAnimate);
     }
+  }
+}
+
+/**
+ * Expand collapsed / mini FAB so UpdatePrompt has a usable window size.
+ */
+async function ensureUpdatePromptVisible(get: () => AppStore) {
+  const state = get();
+  if (state.miniModeActive) {
+    if (!state.miniModeKeyboardVisible) {
+      await state.expandMiniModeKeyboard();
+    }
+    return;
+  }
+  if (state.settings.collapsed) {
+    await state.toggleCollapsed();
   }
 }
 
@@ -469,8 +486,14 @@ async function setToolWindowVisible(
   const flag = TOOL_WINDOW_FLAG[label];
   if (show) {
     try {
+      const monitors = get().monitors;
+      const preferred = resolveMonitor(
+        monitors,
+        get().settings.accessibilityMonitorId,
+      );
       await openToolWindow(label, {
         title: TOOL_WINDOW_TITLES[label],
+        monitor: preferred,
         onDestroyed: () => {
           set({ [flag]: false });
           void syncMainForToolWindows();
@@ -609,6 +632,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setPendingUpdate: (update) => {
     set({ pendingUpdate: update });
     void get().syncWindowFocusable();
+    // Expand mini keyboard / uncollapse so the themed modal has room to render.
+    if (update) {
+      void ensureUpdatePromptVisible(get);
+    }
   },
 
   checkForUpdates: async () => {
@@ -617,6 +644,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const update = await checkForUpdate();
       if (update) {
         set({ pendingUpdate: update, updateCheckStatus: "idle" });
+        void ensureUpdatePromptVisible(get);
       } else {
         set({ pendingUpdate: null, updateCheckStatus: "upToDate" });
       }

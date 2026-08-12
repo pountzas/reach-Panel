@@ -7,6 +7,7 @@ import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { MacroBuilder } from "./components/macros/MacroBuilder";
 import { HeadTrackingWizard } from "./components/head-tracking/HeadTrackingWizard";
 import { AppToaster } from "./components/common/AppToaster";
+import { UpdatePrompt } from "./components/common/UpdatePrompt";
 import { computeContentHeightRatio } from "./lib/sectionLayouts";
 import {
   isToolWindowLabel,
@@ -185,7 +186,21 @@ function MainApp() {
     setLastError,
   ]);
 
-  return <AppShell />;
+  const pendingUpdate = useAppStore((s) => s.pendingUpdate);
+  const setPendingUpdate = useAppStore((s) => s.setPendingUpdate);
+
+  return (
+    <>
+      <AppShell />
+      {pendingUpdate && (
+        <UpdatePrompt
+          update={pendingUpdate}
+          onDismiss={() => setPendingUpdate(null)}
+        />
+      )}
+      <AppToaster />
+    </>
+  );
 }
 
 function ToolApp({ label }: { label: ToolWindowLabel }) {

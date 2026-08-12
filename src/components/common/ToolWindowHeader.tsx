@@ -1,5 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
-import { useLongPressWindowDrag } from "../../hooks/useLongPressWindowDrag";
+import {
+  useLongPressWindowDrag,
+  WINDOW_DRAG_TOUCH_STYLE,
+} from "../../hooks/useLongPressWindowDrag";
 import { useTranslation } from "../../hooks/useTranslation";
 
 interface ToolWindowHeaderProps {
@@ -22,7 +25,7 @@ export function ToolWindowHeader({
   return (
     <div
       className={`${className} cursor-grab active:cursor-grabbing`}
-      style={style}
+      style={{ ...WINDOW_DRAG_TOUCH_STYLE, ...style }}
       title={t("dragToMove")}
       {...dragHandlers}
     >
