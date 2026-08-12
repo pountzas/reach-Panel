@@ -35,7 +35,13 @@ export const el: Record<keyof typeof en, string> = {
   miniModeAutoDescription:
     "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
 
-  miniModeForceEnable: "Ενεργοποίηση Mini σε διπλές οθόνες",
+  miniModeOverrideLabel: "Λειτουργία Mini",
+
+  miniModeOverrideAuto: "Αυτόματο",
+
+  miniModeOverrideOn: "Ενεργό",
+
+  miniModeOverrideOff: "Ανενεργό",
 
   miniModeTransparent: "Διαφανές πληκτρολόγιο",
 

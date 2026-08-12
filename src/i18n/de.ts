@@ -32,7 +32,13 @@ export const de: Record<keyof typeof en, string> = {
   miniModeAutoDescription:
     "Auf einem einzelnen Display oder bei gespiegelter Einrichtung erscheint die Tastatur automatisch, wenn Sie ein Eingabefeld antippen.",
 
-  miniModeForceEnable: "Mini-Modus auf Dual-Monitoren aktivieren",
+  miniModeOverrideLabel: "Mini-Modus",
+
+  miniModeOverrideAuto: "Automatisch",
+
+  miniModeOverrideOn: "Ein",
+
+  miniModeOverrideOff: "Aus",
 
   miniModeTransparent: "Transparente Tastatur",
 

@@ -32,14 +32,20 @@ export const it: Record<keyof typeof en, string> = {
   miniModeAutoDescription:
     "Su un singolo display o in configurazione speculare, la tastiera appare automaticamente quando tocchi un campo di input.",
 
-  miniModeForceEnable: "Abilita Modalità Mini su monitor doppi",
+  miniModeOverrideLabel: "Modalità Mini",
+
+  miniModeOverrideAuto: "Automatica",
+
+  miniModeOverrideOn: "Attiva",
+
+  miniModeOverrideOff: "Disattiva",
 
   miniModeTransparent: "Tastiera trasparente",
 
   miniModeTransparentDescription:
     "Mostra i tasti solo con contorno per vedere le app sottostanti.",
 
-  miniModeCollapse: "Torna alla modalità mini",
+  miniModeCollapse: "Torna alla Modalità Mini",
 
   largeHeaders: "Intestazioni grandi per ridimensionare più facilmente",
 
