@@ -25,6 +25,10 @@ pub fn app_icon_cached_path(app: &AppHandle, target: &str) -> Option<String> {
     ));
     fs::write(&tmp, &png).ok()?;
     if fs::rename(&tmp, &cache_file).is_err() {
+        if cache_file.is_file() {
+            let _ = fs::remove_file(&tmp);
+            return Some(cache_file.to_string_lossy().into_owned());
+        }
         let _ = fs::remove_file(&tmp);
         return None;
     }
