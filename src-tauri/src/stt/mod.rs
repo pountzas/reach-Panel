@@ -60,6 +60,15 @@ pub fn start_dictation(
     groq_api_key: Option<&str>,
     app: AppHandle,
 ) -> anyhow::Result<()> {
+    {
+        let guard = router()
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Dictation router lock poisoned"))?;
+        if guard.active.is_some() {
+            anyhow::bail!("Dictation is already active");
+        }
+    }
+
     let online = network::is_online();
     let winrt_supported = winrt::is_language_supported(language);
     let groq_configured = groq::is_configured(groq_api_key);
