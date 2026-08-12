@@ -40,7 +40,10 @@ export function DictationButton({ transparentUi = false }: { transparentUi?: boo
   return (
     <>
       <DictationVisualizer active={listening} captureAudio={captureAudio} />
-      <ModeToggleGroup transparentUi={transparentUi}>
+      <ModeToggleGroup
+        transparentUi={transparentUi}
+        transparentBorderColor={transparentPalette.border}
+      >
         <ModeToggleButton
           active={listening}
           position="only"

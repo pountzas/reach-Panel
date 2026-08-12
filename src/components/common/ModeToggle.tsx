@@ -47,12 +47,23 @@ export function ModeToggleButton({
 interface ModeToggleGroupProps {
   children: ReactNode;
   transparentUi?: boolean;
+  /** Outer frame color when transparentUi is on (defaults to white). */
+  transparentBorderColor?: string;
 }
 
-export function ModeToggleGroup({ children, transparentUi = false }: ModeToggleGroupProps) {
+export function ModeToggleGroup({
+  children,
+  transparentUi = false,
+  transparentBorderColor,
+}: ModeToggleGroupProps) {
   return (
     <div
-      className={`relative box-border flex h-8 shrink-0 items-stretch overflow-visible rounded border ${transparentUi ? "border-white/80" : "border-slate-300"}`}
+      className={`relative box-border flex h-8 shrink-0 items-stretch overflow-visible rounded border ${transparentUi ? "" : "border-slate-300"}`}
+      style={
+        transparentUi
+          ? { borderColor: transparentBorderColor ?? "rgba(255,255,255,0.8)" }
+          : undefined
+      }
     >
       {children}
     </div>

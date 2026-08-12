@@ -84,7 +84,10 @@ export function KeyboardSection() {
               className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
             >
               {showMiniModeCollapse && (
-                <ModeToggleGroup transparentUi={transparentUi}>
+                <ModeToggleGroup
+                  transparentUi={transparentUi}
+                  transparentBorderColor={transparentPalette.border}
+                >
                   <ModeToggleButton
                     active={false}
                     position="only"
@@ -102,7 +105,10 @@ export function KeyboardSection() {
               )}
               {showDictation && <DictationButton transparentUi={transparentUi} />}
               {showTransparentToggle && (
-                <ModeToggleGroup transparentUi={transparentUi}>
+                <ModeToggleGroup
+                  transparentUi={transparentUi}
+                  transparentBorderColor={transparentPalette.border}
+                >
                   <ModeToggleButton
                     active={Boolean(settings.miniModeTransparent)}
                     position="only"
@@ -130,7 +136,10 @@ export function KeyboardSection() {
                 </ModeToggleGroup>
               )}
               {showTransparentColorButton && (
-                <ModeToggleGroup transparentUi>
+                <ModeToggleGroup
+                  transparentUi
+                  transparentBorderColor={transparentPalette.border}
+                >
                   <ModeToggleButton
                     active={false}
                     position="only"

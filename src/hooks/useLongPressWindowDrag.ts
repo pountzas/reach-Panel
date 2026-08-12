@@ -1,4 +1,9 @@
-import { useCallback, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 const TOUCH_HOLD_MS = 450;
@@ -32,6 +37,8 @@ export function useLongPressWindowDrag() {
     }
     startRef.current = null;
   }, []);
+
+  useEffect(() => clear, [clear]);
 
   const onPointerDown = useCallback(
     (event: ReactPointerEvent<HTMLElement>) => {
