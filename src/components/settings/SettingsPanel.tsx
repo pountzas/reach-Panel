@@ -462,16 +462,29 @@ export function SettingsPanel() {
             >
               {t("miniModeAutoDescription")}
             </p>
-            <ToggleRow
-              label={t("miniModeForceEnable")}
-              checked={settings.miniModeOverride === true}
-              onChange={(checked) =>
-                updateSettings({
-                  miniModeOverride: checked ? true : null,
-                })
-              }
-              surface={surface}
-            />
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("miniModeOverrideLabel")}
+              <ThemedSelect
+                value={
+                  settings.miniModeOverride === true
+                    ? "on"
+                    : settings.miniModeOverride === false
+                      ? "off"
+                      : "auto"
+                }
+                onChange={(value) =>
+                  updateSettings({
+                    miniModeOverride:
+                      value === "on" ? true : value === "off" ? false : null,
+                  })
+                }
+                surface={surface}
+              >
+                <option value="auto">{t("miniModeOverrideAuto")}</option>
+                <option value="on">{t("miniModeOverrideOn")}</option>
+                <option value="off">{t("miniModeOverrideOff")}</option>
+              </ThemedSelect>
+            </label>
             <div className="mt-2">
               <ToggleRow
                 label={t("miniModeTransparent")}

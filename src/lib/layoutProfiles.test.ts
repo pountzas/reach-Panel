@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createDefaultSectionStack } from "./sectionStack";
 import { DEFAULT_SETTINGS, type AppSettings } from "./types";
 import {
   applyLayoutSnapshot,
@@ -27,7 +28,7 @@ describe("layoutProfiles", () => {
     const touchApplied = applyLayoutSnapshot(base, { inputRowRightRatio: 0.4 });
     const stored = persistLayoutForKind(touchApplied, "touch");
     expect(stored.touchLayout?.inputRowRightRatio).toBe(0.4);
-    expect(stored.mouseLayout?.inputRowRightRatio ?? 0.28).toBe(0.28);
+    expect(stored.mouseLayout).toBeUndefined();
   });
 
   it("resolveActiveLayout picks touch snapshot when kind is touch", () => {
@@ -56,24 +57,44 @@ describe("layoutProfiles", () => {
   });
 
   it("switchPointerInputKindLayout persists outgoing then restores incoming", () => {
+    const mouseStack = createDefaultSectionStack();
+    const touchStack = {
+      ...createDefaultSectionStack(),
+      order: ["phrases", "quick-actions"] as ReturnType<
+        typeof createDefaultSectionStack
+      >["order"],
+    };
+    const editedMouseStack = {
+      ...mouseStack,
+      weights: { ...mouseStack.weights, phrases: 5 },
+    };
+
     let settings: AppSettings = {
       ...DEFAULT_SETTINGS,
+      sectionStack: mouseStack,
       inputRowRightRatio: 0.3,
-      mouseLayout: { inputRowRightRatio: 0.3 },
-      touchLayout: { inputRowRightRatio: 0.55 },
+      mouseLayout: { sectionStack: mouseStack, inputRowRightRatio: 0.3 },
+      touchLayout: {
+        sectionStack: touchStack,
+        inputRowRightRatio: 0.55,
+      },
     };
     // Simulate active mouse editing, then switch to touch.
     settings = applySettingsWithLayoutPersist(
       settings,
-      { inputRowRightRatio: 0.22 },
+      { sectionStack: editedMouseStack, inputRowRightRatio: 0.22 },
       "mouse",
     );
     const switched = switchPointerInputKindLayout(settings, "mouse", "touch");
     expect(switched.mouseLayout?.inputRowRightRatio).toBe(0.22);
+    expect(switched.mouseLayout?.sectionStack?.weights?.phrases).toBe(5);
     expect(switched.inputRowRightRatio).toBe(0.55);
+    expect(switched.sectionStack?.order).toEqual(["phrases", "quick-actions"]);
 
     const back = switchPointerInputKindLayout(switched, "touch", "mouse");
     expect(back.inputRowRightRatio).toBe(0.22);
+    expect(back.sectionStack?.weights?.phrases).toBe(5);
+    expect(back.sectionStack?.order).toEqual(mouseStack.order);
   });
 
   it("pointerKindFromEvent maps touch vs other", () => {

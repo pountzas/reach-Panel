@@ -100,7 +100,7 @@ function MainApp() {
   ]);
 
   useEffect(() => {
-    // Instant touch↔mouse layout profile switch (no debounce).
+    // Touch↔mouse layout switch (store debounces rapid alternating pointerdowns).
     const onPointerDown = (event: PointerEvent) => {
       useAppStore.getState().handlePointerInputEvent(event.pointerType);
     };

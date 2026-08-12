@@ -111,6 +111,7 @@ export function Trackpad() {
   const gestureReady = useRef(false);
   const gestureGen = useRef(0);
   const pendingDelta = useRef({ dx: 0, dy: 0 });
+  const subPixel = useRef({ x: 0, y: 0 });
   const rafId = useRef<number | null>(null);
   const ipcInFlight = useRef(false);
   const pressStart = useRef<{ x: number; y: number; t: number } | null>(null);
@@ -180,6 +181,7 @@ export function Trackpad() {
     pressStart.current = { x: e.clientX, y: e.clientY, t: performance.now() };
     travelPx.current = 0;
     pendingDelta.current = { dx: 0, dy: 0 };
+    subPixel.current = { x: 0, y: 0 };
     const gen = ++gestureGen.current;
     dragging.current = true;
     gestureReady.current = false;
@@ -195,6 +197,7 @@ export function Trackpad() {
         if (gestureGen.current === gen) {
           dragging.current = false;
           gestureReady.current = false;
+          void pollError();
         }
       });
   };
@@ -210,8 +213,12 @@ export function Trackpad() {
       clearPendingClick();
       lastTapAt.current = 0;
     }
-    const dx = Math.round(rawDx * speed);
-    const dy = Math.round(rawDy * speed);
+    subPixel.current.x += rawDx * speed;
+    subPixel.current.y += rawDy * speed;
+    const dx = Math.round(subPixel.current.x);
+    const dy = Math.round(subPixel.current.y);
+    subPixel.current.x -= dx;
+    subPixel.current.y -= dy;
     lastPos.current = { x: e.clientX, y: e.clientY };
     // Wait until the backend session is active so we never GetCursorPos on a touch point.
     if (!gestureReady.current || (dx === 0 && dy === 0)) return;
@@ -246,27 +253,31 @@ export function Trackpad() {
     const duration = start ? performance.now() - start.t : Number.POSITIVE_INFINITY;
     const wasTap =
       travelPx.current <= TAP_SLOP_PX && duration <= TAP_MAX_MS;
+    const endedGen = ++gestureGen.current;
 
     dragging.current = false;
     gestureReady.current = false;
     lastPos.current = null;
     pressStart.current = null;
     travelPx.current = 0;
-    gestureGen.current += 1;
+    subPixel.current = { x: 0, y: 0 };
     if (rafId.current !== null) {
       cancelAnimationFrame(rafId.current);
       rafId.current = null;
     }
 
     const endBackend = () => {
+      if (gestureGen.current !== endedGen) return;
       void invoke("cmd_trackpad_gesture_end")
         .catch(() => {})
         .finally(() => {
+          if (gestureGen.current !== endedGen) return;
           if (wasTap) handleTap();
         });
     };
 
     const flushThenEnd = () => {
+      if (gestureGen.current !== endedGen) return;
       if (ipcInFlight.current) {
         rafId.current = requestAnimationFrame(flushThenEnd);
         return;
@@ -282,6 +293,7 @@ export function Trackpad() {
         .catch(() => {})
         .finally(() => {
           ipcInFlight.current = false;
+          if (gestureGen.current !== endedGen) return;
           endBackend();
         });
     };

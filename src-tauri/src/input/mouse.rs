@@ -19,15 +19,6 @@ struct TrackpadGestureState {
     last_good: Option<(i32, i32)>,
 }
 
-impl Default for TrackpadGestureState {
-    fn default() -> Self {
-        Self {
-            active: false,
-            last_good: None,
-        }
-    }
-}
-
 static TRACKPAD_GESTURE: Mutex<TrackpadGestureState> = Mutex::new(TrackpadGestureState {
     active: false,
     last_good: None,

@@ -37,3 +37,6 @@ src-tauri/.tauri/
 
 # Subagent-driven development scratch (briefs, reports, diffs)
 .superpowers/
+
+# Expo local state
+companion/.expo/

@@ -84,7 +84,8 @@ export function isMirroredSetup(monitors: MonitorInfo[]): boolean {
 
 /** Mini mode is eligible on a single display or a mirrored multi-display setup. */
 export function isMiniModeEligible(monitors: MonitorInfo[]): boolean {
-  return monitors.length <= 1 || isMirroredSetup(monitors);
+  if (monitors.length === 0) return false;
+  return monitors.length === 1 || isMirroredSetup(monitors);
 }
 
 /**

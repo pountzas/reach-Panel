@@ -83,24 +83,36 @@ pub enum CollapsedFabCount {
     Three,
 }
 
-fn collapsed_hover_slack(dpi_scale: f32) -> u32 {
-    (FAB_HOVER_SLACK as f32 * dpi_scale.max(1.0)).ceil() as u32
+fn collapsed_dpi_scale(dpi_scale: f32) -> f32 {
+    dpi_scale.max(1.0)
 }
 
-fn collapsed_fab_stack_height(count: CollapsedFabCount) -> u32 {
+fn scale_collapsed_px(value: u32, dpi_scale: f32) -> u32 {
+    (value as f32 * collapsed_dpi_scale(dpi_scale)).ceil() as u32
+}
+
+fn collapsed_hover_slack(dpi_scale: f32) -> u32 {
+    scale_collapsed_px(FAB_HOVER_SLACK, dpi_scale)
+}
+
+fn collapsed_fab_stack_height(count: CollapsedFabCount, dpi_scale: f32) -> u32 {
+    let size = scale_collapsed_px(COLLAPSED_SIZE, dpi_scale);
+    let gap = scale_collapsed_px(COLLAPSED_FAB_GAP, dpi_scale);
     match count {
-        CollapsedFabCount::One => COLLAPSED_SIZE,
-        CollapsedFabCount::Two => COLLAPSED_SIZE * 2 + COLLAPSED_FAB_GAP,
-        CollapsedFabCount::Three => COLLAPSED_SIZE * 3 + COLLAPSED_FAB_GAP * 2,
+        CollapsedFabCount::One => size,
+        CollapsedFabCount::Two => size * 2 + gap,
+        CollapsedFabCount::Three => size * 3 + gap * 2,
     }
 }
 
 /// Collapsed FAB window inner dimensions (width, height) including hover/DPI slack.
 pub fn compute_collapsed_dimensions(count: CollapsedFabCount, dpi_scale: f32) -> (u32, u32) {
     let slack = collapsed_hover_slack(dpi_scale);
-    let fab_stack_h = collapsed_fab_stack_height(count);
-    let width = COLLAPSED_SIZE + 2 * COLLAPSED_PAD + slack;
-    let height = fab_stack_h + 2 * COLLAPSED_PAD + slack;
+    let pad = scale_collapsed_px(COLLAPSED_PAD, dpi_scale);
+    let size = scale_collapsed_px(COLLAPSED_SIZE, dpi_scale);
+    let fab_stack_h = collapsed_fab_stack_height(count, dpi_scale);
+    let width = size + 2 * pad + slack;
+    let height = fab_stack_h + 2 * pad + slack;
     (width, height)
 }
 
@@ -282,9 +294,12 @@ mod tests {
 
     #[test]
     fn collapsed_window_includes_hover_and_dpi_slack() {
-        let (width, height) = compute_collapsed_dimensions(CollapsedFabCount::Two, 1.5);
-        assert!(width >= 76);
-        assert!(height >= 76);
+        let (w1, h1) = compute_collapsed_dimensions(CollapsedFabCount::Two, 1.0);
+        let (w15, h15) = compute_collapsed_dimensions(CollapsedFabCount::Two, 1.5);
+        assert!(w15 > w1, "1.5x DPI width should exceed 1.0x ({w15} vs {w1})");
+        assert!(h15 > h1, "1.5x DPI height should exceed 1.0x ({h15} vs {h1})");
+        assert!(w15 >= 76);
+        assert!(h15 >= 76);
     }
 
     #[test]

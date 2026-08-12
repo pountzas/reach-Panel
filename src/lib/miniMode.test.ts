@@ -41,6 +41,13 @@ describe("miniMode", () => {
     expect(monitorsOverlap(a, sideBySide)).toBe(false);
   });
 
+  it("empty monitor list is not eligible", () => {
+    expect(isMiniModeEligible([])).toBe(false);
+    expect(
+      resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: null }, []),
+    ).toBe(false);
+  });
+
   it("auto-enables mini mode on single monitor", () => {
     expect(
       resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: null }, [a]),
