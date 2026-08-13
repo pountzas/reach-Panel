@@ -76,9 +76,9 @@ pub fn lift_for_bottom_taskbar_overlap(
         return layout;
     }
 
-    // Only treat as a *bottom* overlay when the taskbar sits on the lower edge
-    // of the window (not a top-docked bar grazing the top).
-    if taskbar.top < win_top + (layout.height as i32) / 2 {
+    // Only treat as a *bottom* overlay when the intersection touches the window
+    // bottom edge (not a top-docked bar that only grazes the top).
+    if iy2 != win_bottom {
         return layout;
     }
 
@@ -416,5 +416,21 @@ mod tests {
         };
         let out = lift_for_bottom_taskbar_overlap(win, taskbar, 0);
         assert_eq!(out.y, win.y);
+    }
+
+    #[test]
+    fn short_window_bottom_taskbar_past_midline_lifts() {
+        // Collapsed FAB (~82px) near monitor bottom; 60px taskbar extends past midline.
+        let win = layout(0, 998, 1920, 82);
+        let taskbar = RectI {
+            left: 0,
+            top: 1020,
+            right: 1920,
+            bottom: 1080,
+        };
+        let out = lift_for_bottom_taskbar_overlap(win, taskbar, 0);
+        assert_eq!(out.height, 82);
+        assert_eq!(out.y, 998 - 60);
+        assert_eq!(out.y + out.height as i32, 1020);
     }
 }
