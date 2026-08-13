@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { AppShell } from "./components/layout/AppShell";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
@@ -8,7 +8,7 @@ import { MacroBuilder } from "./components/macros/MacroBuilder";
 import { HeadTrackingWizard } from "./components/head-tracking/HeadTrackingWizard";
 import { AppToaster } from "./components/common/AppToaster";
 import { UpdatePrompt } from "./components/common/UpdatePrompt";
-import { computeContentHeightRatio } from "./lib/sectionLayouts";
+import { computeContentHeightRatioFromSettings } from "./lib/sectionLayouts";
 import {
   isToolWindowLabel,
   PROFILE_UPDATED_EVENT,
@@ -16,6 +16,20 @@ import {
   type ToolWindowLabel,
   type ToolWindowRequest,
 } from "./lib/toolWindows";
+import {
+  APP_MODE_REQUEST_EVENT,
+  TEACHING_LESSON_REQUEST_EVENT,
+  TEACHING_SESSION_EVENT,
+  TEACHING_SESSION_REQUEST_EVENT,
+  type AppModeRequest,
+  type TeachingLessonRequest,
+  type TeachingSessionPayload,
+} from "./lib/appModeLayout";
+import {
+  isMusicLessonSlotVisible,
+  isTeachingFullWorkArea,
+  isV1ToolWindowHidden,
+} from "./lib/v1HiddenFeatures";
 import { useAppStore } from "./stores/appStore";
 
 const KEYBOARD_POLL_MS = 100;
@@ -48,16 +62,23 @@ function MainApp() {
         await useAppStore.getState().refreshMiniModeState({ animate: false });
         if (cancelled) return;
         if (!useAppStore.getState().miniModeActive) {
-          const { settings } = useAppStore.getState();
+          const { settings, musicTeachingEnabled } = useAppStore.getState();
+          const lessonSlotVisible = isMusicLessonSlotVisible({
+            musicTeachingEnabled,
+            keyboardSectionMode: settings.keyboardSectionMode,
+          });
+          const fullWorkArea = isTeachingFullWorkArea({
+            musicTeachingEnabled,
+            keyboardSectionMode: settings.keyboardSectionMode,
+          });
           await invoke("cmd_apply_window_layout", {
             monitorId: settings.accessibilityMonitorId,
             collapsed: settings.collapsed,
-            collapsedDictation:
-              settings.collapsed && settings.dictationVisible !== false,
-            heightRatio: computeContentHeightRatio({
-              quickActions: settings.quickActionsVisible,
-              phrases: settings.phrasesVisible,
-            }),
+            collapsedDictation: false,
+            heightRatio: fullWorkArea
+              ? 1.0
+              : computeContentHeightRatioFromSettings(settings, lessonSlotVisible),
+            fullWorkArea,
           });
         }
         await loadKeyboardLayout();
@@ -152,8 +173,29 @@ function MainApp() {
     );
 
     unlisteners.push(
+      listen<AppModeRequest>(APP_MODE_REQUEST_EVENT, (event) => {
+        void useAppStore.getState().setAppMode(event.payload.mode);
+      }),
+    );
+
+    unlisteners.push(
+      listen<TeachingLessonRequest>(TEACHING_LESSON_REQUEST_EVENT, (event) => {
+        useAppStore.getState().setTeachingLesson(event.payload.lesson);
+      }),
+    );
+
+    unlisteners.push(
+      listen(TEACHING_SESSION_REQUEST_EVENT, () => {
+        void useAppStore.getState().broadcastTeachingSession();
+      }),
+    );
+
+    unlisteners.push(
       listen<ToolWindowRequest>(TOOL_WINDOW_REQUEST_EVENT, (event) => {
         const { label, show } = event.payload;
+        if (show && isV1ToolWindowHidden(label)) {
+          return;
+        }
         const store = useAppStore.getState();
         switch (label) {
           case "settings":
@@ -214,17 +256,25 @@ function ToolApp({ label }: { label: ToolWindowLabel }) {
       const win = WebviewWindow.getCurrent();
       await win.setAlwaysOnTop(true);
       await win.setFocusable(true);
+      await emit(TEACHING_SESSION_REQUEST_EVENT);
     };
     void init();
   }, [loadMonitors, loadProfileFiles]);
 
   useEffect(() => {
-    const unlisten = listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
-      if (event.payload?.source === WebviewWindow.getCurrent().label) return;
-      void useAppStore.getState().loadProfileFiles();
-    });
+    const unlisteners = [
+      listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
+        if (event.payload?.source === WebviewWindow.getCurrent().label) return;
+        void useAppStore.getState().loadProfileFiles();
+      }),
+      listen<TeachingSessionPayload>(TEACHING_SESSION_EVENT, (event) => {
+        useAppStore.getState().applyTeachingSession(event.payload);
+      }),
+    ];
     return () => {
-      void unlisten.then((stop) => stop());
+      void Promise.all(unlisteners).then((stops) => {
+        for (const stop of stops) stop();
+      });
     };
   }, []);
 
@@ -234,9 +284,15 @@ function ToolApp({ label }: { label: ToolWindowLabel }) {
       panel = <SettingsPanel />;
       break;
     case "macro-builder":
+      if (isV1ToolWindowHidden("macro-builder")) {
+        return null;
+      }
       panel = <MacroBuilder />;
       break;
     case "head-tracking":
+      if (isV1ToolWindowHidden("head-tracking")) {
+        return null;
+      }
       panel = <HeadTrackingWizard />;
       break;
     default: {

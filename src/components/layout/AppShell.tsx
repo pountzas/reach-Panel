@@ -8,9 +8,12 @@ import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
 import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
 import { PhrasePanel } from "../phrases/PhrasePanel";
 import { MusicLessonPanel } from "../music/MusicLessonPanel";
+import { MathLessonPanel } from "../teaching/MathLessonPanel";
+import { LanguageLessonPanel } from "../teaching/LanguageLessonPanel";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
+import type { TeachingLesson } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { CollapseIcon, CloseIcon, SettingsIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
@@ -19,21 +22,47 @@ import { MiniModeShell } from "./MiniModeShell";
 import {
   appHeaderHeightPx,
   clampWindowHeightRatio,
-  computeContentHeightRatio,
+  computeContentHeightRatioFromSettings,
 } from "../../lib/sectionLayouts";
 import { closeAllToolWindows } from "../../lib/toolWindows";
 import { resolveMiniModeEnabled } from "../../lib/miniMode";
+import { isTeachingSessionActive } from "../../lib/appModeLayout";
+import {
+  effectiveLargeHeaders,
+  effectiveMouseVisible,
+  effectiveQuickActionsVisible,
+  isMusicLessonSlotVisible,
+  isTeachingFullWorkArea,
+  isV1FeatureHidden,
+  resolveV1SectionVisibility,
+} from "../../lib/v1HiddenFeatures";
+
+function renderTeachingLessonPanel(lesson: TeachingLesson) {
+  switch (lesson) {
+    case "music":
+      return <MusicLessonPanel />;
+    case "math":
+      return <MathLessonPanel />;
+    case "language":
+      return <LanguageLessonPanel />;
+    default: {
+      const _exhaustive: never = lesson;
+      return _exhaustive;
+    }
+  }
+}
 
 function InputRowPanel() {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const mouseSide = settings.mousePanelSide ?? "right";
   const mouseRatio = settings.inputRowRightRatio ?? 0.28;
-  const mouseVisible = settings.mouseVisible;
+  const mouseVisible = effectiveMouseVisible(settings.mouseVisible);
 
   // Always keep KeyboardSection in the same split-pane slot so synth playback
   // is not remounted when show/hide mouse toggles. 5-octave mode sets
-  // mouseVisible=false the same way the hide button does.
+  // mouseVisible=false the same way the hide button does. v1 mouse flag forces
+  // the mouse pane collapsed; flip the flag off to restore the column.
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
       <ResizableSplitPane
@@ -55,25 +84,35 @@ function InputRowPanel() {
 function monitorRegionHeight(
   monitors: { id: number; height: number; is_primary: boolean }[],
   monitorId: number,
+  fullWorkArea: boolean,
 ): number {
   const monitor =
     monitors.find((m) => m.id === monitorId) ??
     monitors.find((m) => m.is_primary) ??
     monitors[0];
   if (!monitor) return window.innerHeight;
-  // Match Rust compute_window_layout: dual-monitor = full work area; single = bottom half.
-  return monitors.length >= 2 ? monitor.height : monitor.height / 2;
+  // Match Rust compute_window_layout: full_work_area or dual-monitor = full
+  // work area; single = bottom half.
+  return fullWorkArea || monitors.length >= 2 ? monitor.height : monitor.height / 2;
 }
 
-function contentHeightRatioFromSettings(settings: {
-  quickActionsVisible: boolean;
-  phrasesVisible: boolean;
-  windowHeightRatio?: number;
-}): number {
-  const contentRatio = computeContentHeightRatio({
-    quickActions: settings.quickActionsVisible,
-    phrases: settings.phrasesVisible,
+function contentHeightRatioFromSettings(
+  settings: {
+    quickActionsVisible: boolean;
+    phrasesVisible: boolean;
+    windowHeightRatio?: number;
+    keyboardSectionMode: string;
+  },
+  musicTeachingEnabled: boolean,
+): number {
+  const lessonSlotVisible = isMusicLessonSlotVisible({
+    musicTeachingEnabled,
+    keyboardSectionMode: settings.keyboardSectionMode,
   });
+  const contentRatio = computeContentHeightRatioFromSettings(
+    settings,
+    lessonSlotVisible,
+  );
   if (settings.windowHeightRatio == null) return contentRatio;
   return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
 }
@@ -87,14 +126,28 @@ export function AppShell() {
   const applyWindowHeightRatioLive = useAppStore((s) => s.applyWindowHeightRatioLive);
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const teachingLesson = useAppStore((s) => s.teachingLesson);
   const { t } = useTranslation();
-  const largeHeaders = settings.largeHeaders;
+  const largeHeaders = effectiveLargeHeaders(settings.largeHeaders);
   const headerHeight = appHeaderHeightPx(largeHeaders);
   const iconSize = largeHeaders ? "lg" : "sm";
   const iconClass = largeHeaders ? "h-7 w-7" : "h-4 w-4";
-  const showMusicLesson =
-    musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
-  const phrasesSlotVisible = settings.phrasesVisible || showMusicLesson;
+  const lessonSlotVisible = isMusicLessonSlotVisible({
+    musicTeachingEnabled,
+    keyboardSectionMode: settings.keyboardSectionMode,
+    teachingLesson,
+  });
+  const fullWorkArea = isTeachingFullWorkArea({
+    musicTeachingEnabled,
+    keyboardSectionMode: settings.keyboardSectionMode,
+  });
+  const sectionVisibility = resolveV1SectionVisibility({
+    quickActionsVisible: settings.quickActionsVisible,
+    phrasesVisible: settings.phrasesVisible,
+    lessonSlotVisible,
+  });
+  const quickActionsVisible = effectiveQuickActionsVisible(settings.quickActionsVisible);
+  const phrasesSlotVisible = sectionVisibility.phrases;
   const windowResizeRef = useRef<{
     startY: number;
     startRatio: number;
@@ -115,8 +168,12 @@ export function AppShell() {
 
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    const regionHeight = monitorRegionHeight(monitors, settings.accessibilityMonitorId);
-    const startRatio = contentHeightRatioFromSettings(settings);
+    const regionHeight = monitorRegionHeight(
+      monitors,
+      settings.accessibilityMonitorId,
+      fullWorkArea,
+    );
+    const startRatio = contentHeightRatioFromSettings(settings, musicTeachingEnabled);
     windowResizeRef.current = {
       startY: event.clientY,
       startRatio,
@@ -161,7 +218,16 @@ export function AppShell() {
   };
 
   // Mini Mode: keyboard+suggestions or collapsed FAB — not the full app chrome.
-  if (monitors.length > 0 && resolveMiniModeEnabled(settings, monitors)) {
+  // Teaching wins: never host Teaching inside MiniModeShell.
+  const teachingUiActive = isTeachingSessionActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
+  if (
+    !teachingUiActive &&
+    monitors.length > 0 &&
+    resolveMiniModeEnabled(settings, monitors, teachingUiActive)
+  ) {
     return <MiniModeShell />;
   }
 
@@ -179,6 +245,14 @@ export function AppShell() {
     shellStyle.backgroundPosition = "center";
     shellStyle.backgroundRepeat = "no-repeat";
   }
+
+  const phrasesContent = lessonSlotVisible
+    ? renderTeachingLessonPanel(teachingLesson)
+    : isV1FeatureHidden("phrases")
+      ? null
+      : (
+        <PhrasePanel />
+      );
 
   return (
     <div
@@ -247,13 +321,13 @@ export function AppShell() {
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <ErrorBanner />
           <SectionCanvas
-            quickActionsVisible={settings.quickActionsVisible}
+            quickActionsVisible={quickActionsVisible}
             phrasesVisible={phrasesSlotVisible}
             savedStack={settings.sectionStack}
             legacyLayouts={settings.sectionLayouts}
             onStackChange={(sectionStack) => updateSettings({ sectionStack })}
-            quickActions={<QuickActionsBar />}
-            phrases={showMusicLesson ? <MusicLessonPanel /> : <PhrasePanel />}
+            quickActions={quickActionsVisible ? <QuickActionsBar /> : null}
+            phrases={phrasesContent}
             inputRow={<InputRowPanel />}
           />
         </div>

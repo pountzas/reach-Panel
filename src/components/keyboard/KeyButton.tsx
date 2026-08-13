@@ -13,6 +13,8 @@ interface KeyButtonProps {
   bgColor: string;
   textColor?: string;
   active?: boolean;
+  disabled?: boolean;
+  ariaLabel?: string;
   stretch?: boolean;
   gridColumn?: string;
   gridRow?: string;
@@ -31,6 +33,8 @@ export function KeyButton({
   bgColor,
   textColor = "#1e293b",
   active,
+  disabled = false,
+  ariaLabel,
   stretch,
   gridColumn,
   gridRow,
@@ -57,8 +61,8 @@ export function KeyButton({
       };
 
   const buttonClass = transparent
-    ? `ak-action-btn rounded-lg font-semibold transition active:scale-95 ${pressedClass}`
-    : `ak-action-btn ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`;
+    ? `ak-action-btn inline-flex items-center justify-center rounded-lg font-semibold transition active:scale-95 ${pressedClass}`
+    : `ak-action-btn inline-flex items-center justify-center ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`;
 
   return (
     <button
@@ -92,6 +96,8 @@ export function KeyButton({
               marginBottom: spacing,
             }
       }
+      disabled={disabled}
+      aria-label={ariaLabel}
       onClick={onPress}
       {...pointerHandlers}
     >

@@ -32,6 +32,27 @@ export const el: Record<keyof typeof en, string> = {
 
   miniMode: "Λειτουργία Mini",
 
+  modeNormal: "Κανονική",
+
+  modeMini: "Mini",
+
+  modeTeaching: "Διδασκαλία",
+
+  teachingLessonMusic: "Μουσική",
+
+  teachingLessonMath: "Μαθηματικά",
+
+  teachingLessonLanguage: "Γλώσσα",
+
+  comingSoon: "Σύντομα",
+
+  mathLessonTitle: "Μαθηματικά",
+
+  languageLessonTitle: "Γλώσσα",
+
+  modeTabletsHint:
+    "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή.",
+
   miniModeAutoDescription:
     "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
 
@@ -273,6 +294,8 @@ export const el: Record<keyof typeof en, string> = {
   dictationUnavailableOffline:
     "Η υπαγόρευση δεν είναι διαθέσιμη — απαιτείται σύνδεση στο διαδίκτυο",
 
+  dictationGroqRemainingToday: "Υπολειπόμενα αιτήματα Groq σήμερα",
+
   dictationOpenSpeechSettings: "Άνοιγμα ρυθμίσεων ομιλίας",
 
   dictationOpenSpeechLanguageSettings: "Εγκατάσταση γλώσσας ομιλίας",
@@ -427,6 +450,39 @@ export const el: Record<keyof typeof en, string> = {
   quickActionNoApps: "Δεν βρέθηκαν προγράμματα.",
 
   settingsAbout: "Σχετικά",
+
+  settingsCompanion: "Companion",
+  companionDescription: "Pair an Android tablet to control this PC over Wi-Fi. The tablet becomes the control surface while connected.",
+  companionBridgeRunning: "Bridge running",
+  companionBridgeStopped: "Bridge stopped",
+  companionPort: "Port",
+  companionSession: "Session",
+  companionSessionIdle: "Idle",
+  companionSessionActive: "Active",
+  companionSessionReconnecting: "Reconnecting",
+  companionConnectedDevice: "Connected device",
+  companionAudioRouting: "Audio routing",
+  companionAudioHost: "Host PC",
+  companionAudioTablet: "Tablet",
+  companionStart: "Start bridge",
+  companionStop: "Stop bridge",
+  companionRefreshQr: "New pairing code",
+  companionQrHint: "Scan this QR with ReachPanel Companion on your tablet.",
+  companionCopyPayload: "Copy pairing JSON",
+  companionCopied: "Pairing JSON copied",
+  companionPairedDevices: "Paired devices",
+  companionNoDevices: "No tablets paired yet.",
+  companionRevoke: "Revoke",
+  companionRevoked: "Device revoked",
+  companionDeviceRevokedBadge: "Revoked",
+  companionLastSeen: "Last seen",
+  companionCandidateIps: "Detected local IPs",
+  companionUsbTitle: "USB tether (no Wi-Fi)",
+  companionUsbStep1: "On the Android tablet: Settings ? Network ? Hotspot & tethering ? enable USB tethering.",
+  companionUsbStep2: "Connect the tablet to this PC with a data USB cable (not charge-only).",
+  companionUsbStep3: "Click New pairing code so the QR uses the USB network IP (often 192.168.42.x or 192.168.137.x).",
+  companionUsbStep4: "On the tablet, scan the updated QR (or paste JSON). Same protocol as Wi-Fi.",
+  companionUsbStep5: "Already paired? Scanning the new QR updates the IP and reconnects when the host ID matches.",
 
   aboutDescription:
     "Εικονικό πληκτρολόγιο και ποντίκι προσβασιμότητας για Windows.",

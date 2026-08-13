@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { getSurfaceColors } from "../../lib/colorProfiles";
+import { lessonCloseAppMode, teachingLessonTitleKey } from "../../lib/appModeLayout";
 import { usePointerDragActive } from "../../lib/pointerDrag";
 import type { TranslationKey } from "../../i18n";
 import {
@@ -58,18 +59,20 @@ export function FloatingSection({
 }: FloatingSectionProps) {
   const { t } = useTranslation();
   const updateSettings = useAppStore((s) => s.updateSettings);
-  const disableMusicTeaching = useAppStore((s) => s.disableMusicTeaching);
+  const setAppMode = useAppStore((s) => s.setAppMode);
+  const modeBeforeTeaching = useAppStore((s) => s.modeBeforeTeaching);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const keyboardSectionMode = useAppStore((s) => s.settings.keyboardSectionMode);
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
   const pointerDragActive = usePointerDragActive();
+  const teachingLesson = useAppStore((s) => s.teachingLesson);
   const showMusicLesson =
     id === "phrases" &&
     musicTeachingEnabled &&
     keyboardSectionMode === "synthesizer";
   const sectionTitleKey: TranslationKey = showMusicLesson
-    ? "musicLesson"
+    ? teachingLessonTitleKey(teachingLesson)
     : SECTION_TITLE_KEY[id];
   const surface = getSurfaceColors(appBgColor);
   const headerHeight = headerHeightFor(largeHeaders);
@@ -105,7 +108,7 @@ export function FloatingSection({
         break;
       case "phrases":
         if (musicTeachingEnabled) {
-          void disableMusicTeaching({ hidePhrases: true });
+          void setAppMode(lessonCloseAppMode(modeBeforeTeaching));
         } else {
           updateSettings({ phrasesVisible: false });
         }

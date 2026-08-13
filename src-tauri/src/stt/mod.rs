@@ -1,5 +1,5 @@
-mod events;
-mod groq;
+pub(crate) mod events;
+pub(crate) mod groq;
 mod network;
 mod route;
 mod winrt;

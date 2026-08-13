@@ -1,6 +1,15 @@
+import type { ReactNode } from "react";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { getSurfaceColors } from "../../lib/colorProfiles";
+import { HoverTooltip } from "../common/HoverTooltip";
+import {
+  LoadSongIcon,
+  PlayIcon,
+  RestartIcon,
+  StopIcon,
+  TrashIcon,
+} from "../common/SectionIcons";
 import {
   BUILT_IN_SONGS,
   getSongById,
@@ -17,6 +26,43 @@ import { PartitureView } from "./PartitureView";
 /** Fixed slot width so the strip can keep the active note centered. */
 const NOTE_SLOT_REM = 2.75;
 const NOTE_GAP_REM = 0.75;
+const TOOLBAR_ICON_CLASS = "h-5 w-5";
+
+function MusicToolbarButton({
+  label,
+  onClick,
+  disabled,
+  backgroundColor,
+  borderColor,
+  color,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  backgroundColor: string;
+  borderColor: string;
+  color: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-md border disabled:opacity-50"
+      style={{
+        borderColor,
+        backgroundColor,
+        color,
+      }}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+    >
+      {children}
+      <HoverTooltip label={label} />
+    </button>
+  );
+}
 
 export function MusicLessonPanel() {
   const settings = useAppStore((s) => s.settings);
@@ -73,27 +119,18 @@ export function MusicLessonPanel() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm font-semibold">{t("musicLesson")}</span>
             <div className="flex flex-wrap items-center gap-1">
-              <button
-                type="button"
-                className="rounded-md border px-2 py-1 text-xs font-medium"
-                style={{
-                  borderColor: surface.panelBorder,
-                  backgroundColor: surface.panelBg,
-                  color: surface.panelText,
-                }}
+              <MusicToolbarButton
+                label={t("loadSong")}
                 onClick={() => void importMusicSongsFromFile()}
                 disabled={musicPlaybackActive}
+                borderColor={surface.panelBorder}
+                backgroundColor={surface.panelBg}
+                color={surface.panelText}
               >
-                {t("loadSong")}
-              </button>
-              <button
-                type="button"
-                className="rounded-md border px-2 py-1 text-xs font-medium"
-                style={{
-                  borderColor: surface.panelBorder,
-                  backgroundColor: musicPlaybackActive ? "#fde68a" : surface.panelBg,
-                  color: surface.panelText,
-                }}
+                <LoadSongIcon className={TOOLBAR_ICON_CLASS} />
+              </MusicToolbarButton>
+              <MusicToolbarButton
+                label={musicPlaybackActive ? t("stopSong") : t("playSong")}
                 onClick={() => {
                   if (musicPlaybackActive) {
                     stopMusicPlayback();
@@ -102,31 +139,31 @@ export function MusicLessonPanel() {
                   }
                 }}
                 disabled={!song || song.notes.length === 0}
+                borderColor={surface.panelBorder}
+                backgroundColor={
+                  musicPlaybackActive ? "#fde68a" : surface.panelBg
+                }
+                color={surface.panelText}
               >
-                {musicPlaybackActive ? t("stopSong") : t("playSong")}
-              </button>
-              <button
-                type="button"
-                className="rounded-md border px-2 py-1 text-xs font-medium"
-                style={{
-                  borderColor: surface.panelBorder,
-                  backgroundColor: surface.panelBg,
-                  color: surface.panelText,
-                }}
+                {musicPlaybackActive ? (
+                  <StopIcon className={TOOLBAR_ICON_CLASS} />
+                ) : (
+                  <PlayIcon className={TOOLBAR_ICON_CLASS} />
+                )}
+              </MusicToolbarButton>
+              <MusicToolbarButton
+                label={t("restartLesson")}
                 onClick={() => restartMusicLesson()}
                 disabled={musicPlaybackActive}
+                borderColor={surface.panelBorder}
+                backgroundColor={surface.panelBg}
+                color={surface.panelText}
               >
-                {t("restartLesson")}
-              </button>
+                <RestartIcon className={TOOLBAR_ICON_CLASS} />
+              </MusicToolbarButton>
               {selectedIsImported && (
-                <button
-                  type="button"
-                  className="rounded-md border px-2 py-1 text-xs font-medium"
-                  style={{
-                    borderColor: surface.panelBorder,
-                    backgroundColor: surface.panelBg,
-                    color: surface.panelText,
-                  }}
+                <MusicToolbarButton
+                  label={t("deleteSong")}
                   onClick={() => {
                     if (!song) return;
                     const ok = window.confirm(
@@ -137,9 +174,12 @@ export function MusicLessonPanel() {
                     }
                   }}
                   disabled={musicPlaybackActive}
+                  borderColor={surface.panelBorder}
+                  backgroundColor={surface.panelBg}
+                  color={surface.panelText}
                 >
-                  {t("deleteSong")}
-                </button>
+                  <TrashIcon className={TOOLBAR_ICON_CLASS} />
+                </MusicToolbarButton>
               )}
             </div>
           </div>

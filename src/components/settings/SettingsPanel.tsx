@@ -15,11 +15,14 @@ import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
 import { ONSCREEN_LAYOUT_OPTIONS } from "../../lib/keyboardLayouts";
 import { SettingsSection } from "./SettingsSection";
+import { CompanionSection } from "./CompanionSection";
 import { AboutSection } from "./AboutSection";
-import { CloseIcon } from "../common/SectionIcons";
+import { CloseIcon, TeachingLessonIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { ToolWindowHeader } from "../common/ToolWindowHeader";
 import { TRANSPARENT_KEY_COLORS } from "../../lib/miniMode";
+import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
+import { isTeachingSessionActive } from "../../lib/appModeLayout";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -272,6 +275,10 @@ export function SettingsPanel() {
     pickBackgroundImage,
     monitors,
     miniModeActive,
+    musicTeachingEnabled,
+    teachingLesson,
+    setAppMode,
+    setTeachingLesson,
     setShowSettings,
     setShowMacroBuilder,
     setShowHeadTrackingWizard,
@@ -279,7 +286,6 @@ export function SettingsPanel() {
     wipeActiveProfile,
     checkForUpdates,
     updateCheckStatus,
-    stopDictation,
     inputMethods,
     loadInputMethods,
     selectTypingInputMethod,
@@ -293,6 +299,17 @@ export function SettingsPanel() {
   }, [loadInputMethods]);
 
   if (!settings) return null;
+
+  const teachingActive = isTeachingSessionActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
+  const selectedMode: "normal" | "mini" | "teaching" = teachingActive
+    ? "teaching"
+    : settings.miniModeOverride === true
+      ? "mini"
+      : "normal";
+  const showMiniTransparentControls = selectedMode === "mini";
 
   const activeTypingValue = String(
     inputMethods.find((m) => m.hkl === physicalKeyState.systemHkl)?.hkl ??
@@ -451,20 +468,22 @@ export function SettingsPanel() {
                 );
               })}
             </ul>
-            <div className="mt-3">
-              <ToggleRow
-                label={t("largeHeaders")}
-                checked={settings.largeHeaders}
-                onChange={(checked) => updateSettings({ largeHeaders: checked })}
-                surface={surface}
-              />
-              <p
-                className="mt-1 px-1 text-xs"
-                style={{ color: surface.panelMutedText }}
-              >
-                {t("largeHeadersHint")}
-              </p>
-            </div>
+            {!isV1FeatureHidden("largeHeaders") && (
+              <div className="mt-3">
+                <ToggleRow
+                  label={t("largeHeaders")}
+                  checked={settings.largeHeaders}
+                  onChange={(checked) => updateSettings({ largeHeaders: checked })}
+                  surface={surface}
+                />
+                <p
+                  className="mt-1 px-1 text-xs"
+                  style={{ color: surface.panelMutedText }}
+                >
+                  {t("largeHeadersHint")}
+                </p>
+              </div>
+            )}
           </SettingsSection>
 
           <SettingsSection title={t("miniMode")} surface={surface}>
@@ -472,76 +491,126 @@ export function SettingsPanel() {
               className="mb-3 px-1 text-xs"
               style={{ color: surface.panelMutedText }}
             >
-              {t("miniModeAutoDescription")}
+              {t("modeTabletsHint")}
             </p>
-            <label className="block text-sm" style={{ color: surface.panelText }}>
-              {t("miniModeOverrideLabel")}
-              <ThemedSelect
-                value={
-                  settings.miniModeOverride === true
-                    ? "on"
-                    : settings.miniModeOverride === false
-                      ? "off"
-                      : "auto"
-                }
-                onChange={(value) =>
-                  updateSettings({
-                    miniModeOverride:
-                      value === "on" ? true : value === "off" ? false : null,
-                  })
-                }
-                surface={surface}
-              >
-                <option value="auto">{t("miniModeOverrideAuto")}</option>
-                <option value="on">{t("miniModeOverrideOn")}</option>
-                <option value="off">{t("miniModeOverrideOff")}</option>
-              </ThemedSelect>
-            </label>
-            <div className="mt-2">
-              <ToggleRow
-                label={t("miniModeTransparent")}
-                checked={Boolean(settings.miniModeTransparent)}
-                disabled={!miniModeActive}
-                onChange={(checked) =>
-                  updateSettings({ miniModeTransparent: checked })
-                }
-                surface={surface}
-              />
-              <p
-                className="mt-1 px-1 text-xs"
-                style={{ color: surface.panelMutedText }}
-              >
-                {t("miniModeTransparentDescription")}
-              </p>
-              {Boolean(settings.miniModeTransparent) && (
-                <label
-                  className="mt-2 block text-sm"
-                  style={{
-                    color: surface.panelText,
-                    opacity: miniModeActive ? 1 : 0.5,
-                  }}
-                >
-                  {t("transparentKeyColor")}
-                  <ThemedSelect
-                    value={settings.transparentKeyColor ?? "white"}
-                    disabled={!miniModeActive}
-                    onChange={(value) =>
-                      updateSettings({
-                        transparentKeyColor: value as TransparentKeyColor,
-                      })
-                    }
-                    surface={surface}
-                    className="mt-1 w-full rounded border px-2 py-2 text-sm"
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  { id: "normal" as const, label: t("modeNormal") },
+                  { id: "mini" as const, label: t("modeMini") },
+                  { id: "teaching" as const, label: t("modeTeaching") },
+                ] as const
+              ).map((mode) => {
+                const pressed = selectedMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    aria-pressed={pressed}
+                    className="rounded-lg border px-2 py-3 text-sm font-semibold transition-colors"
+                    style={{
+                      backgroundColor: pressed
+                        ? surface.insetBg
+                        : surface.panelButtonBg,
+                      borderColor: pressed
+                        ? surface.panelText
+                        : surface.panelBorder,
+                      color: surface.panelText,
+                      boxShadow: pressed
+                        ? `inset 0 0 0 1px ${surface.panelText}`
+                        : undefined,
+                    }}
+                    onClick={() => void setAppMode(mode.id)}
                   >
-                    {TRANSPARENT_KEY_COLORS.map((id) => (
-                      <option key={id} value={id}>
-                        {t(TRANSPARENT_KEY_COLOR_LABEL_KEYS[id])}
-                      </option>
-                    ))}
-                  </ThemedSelect>
-                </label>
-              )}
+                    {mode.label}
+                  </button>
+                );
+              })}
             </div>
+            {selectedMode === "teaching" && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(
+                  [
+                    {
+                      id: "language" as const,
+                      label: t("teachingLessonLanguage"),
+                    },
+                    { id: "music" as const, label: t("teachingLessonMusic") },
+                    { id: "math" as const, label: t("teachingLessonMath") },
+                  ] as const
+                ).map((lesson) => {
+                  const pressed = teachingLesson === lesson.id;
+                  return (
+                    <button
+                      key={lesson.id}
+                      type="button"
+                      aria-pressed={pressed}
+                      className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold"
+                      style={{
+                        backgroundColor: pressed
+                          ? surface.insetBg
+                          : surface.panelButtonBg,
+                        borderColor: pressed
+                          ? surface.panelText
+                          : surface.panelBorder,
+                        color: surface.panelText,
+                      }}
+                      onClick={() => setTeachingLesson(lesson.id)}
+                    >
+                      <TeachingLessonIcon lesson={lesson.id} className="h-4 w-4" />
+                      {lesson.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {showMiniTransparentControls && (
+              <div className="mt-3">
+                <ToggleRow
+                  label={t("miniModeTransparent")}
+                  checked={Boolean(settings.miniModeTransparent)}
+                  disabled={!miniModeActive}
+                  onChange={(checked) =>
+                    updateSettings({ miniModeTransparent: checked })
+                  }
+                  surface={surface}
+                />
+                <p
+                  className="mt-1 px-1 text-xs"
+                  style={{ color: surface.panelMutedText }}
+                >
+                  {t("miniModeTransparentDescription")}
+                </p>
+                {Boolean(settings.miniModeTransparent) && (
+                  <label
+                    className="mt-2 block text-sm"
+                    style={{
+                      color: surface.panelText,
+                      opacity: miniModeActive ? 1 : 0.5,
+                    }}
+                  >
+                    {t("transparentKeyColor")}
+                    <ThemedSelect
+                      value={settings.transparentKeyColor ?? "white"}
+                      disabled={!miniModeActive}
+                      onChange={(value) =>
+                        updateSettings({
+                          transparentKeyColor: value as TransparentKeyColor,
+                        })
+                      }
+                      surface={surface}
+                      className="mt-1 w-full rounded border px-2 py-2 text-sm"
+                    >
+                      {TRANSPARENT_KEY_COLORS.map((id) => (
+                        <option key={id} value={id}>
+                          {t(TRANSPARENT_KEY_COLOR_LABEL_KEYS[id])}
+                        </option>
+                      ))}
+                    </ThemedSelect>
+                  </label>
+                )}
+              </div>
+            )}
           </SettingsSection>
 
           <SettingsSection title={t("appearance")} surface={surface}>
@@ -621,12 +690,14 @@ export function SettingsPanel() {
                   onChange={(v) => updateSettings({ keyTextColor: v, colorProfile: "custom" })}
                   surface={surface}
                 />
-                <ColorField
-                  label={t("mousePanelColor")}
-                  value={settings.mousePanelBgColor ?? "#f8fafc"}
-                  onChange={(v) => updateSettings({ mousePanelBgColor: v, colorProfile: "custom" })}
-                  surface={surface}
-                />
+                {!isV1FeatureHidden("mouse") && (
+                  <ColorField
+                    label={t("mousePanelColor")}
+                    value={settings.mousePanelBgColor ?? "#f8fafc"}
+                    onChange={(v) => updateSettings({ mousePanelBgColor: v, colorProfile: "custom" })}
+                    surface={surface}
+                  />
+                )}
               </div>
             )}
 
@@ -685,24 +756,30 @@ export function SettingsPanel() {
 
           <SettingsSection title={t("settingsVisibleSections")} surface={surface}>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <ToggleRow
-                label={t("showMouseSection")}
-                checked={settings.mouseVisible}
-                onChange={(checked) => updateSettings({ mouseVisible: checked })}
-                surface={surface}
-              />
-              <ToggleRow
-                label={t("showQuickActionsBar")}
-                checked={settings.quickActionsVisible}
-                onChange={(checked) => updateSettings({ quickActionsVisible: checked })}
-                surface={surface}
-              />
-              <ToggleRow
-                label={t("showPhrasesSection")}
-                checked={settings.phrasesVisible}
-                onChange={(checked) => updateSettings({ phrasesVisible: checked })}
-                surface={surface}
-              />
+              {!isV1FeatureHidden("mouse") && (
+                <ToggleRow
+                  label={t("showMouseSection")}
+                  checked={settings.mouseVisible}
+                  onChange={(checked) => updateSettings({ mouseVisible: checked })}
+                  surface={surface}
+                />
+              )}
+              {!isV1FeatureHidden("quickActions") && (
+                <ToggleRow
+                  label={t("showQuickActionsBar")}
+                  checked={settings.quickActionsVisible}
+                  onChange={(checked) => updateSettings({ quickActionsVisible: checked })}
+                  surface={surface}
+                />
+              )}
+              {!isV1FeatureHidden("phrases") && (
+                <ToggleRow
+                  label={t("showPhrasesSection")}
+                  checked={settings.phrasesVisible}
+                  onChange={(checked) => updateSettings({ phrasesVisible: checked })}
+                  surface={surface}
+                />
+              )}
               <ToggleRow
                 label={t("showSuggestionsBar")}
                 checked={settings.suggestionsVisible}
@@ -725,27 +802,6 @@ export function SettingsPanel() {
                 <option value="latched">{t("fnKeyModeLatched")}</option>
               </ThemedSelect>
             </label>
-            <div className="mt-3">
-              <ToggleRow
-                label={t("showKeyboardModeToggle")}
-                checked={settings.keyboardModeToggleVisible}
-                onChange={(checked) => updateSettings({ keyboardModeToggleVisible: checked })}
-                surface={surface}
-              />
-            </div>
-            <div className="mt-3">
-              <ToggleRow
-                label={t("showDictationControl")}
-                checked={settings.dictationVisible !== false}
-                onChange={(checked) => {
-                  if (!checked) {
-                    void stopDictation();
-                  }
-                  void updateSettings({ dictationVisible: checked });
-                }}
-                surface={surface}
-              />
-            </div>
             <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
               {t("groqApiKeyLabel")}
               <input
@@ -764,37 +820,24 @@ export function SettingsPanel() {
               />
               <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
             </label>
-            {!settings.keyboardModeToggleVisible && (
-              <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
-                {t("keyboardSectionMode")}
-                <ThemedSelect
-                  value={settings.keyboardSectionMode}
-                  onChange={(v) =>
-                    updateSettings({
-                      keyboardSectionMode: v as "keyboard" | "synthesizer",
-                    })
-                  }
-                  surface={surface}
-                >
-                  <option value="keyboard">{t("keyboard")}</option>
-                  <option value="synthesizer">{t("synthesizer")}</option>
-                </ThemedSelect>
-              </label>
-            )}
           </SettingsSection>
 
-          <SettingsSection title={t("mouse")} surface={surface}>
-            <ToggleRow
-              label={t("showMouseBottomRow")}
-              checked={settings.mouseBottomRowVisible}
-              onChange={(checked) => updateSettings({ mouseBottomRowVisible: checked })}
-              surface={surface}
-            />
-          </SettingsSection>
+          {!isV1FeatureHidden("mouse") && (
+            <SettingsSection title={t("mouse")} surface={surface}>
+              <ToggleRow
+                label={t("showMouseBottomRow")}
+                checked={settings.mouseBottomRowVisible}
+                onChange={(checked) => updateSettings({ mouseBottomRowVisible: checked })}
+                surface={surface}
+              />
+            </SettingsSection>
+          )}
 
-          <SettingsSection title={t("quickActions")} surface={surface}>
-            <QuickActionEditor surface={surface} />
-          </SettingsSection>
+          {!isV1FeatureHidden("quickActions") && (
+            <SettingsSection title={t("quickActions")} surface={surface}>
+              <QuickActionEditor surface={surface} />
+            </SettingsSection>
+          )}
 
           <SettingsSection title={t("settingsGeneral")} surface={surface}>
             <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
@@ -863,29 +906,44 @@ export function SettingsPanel() {
             </label>
           </SettingsSection>
 
+          <SettingsSection
+            title={t("settingsCompanion")}
+            description={t("companionDescription")}
+            surface={surface}
+          >
+            <CompanionSection surface={surface} />
+          </SettingsSection>
+
           <SettingsSection title={t("settingsToolsMaintenance")} surface={surface}>
-            <div className="mb-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="rounded-lg border px-3 py-2 text-sm"
-                style={secondaryButtonStyle}
-                onClick={() => {
-                  setShowMacroBuilder(true);
-                }}
-              >
-                {t("macroBuilder")}
-              </button>
-              <button
-                type="button"
-                className="rounded-lg border px-3 py-2 text-sm"
-                style={secondaryButtonStyle}
-                onClick={() => {
-                  setShowHeadTrackingWizard(true);
-                }}
-              >
-                {t("headTracking")}
-              </button>
-            </div>
+            {(!isV1FeatureHidden("macroBuilder") ||
+              !isV1FeatureHidden("headTracking")) && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {!isV1FeatureHidden("macroBuilder") && (
+                  <button
+                    type="button"
+                    className="rounded-lg border px-3 py-2 text-sm"
+                    style={secondaryButtonStyle}
+                    onClick={() => {
+                      setShowMacroBuilder(true);
+                    }}
+                  >
+                    {t("macroBuilder")}
+                  </button>
+                )}
+                {!isV1FeatureHidden("headTracking") && (
+                  <button
+                    type="button"
+                    className="rounded-lg border px-3 py-2 text-sm"
+                    style={secondaryButtonStyle}
+                    onClick={() => {
+                      setShowHeadTrackingWizard(true);
+                    }}
+                  >
+                    {t("headTracking")}
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="mb-4">
               <button

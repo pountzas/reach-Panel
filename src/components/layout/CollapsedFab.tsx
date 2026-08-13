@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { MicrophoneIcon, SettingsIcon } from "../common/SectionIcons";
+import { SettingsIcon } from "../common/SectionIcons";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import {
@@ -11,7 +10,7 @@ import {
 } from "../../lib/miniMode";
 
 export interface CollapsedFabProps {
-  /** Show Settings (gear) above Dictate / Expand (Mini Mode). */
+  /** Show Settings (gear) above Expand (Mini Mode). */
   showSettings?: boolean;
   onSettings?: () => void;
   /** When set, Expand uses this instead of toggleCollapsed (Mini Mode manual expand). */
@@ -23,45 +22,18 @@ export function CollapsedFab({
   onSettings,
   onExpand,
 }: CollapsedFabProps) {
-  const {
-    settings,
-    toggleCollapsed,
-    isAnimatingWindow,
-    dictationState,
-    toggleDictation,
-    sttCapability,
-    refreshSttCapability,
-  } = useAppStore();
+  const { settings, toggleCollapsed, isAnimatingWindow } = useAppStore();
   const { t } = useTranslation();
 
   const bgColor = settings.headerBgColor ?? "#1e293b";
   const textColor = settings.headerTextColor ?? "#ffffff";
-  const showDictation = settings.dictationVisible !== false;
-  const listening = dictationState === "listening" || dictationState === "processing";
-  const canDictate = sttCapability?.canDictate ?? false;
-  const dictationDisabled = !listening && !canDictate;
 
   const fabCount = ((): CollapsedFabCount => {
-    const n = (showSettings ? 1 : 0) + (showDictation ? 1 : 0) + 1;
+    const n = (showSettings ? 1 : 0) + 1;
     if (n === 1 || n === 2 || n === 3) return n;
-    return 3;
+    return 2;
   })();
   const contentMin = collapsedFabContentMinSize(fabCount);
-
-  useEffect(() => {
-    void refreshSttCapability();
-  }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
-
-  let dictationLabel = listening ? t("dictationStop") : t("dictationStart");
-  if (dictationDisabled) {
-    if (!sttCapability?.online) {
-      dictationLabel = t("dictationUnavailableOffline");
-    } else if (sttCapability && !sttCapability.winrtSupported) {
-      dictationLabel = t("dictationUnavailableUnsupported");
-    } else {
-      dictationLabel = t("dictationUnavailableOffline");
-    }
-  }
 
   const handleExpand = () => {
     if (onExpand) {
@@ -96,27 +68,6 @@ export function CollapsedFab({
           aria-label={t("settings")}
         >
           <SettingsIcon className="h-6 w-6" />
-        </button>
-      )}
-      {showDictation && (
-        <button
-          type="button"
-          className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-[1.03] active:scale-95 disabled:opacity-50"
-          style={{
-            width: COLLAPSED_FAB_SIZE,
-            height: COLLAPSED_FAB_SIZE,
-            backgroundColor: listening
-              ? "#dc2626"
-              : dictationDisabled
-                ? "#94a3b8"
-                : "#2563eb",
-            color: "#ffffff",
-          }}
-          onClick={() => void toggleDictation()}
-          disabled={dictationDisabled}
-          aria-label={dictationLabel}
-        >
-          <MicrophoneIcon className="h-6 w-6" />
         </button>
       )}
       <button
