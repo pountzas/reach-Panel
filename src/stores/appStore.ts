@@ -66,6 +66,7 @@ import {
   coercePersistedKeyboardSectionMode,
   needsKeyboardSectionModeMigration,
   restoreWindowHeightRatio,
+  shouldSyncNonMiniWindowLayout,
   type WindowHeightRatioBeforeTeaching,
 } from "../lib/appModeLayout";
 import {
@@ -1076,13 +1077,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const miniModeSettingChanged = partial.miniModeOverride !== undefined;
       if (miniModeSettingChanged || partial.accessibilityMonitorId !== undefined) {
         await refreshMiniModeState({ animate: true });
-        // Leaving Teaching → Normal sets miniModeOverride + height/section in one
-        // patch; refresh alone is a no-op when mini was already off, so still
-        // re-apply non-mini layout (fullWorkArea: false + restored ratio).
+        // Monitor moves (and Teaching→Normal height/section patches) must still
+        // re-apply non-mini layout when refresh is a no-op with Mini already off.
         if (
-          !get().miniModeActive &&
-          (partial.windowHeightRatio !== undefined ||
-            partial.keyboardSectionMode !== undefined)
+          shouldSyncNonMiniWindowLayout({
+            miniModeActive: get().miniModeActive,
+            accessibilityMonitorIdInPatch:
+              partial.accessibilityMonitorId !== undefined,
+            windowHeightRatioInPatch: partial.windowHeightRatio !== undefined,
+            keyboardSectionModeInPatch:
+              partial.keyboardSectionMode !== undefined,
+          })
         ) {
           await syncWindowLayoutFromSettings(
             get().settings,

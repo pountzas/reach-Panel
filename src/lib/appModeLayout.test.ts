@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   captureWindowHeightRatioBeforeTeaching,
   coercePersistedKeyboardSectionMode,
+  isSynthesizerUiActive,
+  lessonCloseAppMode,
   needsKeyboardSectionModeMigration,
   restoreWindowHeightRatio,
+  shouldSyncNonMiniWindowLayout,
 } from "./appModeLayout";
 
 describe("restoreWindowHeightRatio", () => {
@@ -59,5 +62,69 @@ describe("needsKeyboardSectionModeMigration", () => {
   it("does not migrate keyboard or live Teaching synth", () => {
     expect(needsKeyboardSectionModeMigration("keyboard", false)).toBe(false);
     expect(needsKeyboardSectionModeMigration("synthesizer", true)).toBe(false);
+  });
+});
+
+describe("isSynthesizerUiActive", () => {
+  it("requires both Teaching and synthesizer section", () => {
+    expect(isSynthesizerUiActive(true, "synthesizer")).toBe(true);
+    expect(isSynthesizerUiActive(false, "synthesizer")).toBe(false);
+    expect(isSynthesizerUiActive(true, "keyboard")).toBe(false);
+    expect(isSynthesizerUiActive(false, "keyboard")).toBe(false);
+  });
+});
+
+describe("lessonCloseAppMode", () => {
+  it("restores the tablet captured before Teaching", () => {
+    expect(lessonCloseAppMode("mini")).toBe("mini");
+    expect(lessonCloseAppMode("normal")).toBe("normal");
+  });
+
+  it('falls back to "normal" when nothing was captured', () => {
+    expect(lessonCloseAppMode(null)).toBe("normal");
+    expect(lessonCloseAppMode(undefined)).toBe("normal");
+  });
+});
+
+describe("shouldSyncNonMiniWindowLayout", () => {
+  it("syncs non-mini when only accessibilityMonitorId changes", () => {
+    expect(
+      shouldSyncNonMiniWindowLayout({
+        miniModeActive: false,
+        accessibilityMonitorIdInPatch: true,
+        windowHeightRatioInPatch: false,
+        keyboardSectionModeInPatch: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not sync non-mini layout while Mini is active", () => {
+    expect(
+      shouldSyncNonMiniWindowLayout({
+        miniModeActive: true,
+        accessibilityMonitorIdInPatch: true,
+        windowHeightRatioInPatch: false,
+        keyboardSectionModeInPatch: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("syncs for height or section changes when not Mini", () => {
+    expect(
+      shouldSyncNonMiniWindowLayout({
+        miniModeActive: false,
+        accessibilityMonitorIdInPatch: false,
+        windowHeightRatioInPatch: true,
+        keyboardSectionModeInPatch: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldSyncNonMiniWindowLayout({
+        miniModeActive: false,
+        accessibilityMonitorIdInPatch: false,
+        windowHeightRatioInPatch: false,
+        keyboardSectionModeInPatch: true,
+      }),
+    ).toBe(true);
   });
 });

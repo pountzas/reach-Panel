@@ -10,6 +10,8 @@ pub struct SessionState {
     last_rtt_ms: AtomicU64,
     has_rtt: AtomicBool,
     audio_routing: Mutex<AudioRouting>,
+    /// Bumped on clear/revoke and on each successful auth so stale sockets drop.
+    epoch: AtomicU64,
 }
 
 impl SessionState {
@@ -21,6 +23,7 @@ impl SessionState {
             last_rtt_ms: AtomicU64::new(0),
             has_rtt: AtomicBool::new(false),
             audio_routing: Mutex::new(AudioRouting::Host),
+            epoch: AtomicU64::new(0),
         }
     }
 
@@ -28,11 +31,26 @@ impl SessionState {
         *self.phase.lock().unwrap_or_else(|e| e.into_inner())
     }
 
-    pub fn set_active(&self, device_id: String, device_name: String) {
+    pub fn epoch(&self) -> u64 {
+        self.epoch.load(Ordering::SeqCst)
+    }
+
+    pub fn bump_epoch(&self) -> u64 {
+        self.epoch.fetch_add(1, Ordering::SeqCst) + 1
+    }
+
+    pub fn epoch_matches(&self, captured: u64) -> bool {
+        self.epoch() == captured
+    }
+
+    /// Start (or replace) the live session; returns the epoch this socket must hold.
+    pub fn set_active(&self, device_id: String, device_name: String) -> u64 {
+        let epoch = self.bump_epoch();
         *self.phase.lock().unwrap_or_else(|e| e.into_inner()) = SessionPhase::Active;
         *self.device_id.lock().unwrap_or_else(|e| e.into_inner()) = Some(device_id);
         *self.device_name.lock().unwrap_or_else(|e| e.into_inner()) = Some(device_name);
         *self.audio_routing.lock().unwrap_or_else(|e| e.into_inner()) = AudioRouting::Tablet;
+        epoch
     }
 
     pub fn set_reconnecting(&self) {
@@ -48,6 +66,7 @@ impl SessionState {
         *self.device_name.lock().unwrap_or_else(|e| e.into_inner()) = None;
         *self.audio_routing.lock().unwrap_or_else(|e| e.into_inner()) = AudioRouting::Host;
         self.has_rtt.store(false, Ordering::Relaxed);
+        let _ = self.bump_epoch();
         super::dictation::abort();
     }
 
@@ -92,5 +111,36 @@ impl SessionState {
             self.phase(),
             SessionPhase::Active | SessionPhase::Reconnecting
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn revoke_clear_bumps_epoch_and_stale_is_unauthorized() {
+        let session = SessionState::new();
+        assert_eq!(session.epoch(), 0);
+
+        let live = session.set_active("dev-a".into(), "Tablet A".into());
+        assert!(session.epoch_matches(live));
+        assert_eq!(session.device_id().as_deref(), Some("dev-a"));
+
+        session.clear();
+        assert!(!session.epoch_matches(live));
+        assert!(session.device_id().is_none());
+        assert_eq!(session.phase(), SessionPhase::Idle);
+    }
+
+    #[test]
+    fn newer_auth_invalidates_prior_epoch() {
+        let session = SessionState::new();
+        let first = session.set_active("dev-a".into(), "A".into());
+        let second = session.set_active("dev-b".into(), "B".into());
+        assert_ne!(first, second);
+        assert!(!session.epoch_matches(first));
+        assert!(session.epoch_matches(second));
+        assert_eq!(session.device_id().as_deref(), Some("dev-b"));
     }
 }

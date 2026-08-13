@@ -39,3 +39,39 @@ export function needsKeyboardSectionModeMigration(
 ): boolean {
   return !musicTeachingEnabled && rawMode === "synthesizer";
 }
+
+/**
+ * Piano / synthesizer chrome is a Teaching product surface — never show it
+ * from `keyboardSectionMode === "synthesizer"` alone.
+ */
+export function isSynthesizerUiActive(
+  musicTeachingEnabled: boolean,
+  keyboardSectionMode: string,
+): boolean {
+  return musicTeachingEnabled && keyboardSectionMode === "synthesizer";
+}
+
+/** Lesson-slot Close restores the tablet captured before Teaching. */
+export function lessonCloseAppMode(
+  modeBeforeTeaching: "normal" | "mini" | null | undefined,
+): "normal" | "mini" {
+  return modeBeforeTeaching ?? "normal";
+}
+
+/**
+ * After `updateSettings`, whether non-mini Normal/Teaching must re-apply
+ * window layout (monitor move, height, or section change).
+ */
+export function shouldSyncNonMiniWindowLayout(input: {
+  miniModeActive: boolean;
+  accessibilityMonitorIdInPatch: boolean;
+  windowHeightRatioInPatch: boolean;
+  keyboardSectionModeInPatch: boolean;
+}): boolean {
+  if (input.miniModeActive) return false;
+  return (
+    input.accessibilityMonitorIdInPatch ||
+    input.windowHeightRatioInPatch ||
+    input.keyboardSectionModeInPatch
+  );
+}

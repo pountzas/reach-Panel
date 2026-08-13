@@ -88,6 +88,7 @@ async fn handle_connection(
     let (mut write, mut read) = ws.split();
 
     let mut authenticated = false;
+    let mut connection_epoch = 0u64;
     let mut device_name = String::from("Tablet");
     let mut hello_seen = false;
 
@@ -128,6 +129,16 @@ async fn handle_connection(
             continue;
         }
 
+        if authenticated && !session.epoch_matches(connection_epoch) {
+            let err = Envelope::error(
+                env.id.clone(),
+                "unauthorized",
+                "Session revoked",
+            );
+            let _ = send_json(&mut write, &err).await;
+            break;
+        }
+
         match env.msg_type.as_str() {
             "hello" => {
                 hello_seen = true;
@@ -157,7 +168,7 @@ async fn handle_connection(
                     Ok((device_id, new_credential, name)) => {
                         authenticated = true;
                         device_name = name.clone();
-                        session.set_active(device_id.clone(), name.clone());
+                        connection_epoch = session.set_active(device_id.clone(), name.clone());
                         on_session_active(&app);
                         emit_ui_state(&app, &auth, &session, true, bridge_port);
 
@@ -219,7 +230,7 @@ async fn handle_connection(
         }
     }
 
-    if authenticated {
+    if authenticated && session.epoch_matches(connection_epoch) {
         eprintln!("[companion] session ended from {peer}");
         session.set_reconnecting();
         session.clear();

@@ -1103,21 +1103,7 @@ pub fn run() {
 
             match companion::CompanionBridge::new(&app_data_dir) {
                 Ok(bridge) => {
-                    // Auto-start for MVP until Settings → Companion UI lands.
-                    match bridge.start(app.handle().clone(), None) {
-                        Ok(status) => {
-                            eprintln!(
-                                "[companion] bridge started on port {}",
-                                status.port
-                            );
-                            if let Ok(payload) = bridge.pairing_payload() {
-                                if let Ok(json) = serde_json::to_string(&payload) {
-                                    eprintln!("[companion] pairing payload: {json}");
-                                }
-                            }
-                        }
-                        Err(e) => eprintln!("[companion] failed to start bridge: {e}"),
-                    }
+                    // Default off — user starts from Settings → Companion.
                     app.manage(bridge);
                 }
                 Err(e) => {

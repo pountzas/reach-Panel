@@ -16,6 +16,7 @@ import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
 import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
 import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
+import { isSynthesizerUiActive } from "../../lib/appModeLayout";
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
@@ -30,7 +31,10 @@ export function KeyboardSection() {
   const musicSongId = useAppStore((s) => s.musicSongId);
   const importedSongs = useAppStore((s) => s.importedSongs);
   const { t } = useTranslation();
-  const showSynth = settings.keyboardSectionMode === "synthesizer";
+  const showSynth = isSynthesizerUiActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
   const compact = settings.inputAreaCompact;
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
   const transparentUi = isTransparentUiActive(settings, miniModeActive);
