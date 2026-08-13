@@ -13,6 +13,8 @@ interface KeyButtonProps {
   bgColor: string;
   textColor?: string;
   active?: boolean;
+  disabled?: boolean;
+  ariaLabel?: string;
   stretch?: boolean;
   gridColumn?: string;
   gridRow?: string;
@@ -31,6 +33,8 @@ export function KeyButton({
   bgColor,
   textColor = "#1e293b",
   active,
+  disabled = false,
+  ariaLabel,
   stretch,
   gridColumn,
   gridRow,
@@ -92,6 +96,8 @@ export function KeyButton({
               marginBottom: spacing,
             }
       }
+      disabled={disabled}
+      aria-label={ariaLabel}
       onClick={onPress}
       {...pointerHandlers}
     >

@@ -280,7 +280,6 @@ export function SettingsPanel() {
     wipeActiveProfile,
     checkForUpdates,
     updateCheckStatus,
-    stopDictation,
     inputMethods,
     loadInputMethods,
     selectTypingInputMethod,
@@ -741,19 +740,6 @@ export function SettingsPanel() {
                 label={t("showKeyboardModeToggle")}
                 checked={settings.keyboardModeToggleVisible}
                 onChange={(checked) => updateSettings({ keyboardModeToggleVisible: checked })}
-                surface={surface}
-              />
-            </div>
-            <div className="mt-3">
-              <ToggleRow
-                label={t("showDictationControl")}
-                checked={settings.dictationVisible !== false}
-                onChange={(checked) => {
-                  if (!checked) {
-                    void stopDictation();
-                  }
-                  void updateSettings({ dictationVisible: checked });
-                }}
                 surface={surface}
               />
             </div>

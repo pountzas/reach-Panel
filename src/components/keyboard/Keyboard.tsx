@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
 import {
@@ -15,6 +15,8 @@ import {
 import { KeyButton } from "./KeyButton";
 import { LanguagePicker } from "./LanguagePicker";
 import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
+import { DictationVisualizer } from "./DictationVisualizer";
+import { MicrophoneIcon } from "../common/SectionIcons";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
@@ -44,6 +46,10 @@ export function Keyboard() {
   const selectTypingInputMethod = useAppStore((s) => s.selectTypingInputMethod);
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
   const updateSettings = useAppStore((s) => s.updateSettings);
+  const dictationState = useAppStore((s) => s.dictationState);
+  const toggleDictation = useAppStore((s) => s.toggleDictation);
+  const sttCapability = useAppStore((s) => s.sttCapability);
+  const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const langKeyAnchorRef = useRef<HTMLDivElement>(null);
@@ -70,6 +76,27 @@ export function Keyboard() {
   const keyTextColor = transparent
     ? transparentPalette.text
     : (settings.keyTextColor ?? "#1e293b");
+
+  const listening = dictationState === "listening" || dictationState === "processing";
+  const canDictate = sttCapability?.canDictate ?? false;
+  // Never disable while a session is active — stop must always be clickable.
+  const dictateDisabled = !listening && !canDictate;
+  const captureAudio = sttCapability?.engine !== "groq";
+
+  useEffect(() => {
+    void refreshSttCapability();
+  }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
+
+  let dictateAriaLabel = listening ? t("dictationStop") : t("dictationStart");
+  if (dictateDisabled) {
+    if (!sttCapability?.online) {
+      dictateAriaLabel = t("dictationUnavailableOffline");
+    } else if (sttCapability && !sttCapability.winrtSupported) {
+      dictateAriaLabel = t("dictationUnavailableUnsupported");
+    } else {
+      dictateAriaLabel = t("dictationUnavailableOffline");
+    }
+  }
 
   const clearModifiersAfterKey = (usedFn: boolean) => {
     if (settings.fnKeyMode === "latched") {
@@ -98,6 +125,14 @@ export function Keyboard() {
 
     if (key === "langswitch") {
       await openLanguagePicker();
+      await pollError();
+      return;
+    }
+
+    if (key === "dictate") {
+      if (!dictateDisabled) {
+        await toggleDictation();
+      }
       await pollError();
       return;
     }
@@ -160,6 +195,21 @@ export function Keyboard() {
     await pollError();
   };
 
+  const dictateBgColor = transparent
+    ? settings.keyboardKeyColor ?? "#ffffff"
+    : listening
+      ? "#dc2626"
+      : dictateDisabled
+        ? "#f1f5f9"
+        : (settings.keyboardKeyColor ?? "#ffffff");
+  const dictateTextColor = transparent
+    ? keyTextColor
+    : listening
+      ? "#ffffff"
+      : dictateDisabled
+        ? "#94a3b8"
+        : keyTextColor;
+
   return (
     <div
       ref={ref}
@@ -171,10 +221,37 @@ export function Keyboard() {
         opacity: transparent ? 1 : settings.opacity,
       }}
     >
+      {listening ? (
+        <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2">
+          <DictationVisualizer active={listening} captureAudio={captureAudio} />
+        </div>
+      ) : null}
       {rows.map((row, ri) => (
         <div key={ri} className="flex w-full">
           {row.map((k, ci) => {
             const isLang = k.key === "langswitch";
+            const isDictate = k.key === "dictate";
+            if (isDictate) {
+              return (
+                <KeyButton
+                  key={`${ri}-${k.key}-${k.label}-${ci}`}
+                  label={<MicrophoneIcon className="h-5 w-5" />}
+                  width={k.width}
+                  size={keyHeight}
+                  spacing={spacing}
+                  fontSize={fontSize}
+                  bgColor={dictateBgColor}
+                  textColor={dictateTextColor}
+                  stretch
+                  transparent={transparent}
+                  outlineColor={settings.transparentKeyColor}
+                  active={transparent ? listening : false}
+                  disabled={dictateDisabled}
+                  ariaLabel={dictateAriaLabel}
+                  onPress={() => handleKey(k)}
+                />
+              );
+            }
             if (!isLang) {
               return (
                 <KeyButton

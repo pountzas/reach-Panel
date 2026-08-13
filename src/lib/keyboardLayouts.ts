@@ -81,7 +81,7 @@ function keyNameToVk(key: string): number | null {
 /** Maps a layout key to its physical Windows VK using QWERTY key positions. */
 export function vkForLayoutKey(row: number, col: number): number | null {
   const keyDef = QWERTY_ROWS[row]?.[col];
-  if (!keyDef || keyDef.key === "langswitch") return null;
+  if (!keyDef || keyDef.key === "langswitch" || keyDef.key === "dictate") return null;
   return keyNameToVk(keyDef.key);
 }
 
@@ -138,6 +138,7 @@ export function isKeyActive(
     case "fn":
       return stickyModifiers.includes("fn");
     case "langswitch":
+    case "dictate":
       return false;
     default: {
       const fnVk = fnKeyVk(keyDef.key);
@@ -282,10 +283,11 @@ export const QWERTY_ROWS: KeyDef[][] = [
     { label: "Win", key: "win", width: 1.2, modifier: true },
     { label: "Alt", key: "alt", width: 1.2, modifier: true },
     { label: "Lang", key: "langswitch", width: 1.2 },
-    { label: "Space", key: "space", width: 4.2 },
+    { label: "Space", key: "space", width: 3.0 },
     { label: "Alt", key: "alt", width: 1.2, modifier: true },
     { label: "Fn", key: "fn", width: 1.1, modifier: true },
     { label: "Ctrl", key: "ctrl", width: 1.3, modifier: true },
+    { label: "Mic", key: "dictate", width: 1.3 },
   ],
 ];
 
@@ -358,10 +360,11 @@ export const GREEK_ROWS: KeyDef[][] = [
     { label: "Win", key: "win", width: 1.2, modifier: true },
     { label: "Alt", key: "alt", width: 1.2, modifier: true },
     { label: "Lang", key: "langswitch", width: 1.2 },
-    { label: "Space", key: "space", width: 4.2 },
+    { label: "Space", key: "space", width: 3.0 },
     { label: "Alt", key: "alt", width: 1.2, modifier: true },
     { label: "Fn", key: "fn", width: 1.1, modifier: true },
     { label: "Ctrl", key: "ctrl", width: 1.3, modifier: true },
+    { label: "Mic", key: "dictate", width: 1.3 },
   ],
 ];
 

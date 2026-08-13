@@ -10,7 +10,6 @@ import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { SynthVolumeControl } from "./SynthVolumeControl";
 import { PianoRangeControl } from "./PianoRangeControl";
-import { DictationButton } from "./DictationButton";
 import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -37,8 +36,6 @@ export function KeyboardSection() {
   const showSynth = settings.keyboardSectionMode === "synthesizer";
   const compact = settings.inputAreaCompact;
   const showToggle = settings.keyboardModeToggleVisible && !compact;
-  const showDictation =
-    !showSynth && settings.dictationVisible !== false && !compact;
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
   const transparentUi = isTransparentUiActive(settings, miniModeActive);
   const showTransparentToggle = miniModeActive && !showSynth && !compact;
@@ -53,7 +50,6 @@ export function KeyboardSection() {
     : undefined;
   const showTransparentColorButton = transparentUi && showTransparentToggle;
   const showToolbar =
-    showDictation ||
     showToggle ||
     showSuggestions ||
     showTransparentToggle ||
@@ -80,7 +76,7 @@ export function KeyboardSection() {
           <div className="min-w-0 flex-1 pl-1.5">
             {showSuggestions && <SuggestionsBar />}
           </div>
-              {(showDictation || showToggle || showTransparentToggle || showMiniModeCollapse) && (
+              {(showToggle || showTransparentToggle || showMiniModeCollapse) && (
             <div
               className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
             >
@@ -104,7 +100,6 @@ export function KeyboardSection() {
                   </ModeToggleButton>
                 </ModeToggleGroup>
               )}
-              {showDictation && <DictationButton transparentUi={transparentUi} />}
               {showTransparentToggle && (
                 <ModeToggleGroup
                   transparentUi={transparentUi}

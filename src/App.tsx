@@ -56,8 +56,7 @@ function MainApp() {
           await invoke("cmd_apply_window_layout", {
             monitorId: settings.accessibilityMonitorId,
             collapsed: settings.collapsed,
-            collapsedDictation:
-              settings.collapsed && settings.dictationVisible !== false,
+            collapsedDictation: false,
             heightRatio: computeContentHeightRatioFromSettings(
               settings,
               isMusicLessonSlotVisible({

@@ -111,7 +111,7 @@ async function syncMiniModeWindowLayout(preferAnimate = true) {
     const args = {
       monitorId: settings.accessibilityMonitorId,
       collapsed: !visibleAtStart,
-      collapsedDictation: true,
+      collapsedDictation: false,
       collapsedSettings: true,
       heightRatio: heightRatioFromSettings(
         settings,
@@ -302,8 +302,7 @@ async function syncWindowLayoutFromSettings(
   const args = {
     monitorId: settings.accessibilityMonitorId,
     collapsed: settings.collapsed,
-    collapsedDictation:
-      settings.collapsed && settings.dictationVisible !== false,
+    collapsedDictation: false,
     heightRatio: heightRatioFromSettings(settings, musicTeachingEnabled),
   };
   // Animate height like phrases/QA toggles; apply for collapsed / cold load.
@@ -972,7 +971,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (
           partial.collapsed !== undefined ||
           partial.windowHeightRatio !== undefined ||
-          (current.collapsed && partial.dictationVisible !== undefined) ||
           visibilityChanged
         ) {
           if (partial.windowHeightRatio !== undefined) {
@@ -983,8 +981,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       } else if (
         partial.accessibilityMonitorId !== undefined ||
         partial.collapsed !== undefined ||
-        partial.windowHeightRatio !== undefined ||
-        (current.collapsed && partial.dictationVisible !== undefined)
+        partial.windowHeightRatio !== undefined
       ) {
         if (partial.windowHeightRatio !== undefined) {
           liveHeightRatioPreview = null;
@@ -992,8 +989,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         await invoke("cmd_apply_window_layout", {
           monitorId: current.accessibilityMonitorId,
           collapsed: current.collapsed,
-          collapsedDictation:
-            current.collapsed && current.dictationVisible !== false,
+          collapsedDictation: false,
           heightRatio: heightRatioFromSettings(current, get().musicTeachingEnabled),
         });
       } else if (visibilityChanged && !current.collapsed) {
@@ -1675,7 +1671,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         await invoke("cmd_animate_window_layout", {
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
-          collapsedDictation: next.dictationVisible !== false,
+          collapsedDictation: false,
           heightRatio: heightRatioFromSettings(next, get().musicTeachingEnabled),
         });
       } else {
