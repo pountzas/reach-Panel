@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { AppShell } from "./components/layout/AppShell";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
@@ -16,6 +16,15 @@ import {
   type ToolWindowLabel,
   type ToolWindowRequest,
 } from "./lib/toolWindows";
+import {
+  APP_MODE_REQUEST_EVENT,
+  TEACHING_LESSON_REQUEST_EVENT,
+  TEACHING_SESSION_EVENT,
+  TEACHING_SESSION_REQUEST_EVENT,
+  type AppModeRequest,
+  type TeachingLessonRequest,
+  type TeachingSessionPayload,
+} from "./lib/appModeLayout";
 import {
   isMusicLessonSlotVisible,
   isTeachingFullWorkArea,
@@ -164,6 +173,24 @@ function MainApp() {
     );
 
     unlisteners.push(
+      listen<AppModeRequest>(APP_MODE_REQUEST_EVENT, (event) => {
+        void useAppStore.getState().setAppMode(event.payload.mode);
+      }),
+    );
+
+    unlisteners.push(
+      listen<TeachingLessonRequest>(TEACHING_LESSON_REQUEST_EVENT, (event) => {
+        useAppStore.getState().setTeachingLesson(event.payload.lesson);
+      }),
+    );
+
+    unlisteners.push(
+      listen(TEACHING_SESSION_REQUEST_EVENT, () => {
+        void useAppStore.getState().broadcastTeachingSession();
+      }),
+    );
+
+    unlisteners.push(
       listen<ToolWindowRequest>(TOOL_WINDOW_REQUEST_EVENT, (event) => {
         const { label, show } = event.payload;
         if (show && isV1ToolWindowHidden(label)) {
@@ -229,17 +256,25 @@ function ToolApp({ label }: { label: ToolWindowLabel }) {
       const win = WebviewWindow.getCurrent();
       await win.setAlwaysOnTop(true);
       await win.setFocusable(true);
+      await emit(TEACHING_SESSION_REQUEST_EVENT);
     };
     void init();
   }, [loadMonitors, loadProfileFiles]);
 
   useEffect(() => {
-    const unlisten = listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
-      if (event.payload?.source === WebviewWindow.getCurrent().label) return;
-      void useAppStore.getState().loadProfileFiles();
-    });
+    const unlisteners = [
+      listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
+        if (event.payload?.source === WebviewWindow.getCurrent().label) return;
+        void useAppStore.getState().loadProfileFiles();
+      }),
+      listen<TeachingSessionPayload>(TEACHING_SESSION_EVENT, (event) => {
+        useAppStore.getState().applyTeachingSession(event.payload);
+      }),
+    ];
     return () => {
-      void unlisten.then((stop) => stop());
+      void Promise.all(unlisteners).then((stops) => {
+        for (const stop of stops) stop();
+      });
     };
   }, []);
 

@@ -1,13 +1,34 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "./types";
 import {
   captureWindowHeightRatioBeforeTeaching,
   coercePersistedKeyboardSectionMode,
+  heightRatioAfterLeavingTeaching,
+  hydrateKeyboardSectionMode,
   isSynthesizerUiActive,
+  isTeachingSessionActive,
   lessonCloseAppMode,
+  teachingLessonTitleKey,
   needsKeyboardSectionModeMigration,
   restoreWindowHeightRatio,
+  settingsForPersist,
+  shouldDelegateAppModeToMain,
   shouldSyncNonMiniWindowLayout,
+  teachingSessionKeyboardMode,
 } from "./appModeLayout";
+
+describe("heightRatioAfterLeavingTeaching", () => {
+  it("returns undefined for unset / null / Teaching 1.0", () => {
+    expect(heightRatioAfterLeavingTeaching("unset")).toBeUndefined();
+    expect(heightRatioAfterLeavingTeaching(null)).toBeUndefined();
+    expect(heightRatioAfterLeavingTeaching(1.0)).toBeUndefined();
+    expect(heightRatioAfterLeavingTeaching(0.999)).toBeUndefined();
+  });
+
+  it("returns a normal saved ratio unchanged", () => {
+    expect(heightRatioAfterLeavingTeaching(0.7)).toBe(0.7);
+  });
+});
 
 describe("restoreWindowHeightRatio", () => {
   it("returns the captured numeric ratio", () => {
@@ -66,11 +87,28 @@ describe("needsKeyboardSectionModeMigration", () => {
 });
 
 describe("isSynthesizerUiActive", () => {
-  it("requires both Teaching and synthesizer section", () => {
-    expect(isSynthesizerUiActive(true, "synthesizer")).toBe(true);
-    expect(isSynthesizerUiActive(false, "synthesizer")).toBe(false);
-    expect(isSynthesizerUiActive(true, "keyboard")).toBe(false);
-    expect(isSynthesizerUiActive(false, "keyboard")).toBe(false);
+  it("shows the piano only for the Music lesson during Teaching", () => {
+    expect(isSynthesizerUiActive(true, "synthesizer", "music")).toBe(true);
+    expect(isSynthesizerUiActive(true, "synthesizer", "language")).toBe(false);
+    expect(isSynthesizerUiActive(true, "synthesizer", "math")).toBe(false);
+    expect(isSynthesizerUiActive(false, "synthesizer", "music")).toBe(false);
+    expect(isSynthesizerUiActive(true, "keyboard", "music")).toBe(false);
+  });
+});
+
+describe("isTeachingSessionActive", () => {
+  it("is true for any lesson while Teaching chrome is on", () => {
+    expect(isTeachingSessionActive(true, "synthesizer")).toBe(true);
+    expect(isTeachingSessionActive(false, "synthesizer")).toBe(false);
+    expect(isTeachingSessionActive(true, "keyboard")).toBe(false);
+  });
+});
+
+describe("teachingLessonTitleKey", () => {
+  it("maps each lesson to its section title", () => {
+    expect(teachingLessonTitleKey("language")).toBe("languageLessonTitle");
+    expect(teachingLessonTitleKey("music")).toBe("musicLesson");
+    expect(teachingLessonTitleKey("math")).toBe("mathLessonTitle");
   });
 });
 
@@ -83,6 +121,51 @@ describe("lessonCloseAppMode", () => {
   it('falls back to "normal" when nothing was captured', () => {
     expect(lessonCloseAppMode(null)).toBe("normal");
     expect(lessonCloseAppMode(undefined)).toBe("normal");
+  });
+});
+
+describe("hydrateKeyboardSectionMode", () => {
+  it("restores synthesizer for a live Teaching session even when disk has keyboard", () => {
+    expect(hydrateKeyboardSectionMode("keyboard", true)).toBe("synthesizer");
+    expect(hydrateKeyboardSectionMode("synthesizer", true)).toBe("synthesizer");
+  });
+
+  it("never hydrates synthesizer when Teaching is off", () => {
+    expect(hydrateKeyboardSectionMode("synthesizer", false)).toBe("keyboard");
+    expect(hydrateKeyboardSectionMode("keyboard", false)).toBe("keyboard");
+  });
+});
+
+describe("settingsForPersist", () => {
+  it("strips synthesizer so Teaching chrome is session-only on disk", () => {
+    const persisted = settingsForPersist({
+      ...DEFAULT_SETTINGS,
+      keyboardSectionMode: "synthesizer",
+    });
+    expect(persisted.keyboardSectionMode).toBe("keyboard");
+  });
+
+  it("leaves keyboard mode unchanged", () => {
+    const persisted = settingsForPersist({
+      ...DEFAULT_SETTINGS,
+      keyboardSectionMode: "keyboard",
+    });
+    expect(persisted.keyboardSectionMode).toBe("keyboard");
+  });
+});
+
+describe("shouldDelegateAppModeToMain", () => {
+  it("delegates tablet changes from Settings so main owns the lesson slot", () => {
+    expect(shouldDelegateAppModeToMain("settings")).toBe(true);
+    expect(shouldDelegateAppModeToMain("macro-builder")).toBe(true);
+    expect(shouldDelegateAppModeToMain("main")).toBe(false);
+  });
+});
+
+describe("teachingSessionKeyboardMode", () => {
+  it("maps the live Teaching flag to in-memory keyboard chrome", () => {
+    expect(teachingSessionKeyboardMode(true)).toBe("synthesizer");
+    expect(teachingSessionKeyboardMode(false)).toBe("keyboard");
   });
 });
 

@@ -51,7 +51,7 @@ export const el: Record<keyof typeof en, string> = {
   languageLessonTitle: "Γλώσσα",
 
   modeTabletsHint:
-    "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει τον συνθετητή με μαθήματα.",
+    "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή.",
 
   miniModeAutoDescription:
     "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
@@ -293,6 +293,8 @@ export const el: Record<keyof typeof en, string> = {
 
   dictationUnavailableOffline:
     "Η υπαγόρευση δεν είναι διαθέσιμη — απαιτείται σύνδεση στο διαδίκτυο",
+
+  dictationGroqRemainingToday: "Υπολειπόμενα αιτήματα Groq σήμερα",
 
   dictationOpenSpeechSettings: "Άνοιγμα ρυθμίσεων ομιλίας",
 

@@ -1,13 +1,17 @@
 import {
   CollapseIcon,
   MouseIcon,
+  TeachingLessonIcon,
   TransparentKeyboardIcon,
 } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { SynthVolumeControl } from "./SynthVolumeControl";
 import { PianoRangeControl } from "./PianoRangeControl";
-import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
+import {
+  KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS,
+  modeToggleSegmentPosition,
+} from "../../lib/buttonClasses";
 import { useAppStore, type TeachingLesson } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Keyboard } from "./Keyboard";
@@ -16,7 +20,10 @@ import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
 import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
 import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
-import { isSynthesizerUiActive } from "../../lib/appModeLayout";
+import {
+  isSynthesizerUiActive,
+  isTeachingSessionActive,
+} from "../../lib/appModeLayout";
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
@@ -31,10 +38,17 @@ export function KeyboardSection() {
   const musicSongId = useAppStore((s) => s.musicSongId);
   const importedSongs = useAppStore((s) => s.importedSongs);
   const { t } = useTranslation();
-  const showSynth = isSynthesizerUiActive(
-    musicTeachingEnabled,
-    settings.keyboardSectionMode,
-  );
+  const teachingActive =
+    isTeachingSessionActive(
+      musicTeachingEnabled,
+      settings.keyboardSectionMode,
+    ) && !miniModeActive;
+  const showSynth =
+    isSynthesizerUiActive(
+      musicTeachingEnabled,
+      settings.keyboardSectionMode,
+      teachingLesson,
+    ) && !miniModeActive;
   const compact = settings.inputAreaCompact;
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
   const transparentUi = isTransparentUiActive(settings, miniModeActive);
@@ -49,8 +63,10 @@ export function KeyboardSection() {
       })
     : undefined;
   const showTransparentColorButton = transparentUi && showTransparentToggle;
+  const showLessonToggle = teachingActive && !compact;
   const showSynthToolbar = showSynth && !compact;
   const showToolbar =
+    showLessonToggle ||
     showSynthToolbar ||
     showSuggestions ||
     showTransparentToggle ||
@@ -68,10 +84,10 @@ export function KeyboardSection() {
     octaveCount,
   );
 
-  const lessonButtons: { id: TeachingLesson; labelKey: "teachingLessonMusic" | "teachingLessonMath" | "teachingLessonLanguage" }[] = [
+  const lessonButtons: { id: TeachingLesson; labelKey: "teachingLessonLanguage" | "teachingLessonMusic" | "teachingLessonMath" }[] = [
+    { id: "language", labelKey: "teachingLessonLanguage" },
     { id: "music", labelKey: "teachingLessonMusic" },
     { id: "math", labelKey: "teachingLessonMath" },
-    { id: "language", labelKey: "teachingLessonLanguage" },
   ];
 
   return (
@@ -83,7 +99,10 @@ export function KeyboardSection() {
           <div className="min-w-0 flex-1 pl-1.5">
             {showSuggestions && <SuggestionsBar />}
           </div>
-              {(showSynthToolbar || showTransparentToggle || showMiniModeCollapse) && (
+              {(showLessonToggle ||
+                showSynthToolbar ||
+                showTransparentToggle ||
+                showMiniModeCollapse) && (
             <div
               className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
             >
@@ -168,33 +187,31 @@ export function KeyboardSection() {
                   </ModeToggleButton>
                 </ModeToggleGroup>
               )}
+              {showLessonToggle && (
+                <ModeToggleGroup>
+                  {lessonButtons.map((lesson, index) => (
+                    <ModeToggleButton
+                      key={lesson.id}
+                      active={
+                        musicTeachingEnabled && teachingLesson === lesson.id
+                      }
+                      position={modeToggleSegmentPosition(
+                        index,
+                        lessonButtons.length,
+                      )}
+                      label={t(lesson.labelKey)}
+                      onClick={() => setTeachingLesson(lesson.id)}
+                    >
+                      <TeachingLessonIcon
+                        lesson={lesson.id}
+                        className="h-4 w-4"
+                      />
+                    </ModeToggleButton>
+                  ))}
+                </ModeToggleGroup>
+              )}
               {showSynthToolbar && (
                 <>
-                  <ModeToggleGroup>
-                    {lessonButtons.map((lesson, index) => {
-                      const position =
-                        index === 0
-                          ? "first"
-                          : index === lessonButtons.length - 1
-                            ? "last"
-                            : "middle";
-                      return (
-                        <ModeToggleButton
-                          key={lesson.id}
-                          active={
-                            musicTeachingEnabled && teachingLesson === lesson.id
-                          }
-                          position={position}
-                          label={t(lesson.labelKey)}
-                          onClick={() => setTeachingLesson(lesson.id)}
-                        >
-                          <span className="px-1 text-xs font-semibold">
-                            {t(lesson.labelKey)}
-                          </span>
-                        </ModeToggleButton>
-                      );
-                    })}
-                  </ModeToggleGroup>
                   <PianoRangeControl
                     octaveCount={settings.synthesizerOctaveCount}
                     startOctave={settings.synthesizerStartOctave}

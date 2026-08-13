@@ -201,6 +201,66 @@ export function TeachIcon({ className = iconClass }: IconProps) {
   );
 }
 
+export function LanguageLessonIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M4 20V6a2 2 0 0 1 2-2h5v14H6a2 2 0 0 0-2 2Z" />
+      <path d="M20 20V6a2 2 0 0 0-2-2h-5v14h5a2 2 0 0 1 2 2Z" />
+      <path d="M12 4v14" />
+    </svg>
+  );
+}
+
+export function MusicLessonIcon({ className = iconClass }: IconProps) {
+  return <TeachIcon className={className} />;
+}
+
+export function MathLessonIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 8h8" />
+      <path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+export function TeachingLessonIcon({
+  lesson,
+  className = iconClass,
+}: IconProps & { lesson: "language" | "music" | "math" }) {
+  switch (lesson) {
+    case "language":
+      return <LanguageLessonIcon className={className} />;
+    case "music":
+      return <MusicLessonIcon className={className} />;
+    case "math":
+      return <MathLessonIcon className={className} />;
+    default: {
+      const _exhaustive: never = lesson;
+      return _exhaustive;
+    }
+  }
+}
+
 export function CollapseIcon({ className = iconClass }: IconProps) {
   return (
     <svg

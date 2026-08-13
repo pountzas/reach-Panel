@@ -48,7 +48,7 @@ export const de: Record<keyof typeof en, string> = {
   languageLessonTitle: "Sprache",
 
   modeTabletsHint:
-    "Normal und Mini sind Tastatur. Unterricht öffnet den Synthesizer mit Lektionen.",
+    "Normal und Mini sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer.",
 
   miniModeAutoDescription:
     "Auf einem einzelnen Display oder bei gespiegelter Einrichtung erscheint die Tastatur automatisch, wenn Sie ein Eingabefeld antippen.",
@@ -288,6 +288,8 @@ export const de: Record<keyof typeof en, string> = {
     "Diktat nicht verfügbar — fügen Sie in den Einstellungen einen kostenlosen Groq-API-Schlüssel für diese Sprache hinzu",
 
   dictationUnavailableOffline: "Diktat nicht verfügbar — eine Internetverbindung ist erforderlich",
+
+  dictationGroqRemainingToday: "Verbleibende Groq-Anfragen heute",
 
   dictationOpenSpeechSettings: "Spracheinstellungen öffnen",
 

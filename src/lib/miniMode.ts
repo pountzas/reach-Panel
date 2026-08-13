@@ -96,13 +96,16 @@ export function isMiniModeEligible(monitors: MonitorInfo[]): boolean {
 
 /**
  * Resolve whether mini mode should be active.
+ * - Teaching active → never Mini (typing-only product surface)
  * - `miniModeOverride: true` → Mini
  * - `miniModeOverride: false` / `null` / `undefined` → Normal (Auto dropped)
  */
 export function resolveMiniModeEnabled(
   settings: AppSettings,
   _monitors: MonitorInfo[],
+  teachingActive = false,
 ): boolean {
+  if (teachingActive) return false;
   return settings.miniModeOverride === true;
 }
 

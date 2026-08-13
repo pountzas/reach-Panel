@@ -2,7 +2,7 @@
 
 use crate::db::Database;
 use crate::profiles::INTERNAL_PROFILE_ID;
-use crate::stt::events::handle_result;
+use crate::stt::events::{emit_groq_quota_optional, handle_result};
 use crate::stt::groq;
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use std::sync::Mutex;
@@ -213,15 +213,31 @@ fn transcribe_pcm(
         return Ok(None);
     }
     let key = resolve_host_groq_key(db)?;
-    let text = groq::transcribe_pcm16_le(&key, pcm, sample_rate, language)
-        .map_err(|e| e.to_string())?;
-    if text.is_empty() {
+    let result = match groq::transcribe_pcm16_le(&key, pcm, sample_rate, language) {
+        Ok(result) => {
+            emit_groq_quota_optional(
+                app,
+                result.quota.remaining_requests,
+                result.quota.limit_requests,
+            );
+            result
+        }
+        Err(err) => {
+            emit_groq_quota_optional(
+                app,
+                err.quota.remaining_requests,
+                err.quota.limit_requests,
+            );
+            return Err(err.to_string());
+        }
+    };
+    if result.text.is_empty() {
         return Ok(None);
     }
     // Type via shared path (also emits desktop stt-result for consistency).
-    handle_result(app, &text);
+    handle_result(app, &result.text);
     // handle_result already typed; if it filtered blank audio, check again.
-    let trimmed = text.trim();
+    let trimmed = result.text.trim();
     if trimmed.is_empty() {
         return Ok(None);
     }
@@ -236,11 +252,33 @@ fn transcribe_encoded(
     language: &str,
 ) -> Result<Option<String>, String> {
     let key = resolve_host_groq_key(db)?;
-    let text = groq::transcribe_file_bytes(&key, &enc.data, &enc.filename, &enc.mime, language)
-        .map_err(|e| e.to_string())?;
-    if text.trim().is_empty() {
+    let result = match groq::transcribe_file_bytes(
+        &key,
+        &enc.data,
+        &enc.filename,
+        &enc.mime,
+        language,
+    ) {
+        Ok(result) => {
+            emit_groq_quota_optional(
+                app,
+                result.quota.remaining_requests,
+                result.quota.limit_requests,
+            );
+            result
+        }
+        Err(err) => {
+            emit_groq_quota_optional(
+                app,
+                err.quota.remaining_requests,
+                err.quota.limit_requests,
+            );
+            return Err(err.to_string());
+        }
+    };
+    if result.text.trim().is_empty() {
         return Ok(None);
     }
-    handle_result(app, &text);
-    Ok(Some(text.trim().to_string()))
+    handle_result(app, &result.text);
+    Ok(Some(result.text.trim().to_string()))
 }

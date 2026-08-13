@@ -48,7 +48,7 @@ export const pt: Record<keyof typeof en, string> = {
   languageLessonTitle: "Idioma",
 
   modeTabletsHint:
-    "Normal e Mini são teclado. Ensino abre o sintetizador com lições.",
+    "Normal e Mini são teclado. Ensino abre lições; Música mostra o sintetizador.",
 
   miniModeAutoDescription:
     "Num ecrã único ou configuração em espelho, o teclado aparece automaticamente quando toca num campo de entrada.",
@@ -287,6 +287,8 @@ export const pt: Record<keyof typeof en, string> = {
     "Ditado indisponível — adicione uma chave API Groq gratuita nas Definições para este idioma",
 
   dictationUnavailableOffline: "Ditado indisponível — é necessária uma ligação à Internet",
+
+  dictationGroqRemainingToday: "Pedidos Groq restantes hoje",
 
   dictationOpenSpeechSettings: "Abrir definições de voz",
 

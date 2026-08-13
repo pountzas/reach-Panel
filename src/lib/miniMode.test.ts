@@ -76,6 +76,26 @@ describe("miniMode", () => {
     ).toBe(false);
   });
 
+  it("Mini override + teachingActive true → false", () => {
+    expect(
+      resolveMiniModeEnabled(
+        { ...DEFAULT_SETTINGS, miniModeOverride: true },
+        [a],
+        true,
+      ),
+    ).toBe(false);
+  });
+
+  it("Mini override + teachingActive false → true", () => {
+    expect(
+      resolveMiniModeEnabled(
+        { ...DEFAULT_SETTINGS, miniModeOverride: true },
+        [a],
+        false,
+      ),
+    ).toBe(true);
+  });
+
   it("null override stays Normal on mirrored dual setup (Auto dropped)", () => {
     expect(isMiniModeEligible([a, b])).toBe(true);
     expect(

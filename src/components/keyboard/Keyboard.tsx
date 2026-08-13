@@ -18,6 +18,7 @@ import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
 import { DictationVisualizer } from "./DictationVisualizer";
 import { MicrophoneIcon } from "../common/SectionIcons";
 import { useContainerSize } from "../../hooks/useContainerSize";
+import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
 import { isTransparentUiActive, transparentKeyPalette } from "../../lib/miniMode";
@@ -82,6 +83,7 @@ export function Keyboard() {
   // Never disable while a session is active — stop must always be clickable.
   const dictateDisabled = !listening && !canDictate;
   const captureAudio = sttCapability?.engine !== "groq";
+  const groqRemainingPercent = useGroqDailyQuota(sttCapability?.engine);
 
   useEffect(() => {
     void refreshSttCapability();
@@ -96,6 +98,8 @@ export function Keyboard() {
     } else {
       dictateAriaLabel = t("dictationUnavailableOffline");
     }
+  } else if (groqRemainingPercent !== null) {
+    dictateAriaLabel = `${dictateAriaLabel}. ${t("dictationGroqRemainingToday")} ${groqRemainingPercent}%`;
   }
 
   const clearModifiersAfterKey = (usedFn: boolean) => {
@@ -202,13 +206,11 @@ export function Keyboard() {
       : dictateDisabled
         ? "#f1f5f9"
         : (settings.keyboardKeyColor ?? "#ffffff");
-  const dictateTextColor = transparent
-    ? keyTextColor
-    : listening
-      ? "#ffffff"
-      : dictateDisabled
-        ? "#94a3b8"
-        : keyTextColor;
+  const dictateTextColor = listening
+    ? "#ffffff"
+    : dictateDisabled
+      ? "#94a3b8"
+      : "#2563eb";
 
   return (
     <div
@@ -235,7 +237,19 @@ export function Keyboard() {
               return (
                 <KeyButton
                   key={`${ri}-${k.key}-${k.label}-${ci}`}
-                  label={<MicrophoneIcon className="h-5 w-5" />}
+                  label={
+                    <span className="relative flex h-full w-full items-center justify-center">
+                      <MicrophoneIcon className="absolute h-5 w-5" />
+                      {groqRemainingPercent !== null ? (
+                        <span
+                          className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] font-semibold leading-none tabular-nums"
+                          aria-hidden
+                        >
+                          {groqRemainingPercent}%
+                        </span>
+                      ) : null}
+                    </span>
+                  }
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}

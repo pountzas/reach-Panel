@@ -140,7 +140,10 @@ export function LanguagePicker({
               aria-selected={selected}
               className="flex w-full items-center gap-2 px-3 py-2 text-left hover:brightness-95"
               style={itemStyle(selected)}
-              onClick={() => onSelectLanguage(method)}
+              onClick={() => {
+                onSelectLanguage(method);
+                onClose();
+              }}
             >
               <Flag
                 country={flag}
@@ -187,5 +190,15 @@ export function LanguagePicker({
     </div>
   );
 
-  return createPortal(picker, document.body);
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-[79]"
+        aria-hidden
+        onPointerDown={onClose}
+      />
+      {picker}
+    </>,
+    document.body,
+  );
 }

@@ -1,6 +1,6 @@
 //! Cloud Groq Whisper STT for languages Windows SpeechRecognition does not support.
 
-use super::events::{emit_error, emit_state, handle_result};
+use super::events::{emit_error, emit_groq_quota_optional, emit_state, handle_result};
 use super::route::groq_language_hint;
 use super::SttState;
 use anyhow::{anyhow, Result};
@@ -305,13 +305,26 @@ fn worker_loop(
                 set_processing(true);
                 emit_state(&app, SttState::Processing, Some(language.clone()));
                 match transcribe(&api_key, &chunk, &language) {
-                    Ok(text) => {
-                        eprintln!("[stt/groq] transcript len={}", text.chars().count());
+                    Ok(result) => {
+                        emit_groq_quota_optional(
+                            &app,
+                            result.quota.remaining_requests,
+                            result.quota.limit_requests,
+                        );
+                        eprintln!(
+                            "[stt/groq] transcript len={}",
+                            result.text.chars().count()
+                        );
                         if !stop_flag.load(Ordering::SeqCst) {
-                            handle_result(&app, &text);
+                            handle_result(&app, &result.text);
                         }
                     }
                     Err(err) => {
+                        emit_groq_quota_optional(
+                            &app,
+                            err.quota.remaining_requests,
+                            err.quota.limit_requests,
+                        );
                         eprintln!("[stt/groq] transcribe error: {err}");
                         if !stop_flag.load(Ordering::SeqCst) {
                             emit_error(&app, err.to_string());
@@ -340,9 +353,75 @@ struct GroqApiError {
     message: Option<String>,
 }
 
-fn transcribe(api_key: &str, audio: &[f32], language: &str) -> Result<String> {
+/// RPD headers from Groq (`x-ratelimit-*-requests`).
+#[derive(Debug, Clone, Default)]
+pub struct GroqRequestQuota {
+    pub remaining_requests: Option<u64>,
+    pub limit_requests: Option<u64>,
+}
+
+#[derive(Debug)]
+pub struct GroqTranscription {
+    pub text: String,
+    pub quota: GroqRequestQuota,
+}
+
+#[derive(Debug)]
+pub struct GroqTranscribeError {
+    message: String,
+    pub quota: GroqRequestQuota,
+}
+
+impl GroqTranscribeError {
+    fn new(message: impl Into<String>, quota: GroqRequestQuota) -> Self {
+        Self {
+            message: message.into(),
+            quota,
+        }
+    }
+}
+
+impl std::fmt::Display for GroqTranscribeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for GroqTranscribeError {}
+
+impl From<anyhow::Error> for GroqTranscribeError {
+    fn from(value: anyhow::Error) -> Self {
+        Self::new(value.to_string(), GroqRequestQuota::default())
+    }
+}
+
+fn parse_quota_headers(resp: &ureq::Response) -> GroqRequestQuota {
+    GroqRequestQuota {
+        remaining_requests: resp
+            .header("x-ratelimit-remaining-requests")
+            .and_then(|v| v.parse().ok()),
+        limit_requests: resp
+            .header("x-ratelimit-limit-requests")
+            .and_then(|v| v.parse().ok()),
+    }
+}
+
+/// Remaining RPD percent from Groq request headers (0–100).
+#[allow(dead_code)] // used by unit tests; percent display lives on the frontend
+pub fn groq_remaining_percent(remaining: u64, limit: u64) -> u32 {
+    if limit == 0 {
+        return 0;
+    }
+    let pct = ((100.0 * remaining as f64) / limit as f64).round() as i64;
+    pct.clamp(0, 100) as u32
+}
+
+fn transcribe(api_key: &str, audio: &[f32], language: &str) -> Result<GroqTranscription, GroqTranscribeError> {
     if audio.is_empty() {
-        return Ok(String::new());
+        return Ok(GroqTranscription {
+            text: String::new(),
+            quota: GroqRequestQuota::default(),
+        });
     }
     let wav = encode_wav_pcm16(audio, TARGET_SAMPLE_RATE);
     transcribe_file_bytes(api_key, &wav, "audio.wav", "audio/wav", language)
@@ -354,12 +433,22 @@ pub(crate) fn transcribe_pcm16_le(
     pcm16le: &[u8],
     sample_rate: u32,
     language: &str,
-) -> Result<String> {
+) -> Result<GroqTranscription, GroqTranscribeError> {
     if pcm16le.is_empty() {
-        return Ok(String::new());
+        return Ok(GroqTranscription {
+            text: String::new(),
+            quota: GroqRequestQuota::default(),
+        });
     }
     let samples = pcm16le_to_f32(pcm16le);
-    let wav = encode_wav_pcm16(&samples, if sample_rate == 0 { TARGET_SAMPLE_RATE } else { sample_rate });
+    let wav = encode_wav_pcm16(
+        &samples,
+        if sample_rate == 0 {
+            TARGET_SAMPLE_RATE
+        } else {
+            sample_rate
+        },
+    );
     transcribe_file_bytes(api_key, &wav, "audio.wav", "audio/wav", language)
 }
 
@@ -370,18 +459,25 @@ pub(crate) fn transcribe_file_bytes(
     filename: &str,
     mime: &str,
     language: &str,
-) -> Result<String> {
+) -> Result<GroqTranscription, GroqTranscribeError> {
     if data.is_empty() {
-        return Ok(String::new());
+        return Ok(GroqTranscription {
+            text: String::new(),
+            quota: GroqRequestQuota::default(),
+        });
     }
     let lang = groq_language_hint(language);
     let boundary = format!("----ReachPanel{}", std::process::id());
     let mut body = Vec::new();
-    write_multipart_field(&mut body, &boundary, "model", GROQ_MODEL)?;
-    write_multipart_field(&mut body, &boundary, "language", lang)?;
-    write_multipart_field(&mut body, &boundary, "response_format", "json")?;
-    write_multipart_file(&mut body, &boundary, "file", filename, mime, data)?;
-    write!(body, "--{boundary}--\r\n")?;
+    write_multipart_field(&mut body, &boundary, "model", GROQ_MODEL)
+        .map_err(GroqTranscribeError::from)?;
+    write_multipart_field(&mut body, &boundary, "language", lang)
+        .map_err(GroqTranscribeError::from)?;
+    write_multipart_field(&mut body, &boundary, "response_format", "json")
+        .map_err(GroqTranscribeError::from)?;
+    write_multipart_file(&mut body, &boundary, "file", filename, mime, data)
+        .map_err(GroqTranscribeError::from)?;
+    write!(body, "--{boundary}--\r\n").map_err(|e| GroqTranscribeError::from(anyhow!("{e}")))?;
 
     let response = ureq::post(GROQ_TRANSCRIPTIONS_URL)
         .set("Authorization", &format!("Bearer {api_key}"))
@@ -394,24 +490,41 @@ pub(crate) fn transcribe_file_bytes(
 
     match response {
         Ok(resp) => {
-            let parsed: GroqTranscriptionResponse = resp
-                .into_json()
-                .map_err(|e| anyhow!("GROQ_API: Failed to parse response: {e}"))?;
+            let quota = parse_quota_headers(&resp);
+            let parsed: GroqTranscriptionResponse = resp.into_json().map_err(|e| {
+                GroqTranscribeError::new(
+                    format!("GROQ_API: Failed to parse response: {e}"),
+                    quota.clone(),
+                )
+            })?;
             if let Some(err) = parsed.error {
                 let msg = err.message.unwrap_or_else(|| "Unknown API error".into());
-                return Err(map_groq_http_error(401, &msg));
+                return Err(GroqTranscribeError::new(
+                    map_groq_http_error(401, &msg).to_string(),
+                    quota,
+                ));
             }
-            Ok(parsed.text.unwrap_or_default().trim().to_string())
+            Ok(GroqTranscription {
+                text: parsed.text.unwrap_or_default().trim().to_string(),
+                quota,
+            })
         }
         Err(ureq::Error::Status(code, resp)) => {
+            let quota = parse_quota_headers(&resp);
             let body = resp.into_string().unwrap_or_default();
             let message = serde_json::from_str::<GroqTranscriptionResponse>(&body)
                 .ok()
                 .and_then(|p| p.error.and_then(|e| e.message))
                 .unwrap_or(body);
-            Err(map_groq_http_error(code, &message))
+            Err(GroqTranscribeError::new(
+                map_groq_http_error(code, &message).to_string(),
+                quota,
+            ))
         }
-        Err(e) => Err(anyhow!("GROQ_API: Network error: {e}")),
+        Err(e) => Err(GroqTranscribeError::new(
+            format!("GROQ_API: Network error: {e}"),
+            GroqRequestQuota::default(),
+        )),
     }
 }
 
@@ -572,7 +685,9 @@ fn resample_linear(input: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {
 
 #[cfg(test)]
 mod tests {
-    use super::{encode_wav_pcm16, resample_linear, resolve_api_key};
+    use super::{
+        encode_wav_pcm16, groq_remaining_percent, resample_linear, resolve_api_key,
+    };
 
     #[test]
     fn resample_identity() {
@@ -604,5 +719,16 @@ mod tests {
         );
         assert_eq!(resolve_api_key(Some("")).as_deref(), None);
         assert_eq!(resolve_api_key(Some("   ")).as_deref(), None);
+    }
+
+    #[test]
+    fn remaining_percent_from_headers() {
+        assert_eq!(groq_remaining_percent(50, 100), 50);
+        assert_eq!(groq_remaining_percent(1, 3), 33);
+        assert_eq!(groq_remaining_percent(2, 3), 67);
+        assert_eq!(groq_remaining_percent(0, 100), 0);
+        assert_eq!(groq_remaining_percent(100, 100), 100);
+        assert_eq!(groq_remaining_percent(0, 0), 0);
+        assert_eq!(groq_remaining_percent(200, 100), 100);
     }
 }

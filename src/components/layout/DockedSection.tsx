@@ -9,7 +9,7 @@ import { getSectionDefinition, isStackableSectionId } from "../../lib/sectionReg
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { getSurfaceColors } from "../../lib/colorProfiles";
-import { lessonCloseAppMode } from "../../lib/appModeLayout";
+import { lessonCloseAppMode, teachingLessonTitleKey } from "../../lib/appModeLayout";
 import type { TranslationKey } from "../../i18n";
 import {
   CloseIcon,
@@ -58,12 +58,13 @@ export function DockedSection({
   const keyboardSectionMode = useAppStore((s) => s.settings.keyboardSectionMode);
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
+  const teachingLesson = useAppStore((s) => s.teachingLesson);
   const showMusicLesson =
     slot.id === "phrases" &&
     musicTeachingEnabled &&
     keyboardSectionMode === "synthesizer";
   const sectionTitleKey: TranslationKey = showMusicLesson
-    ? "musicLesson"
+    ? teachingLessonTitleKey(teachingLesson)
     : SECTION_TITLE_KEY[slot.id];
   const surface = getSurfaceColors(appBgColor);
   const headerHeight = headerHeightFor(largeHeaders);

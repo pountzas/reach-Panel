@@ -395,6 +395,34 @@ export function toggleStackMinimized(
   return { ...stack, minimized, expandedWeights };
 }
 
+/** Expand a minimized docked section; no-op when already expanded. */
+export function ensureSectionExpanded(
+  stack: SectionStackState,
+  id: SectionId,
+): SectionStackState {
+  if (!stack.minimized[id]) return stack;
+
+  if (isUndocked(stack, id)) {
+    const minimized = { ...stack.minimized };
+    delete minimized[id];
+    return { ...stack, minimized };
+  }
+
+  const minimized = { ...stack.minimized };
+  const expandedWeights = { ...stack.expandedWeights };
+  delete minimized[id];
+  const restored = expandedWeights[id];
+  if (restored != null) {
+    return {
+      ...stack,
+      minimized,
+      weights: { ...stack.weights, [id]: restored },
+      expandedWeights,
+    };
+  }
+  return { ...stack, minimized, expandedWeights };
+}
+
 export function reorderStack(
   stack: SectionStackState,
   fromId: StackableSectionId,

@@ -17,11 +17,12 @@ import { ONSCREEN_LAYOUT_OPTIONS } from "../../lib/keyboardLayouts";
 import { SettingsSection } from "./SettingsSection";
 import { CompanionSection } from "./CompanionSection";
 import { AboutSection } from "./AboutSection";
-import { CloseIcon } from "../common/SectionIcons";
+import { CloseIcon, TeachingLessonIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { ToolWindowHeader } from "../common/ToolWindowHeader";
 import { TRANSPARENT_KEY_COLORS } from "../../lib/miniMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
+import { isTeachingSessionActive } from "../../lib/appModeLayout";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -299,8 +300,10 @@ export function SettingsPanel() {
 
   if (!settings) return null;
 
-  const teachingActive =
-    musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
+  const teachingActive = isTeachingSessionActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
   const selectedMode: "normal" | "mini" | "teaching" = teachingActive
     ? "teaching"
     : settings.miniModeOverride === true
@@ -528,12 +531,12 @@ export function SettingsPanel() {
               <div className="mt-3 flex flex-wrap gap-2">
                 {(
                   [
-                    { id: "music" as const, label: t("teachingLessonMusic") },
-                    { id: "math" as const, label: t("teachingLessonMath") },
                     {
                       id: "language" as const,
                       label: t("teachingLessonLanguage"),
                     },
+                    { id: "music" as const, label: t("teachingLessonMusic") },
+                    { id: "math" as const, label: t("teachingLessonMath") },
                   ] as const
                 ).map((lesson) => {
                   const pressed = teachingLesson === lesson.id;
@@ -542,7 +545,7 @@ export function SettingsPanel() {
                       key={lesson.id}
                       type="button"
                       aria-pressed={pressed}
-                      className="rounded-md border px-3 py-1.5 text-xs font-semibold"
+                      className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold"
                       style={{
                         backgroundColor: pressed
                           ? surface.insetBg
@@ -554,6 +557,7 @@ export function SettingsPanel() {
                       }}
                       onClick={() => setTeachingLesson(lesson.id)}
                     >
+                      <TeachingLessonIcon lesson={lesson.id} className="h-4 w-4" />
                       {lesson.label}
                     </button>
                   );

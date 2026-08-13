@@ -61,8 +61,8 @@ export function KeyButton({
       };
 
   const buttonClass = transparent
-    ? `ak-action-btn rounded-lg font-semibold transition active:scale-95 ${pressedClass}`
-    : `ak-action-btn ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`;
+    ? `ak-action-btn inline-flex items-center justify-center rounded-lg font-semibold transition active:scale-95 ${pressedClass}`
+    : `ak-action-btn inline-flex items-center justify-center ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`;
 
   return (
     <button

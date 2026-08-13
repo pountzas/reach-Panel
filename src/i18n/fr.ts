@@ -48,7 +48,7 @@ export const fr: Record<keyof typeof en, string> = {
   languageLessonTitle: "Langue",
 
   modeTabletsHint:
-    "Normal et Mini sont un clavier de saisie. Enseignement ouvre le synthétiseur avec des leçons.",
+    "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur.",
 
   miniModeAutoDescription:
     "Sur un seul écran ou une configuration en miroir, le clavier apparaît automatiquement lorsque vous touchez un champ de saisie.",
@@ -287,6 +287,8 @@ export const fr: Record<keyof typeof en, string> = {
     "Dictée indisponible — ajoutez une clé API Groq gratuite dans les Paramètres pour cette langue",
 
   dictationUnavailableOffline: "Dictée indisponible — une connexion Internet est requise",
+
+  dictationGroqRemainingToday: "Requêtes Groq restantes aujourd'hui",
 
   dictationOpenSpeechSettings: "Ouvrir les paramètres de parole",
 

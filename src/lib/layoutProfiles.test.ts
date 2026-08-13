@@ -4,12 +4,72 @@ import { DEFAULT_SETTINGS, type AppSettings } from "./types";
 import {
   applyLayoutSnapshot,
   applySettingsWithLayoutPersist,
+  partialContainsLayoutFields,
   persistLayoutForKind,
   pointerKindFromEvent,
   resolveActiveLayout,
   snapshotFromSettings,
+  stripFullscreenHeightFromLayoutSnapshots,
   switchPointerInputKindLayout,
 } from "./layoutProfiles";
+
+describe("partialContainsLayoutFields", () => {
+  it("treats own-property undefined windowHeightRatio as a layout change", () => {
+    expect(
+      partialContainsLayoutFields({ windowHeightRatio: undefined }),
+    ).toBe(true);
+  });
+
+  it("ignores non-layout fields", () => {
+    expect(partialContainsLayoutFields({ opacity: 1 })).toBe(false);
+  });
+});
+
+describe("stripFullscreenHeightFromLayoutSnapshots", () => {
+  it("removes Teaching 1.0 from both layouts but keeps normal ratios", () => {
+    const settings: AppSettings = {
+      ...DEFAULT_SETTINGS,
+      touchLayout: {
+        inputRowRightRatio: 0.4,
+        windowHeightRatio: 1.0,
+      },
+      mouseLayout: {
+        inputRowRightRatio: 0.3,
+        windowHeightRatio: 0.7,
+      },
+    };
+    const stripped = stripFullscreenHeightFromLayoutSnapshots(settings);
+    expect(stripped.touchLayout?.windowHeightRatio).toBeUndefined();
+    expect(stripped.touchLayout?.inputRowRightRatio).toBe(0.4);
+    expect(stripped.mouseLayout?.windowHeightRatio).toBe(0.7);
+    expect(stripped.mouseLayout?.inputRowRightRatio).toBe(0.3);
+  });
+
+  it("after strip, pointer switch does not restore 1.0 onto flat settings", () => {
+    let settings: AppSettings = {
+      ...DEFAULT_SETTINGS,
+      inputRowRightRatio: 0.28,
+      touchLayout: {
+        inputRowRightRatio: 0.4,
+        windowHeightRatio: 1.0,
+      },
+      mouseLayout: {
+        inputRowRightRatio: 0.28,
+        windowHeightRatio: 1.0,
+      },
+    };
+    settings = stripFullscreenHeightFromLayoutSnapshots(settings);
+    delete settings.windowHeightRatio;
+    settings = persistLayoutForKind(settings, "mouse");
+
+    const switched = switchPointerInputKindLayout(settings, "mouse", "touch");
+    expect(switched.windowHeightRatio).toBeUndefined();
+    expect(switched.inputRowRightRatio).toBe(0.4);
+
+    const applied = applyLayoutSnapshot(settings, settings.touchLayout ?? {});
+    expect(applied.windowHeightRatio).toBeUndefined();
+  });
+});
 
 describe("layoutProfiles", () => {
   it("snapshots current ratios from flat settings", () => {

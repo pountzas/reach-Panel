@@ -26,6 +26,7 @@ import {
 } from "../../lib/sectionLayouts";
 import { closeAllToolWindows } from "../../lib/toolWindows";
 import { resolveMiniModeEnabled } from "../../lib/miniMode";
+import { isTeachingSessionActive } from "../../lib/appModeLayout";
 import {
   effectiveLargeHeaders,
   effectiveMouseVisible,
@@ -217,7 +218,16 @@ export function AppShell() {
   };
 
   // Mini Mode: keyboard+suggestions or collapsed FAB — not the full app chrome.
-  if (monitors.length > 0 && resolveMiniModeEnabled(settings, monitors)) {
+  // Teaching wins: never host Teaching inside MiniModeShell.
+  const teachingUiActive = isTeachingSessionActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
+  if (
+    !teachingUiActive &&
+    monitors.length > 0 &&
+    resolveMiniModeEnabled(settings, monitors, teachingUiActive)
+  ) {
     return <MiniModeShell />;
   }
 

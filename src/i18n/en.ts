@@ -47,7 +47,7 @@
   languageLessonTitle: "Language",
 
   modeTabletsHint:
-    "Normal and Mini are typing keyboard. Teaching opens the synthesizer with lessons.",
+    "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer.",
 
   miniModeAutoDescription:
     "On a single display or mirrored setup, the keyboard appears automatically when you tap an input field.",
@@ -290,8 +290,9 @@
   dictationUnavailableOffline:
     "Dictation unavailable — an internet connection is required",
 
-  dictationOpenSpeechSettings: "Open Speech settings",
+  dictationGroqRemainingToday: "Groq requests remaining today",
 
+  dictationOpenSpeechSettings: "Open Speech settings",
   dictationOpenSpeechLanguageSettings: "Install speech language",
 
   dictationOpenAppSettings: "Open Settings",

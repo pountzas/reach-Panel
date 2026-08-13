@@ -10,7 +10,7 @@ import {
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { getSurfaceColors } from "../../lib/colorProfiles";
-import { lessonCloseAppMode } from "../../lib/appModeLayout";
+import { lessonCloseAppMode, teachingLessonTitleKey } from "../../lib/appModeLayout";
 import { usePointerDragActive } from "../../lib/pointerDrag";
 import type { TranslationKey } from "../../i18n";
 import {
@@ -66,12 +66,13 @@ export function FloatingSection({
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
   const pointerDragActive = usePointerDragActive();
+  const teachingLesson = useAppStore((s) => s.teachingLesson);
   const showMusicLesson =
     id === "phrases" &&
     musicTeachingEnabled &&
     keyboardSectionMode === "synthesizer";
   const sectionTitleKey: TranslationKey = showMusicLesson
-    ? "musicLesson"
+    ? teachingLessonTitleKey(teachingLesson)
     : SECTION_TITLE_KEY[id];
   const surface = getSurfaceColors(appBgColor);
   const headerHeight = headerHeightFor(largeHeaders);
