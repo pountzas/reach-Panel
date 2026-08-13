@@ -1510,20 +1510,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
       musicNoteIndex: 0,
       musicSongId: musicSongId ?? "twinkle",
     });
+    // Lesson slot does not depend on phrasesVisible — do not force it on.
     const song = getSongById(get().musicSongId, importedSongs);
-    const patch: Partial<AppSettings> = {};
-    if (!settings.phrasesVisible) {
-      patch.phrasesVisible = true;
-    }
     if (song) {
       const fit = songPianoRangeFit(song);
       if (fit) {
-        patch.synthesizerOctaveCount = fit.octaveCount;
-        patch.synthesizerStartOctave = fit.startOctave;
+        await get().updateSettings({
+          synthesizerOctaveCount: fit.octaveCount,
+          synthesizerStartOctave: fit.startOctave,
+        });
       }
-    }
-    if (Object.keys(patch).length > 0) {
-      await get().updateSettings(patch);
     }
   },
 

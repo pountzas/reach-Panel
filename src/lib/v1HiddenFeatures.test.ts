@@ -46,6 +46,7 @@ describe("v1HiddenFeatures", () => {
   });
 
   it("treats music lesson slot as teaching + synthesizer only", () => {
+    // enableMusicTeaching must not require / write phrasesVisible.
     expect(
       isMusicLessonSlotVisible({
         musicTeachingEnabled: true,

@@ -1,7 +1,12 @@
 import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { exit } from "@tauri-apps/plugin-process";
+import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
+import { MousePanel } from "../mouse/MousePanel";
+import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
+import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
+import { PhrasePanel } from "../phrases/PhrasePanel";
 import { MusicLessonPanel } from "../music/MusicLessonPanel";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { SectionCanvas } from "./SectionCanvas";
@@ -20,15 +25,38 @@ import { closeAllToolWindows } from "../../lib/toolWindows";
 import { resolveMiniModeEnabled } from "../../lib/miniMode";
 import {
   effectiveLargeHeaders,
+  effectiveMouseVisible,
+  effectiveQuickActionsVisible,
   isMusicLessonSlotVisible,
   isV1FeatureHidden,
+  resolveV1SectionVisibility,
 } from "../../lib/v1HiddenFeatures";
 
 function InputRowPanel() {
-  // v1: mouse column hidden — keyboard takes the full input row width.
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
+  const mouseSide = settings.mousePanelSide ?? "right";
+  const mouseRatio = settings.inputRowRightRatio ?? 0.28;
+  const mouseVisible = effectiveMouseVisible(settings.mouseVisible);
+
+  // Always keep KeyboardSection in the same split-pane slot so synth playback
+  // is not remounted when show/hide mouse toggles. 5-octave mode sets
+  // mouseVisible=false the same way the hide button does. v1 mouse flag forces
+  // the mouse pane collapsed; flip the flag off to restore the column.
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
-      <KeyboardSection />
+      <ResizableSplitPane
+        ratioSide={mouseSide === "left" ? "left" : "right"}
+        rightRatio={mouseRatio}
+        onRightRatioChange={(inputRowRightRatio) =>
+          updateSettings({ inputRowRightRatio })
+        }
+        minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
+        minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
+        sizedPaneCollapsed={!mouseVisible}
+        left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
+        right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
+      />
     </div>
   );
 }
@@ -85,11 +113,13 @@ export function AppShell() {
     musicTeachingEnabled,
     keyboardSectionMode: settings.keyboardSectionMode,
   });
-  // v1: phrases slot is teaching-only; never mount PhrasePanel / QuickActionsBar.
-  const phrasesSlotVisible = lessonSlotVisible;
-  const quickActionsVisible = isV1FeatureHidden("quickActions")
-    ? false
-    : settings.quickActionsVisible;
+  const sectionVisibility = resolveV1SectionVisibility({
+    quickActionsVisible: settings.quickActionsVisible,
+    phrasesVisible: settings.phrasesVisible,
+    lessonSlotVisible,
+  });
+  const quickActionsVisible = effectiveQuickActionsVisible(settings.quickActionsVisible);
+  const phrasesSlotVisible = sectionVisibility.phrases;
   const windowResizeRef = useRef<{
     startY: number;
     startRatio: number;
@@ -175,6 +205,12 @@ export function AppShell() {
     shellStyle.backgroundRepeat = "no-repeat";
   }
 
+  const phrasesContent = lessonSlotVisible ? (
+    <MusicLessonPanel />
+  ) : isV1FeatureHidden("phrases") ? null : (
+    <PhrasePanel />
+  );
+
   return (
     <div
       className="relative flex min-h-0 flex-col"
@@ -247,8 +283,8 @@ export function AppShell() {
             savedStack={settings.sectionStack}
             legacyLayouts={settings.sectionLayouts}
             onStackChange={(sectionStack) => updateSettings({ sectionStack })}
-            quickActions={null}
-            phrases={lessonSlotVisible ? <MusicLessonPanel /> : null}
+            quickActions={quickActionsVisible ? <QuickActionsBar /> : null}
+            phrases={phrasesContent}
             inputRow={<InputRowPanel />}
           />
         </div>
