@@ -14,7 +14,7 @@ use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentProcessId, 
 use windows::Win32::UI::Accessibility::{
     CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationValuePattern, SetWinEventHook,
     HWINEVENTHOOK, UIA_CONTROLTYPE_ID, UIA_ComboBoxControlTypeId, UIA_DocumentControlTypeId,
-    UIA_EditControlTypeId, UIA_TextControlTypeId, UIA_ValuePatternId,
+    UIA_EditControlTypeId, UIA_ListControlTypeId, UIA_ListItemControlTypeId, UIA_ValuePatternId,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo, GetParent,
@@ -37,6 +37,17 @@ thread_local! {
     static UIA_LOCAL: RefCell<Option<IUIAutomation>> = const { RefCell::new(None) };
 }
 
+/// ARIA role of the focused UIA element, used to reject page landmarks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum AriaRoleKind {
+    #[default]
+    Unspecified,
+    TextInput,
+    ComboBox,
+    AutocompletePopup,
+    NotText,
+}
+
 /// Signals used to decide whether a UIA-focused control accepts text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct UiaTextInputSignals {
@@ -44,25 +55,133 @@ pub struct UiaTextInputSignals {
     pub value_writable: bool,
     /// Chromium reports a page-level Document even when no text field is focused.
     pub is_chromium_document: bool,
+    pub aria_role: AriaRoleKind,
+}
+
+/// Maps an ARIA role string from UIA (`CurrentAriaRole`) to a classifier bucket.
+pub fn classify_aria_role(role: &str) -> AriaRoleKind {
+    match role.trim().to_ascii_lowercase().as_str() {
+        "" => AriaRoleKind::Unspecified,
+        "textbox" | "searchbox" => AriaRoleKind::TextInput,
+        "combobox" => AriaRoleKind::ComboBox,
+        "option" | "listbox" | "listitem" => AriaRoleKind::AutocompletePopup,
+        "main"
+        | "navigation"
+        | "banner"
+        | "complementary"
+        | "contentinfo"
+        | "region"
+        | "article"
+        | "heading"
+        | "document"
+        | "application"
+        | "button"
+        | "tab"
+        | "tablist"
+        | "link"
+        | "img"
+        | "image"
+        | "slider"
+        | "scrollbar"
+        | "progressbar"
+        | "switch"
+        | "checkbox"
+        | "radio"
+        | "list"
+        | "menu"
+        | "menuitem"
+        | "menubar"
+        | "toolbar"
+        | "grid"
+        | "gridcell"
+        | "row"
+        | "table"
+        | "dialog"
+        | "alertdialog"
+        | "tooltip"
+        | "group"
+        | "none"
+        | "presentation" => AriaRoleKind::NotText,
+        _ => AriaRoleKind::Unspecified,
+    }
 }
 
 /// Pure classifier for UIA control signals (unit-tested without live UIA).
 pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
-    if signals.value_writable {
-        return true;
+    match signals.aria_role {
+        AriaRoleKind::NotText | AriaRoleKind::AutocompletePopup => return false,
+        AriaRoleKind::TextInput => return true,
+        AriaRoleKind::ComboBox => return signals.value_writable,
+        AriaRoleKind::Unspecified => {}
     }
+
     let ty = UIA_CONTROLTYPE_ID(signals.control_type);
-    if ty == UIA_EditControlTypeId || ty == UIA_TextControlTypeId {
+    if ty == UIA_EditControlTypeId {
         return true;
     }
     if ty == UIA_DocumentControlTypeId {
-        // Word / editors: Document is the typing surface.
-        // Chromium page body is also Document — ignore unless ValuePattern is writable.
+        // Word / native editors: Document is the typing surface.
+        // Chromium page Document is often writable even for role=main landmarks.
         return !signals.is_chromium_document;
     }
     if ty == UIA_ComboBoxControlTypeId {
-        // Non-editable combo boxes are not text inputs; writable ValuePattern handled above.
+        return signals.value_writable;
+    }
+    false
+}
+
+/// Keep the mini keyboard up while focus is on a search autocomplete popup
+/// that appeared after a real text field (YouTube suggestions, etc.).
+pub fn should_retain_text_focus(
+    current_is_text_input: bool,
+    current_is_autocomplete_satellite: bool,
+    previously_text_focused: bool,
+) -> bool {
+    current_is_text_input || (previously_text_focused && current_is_autocomplete_satellite)
+}
+
+pub fn is_autocomplete_satellite_role(kind: AriaRoleKind) -> bool {
+    matches!(kind, AriaRoleKind::AutocompletePopup)
+}
+
+pub fn uia_signals_are_autocomplete_satellite(signals: UiaTextInputSignals) -> bool {
+    if is_autocomplete_satellite_role(signals.aria_role) {
+        return true;
+    }
+    let ty = UIA_CONTROLTYPE_ID(signals.control_type);
+    ty == UIA_ListItemControlTypeId || ty == UIA_ListControlTypeId
+}
+
+fn previously_text_focused() -> bool {
+    LAST_INPUT_FOCUSED
+        .lock()
+        .ok()
+        .and_then(|guard| *guard)
+        == Some(true)
+}
+
+fn uia_ancestor_is_autocomplete_satellite(
+    automation: &IUIAutomation,
+    element: &IUIAutomationElement,
+) -> bool {
+    let Ok(walker) = (unsafe { automation.ControlViewWalker() }) else {
         return false;
+    };
+    let mut current = element.clone();
+    for _ in 0..12 {
+        let parent = unsafe { walker.GetParentElement(&current) };
+        let Ok(parent) = parent else {
+            break;
+        };
+        if is_autocomplete_satellite_role(uia_element_aria_role(&parent)) {
+            return true;
+        }
+        if let Ok(ty) = unsafe { parent.CurrentControlType() } {
+            if ty == UIA_ListItemControlTypeId || ty == UIA_ListControlTypeId {
+                return true;
+            }
+        }
+        current = parent;
     }
     false
 }
@@ -175,7 +294,7 @@ pub fn is_valid_typing_target(hwnd: HWND) -> bool {
     true
 }
 
-/// Heuristic: Win32 / browser / editor class names that typically accept text input.
+/// Heuristic: Win32 class names that *are* a text field (not a whole browser page).
 pub fn is_editable_class(class: &str) -> bool {
     let lower = class.to_ascii_lowercase();
     if lower == "edit" || lower == "editcomctl32" {
@@ -184,13 +303,9 @@ pub fn is_editable_class(class: &str) -> bool {
     if lower.starts_with("richedit") {
         return true;
     }
-    if lower.starts_with("chrome_renderwidgethosthwnd") {
-        return true;
-    }
     matches!(
         lower.as_str(),
-        "internet explorer_server"
-            | "scintilla"
+        "scintilla"
             | "_wwg" // Word document window
             | "osalsoframe" // Office content frame (legacy)
             | "netuihwnd" // Outlook compose (heuristic)
@@ -285,6 +400,16 @@ fn uia_element_native_class(element: &IUIAutomationElement) -> String {
     }
 }
 
+fn uia_element_aria_role(element: &IUIAutomationElement) -> AriaRoleKind {
+    unsafe {
+        let role = match element.CurrentAriaRole() {
+            Ok(bstr) => bstr.to_string(),
+            Err(_) => String::new(),
+        };
+        classify_aria_role(&role)
+    }
+}
+
 fn uia_element_value_writable(element: &IUIAutomationElement) -> bool {
     unsafe {
         let pattern = element
@@ -339,9 +464,18 @@ fn uia_focused_is_text_input() -> Option<bool> {
             control_type,
             value_writable: uia_element_value_writable(&element),
             is_chromium_document: is_chromium_class(&native_class),
+            aria_role: uia_element_aria_role(&element),
         };
-        let focused = uia_control_is_text_input(signals);
-        if focused {
+        let is_text = uia_control_is_text_input(signals);
+        let previously = previously_text_focused();
+        let satellite = if is_text || !previously {
+            false
+        } else {
+            uia_signals_are_autocomplete_satellite(signals)
+                || uia_ancestor_is_autocomplete_satellite(automation, &element)
+        };
+        let focused = should_retain_text_focus(is_text, satellite, previously);
+        if is_text {
             remember_uia_focus_target(&element);
         }
         Some(focused)
@@ -357,8 +491,15 @@ fn is_editable_input_focused() -> bool {
         if focused {
             return true;
         }
-        // UIA answered "not a text field" — still allow Win32 heuristics below
-        // for apps with incomplete UIA trees (e.g. some legacy editors).
+        // UIA identified a non-text control. In Chromium the renderer HWND is
+        // not a text field — do not let Win32 class/caret heuristics override.
+        unsafe {
+            let fg = GetForegroundWindow();
+            if is_chromium_class(&window_class_name(fg)) {
+                return false;
+            }
+        }
+        // Non-browser apps: still allow Win32 heuristics for incomplete UIA trees.
     }
 
     unsafe {
@@ -371,10 +512,11 @@ fn is_editable_input_focused() -> bool {
             return hwnd_or_ancestor_is_editable(fg) || is_editable_class(&window_class_name(fg));
         };
 
-        // Caret in another process is a strong signal of text entry.
+        // Caret in a real Edit/RichEdit is a strong signal. Browser renderer
+        // HWNDs often have a caret even when a slider/button is focused.
         if !is_null(info.hwndCaret) && !is_our_window(info.hwndCaret) {
             let caret_class = window_class_name(info.hwndCaret);
-            if !is_readonly_edit(info.hwndCaret, &caret_class) {
+            if is_editable_class(&caret_class) && !is_readonly_edit(info.hwndCaret, &caret_class) {
                 return true;
             }
         }
@@ -608,7 +750,36 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{is_editable_class, uia_control_is_text_input, UiaTextInputSignals};
+    use super::{
+        classify_aria_role, is_editable_class, should_retain_text_focus,
+        uia_control_is_text_input, uia_signals_are_autocomplete_satellite, AriaRoleKind,
+        UiaTextInputSignals,
+    };
+
+    fn signals(
+        control_type: i32,
+        value_writable: bool,
+        is_chromium_document: bool,
+        aria_role: AriaRoleKind,
+    ) -> UiaTextInputSignals {
+        UiaTextInputSignals {
+            control_type,
+            value_writable,
+            is_chromium_document,
+            aria_role,
+        }
+    }
+
+    #[test]
+    fn classify_aria_role_maps_landmarks_and_textboxes() {
+        assert_eq!(classify_aria_role("main"), AriaRoleKind::NotText);
+        assert_eq!(classify_aria_role("tablist"), AriaRoleKind::NotText);
+        assert_eq!(classify_aria_role("textbox"), AriaRoleKind::TextInput);
+        assert_eq!(classify_aria_role("searchbox"), AriaRoleKind::TextInput);
+        assert_eq!(classify_aria_role("combobox"), AriaRoleKind::ComboBox);
+        assert_eq!(classify_aria_role(""), AriaRoleKind::Unspecified);
+        assert_eq!(classify_aria_role("TextBox"), AriaRoleKind::TextInput);
+    }
 
     #[test]
     fn editable_class_names_include_common_inputs() {
@@ -616,53 +787,178 @@ mod tests {
         assert!(is_editable_class("RichEdit20W"));
         assert!(is_editable_class("RICHEDIT50W"));
         assert!(is_editable_class("RichEditD2DPT"));
-        assert!(is_editable_class("Chrome_RenderWidgetHostHWND"));
-        assert!(is_editable_class("Internet Explorer_Server"));
         assert!(is_editable_class("Scintilla"));
         assert!(!is_editable_class("Button"));
         assert!(!is_editable_class("Progman"));
         assert!(!is_editable_class("Shell_TrayWnd"));
         assert!(!is_editable_class("Chrome_WidgetWin_1"));
+        // Whole-page browser HWNDs are not text fields — UIA must decide.
+        assert!(!is_editable_class("Chrome_RenderWidgetHostHWND"));
+        assert!(!is_editable_class("Internet Explorer_Server"));
     }
 
     #[test]
     fn uia_edit_control_is_text_input() {
-        assert!(uia_control_is_text_input(UiaTextInputSignals {
-            control_type: 50004, // UIA_EditControlTypeId
-            value_writable: false,
-            is_chromium_document: false,
-        }));
+        assert!(uia_control_is_text_input(signals(
+            50004, // UIA_EditControlTypeId
+            false,
+            false,
+            AriaRoleKind::Unspecified,
+        )));
     }
 
     #[test]
-    fn uia_writable_value_pattern_is_text_input() {
-        assert!(uia_control_is_text_input(UiaTextInputSignals {
-            control_type: 50000, // button / custom — ValuePattern decides
-            value_writable: true,
-            is_chromium_document: false,
-        }));
+    fn uia_writable_edit_is_text_input() {
+        assert!(uia_control_is_text_input(signals(
+            50004, // UIA_EditControlTypeId
+            true,
+            false,
+            AriaRoleKind::Unspecified,
+        )));
+    }
+
+    #[test]
+    fn uia_writable_custom_with_textbox_role_is_text_input() {
+        assert!(uia_control_is_text_input(signals(
+            50025, // UIA_CustomControlTypeId (contenteditable)
+            true,
+            false,
+            AriaRoleKind::TextInput,
+        )));
+    }
+
+    #[test]
+    fn uia_chromium_contenteditable_document_is_text_input() {
+        assert!(uia_control_is_text_input(signals(
+            50030, // UIA_DocumentControlTypeId
+            true,
+            true,
+            AriaRoleKind::TextInput,
+        )));
+    }
+
+    #[test]
+    fn uia_youtube_channel_main_landmark_is_not_text_input() {
+        // ytd-browse role="main" is a page landmark, not a text field.
+        assert!(!uia_control_is_text_input(signals(
+            50030, // UIA_DocumentControlTypeId
+            true,
+            true,
+            AriaRoleKind::NotText,
+        )));
+        assert!(!uia_control_is_text_input(signals(
+            50025, // UIA_CustomControlTypeId
+            true,
+            true,
+            AriaRoleKind::NotText,
+        )));
+    }
+
+    #[test]
+    fn uia_chromium_writable_page_without_textbox_role_is_not_text_input() {
+        assert!(!uia_control_is_text_input(signals(
+            50030,
+            true,
+            true,
+            AriaRoleKind::Unspecified,
+        )));
+        assert!(!uia_control_is_text_input(signals(
+            50025,
+            true,
+            true,
+            AriaRoleKind::Unspecified,
+        )));
+    }
+
+    #[test]
+    fn uia_static_text_is_not_text_input() {
+        assert!(!uia_control_is_text_input(signals(
+            50020, // UIA_TextControlTypeId
+            false,
+            false,
+            AriaRoleKind::Unspecified,
+        )));
+    }
+
+    #[test]
+    fn uia_slider_with_value_pattern_is_not_text_input() {
+        assert!(!uia_control_is_text_input(signals(
+            50015, // UIA_SliderControlTypeId (YouTube volume)
+            true,
+            false,
+            AriaRoleKind::Unspecified,
+        )));
+    }
+
+    #[test]
+    fn uia_button_with_value_pattern_is_not_text_input() {
+        assert!(!uia_control_is_text_input(signals(
+            50000, // UIA_ButtonControlTypeId
+            true,
+            false,
+            AriaRoleKind::Unspecified,
+        )));
     }
 
     #[test]
     fn uia_word_document_is_text_input_but_chromium_document_is_not() {
-        assert!(uia_control_is_text_input(UiaTextInputSignals {
-            control_type: 50030, // UIA_DocumentControlTypeId
-            value_writable: false,
-            is_chromium_document: false,
-        }));
-        assert!(!uia_control_is_text_input(UiaTextInputSignals {
-            control_type: 50030,
-            value_writable: false,
-            is_chromium_document: true,
-        }));
+        assert!(uia_control_is_text_input(signals(
+            50030, // UIA_DocumentControlTypeId
+            false,
+            false,
+            AriaRoleKind::Unspecified,
+        )));
+        assert!(!uia_control_is_text_input(signals(
+            50030,
+            false,
+            true,
+            AriaRoleKind::Unspecified,
+        )));
     }
 
     #[test]
     fn uia_plain_button_is_not_text_input() {
-        assert!(!uia_control_is_text_input(UiaTextInputSignals {
-            control_type: 50000, // UIA_ButtonControlTypeId
-            value_writable: false,
-            is_chromium_document: false,
-        }));
+        assert!(!uia_control_is_text_input(signals(
+            50000, // UIA_ButtonControlTypeId
+            false,
+            false,
+            AriaRoleKind::Unspecified,
+        )));
+    }
+
+    #[test]
+    fn classify_aria_role_maps_search_suggestions_as_autocomplete() {
+        assert_eq!(classify_aria_role("option"), AriaRoleKind::AutocompletePopup);
+        assert_eq!(classify_aria_role("listbox"), AriaRoleKind::AutocompletePopup);
+        assert_eq!(classify_aria_role("listitem"), AriaRoleKind::AutocompletePopup);
+        assert!(!uia_control_is_text_input(signals(
+            50007, // UIA_ListItemControlTypeId
+            false,
+            true,
+            AriaRoleKind::AutocompletePopup,
+        )));
+        assert!(uia_signals_are_autocomplete_satellite(signals(
+            50007,
+            false,
+            true,
+            AriaRoleKind::Unspecified,
+        )));
+        assert!(uia_signals_are_autocomplete_satellite(signals(
+            50000, // button nested inside a suggestion
+            false,
+            true,
+            AriaRoleKind::AutocompletePopup,
+        )));
+    }
+
+    #[test]
+    fn youtube_search_suggestion_keeps_keyboard_after_searchbox() {
+        // Hovering a suggestion must not hide the keyboard once the search box showed it.
+        assert!(should_retain_text_focus(false, true, true));
+        // A listbox on its own must not pop the keyboard.
+        assert!(!should_retain_text_focus(false, true, false));
+        // Leaving the field for a real non-text control hides it.
+        assert!(!should_retain_text_focus(false, false, true));
+        assert!(should_retain_text_focus(true, false, false));
     }
 }
