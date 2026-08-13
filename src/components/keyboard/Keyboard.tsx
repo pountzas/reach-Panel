@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
 import {
@@ -45,6 +46,7 @@ export function Keyboard() {
   const updateSettings = useAppStore((s) => s.updateSettings);
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
+  const langKeyAnchorRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const fnActive = isFnActive(stickyModifiers);
@@ -201,6 +203,7 @@ export function Keyboard() {
             return (
               <div
                 key={`${ri}-${k.key}-${k.label}-${ci}`}
+                ref={langKeyAnchorRef}
                 className="relative flex"
                 style={{
                   flex: `${k.width ?? 1} 1 0`,
@@ -212,6 +215,7 @@ export function Keyboard() {
               >
                 {languagePickerOpen ? (
                   <LanguagePicker
+                    anchorRef={langKeyAnchorRef}
                     methods={inputMethods}
                     activeHkl={physicalKeyState.systemHkl}
                     onscreenLayout={(settings.onscreenLayout ?? "auto") as OnscreenLayout}

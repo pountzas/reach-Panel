@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { Flag } from "svg-flags";
 import type { InputMethod, OnscreenLayoutOption } from "../../lib/keyboardLayouts";
 import {
@@ -6,8 +7,10 @@ import {
   languageDisplayCode,
   ONSCREEN_LAYOUT_OPTIONS,
 } from "../../lib/keyboardLayouts";
+import { computeLanguagePickerPosition } from "../../lib/languagePickerPosition";
 
 interface LanguagePickerProps {
+  anchorRef: RefObject<HTMLElement | null>;
   methods: InputMethod[];
   activeHkl: number;
   onscreenLayout: OnscreenLayoutOption;
@@ -24,6 +27,7 @@ interface LanguagePickerProps {
 }
 
 export function LanguagePicker({
+  anchorRef,
   methods,
   activeHkl,
   onscreenLayout,
@@ -39,12 +43,48 @@ export function LanguagePicker({
   autoLayoutLabel,
 }: LanguagePickerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+
+  const reposition = useCallback(() => {
+    const anchor = anchorRef.current;
+    const popup = rootRef.current;
+    if (!anchor || !popup) return;
+
+    const anchorRect = anchor.getBoundingClientRect();
+    const popupRect = popup.getBoundingClientRect();
+    setPosition(
+      computeLanguagePickerPosition(
+        {
+          left: anchorRect.left,
+          top: anchorRect.top,
+          width: anchorRect.width,
+          height: anchorRect.height,
+        },
+        { width: popupRect.width, height: popupRect.height },
+        { width: window.innerWidth, height: window.innerHeight },
+      ),
+    );
+  }, [anchorRef]);
+
+  useLayoutEffect(() => {
+    reposition();
+  }, [reposition, methods.length, onscreenLayout]);
+
+  useEffect(() => {
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [reposition]);
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        onClose();
-      }
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      if (anchorRef.current?.contains(target)) return;
+      onClose();
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -55,18 +95,21 @@ export function LanguagePicker({
       window.removeEventListener("pointerdown", onPointerDown, true);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [onClose]);
+  }, [anchorRef, onClose]);
 
   const itemStyle = (selected: boolean) => ({
     backgroundColor: selected ? "rgba(59, 130, 246, 0.18)" : "transparent",
     fontWeight: selected ? 600 : 400,
   });
 
-  return (
+  const picker = (
     <div
       ref={rootRef}
-      className="absolute bottom-full left-0 z-50 mb-1 max-h-72 min-w-[14rem] overflow-y-auto rounded-lg border shadow-lg"
+      className="fixed z-[80] max-h-72 min-w-[14rem] overflow-y-auto rounded-lg border shadow-lg"
       style={{
+        left: position?.left ?? 0,
+        top: position?.top ?? 0,
+        visibility: position ? "visible" : "hidden",
         backgroundColor: bgColor,
         borderColor: mutedColor,
         color: textColor,
@@ -143,4 +186,6 @@ export function LanguagePicker({
       })}
     </div>
   );
+
+  return createPortal(picker, document.body);
 }
