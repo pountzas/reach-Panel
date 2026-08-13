@@ -2,9 +2,7 @@ use super::{MonitorInfo, WindowLayout};
 use windows::Win32::Foundation::{BOOL, HWND, LPARAM, RECT};
 use windows::Win32::Graphics::Gdi::{EnumDisplayMonitors, GetMonitorInfoW, MONITORINFO, MONITORINFOEXW};
 use windows::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
-use windows::Win32::UI::WindowsAndMessaging::{
-    GetWindowRect, SetWindowPos, HWND_TOP, SWP_NOACTIVATE, SWP_NOZORDER, SWP_SHOWWINDOW,
-};
+use windows::Win32::UI::WindowsAndMessaging::GetWindowRect;
 
 struct MonitorCollector {
     monitors: Vec<MonitorInfo>,
@@ -121,17 +119,5 @@ pub fn get_window_bounds(hwnd: isize) -> Result<WindowLayout, String> {
 }
 
 pub fn set_window_bounds(hwnd: isize, layout: WindowLayout) -> Result<(), String> {
-    unsafe {
-        SetWindowPos(
-            HWND(hwnd as *mut core::ffi::c_void),
-            HWND_TOP,
-            layout.x,
-            layout.y,
-            layout.width as i32,
-            layout.height as i32,
-            SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW,
-        )
-        .map_err(|e| e.to_string())?;
-    }
-    Ok(())
+    super::taskbar::set_window_bounds_with_taskbar_lift(hwnd, layout)
 }

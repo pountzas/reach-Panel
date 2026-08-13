@@ -201,6 +201,66 @@ export function TeachIcon({ className = iconClass }: IconProps) {
   );
 }
 
+export function LanguageLessonIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M4 20V6a2 2 0 0 1 2-2h5v14H6a2 2 0 0 0-2 2Z" />
+      <path d="M20 20V6a2 2 0 0 0-2-2h-5v14h5a2 2 0 0 1 2 2Z" />
+      <path d="M12 4v14" />
+    </svg>
+  );
+}
+
+export function MusicLessonIcon({ className = iconClass }: IconProps) {
+  return <TeachIcon className={className} />;
+}
+
+export function MathLessonIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 8h8" />
+      <path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+export function TeachingLessonIcon({
+  lesson,
+  className = iconClass,
+}: IconProps & { lesson: "language" | "music" | "math" }) {
+  switch (lesson) {
+    case "language":
+      return <LanguageLessonIcon className={className} />;
+    case "music":
+      return <MusicLessonIcon className={className} />;
+    case "math":
+      return <MathLessonIcon className={className} />;
+    default: {
+      const _exhaustive: never = lesson;
+      return _exhaustive;
+    }
+  }
+}
+
 export function CollapseIcon({ className = iconClass }: IconProps) {
   return (
     <svg
@@ -343,6 +403,100 @@ export function ExpandedViewIcon({ className = iconClass }: IconProps) {
     >
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <rect x="5" y="5" width="14" height="14" rx="1" />
+    </svg>
+  );
+}
+
+export function LoadSongIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+      <path d="M12 11v6" />
+      <path d="M9 14h6" />
+    </svg>
+  );
+}
+
+export function PlayIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M8 5v14l11-7-7z" />
+    </svg>
+  );
+}
+
+export function StopIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="7" y="7" width="10" height="10" rx="1" />
+    </svg>
+  );
+}
+
+export function RestartIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+      <path d="M3 21v-5h5" />
+    </svg>
+  );
+}
+
+export function TrashIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
     </svg>
   );
 }

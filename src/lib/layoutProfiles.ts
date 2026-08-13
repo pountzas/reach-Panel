@@ -61,7 +61,44 @@ export function persistLayoutForKind(
 export function partialContainsLayoutFields(
   partial: Partial<AppSettings>,
 ): boolean {
-  return LAYOUT_PARTIAL_KEYS.some((key) => partial[key] !== undefined);
+  return LAYOUT_PARTIAL_KEYS.some((key) =>
+    Object.prototype.hasOwnProperty.call(partial, key),
+  );
+}
+
+function isFullscreenHeightRatio(ratio: number | undefined): boolean {
+  return ratio == null || ratio >= 0.999;
+}
+
+function stripFullscreenHeightFromSnapshot(
+  snap: LayoutSnapshot | undefined,
+): LayoutSnapshot | undefined {
+  if (!snap) {
+    return snap;
+  }
+  if (!isFullscreenHeightRatio(snap.windowHeightRatio)) {
+    return snap;
+  }
+  if (!Object.prototype.hasOwnProperty.call(snap, "windowHeightRatio")) {
+    return snap;
+  }
+  const next: LayoutSnapshot = { ...snap };
+  delete next.windowHeightRatio;
+  return next;
+}
+
+/**
+ * Drop Teaching fullscreen (null / ≥ 0.999) height from both pointer-kind
+ * layout snapshots so a later pointer switch cannot re-apply 1.0 onto Normal.
+ */
+export function stripFullscreenHeightFromLayoutSnapshots(
+  settings: AppSettings,
+): AppSettings {
+  return {
+    ...settings,
+    touchLayout: stripFullscreenHeightFromSnapshot(settings.touchLayout),
+    mouseLayout: stripFullscreenHeightFromSnapshot(settings.mouseLayout),
+  };
 }
 
 /**
@@ -73,7 +110,14 @@ export function applySettingsWithLayoutPersist(
   partial: Partial<AppSettings>,
   kind: PointerInputKind,
 ): AppSettings {
-  const next = { ...settings, ...partial };
+  let next = { ...settings, ...partial };
+  const clearingHeight =
+    Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio") &&
+    partial.windowHeightRatio === undefined;
+  if (clearingHeight) {
+    delete next.windowHeightRatio;
+    next = stripFullscreenHeightFromLayoutSnapshots(next);
+  }
   if (!partialContainsLayoutFields(partial)) {
     return next;
   }

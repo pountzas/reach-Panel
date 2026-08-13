@@ -1,24 +1,29 @@
 import {
   CollapseIcon,
-  KeyboardIcon,
   MouseIcon,
-  SynthesizerIcon,
-  TeachIcon,
+  TeachingLessonIcon,
   TransparentKeyboardIcon,
 } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { SynthVolumeControl } from "./SynthVolumeControl";
 import { PianoRangeControl } from "./PianoRangeControl";
-import { DictationButton } from "./DictationButton";
-import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
-import { useAppStore } from "../../stores/appStore";
+import {
+  KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS,
+  modeToggleSegmentPosition,
+} from "../../lib/buttonClasses";
+import { useAppStore, type TeachingLesson } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
 import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
 import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
 import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
+import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
+import {
+  isSynthesizerUiActive,
+  isTeachingSessionActive,
+} from "../../lib/appModeLayout";
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
@@ -28,16 +33,23 @@ export function KeyboardSection() {
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const teachingLesson = useAppStore((s) => s.teachingLesson);
+  const setTeachingLesson = useAppStore((s) => s.setTeachingLesson);
   const musicSongId = useAppStore((s) => s.musicSongId);
   const importedSongs = useAppStore((s) => s.importedSongs);
-  const enableMusicTeaching = useAppStore((s) => s.enableMusicTeaching);
-  const disableMusicTeaching = useAppStore((s) => s.disableMusicTeaching);
   const { t } = useTranslation();
-  const showSynth = settings.keyboardSectionMode === "synthesizer";
+  const teachingActive =
+    isTeachingSessionActive(
+      musicTeachingEnabled,
+      settings.keyboardSectionMode,
+    ) && !miniModeActive;
+  const showSynth =
+    isSynthesizerUiActive(
+      musicTeachingEnabled,
+      settings.keyboardSectionMode,
+      teachingLesson,
+    ) && !miniModeActive;
   const compact = settings.inputAreaCompact;
-  const showToggle = settings.keyboardModeToggleVisible && !compact;
-  const showDictation =
-    !showSynth && settings.dictationVisible !== false && !compact;
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
   const transparentUi = isTransparentUiActive(settings, miniModeActive);
   const showTransparentToggle = miniModeActive && !showSynth && !compact;
@@ -51,9 +63,11 @@ export function KeyboardSection() {
       })
     : undefined;
   const showTransparentColorButton = transparentUi && showTransparentToggle;
+  const showLessonToggle = teachingActive && !compact;
+  const showSynthToolbar = showSynth && !compact;
   const showToolbar =
-    showDictation ||
-    showToggle ||
+    showLessonToggle ||
+    showSynthToolbar ||
     showSuggestions ||
     showTransparentToggle ||
     showMiniModeCollapse;
@@ -70,6 +84,12 @@ export function KeyboardSection() {
     octaveCount,
   );
 
+  const lessonButtons: { id: TeachingLesson; labelKey: "teachingLessonLanguage" | "teachingLessonMusic" | "teachingLessonMath" }[] = [
+    { id: "language", labelKey: "teachingLessonLanguage" },
+    { id: "music", labelKey: "teachingLessonMusic" },
+    { id: "math", labelKey: "teachingLessonMath" },
+  ];
+
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
       {showToolbar && (
@@ -79,7 +99,10 @@ export function KeyboardSection() {
           <div className="min-w-0 flex-1 pl-1.5">
             {showSuggestions && <SuggestionsBar />}
           </div>
-              {(showDictation || showToggle || showTransparentToggle || showMiniModeCollapse) && (
+              {(showLessonToggle ||
+                showSynthToolbar ||
+                showTransparentToggle ||
+                showMiniModeCollapse) && (
             <div
               className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
             >
@@ -103,7 +126,6 @@ export function KeyboardSection() {
                   </ModeToggleButton>
                 </ModeToggleGroup>
               )}
-              {showDictation && <DictationButton transparentUi={transparentUi} />}
               {showTransparentToggle && (
                 <ModeToggleGroup
                   transparentUi={transparentUi}
@@ -165,24 +187,31 @@ export function KeyboardSection() {
                   </ModeToggleButton>
                 </ModeToggleGroup>
               )}
-              {showSynth && showToggle && (
-                <>
-                  <ModeToggleGroup>
+              {showLessonToggle && (
+                <ModeToggleGroup>
+                  {lessonButtons.map((lesson, index) => (
                     <ModeToggleButton
-                      active={musicTeachingEnabled}
-                      position="only"
-                      label={musicTeachingEnabled ? t("stopTeaching") : t("teachMusic")}
-                      onClick={() => {
-                        if (musicTeachingEnabled) {
-                          void disableMusicTeaching();
-                        } else {
-                          void enableMusicTeaching();
-                        }
-                      }}
+                      key={lesson.id}
+                      active={
+                        musicTeachingEnabled && teachingLesson === lesson.id
+                      }
+                      position={modeToggleSegmentPosition(
+                        index,
+                        lessonButtons.length,
+                      )}
+                      label={t(lesson.labelKey)}
+                      onClick={() => setTeachingLesson(lesson.id)}
                     >
-                      <TeachIcon className="h-4 w-4" />
+                      <TeachingLessonIcon
+                        lesson={lesson.id}
+                        className="h-4 w-4"
+                      />
                     </ModeToggleButton>
-                  </ModeToggleGroup>
+                  ))}
+                </ModeToggleGroup>
+              )}
+              {showSynthToolbar && (
+                <>
                   <PianoRangeControl
                     octaveCount={settings.synthesizerOctaveCount}
                     startOctave={settings.synthesizerStartOctave}
@@ -201,25 +230,27 @@ export function KeyboardSection() {
                       });
                     }}
                   />
-                  <ModeToggleGroup>
-                    <ModeToggleButton
-                      active={settings.mouseVisible}
-                      position="only"
-                      label={
-                        isWidePianoOctaveCount(settings.synthesizerOctaveCount)
-                          ? t("mouseHiddenForWidePiano")
-                          : settings.mouseVisible
-                            ? t("hideMouseSection")
-                            : t("showMouseSection")
-                      }
-                      onClick={() =>
-                        updateSettings({ mouseVisible: !settings.mouseVisible })
-                      }
-                      disabled={isWidePianoOctaveCount(settings.synthesizerOctaveCount)}
-                    >
-                      <MouseIcon className="h-4 w-4" />
-                    </ModeToggleButton>
-                  </ModeToggleGroup>
+                  {!isV1FeatureHidden("mouse") && (
+                    <ModeToggleGroup>
+                      <ModeToggleButton
+                        active={settings.mouseVisible}
+                        position="only"
+                        label={
+                          isWidePianoOctaveCount(settings.synthesizerOctaveCount)
+                            ? t("mouseHiddenForWidePiano")
+                            : settings.mouseVisible
+                              ? t("hideMouseSection")
+                              : t("showMouseSection")
+                        }
+                        onClick={() =>
+                          updateSettings({ mouseVisible: !settings.mouseVisible })
+                        }
+                        disabled={isWidePianoOctaveCount(settings.synthesizerOctaveCount)}
+                      >
+                        <MouseIcon className="h-4 w-4" />
+                      </ModeToggleButton>
+                    </ModeToggleGroup>
+                  )}
                   <SynthVolumeControl
                     volume={settings.synthesizerVolume ?? 70}
                     muted={settings.synthesizerMuted ?? false}
@@ -231,26 +262,6 @@ export function KeyboardSection() {
                     }
                   />
                 </>
-              )}
-              {showToggle && (
-                <ModeToggleGroup>
-                  <ModeToggleButton
-                    active={!showSynth}
-                    position="first"
-                    label={t("keyboard")}
-                    onClick={() => updateSettings({ keyboardSectionMode: "keyboard" })}
-                  >
-                    <KeyboardIcon className="h-4 w-4" />
-                  </ModeToggleButton>
-                  <ModeToggleButton
-                    active={showSynth}
-                    position="last"
-                    label={t("synthesizer")}
-                    onClick={() => updateSettings({ keyboardSectionMode: "synthesizer" })}
-                  >
-                    <SynthesizerIcon className="h-4 w-4" />
-                  </ModeToggleButton>
-                </ModeToggleGroup>
               )}
             </div>
           )}

@@ -1,0 +1,15 @@
+{
+  "version": "0.9.0",
+  "notes": "",
+  "pub_date": "2026-08-12T19:29:44.683Z",
+  "platforms": {
+    "windows-x86_64": {
+      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.9.0/ReachPanel_0.9.0_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0JHRW1rdFVPTC9HeWRWeWNqaHNzc2FUTjB3WGVjMENFZVlUWFVrME1KcjFmWTVmbXNaMzVIL21RaGxPQ3RoY0FaWU1WSFJvYUN3OFFoa2ZwOTNNOGdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTYyOTA1CWZpbGU6UmVhY2hQYW5lbF8wLjkuMF94NjQtc2V0dXAuZXhlCjJETHVRRXRLVjVCTzV0aFUxZG5xZi9rOERNZnJjSlJmajNGWEJ0WTVXSmZlNW80S1h5L1liVEQ1S0crTmorNENSZGVueS9DejdJa0JBdlp4SjcvMkFRPT0K"
+    },
+    "windows-x86_64-nsis": {
+      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.9.0/ReachPanel_0.9.0_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0JHRW1rdFVPTC9HeWRWeWNqaHNzc2FUTjB3WGVjMENFZVlUWFVrME1KcjFmWTVmbXNaMzVIL21RaGxPQ3RoY0FaWU1WSFJvYUN3OFFoa2ZwOTNNOGdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTYyOTA1CWZpbGU6UmVhY2hQYW5lbF8wLjkuMF94NjQtc2V0dXAuZXhlCjJETHVRRXRLVjVCTzV0aFUxZG5xZi9rOERNZnJjSlJmajNGWEJ0WTVXSmZlNW80S1h5L1liVEQ1S0crTmorNENSZGVueS9DejdJa0JBdlp4SjcvMkFRPT0K"
+    }
+  }
+}

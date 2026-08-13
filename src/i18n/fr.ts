@@ -29,6 +29,27 @@ export const fr: Record<keyof typeof en, string> = {
 
   miniMode: "Mode Mini",
 
+  modeNormal: "Normal",
+
+  modeMini: "Mini",
+
+  modeTeaching: "Enseignement",
+
+  teachingLessonMusic: "Musique",
+
+  teachingLessonMath: "Mathématiques",
+
+  teachingLessonLanguage: "Langue",
+
+  comingSoon: "Bientôt disponible",
+
+  mathLessonTitle: "Mathématiques",
+
+  languageLessonTitle: "Langue",
+
+  modeTabletsHint:
+    "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur.",
+
   miniModeAutoDescription:
     "Sur un seul écran ou une configuration en miroir, le clavier apparaît automatiquement lorsque vous touchez un champ de saisie.",
 
@@ -267,6 +288,8 @@ export const fr: Record<keyof typeof en, string> = {
 
   dictationUnavailableOffline: "Dictée indisponible — une connexion Internet est requise",
 
+  dictationGroqRemainingToday: "Requêtes Groq restantes aujourd'hui",
+
   dictationOpenSpeechSettings: "Ouvrir les paramètres de parole",
 
   dictationOpenSpeechLanguageSettings: "Installer la langue de parole",
@@ -420,6 +443,39 @@ export const fr: Record<keyof typeof en, string> = {
   quickActionNoApps: "Aucun programme correspondant.",
 
   settingsAbout: "À propos",
+
+  settingsCompanion: "Companion",
+  companionDescription: "Pair an Android tablet to control this PC over Wi-Fi. The tablet becomes the control surface while connected.",
+  companionBridgeRunning: "Bridge running",
+  companionBridgeStopped: "Bridge stopped",
+  companionPort: "Port",
+  companionSession: "Session",
+  companionSessionIdle: "Idle",
+  companionSessionActive: "Active",
+  companionSessionReconnecting: "Reconnecting",
+  companionConnectedDevice: "Connected device",
+  companionAudioRouting: "Audio routing",
+  companionAudioHost: "Host PC",
+  companionAudioTablet: "Tablet",
+  companionStart: "Start bridge",
+  companionStop: "Stop bridge",
+  companionRefreshQr: "New pairing code",
+  companionQrHint: "Scan this QR with ReachPanel Companion on your tablet.",
+  companionCopyPayload: "Copy pairing JSON",
+  companionCopied: "Pairing JSON copied",
+  companionPairedDevices: "Paired devices",
+  companionNoDevices: "No tablets paired yet.",
+  companionRevoke: "Revoke",
+  companionRevoked: "Device revoked",
+  companionDeviceRevokedBadge: "Revoked",
+  companionLastSeen: "Last seen",
+  companionCandidateIps: "Detected local IPs",
+  companionUsbTitle: "USB tether (no Wi-Fi)",
+  companionUsbStep1: "On the Android tablet: Settings ? Network ? Hotspot & tethering ? enable USB tethering.",
+  companionUsbStep2: "Connect the tablet to this PC with a data USB cable (not charge-only).",
+  companionUsbStep3: "Click New pairing code so the QR uses the USB network IP (often 192.168.42.x or 192.168.137.x).",
+  companionUsbStep4: "On the tablet, scan the updated QR (or paste JSON). Same protocol as Wi-Fi.",
+  companionUsbStep5: "Already paired? Scanning the new QR updates the IP and reconnects when the host ID matches.",
 
   aboutDescription: "Clavier et souris virtuels d’assistance pour Windows.",
 

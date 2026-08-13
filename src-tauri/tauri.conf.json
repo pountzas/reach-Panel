@@ -60,6 +60,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwOUFGNkIwRTA3MEM4NEQKUldSTnlIRGdzUGFhc0hudnVzaGVCMFpWcUVrbkx1c3YxRnN6c3U3S3ptQ3hSZUVSOVRlOGJGQ0sK",
       "endpoints": [
+        "https://raw.githubusercontent.com/pountzas/reach-Panel/main/updater/latest.json",
         "https://github.com/pountzas/reach-Panel/releases/latest/download/latest.json"
       ]
     }

@@ -23,6 +23,13 @@ struct SttErrorEvent {
     message: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SttGroqQuotaEvent {
+    remaining_requests: u64,
+    limit_requests: u64,
+}
+
 pub fn emit_error(app: &AppHandle, message: impl Into<String>) {
     let message = map_stt_error(message.into()).to_string();
     let _ = app.emit("stt-error", SttErrorEvent { message });
@@ -30,6 +37,27 @@ pub fn emit_error(app: &AppHandle, message: impl Into<String>) {
 
 pub fn emit_state(app: &AppHandle, state: SttState, language: Option<String>) {
     let _ = app.emit("stt-state", SttStateEvent { state, language });
+}
+
+/// Emit Groq RPD remaining/limit when both headers were parsed.
+pub fn emit_groq_quota(app: &AppHandle, remaining_requests: u64, limit_requests: u64) {
+    let _ = app.emit(
+        "stt-groq-quota",
+        SttGroqQuotaEvent {
+            remaining_requests,
+            limit_requests,
+        },
+    );
+}
+
+pub fn emit_groq_quota_optional(
+    app: &AppHandle,
+    remaining_requests: Option<u64>,
+    limit_requests: Option<u64>,
+) {
+    if let (Some(remaining), Some(limit)) = (remaining_requests, limit_requests) {
+        emit_groq_quota(app, remaining, limit);
+    }
 }
 
 pub fn map_stt_error(error: impl std::fmt::Display) -> anyhow::Error {

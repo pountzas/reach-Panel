@@ -88,7 +88,7 @@ export interface AppSettings {
    * Combined with visibility-based content ratio via Math.max.
    */
   windowHeightRatio?: number;
-  /** null = auto, true = force on, false = force off */
+  /** true = Mini, false / null = Normal (null migrates to false on load) */
   miniModeOverride?: boolean | null;
   miniModeTransparent?: boolean;
   /** Outline/label color when transparent keyboard is active. */
@@ -216,4 +216,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mouseBottomRowVisible: true,
   largeHeaders: false,
   transparentKeyColor: "white",
+  miniModeOverride: false,
 };

@@ -3,6 +3,7 @@ import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { monitorsOverlap } from "./miniMode";
 import type { MonitorInfo } from "./types";
+import { isV1ToolWindowHidden } from "./v1HiddenFeatures";
 
 export const TOOL_WINDOW_LABELS = [
   "settings",
@@ -178,6 +179,9 @@ export async function openToolWindow(
     onDestroyed?: () => void;
   },
 ): Promise<void> {
+  if (isV1ToolWindowHidden(label)) {
+    return;
+  }
   const placement = await resolvePlacement(options.monitor);
   const existing = await WebviewWindow.getByLabel(label);
   if (existing) {
