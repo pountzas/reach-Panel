@@ -1,3 +1,5 @@
+import { resolveV1SectionVisibility } from "./v1HiddenFeatures";
+
 /** Extensible section ids. Keyboard is always the docked base. */
 export type SectionId = "quick-actions" | "phrases" | "input-row";
 
@@ -13,6 +15,18 @@ export interface SectionDefinition {
   canUndock: boolean;
   /** Settings visibility flag; null means always present when the canvas is shown. */
   visibilityKey: SectionVisibilityKey | null;
+}
+
+/**
+ * Effective QA/phrases visibility for the docked stack and window height.
+ * v1 flags force QA/phrases off unless the music lesson slot is showing.
+ */
+export function resolveDockedSectionVisibility(input: {
+  quickActionsVisible: boolean;
+  phrasesVisible: boolean;
+  lessonSlotVisible?: boolean;
+}): Record<SectionVisibilityKey, boolean> {
+  return resolveV1SectionVisibility(input);
 }
 
 export const KEYBOARD_SECTION_ID: SectionId = "input-row";

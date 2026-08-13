@@ -39,7 +39,10 @@ import { isImportedMusicSong } from "../lib/music/parseJsonSong";
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
-import { clampWindowHeightRatio, computeContentHeightRatio } from "../lib/sectionLayouts";
+import {
+  clampWindowHeightRatio,
+  computeContentHeightRatioFromSettings,
+} from "../lib/sectionLayouts";
 import { resolveSectionStack } from "../lib/sectionStack";
 import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled } from "../lib/miniMode";
 import {
@@ -52,6 +55,11 @@ import {
   TOOL_WINDOW_TITLES,
   type ToolWindowLabel,
 } from "../lib/toolWindows";
+import {
+  effectiveLargeHeaders,
+  isMusicLessonSlotVisible,
+  isV1ToolWindowHidden,
+} from "../lib/v1HiddenFeatures";
 import {
   partialContainsLayoutFields,
   persistLayoutForKind,
@@ -105,7 +113,10 @@ async function syncMiniModeWindowLayout(preferAnimate = true) {
       collapsed: !visibleAtStart,
       collapsedDictation: true,
       collapsedSettings: true,
-      heightRatio: heightRatioFromSettings(settings),
+      heightRatio: heightRatioFromSettings(
+        settings,
+        useAppStore.getState().musicTeachingEnabled,
+      ),
       miniMode: true,
       miniKeyboardVisible: visibleAtStart,
       miniKeyboardHeightRatio: MINI_KEYBOARD_HEIGHT_RATIO,
@@ -212,7 +223,7 @@ async function refreshMiniModeState(options?: { animate?: boolean }) {
       mouseVisibleBeforeMiniMode: null,
       settings: nextSettings,
     });
-    await syncWindowLayoutFromSettings(nextSettings, animate);
+    await syncWindowLayoutFromSettings(nextSettings, animate, useAppStore.getState().musicTeachingEnabled);
     return;
   }
 
@@ -250,27 +261,50 @@ function physicalKeyStateEqual(a: PhysicalKeyState, b: PhysicalKeyState): boolea
   );
 }
 
-function heightRatioFromSettings(settings: AppSettings): number {
-  const contentRatio = computeContentHeightRatio({
-    quickActions: settings.quickActionsVisible,
-    phrases: settings.phrasesVisible,
+function lessonSlotVisibleFromState(
+  settings: AppSettings,
+  musicTeachingEnabled: boolean,
+): boolean {
+  return isMusicLessonSlotVisible({
+    musicTeachingEnabled,
+    keyboardSectionMode: settings.keyboardSectionMode,
   });
+}
+
+function heightRatioFromSettings(
+  settings: AppSettings,
+  musicTeachingEnabled = false,
+): number {
+  const contentRatio = computeContentHeightRatioFromSettings(
+    settings,
+    lessonSlotVisibleFromState(settings, musicTeachingEnabled),
+  );
   if (settings.windowHeightRatio == null) {
     return contentRatio;
   }
   return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
 }
 
+/** Apply effective v1 chrome reads without wiping unrelated stored prefs. */
+function withV1EffectiveChrome(settings: AppSettings): AppSettings {
+  const largeHeaders = effectiveLargeHeaders(settings.largeHeaders);
+  if (largeHeaders === settings.largeHeaders) {
+    return settings;
+  }
+  return { ...settings, largeHeaders };
+}
+
 async function syncWindowLayoutFromSettings(
   settings: AppSettings,
   preferAnimate: boolean,
+  musicTeachingEnabled = false,
 ) {
   const args = {
     monitorId: settings.accessibilityMonitorId,
     collapsed: settings.collapsed,
     collapsedDictation:
       settings.collapsed && settings.dictationVisible !== false,
-    heightRatio: heightRatioFromSettings(settings),
+    heightRatio: heightRatioFromSettings(settings, musicTeachingEnabled),
   };
   // Animate height like phrases/QA toggles; apply for collapsed / cold load.
   if (preferAnimate && !settings.collapsed) {
@@ -556,9 +590,9 @@ async function loadProfileData(
     "cmd_get_profiles",
   );
   const active = profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ?? profiles[0];
-  const settings = active
-    ? parseSettings(active.settings_json)
-    : DEFAULT_SETTINGS;
+  const settings = withV1EffectiveChrome(
+    active ? parseSettings(active.settings_json) : DEFAULT_SETTINGS,
+  );
   set({ settings, settingsEpoch: get().settingsEpoch + 1 });
   const isMainWindow = WebviewWindow.getCurrent().label === "main";
   if (isMainWindow) {
@@ -574,6 +608,7 @@ async function loadProfileData(
       await syncWindowLayoutFromSettings(
         get().settings,
         options?.animateLayout === true,
+        get().musicTeachingEnabled,
       );
     }
   }
@@ -844,6 +879,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       next = persistLayoutForKind(next, get().pointerInputKind);
     }
 
+    next = withV1EffectiveChrome(next);
+
     if (get().settingsEpoch !== epoch) {
       return;
     }
@@ -957,14 +994,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
           collapsed: current.collapsed,
           collapsedDictation:
             current.collapsed && current.dictationVisible !== false,
-          heightRatio: heightRatioFromSettings(current),
+          heightRatio: heightRatioFromSettings(current, get().musicTeachingEnabled),
         });
       } else if (visibilityChanged && !current.collapsed) {
         await invoke("cmd_animate_window_layout", {
           monitorId: current.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(current),
+          heightRatio: heightRatioFromSettings(current, get().musicTeachingEnabled),
         });
       }
     }
@@ -985,7 +1022,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (get().miniModeActive) {
         void syncMiniModeWindowLayout(true);
       } else {
-        void syncWindowLayoutFromSettings(next, true);
+        void syncWindowLayoutFromSettings(next, true, get().musicTeachingEnabled);
       }
     }
   },
@@ -1016,13 +1053,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings, miniModeActive } = get();
+    const { settings, miniModeActive, musicTeachingEnabled } = get();
     if (settings.collapsed || miniModeActive) return;
     const heightRatio = Math.max(
-      computeContentHeightRatio({
-        quickActions: settings.quickActionsVisible,
-        phrases: settings.phrasesVisible,
-      }),
+      computeContentHeightRatioFromSettings(
+        settings,
+        lessonSlotVisibleFromState(settings, musicTeachingEnabled),
+      ),
       clampWindowHeightRatio(ratio),
     );
     if (
@@ -1447,9 +1484,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     void setToolWindowVisible(get, set, "settings", show);
   },
   setShowMacroBuilder: (show) => {
+    if (show && isV1ToolWindowHidden("macro-builder")) {
+      return;
+    }
     void setToolWindowVisible(get, set, "macro-builder", show);
   },
   setShowHeadTrackingWizard: (show) => {
+    if (show && isV1ToolWindowHidden("head-tracking")) {
+      return;
+    }
     void setToolWindowVisible(get, set, "head-tracking", show);
   },
 
@@ -1637,14 +1680,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
           collapsedDictation: next.dictationVisible !== false,
-          heightRatio: heightRatioFromSettings(next),
+          heightRatio: heightRatioFromSettings(next, get().musicTeachingEnabled),
         });
       } else {
         await invoke("cmd_animate_window_layout", {
           monitorId: settings.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(settings),
+          heightRatio: heightRatioFromSettings(settings, get().musicTeachingEnabled),
         });
         if (get().settingsEpoch !== epoch) {
           return;

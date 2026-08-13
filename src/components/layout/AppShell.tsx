@@ -1,12 +1,7 @@
 import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { exit } from "@tauri-apps/plugin-process";
-import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
-import { MousePanel } from "../mouse/MousePanel";
-import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
-import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
-import { PhrasePanel } from "../phrases/PhrasePanel";
 import { MusicLessonPanel } from "../music/MusicLessonPanel";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { SectionCanvas } from "./SectionCanvas";
@@ -19,35 +14,21 @@ import { MiniModeShell } from "./MiniModeShell";
 import {
   appHeaderHeightPx,
   clampWindowHeightRatio,
-  computeContentHeightRatio,
+  computeContentHeightRatioFromSettings,
 } from "../../lib/sectionLayouts";
 import { closeAllToolWindows } from "../../lib/toolWindows";
 import { resolveMiniModeEnabled } from "../../lib/miniMode";
+import {
+  effectiveLargeHeaders,
+  isMusicLessonSlotVisible,
+  isV1FeatureHidden,
+} from "../../lib/v1HiddenFeatures";
 
 function InputRowPanel() {
-  const settings = useAppStore((s) => s.settings);
-  const updateSettings = useAppStore((s) => s.updateSettings);
-  const mouseSide = settings.mousePanelSide ?? "right";
-  const mouseRatio = settings.inputRowRightRatio ?? 0.28;
-  const mouseVisible = settings.mouseVisible;
-
-  // Always keep KeyboardSection in the same split-pane slot so synth playback
-  // is not remounted when show/hide mouse toggles. 5-octave mode sets
-  // mouseVisible=false the same way the hide button does.
+  // v1: mouse column hidden — keyboard takes the full input row width.
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
-      <ResizableSplitPane
-        ratioSide={mouseSide === "left" ? "left" : "right"}
-        rightRatio={mouseRatio}
-        onRightRatioChange={(inputRowRightRatio) =>
-          updateSettings({ inputRowRightRatio })
-        }
-        minLeftWidth={mouseSide === "left" ? MOUSE_PANEL_MIN_WIDTH : 160}
-        minRightWidth={mouseSide === "left" ? 160 : MOUSE_PANEL_MIN_WIDTH}
-        sizedPaneCollapsed={!mouseVisible}
-        left={mouseSide === "left" ? <MousePanel /> : <KeyboardSection />}
-        right={mouseSide === "left" ? <KeyboardSection /> : <MousePanel />}
-      />
+      <KeyboardSection />
     </div>
   );
 }
@@ -65,15 +46,23 @@ function monitorRegionHeight(
   return monitors.length >= 2 ? monitor.height : monitor.height / 2;
 }
 
-function contentHeightRatioFromSettings(settings: {
-  quickActionsVisible: boolean;
-  phrasesVisible: boolean;
-  windowHeightRatio?: number;
-}): number {
-  const contentRatio = computeContentHeightRatio({
-    quickActions: settings.quickActionsVisible,
-    phrases: settings.phrasesVisible,
+function contentHeightRatioFromSettings(
+  settings: {
+    quickActionsVisible: boolean;
+    phrasesVisible: boolean;
+    windowHeightRatio?: number;
+    keyboardSectionMode: string;
+  },
+  musicTeachingEnabled: boolean,
+): number {
+  const lessonSlotVisible = isMusicLessonSlotVisible({
+    musicTeachingEnabled,
+    keyboardSectionMode: settings.keyboardSectionMode,
   });
+  const contentRatio = computeContentHeightRatioFromSettings(
+    settings,
+    lessonSlotVisible,
+  );
   if (settings.windowHeightRatio == null) return contentRatio;
   return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
 }
@@ -88,13 +77,19 @@ export function AppShell() {
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const { t } = useTranslation();
-  const largeHeaders = settings.largeHeaders;
+  const largeHeaders = effectiveLargeHeaders(settings.largeHeaders);
   const headerHeight = appHeaderHeightPx(largeHeaders);
   const iconSize = largeHeaders ? "lg" : "sm";
   const iconClass = largeHeaders ? "h-7 w-7" : "h-4 w-4";
-  const showMusicLesson =
-    musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
-  const phrasesSlotVisible = settings.phrasesVisible || showMusicLesson;
+  const lessonSlotVisible = isMusicLessonSlotVisible({
+    musicTeachingEnabled,
+    keyboardSectionMode: settings.keyboardSectionMode,
+  });
+  // v1: phrases slot is teaching-only; never mount PhrasePanel / QuickActionsBar.
+  const phrasesSlotVisible = lessonSlotVisible;
+  const quickActionsVisible = isV1FeatureHidden("quickActions")
+    ? false
+    : settings.quickActionsVisible;
   const windowResizeRef = useRef<{
     startY: number;
     startRatio: number;
@@ -116,7 +111,7 @@ export function AppShell() {
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     const regionHeight = monitorRegionHeight(monitors, settings.accessibilityMonitorId);
-    const startRatio = contentHeightRatioFromSettings(settings);
+    const startRatio = contentHeightRatioFromSettings(settings, musicTeachingEnabled);
     windowResizeRef.current = {
       startY: event.clientY,
       startRatio,
@@ -247,13 +242,13 @@ export function AppShell() {
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <ErrorBanner />
           <SectionCanvas
-            quickActionsVisible={settings.quickActionsVisible}
+            quickActionsVisible={quickActionsVisible}
             phrasesVisible={phrasesSlotVisible}
             savedStack={settings.sectionStack}
             legacyLayouts={settings.sectionLayouts}
             onStackChange={(sectionStack) => updateSettings({ sectionStack })}
-            quickActions={<QuickActionsBar />}
-            phrases={showMusicLesson ? <MusicLessonPanel /> : <PhrasePanel />}
+            quickActions={null}
+            phrases={lessonSlotVisible ? <MusicLessonPanel /> : null}
             inputRow={<InputRowPanel />}
           />
         </div>

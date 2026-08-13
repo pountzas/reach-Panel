@@ -19,6 +19,7 @@ import { Synthesizer } from "./Synthesizer";
 import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
 import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
 import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
+import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
@@ -201,25 +202,27 @@ export function KeyboardSection() {
                       });
                     }}
                   />
-                  <ModeToggleGroup>
-                    <ModeToggleButton
-                      active={settings.mouseVisible}
-                      position="only"
-                      label={
-                        isWidePianoOctaveCount(settings.synthesizerOctaveCount)
-                          ? t("mouseHiddenForWidePiano")
-                          : settings.mouseVisible
-                            ? t("hideMouseSection")
-                            : t("showMouseSection")
-                      }
-                      onClick={() =>
-                        updateSettings({ mouseVisible: !settings.mouseVisible })
-                      }
-                      disabled={isWidePianoOctaveCount(settings.synthesizerOctaveCount)}
-                    >
-                      <MouseIcon className="h-4 w-4" />
-                    </ModeToggleButton>
-                  </ModeToggleGroup>
+                  {!isV1FeatureHidden("mouse") && (
+                    <ModeToggleGroup>
+                      <ModeToggleButton
+                        active={settings.mouseVisible}
+                        position="only"
+                        label={
+                          isWidePianoOctaveCount(settings.synthesizerOctaveCount)
+                            ? t("mouseHiddenForWidePiano")
+                            : settings.mouseVisible
+                              ? t("hideMouseSection")
+                              : t("showMouseSection")
+                        }
+                        onClick={() =>
+                          updateSettings({ mouseVisible: !settings.mouseVisible })
+                        }
+                        disabled={isWidePianoOctaveCount(settings.synthesizerOctaveCount)}
+                      >
+                        <MouseIcon className="h-4 w-4" />
+                      </ModeToggleButton>
+                    </ModeToggleGroup>
+                  )}
                   <SynthVolumeControl
                     volume={settings.synthesizerVolume ?? 70}
                     muted={settings.synthesizerMuted ?? false}

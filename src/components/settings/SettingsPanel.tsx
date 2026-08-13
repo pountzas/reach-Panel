@@ -20,6 +20,7 @@ import { CloseIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { ToolWindowHeader } from "../common/ToolWindowHeader";
 import { TRANSPARENT_KEY_COLORS } from "../../lib/miniMode";
+import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -451,20 +452,22 @@ export function SettingsPanel() {
                 );
               })}
             </ul>
-            <div className="mt-3">
-              <ToggleRow
-                label={t("largeHeaders")}
-                checked={settings.largeHeaders}
-                onChange={(checked) => updateSettings({ largeHeaders: checked })}
-                surface={surface}
-              />
-              <p
-                className="mt-1 px-1 text-xs"
-                style={{ color: surface.panelMutedText }}
-              >
-                {t("largeHeadersHint")}
-              </p>
-            </div>
+            {!isV1FeatureHidden("largeHeaders") && (
+              <div className="mt-3">
+                <ToggleRow
+                  label={t("largeHeaders")}
+                  checked={settings.largeHeaders}
+                  onChange={(checked) => updateSettings({ largeHeaders: checked })}
+                  surface={surface}
+                />
+                <p
+                  className="mt-1 px-1 text-xs"
+                  style={{ color: surface.panelMutedText }}
+                >
+                  {t("largeHeadersHint")}
+                </p>
+              </div>
+            )}
           </SettingsSection>
 
           <SettingsSection title={t("miniMode")} surface={surface}>
@@ -621,12 +624,14 @@ export function SettingsPanel() {
                   onChange={(v) => updateSettings({ keyTextColor: v, colorProfile: "custom" })}
                   surface={surface}
                 />
-                <ColorField
-                  label={t("mousePanelColor")}
-                  value={settings.mousePanelBgColor ?? "#f8fafc"}
-                  onChange={(v) => updateSettings({ mousePanelBgColor: v, colorProfile: "custom" })}
-                  surface={surface}
-                />
+                {!isV1FeatureHidden("mouse") && (
+                  <ColorField
+                    label={t("mousePanelColor")}
+                    value={settings.mousePanelBgColor ?? "#f8fafc"}
+                    onChange={(v) => updateSettings({ mousePanelBgColor: v, colorProfile: "custom" })}
+                    surface={surface}
+                  />
+                )}
               </div>
             )}
 
@@ -685,24 +690,30 @@ export function SettingsPanel() {
 
           <SettingsSection title={t("settingsVisibleSections")} surface={surface}>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <ToggleRow
-                label={t("showMouseSection")}
-                checked={settings.mouseVisible}
-                onChange={(checked) => updateSettings({ mouseVisible: checked })}
-                surface={surface}
-              />
-              <ToggleRow
-                label={t("showQuickActionsBar")}
-                checked={settings.quickActionsVisible}
-                onChange={(checked) => updateSettings({ quickActionsVisible: checked })}
-                surface={surface}
-              />
-              <ToggleRow
-                label={t("showPhrasesSection")}
-                checked={settings.phrasesVisible}
-                onChange={(checked) => updateSettings({ phrasesVisible: checked })}
-                surface={surface}
-              />
+              {!isV1FeatureHidden("mouse") && (
+                <ToggleRow
+                  label={t("showMouseSection")}
+                  checked={settings.mouseVisible}
+                  onChange={(checked) => updateSettings({ mouseVisible: checked })}
+                  surface={surface}
+                />
+              )}
+              {!isV1FeatureHidden("quickActions") && (
+                <ToggleRow
+                  label={t("showQuickActionsBar")}
+                  checked={settings.quickActionsVisible}
+                  onChange={(checked) => updateSettings({ quickActionsVisible: checked })}
+                  surface={surface}
+                />
+              )}
+              {!isV1FeatureHidden("phrases") && (
+                <ToggleRow
+                  label={t("showPhrasesSection")}
+                  checked={settings.phrasesVisible}
+                  onChange={(checked) => updateSettings({ phrasesVisible: checked })}
+                  surface={surface}
+                />
+              )}
               <ToggleRow
                 label={t("showSuggestionsBar")}
                 checked={settings.suggestionsVisible}
@@ -783,18 +794,22 @@ export function SettingsPanel() {
             )}
           </SettingsSection>
 
-          <SettingsSection title={t("mouse")} surface={surface}>
-            <ToggleRow
-              label={t("showMouseBottomRow")}
-              checked={settings.mouseBottomRowVisible}
-              onChange={(checked) => updateSettings({ mouseBottomRowVisible: checked })}
-              surface={surface}
-            />
-          </SettingsSection>
+          {!isV1FeatureHidden("mouse") && (
+            <SettingsSection title={t("mouse")} surface={surface}>
+              <ToggleRow
+                label={t("showMouseBottomRow")}
+                checked={settings.mouseBottomRowVisible}
+                onChange={(checked) => updateSettings({ mouseBottomRowVisible: checked })}
+                surface={surface}
+              />
+            </SettingsSection>
+          )}
 
-          <SettingsSection title={t("quickActions")} surface={surface}>
-            <QuickActionEditor surface={surface} />
-          </SettingsSection>
+          {!isV1FeatureHidden("quickActions") && (
+            <SettingsSection title={t("quickActions")} surface={surface}>
+              <QuickActionEditor surface={surface} />
+            </SettingsSection>
+          )}
 
           <SettingsSection title={t("settingsGeneral")} surface={surface}>
             <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
@@ -864,28 +879,35 @@ export function SettingsPanel() {
           </SettingsSection>
 
           <SettingsSection title={t("settingsToolsMaintenance")} surface={surface}>
-            <div className="mb-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="rounded-lg border px-3 py-2 text-sm"
-                style={secondaryButtonStyle}
-                onClick={() => {
-                  setShowMacroBuilder(true);
-                }}
-              >
-                {t("macroBuilder")}
-              </button>
-              <button
-                type="button"
-                className="rounded-lg border px-3 py-2 text-sm"
-                style={secondaryButtonStyle}
-                onClick={() => {
-                  setShowHeadTrackingWizard(true);
-                }}
-              >
-                {t("headTracking")}
-              </button>
-            </div>
+            {(!isV1FeatureHidden("macroBuilder") ||
+              !isV1FeatureHidden("headTracking")) && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {!isV1FeatureHidden("macroBuilder") && (
+                  <button
+                    type="button"
+                    className="rounded-lg border px-3 py-2 text-sm"
+                    style={secondaryButtonStyle}
+                    onClick={() => {
+                      setShowMacroBuilder(true);
+                    }}
+                  >
+                    {t("macroBuilder")}
+                  </button>
+                )}
+                {!isV1FeatureHidden("headTracking") && (
+                  <button
+                    type="button"
+                    className="rounded-lg border px-3 py-2 text-sm"
+                    style={secondaryButtonStyle}
+                    onClick={() => {
+                      setShowHeadTrackingWizard(true);
+                    }}
+                  >
+                    {t("headTracking")}
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="mb-4">
               <button

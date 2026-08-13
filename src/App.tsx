@@ -8,7 +8,7 @@ import { MacroBuilder } from "./components/macros/MacroBuilder";
 import { HeadTrackingWizard } from "./components/head-tracking/HeadTrackingWizard";
 import { AppToaster } from "./components/common/AppToaster";
 import { UpdatePrompt } from "./components/common/UpdatePrompt";
-import { computeContentHeightRatio } from "./lib/sectionLayouts";
+import { computeContentHeightRatioFromSettings } from "./lib/sectionLayouts";
 import {
   isToolWindowLabel,
   PROFILE_UPDATED_EVENT,
@@ -16,6 +16,10 @@ import {
   type ToolWindowLabel,
   type ToolWindowRequest,
 } from "./lib/toolWindows";
+import {
+  isMusicLessonSlotVisible,
+  isV1ToolWindowHidden,
+} from "./lib/v1HiddenFeatures";
 import { useAppStore } from "./stores/appStore";
 
 const KEYBOARD_POLL_MS = 100;
@@ -48,16 +52,19 @@ function MainApp() {
         await useAppStore.getState().refreshMiniModeState({ animate: false });
         if (cancelled) return;
         if (!useAppStore.getState().miniModeActive) {
-          const { settings } = useAppStore.getState();
+          const { settings, musicTeachingEnabled } = useAppStore.getState();
           await invoke("cmd_apply_window_layout", {
             monitorId: settings.accessibilityMonitorId,
             collapsed: settings.collapsed,
             collapsedDictation:
               settings.collapsed && settings.dictationVisible !== false,
-            heightRatio: computeContentHeightRatio({
-              quickActions: settings.quickActionsVisible,
-              phrases: settings.phrasesVisible,
-            }),
+            heightRatio: computeContentHeightRatioFromSettings(
+              settings,
+              isMusicLessonSlotVisible({
+                musicTeachingEnabled,
+                keyboardSectionMode: settings.keyboardSectionMode,
+              }),
+            ),
           });
         }
         await loadKeyboardLayout();
@@ -154,6 +161,9 @@ function MainApp() {
     unlisteners.push(
       listen<ToolWindowRequest>(TOOL_WINDOW_REQUEST_EVENT, (event) => {
         const { label, show } = event.payload;
+        if (show && isV1ToolWindowHidden(label)) {
+          return;
+        }
         const store = useAppStore.getState();
         switch (label) {
           case "settings":
@@ -234,9 +244,15 @@ function ToolApp({ label }: { label: ToolWindowLabel }) {
       panel = <SettingsPanel />;
       break;
     case "macro-builder":
+      if (isV1ToolWindowHidden("macro-builder")) {
+        return null;
+      }
       panel = <MacroBuilder />;
       break;
     case "head-tracking":
+      if (isV1ToolWindowHidden("head-tracking")) {
+        return null;
+      }
       panel = <HeadTrackingWizard />;
       break;
     default: {
