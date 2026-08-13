@@ -209,7 +209,7 @@ Command handlers in `lib.rs` should call these services; companion dispatch does
 
 1. **Gate** — phone blocked / tablet allowed  
 2. **Pair** — QR scanner + manual IP fallback  
-3. **Connected shell** — section stack: quick actions, phrases/emergency, keyboard | trackpad | numpad, suggestions, collapsed FAB  
+3. **Connected shell** — keyboard | trackpad | numpad | dictation, suggestions, profile/USB help, collapsed FAB (phrases / emergency / quick actions deferred; Windows host uses Normal/Mini/Teaching mode tablets — Mini Auto removed)  
 4. **Reconnecting** — overlay; preserve UI state; exponential backoff  
 
 ### 8.3 Persistence
@@ -232,7 +232,7 @@ No macros page. No head-tracking page.
 1. Design spec + requirements note (**this doc**)
 2. Protocol + host bridge skeleton (pairing QR, auth, ping, minimize/tray hooks)
 3. Android Wi‑Fi MVP — keyboard + trackpad + reconnect
-4. Parity pack — numpad, phrases/emergency, tablet TTS, QA, prediction, FAB, profile sync
+4. Parity pack — numpad, tablet TTS, prediction, FAB, profile sync (phrases/QA shell deferred to v2)
 5. Dictation — tablet mic → host STT → type-back
 6. USB tether path + school parent UX
 7. iOS TestFlight (Wi‑Fi)

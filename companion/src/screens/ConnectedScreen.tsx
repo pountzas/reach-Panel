@@ -8,9 +8,7 @@ import {
 import { DictationPanel } from '../components/DictationPanel';
 import { KeyboardPanel } from '../components/KeyboardPanel';
 import { NumpadPanel } from '../components/NumpadPanel';
-import { PhrasesPanel } from '../components/PhrasesPanel';
 import { ProfilePanel } from '../components/ProfilePanel';
-import { QuickActionsPanel } from '../components/QuickActionsPanel';
 import { ReconnectingBanner } from '../components/ReconnectingBanner';
 import { SuggestionsBar } from '../components/SuggestionsBar';
 import { TrackpadPanel } from '../components/TrackpadPanel';
@@ -144,9 +142,6 @@ export function ConnectedScreen({
               ['keyboard', 'Keyboard'],
               ['trackpad', 'Trackpad'],
               ['numpad', 'Numpad'],
-              ['phrases', 'Phrases'],
-              ['emergency', 'Emergency'],
-              ['quickActions', 'Actions'],
               ['dictation', 'Dictation'],
               ['profile', 'Profile'],
               ['usb', 'USB'],
@@ -179,10 +174,10 @@ export function ConnectedScreen({
           client,
           enabled,
           snapshot,
-          language,
           loading,
           error,
           refresh,
+          language,
           onTypedChar,
           onSpecialKey,
         })}
@@ -239,33 +234,6 @@ function renderTab(args: {
       return <TrackpadPanel client={client} enabled={enabled} />;
     case 'numpad':
       return <NumpadPanel client={client} enabled={enabled} />;
-    case 'phrases':
-      return (
-        <PhrasesPanel
-          client={client}
-          phrases={snapshot?.phrases ?? []}
-          language={language}
-          enabled={enabled}
-        />
-      );
-    case 'emergency':
-      return (
-        <PhrasesPanel
-          client={client}
-          phrases={snapshot?.phrases ?? []}
-          language={language}
-          enabled={enabled}
-          emergencyOnly
-        />
-      );
-    case 'quickActions':
-      return (
-        <QuickActionsPanel
-          client={client}
-          actions={snapshot?.quickActions ?? []}
-          enabled={enabled}
-        />
-      );
     case 'dictation':
       return (
         <DictationPanel

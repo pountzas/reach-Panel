@@ -3,7 +3,6 @@
 use crate::db::Database;
 use crate::profiles::INTERNAL_PROFILE_ID;
 use crate::stt::events::handle_result;
-#[cfg(target_os = "windows")]
 use crate::stt::groq;
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use std::sync::Mutex;
@@ -185,32 +184,23 @@ pub fn stop(app: &AppHandle, db: &Database) -> Result<serde_json::Value, String>
 }
 
 fn resolve_host_groq_key(db: &Database) -> Result<String, String> {
-    #[cfg(target_os = "windows")]
-    {
-        let from_settings = db
-            .get_profile_by_id(INTERNAL_PROFILE_ID)
-            .map_err(|e| e.to_string())?
-            .and_then(|p| {
-                serde_json::from_str::<serde_json::Value>(&p.settings_json)
-                    .ok()
-                    .and_then(|v| {
-                        v.get("groqApiKey")
-                            .and_then(|k| k.as_str())
-                            .map(|s| s.to_string())
-                    })
-            });
-        groq::resolve_api_key(from_settings.as_deref()).ok_or_else(|| {
-            "GROQ_KEY: Companion dictation needs a Groq API key on the host (Settings). Keys never sync to the tablet.".to_string()
-        })
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let _ = db;
-        Err("Companion dictation is only available on Windows".to_string())
-    }
+    let from_settings = db
+        .get_profile_by_id(INTERNAL_PROFILE_ID)
+        .map_err(|e| e.to_string())?
+        .and_then(|p| {
+            serde_json::from_str::<serde_json::Value>(&p.settings_json)
+                .ok()
+                .and_then(|v| {
+                    v.get("groqApiKey")
+                        .and_then(|k| k.as_str())
+                        .map(|s| s.to_string())
+                })
+        });
+    groq::resolve_api_key(from_settings.as_deref()).ok_or_else(|| {
+        "GROQ_KEY: Companion dictation needs a Groq API key on the host (Settings). Keys never sync to the tablet.".to_string()
+    })
 }
 
-#[cfg(target_os = "windows")]
 fn transcribe_pcm(
     app: &AppHandle,
     db: &Database,
@@ -239,18 +229,6 @@ fn transcribe_pcm(
     Ok(Some(trimmed.to_string()))
 }
 
-#[cfg(not(target_os = "windows"))]
-fn transcribe_pcm(
-    _app: &AppHandle,
-    _db: &Database,
-    _pcm: &[u8],
-    _sample_rate: u32,
-    _language: &str,
-) -> Result<Option<String>, String> {
-    Err("Companion dictation is only available on Windows".to_string())
-}
-
-#[cfg(target_os = "windows")]
 fn transcribe_encoded(
     app: &AppHandle,
     db: &Database,
@@ -265,14 +243,4 @@ fn transcribe_encoded(
     }
     handle_result(app, &text);
     Ok(Some(text.trim().to_string()))
-}
-
-#[cfg(not(target_os = "windows"))]
-fn transcribe_encoded(
-    _app: &AppHandle,
-    _db: &Database,
-    _enc: &EncodedAudio,
-    _language: &str,
-) -> Result<Option<String>, String> {
-    Err("Companion dictation is only available on Windows".to_string())
 }

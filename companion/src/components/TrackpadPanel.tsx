@@ -7,6 +7,11 @@ import {
   View,
 } from 'react-native';
 import type { CompanionClient } from '../companionClient';
+import {
+  DOUBLE_TAP_MS,
+  TAP_SLOP_PX,
+  isTapGesture,
+} from '../trackpadTap';
 
 type Props = {
   client: CompanionClient;
@@ -15,10 +20,48 @@ type Props = {
 
 export function TrackpadPanel({ client, enabled }: Props) {
   const last = useRef<{ x: number; y: number } | null>(null);
+  const pressStart = useRef<{ x: number; y: number; t: number } | null>(null);
+  const travelPx = useRef(0);
+  const lastTapAt = useRef(0);
+  const pendingClickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPendingClick = () => {
+    if (pendingClickTimer.current !== null) {
+      clearTimeout(pendingClickTimer.current);
+      pendingClickTimer.current = null;
+    }
+  };
+
+  const fireLeftClick = () => {
+    void client.send('mouse.click', { button: 'left' });
+  };
+
+  const fireDoubleClick = () => {
+    void client.send('mouse.doubleClick', {});
+  };
+
+  const handleTap = () => {
+    const now = Date.now();
+    if (lastTapAt.current > 0 && now - lastTapAt.current <= DOUBLE_TAP_MS) {
+      clearPendingClick();
+      lastTapAt.current = 0;
+      fireDoubleClick();
+      return;
+    }
+    lastTapAt.current = now;
+    clearPendingClick();
+    pendingClickTimer.current = setTimeout(() => {
+      pendingClickTimer.current = null;
+      lastTapAt.current = 0;
+      fireLeftClick();
+    }, DOUBLE_TAP_MS);
+  };
 
   const onTouchStart = (e: GestureResponderEvent) => {
     const t = e.nativeEvent;
     last.current = { x: t.pageX, y: t.pageY };
+    pressStart.current = { x: t.pageX, y: t.pageY, t: Date.now() };
+    travelPx.current = 0;
   };
 
   const onTouchMove = (e: GestureResponderEvent) => {
@@ -26,17 +69,35 @@ export function TrackpadPanel({ client, enabled }: Props) {
       return;
     }
     const t = e.nativeEvent;
-    const dx = Math.round(t.pageX - last.current.x);
-    const dy = Math.round(t.pageY - last.current.y);
+    const dx = t.pageX - last.current.x;
+    const dy = t.pageY - last.current.y;
+    travelPx.current += Math.hypot(dx, dy);
+    // Dragging past tap slop cancels a waiting single-click from a prior tap.
+    if (travelPx.current > TAP_SLOP_PX) {
+      clearPendingClick();
+      lastTapAt.current = 0;
+    }
+    const rdx = Math.round(dx);
+    const rdy = Math.round(dy);
     last.current = { x: t.pageX, y: t.pageY };
-    if (dx === 0 && dy === 0) {
+    if (rdx === 0 && rdy === 0) {
       return;
     }
-    client.sendFireAndForget('mouse.moveRel', { dx, dy });
+    client.sendFireAndForget('mouse.moveRel', { dx: rdx, dy: rdy });
   };
 
   const onTouchEnd = () => {
+    const start = pressStart.current;
+    const duration = start ? Date.now() - start.t : Number.POSITIVE_INFINITY;
+    const wasTap = isTapGesture(travelPx.current, duration);
+
     last.current = null;
+    pressStart.current = null;
+    travelPx.current = 0;
+
+    if (wasTap && enabled) {
+      handleTap();
+    }
   };
 
   return (
@@ -51,7 +112,7 @@ export function TrackpadPanel({ client, enabled }: Props) {
         onResponderTerminate={onTouchEnd}
         accessibilityLabel="Trackpad"
       >
-        <Text style={styles.hint}>Drag to move pointer</Text>
+        <Text style={styles.hint}>Drag to move · tap to click</Text>
       </View>
       <View style={styles.buttons}>
         <PadButton

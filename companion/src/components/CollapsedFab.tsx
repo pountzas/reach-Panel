@@ -4,9 +4,6 @@ export type ShellTab =
   | 'keyboard'
   | 'trackpad'
   | 'numpad'
-  | 'phrases'
-  | 'emergency'
-  | 'quickActions'
   | 'dictation'
   | 'profile'
   | 'usb';
@@ -15,9 +12,6 @@ const FAB_ITEMS: { tab: ShellTab; label: string }[] = [
   { tab: 'keyboard', label: 'Keyboard' },
   { tab: 'trackpad', label: 'Trackpad' },
   { tab: 'numpad', label: 'Numpad' },
-  { tab: 'phrases', label: 'Phrases' },
-  { tab: 'emergency', label: 'Emergency' },
-  { tab: 'quickActions', label: 'Actions' },
   { tab: 'dictation', label: 'Dictation' },
   { tab: 'profile', label: 'Profile' },
   { tab: 'usb', label: 'USB help' },
