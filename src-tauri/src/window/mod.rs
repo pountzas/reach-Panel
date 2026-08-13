@@ -478,6 +478,7 @@ mod tests {
     }
 }
 
+mod taskbar;
 mod windows;
 
 pub use windows::{get_window_bounds, list_monitors, monitor_for_rect, set_window_bounds};
