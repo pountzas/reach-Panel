@@ -4,29 +4,43 @@ use std::cell::RefCell;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Condvar, Mutex, Once, OnceLock};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::System::Com::{
     CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
 };
-use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId};
+use windows::Win32::System::Threading::{
+    AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId,
+};
 use windows::Win32::UI::Accessibility::{
     CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationValuePattern, SetWinEventHook,
-    HWINEVENTHOOK, UIA_CONTROLTYPE_ID, UIA_ComboBoxControlTypeId, UIA_DocumentControlTypeId,
-    UIA_EditControlTypeId, UIA_ListControlTypeId, UIA_ListItemControlTypeId, UIA_ValuePatternId,
+    UIA_ComboBoxControlTypeId, UIA_DocumentControlTypeId, UIA_EditControlTypeId,
+    UIA_ListControlTypeId, UIA_ListItemControlTypeId, UIA_ValuePatternId, HWINEVENTHOOK,
+    UIA_CONTROLTYPE_ID,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo, GetParent,
     GetWindowLongW, GetWindowThreadProcessId, IsWindow, IsWindowVisible, SetForegroundWindow,
-    ShowWindow, EVENT_OBJECT_FOCUS, EVENT_SYSTEM_FOREGROUND, ES_READONLY, GUITHREADINFO, GWL_STYLE,
+    ShowWindow, ES_READONLY, EVENT_OBJECT_FOCUS, EVENT_SYSTEM_FOREGROUND, GUITHREADINFO, GWL_STYLE,
     SW_RESTORE, WINEVENT_OUTOFCONTEXT,
 };
+
+/// How long a real text field can "lend" focus to an autocomplete popup.
+pub const LAST_REAL_TEXT_FOCUS_TTL: Duration = Duration::from_secs(30);
+const AUTOCOMPLETE_ANCESTOR_WALK_DEPTH: usize = 6;
+
+struct LastRealTextFocus {
+    process_id: u32,
+    hwnd: usize,
+    at: Instant,
+}
 
 static TARGET_HWND: Mutex<Option<usize>> = Mutex::new(None);
 static HOOK_ONCE: Once = Once::new();
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 static LAST_INPUT_FOCUSED: Mutex<Option<bool>> = Mutex::new(None);
+static LAST_REAL_TEXT_FOCUS: Mutex<Option<LastRealTextFocus>> = Mutex::new(None);
 /// Coalesce deferred focus reevals; never call UIA inside a WinEvent hook.
 static REEVAL_DIRTY: AtomicBool = AtomicBool::new(false);
 static REEVAL_WORKER: Once = Once::new();
@@ -65,43 +79,12 @@ pub fn classify_aria_role(role: &str) -> AriaRoleKind {
         "textbox" | "searchbox" => AriaRoleKind::TextInput,
         "combobox" => AriaRoleKind::ComboBox,
         "option" | "listbox" | "listitem" => AriaRoleKind::AutocompletePopup,
-        "main"
-        | "navigation"
-        | "banner"
-        | "complementary"
-        | "contentinfo"
-        | "region"
-        | "article"
-        | "heading"
-        | "document"
-        | "application"
-        | "button"
-        | "tab"
-        | "tablist"
-        | "link"
-        | "img"
-        | "image"
-        | "slider"
-        | "scrollbar"
-        | "progressbar"
-        | "switch"
-        | "checkbox"
-        | "radio"
-        | "list"
-        | "menu"
-        | "menuitem"
-        | "menubar"
-        | "toolbar"
-        | "grid"
-        | "gridcell"
-        | "row"
-        | "table"
-        | "dialog"
-        | "alertdialog"
-        | "tooltip"
-        | "group"
-        | "none"
-        | "presentation" => AriaRoleKind::NotText,
+        "main" | "navigation" | "banner" | "complementary" | "contentinfo" | "region"
+        | "article" | "heading" | "document" | "application" | "button" | "tab" | "tablist"
+        | "link" | "img" | "image" | "slider" | "scrollbar" | "progressbar" | "switch"
+        | "checkbox" | "radio" | "list" | "menu" | "menuitem" | "menubar" | "toolbar" | "grid"
+        | "gridcell" | "row" | "table" | "dialog" | "alertdialog" | "tooltip" | "group"
+        | "none" | "presentation" => AriaRoleKind::NotText,
         _ => AriaRoleKind::Unspecified,
     }
 }
@@ -152,12 +135,87 @@ pub fn uia_signals_are_autocomplete_satellite(signals: UiaTextInputSignals) -> b
     ty == UIA_ListItemControlTypeId || ty == UIA_ListControlTypeId
 }
 
+pub fn is_last_real_text_focus_live(recorded_at: Instant, now: Instant) -> bool {
+    now.saturating_duration_since(recorded_at) <= LAST_REAL_TEXT_FOCUS_TTL
+}
+
+/// Autocomplete popups may be a child HWND of the same process, or share the field's HWND.
+pub fn satellite_matches_remembered_owner(
+    current_process_id: u32,
+    current_hwnd: usize,
+    remembered: Option<(u32, usize)>,
+) -> bool {
+    let Some((process_id, hwnd)) = remembered else {
+        return false;
+    };
+    (current_process_id != 0 && current_process_id == process_id)
+        || (current_hwnd != 0 && hwnd != 0 && current_hwnd == hwnd)
+}
+
+fn live_last_real_text_focus() -> Option<(u32, usize)> {
+    let guard = LAST_REAL_TEXT_FOCUS.lock().ok()?;
+    let last = guard.as_ref()?;
+    if !is_last_real_text_focus_live(last.at, Instant::now()) {
+        return None;
+    }
+    Some((last.process_id, last.hwnd))
+}
+
 fn previously_text_focused() -> bool {
-    LAST_INPUT_FOCUSED
-        .lock()
-        .ok()
-        .and_then(|guard| *guard)
-        == Some(true)
+    live_last_real_text_focus().is_some()
+}
+
+fn note_text_focus(element: &IUIAutomationElement) {
+    let process_id = uia_element_process_id(element);
+    if process_id == 0 {
+        return;
+    }
+    let hwnd = uia_element_hwnd_usize(element);
+    if let Ok(mut slot) = LAST_REAL_TEXT_FOCUS.lock() {
+        if let Some(last) = slot.as_mut() {
+            if last.process_id == process_id {
+                last.at = Instant::now();
+                if hwnd != 0 {
+                    last.hwnd = hwnd;
+                }
+                return;
+            }
+        }
+        *slot = Some(LastRealTextFocus {
+            process_id,
+            hwnd,
+            at: Instant::now(),
+        });
+    }
+}
+
+fn clear_last_real_text_focus() {
+    if let Ok(mut slot) = LAST_REAL_TEXT_FOCUS.lock() {
+        *slot = None;
+    }
+}
+
+fn uia_element_process_id(element: &IUIAutomationElement) -> u32 {
+    unsafe { element.CurrentProcessId().ok().map(|pid| pid as u32) }.unwrap_or(0)
+}
+
+fn uia_element_hwnd_usize(element: &IUIAutomationElement) -> usize {
+    unsafe {
+        element
+            .CurrentNativeWindowHandle()
+            .ok()
+            .filter(|hwnd| !is_null(*hwnd))
+            .map(hwnd_to_usize)
+            .unwrap_or(0)
+    }
+}
+
+fn uia_element_belongs_to_remembered_text_focus(element: &IUIAutomationElement) -> bool {
+    satellite_matches_remembered_owner(
+        uia_element_process_id(element),
+        uia_element_hwnd_usize(element),
+        live_last_real_text_focus(),
+    )
 }
 
 fn uia_ancestor_is_autocomplete_satellite(
@@ -168,7 +226,7 @@ fn uia_ancestor_is_autocomplete_satellite(
         return false;
     };
     let mut current = element.clone();
-    for _ in 0..12 {
+    for _ in 0..AUTOCOMPLETE_ANCESTOR_WALK_DEPTH {
         let parent = unsafe { walker.GetParentElement(&current) };
         let Ok(parent) = parent else {
             break;
@@ -467,16 +525,24 @@ fn uia_focused_is_text_input() -> Option<bool> {
             aria_role: uia_element_aria_role(&element),
         };
         let is_text = uia_control_is_text_input(signals);
-        let previously = previously_text_focused();
-        let satellite = if is_text || !previously {
-            false
-        } else {
-            uia_signals_are_autocomplete_satellite(signals)
-                || uia_ancestor_is_autocomplete_satellite(automation, &element)
-        };
-        let focused = should_retain_text_focus(is_text, satellite, previously);
         if is_text {
+            note_text_focus(&element);
             remember_uia_focus_target(&element);
+            return Some(true);
+        }
+        let previously = previously_text_focused();
+        let satellite = if !previously || !uia_element_belongs_to_remembered_text_focus(&element) {
+            false
+        } else if uia_signals_are_autocomplete_satellite(signals) {
+            true
+        } else {
+            uia_ancestor_is_autocomplete_satellite(automation, &element)
+        };
+        let focused = should_retain_text_focus(false, satellite, previously);
+        if focused {
+            note_text_focus(&element);
+        } else {
+            clear_last_real_text_focus();
         }
         Some(focused)
     })
@@ -751,10 +817,12 @@ where
 #[cfg(test)]
 mod tests {
     use super::{
-        classify_aria_role, is_editable_class, should_retain_text_focus,
-        uia_control_is_text_input, uia_signals_are_autocomplete_satellite, AriaRoleKind,
-        UiaTextInputSignals,
+        classify_aria_role, is_editable_class, is_last_real_text_focus_live,
+        satellite_matches_remembered_owner, should_retain_text_focus, uia_control_is_text_input,
+        uia_signals_are_autocomplete_satellite, AriaRoleKind, UiaTextInputSignals,
+        LAST_REAL_TEXT_FOCUS_TTL,
     };
+    use std::time::{Duration, Instant};
 
     fn signals(
         control_type: i32,
@@ -928,9 +996,18 @@ mod tests {
 
     #[test]
     fn classify_aria_role_maps_search_suggestions_as_autocomplete() {
-        assert_eq!(classify_aria_role("option"), AriaRoleKind::AutocompletePopup);
-        assert_eq!(classify_aria_role("listbox"), AriaRoleKind::AutocompletePopup);
-        assert_eq!(classify_aria_role("listitem"), AriaRoleKind::AutocompletePopup);
+        assert_eq!(
+            classify_aria_role("option"),
+            AriaRoleKind::AutocompletePopup
+        );
+        assert_eq!(
+            classify_aria_role("listbox"),
+            AriaRoleKind::AutocompletePopup
+        );
+        assert_eq!(
+            classify_aria_role("listitem"),
+            AriaRoleKind::AutocompletePopup
+        );
         assert!(!uia_control_is_text_input(signals(
             50007, // UIA_ListItemControlTypeId
             false,
@@ -960,5 +1037,26 @@ mod tests {
         // Leaving the field for a real non-text control hides it.
         assert!(!should_retain_text_focus(false, false, true));
         assert!(should_retain_text_focus(true, false, false));
+    }
+
+    #[test]
+    fn last_real_text_focus_expires_after_ttl() {
+        let recorded = Instant::now();
+        assert!(is_last_real_text_focus_live(
+            recorded,
+            recorded + Duration::from_secs(1)
+        ));
+        assert!(!is_last_real_text_focus_live(
+            recorded,
+            recorded + LAST_REAL_TEXT_FOCUS_TTL + Duration::from_millis(1)
+        ));
+    }
+
+    #[test]
+    fn autocomplete_satellite_requires_remembered_owner() {
+        assert!(satellite_matches_remembered_owner(42, 0, Some((42, 100))));
+        assert!(satellite_matches_remembered_owner(0, 100, Some((42, 100))));
+        assert!(!satellite_matches_remembered_owner(7, 99, Some((42, 100))));
+        assert!(!satellite_matches_remembered_owner(42, 100, None));
     }
 }

@@ -23,7 +23,7 @@ We track Tauri releases for a proper fix and dismiss this alert as an accepted u
 
 Dependabot may report high-severity alerts for `image-size` in `companion/package-lock.json`.
 
-This package is a **transitive Metro/Expo bundler dependency**. Advisories claim a fix in `>= 2.0.3`, but **no such version has been published** to npm (`latest` is still `2.0.2`, which is inside the vulnerable range). `npm audit fix --force` would also try to install Expo SDK 53, which is a breaking change from this project’s SDK 57.
+This package is a **transitive Metro/Expo bundler dependency**. No patched version is recorded for these advisories. npm `latest` is still `2.0.2`, and this repo's lockfile resolves `1.2.1`. `npm audit fix --force` would also try to install Expo SDK 53, which is a breaking change from this project’s SDK 57.
 
 There is no safe in-repo version bump until `image-size` publishes a patched release. The DoS requires feeding a crafted image buffer to Metro’s image-size parser (dev/bundler path), not the Windows desktop runtime.
 
