@@ -62,6 +62,13 @@ import {
   isV1ToolWindowHidden,
 } from "../lib/v1HiddenFeatures";
 import {
+  captureWindowHeightRatioBeforeTeaching,
+  coercePersistedKeyboardSectionMode,
+  needsKeyboardSectionModeMigration,
+  restoreWindowHeightRatio,
+  type WindowHeightRatioBeforeTeaching,
+} from "../lib/appModeLayout";
+import {
   partialContainsLayoutFields,
   persistLayoutForKind,
   pointerKindFromEvent,
@@ -285,22 +292,7 @@ function teachingFullWorkAreaActive(
 
 export type TeachingLesson = "music" | "math" | "language";
 export type AppModeTablet = "normal" | "mini" | "teaching";
-/** Distinguishes “was unset” from a numeric ratio (including 0). */
-export type WindowHeightRatioBeforeTeaching = number | null | "unset";
-
-function captureWindowHeightRatioBeforeTeaching(
-  ratio: number | undefined | null,
-): WindowHeightRatioBeforeTeaching {
-  if (ratio == null) return "unset";
-  return ratio;
-}
-
-function restoreWindowHeightRatio(
-  saved: WindowHeightRatioBeforeTeaching,
-): number | undefined {
-  if (saved === null || saved === "unset") return undefined;
-  return saved;
-}
+export type { WindowHeightRatioBeforeTeaching };
 
 function heightRatioFromSettings(
   settings: AppSettings,
@@ -559,6 +551,11 @@ function parseSettings(json: string): AppSettings {
       parsed.miniModeOverride === true
         ? true
         : false;
+    // Teaching is session-only; never hydrate synthesizer under Normal/Mini.
+    const keyboardSectionMode = coercePersistedKeyboardSectionMode(
+      parsed.keyboardSectionMode,
+      false,
+    );
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
@@ -568,6 +565,7 @@ function parseSettings(json: string): AppSettings {
       colorProfile,
       mousePanelSide,
       miniModeOverride,
+      keyboardSectionMode,
       sectionStack: resolveSectionStack(parsed.sectionStack, parsed.sectionLayouts),
       synthesizerOctaveCount: resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
       synthesizerStartOctave: resolveSynthStartOctave(
@@ -662,12 +660,21 @@ async function loadProfileData(
   );
   const active = profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ?? profiles[0];
   let migratedMiniAuto = false;
+  let migratedKeyboardSectionMode = false;
   if (active) {
     try {
-      const raw = JSON.parse(active.settings_json) as { miniModeOverride?: unknown };
+      const raw = JSON.parse(active.settings_json) as {
+        miniModeOverride?: unknown;
+        keyboardSectionMode?: unknown;
+      };
       migratedMiniAuto = raw.miniModeOverride == null;
+      migratedKeyboardSectionMode = needsKeyboardSectionModeMigration(
+        raw.keyboardSectionMode,
+        false,
+      );
     } catch {
       migratedMiniAuto = false;
+      migratedKeyboardSectionMode = false;
     }
   }
   const settings = withV1EffectiveChrome(
@@ -682,7 +689,7 @@ async function loadProfileData(
   await get().loadQuickActions();
   await get().loadPhrases();
   await get().loadMacros();
-  if (migratedMiniAuto) {
+  if (migratedMiniAuto || migratedKeyboardSectionMode) {
     const epoch = get().settingsEpoch;
     await persistSettingsIfCurrent(get, epoch, get().settings);
   }
@@ -1069,6 +1076,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const miniModeSettingChanged = partial.miniModeOverride !== undefined;
       if (miniModeSettingChanged || partial.accessibilityMonitorId !== undefined) {
         await refreshMiniModeState({ animate: true });
+        // Leaving Teaching → Normal sets miniModeOverride + height/section in one
+        // patch; refresh alone is a no-op when mini was already off, so still
+        // re-apply non-mini layout (fullWorkArea: false + restored ratio).
+        if (
+          !get().miniModeActive &&
+          (partial.windowHeightRatio !== undefined ||
+            partial.keyboardSectionMode !== undefined)
+        ) {
+          await syncWindowLayoutFromSettings(
+            get().settings,
+            true,
+            get().musicTeachingEnabled,
+          );
+        }
       } else if (get().miniModeActive) {
         if (
           partial.collapsed !== undefined ||
@@ -1639,6 +1660,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     switch (mode) {
       case "normal": {
+        // Clear teaching first so leavingSynthesizer does not restore Mini.
         const heightRestore = inTeaching
           ? restoreWindowHeightRatio(state.windowHeightRatioBeforeTeaching)
           : settings.windowHeightRatio;
@@ -1657,9 +1679,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
           keyboardSectionMode: "keyboard",
           ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
+        // Explicit Normal must re-apply non-mini layout even if refresh was a no-op.
+        await syncWindowLayoutFromSettings(get().settings, true, false);
         return;
       }
       case "mini": {
+        const heightRestore = inTeaching
+          ? restoreWindowHeightRatio(state.windowHeightRatioBeforeTeaching)
+          : undefined;
         if (inTeaching) {
           set({
             musicTeachingEnabled: false,
@@ -1673,6 +1700,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         await get().updateSettings({
           miniModeOverride: true,
           keyboardSectionMode: "keyboard",
+          ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
         return;
       }
