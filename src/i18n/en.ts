@@ -28,6 +28,27 @@
 
   miniMode: "Mini Mode",
 
+  modeNormal: "Normal",
+
+  modeMini: "Mini",
+
+  modeTeaching: "Teaching",
+
+  teachingLessonMusic: "Music",
+
+  teachingLessonMath: "Mathematics",
+
+  teachingLessonLanguage: "Language",
+
+  comingSoon: "Coming soon",
+
+  mathLessonTitle: "Mathematics",
+
+  languageLessonTitle: "Language",
+
+  modeTabletsHint:
+    "Normal and Mini are typing keyboard. Teaching opens the synthesizer with lessons.",
+
   miniModeAutoDescription:
     "On a single display or mirrored setup, the keyboard appears automatically when you tap an input field.",
 

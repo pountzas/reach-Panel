@@ -169,6 +169,7 @@ pub fn compute_window_layout(
     mini_keyboard_visible: bool,
     mini_keyboard_height_ratio: f32,
     dpi_scale: f32,
+    full_work_area: bool,
 ) -> Result<WindowLayout, String> {
     let dpi_scale = dpi_scale.max(1.0);
     let monitor = monitors
@@ -204,7 +205,9 @@ pub fn compute_window_layout(
         });
     }
 
-    let (mut x, mut y, mut w, mut h) = if monitors.len() >= 2 {
+    // Teaching / full_work_area: entire rcWork even on one monitor.
+    // Otherwise: 2+ monitors = full work area; 1 monitor = bottom half.
+    let (mut x, mut y, mut w, mut h) = if full_work_area || monitors.len() >= 2 {
         (
             monitor.x,
             monitor.y,
@@ -330,6 +333,7 @@ mod tests {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
             &monitors, 0, true, false, false, 0.5, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            false,
         )
         .unwrap();
         let (expected_w, expected_h) =
@@ -346,6 +350,7 @@ mod tests {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
             &monitors, 0, true, true, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            false,
         )
         .unwrap();
         let (expected_w, expected_h) =
@@ -365,6 +370,7 @@ mod tests {
         ];
         let layout = compute_window_layout(
             &monitors, 1, true, false, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            false,
         )
         .unwrap();
         let (expected_w, expected_h) =
@@ -381,6 +387,7 @@ mod tests {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
             &monitors, 0, false, false, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            false,
         )
         .unwrap();
 
@@ -391,10 +398,35 @@ mod tests {
     }
 
     #[test]
+    fn full_work_area_fills_entire_single_monitor_rc_work() {
+        let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
+        let layout = compute_window_layout(
+            &monitors,
+            0,
+            false,
+            false,
+            false,
+            1.0,
+            false,
+            false,
+            MINI_KEYBOARD_HEIGHT_RATIO,
+            1.0,
+            true,
+        )
+        .unwrap();
+
+        assert_eq!(layout.x, 0);
+        assert_eq!(layout.y, 0);
+        assert_eq!(layout.width, 1920);
+        assert_eq!(layout.height, 1080);
+    }
+
+    #[test]
     fn expanded_partial_ratio_bottom_aligned_single_monitor() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
             &monitors, 0, false, false, false, 0.5, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            false,
         )
         .unwrap();
 
@@ -414,6 +446,7 @@ mod tests {
         ];
         let layout = compute_window_layout(
             &monitors, 1, false, false, false, 0.61, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            false,
         )
         .unwrap();
 
@@ -438,6 +471,7 @@ mod tests {
             true,
             MINI_KEYBOARD_HEIGHT_RATIO,
             1.0,
+            false,
         )
         .unwrap();
 
@@ -464,6 +498,7 @@ mod tests {
             false,
             MINI_KEYBOARD_HEIGHT_RATIO,
             1.0,
+            false,
         )
         .unwrap();
 

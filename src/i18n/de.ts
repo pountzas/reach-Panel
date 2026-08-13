@@ -29,6 +29,27 @@ export const de: Record<keyof typeof en, string> = {
 
   miniMode: "Mini-Modus",
 
+  modeNormal: "Normal",
+
+  modeMini: "Mini",
+
+  modeTeaching: "Unterricht",
+
+  teachingLessonMusic: "Musik",
+
+  teachingLessonMath: "Mathematik",
+
+  teachingLessonLanguage: "Sprache",
+
+  comingSoon: "Demnächst",
+
+  mathLessonTitle: "Mathematik",
+
+  languageLessonTitle: "Sprache",
+
+  modeTabletsHint:
+    "Normal und Mini sind Tastatur. Unterricht öffnet den Synthesizer mit Lektionen.",
+
   miniModeAutoDescription:
     "Auf einem einzelnen Display oder bei gespiegelter Einrichtung erscheint die Tastatur automatisch, wenn Sie ein Eingabefeld antippen.",
 

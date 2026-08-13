@@ -66,6 +66,37 @@ describe("v1HiddenFeatures", () => {
       }),
     ).toBe(false);
   });
+
+  it("keeps lesson slot for any teaching lesson while teaching + synth", () => {
+    expect(
+      isMusicLessonSlotVisible({
+        musicTeachingEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        teachingLesson: "music",
+      }),
+    ).toBe(true);
+    expect(
+      isMusicLessonSlotVisible({
+        musicTeachingEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        teachingLesson: "math",
+      }),
+    ).toBe(true);
+    expect(
+      isMusicLessonSlotVisible({
+        musicTeachingEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        teachingLesson: "language",
+      }),
+    ).toBe(true);
+    expect(
+      isMusicLessonSlotVisible({
+        musicTeachingEnabled: true,
+        keyboardSectionMode: "keyboard",
+        teachingLesson: "math",
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("resolveV1SectionVisibility / content height", () => {

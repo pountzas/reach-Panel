@@ -18,6 +18,7 @@ import {
 } from "./lib/toolWindows";
 import {
   isMusicLessonSlotVisible,
+  isTeachingFullWorkArea,
   isV1ToolWindowHidden,
 } from "./lib/v1HiddenFeatures";
 import { useAppStore } from "./stores/appStore";
@@ -53,17 +54,22 @@ function MainApp() {
         if (cancelled) return;
         if (!useAppStore.getState().miniModeActive) {
           const { settings, musicTeachingEnabled } = useAppStore.getState();
+          const lessonSlotVisible = isMusicLessonSlotVisible({
+            musicTeachingEnabled,
+            keyboardSectionMode: settings.keyboardSectionMode,
+          });
+          const fullWorkArea = isTeachingFullWorkArea({
+            musicTeachingEnabled,
+            keyboardSectionMode: settings.keyboardSectionMode,
+          });
           await invoke("cmd_apply_window_layout", {
             monitorId: settings.accessibilityMonitorId,
             collapsed: settings.collapsed,
             collapsedDictation: false,
-            heightRatio: computeContentHeightRatioFromSettings(
-              settings,
-              isMusicLessonSlotVisible({
-                musicTeachingEnabled,
-                keyboardSectionMode: settings.keyboardSectionMode,
-              }),
-            ),
+            heightRatio: fullWorkArea
+              ? 1.0
+              : computeContentHeightRatioFromSettings(settings, lessonSlotVisible),
+            fullWorkArea,
           });
         }
         await loadKeyboardLayout();

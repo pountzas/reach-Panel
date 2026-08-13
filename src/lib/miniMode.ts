@@ -96,18 +96,14 @@ export function isMiniModeEligible(monitors: MonitorInfo[]): boolean {
 
 /**
  * Resolve whether mini mode should be active.
- * - `miniModeOverride: true` → force on
- * - `miniModeOverride: false` → force off
- * - `null` / `undefined` → auto (eligible = single or mirrored)
+ * - `miniModeOverride: true` → Mini
+ * - `miniModeOverride: false` / `null` / `undefined` → Normal (Auto dropped)
  */
 export function resolveMiniModeEnabled(
   settings: AppSettings,
-  monitors: MonitorInfo[],
+  _monitors: MonitorInfo[],
 ): boolean {
-  const override = settings.miniModeOverride;
-  if (override === true) return true;
-  if (override === false) return false;
-  return isMiniModeEligible(monitors);
+  return settings.miniModeOverride === true;
 }
 
 /** True when mini mode is active and the transparent keyboard setting is on. */

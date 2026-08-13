@@ -32,6 +32,27 @@ export const el: Record<keyof typeof en, string> = {
 
   miniMode: "Λειτουργία Mini",
 
+  modeNormal: "Κανονική",
+
+  modeMini: "Mini",
+
+  modeTeaching: "Διδασκαλία",
+
+  teachingLessonMusic: "Μουσική",
+
+  teachingLessonMath: "Μαθηματικά",
+
+  teachingLessonLanguage: "Γλώσσα",
+
+  comingSoon: "Σύντομα",
+
+  mathLessonTitle: "Μαθηματικά",
+
+  languageLessonTitle: "Γλώσσα",
+
+  modeTabletsHint:
+    "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει τον συνθετητή με μαθήματα.",
+
   miniModeAutoDescription:
     "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
 

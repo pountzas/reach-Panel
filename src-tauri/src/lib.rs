@@ -317,6 +317,7 @@ async fn apply_window_layout(
     mini_mode: bool,
     mini_keyboard_visible: bool,
     mini_keyboard_height_ratio: f32,
+    full_work_area: bool,
 ) -> Result<(), String> {
     let monitors = list_monitors();
     let dpi_scale = main_window_dpi_scale(app);
@@ -331,6 +332,7 @@ async fn apply_window_layout(
         mini_keyboard_visible,
         mini_keyboard_height_ratio,
         dpi_scale,
+        full_work_area,
     )?;
     set_window_layout(app, layout).await
 }
@@ -368,6 +370,7 @@ async fn animate_window_layout(
     mini_mode: bool,
     mini_keyboard_visible: bool,
     mini_keyboard_height_ratio: f32,
+    full_work_area: bool,
 ) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
@@ -385,6 +388,7 @@ async fn animate_window_layout(
         mini_keyboard_visible,
         mini_keyboard_height_ratio,
         dpi_scale,
+        full_work_area,
     )?;
     let from = get_current_window_layout(&window)?;
 
@@ -419,6 +423,7 @@ async fn cmd_apply_window_layout(
     mini_mode: Option<bool>,
     mini_keyboard_visible: Option<bool>,
     mini_keyboard_height_ratio: Option<f32>,
+    full_work_area: Option<bool>,
 ) -> Result<(), String> {
     apply_window_layout(
         &app,
@@ -430,6 +435,7 @@ async fn cmd_apply_window_layout(
         mini_mode.unwrap_or(false),
         mini_keyboard_visible.unwrap_or(false),
         mini_keyboard_height_ratio.unwrap_or(window::MINI_KEYBOARD_HEIGHT_RATIO),
+        full_work_area.unwrap_or(false),
     )
     .await
 }
@@ -445,6 +451,7 @@ async fn cmd_animate_window_layout(
     mini_mode: Option<bool>,
     mini_keyboard_visible: Option<bool>,
     mini_keyboard_height_ratio: Option<f32>,
+    full_work_area: Option<bool>,
 ) -> Result<(), String> {
     animate_window_layout(
         &app,
@@ -456,6 +463,7 @@ async fn cmd_animate_window_layout(
         mini_mode.unwrap_or(false),
         mini_keyboard_visible.unwrap_or(false),
         mini_keyboard_height_ratio.unwrap_or(window::MINI_KEYBOARD_HEIGHT_RATIO),
+        full_work_area.unwrap_or(false),
     )
     .await
 }
@@ -476,6 +484,7 @@ async fn cmd_move_window_to_monitor(
         false,
         false,
         window::MINI_KEYBOARD_HEIGHT_RATIO,
+        false,
     )
     .await
 }
@@ -517,6 +526,7 @@ async fn cmd_set_collapsed(
         false,
         false,
         window::MINI_KEYBOARD_HEIGHT_RATIO,
+        false,
     )
     .await
 }

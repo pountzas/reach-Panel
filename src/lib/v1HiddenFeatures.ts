@@ -82,8 +82,20 @@ export function isV1ToolWindowHidden(
   }
 }
 
-/** Music lesson occupies the phrases slot without requiring phrasesVisible. */
+/** Teaching lesson occupies the phrases slot without requiring phrasesVisible. */
 export function isMusicLessonSlotVisible(input: {
+  musicTeachingEnabled: boolean;
+  keyboardSectionMode: string;
+  /** Present for callers; any lesson still occupies the slot while teaching+synth. */
+  teachingLesson?: "music" | "math" | "language";
+}): boolean {
+  return (
+    input.musicTeachingEnabled && input.keyboardSectionMode === "synthesizer"
+  );
+}
+
+/** True while Teaching layout should fill the entire monitor work area. */
+export function isTeachingFullWorkArea(input: {
   musicTeachingEnabled: boolean;
   keyboardSectionMode: string;
 }): boolean {

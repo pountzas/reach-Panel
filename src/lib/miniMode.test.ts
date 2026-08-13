@@ -50,10 +50,13 @@ describe("miniMode", () => {
     ).toBe(false);
   });
 
-  it("auto-enables mini mode on single monitor", () => {
+  it("null override stays Normal even on single monitor (Auto dropped)", () => {
     expect(
       resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: null }, [a]),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: undefined }, [a]),
+    ).toBe(false);
     expect(isMiniModeEligible([a])).toBe(true);
   });
 
@@ -73,11 +76,11 @@ describe("miniMode", () => {
     ).toBe(false);
   });
 
-  it("auto-enables mini mode on mirrored dual setup", () => {
+  it("null override stays Normal on mirrored dual setup (Auto dropped)", () => {
     expect(isMiniModeEligible([a, b])).toBe(true);
     expect(
       resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: null }, [a, b]),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("transparent UI only when mini mode active and setting on", () => {

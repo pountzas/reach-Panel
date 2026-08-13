@@ -29,6 +29,27 @@ export const es: Record<keyof typeof en, string> = {
 
   miniMode: "Modo Mini",
 
+  modeNormal: "Normal",
+
+  modeMini: "Mini",
+
+  modeTeaching: "Enseñanza",
+
+  teachingLessonMusic: "Música",
+
+  teachingLessonMath: "Matemáticas",
+
+  teachingLessonLanguage: "Idioma",
+
+  comingSoon: "Próximamente",
+
+  mathLessonTitle: "Matemáticas",
+
+  languageLessonTitle: "Idioma",
+
+  modeTabletsHint:
+    "Normal y Mini son teclado. Enseñanza abre el sintetizador con lecciones.",
+
   miniModeAutoDescription:
     "En una sola pantalla o configuración reflejada, el teclado aparece automáticamente al tocar un campo de entrada.",
 

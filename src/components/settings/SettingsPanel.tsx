@@ -273,6 +273,10 @@ export function SettingsPanel() {
     pickBackgroundImage,
     monitors,
     miniModeActive,
+    musicTeachingEnabled,
+    teachingLesson,
+    setAppMode,
+    setTeachingLesson,
     setShowSettings,
     setShowMacroBuilder,
     setShowHeadTrackingWizard,
@@ -293,6 +297,15 @@ export function SettingsPanel() {
   }, [loadInputMethods]);
 
   if (!settings) return null;
+
+  const teachingActive =
+    musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
+  const selectedMode: "normal" | "mini" | "teaching" = teachingActive
+    ? "teaching"
+    : settings.miniModeOverride === true
+      ? "mini"
+      : "normal";
+  const showMiniTransparentControls = selectedMode === "mini";
 
   const activeTypingValue = String(
     inputMethods.find((m) => m.hkl === physicalKeyState.systemHkl)?.hkl ??
@@ -474,76 +487,125 @@ export function SettingsPanel() {
               className="mb-3 px-1 text-xs"
               style={{ color: surface.panelMutedText }}
             >
-              {t("miniModeAutoDescription")}
+              {t("modeTabletsHint")}
             </p>
-            <label className="block text-sm" style={{ color: surface.panelText }}>
-              {t("miniModeOverrideLabel")}
-              <ThemedSelect
-                value={
-                  settings.miniModeOverride === true
-                    ? "on"
-                    : settings.miniModeOverride === false
-                      ? "off"
-                      : "auto"
-                }
-                onChange={(value) =>
-                  updateSettings({
-                    miniModeOverride:
-                      value === "on" ? true : value === "off" ? false : null,
-                  })
-                }
-                surface={surface}
-              >
-                <option value="auto">{t("miniModeOverrideAuto")}</option>
-                <option value="on">{t("miniModeOverrideOn")}</option>
-                <option value="off">{t("miniModeOverrideOff")}</option>
-              </ThemedSelect>
-            </label>
-            <div className="mt-2">
-              <ToggleRow
-                label={t("miniModeTransparent")}
-                checked={Boolean(settings.miniModeTransparent)}
-                disabled={!miniModeActive}
-                onChange={(checked) =>
-                  updateSettings({ miniModeTransparent: checked })
-                }
-                surface={surface}
-              />
-              <p
-                className="mt-1 px-1 text-xs"
-                style={{ color: surface.panelMutedText }}
-              >
-                {t("miniModeTransparentDescription")}
-              </p>
-              {Boolean(settings.miniModeTransparent) && (
-                <label
-                  className="mt-2 block text-sm"
-                  style={{
-                    color: surface.panelText,
-                    opacity: miniModeActive ? 1 : 0.5,
-                  }}
-                >
-                  {t("transparentKeyColor")}
-                  <ThemedSelect
-                    value={settings.transparentKeyColor ?? "white"}
-                    disabled={!miniModeActive}
-                    onChange={(value) =>
-                      updateSettings({
-                        transparentKeyColor: value as TransparentKeyColor,
-                      })
-                    }
-                    surface={surface}
-                    className="mt-1 w-full rounded border px-2 py-2 text-sm"
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  { id: "normal" as const, label: t("modeNormal") },
+                  { id: "mini" as const, label: t("modeMini") },
+                  { id: "teaching" as const, label: t("modeTeaching") },
+                ] as const
+              ).map((mode) => {
+                const pressed = selectedMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    aria-pressed={pressed}
+                    className="rounded-lg border px-2 py-3 text-sm font-semibold transition-colors"
+                    style={{
+                      backgroundColor: pressed
+                        ? surface.insetBg
+                        : surface.panelButtonBg,
+                      borderColor: pressed
+                        ? surface.panelText
+                        : surface.panelBorder,
+                      color: surface.panelText,
+                      boxShadow: pressed
+                        ? `inset 0 0 0 1px ${surface.panelText}`
+                        : undefined,
+                    }}
+                    onClick={() => void setAppMode(mode.id)}
                   >
-                    {TRANSPARENT_KEY_COLORS.map((id) => (
-                      <option key={id} value={id}>
-                        {t(TRANSPARENT_KEY_COLOR_LABEL_KEYS[id])}
-                      </option>
-                    ))}
-                  </ThemedSelect>
-                </label>
-              )}
+                    {mode.label}
+                  </button>
+                );
+              })}
             </div>
+            {selectedMode === "teaching" && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(
+                  [
+                    { id: "music" as const, label: t("teachingLessonMusic") },
+                    { id: "math" as const, label: t("teachingLessonMath") },
+                    {
+                      id: "language" as const,
+                      label: t("teachingLessonLanguage"),
+                    },
+                  ] as const
+                ).map((lesson) => {
+                  const pressed = teachingLesson === lesson.id;
+                  return (
+                    <button
+                      key={lesson.id}
+                      type="button"
+                      aria-pressed={pressed}
+                      className="rounded-md border px-3 py-1.5 text-xs font-semibold"
+                      style={{
+                        backgroundColor: pressed
+                          ? surface.insetBg
+                          : surface.panelButtonBg,
+                        borderColor: pressed
+                          ? surface.panelText
+                          : surface.panelBorder,
+                        color: surface.panelText,
+                      }}
+                      onClick={() => setTeachingLesson(lesson.id)}
+                    >
+                      {lesson.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {showMiniTransparentControls && (
+              <div className="mt-3">
+                <ToggleRow
+                  label={t("miniModeTransparent")}
+                  checked={Boolean(settings.miniModeTransparent)}
+                  disabled={!miniModeActive}
+                  onChange={(checked) =>
+                    updateSettings({ miniModeTransparent: checked })
+                  }
+                  surface={surface}
+                />
+                <p
+                  className="mt-1 px-1 text-xs"
+                  style={{ color: surface.panelMutedText }}
+                >
+                  {t("miniModeTransparentDescription")}
+                </p>
+                {Boolean(settings.miniModeTransparent) && (
+                  <label
+                    className="mt-2 block text-sm"
+                    style={{
+                      color: surface.panelText,
+                      opacity: miniModeActive ? 1 : 0.5,
+                    }}
+                  >
+                    {t("transparentKeyColor")}
+                    <ThemedSelect
+                      value={settings.transparentKeyColor ?? "white"}
+                      disabled={!miniModeActive}
+                      onChange={(value) =>
+                        updateSettings({
+                          transparentKeyColor: value as TransparentKeyColor,
+                        })
+                      }
+                      surface={surface}
+                      className="mt-1 w-full rounded border px-2 py-2 text-sm"
+                    >
+                      {TRANSPARENT_KEY_COLORS.map((id) => (
+                        <option key={id} value={id}>
+                          {t(TRANSPARENT_KEY_COLOR_LABEL_KEYS[id])}
+                        </option>
+                      ))}
+                    </ThemedSelect>
+                  </label>
+                )}
+              </div>
+            )}
           </SettingsSection>
 
           <SettingsSection title={t("appearance")} surface={surface}>
@@ -735,14 +797,6 @@ export function SettingsPanel() {
                 <option value="latched">{t("fnKeyModeLatched")}</option>
               </ThemedSelect>
             </label>
-            <div className="mt-3">
-              <ToggleRow
-                label={t("showKeyboardModeToggle")}
-                checked={settings.keyboardModeToggleVisible}
-                onChange={(checked) => updateSettings({ keyboardModeToggleVisible: checked })}
-                surface={surface}
-              />
-            </div>
             <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
               {t("groqApiKeyLabel")}
               <input
@@ -761,23 +815,6 @@ export function SettingsPanel() {
               />
               <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
             </label>
-            {!settings.keyboardModeToggleVisible && (
-              <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
-                {t("keyboardSectionMode")}
-                <ThemedSelect
-                  value={settings.keyboardSectionMode}
-                  onChange={(v) =>
-                    updateSettings({
-                      keyboardSectionMode: v as "keyboard" | "synthesizer",
-                    })
-                  }
-                  surface={surface}
-                >
-                  <option value="keyboard">{t("keyboard")}</option>
-                  <option value="synthesizer">{t("synthesizer")}</option>
-                </ThemedSelect>
-              </label>
-            )}
           </SettingsSection>
 
           {!isV1FeatureHidden("mouse") && (

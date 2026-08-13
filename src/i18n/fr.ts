@@ -29,6 +29,27 @@ export const fr: Record<keyof typeof en, string> = {
 
   miniMode: "Mode Mini",
 
+  modeNormal: "Normal",
+
+  modeMini: "Mini",
+
+  modeTeaching: "Enseignement",
+
+  teachingLessonMusic: "Musique",
+
+  teachingLessonMath: "Mathématiques",
+
+  teachingLessonLanguage: "Langue",
+
+  comingSoon: "Bientôt disponible",
+
+  mathLessonTitle: "Mathématiques",
+
+  languageLessonTitle: "Langue",
+
+  modeTabletsHint:
+    "Normal et Mini sont un clavier de saisie. Enseignement ouvre le synthétiseur avec des leçons.",
+
   miniModeAutoDescription:
     "Sur un seul écran ou une configuration en miroir, le clavier apparaît automatiquement lorsque vous touchez un champ de saisie.",
 
