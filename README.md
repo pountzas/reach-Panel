@@ -20,7 +20,7 @@ Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Pan
 
 The companion turns an Android tablet into a control surface (keyboard, trackpad, numpad, dictation, suggestions). The Windows host still injects keystrokes and mouse events into the focused app. Teaching / Music stay on Windows only.
 
-Pairing stays in **Settings → Companion** (Start bridge / QR). The Companion mode tablet in Settings is disabled until a tablet is connected; when one connects the host enters Companion mode and minimizes, and disconnect restores the previous mode.
+Pairing stays in **Settings → Companion** (Start bridge / QR). The Companion mode tablet arms the bridge without changing the current keyboard UI. When a tablet connects, Companion becomes the selected mode and the host minimizes. Disconnect restores the previous mode and unminimizes but keeps the bridge running (reconnect without tapping Companion again). Tapping Normal, Mini, or Teaching — or **Stop** — stops the bridge.
 
 ### 1. Install ReachPanel on Windows
 

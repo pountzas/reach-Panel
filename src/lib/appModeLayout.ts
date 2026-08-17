@@ -84,6 +84,8 @@ export const TEACHING_SESSION_REQUEST_EVENT = "teaching-session-request";
 
 export type AppModeRequest = {
   mode: "normal" | "mini" | "teaching" | "companion";
+  /** Idle restore already left companion; do not stop the bridge again. */
+  skipCompanionBridgeStop?: boolean;
 };
 export type AppModeTablet = "normal" | "mini" | "teaching" | "companion";
 export type HostAppMode = "normal" | "mini" | "teaching";
@@ -150,20 +152,11 @@ export function lessonCloseAppMode(
   return modeBeforeTeaching ?? "normal";
 }
 
+/** Always tappable: tapping Companion arms the bridge before a tablet connects. */
 export function isCompanionTabletEnabled(
-  session: CompanionSessionPhase,
+  _session?: CompanionSessionPhase,
 ): boolean {
-  switch (session) {
-    case "active":
-    case "reconnecting":
-      return true;
-    case "idle":
-      return false;
-    default: {
-      const _exhaustive: never = session;
-      return _exhaustive;
-    }
-  }
+  return true;
 }
 
 export function isCompanionModeActive(

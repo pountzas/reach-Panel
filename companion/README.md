@@ -8,7 +8,7 @@ For the caregiver-facing install and pairing walkthrough (Wi‑Fi + USB tether),
 
 - Node 20+
 - Android tablet or emulator (SDK 57 Expo Go **or** a local development build)
-- ReachPanel host running; start the companion bridge from **Settings → Companion** (auto-starts in some `npm run tauri dev` flows)
+- ReachPanel host running; start the companion bridge from **Settings → Companion** or the Companion mode tablet
 
 ## Run on device (recommended: Expo Go)
 

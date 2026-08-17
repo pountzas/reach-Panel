@@ -50,7 +50,7 @@ export const fr: Record<keyof typeof en, string> = {
   languageLessonTitle: "Langue",
 
   modeTabletsHint:
-    "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon n'est disponible que lorsqu'une tablette est connectée.",
+    "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon démarre le pont tablette ; il n'est sélectionné que lorsqu'une tablette est connectée.",
 
   miniModeAutoDescription:
     "Sur un seul écran ou une configuration en miroir, le clavier apparaît automatiquement lorsque vous touchez un champ de saisie.",

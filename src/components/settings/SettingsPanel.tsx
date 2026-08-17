@@ -23,6 +23,7 @@ import { ToolWindowHeader } from "../common/ToolWindowHeader";
 import { TRANSPARENT_KEY_COLORS } from "../../lib/miniMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
+  isCompanionTabletEnabled,
   isTeachingSessionActive,
   resolveSelectedAppMode,
   type AppModeTablet,
@@ -320,7 +321,6 @@ export function SettingsPanel() {
     monitors,
     miniModeActive,
     companionModeActive,
-    companionSessionLive,
     musicTeachingEnabled,
     teachingLesson,
     setAppMode,
@@ -549,18 +549,14 @@ export function SettingsPanel() {
                   { id: "companion" as const, label: t("modeCompanion") },
                 ] as const
               ).map((mode) => {
-                const companionDisabled =
-                  mode.id === "companion" && !companionSessionLive;
-                const pressed =
-                  selectedMode === mode.id &&
-                  (mode.id !== "companion" || companionSessionLive);
+                const pressed = selectedMode === mode.id;
                 return (
                   <ModeTabletButton
                     key={mode.id}
                     id={mode.id}
                     label={mode.label}
                     pressed={pressed}
-                    disabled={companionDisabled}
+                    disabled={mode.id === "companion" && !isCompanionTabletEnabled()}
                     surface={surface}
                     onSelect={(id) => void setAppMode(id)}
                   />

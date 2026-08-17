@@ -6,6 +6,7 @@ import type { SurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useAppStore } from "../../stores/appStore";
 
 type SessionPhase = "idle" | "active" | "reconnecting";
 type AudioRouting = "host" | "tablet";
@@ -84,6 +85,8 @@ function audioLabel(
 
 export function CompanionSection({ surface }: { surface: SurfaceColors }) {
   const { t } = useTranslation();
+  const setAppMode = useAppStore((s) => s.setAppMode);
+  const stopCompanionByCaregiver = useAppStore((s) => s.stopCompanionByCaregiver);
   const [status, setStatus] = useState<CompanionUiState | null>(null);
   const [payload, setPayload] = useState<PairingPayload | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -158,10 +161,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
   const startBridge = async () => {
     setBusy(true);
     try {
-      const next = await invoke<CompanionUiState>("cmd_companion_start", {
-        port: null,
-      });
-      setStatus(next);
+      await setAppMode("companion");
       const pair = await invoke<PairingPayload>("cmd_companion_refresh_pairing");
       setPayload(pair);
       await refresh();
@@ -175,10 +175,10 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
   const stopBridge = async () => {
     setBusy(true);
     try {
-      const next = await invoke<CompanionUiState>("cmd_companion_stop");
-      setStatus(next);
+      await stopCompanionByCaregiver();
       setPayload(null);
       setQrDataUrl(null);
+      await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

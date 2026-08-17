@@ -50,7 +50,7 @@ export const es: Record<keyof typeof en, string> = {
   languageLessonTitle: "Idioma",
 
   modeTabletsHint:
-    "Normal y Mini son teclado. Enseñanza abre lecciones; Música muestra el sintetizador. Compañero solo está disponible mientras hay una tableta conectada.",
+    "Normal y Mini son teclado. Enseñanza abre lecciones; Música muestra el sintetizador. Compañero inicia el puente de la tableta; solo queda seleccionado mientras hay una tableta conectada.",
 
   miniModeAutoDescription:
     "En una sola pantalla o configuración reflejada, el teclado aparece automáticamente al tocar un campo de entrada.",

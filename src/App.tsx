@@ -175,7 +175,9 @@ function MainApp() {
 
     unlisteners.push(
       listen<AppModeRequest>(APP_MODE_REQUEST_EVENT, (event) => {
-        void useAppStore.getState().setAppMode(event.payload.mode);
+        void useAppStore.getState().setAppMode(event.payload.mode, {
+          skipCompanionBridgeStop: event.payload.skipCompanionBridgeStop,
+        });
       }),
     );
 

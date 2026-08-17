@@ -175,10 +175,10 @@ describe("teachingSessionKeyboardMode", () => {
 });
 
 describe("isCompanionTabletEnabled", () => {
-  it("is true only for active or reconnecting sessions", () => {
+  it("is always tappable so the caregiver can arm the bridge", () => {
     expect(isCompanionTabletEnabled("active")).toBe(true);
     expect(isCompanionTabletEnabled("reconnecting")).toBe(true);
-    expect(isCompanionTabletEnabled("idle")).toBe(false);
+    expect(isCompanionTabletEnabled("idle")).toBe(true);
   });
 });
 
