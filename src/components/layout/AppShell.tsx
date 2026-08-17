@@ -19,6 +19,7 @@ import { CollapseIcon, CloseIcon, SettingsIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { CollapsedFab } from "./CollapsedFab";
 import { MiniModeShell } from "./MiniModeShell";
+import { CompanionModeShell } from "./CompanionModeShell";
 import {
   appHeaderHeightPx,
   clampWindowHeightRatio,
@@ -216,6 +217,12 @@ export function AppShell() {
     }
     void updateSettings({ windowHeightRatio: drag.latestRatio });
   };
+
+  // Companion replaces the host control surface while a tablet session is live.
+  const companionModeActive = useAppStore((s) => s.companionModeActive);
+  if (companionModeActive) {
+    return <CompanionModeShell />;
+  }
 
   // Mini Mode: keyboard+suggestions or collapsed FAB — not the full app chrome.
   // Teaching wins: never host Teaching inside MiniModeShell.
