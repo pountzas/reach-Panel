@@ -20,7 +20,7 @@ Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Pan
 
 The companion turns an Android tablet into a control surface (keyboard, trackpad, numpad, dictation, suggestions). The Windows host still injects keystrokes and mouse events into the focused app. Teaching / Music stay on Windows only.
 
-There is no Play Store build yet — install from this repo (Expo Go or a local APK). Full Expo troubleshooting lives in [companion/README.md](companion/README.md).
+Pairing stays in **Settings → Companion** (Start bridge / QR). Companion mode on the tablet is disabled until a tablet is connected; when one connects the host enters Companion mode and minimizes, and disconnect restores the previous mode.
 
 ### 1. Install ReachPanel on Windows
 
@@ -28,19 +28,19 @@ Use a [release installer](https://github.com/pountzas/reach-Panel/releases) or, 
 
 ### 2. Install the companion on an Android tablet
 
-1. Install [Expo Go](https://play.google.com/store/apps/details?id=host.exp.exponent) from the Play Store (SDK 57 or newer).
-2. On a development machine with Node 20+:
+**Caregivers:** download the pre-built APK from the public install page:
 
-```bash
-cd companion
-npm install
-npx expo start
-```
+**https://reachpanel-companion.vercel.app/**
 
-3. Open the project in Expo Go on the tablet (scan the Metro QR).
-4. Optional APK / USB install: see [companion/README.md](companion/README.md) (`npx expo run:android` or EAS).
+(After the first Vercel deploy, update this URL if your project name differs.)
+
+1. Open the link on the tablet and tap **Download APK**.
+2. Allow installs from the browser if Android prompts (unknown apps).
+3. Install and open ReachPanel Companion.
 
 Phones are blocked — the companion is tablet-only.
+
+**Contributors:** run from source with Expo Go or a local dev build — see [companion/README.md](companion/README.md) (`npx expo start`, `npx expo run:android`, or EAS).
 
 ### 3. Connect over Wi‑Fi (default)
 
@@ -160,6 +160,25 @@ For Rust builds on Windows, ensure the MSVC environment is active. If `link.exe`
 ```
 
 Companion app: [companion/README.md](companion/README.md).
+
+### Public install site (Vercel)
+
+The caregiver APK page lives at [docs/install/index.html](docs/install/index.html) and deploys to Vercel. CI replaces `__INSTALL_APK_PUBLIC_URL__` with the Blob URL before publish.
+
+One-time GitHub Actions secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Purpose |
+| ------ | ------- |
+| `EXPO_TOKEN` | EAS build auth |
+| `EAS_PROJECT_ID` | Expo project (run `eas init` inside `companion/` — do not invent a UUID) |
+| `VERCEL_TOKEN` | Vercel deploy |
+| `VERCEL_ORG_ID` | Vercel team / user |
+| `VERCEL_PROJECT_ID` | Vercel project for `docs/install` |
+| `BLOB_READ_WRITE_TOKEN` | Upload APK to Vercel Blob |
+
+Optional repository variable: `INSTALL_APK_PUBLIC_URL` (override the default Blob URL if needed).
+
+Before the first CI run, inside `companion/`: `eas init` and `eas credentials` for Android signing.
 
 ## Build from source
 

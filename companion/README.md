@@ -81,7 +81,9 @@ npx expo run:android
 ## Not yet
 
 - iOS TestFlight
-- Play Store / public APK distribution
+- Play Store listing
+
+Caregivers install the pre-built APK from the public page: **https://reachpanel-companion.vercel.app/** (see root [README](../README.md#install--connect-the-android-companion)).
 
 ## Troubleshooting: `ExponentAV` / native module errors
 
