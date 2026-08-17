@@ -2,11 +2,13 @@
 
 Android-first Expo app that drives the Windows ReachPanel host over a local WebSocket bridge.
 
+For the caregiver-facing install and pairing walkthrough (Wi‑Fi + USB tether), see the root [README — Install & connect the Android companion](../README.md#install--connect-the-android-companion).
+
 ## Prerequisites
 
 - Node 20+
 - Android tablet or emulator (SDK 57 Expo Go **or** a local development build)
-- ReachPanel host running with companion bridge (auto-starts in `npm run tauri dev`)
+- ReachPanel host running; start the companion bridge from **Settings → Companion** (auto-starts in some `npm run tauri dev` flows)
 
 ## Run on device (recommended: Expo Go)
 
@@ -16,7 +18,7 @@ Dictation uses `expo-audio`, which is included in Expo Go for SDK 57. You do **n
 # Terminal 1 — Windows host
 cd ..
 npm run tauri dev
-# Watch console for: [companion] pairing payload: {...}
+# Then Settings → Companion → Start bridge (watch for pairing QR / payload)
 
 # Terminal 2 — tablet app
 cd companion
@@ -28,7 +30,7 @@ On the tablet:
 
 1. Install **Expo Go** from the Play Store (must be recent enough for SDK 57).
 2. Scan the Metro QR / open the project in Expo Go.
-3. Pair with the host (paste pairing JSON or scan the host Settings QR).
+3. Pair with the host: scan the host Settings → Companion QR, or paste pairing JSON.
 
 If Metro was already running against an old `expo-av` bundle, clear cache once:
 
@@ -69,9 +71,7 @@ npx expo run:android
 - Tablet-only gate
 - QR scan + paste pairing JSON (host Settings → Companion shows QR)
 - Auth + credential persistence + reconnect
-- Keyboard, trackpad, numpad
-- Phrases / emergency with **tablet TTS** (Speak)
-- Quick actions (host launch)
+- Keyboard, trackpad (tap-to-click), numpad
 - Prediction suggestions
 - Collapsed FAB mode
 - Profile sync panel (`profile.snapshot`)
@@ -81,6 +81,7 @@ npx expo run:android
 ## Not yet
 
 - iOS TestFlight
+- Play Store / public APK distribution
 
 ## Troubleshooting: `ExponentAV` / native module errors
 
