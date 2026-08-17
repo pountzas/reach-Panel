@@ -82,7 +82,12 @@ export const TEACHING_LESSON_REQUEST_EVENT = "teaching-lesson-request";
 export const TEACHING_SESSION_EVENT = "teaching-session";
 export const TEACHING_SESSION_REQUEST_EVENT = "teaching-session-request";
 
-export type AppModeRequest = { mode: "normal" | "mini" | "teaching" };
+export type AppModeRequest = {
+  mode: "normal" | "mini" | "teaching" | "companion";
+};
+export type AppModeTablet = "normal" | "mini" | "teaching" | "companion";
+export type HostAppMode = "normal" | "mini" | "teaching";
+export type CompanionSessionPhase = "idle" | "active" | "reconnecting";
 export type TeachingLessonRequest = { lesson: "music" | "math" | "language" };
 export type TeachingSessionPayload = {
   musicTeachingEnabled: boolean;
@@ -143,6 +148,62 @@ export function lessonCloseAppMode(
   modeBeforeTeaching: "normal" | "mini" | null | undefined,
 ): "normal" | "mini" {
   return modeBeforeTeaching ?? "normal";
+}
+
+export function isCompanionTabletEnabled(
+  session: CompanionSessionPhase,
+): boolean {
+  switch (session) {
+    case "active":
+    case "reconnecting":
+      return true;
+    case "idle":
+      return false;
+    default: {
+      const _exhaustive: never = session;
+      return _exhaustive;
+    }
+  }
+}
+
+export function isCompanionModeActive(
+  companionModeActive: boolean,
+): boolean {
+  return companionModeActive;
+}
+
+export function resolveSelectedAppMode(input: {
+  companionModeActive: boolean;
+  teachingActive: boolean;
+  miniModeOverride: boolean | undefined;
+}): AppModeTablet {
+  if (input.companionModeActive) return "companion";
+  if (input.teachingActive) return "teaching";
+  if (input.miniModeOverride === true) return "mini";
+  return "normal";
+}
+
+export function captureModeBeforeCompanion(
+  selected: AppModeTablet,
+): HostAppMode | null {
+  switch (selected) {
+    case "companion":
+      return null;
+    case "normal":
+    case "mini":
+    case "teaching":
+      return selected;
+    default: {
+      const _exhaustive: never = selected;
+      return _exhaustive;
+    }
+  }
+}
+
+export function restoreModeAfterCompanion(
+  modeBeforeCompanion: HostAppMode | null | undefined,
+): HostAppMode {
+  return modeBeforeCompanion ?? "normal";
 }
 
 /**
