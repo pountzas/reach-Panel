@@ -1767,8 +1767,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     switch (phase) {
       case "active":
       case "reconnecting": {
-        const { companionSessionLive, companionModeActive } = get();
-        if (companionSessionLive && companionModeActive) {
+        // Stay live across reconnect / extra companion-state emits. Do not
+        // force Companion chrome again if the caregiver already switched Mini/Teaching.
+        if (get().companionSessionLive) {
           return;
         }
         set({ companionSessionLive: true });
