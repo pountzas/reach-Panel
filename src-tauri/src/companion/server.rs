@@ -300,6 +300,10 @@ pub fn on_session_active(app: &AppHandle) {
 }
 
 pub fn on_session_inactive(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+    }
     let _ = app.emit(
         "companion-session",
         serde_json::json!({ "phase": "idle", "minimize": false }),

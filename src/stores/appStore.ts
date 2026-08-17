@@ -69,6 +69,7 @@ import {
   hydrateKeyboardSectionMode,
   needsKeyboardSectionModeMigration,
   resolveSelectedAppMode,
+  restoreModeAfterCompanion,
   settingsForPersist,
   shouldDelegateAppModeToMain,
   shouldSyncNonMiniWindowLayout,
@@ -78,6 +79,7 @@ import {
   TEACHING_SESSION_EVENT,
   type AppModeRequest,
   type AppModeTablet,
+  type CompanionSessionPhase,
   type HostAppMode,
   type TeachingLessonRequest,
   type TeachingSessionPayload,
@@ -524,6 +526,11 @@ interface AppStore {
   disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
   /** Select Normal / Mini / Teaching / Companion tablet mode. */
   setAppMode: (mode: AppModeTablet) => Promise<void>;
+  /**
+   * Sync host chrome with tablet companion session phase (force companion /
+   * restore prior mode). Call from main-window event listeners only.
+   */
+  applyCompanionSessionPhase: (phase: CompanionSessionPhase) => Promise<void>;
   setTeachingLesson: (lesson: TeachingLesson) => void;
   applyTeachingSession: (payload: TeachingSessionPayload) => void;
   broadcastTeachingSession: () => Promise<void>;
@@ -1756,6 +1763,39 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await emitTeachingSession(get);
   },
 
+  applyCompanionSessionPhase: async (phase) => {
+    switch (phase) {
+      case "active":
+      case "reconnecting": {
+        const { companionSessionLive, companionModeActive } = get();
+        if (companionSessionLive && companionModeActive) {
+          return;
+        }
+        set({ companionSessionLive: true });
+        await get().setAppMode("companion");
+        return;
+      }
+      case "idle": {
+        if (!get().companionSessionLive && !get().companionModeActive) {
+          return;
+        }
+        const modeBeforeCompanion = get().modeBeforeCompanion;
+        const restore = restoreModeAfterCompanion(modeBeforeCompanion);
+        set({
+          companionSessionLive: false,
+          companionModeActive: false,
+          modeBeforeCompanion: null,
+        });
+        await get().setAppMode(restore);
+        return;
+      }
+      default: {
+        const _exhaustive: never = phase;
+        return _exhaustive;
+      }
+    }
+  },
+
   setAppMode: async (mode) => {
     if (shouldDelegateAppModeToMain(WebviewWindow.getCurrent().label)) {
       const current = get().settings;
@@ -1864,6 +1904,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
           }
         }
         set(patch);
+        // Re-minimize when entering / re-selecting Companion on the main window.
+        await WebviewWindow.getCurrent().minimize();
         return;
       }
       case "normal": {
