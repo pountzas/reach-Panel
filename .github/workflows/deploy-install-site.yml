@@ -1,0 +1,57 @@
+name: Deploy install site
+
+# Public Vercel site for the companion APK QR / download (repo can stay private).
+# One-time setup: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID secrets + vars.INSTALL_APK_PUBLIC_URL.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/install/**'
+      - '.github/workflows/deploy-install-site.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-install-site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require Vercel secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          missing=()
+          [ -z "$VERCEL_TOKEN" ] && missing+=("secret:VERCEL_TOKEN")
+          [ -z "$VERCEL_ORG_ID" ] && missing+=("secret:VERCEL_ORG_ID")
+          [ -z "$VERCEL_PROJECT_ID" ] && missing+=("secret:VERCEL_PROJECT_ID")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing GitHub Actions secrets: ${missing[*]}"
+            echo "Repo → Settings → Secrets and variables → Actions → Secrets"
+            exit 1
+          fi
+
+      - name: Inject APK download URL
+        env:
+          INSTALL_APK_PUBLIC_URL: ${{ vars.INSTALL_APK_PUBLIC_URL }}
+        run: |
+          APK_URL="${INSTALL_APK_PUBLIC_URL:-#}"
+          if [ "$APK_URL" = "#" ] || [ -z "$INSTALL_APK_PUBLIC_URL" ]; then
+            echo "::warning::vars.INSTALL_APK_PUBLIC_URL is empty; Download CTA href will be # until first Blob upload / release sets it."
+            APK_URL="#"
+          fi
+          sed -i "s|__INSTALL_APK_PUBLIC_URL__|${APK_URL}|g" docs/install/index.html
+          grep -n 'class="cta"' docs/install/index.html || true
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel@latest deploy docs/install --prod --yes --token="$VERCEL_TOKEN"
