@@ -22,7 +22,11 @@ import { IconActionButton } from "../common/IconActionButton";
 import { ToolWindowHeader } from "../common/ToolWindowHeader";
 import { TRANSPARENT_KEY_COLORS } from "../../lib/miniMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
-import { isTeachingSessionActive } from "../../lib/appModeLayout";
+import {
+  isTeachingSessionActive,
+  resolveSelectedAppMode,
+  type AppModeTablet,
+} from "../../lib/appModeLayout";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -42,6 +46,46 @@ function fieldStyle(surface: SurfaceColors): CSSProperties {
     borderColor: surface.insetBorder,
     color: surface.panelText,
   };
+}
+
+function ModeTabletButton({
+  id,
+  label,
+  pressed,
+  disabled,
+  surface,
+  onSelect,
+}: {
+  id: AppModeTablet;
+  label: string;
+  pressed: boolean;
+  disabled: boolean;
+  surface: SurfaceColors;
+  onSelect: (mode: AppModeTablet) => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-disabled={disabled}
+      aria-pressed={pressed}
+      className="rounded-lg border px-2 py-3 text-sm font-semibold transition-colors disabled:opacity-50"
+      style={{
+        backgroundColor: pressed ? surface.insetBg : surface.panelButtonBg,
+        borderColor: pressed ? surface.panelText : surface.panelBorder,
+        color: surface.panelText,
+        boxShadow: pressed
+          ? `inset 0 0 0 1px ${surface.panelText}`
+          : undefined,
+      }}
+      onClick={() => {
+        if (disabled) return;
+        onSelect(id);
+      }}
+    >
+      {label}
+    </button>
+  );
 }
 
 function ColorField({
@@ -275,6 +319,8 @@ export function SettingsPanel() {
     pickBackgroundImage,
     monitors,
     miniModeActive,
+    companionModeActive,
+    companionSessionLive,
     musicTeachingEnabled,
     teachingLesson,
     setAppMode,
@@ -304,11 +350,12 @@ export function SettingsPanel() {
     musicTeachingEnabled,
     settings.keyboardSectionMode,
   );
-  const selectedMode: "normal" | "mini" | "teaching" = teachingActive
-    ? "teaching"
-    : settings.miniModeOverride === true
-      ? "mini"
-      : "normal";
+  const selectedMode = resolveSelectedAppMode({
+    companionModeActive,
+    teachingActive,
+    miniModeOverride:
+      settings.miniModeOverride === true ? true : undefined,
+  });
   const showMiniTransparentControls = selectedMode === "mini";
 
   const activeTypingValue = String(
@@ -493,37 +540,30 @@ export function SettingsPanel() {
             >
               {t("modeTabletsHint")}
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {(
                 [
                   { id: "normal" as const, label: t("modeNormal") },
                   { id: "mini" as const, label: t("modeMini") },
                   { id: "teaching" as const, label: t("modeTeaching") },
+                  { id: "companion" as const, label: t("modeCompanion") },
                 ] as const
               ).map((mode) => {
-                const pressed = selectedMode === mode.id;
+                const companionDisabled =
+                  mode.id === "companion" && !companionSessionLive;
+                const pressed =
+                  selectedMode === mode.id &&
+                  (mode.id !== "companion" || companionSessionLive);
                 return (
-                  <button
+                  <ModeTabletButton
                     key={mode.id}
-                    type="button"
-                    aria-pressed={pressed}
-                    className="rounded-lg border px-2 py-3 text-sm font-semibold transition-colors"
-                    style={{
-                      backgroundColor: pressed
-                        ? surface.insetBg
-                        : surface.panelButtonBg,
-                      borderColor: pressed
-                        ? surface.panelText
-                        : surface.panelBorder,
-                      color: surface.panelText,
-                      boxShadow: pressed
-                        ? `inset 0 0 0 1px ${surface.panelText}`
-                        : undefined,
-                    }}
-                    onClick={() => void setAppMode(mode.id)}
-                  >
-                    {mode.label}
-                  </button>
+                    id={mode.id}
+                    label={mode.label}
+                    pressed={pressed}
+                    disabled={companionDisabled}
+                    surface={surface}
+                    onSelect={(id) => void setAppMode(id)}
+                  />
                 );
               })}
             </div>

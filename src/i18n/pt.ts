@@ -35,6 +35,8 @@ export const pt: Record<keyof typeof en, string> = {
 
   modeTeaching: "Ensino",
 
+  modeCompanion: "Companheiro",
+
   teachingLessonMusic: "Música",
 
   teachingLessonMath: "Matemática",
@@ -48,7 +50,7 @@ export const pt: Record<keyof typeof en, string> = {
   languageLessonTitle: "Idioma",
 
   modeTabletsHint:
-    "Normal e Mini são teclado. Ensino abre lições; Música mostra o sintetizador.",
+    "Normal e Mini são teclado. Ensino abre lições; Música mostra o sintetizador. Companheiro só está disponível enquanto um tablet estiver ligado.",
 
   miniModeAutoDescription:
     "Num ecrã único ou configuração em espelho, o teclado aparece automaticamente quando toca num campo de entrada.",
