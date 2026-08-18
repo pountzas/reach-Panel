@@ -152,19 +152,6 @@ export function lessonCloseAppMode(
   return modeBeforeTeaching ?? "normal";
 }
 
-/** Always tappable: tapping Companion arms the bridge before a tablet connects. */
-export function isCompanionTabletEnabled(
-  _session?: CompanionSessionPhase,
-): boolean {
-  return true;
-}
-
-export function isCompanionModeActive(
-  companionModeActive: boolean,
-): boolean {
-  return companionModeActive;
-}
-
 export function resolveSelectedAppMode(input: {
   companionModeActive: boolean;
   teachingActive: boolean;

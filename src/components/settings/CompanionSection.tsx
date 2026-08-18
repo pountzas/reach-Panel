@@ -6,21 +6,12 @@ import type { SurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
 import { useTranslation } from "../../hooks/useTranslation";
+import {
+  type CompanionAudioRouting,
+  type CompanionSessionPhase,
+  type CompanionUiState,
+} from "../../lib/companionSession";
 import { useAppStore } from "../../stores/appStore";
-
-type SessionPhase = "idle" | "active" | "reconnecting";
-type AudioRouting = "host" | "tablet";
-
-interface CompanionUiState {
-  running: boolean;
-  port: number;
-  session: SessionPhase;
-  deviceName: string | null;
-  deviceId: string | null;
-  lastRttMs: number | null;
-  audioRouting: AudioRouting;
-  pairedDeviceCount: number;
-}
 
 interface PairingPayload {
   hostId: string;
@@ -50,7 +41,7 @@ function fieldStyle(surface: SurfaceColors): CSSProperties {
 }
 
 function sessionLabel(
-  session: SessionPhase,
+  session: CompanionSessionPhase,
   t: (key: TranslationKey) => string,
 ): string {
   switch (session) {
@@ -68,7 +59,7 @@ function sessionLabel(
 }
 
 function audioLabel(
-  routing: AudioRouting,
+  routing: CompanionAudioRouting,
   t: (key: TranslationKey) => string,
 ): string {
   switch (routing) {
@@ -162,8 +153,16 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
     setBusy(true);
     try {
       await setAppMode("companion");
-      const pair = await invoke<PairingPayload>("cmd_companion_refresh_pairing");
-      setPayload(pair);
+      let next = await invoke<CompanionUiState>("cmd_companion_status");
+      if (!next.running) {
+        next = await invoke<CompanionUiState>("cmd_companion_start", {
+          port: null,
+        });
+      }
+      if (next.running) {
+        const pair = await invoke<PairingPayload>("cmd_companion_pairing_payload");
+        setPayload(pair);
+      }
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

@@ -46,12 +46,14 @@ jobs:
 
       - name: Commit version bump
         if: steps.bump.outputs.should_release == 'true'
+        id: bump_commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add companion/src/versioning.ts companion/package.json
           git commit -m "chore(release): companion-v${{ steps.bump.outputs.new_version }} [skip ci]"
           git push
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Require release secrets
         if: steps.bump.outputs.should_release == 'true'
@@ -95,8 +97,13 @@ jobs:
       - name: Download APK
         if: steps.bump.outputs.should_release == 'true'
         run: |
-          curl -L -o "ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk" "${{ steps.build.outputs.build_url }}"
-          cp "ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk" ReachPanel-Companion.apk
+          APK="ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk"
+          curl -fL --retry 3 -o "$APK" "${{ steps.build.outputs.build_url }}"
+          if ! unzip -t "$APK" >/dev/null; then
+            echo "::error::Downloaded artifact is not a valid APK (zip) archive"
+            exit 1
+          fi
+          cp "$APK" ReachPanel-Companion.apk
 
       - name: Upload APK to Vercel Blob (public download)
         if: steps.bump.outputs.should_release == 'true'
@@ -110,7 +117,6 @@ jobs:
             echo "Create a Blob store in the Vercel project and add the token as a GitHub Actions secret."
             exit 1
           fi
-          npm install --no-save @vercel/blob
           STABLE_URL=$(node companion/scripts/upload-apk-to-blob.mjs ReachPanel-Companion.apk ReachPanel-Companion.apk)
           node companion/scripts/upload-apk-to-blob.mjs "ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk" "ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk" >/dev/null
           echo "apk_url=$STABLE_URL" >> "$GITHUB_OUTPUT"
@@ -142,6 +148,7 @@ jobs:
         with:
           tag_name: companion-v${{ steps.bump.outputs.new_version }}
           name: ReachPanel Companion v${{ steps.bump.outputs.new_version }}
+          target_commitish: ${{ steps.bump_commit.outputs.sha }}
           prerelease: true
           generate_release_notes: true
           files: |

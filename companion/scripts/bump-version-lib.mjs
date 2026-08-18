@@ -71,9 +71,9 @@ export function resolveBumpType(messages) {
   for (const message of messages) {
     const subject = message.split('\n')[0];
     const breaking =
-      subject.includes('BREAKING CHANGE') ||
       /^(\w+)(\(.+\))?!:/.test(subject) ||
-      subject.startsWith('BREAKING:');
+      subject.startsWith('BREAKING:') ||
+      /^BREAKING CHANGE:/m.test(message);
 
     if (breaking) {
       return 'major';

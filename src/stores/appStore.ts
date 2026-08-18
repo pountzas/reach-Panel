@@ -46,7 +46,7 @@ import {
 import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
 import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled } from "../lib/miniMode";
 import {
-  planCompanionLeave,
+  mapCompanionSessionPhase,
   shouldIgnoreCompanionIdle,
   shouldStopCompanionBridgeOnHostMode,
 } from "../lib/companionSession";
@@ -1788,51 +1788,40 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applyCompanionSessionPhase: async (phase) => {
-    switch (phase) {
-      case "active":
-      case "reconnecting": {
-        if (get().companionSessionLive) {
-          return;
-        }
-        const current = get();
-        const teachingActive =
-          current.musicTeachingEnabled &&
-          current.settings.keyboardSectionMode === "synthesizer";
-        const captured = captureModeBeforeCompanion(
-          resolveSelectedAppMode({
-            companionModeActive: current.companionModeActive,
-            teachingActive,
-            miniModeOverride: current.settings.miniModeOverride ?? undefined,
-          }),
-        );
-        set({
-          companionSessionLive: true,
-          companionModeActive: true,
-          companionBridgeArmed: true,
-          ...(captured != null ? { modeBeforeCompanion: captured } : {}),
-        });
+    const mapped = mapCompanionSessionPhase(phase, get().modeBeforeCompanion);
+    if (mapped.live) {
+      if (get().companionSessionLive) {
         return;
       }
-      case "idle": {
-        if (shouldIgnoreCompanionIdle(get().companionModeActive)) {
-          return;
-        }
-        const leave = planCompanionLeave("sessionIdle", true);
-        const restore = restoreModeAfterCompanion(get().modeBeforeCompanion);
-        set({
-          companionSessionLive: false,
-          companionModeActive: false,
-          modeBeforeCompanion: null,
-          companionBridgeArmed: leave.keepArmed,
-        });
-        await get().setAppMode(restore, { skipCompanionBridgeStop: true });
-        return;
-      }
-      default: {
-        const _exhaustive: never = phase;
-        return _exhaustive;
-      }
+      const current = get();
+      const teachingActive =
+        current.musicTeachingEnabled &&
+        current.settings.keyboardSectionMode === "synthesizer";
+      const captured = captureModeBeforeCompanion(
+        resolveSelectedAppMode({
+          companionModeActive: current.companionModeActive,
+          teachingActive,
+          miniModeOverride: current.settings.miniModeOverride ?? undefined,
+        }),
+      );
+      set({
+        companionSessionLive: true,
+        companionModeActive: true,
+        companionBridgeArmed: true,
+        ...(captured != null ? { modeBeforeCompanion: captured } : {}),
+      });
+      return;
     }
+    if (shouldIgnoreCompanionIdle(get().companionModeActive)) {
+      return;
+    }
+    set({
+      companionSessionLive: false,
+      companionModeActive: false,
+      modeBeforeCompanion: null,
+      companionBridgeArmed: true,
+    });
+    await get().setAppMode(mapped.restore, { skipCompanionBridgeStop: true });
   },
 
   stopCompanionByCaregiver: async () => {
@@ -1849,15 +1838,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       selected === "companion"
         ? restoreModeAfterCompanion(current.modeBeforeCompanion)
         : selected;
-    if (
-      !shouldStopCompanionBridgeOnHostMode(
-        current.companionBridgeArmed,
-        current.companionModeActive,
-      )
-    ) {
-      await stopCompanionBridge();
-      return;
-    }
     await get().setAppMode(host);
   },
 
@@ -1958,7 +1938,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       case "companion": {
         await startCompanionBridge();
         set({ companionBridgeArmed: true });
-        if (state.companionModeActive || state.companionSessionLive) {
+        const afterStart = get();
+        if (afterStart.companionModeActive || afterStart.companionSessionLive) {
           await WebviewWindow.getCurrent().minimize();
         }
         return;
