@@ -34,6 +34,8 @@
 
   modeTeaching: "Teaching",
 
+  modeCompanion: "Companion",
+
   teachingLessonMusic: "Music",
 
   teachingLessonMath: "Mathematics",
@@ -47,7 +49,7 @@
   languageLessonTitle: "Language",
 
   modeTabletsHint:
-    "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer.",
+    "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion starts the tablet bridge; it is selected only while a tablet is connected.",
 
   miniModeAutoDescription:
     "On a single display or mirrored setup, the keyboard appears automatically when you tap an input field.",

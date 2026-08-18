@@ -1,16 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "./types";
 import {
+  captureModeBeforeCompanion,
   captureWindowHeightRatioBeforeTeaching,
   coercePersistedKeyboardSectionMode,
   heightRatioAfterLeavingTeaching,
   hydrateKeyboardSectionMode,
+  isCompanionModeActive,
+  isCompanionTabletEnabled,
   isSynthesizerUiActive,
   isTeachingSessionActive,
   lessonCloseAppMode,
   teachingLessonTitleKey,
   needsKeyboardSectionModeMigration,
+  restoreModeAfterCompanion,
   restoreWindowHeightRatio,
+  resolveSelectedAppMode,
   settingsForPersist,
   shouldDelegateAppModeToMain,
   shouldSyncNonMiniWindowLayout,
@@ -166,6 +171,95 @@ describe("teachingSessionKeyboardMode", () => {
   it("maps the live Teaching flag to in-memory keyboard chrome", () => {
     expect(teachingSessionKeyboardMode(true)).toBe("synthesizer");
     expect(teachingSessionKeyboardMode(false)).toBe("keyboard");
+  });
+});
+
+describe("isCompanionTabletEnabled", () => {
+  it("is always tappable so the caregiver can arm the bridge", () => {
+    expect(isCompanionTabletEnabled("active")).toBe(true);
+    expect(isCompanionTabletEnabled("reconnecting")).toBe(true);
+    expect(isCompanionTabletEnabled("idle")).toBe(true);
+  });
+});
+
+describe("isCompanionModeActive", () => {
+  it("returns the companion flag unchanged", () => {
+    expect(isCompanionModeActive(true)).toBe(true);
+    expect(isCompanionModeActive(false)).toBe(false);
+  });
+});
+
+describe("resolveSelectedAppMode", () => {
+  it("prefers companion over teaching and mini", () => {
+    expect(
+      resolveSelectedAppMode({
+        companionModeActive: true,
+        teachingActive: true,
+        miniModeOverride: true,
+      }),
+    ).toBe("companion");
+  });
+
+  it("prefers teaching over mini when companion is off", () => {
+    expect(
+      resolveSelectedAppMode({
+        companionModeActive: false,
+        teachingActive: true,
+        miniModeOverride: true,
+      }),
+    ).toBe("teaching");
+  });
+
+  it("selects mini when only mini override is set", () => {
+    expect(
+      resolveSelectedAppMode({
+        companionModeActive: false,
+        teachingActive: false,
+        miniModeOverride: true,
+      }),
+    ).toBe("mini");
+  });
+
+  it('falls back to "normal" when no overrides are active', () => {
+    expect(
+      resolveSelectedAppMode({
+        companionModeActive: false,
+        teachingActive: false,
+        miniModeOverride: false,
+      }),
+    ).toBe("normal");
+    expect(
+      resolveSelectedAppMode({
+        companionModeActive: false,
+        teachingActive: false,
+        miniModeOverride: undefined,
+      }),
+    ).toBe("normal");
+  });
+});
+
+describe("captureModeBeforeCompanion", () => {
+  it("captures normal, mini, and teaching host modes", () => {
+    expect(captureModeBeforeCompanion("normal")).toBe("normal");
+    expect(captureModeBeforeCompanion("mini")).toBe("mini");
+    expect(captureModeBeforeCompanion("teaching")).toBe("teaching");
+  });
+
+  it("returns null when already on the companion tablet", () => {
+    expect(captureModeBeforeCompanion("companion")).toBeNull();
+  });
+});
+
+describe("restoreModeAfterCompanion", () => {
+  it("restores the captured host mode", () => {
+    expect(restoreModeAfterCompanion("mini")).toBe("mini");
+    expect(restoreModeAfterCompanion("teaching")).toBe("teaching");
+    expect(restoreModeAfterCompanion("normal")).toBe("normal");
+  });
+
+  it('falls back to "normal" when nothing was captured', () => {
+    expect(restoreModeAfterCompanion(null)).toBe("normal");
+    expect(restoreModeAfterCompanion(undefined)).toBe("normal");
   });
 });
 

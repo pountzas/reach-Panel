@@ -46,6 +46,11 @@ import {
 import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
 import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled } from "../lib/miniMode";
 import {
+  planCompanionLeave,
+  shouldIgnoreCompanionIdle,
+  shouldStopCompanionBridgeOnHostMode,
+} from "../lib/companionSession";
+import {
   closeToolWindow,
   openToolWindow,
   PROFILE_UPDATED_EVENT,
@@ -62,11 +67,14 @@ import {
   isV1ToolWindowHidden,
 } from "../lib/v1HiddenFeatures";
 import {
+  captureModeBeforeCompanion,
   captureWindowHeightRatioBeforeTeaching,
   coercePersistedKeyboardSectionMode,
   heightRatioAfterLeavingTeaching,
   hydrateKeyboardSectionMode,
   needsKeyboardSectionModeMigration,
+  resolveSelectedAppMode,
+  restoreModeAfterCompanion,
   settingsForPersist,
   shouldDelegateAppModeToMain,
   shouldSyncNonMiniWindowLayout,
@@ -75,6 +83,9 @@ import {
   TEACHING_LESSON_REQUEST_EVENT,
   TEACHING_SESSION_EVENT,
   type AppModeRequest,
+  type AppModeTablet,
+  type CompanionSessionPhase,
+  type HostAppMode,
   type TeachingLessonRequest,
   type TeachingSessionPayload,
   type WindowHeightRatioBeforeTeaching,
@@ -89,6 +100,18 @@ import {
 
 /** Avoid re-toasting the same backend error until it clears. */
 let lastAnnouncedError: string | null = null;
+
+async function startCompanionBridge(): Promise<void> {
+  await invoke("cmd_companion_start", { port: null });
+}
+
+async function stopCompanionBridge(): Promise<void> {
+  try {
+    await invoke("cmd_companion_stop");
+  } catch {
+    // Already stopped or never started.
+  }
+}
 
 /** Block OS→UI language sync while a typing-language switch is in flight. */
 let typingLanguageSwitchInFlight = false;
@@ -306,8 +329,7 @@ function teachingFullWorkAreaActive(
 }
 
 export type TeachingLesson = "music" | "math" | "language";
-export type AppModeTablet = "normal" | "mini" | "teaching";
-export type { WindowHeightRatioBeforeTeaching };
+export type { AppModeTablet, WindowHeightRatioBeforeTeaching };
 
 function heightRatioFromSettings(
   settings: AppSettings,
@@ -433,6 +455,16 @@ interface AppStore {
   modeBeforeTeaching: "normal" | "mini" | null;
   /** Session-only: height ratio captured before Teaching (incl. unset). */
   windowHeightRatioBeforeTeaching: WindowHeightRatioBeforeTeaching;
+  /** Session-only: companion tablet mode is selected while a live session exists. */
+  companionModeActive: boolean;
+  /** Session-only: host mode to restore when leaving Companion. */
+  modeBeforeCompanion: HostAppMode | null;
+  /**
+   * Session-only: true while a tablet session is active or reconnecting.
+   */
+  companionSessionLive: boolean;
+  /** Session-only: bridge listener is up (armed). Cleared only by caregiver leave/Stop. */
+  companionBridgeArmed: boolean;
   /** Session-only: restore mouse after leaving 5-octave (wide) piano mode. */
   mouseVisibleBeforeWidePiano: boolean | null;
   /** Session-only: restore mouse after leaving Mini Mode. */
@@ -510,8 +542,18 @@ interface AppStore {
   collapseMiniModeKeyboard: () => Promise<void>;
   enableMusicTeaching: () => Promise<void>;
   disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
-  /** Select Normal / Mini / Teaching tablet mode. */
-  setAppMode: (mode: AppModeTablet) => Promise<void>;
+  /** Select Normal / Mini / Teaching / Companion tablet mode. */
+  setAppMode: (
+    mode: AppModeTablet,
+    options?: { skipCompanionBridgeStop?: boolean },
+  ) => Promise<void>;
+  /**
+   * Sync host chrome with tablet companion session phase (force companion /
+   * restore prior mode). Call from main-window event listeners only.
+   */
+  applyCompanionSessionPhase: (phase: CompanionSessionPhase) => Promise<void>;
+  /** Settings Stop: kill the bridge and restore the previous host mode if live. */
+  stopCompanionByCaregiver: () => Promise<void>;
   setTeachingLesson: (lesson: TeachingLesson) => void;
   applyTeachingSession: (payload: TeachingSessionPayload) => void;
   broadcastTeachingSession: () => Promise<void>;
@@ -811,6 +853,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   teachingLesson: "language",
   modeBeforeTeaching: null,
   windowHeightRatioBeforeTeaching: null,
+  companionModeActive: false,
+  modeBeforeCompanion: null,
+  companionSessionLive: false,
+  companionBridgeArmed: false,
   mouseVisibleBeforeWidePiano: null,
   mouseVisibleBeforeMiniMode: null,
   importedSongs: [],
@@ -1741,12 +1787,98 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await emitTeachingSession(get);
   },
 
-  setAppMode: async (mode) => {
+  applyCompanionSessionPhase: async (phase) => {
+    switch (phase) {
+      case "active":
+      case "reconnecting": {
+        if (get().companionSessionLive) {
+          return;
+        }
+        const current = get();
+        const teachingActive =
+          current.musicTeachingEnabled &&
+          current.settings.keyboardSectionMode === "synthesizer";
+        const captured = captureModeBeforeCompanion(
+          resolveSelectedAppMode({
+            companionModeActive: current.companionModeActive,
+            teachingActive,
+            miniModeOverride: current.settings.miniModeOverride ?? undefined,
+          }),
+        );
+        set({
+          companionSessionLive: true,
+          companionModeActive: true,
+          companionBridgeArmed: true,
+          ...(captured != null ? { modeBeforeCompanion: captured } : {}),
+        });
+        return;
+      }
+      case "idle": {
+        if (shouldIgnoreCompanionIdle(get().companionModeActive)) {
+          return;
+        }
+        const leave = planCompanionLeave("sessionIdle", true);
+        const restore = restoreModeAfterCompanion(get().modeBeforeCompanion);
+        set({
+          companionSessionLive: false,
+          companionModeActive: false,
+          modeBeforeCompanion: null,
+          companionBridgeArmed: leave.keepArmed,
+        });
+        await get().setAppMode(restore, { skipCompanionBridgeStop: true });
+        return;
+      }
+      default: {
+        const _exhaustive: never = phase;
+        return _exhaustive;
+      }
+    }
+  },
+
+  stopCompanionByCaregiver: async () => {
+    const current = get();
+    const teachingActive =
+      current.musicTeachingEnabled &&
+      current.settings.keyboardSectionMode === "synthesizer";
+    const selected = resolveSelectedAppMode({
+      companionModeActive: current.companionModeActive,
+      teachingActive,
+      miniModeOverride: current.settings.miniModeOverride ?? undefined,
+    });
+    const host: HostAppMode =
+      selected === "companion"
+        ? restoreModeAfterCompanion(current.modeBeforeCompanion)
+        : selected;
+    if (
+      !shouldStopCompanionBridgeOnHostMode(
+        current.companionBridgeArmed,
+        current.companionModeActive,
+      )
+    ) {
+      await stopCompanionBridge();
+      return;
+    }
+    await get().setAppMode(host);
+  },
+
+  setAppMode: async (mode, options) => {
+    const skipCompanionBridgeStop = options?.skipCompanionBridgeStop === true;
+
     if (shouldDelegateAppModeToMain(WebviewWindow.getCurrent().label)) {
       const current = get().settings;
       switch (mode) {
+        case "companion": {
+          set({ companionBridgeArmed: true });
+          break;
+        }
         case "teaching":
           set({
+            companionModeActive: false,
+            companionSessionLive: false,
+            companionBridgeArmed: skipCompanionBridgeStop
+              ? get().companionBridgeArmed
+              : false,
+            modeBeforeCompanion: null,
             musicTeachingEnabled: true,
             teachingLesson: "language",
             settings: {
@@ -1758,6 +1890,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
           break;
         case "mini":
           set({
+            companionModeActive: false,
+            companionSessionLive: false,
+            companionBridgeArmed: skipCompanionBridgeStop
+              ? get().companionBridgeArmed
+              : false,
+            modeBeforeCompanion: null,
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
@@ -1770,6 +1908,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
           break;
         case "normal":
           set({
+            companionModeActive: false,
+            companionSessionLive: false,
+            companionBridgeArmed: skipCompanionBridgeStop
+              ? get().companionBridgeArmed
+              : false,
+            modeBeforeCompanion: null,
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
@@ -1785,8 +1929,24 @@ export const useAppStore = create<AppStore>((set, get) => ({
           return _exhaustive;
         }
       }
-      await emit(APP_MODE_REQUEST_EVENT, { mode } satisfies AppModeRequest);
+      await emit(APP_MODE_REQUEST_EVENT, {
+        mode,
+        skipCompanionBridgeStop,
+      } satisfies AppModeRequest);
       return;
+    }
+
+    if (mode !== "companion" && !skipCompanionBridgeStop) {
+      const { companionBridgeArmed, companionModeActive } = get();
+      if (shouldStopCompanionBridgeOnHostMode(companionBridgeArmed, companionModeActive)) {
+        set({
+          companionBridgeArmed: false,
+          companionModeActive: false,
+          companionSessionLive: false,
+          modeBeforeCompanion: null,
+        });
+        await stopCompanionBridge();
+      }
     }
 
     const state = get();
@@ -1795,7 +1955,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
       musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
 
     switch (mode) {
+      case "companion": {
+        await startCompanionBridge();
+        set({ companionBridgeArmed: true });
+        if (state.companionModeActive || state.companionSessionLive) {
+          await WebviewWindow.getCurrent().minimize();
+        }
+        return;
+      }
       case "normal": {
+        set({ companionModeActive: false });
         // Clear teaching first so leavingSynthesizer does not restore Mini.
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
@@ -1822,6 +1991,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return;
       }
       case "mini": {
+        set({ companionModeActive: false });
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
           : undefined;
@@ -1845,6 +2015,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return;
       }
       case "teaching": {
+        set({ companionModeActive: false });
         if (inTeaching) {
           return;
         }
