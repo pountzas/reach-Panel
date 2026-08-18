@@ -29,9 +29,11 @@ test('resolveBumpType release → minor', () => {
   assert.equal(resolveBumpType(['release: ship companion APK']), 'minor');
 });
 
-test('resolveBumpType BREAKING → major', () => {
-  assert.equal(resolveBumpType(['feat!: drop legacy protocol']), 'major');
-  assert.equal(resolveBumpType(['BREAKING: remove v1 protocol']), 'major');
+test('resolveBumpType BREAKING CHANGE footer → major', () => {
+  assert.equal(
+    resolveBumpType(['feat: new protocol\n\nBREAKING CHANGE: drop v1 frames']),
+    'major',
+  );
 });
 
 test('resolveBumpType chore/docs only → null', () => {

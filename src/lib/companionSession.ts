@@ -4,6 +4,27 @@ import {
   type HostAppMode,
 } from "./appModeLayout";
 
+export type { CompanionSessionPhase };
+
+export type CompanionAudioRouting = "host" | "tablet";
+
+/** `companion-state` event and `cmd_companion_status` payload. */
+export type CompanionUiState = {
+  running: boolean;
+  port: number;
+  session: CompanionSessionPhase;
+  deviceName: string | null;
+  deviceId: string | null;
+  lastRttMs: number | null;
+  audioRouting: CompanionAudioRouting;
+  pairedDeviceCount: number;
+};
+
+/** `companion-session` event payload. */
+export type CompanionSessionEventPayload = {
+  phase: Extract<CompanionSessionPhase, "active" | "idle">;
+};
+
 export type CompanionLeaveReason = "sessionIdle" | "caregiverLeft";
 
 export type CompanionLeavePlan = {

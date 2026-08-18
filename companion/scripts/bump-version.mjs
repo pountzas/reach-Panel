@@ -43,7 +43,13 @@ function getCommitsSinceLastTag() {
   }
 
   try {
-    return runGit(`git log ${range} --pretty=format:%s`).split('\n').filter(Boolean);
+    const raw = runGit(
+      `git log ${range} --pretty=format:%B%x1e -- companion/`,
+    );
+    return raw
+      .split('\x1e')
+      .map((message) => message.trim())
+      .filter(Boolean);
   } catch {
     return [];
   }

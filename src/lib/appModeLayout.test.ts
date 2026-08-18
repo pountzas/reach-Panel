@@ -6,8 +6,6 @@ import {
   coercePersistedKeyboardSectionMode,
   heightRatioAfterLeavingTeaching,
   hydrateKeyboardSectionMode,
-  isCompanionModeActive,
-  isCompanionTabletEnabled,
   isSynthesizerUiActive,
   isTeachingSessionActive,
   lessonCloseAppMode,
@@ -171,21 +169,6 @@ describe("teachingSessionKeyboardMode", () => {
   it("maps the live Teaching flag to in-memory keyboard chrome", () => {
     expect(teachingSessionKeyboardMode(true)).toBe("synthesizer");
     expect(teachingSessionKeyboardMode(false)).toBe("keyboard");
-  });
-});
-
-describe("isCompanionTabletEnabled", () => {
-  it("is always tappable so the caregiver can arm the bridge", () => {
-    expect(isCompanionTabletEnabled("active")).toBe(true);
-    expect(isCompanionTabletEnabled("reconnecting")).toBe(true);
-    expect(isCompanionTabletEnabled("idle")).toBe(true);
-  });
-});
-
-describe("isCompanionModeActive", () => {
-  it("returns the companion flag unchanged", () => {
-    expect(isCompanionModeActive(true)).toBe(true);
-    expect(isCompanionModeActive(false)).toBe(false);
   });
 });
 

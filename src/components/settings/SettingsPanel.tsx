@@ -23,7 +23,6 @@ import { ToolWindowHeader } from "../common/ToolWindowHeader";
 import { TRANSPARENT_KEY_COLORS } from "../../lib/miniMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
-  isCompanionTabletEnabled,
   isTeachingSessionActive,
   resolveSelectedAppMode,
   type AppModeTablet,
@@ -556,7 +555,7 @@ export function SettingsPanel() {
                     id={mode.id}
                     label={mode.label}
                     pressed={pressed}
-                    disabled={mode.id === "companion" && !isCompanionTabletEnabled()}
+                    disabled={false}
                     surface={surface}
                     onSelect={(id) => void setAppMode(id)}
                   />

@@ -22,10 +22,13 @@ import {
   TEACHING_SESSION_EVENT,
   TEACHING_SESSION_REQUEST_EVENT,
   type AppModeRequest,
-  type CompanionSessionPhase,
   type TeachingLessonRequest,
   type TeachingSessionPayload,
 } from "./lib/appModeLayout";
+import {
+  type CompanionSessionEventPayload,
+  type CompanionUiState,
+} from "./lib/companionSession";
 import {
   isMusicLessonSlotVisible,
   isTeachingFullWorkArea,
@@ -182,7 +185,7 @@ function MainApp() {
     );
 
     unlisteners.push(
-      listen<{ session: CompanionSessionPhase }>("companion-state", (event) => {
+      listen<CompanionUiState>("companion-state", (event) => {
         void useAppStore
           .getState()
           .applyCompanionSessionPhase(event.payload.session);
@@ -190,7 +193,7 @@ function MainApp() {
     );
 
     unlisteners.push(
-      listen<{ phase: "active" | "idle" }>("companion-session", (event) => {
+      listen<CompanionSessionEventPayload>("companion-session", (event) => {
         void useAppStore
           .getState()
           .applyCompanionSessionPhase(event.payload.phase);

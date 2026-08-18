@@ -17,7 +17,7 @@ Caregivers can manage named profiles, monitor selection, companion pairing, and 
 
 ### Normal mode (default)
 
-```
+```text
 +---------------------------------------------------+
 | Keyboard                                          |
 +---------------------------------------------------+
@@ -27,7 +27,7 @@ Caregivers can manage named profiles, monitor selection, companion pairing, and 
 
 ### Mini mode
 
-```
+```text
 +---------------------------------------------------+
 | Compact keyboard + suggestions (when expanded)    |
 +---------------------------------------------------+
@@ -36,7 +36,7 @@ Caregivers can manage named profiles, monitor selection, companion pairing, and 
 
 ### Teaching mode
 
-```
+```text
 +---------------------------------------------------+
 | Lesson panel (Language / Music / Mathematics)     |
 +---------------------------------------------------+

@@ -38,7 +38,7 @@ Use a [release installer](https://github.com/pountzas/reach-Panel/releases) or, 
 2. Allow installs from the browser if Android prompts (unknown apps).
 3. Install and open ReachPanel Companion.
 
-Phones are blocked — the companion is tablet-only.
+Tablets are required. Phone-sized devices can install the APK but are blocked when the app launches.
 
 **Contributors:** run from source with Expo Go or a local dev build — see [companion/README.md](companion/README.md) (`npx expo start`, `npx expo run:android`, or EAS).
 
