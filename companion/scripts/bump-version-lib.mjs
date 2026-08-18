@@ -63,6 +63,23 @@ export function writeVersion(companionRoot, version) {
   const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
   pkg.version = version;
   writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`);
+
+  const lockPath = join(companionRoot, 'package-lock.json');
+  const lockSource = readFileSync(lockPath, 'utf8');
+  const lockPattern = /("name": "reachpanel-companion",\s*"version": ")[^"]+(")/g;
+  const matches = [...lockSource.matchAll(lockPattern)];
+  if (matches.length !== 2) {
+    throw new Error(
+      'Expected two root version fields in package-lock.json (lockfile + packages[""])',
+    );
+  }
+  writeFileSync(
+    lockPath,
+    lockSource.replace(
+      /("name": "reachpanel-companion",\s*"version": ")[^"]+(")/g,
+      `$1${version}$2`,
+    ),
+  );
 }
 
 export function resolveBumpType(messages) {
