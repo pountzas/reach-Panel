@@ -1,6 +1,8 @@
-export const VERSION = '0.2.0';
+'use strict';
 
-export function androidVersionCode(version: string): number {
+const VERSION = '0.2.0';
+
+function androidVersionCode(version) {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
   if (!match) {
     throw new Error(`Invalid version format: ${version}`);
@@ -16,3 +18,5 @@ export function androidVersionCode(version: string): number {
 
   return major * 10000 + minor * 100 + patch;
 }
+
+module.exports = { VERSION, androidVersionCode };

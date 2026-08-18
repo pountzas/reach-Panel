@@ -41,11 +41,11 @@ export function androidVersionCode(version) {
 }
 
 export function readCurrentVersion(companionRoot) {
-  const versioningPath = join(companionRoot, 'src/versioning.ts');
+  const versioningPath = join(companionRoot, 'src/versioning.cjs');
   const source = readFileSync(versioningPath, 'utf8');
-  const versionMatch = /export const VERSION = '([^']+)'/.exec(source);
+  const versionMatch = /const VERSION = '([^']+)'/.exec(source);
   if (!versionMatch) {
-    throw new Error('Could not parse VERSION from src/versioning.ts');
+    throw new Error('Could not parse VERSION from src/versioning.cjs');
   }
   return { version: versionMatch[1], versioningPath };
 }
@@ -54,8 +54,8 @@ export function writeVersion(companionRoot, version) {
   const { versioningPath } = readCurrentVersion(companionRoot);
   let source = readFileSync(versioningPath, 'utf8');
   source = source.replace(
-    /export const VERSION = '[^']+'/,
-    `export const VERSION = '${version}'`,
+    /const VERSION = '[^']+'/,
+    `const VERSION = '${version}'`,
   );
   writeFileSync(versioningPath, source);
 
@@ -63,6 +63,23 @@ export function writeVersion(companionRoot, version) {
   const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
   pkg.version = version;
   writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`);
+
+  const lockPath = join(companionRoot, 'package-lock.json');
+  const lockSource = readFileSync(lockPath, 'utf8');
+  const lockPattern = /("name": "reachpanel-companion",\s*"version": ")[^"]+(")/g;
+  const matches = [...lockSource.matchAll(lockPattern)];
+  if (matches.length !== 2) {
+    throw new Error(
+      'Expected two root version fields in package-lock.json (lockfile + packages[""])',
+    );
+  }
+  writeFileSync(
+    lockPath,
+    lockSource.replace(
+      /("name": "reachpanel-companion",\s*"version": ")[^"]+(")/g,
+      `$1${version}$2`,
+    ),
+  );
 }
 
 export function resolveBumpType(messages) {

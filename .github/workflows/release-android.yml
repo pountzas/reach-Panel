@@ -40,21 +40,6 @@ jobs:
         id: bump
         run: node companion/scripts/bump-version.mjs --check
 
-      - name: Bump version files
-        if: steps.bump.outputs.should_release == 'true'
-        run: node companion/scripts/bump-version.mjs
-
-      - name: Commit version bump
-        if: steps.bump.outputs.should_release == 'true'
-        id: bump_commit
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add companion/src/versioning.ts companion/package.json
-          git commit -m "chore(release): companion-v${{ steps.bump.outputs.new_version }} [skip ci]"
-          git push
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
       - name: Require release secrets
         if: steps.bump.outputs.should_release == 'true'
         env:
@@ -76,6 +61,28 @@ jobs:
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Bump version files
+        if: steps.bump.outputs.should_release == 'true'
+        run: node companion/scripts/bump-version.mjs
+
+      - name: Verify Expo config
+        if: steps.bump.outputs.should_release == 'true'
+        working-directory: companion
+        env:
+          EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
+        run: npx expo config --json >/dev/null
+
+      - name: Commit version bump
+        if: steps.bump.outputs.should_release == 'true'
+        id: bump_commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add companion/src/versioning.cjs companion/package.json companion/package-lock.json
+          git commit -m "chore(release): companion-v${{ steps.bump.outputs.new_version }} [skip ci]"
+          git push
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Build Android APK
         if: steps.bump.outputs.should_release == 'true'
