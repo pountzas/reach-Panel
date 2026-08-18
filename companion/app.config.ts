@@ -1,6 +1,6 @@
 import type { ExpoConfig } from 'expo/config';
 
-import { androidVersionCode, VERSION } from './src/versioning';
+import { androidVersionCode, VERSION } from './src/versioning.cjs';
 
 export { VERSION, androidVersionCode };
 

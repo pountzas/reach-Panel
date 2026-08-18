@@ -1,24 +1,7 @@
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-
-const testFile = fileURLToPath(import.meta.url);
-
-if (!process.env.VERSIONING_TEST_STRIP_TYPES) {
-  const result = spawnSync(
-    process.execPath,
-    ['--experimental-strip-types', testFile],
-    {
-      env: { ...process.env, VERSIONING_TEST_STRIP_TYPES: '1' },
-      stdio: 'inherit',
-    },
-  );
-  process.exit(result.status ?? 1);
-}
-
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { androidVersionCode } from './versioning.ts';
+import { androidVersionCode } from './versioning.cjs';
 
 test('androidVersionCode maps semver to Android versionCode', () => {
   assert.equal(androidVersionCode('0.1.0'), 100);
