@@ -32,9 +32,13 @@ Use a [release installer](https://github.com/pountzas/reach-Panel/releases) or, 
 
 **https://reachpanel-companion.vercel.app/**
 
-(After the first Vercel deploy, update this URL if your project name differs.)
+Scan this QR on the tablet to open that page, then tap **Download APK**:
 
-1. Open the link on the tablet and tap **Download APK**.
+<img src="docs/images/companion-apk-qr.png" alt="QR code for the ReachPanel Companion APK install page" width="220" />
+
+(After the first Vercel deploy, update this URL and regenerate the QR if your project name differs.)
+
+1. Open the link (or scan the QR) on the tablet and tap **Download APK**.
 2. Allow installs from the browser if Android prompts (unknown apps).
 3. Install and open ReachPanel Companion.
 
