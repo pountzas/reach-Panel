@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.0 (2026-08-18)
+
+## What's Changed
+* feat: arm Companion mode from the Settings tablet before a tablet connects by @pountzas in https://github.com/pountzas/reach-Panel/pull/118
+* fix: apply companion review fixes for APK CI and host session handling by @pountzas in https://github.com/pountzas/reach-Panel/pull/126
+* feat: companion mode tablet and public Android APK install by @pountzas in https://github.com/pountzas/reach-Panel/pull/125
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.10.1...v0.11.0
+
 ## 0.10.1 (2026-08-13)
 
 ## What's Changed
