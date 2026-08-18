@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.1 (2026-08-18)
+
+## What's Changed
+* fix: load companion version from CJS so EAS can evaluate app.config by @pountzas in https://github.com/pountzas/reach-Panel/pull/128
+* docs: add a QR code for the companion APK install page by @pountzas in https://github.com/pountzas/reach-Panel/pull/129
+* fix: evaluate companion Expo config so the Android APK release can run by @pountzas in https://github.com/pountzas/reach-Panel/pull/130
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.11.0...v0.11.1
+
 ## 0.11.0 (2026-08-18)
 
 ## What's Changed
