@@ -26,6 +26,10 @@ import {
   type TeachingSessionPayload,
 } from "./lib/appModeLayout";
 import {
+  type CompanionSessionEventPayload,
+  type CompanionUiState,
+} from "./lib/companionSession";
+import {
   isMusicLessonSlotVisible,
   isTeachingFullWorkArea,
   isV1ToolWindowHidden,
@@ -174,7 +178,25 @@ function MainApp() {
 
     unlisteners.push(
       listen<AppModeRequest>(APP_MODE_REQUEST_EVENT, (event) => {
-        void useAppStore.getState().setAppMode(event.payload.mode);
+        void useAppStore.getState().setAppMode(event.payload.mode, {
+          skipCompanionBridgeStop: event.payload.skipCompanionBridgeStop,
+        });
+      }),
+    );
+
+    unlisteners.push(
+      listen<CompanionUiState>("companion-state", (event) => {
+        void useAppStore
+          .getState()
+          .applyCompanionSessionPhase(event.payload.session);
+      }),
+    );
+
+    unlisteners.push(
+      listen<CompanionSessionEventPayload>("companion-session", (event) => {
+        void useAppStore
+          .getState()
+          .applyCompanionSessionPhase(event.payload.phase);
       }),
     );
 

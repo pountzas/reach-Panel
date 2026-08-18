@@ -38,6 +38,8 @@ export const el: Record<keyof typeof en, string> = {
 
   modeTeaching: "Διδασκαλία",
 
+  modeCompanion: "Συνοδός",
+
   teachingLessonMusic: "Μουσική",
 
   teachingLessonMath: "Μαθηματικά",
@@ -51,7 +53,7 @@ export const el: Record<keyof typeof en, string> = {
   languageLessonTitle: "Γλώσσα",
 
   modeTabletsHint:
-    "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή.",
+    "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή. Ο Συνοδός ξεκινά τη γέφυρα του tablet· επιλέγεται μόνο όσο είναι συνδεδεμένο ένα tablet.",
 
   miniModeAutoDescription:
     "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
