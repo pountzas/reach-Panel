@@ -38,7 +38,10 @@ use tauri_plugin_opener::OpenerExt;
 use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
-use window::{compute_window_layout, list_monitors, MonitorInfo, WindowLayout};
+use window::{
+    apply_taskbar_position_from_str, compute_window_layout, get_taskbar_position_for_monitor,
+    list_monitors, MonitorInfo, TaskbarPosition, TaskbarPositionResult, WindowLayout,
+};
 
 pub(crate) struct AppState {
     pub(crate) db: Database,
@@ -926,10 +929,32 @@ fn cmd_get_stt_status(
     ))
 }
 
+/// Applies a Windows taskbar edge preference on the monitor where ReachPanel runs.
+#[tauri::command]
+fn cmd_set_taskbar_position(
+    position: String,
+    monitor_id: Option<u32>,
+) -> Result<TaskbarPositionResult, String> {
+    apply_taskbar_position_from_str(&position, monitor_id)
+}
+
+/// Reads the taskbar edge on a specific monitor (defaults to primary).
+#[tauri::command]
+fn cmd_get_taskbar_position(monitor_id: Option<u32>) -> Option<TaskbarPosition> {
+    let id = monitor_id.or_else(|| {
+        list_monitors()
+            .into_iter()
+            .find(|m| m.is_primary)
+            .map(|m| m.id)
+    })?;
+    get_taskbar_position_for_monitor(id)
+}
+
 /// Strict allowlist of Windows Settings pages this app may open.
 const ALLOWED_MS_SETTINGS_PAGES: &[&str] = &[
     "ms-settings:privacy-speech",
     "ms-settings:speech",
+    "ms-settings:taskbar",
 ];
 
 /// Opens a Windows Settings page (e.g. `ms-settings:privacy-speech`).
@@ -1194,6 +1219,8 @@ pub fn run() {
             cmd_stop_dictation,
             cmd_get_stt_status,
             cmd_open_windows_settings,
+            cmd_set_taskbar_position,
+            cmd_get_taskbar_position,
             cmd_get_suggestions,
             cmd_record_word,
             cmd_list_word_packs,

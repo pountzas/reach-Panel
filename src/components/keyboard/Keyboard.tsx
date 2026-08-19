@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../../stores/appStore";
 import {
@@ -8,11 +8,13 @@ import {
   isFnMappedKey,
   isKeyActive,
   isShiftActive,
+  isSpecialLabeledKey,
   KeyDef,
   resolveKeyOutput,
   resolveOnscreenLayout,
 } from "../../lib/keyboardLayouts";
 import { KeyButton } from "./KeyButton";
+import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
 import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
 import { DictationVisualizer } from "./DictationVisualizer";
@@ -49,6 +51,7 @@ export function Keyboard() {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const dictationState = useAppStore((s) => s.dictationState);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
+  const stopDictation = useAppStore((s) => s.stopDictation);
   const sttCapability = useAppStore((s) => s.sttCapability);
   const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
 
@@ -64,11 +67,15 @@ export function Keyboard() {
     keyboardLayout,
     settings.typingLanguage,
   );
-  const rows = getLayoutRows(
+  const baseRows = getLayoutRows(
     effectiveLayout,
     settings.typingLanguage,
     followWindowsLayout ? layoutKeyLabels : undefined,
   );
+  const rows = useMemo(() => {
+    if (settings.dictationVisible) return baseRows;
+    return baseRows.map((row) => row.filter((k) => k.key !== "dictate"));
+  }, [baseRows, settings.dictationVisible]);
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
   const fontSize = settings.keyboardFontSize ?? 18;
   const typingLocale = settings.typingLanguage || "en";
@@ -88,6 +95,12 @@ export function Keyboard() {
   useEffect(() => {
     void refreshSttCapability();
   }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
+
+  useEffect(() => {
+    if (!settings.dictationVisible && dictationState !== "idle") {
+      void stopDictation();
+    }
+  }, [settings.dictationVisible, dictationState, stopDictation]);
 
   let dictateAriaLabel = listening ? t("dictationStop") : t("dictationStart");
   if (dictateDisabled) {
@@ -215,7 +228,7 @@ export function Keyboard() {
   return (
     <div
       ref={ref}
-      className="relative flex h-full w-full flex-col rounded-xl p-2"
+      className={`relative flex h-full w-full flex-col rounded-xl px-2 pb-2 ${miniModeActive ? "pt-1" : "pt-2"}`}
       style={{
         backgroundColor: transparent
           ? "transparent"
@@ -267,16 +280,24 @@ export function Keyboard() {
               );
             }
             if (!isLang) {
+              const specialKey = isSpecialLabeledKey(k.key);
               return (
                 <KeyButton
                   key={`${ri}-${k.key}-${k.label}-${ci}`}
-                  label={displayLabel(
-                    k,
-                    physicalKeyState.capsLock,
-                    shiftActive,
-                    fnActive,
-                    typingLocale,
-                  )}
+                  label={
+                    specialKey ? (
+                      <SpecialKeyLabel keyName={k.key} fontSize={fontSize} />
+                    ) : (
+                      displayLabel(
+                        k,
+                        physicalKeyState.capsLock,
+                        shiftActive,
+                        fnActive,
+                        typingLocale,
+                      )
+                    )
+                  }
+                  ariaLabel={specialKey ? specialKeyAriaLabel(k.key) : undefined}
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}

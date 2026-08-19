@@ -21,6 +21,8 @@ interface KeyButtonProps {
   /** Mini-mode transparent outlined key styling. */
   transparent?: boolean;
   outlineColor?: TransparentKeyColor | string | null;
+  /** Pin label to the bottom edge of the key (e.g. wide Space bar). */
+  labelAlign?: "center" | "bottom";
   onPress: () => void;
 }
 
@@ -40,10 +42,12 @@ export function KeyButton({
   gridRow,
   transparent = false,
   outlineColor,
+  labelAlign = "center",
   onPress,
 }: KeyButtonProps) {
   const { pressedClass, pointerHandlers } = usePressableButton(active ?? false);
   const inGrid = gridColumn !== undefined && gridRow !== undefined;
+  const alignBottom = labelAlign === "bottom";
 
   const sharedStyle = transparent
     ? {
@@ -61,8 +65,8 @@ export function KeyButton({
       };
 
   const buttonClass = transparent
-    ? `ak-action-btn inline-flex items-center justify-center rounded-lg font-semibold transition active:scale-95 ${pressedClass}`
-    : `ak-action-btn inline-flex items-center justify-center ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`;
+    ? `ak-action-btn inline-flex ${alignBottom ? "items-end pb-1" : "items-center"} justify-center rounded-lg font-semibold transition active:scale-95 ${pressedClass}`
+    : `ak-action-btn inline-flex ${alignBottom ? "items-end pb-1" : "items-center"} justify-center ${PRESSABLE_BUTTON_CLASS} ${active ? "sticky-active" : ""} ${pressedClass}`;
 
   return (
     <button
@@ -99,6 +103,7 @@ export function KeyButton({
       disabled={disabled}
       aria-label={ariaLabel}
       onClick={onPress}
+      onContextMenu={(e) => e.preventDefault()}
       {...pointerHandlers}
     >
       {label}

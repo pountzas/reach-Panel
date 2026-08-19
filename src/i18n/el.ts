@@ -147,6 +147,26 @@ export const el: Record<keyof typeof en, string> = {
 
   showDictationControl: "Εμφάνιση υπαγόρευσης (μικρόφωνο)",
 
+  taskbarPosition: "Θέση γραμμής εργασιών",
+
+  taskbarPositionHint:
+    "Μετακινεί τη γραμμή εργασιών Windows σε άλλη άκρη της οθόνης. Στα Windows 11 δεν υποστηρίζονται αριστερά ή δεξιά.",
+
+  taskbarPositionBottom: "Κάτω",
+
+  taskbarPositionTop: "Πάνω",
+
+  taskbarPositionLeft: "Αριστερά",
+
+  taskbarPositionRight: "Δεξιά",
+
+  taskbarPositionApplied: "Η θέση της γραμμής εργασιών ενημερώθηκε. Ο Explorer επανεκκινήθηκε.",
+
+  taskbarPositionUnsupported:
+    "Αυτή η θέση γραμμής εργασιών δεν υποστηρίζεται σε αυτή την έκδοση Windows.",
+
+  taskbarPositionFailed: "Δεν ήταν δυνατή η αλλαγή θέσης γραμμής εργασιών.",
+
   opacity: "Διαφάνεια",
 
   appLanguage: "Γλώσσα εφαρμογής",

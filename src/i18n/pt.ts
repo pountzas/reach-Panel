@@ -144,6 +144,26 @@ export const pt: Record<keyof typeof en, string> = {
 
   showDictationControl: "Mostrar ditado (microfone)",
 
+  taskbarPosition: "Posição da barra de tarefas",
+
+  taskbarPositionHint:
+    "Move a barra de tarefas do Windows para outra borda do ecrã. O Windows 11 não suporta esquerda ou direita.",
+
+  taskbarPositionBottom: "Em baixo",
+
+  taskbarPositionTop: "Em cima",
+
+  taskbarPositionLeft: "Esquerda",
+
+  taskbarPositionRight: "Direita",
+
+  taskbarPositionApplied: "Posição da barra de tarefas atualizada. O Explorer foi reiniciado.",
+
+  taskbarPositionUnsupported:
+    "Essa posição da barra de tarefas não é suportada nesta versão do Windows.",
+
+  taskbarPositionFailed: "Não foi possível alterar a posição da barra de tarefas.",
+
   opacity: "Opacidade",
 
   appLanguage: "Idioma da aplicação",

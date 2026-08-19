@@ -34,6 +34,7 @@ export function MiniModeShell() {
             ? "transparent"
             : (settings.appBgColor ?? "#f1f5f9"),
       }}
+      onContextMenu={(e) => e.preventDefault()}
     >
       <div className="min-h-0 flex-1">
         <KeyboardSection />
