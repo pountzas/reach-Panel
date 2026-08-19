@@ -144,6 +144,11 @@ fn cmd_get_keyboard_state() -> KeyboardState {
 }
 
 #[tauri::command]
+fn cmd_set_input_preview_enabled(enabled: bool) {
+    input::input_preview::set_enabled(enabled);
+}
+
+#[tauri::command]
 fn cmd_set_system_language(
     language: String,
     klid: Option<String>,
@@ -1152,6 +1157,7 @@ pub fn run() {
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
                 focus_target::init(app.handle().clone());
+                input::input_preview::init(app.handle().clone());
             }
             Ok(())
         })
@@ -1163,6 +1169,7 @@ pub fn run() {
             cmd_press_media_key,
             cmd_get_keyboard_layout,
             cmd_get_keyboard_state,
+            cmd_set_input_preview_enabled,
             cmd_set_system_language,
             cmd_get_input_methods,
             cmd_set_input_method,

@@ -44,7 +44,7 @@ import {
   computeContentHeightRatioFromSettings,
 } from "../lib/sectionLayouts";
 import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
-import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled } from "../lib/miniMode";
+import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled, isInputPreviewActiveForMode } from "../lib/miniMode";
 import {
   mapCompanionSessionPhase,
   shouldIgnoreCompanionIdle,
@@ -255,10 +255,7 @@ async function refreshMiniModeState(options?: { animate?: boolean }) {
       settings: mouseBefore ? { ...settings, mouseVisible: false } : settings,
     });
     await syncMiniModeWindowLayout(animate);
-    return;
-  }
-
-  if (!enabled && wasActive) {
+  } else if (!enabled && wasActive) {
     const restore = state.mouseVisibleBeforeMiniMode;
     const nextSettings =
       restore !== null ? { ...settings, mouseVisible: restore } : settings;
@@ -271,10 +268,7 @@ async function refreshMiniModeState(options?: { animate?: boolean }) {
       settings: nextSettings,
     });
     await syncWindowLayoutFromSettings(nextSettings, animate, useAppStore.getState().musicTeachingEnabled);
-    return;
-  }
-
-  if (enabled) {
+  } else if (enabled) {
     // Still active: enforce mouse panel hidden and keep window layout in sync.
     if (settings.mouseVisible) {
       if (state.mouseVisibleBeforeMiniMode === null) {
@@ -286,6 +280,8 @@ async function refreshMiniModeState(options?: { animate?: boolean }) {
     }
     await syncMiniModeWindowLayout(animate);
   }
+
+  await syncInputPreviewEnabled(useAppStore.getState);
 }
 
 const LANGUAGE_CHANGE_FALLBACK =
@@ -463,6 +459,8 @@ interface AppStore {
    * Session-only: true while a tablet session is active or reconnecting.
    */
   companionSessionLive: boolean;
+  /** Live JPEG data URL of the focused external input, or null when idle. */
+  inputPreviewFrame: string | null;
   /** Session-only: bridge listener is up (armed). Cleared only by caregiver leave/Stop. */
   companionBridgeArmed: boolean;
   /** Session-only: restore mouse after leaving 5-octave (wide) piano mode. */
@@ -604,6 +602,8 @@ function parseSettings(json: string): AppSettings {
       phrasesVisible: parsed.phrasesVisible ?? true,
       suggestionsVisible: parsed.suggestionsVisible ?? true,
       dictationVisible: parsed.dictationVisible ?? true,
+      inputPreviewVisible: parsed.inputPreviewVisible ?? true,
+      inputPreviewMiniModeVisible: parsed.inputPreviewMiniModeVisible ?? true,
       emergencyVisible: parsed.emergencyVisible ?? true,
       keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,
     };
@@ -711,6 +711,16 @@ async function setToolWindowVisible(
   void get().syncWindowFocusable();
 }
 
+async function syncInputPreviewEnabled(get: () => AppStore): Promise<void> {
+  if (WebviewWindow.getCurrent().label !== "main") {
+    return;
+  }
+  const { settings, miniModeActive } = get();
+  await invoke("cmd_set_input_preview_enabled", {
+    enabled: isInputPreviewActiveForMode(settings, miniModeActive),
+  });
+}
+
 async function loadProfileData(
   set: (partial: Partial<AppStore>) => void,
   get: () => AppStore,
@@ -751,6 +761,7 @@ async function loadProfileData(
   if (isMainWindow) {
     await invoke("cmd_set_system_language", { language: settings.typingLanguage });
     await get().pollKeyboardState();
+    await syncInputPreviewEnabled(get);
   }
   await get().loadQuickActions();
   await get().loadPhrases();
@@ -858,6 +869,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   companionModeActive: false,
   modeBeforeCompanion: null,
   companionSessionLive: false,
+  inputPreviewFrame: null,
   companionBridgeArmed: false,
   mouseVisibleBeforeWidePiano: null,
   mouseVisibleBeforeMiniMode: null,
@@ -1174,6 +1186,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
       partial.suggestionsVisible !== undefined
     ) {
       await get().loadSuggestions();
+    }
+    if (
+      partial.inputPreviewVisible !== undefined ||
+      partial.inputPreviewMiniModeVisible !== undefined
+    ) {
+      await syncInputPreviewEnabled(get);
     }
     if (WebviewWindow.getCurrent().label === "main") {
       const current = get().settings;
@@ -2253,6 +2271,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await syncMiniModeWindowLayout(true);
   },
 }));
+
+void listen<{ data_url: string }>("input-preview-frame", (event) => {
+  useAppStore.setState({ inputPreviewFrame: event.payload.data_url });
+});
+
+void listen("input-preview-cleared", () => {
+  useAppStore.setState({ inputPreviewFrame: null });
+});
 
 /**
  * Mini Mode: show keyboard on external editable focus; hide when focus is lost.

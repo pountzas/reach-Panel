@@ -102,6 +102,8 @@ fn default_settings_json(ui_language: &str) -> serde_json::Value {
         "phrasesVisible": false,
         "suggestionsVisible": false,
         "dictationVisible": true,
+        "inputPreviewVisible": true,
+        "inputPreviewMiniModeVisible": true,
         "taskbarPositionPreference": "bottom",
         "emergencyVisible": false,
         "accessibilityMonitorId": 0,

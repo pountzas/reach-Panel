@@ -68,6 +68,10 @@ export const el: Record<keyof typeof en, string> = {
 
   miniModeTransparent: "Διαφανές πληκτρολόγιο",
 
+  inputPreviewLabel: "Πεδίο προορισμού",
+
+  inputPreviewWaiting: "Αναμονή προεπισκόπησης…",
+
   miniModeTransparentDescription:
     "Εμφάνιση πλήκτρων μόνο με περίγραμμα ώστε να φαίνονται οι εφαρμογές από πίσω.",
 
@@ -146,6 +150,10 @@ export const el: Record<keyof typeof en, string> = {
   wordPackUninstallFailed: "Αποτυχία αφαίρεσης λεξικού",
 
   showDictationControl: "Εμφάνιση υπαγόρευσης (μικρόφωνο)",
+
+  showInputPreview: "Ζωντανή προεπισκόπηση εισόδου (Normal)",
+
+  showInputPreviewMiniMode: "Ζωντανή προεπισκόπηση εισόδου (Mini Mode)",
 
   taskbarPosition: "Θέση γραμμής εργασιών",
 
