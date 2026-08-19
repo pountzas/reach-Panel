@@ -144,6 +144,26 @@ export const de: Record<keyof typeof en, string> = {
 
   showDictationControl: "Diktat anzeigen (Mikrofon)",
 
+  taskbarPosition: "Taskleistenposition",
+
+  taskbarPositionHint:
+    "Verschiebt die Windows-Taskleiste an eine andere Bildschirmkante. Unter Windows 11 sind links und rechts nicht unterstützt.",
+
+  taskbarPositionBottom: "Unten",
+
+  taskbarPositionTop: "Oben",
+
+  taskbarPositionLeft: "Links",
+
+  taskbarPositionRight: "Rechts",
+
+  taskbarPositionApplied: "Taskleistenposition aktualisiert. Explorer wurde neu gestartet.",
+
+  taskbarPositionUnsupported:
+    "Diese Taskleistenposition wird von dieser Windows-Version nicht unterstützt.",
+
+  taskbarPositionFailed: "Taskleistenposition konnte nicht geändert werden.",
+
   opacity: "Deckkraft",
 
   appLanguage: "App-Sprache",

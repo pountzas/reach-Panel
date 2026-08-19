@@ -101,7 +101,13 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - Language switch key with country flag icons (follows installed Windows keyboards)
 - On-screen layout override (auto / QWERTY / QWERTZ / AZERTY / Greek)
 - Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle
-- Dictation key beside Right Ctrl (see Voice dictation below)
+- Dictation key beside Right Ctrl (see Voice dictation below); show/hide the mic key under **Settings → Visible sections**
+- Special keys use symbols (Enter ↵, Shift ⇧, Backspace ⌫, Space ␣)
+- Right-click / long-press context menus are suppressed on the keyboard and main app surface
+
+### Windows integration
+
+- **Taskbar position** — **Settings** moves the taskbar on the **accessibility monitor** (the display selected in Settings). On extended desktops each monitor can have its own taskbar edge; on mirrored/duplicate setups all copies of that display update together. **Windows 10:** all four edges. **Windows 11 (stable):** often bottom-only; failed moves revert. Explorer restarts when a change is attempted.
 
 ### Android tablet companion
 

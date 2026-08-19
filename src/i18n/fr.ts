@@ -144,6 +144,26 @@ export const fr: Record<keyof typeof en, string> = {
 
   showDictationControl: "Afficher la dictée (micro)",
 
+  taskbarPosition: "Position de la barre des tâches",
+
+  taskbarPositionHint:
+    "Déplace la barre des tâches Windows vers un autre bord de l'écran. Windows 11 ne prend pas en charge gauche ni droite.",
+
+  taskbarPositionBottom: "Bas",
+
+  taskbarPositionTop: "Haut",
+
+  taskbarPositionLeft: "Gauche",
+
+  taskbarPositionRight: "Droite",
+
+  taskbarPositionApplied: "Position de la barre des tâches mise à jour. Explorer a redémarré.",
+
+  taskbarPositionUnsupported:
+    "Cette position de barre des tâches n'est pas prise en charge sur cette version de Windows.",
+
+  taskbarPositionFailed: "Impossible de modifier la position de la barre des tâches.",
+
   opacity: "Opacité",
 
   appLanguage: "Langue de l’application",

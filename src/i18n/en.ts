@@ -143,6 +143,26 @@
 
   showDictationControl: "Show dictation (mic)",
 
+  taskbarPosition: "Taskbar position",
+
+  taskbarPositionHint:
+    "Applies to the accessibility monitor selected above. Extended displays: only that screen's taskbar changes. Mirrored/duplicate displays: all copies of that screen update together. Windows 11 stable may refuse top/left/right.",
+
+  taskbarPositionBottom: "Bottom",
+
+  taskbarPositionTop: "Top",
+
+  taskbarPositionLeft: "Left",
+
+  taskbarPositionRight: "Right",
+
+  taskbarPositionApplied: "Taskbar position updated. Explorer restarted.",
+
+  taskbarPositionUnsupported:
+    "That taskbar position is not supported on this version of Windows.",
+
+  taskbarPositionFailed: "Could not change taskbar position.",
+
   opacity: "Opacity",
 
   appLanguage: "App language",

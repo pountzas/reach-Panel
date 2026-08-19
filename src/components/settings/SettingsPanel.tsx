@@ -10,7 +10,7 @@ import {
   type ColorProfileId,
   type SurfaceColors,
 } from "../../lib/colorProfiles";
-import type { FnKeyMode, OnscreenLayout, TransparentKeyColor } from "../../lib/types";
+import type { FnKeyMode, OnscreenLayout, TaskbarPosition, TransparentKeyColor } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
 import { ONSCREEN_LAYOUT_OPTIONS } from "../../lib/keyboardLayouts";
@@ -343,6 +343,18 @@ export function SettingsPanel() {
     void loadInputMethods();
   }, [loadInputMethods]);
 
+  useEffect(() => {
+    if (!settings) return;
+    const monitorId = settings.accessibilityMonitorId;
+    void invoke<TaskbarPosition | null>("cmd_get_taskbar_position", { monitorId }).then(
+      (current) => {
+        if (current && current !== (settings.taskbarPositionPreference ?? "bottom")) {
+          updateSettings({ taskbarPositionPreference: current });
+        }
+      },
+    );
+  }, [settings, updateSettings]);
+
   if (!settings) return null;
 
   const teachingActive = isTeachingSessionActive(
@@ -370,6 +382,36 @@ export function SettingsPanel() {
     backgroundColor: surface.panelButtonBg,
     borderColor: surface.panelBorder,
     color: surface.panelText,
+  };
+
+  const taskbarPosition = settings.taskbarPositionPreference ?? "bottom";
+
+  const applyTaskbarPosition = async (position: TaskbarPosition) => {
+    const previous = settings.taskbarPositionPreference ?? "bottom";
+    updateSettings({ taskbarPositionPreference: position });
+    try {
+      const result = await invoke<{
+        success: boolean;
+        applied: boolean;
+        message: string;
+        current?: TaskbarPosition | null;
+      }>("cmd_set_taskbar_position", {
+        position,
+        monitorId: settings.accessibilityMonitorId,
+      });
+      if (result.success) {
+        if (result.applied) {
+          notify.success(t("taskbarPositionApplied"));
+        }
+        return;
+      }
+      const actual = result.current ?? previous;
+      updateSettings({ taskbarPositionPreference: actual });
+      notify.info(result.message || t("taskbarPositionUnsupported"));
+    } catch {
+      updateSettings({ taskbarPositionPreference: previous });
+      notify.error(t("taskbarPositionFailed"));
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -530,6 +572,28 @@ export function SettingsPanel() {
                 </p>
               </div>
             )}
+          </SettingsSection>
+
+          <SettingsSection title={t("taskbarPosition")} surface={surface}>
+            <p
+              className="mb-2 px-1 text-xs"
+              style={{ color: surface.panelMutedText }}
+            >
+              {t("taskbarPositionHint")}
+            </p>
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("taskbarPosition")}
+              <ThemedSelect
+                value={taskbarPosition}
+                onChange={(v) => void applyTaskbarPosition(v as TaskbarPosition)}
+                surface={surface}
+              >
+                <option value="bottom">{t("taskbarPositionBottom")}</option>
+                <option value="top">{t("taskbarPositionTop")}</option>
+                <option value="left">{t("taskbarPositionLeft")}</option>
+                <option value="right">{t("taskbarPositionRight")}</option>
+              </ThemedSelect>
+            </label>
           </SettingsSection>
 
           <SettingsSection title={t("miniMode")} surface={surface}>
@@ -818,7 +882,18 @@ export function SettingsPanel() {
               <ToggleRow
                 label={t("showSuggestionsBar")}
                 checked={settings.suggestionsVisible}
-                onChange={(checked) => updateSettings({ suggestionsVisible: checked })}
+                onChange={(checked) =>
+                  updateSettings({
+                    suggestionsVisible: checked,
+                    predictionEnabled: checked,
+                  })
+                }
+                surface={surface}
+              />
+              <ToggleRow
+                label={t("showDictationControl")}
+                checked={settings.dictationVisible}
+                onChange={(checked) => updateSettings({ dictationVisible: checked })}
                 surface={surface}
               />
             </div>

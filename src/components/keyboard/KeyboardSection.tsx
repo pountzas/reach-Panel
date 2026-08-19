@@ -62,6 +62,7 @@ export function KeyboardSection() {
         outlineColor: settings.transparentKeyColor,
       })
     : undefined;
+  const showMiniModeToolbar = miniModeActive && !showSynth && !compact;
   const showTransparentColorButton = transparentUi && showTransparentToggle;
   const showLessonToggle = teachingActive && !compact;
   const showSynthToolbar = showSynth && !compact;
@@ -94,17 +95,18 @@ export function KeyboardSection() {
     <div className="flex h-full min-w-0 flex-1 flex-col">
       {showToolbar && (
         <div
-          className={`relative z-20 flex items-center justify-between gap-2 overflow-visible pr-1 ${compact ? "pt-2" : "pt-6"}`}
+          className={`relative z-20 grid w-full grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${showMiniModeToolbar ? "pt-3 pb-1" : compact ? "pt-2" : showSuggestions ? "pt-4 pb-0" : "pt-6"}`}
         >
-          <div className="min-w-0 flex-1 pl-1.5">
+          <div aria-hidden className="min-w-0" />
+          <div className="flex min-w-0 justify-center overflow-hidden px-1">
             {showSuggestions && <SuggestionsBar />}
           </div>
-              {(showLessonToggle ||
-                showSynthToolbar ||
-                showTransparentToggle ||
-                showMiniModeCollapse) && (
+          {(showLessonToggle ||
+            showSynthToolbar ||
+            showTransparentToggle ||
+            showMiniModeCollapse) ? (
             <div
-              className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center gap-2 pr-2`}
+              className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center justify-end gap-2 pr-2`}
             >
               {showMiniModeCollapse && (
                 <ModeToggleGroup
@@ -115,6 +117,7 @@ export function KeyboardSection() {
                     active={false}
                     position="only"
                     label={t("miniModeCollapse")}
+                    tooltipPlacement="below"
                     disabled={isAnimatingWindow}
                     style={transparentToolbarStyle}
                     activeClassName={
@@ -123,6 +126,43 @@ export function KeyboardSection() {
                     onClick={() => void collapseMiniModeKeyboard()}
                   >
                     <CollapseIcon className="h-4 w-4" />
+                  </ModeToggleButton>
+                </ModeToggleGroup>
+              )}
+              {showTransparentColorButton && (
+                <ModeToggleGroup
+                  transparentUi={transparentUi}
+                  transparentBorderColor={transparentPalette.border}
+                >
+                  <ModeToggleButton
+                    active={false}
+                    position="only"
+                    label={t("transparentKeyColor")}
+                    tooltipPlacement="below"
+                    style={
+                      transparentUi
+                        ? transparentOutlineStyle({
+                            color: transparentPalette.text,
+                            outlineColor: settings.transparentKeyColor,
+                          })
+                        : undefined
+                    }
+                    activeClassName={
+                      transparentUi ? "bg-transparent" : undefined
+                    }
+                    onClick={() =>
+                      updateSettings({
+                        transparentKeyColor: nextTransparentKeyColor(
+                          settings.transparentKeyColor,
+                        ),
+                      })
+                    }
+                  >
+                    <span
+                      className="block h-3.5 w-3.5 rounded-full border border-black/40"
+                      style={{ backgroundColor: transparentPalette.text }}
+                      aria-hidden
+                    />
                   </ModeToggleButton>
                 </ModeToggleGroup>
               )}
@@ -135,6 +175,8 @@ export function KeyboardSection() {
                     active={Boolean(settings.miniModeTransparent)}
                     position="only"
                     label={t("miniModeTransparent")}
+                    tooltipPlacement="below"
+                    tooltipAlign="end"
                     style={
                       transparentUi
                         ? transparentOutlineStyle({
@@ -154,36 +196,6 @@ export function KeyboardSection() {
                     }
                   >
                     <TransparentKeyboardIcon className="h-4 w-4" />
-                  </ModeToggleButton>
-                </ModeToggleGroup>
-              )}
-              {showTransparentColorButton && (
-                <ModeToggleGroup
-                  transparentUi
-                  transparentBorderColor={transparentPalette.border}
-                >
-                  <ModeToggleButton
-                    active={false}
-                    position="only"
-                    label={t("transparentKeyColor")}
-                    style={transparentOutlineStyle({
-                      color: transparentPalette.text,
-                      outlineColor: settings.transparentKeyColor,
-                    })}
-                    activeClassName="bg-transparent"
-                    onClick={() =>
-                      updateSettings({
-                        transparentKeyColor: nextTransparentKeyColor(
-                          settings.transparentKeyColor,
-                        ),
-                      })
-                    }
-                  >
-                    <span
-                      className="block h-3.5 w-3.5 rounded-full border border-black/40"
-                      style={{ backgroundColor: transparentPalette.text }}
-                      aria-hidden
-                    />
                   </ModeToggleButton>
                 </ModeToggleGroup>
               )}
@@ -264,7 +276,7 @@ export function KeyboardSection() {
                 </>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       )}
       {showSynth ? (

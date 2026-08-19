@@ -16,6 +16,8 @@ export type OnscreenLayout = "auto" | "QWERTY" | "QWERTZ" | "AZERTY" | "Greek";
 export type TransparentKeyColor = "white" | "dark-gray" | "silver";
 
 export type PointerInputKind = "touch" | "mouse";
+/** Windows taskbar edge preference (applied via system automation). */
+export type TaskbarPosition = "bottom" | "top" | "left" | "right";
 
 export interface LayoutSnapshot {
   sectionStack?: SectionStackState;
@@ -54,8 +56,10 @@ export interface AppSettings {
   quickActionsVisible: boolean;
   phrasesVisible: boolean;
   suggestionsVisible: boolean;
-  /** When false, hides the toolbar mic / dictation control. */
+  /** When false, hides the keyboard mic / dictation key. */
   dictationVisible: boolean;
+  /** Preferred Windows taskbar edge; applied when changed in Settings. */
+  taskbarPositionPreference?: TaskbarPosition;
   /** Free Groq API key for cloud dictation when Windows speech packs are unavailable (e.g. Greek). */
   groqApiKey?: string;
   emergencyVisible: boolean;
@@ -197,7 +201,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   quickActionsVisible: false,
   phrasesVisible: false,
   suggestionsVisible: false,
-  dictationVisible: false,
+  dictationVisible: true,
+  taskbarPositionPreference: "bottom",
   groqApiKey: "",
   emergencyVisible: false,
   accessibilityMonitorId: 0,

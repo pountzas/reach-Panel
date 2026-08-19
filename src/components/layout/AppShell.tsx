@@ -258,6 +258,7 @@ export function AppShell() {
     <div
       className="relative flex min-h-0 flex-col"
       style={{ ...shellStyle, width: "100vw", height: "100vh" }}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {settings.backgroundImagePath && (
         <div

@@ -144,6 +144,26 @@ export const it: Record<keyof typeof en, string> = {
 
   showDictationControl: "Mostra dettatura (microfono)",
 
+  taskbarPosition: "Posizione barra delle applicazioni",
+
+  taskbarPositionHint:
+    "Sposta la barra delle applicazioni di Windows su un altro bordo dello schermo. Windows 11 non supporta sinistra o destra.",
+
+  taskbarPositionBottom: "In basso",
+
+  taskbarPositionTop: "In alto",
+
+  taskbarPositionLeft: "A sinistra",
+
+  taskbarPositionRight: "A destra",
+
+  taskbarPositionApplied: "Posizione barra aggiornata. Explorer riavviato.",
+
+  taskbarPositionUnsupported:
+    "Questa posizione della barra non è supportata su questa versione di Windows.",
+
+  taskbarPositionFailed: "Impossibile cambiare la posizione della barra.",
+
   opacity: "Opacità",
 
   appLanguage: "Lingua dell’app",
