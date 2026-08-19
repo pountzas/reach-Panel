@@ -65,6 +65,10 @@ export const de: Record<keyof typeof en, string> = {
 
   miniModeTransparent: "Transparente Tastatur",
 
+  inputPreviewLabel: "Zieleingabe",
+
+  inputPreviewWaiting: "Vorschau wird geladen…",
+
   miniModeTransparentDescription:
     "Tasten nur mit Umrissen anzeigen, damit Apps darunter sichtbar bleiben.",
 
@@ -143,6 +147,10 @@ export const de: Record<keyof typeof en, string> = {
   wordPackUninstallFailed: "Wörterbuch konnte nicht entfernt werden",
 
   showDictationControl: "Diktat anzeigen (Mikrofon)",
+
+  showInputPreview: "Live-Eingabevorschau (Normal)",
+
+  showInputPreviewMiniMode: "Live-Eingabevorschau (Mini-Modus)",
 
   taskbarPosition: "Taskleistenposition",
 

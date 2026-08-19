@@ -58,6 +58,10 @@ export interface AppSettings {
   suggestionsVisible: boolean;
   /** When false, hides the keyboard mic / dictation key. */
   dictationVisible: boolean;
+  /** Live thumbnail of the focused external input field above the keyboard (Normal mode). */
+  inputPreviewVisible?: boolean;
+  /** Live input preview while Mini Mode keyboard is shown. */
+  inputPreviewMiniModeVisible?: boolean;
   /** Preferred Windows taskbar edge; applied when changed in Settings. */
   taskbarPositionPreference?: TaskbarPosition;
   /** Free Groq API key for cloud dictation when Windows speech packs are unavailable (e.g. Greek). */
@@ -202,6 +206,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   phrasesVisible: false,
   suggestionsVisible: false,
   dictationVisible: true,
+  inputPreviewVisible: true,
+  inputPreviewMiniModeVisible: true,
   taskbarPositionPreference: "bottom",
   groqApiKey: "",
   emergencyVisible: false,

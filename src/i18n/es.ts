@@ -65,6 +65,10 @@ export const es: Record<keyof typeof en, string> = {
 
   miniModeTransparent: "Teclado transparente",
 
+  inputPreviewLabel: "Campo de destino",
+
+  inputPreviewWaiting: "Esperando vista previa…",
+
   miniModeTransparentDescription:
     "Mostrar teclas solo con contornos para ver las aplicaciones detrás.",
 
@@ -143,6 +147,10 @@ export const es: Record<keyof typeof en, string> = {
   wordPackUninstallFailed: "No se pudo quitar el diccionario",
 
   showDictationControl: "Mostrar dictado (micrófono)",
+
+  showInputPreview: "Vista previa en vivo del campo (Normal)",
+
+  showInputPreviewMiniMode: "Vista previa en vivo del campo (Modo Mini)",
 
   taskbarPosition: "Posición de la barra de tareas",
 

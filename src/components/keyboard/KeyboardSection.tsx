@@ -6,6 +6,7 @@ import {
 } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { SuggestionsBar } from "../common/SuggestionsBar";
+import { InputPreview } from "./InputPreview";
 import { SynthVolumeControl } from "./SynthVolumeControl";
 import { PianoRangeControl } from "./PianoRangeControl";
 import {
@@ -18,12 +19,16 @@ import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
 import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
 import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
-import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
+import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, transparentOutlineStyle, isInputPreviewActiveForMode } from "../../lib/miniMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
   isSynthesizerUiActive,
   isTeachingSessionActive,
 } from "../../lib/appModeLayout";
+
+/** Reserved height for suggestion chips so appearing tags do not shrink keys. */
+const SUGGESTION_ROW_MIN_CLASS = "min-h-8";
+const INPUT_PREVIEW_STRIP_HEIGHT_PX = 48;
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
@@ -37,6 +42,8 @@ export function KeyboardSection() {
   const setTeachingLesson = useAppStore((s) => s.setTeachingLesson);
   const musicSongId = useAppStore((s) => s.musicSongId);
   const importedSongs = useAppStore((s) => s.importedSongs);
+  const hasInputTarget = useAppStore((s) => s.physicalKeyState.hasInputTarget);
+  const companionSessionLive = useAppStore((s) => s.companionSessionLive);
   const { t } = useTranslation();
   const teachingActive =
     isTeachingSessionActive(
@@ -50,6 +57,12 @@ export function KeyboardSection() {
       teachingLesson,
     ) && !miniModeActive;
   const compact = settings.inputAreaCompact;
+  const showInputPreview =
+    !showSynth &&
+    !compact &&
+    !companionSessionLive &&
+    hasInputTarget &&
+    isInputPreviewActiveForMode(settings, miniModeActive);
   const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
   const transparentUi = isTransparentUiActive(settings, miniModeActive);
   const showTransparentToggle = miniModeActive && !showSynth && !compact;
@@ -69,6 +82,7 @@ export function KeyboardSection() {
   const showToolbar =
     showLessonToggle ||
     showSynthToolbar ||
+    showInputPreview ||
     showSuggestions ||
     showTransparentToggle ||
     showMiniModeCollapse;
@@ -91,15 +105,34 @@ export function KeyboardSection() {
     { id: "math", labelKey: "teachingLessonMath" },
   ];
 
+  const auxCenterMinHeightPx =
+    (showInputPreview ? INPUT_PREVIEW_STRIP_HEIGHT_PX : 0) +
+    (showSuggestions ? 32 : 0) +
+    (showInputPreview && showSuggestions ? 8 : 0);
+
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
       {showToolbar && (
         <div
-          className={`relative z-20 grid w-full grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${showMiniModeToolbar ? "pt-3 pb-1" : compact ? "pt-2" : showSuggestions ? "pt-4 pb-0" : "pt-6"}`}
+          className={`relative z-20 shrink-0 grid w-full grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${showMiniModeToolbar ? "pt-3 pb-1" : compact ? "pt-2" : showSuggestions || showInputPreview ? "pt-2 pb-0" : "pt-6"}`}
         >
           <div aria-hidden className="min-w-0" />
-          <div className="flex min-w-0 justify-center overflow-hidden px-1">
-            {showSuggestions && <SuggestionsBar />}
+          <div
+            className="flex min-w-0 flex-col items-center justify-end gap-2 overflow-hidden px-1"
+            style={
+              auxCenterMinHeightPx > 0
+                ? { minHeight: auxCenterMinHeightPx }
+                : undefined
+            }
+          >
+            {showInputPreview && <InputPreview />}
+            {showSuggestions && (
+              <div
+                className={`flex w-full items-center justify-center ${SUGGESTION_ROW_MIN_CLASS}`}
+              >
+                <SuggestionsBar />
+              </div>
+            )}
           </div>
           {(showLessonToggle ||
             showSynthToolbar ||

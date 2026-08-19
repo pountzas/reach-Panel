@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
@@ -663,6 +663,17 @@ export function SettingsPanel() {
                 })}
               </div>
             )}
+            <div className="mt-3">
+              <ToggleRow
+                label={t("showInputPreviewMiniMode")}
+                checked={settings.inputPreviewMiniModeVisible !== false}
+                disabled={!miniModeActive}
+                onChange={(checked) =>
+                  updateSettings({ inputPreviewMiniModeVisible: checked })
+                }
+                surface={surface}
+              />
+            </div>
             {showMiniTransparentControls && (
               <div className="mt-3">
                 <ToggleRow
@@ -894,6 +905,14 @@ export function SettingsPanel() {
                 label={t("showDictationControl")}
                 checked={settings.dictationVisible}
                 onChange={(checked) => updateSettings({ dictationVisible: checked })}
+                surface={surface}
+              />
+              <ToggleRow
+                label={t("showInputPreview")}
+                checked={settings.inputPreviewVisible !== false}
+                onChange={(checked) =>
+                  updateSettings({ inputPreviewVisible: checked })
+                }
                 surface={surface}
               />
             </div>

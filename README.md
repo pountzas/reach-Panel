@@ -102,6 +102,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - On-screen layout override (auto / QWERTY / QWERTZ / AZERTY / Greek)
 - Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle
 - Dictation key beside Right Ctrl (see Voice dictation below); show/hide the mic key under **Settings → Visible sections**
+- **Input preview** — when an external text field is targeted, a live thumbnail of that field appears above the keyboard. **Normal mode:** **Settings → Visible sections → Live input preview (Normal)**. **Mini Mode:** **Settings → Mini Mode → Live input preview (Mini Mode)**. Each mode has its own toggle (both on by default). Disabled during Companion sessions. Protected or DRM content may appear black; some custom controls may not expose a usable screen region.
 - Special keys use symbols (Enter ↵, Shift ⇧, Backspace ⌫, Space ␣)
 - Right-click / long-press context menus are suppressed on the keyboard and main app surface
 

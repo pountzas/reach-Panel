@@ -6,7 +6,7 @@ use std::sync::{Condvar, Mutex, Once, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
-use windows::Win32::Foundation::HWND;
+use windows::Win32::Foundation::{HWND, POINT, RECT};
 use windows::Win32::System::Com::{
     CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
 };
@@ -19,11 +19,12 @@ use windows::Win32::UI::Accessibility::{
     UIA_ListControlTypeId, UIA_ListItemControlTypeId, UIA_ValuePatternId, HWINEVENTHOOK,
     UIA_CONTROLTYPE_ID,
 };
+use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo, GetParent,
-    GetWindowLongW, GetWindowThreadProcessId, IsWindow, IsWindowVisible, SetForegroundWindow,
-    ShowWindow, ES_READONLY, EVENT_OBJECT_FOCUS, EVENT_SYSTEM_FOREGROUND, GUITHREADINFO, GWL_STYLE,
-    SW_RESTORE, WINEVENT_OUTOFCONTEXT,
+    BringWindowToTop, GetCaretPos, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo, GetParent,
+    GetWindowLongW, GetWindowRect, GetWindowThreadProcessId, IsWindow, IsWindowVisible,
+    SetForegroundWindow, ShowWindow, ES_READONLY, EVENT_OBJECT_FOCUS, EVENT_SYSTEM_FOREGROUND,
+    GUITHREADINFO, GWL_STYLE, SW_RESTORE, WINEVENT_OUTOFCONTEXT,
 };
 
 /// How long a real text field can "lend" focus to an autocomplete popup.
@@ -37,6 +38,7 @@ struct LastRealTextFocus {
 }
 
 static TARGET_HWND: Mutex<Option<usize>> = Mutex::new(None);
+static TARGET_BOUNDS: Mutex<Option<ScreenRect>> = Mutex::new(None);
 static HOOK_ONCE: Once = Once::new();
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 static LAST_INPUT_FOCUSED: Mutex<Option<bool>> = Mutex::new(None);
@@ -242,6 +244,30 @@ fn uia_ancestor_is_autocomplete_satellite(
         current = parent;
     }
     false
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+pub struct ScreenRect {
+    pub left: i32,
+    pub top: i32,
+    pub width: i32,
+    pub height: i32,
+}
+
+impl ScreenRect {
+    fn from_win32(rect: RECT) -> Option<Self> {
+        let width = rect.right - rect.left;
+        let height = rect.bottom - rect.top;
+        if width <= 0 || height <= 0 {
+            return None;
+        }
+        Some(Self {
+            left: rect.left,
+            top: rect.top,
+            width,
+            height,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -618,7 +644,99 @@ fn publish_input_focus(focused: bool) {
 }
 
 fn reevaluate_input_focus() {
-    publish_input_focus(is_editable_input_focused());
+    let focused = is_editable_input_focused();
+    publish_input_focus(focused);
+    publish_input_target_bounds(focused);
+}
+
+fn publish_input_target_bounds(focused: bool) {
+    let next = if focused {
+        query_focused_input_bounds()
+    } else {
+        None
+    };
+    let changed = if let Ok(mut guard) = TARGET_BOUNDS.lock() {
+        let changed = *guard != next;
+        if changed {
+            *guard = next;
+        }
+        changed
+    } else {
+        false
+    };
+    if changed {
+        super::input_preview::notify_bounds_changed();
+    }
+}
+
+pub fn get_input_target_bounds() -> Option<ScreenRect> {
+    TARGET_BOUNDS.lock().ok().and_then(|g| *g)
+}
+
+fn query_focused_input_bounds() -> Option<ScreenRect> {
+    if let Some(rect) = uia_focused_element_bounds() {
+        return Some(rect);
+    }
+    caret_bounds().or_else(window_focus_bounds)
+}
+
+fn uia_focused_element_bounds() -> Option<ScreenRect> {
+    with_uia(|automation| {
+        let element = unsafe { automation.GetFocusedElement().ok()? };
+        if uia_element_is_our_process(&element) {
+            return None;
+        }
+        uia_element_bounds(&element)
+    })
+    .flatten()
+}
+
+fn uia_element_bounds(element: &IUIAutomationElement) -> Option<ScreenRect> {
+    unsafe {
+        let rect = element.CurrentBoundingRectangle().ok()?;
+        ScreenRect::from_win32(rect)
+    }
+}
+
+fn caret_bounds() -> Option<ScreenRect> {
+    unsafe {
+        let Some(info) = gui_thread_info() else {
+            return None;
+        };
+        let caret_hwnd = if !is_null(info.hwndCaret) && !is_our_window(info.hwndCaret) {
+            info.hwndCaret
+        } else if !is_null(info.hwndFocus) && !is_our_window(info.hwndFocus) {
+            info.hwndFocus
+        } else {
+            return None;
+        };
+
+        let mut pt = POINT::default();
+        if GetCaretPos(&mut pt).is_err() {
+            return None;
+        }
+        if !ClientToScreen(caret_hwnd, &mut pt).as_bool() {
+            return None;
+        }
+
+        Some(ScreenRect {
+            left: pt.x.saturating_sub(160),
+            top: pt.y.saturating_sub(12),
+            width: 320,
+            height: 48,
+        })
+    }
+}
+
+fn window_focus_bounds() -> Option<ScreenRect> {
+    unsafe {
+        let hwnd = get_effective_input_hwnd()?;
+        let mut rect = RECT::default();
+        if GetWindowRect(hwnd, &mut rect).is_err() {
+            return None;
+        }
+        ScreenRect::from_win32(rect)
+    }
 }
 
 /// Schedule focus reevaluation off the WinEvent callback stack.

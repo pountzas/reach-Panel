@@ -65,6 +65,10 @@ export const fr: Record<keyof typeof en, string> = {
 
   miniModeTransparent: "Clavier transparent",
 
+  inputPreviewLabel: "Champ cible",
+
+  inputPreviewWaiting: "Aperçu en attente…",
+
   miniModeTransparentDescription:
     "Afficher les touches avec des contours uniquement pour voir les applications en arrière-plan.",
 
@@ -143,6 +147,10 @@ export const fr: Record<keyof typeof en, string> = {
   wordPackUninstallFailed: "Impossible de supprimer le dictionnaire",
 
   showDictationControl: "Afficher la dictée (micro)",
+
+  showInputPreview: "Aperçu en direct du champ (Normal)",
+
+  showInputPreviewMiniMode: "Aperçu en direct du champ (Mode Mini)",
 
   taskbarPosition: "Position de la barre des tâches",
 

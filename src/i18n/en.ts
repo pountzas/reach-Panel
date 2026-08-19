@@ -1,4 +1,4 @@
-﻿export const en = {
+export const en = {
 
   appTitle: "ReachPanel",
 
@@ -63,6 +63,10 @@
   miniModeOverrideOff: "Off",
 
   miniModeTransparent: "Transparent keyboard",
+
+  inputPreviewLabel: "Target input",
+
+  inputPreviewWaiting: "Waiting for preview…",
 
   miniModeTransparentDescription:
     "Show keys with outlines only so you can see through to your apps.",
@@ -142,6 +146,10 @@
   wordPackUninstallFailed: "Could not remove dictionary",
 
   showDictationControl: "Show dictation (mic)",
+
+  showInputPreview: "Live input preview (Normal)",
+
+  showInputPreviewMiniMode: "Live input preview (Mini Mode)",
 
   taskbarPosition: "Taskbar position",
 
