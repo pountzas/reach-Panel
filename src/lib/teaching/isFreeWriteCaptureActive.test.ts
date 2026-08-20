@@ -26,6 +26,12 @@ describe("isFreeWriteCaptureActive", () => {
   it("is false when Music subject", () => {
     expect(isFreeWriteCaptureActive({ ...base, teachingLesson: "music" })).toBe(false);
   });
+
+  it("is false on School books tab", () => {
+    expect(
+      isFreeWriteCaptureActive({ ...base, languageSubjectTab: "schoolBooks" }),
+    ).toBe(false);
+  });
 });
 
 describe("isLanguageSpellingTabActive", () => {

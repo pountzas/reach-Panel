@@ -46,6 +46,8 @@ export const en = {
 
   teachingTabFreeWrite: "Free write",
 
+  teachingTabSchoolBooks: "School books",
+
   freeWriteNotepad: "Notepad",
 
   freeWriteClearAll: "Clear all",
@@ -75,6 +77,18 @@ export const en = {
   freeWritePdfNextPage: "Next page",
 
   freeWriteRemovePdf: "Remove",
+
+  freeWriteModePdf: "PDF",
+  freeWriteModeEbook: "School books",
+  freeWriteEbookHome: "Catalog home",
+  freeWriteEbookBack: "Back",
+  freeWriteEbookReload: "Reload",
+  freeWriteEbookFocus: "Show book window",
+  freeWriteEbookClose: "Close book window",
+  freeWriteEbookOpen: "Open school books",
+  freeWriteEbookHint:
+    "School books fill this Learning tab. Use Home for the catalog, then pick a subject. Links stay in this panel.",
+  freeWriteEbookCatalog: "Interactive school books catalog (ebooks.edu.gr)",
 
   comingSoon: "Coming soon",
 

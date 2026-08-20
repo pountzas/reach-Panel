@@ -110,6 +110,10 @@ import {
   clampFreeWriteZoom,
   isFreeWriteCaptureActive,
   removeTeachingPdfEntry,
+  sanitizeTeachingEbookUrl,
+  TEACHING_EBOOK_DESTROYED_EVENT,
+  TEACHING_EBOOK_HOME,
+  TEACHING_EBOOK_NAVIGATED_EVENT,
   upsertTeachingPdfEntry,
   type FreeWriteFocus,
   type LanguageSubjectTab,
@@ -642,6 +646,8 @@ interface AppStore {
   teachingPdfLibrary: TeachingPdfEntry[];
   /** Session-only: active Free write PDF id. */
   freeWriteActivePdfId: string | null;
+  /** Session-only: school-book WebviewWindow is open. */
+  teachingEbookWindowOpen: boolean;
   /** Mini Mode shell active (single/mirror or override). */
   miniModeActive: boolean;
   /** Whether the mini-mode keyboard is popped (vs collapsed FAB). */
@@ -782,6 +788,19 @@ interface AppStore {
   pickTeachingPdf: () => Promise<void>;
   openTeachingPdf: (id: string) => Promise<void>;
   removeTeachingPdf: (id: string) => Promise<void>;
+  openTeachingEbook: () => Promise<void>;
+  teachingEbookHome: () => Promise<void>;
+  teachingEbookBack: () => Promise<void>;
+  teachingEbookReload: () => Promise<void>;
+  closeTeachingEbook: () => Promise<void>;
+  hideTeachingEbook: () => Promise<void>;
+  syncTeachingEbookBounds: (bounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => Promise<void>;
+  focusTeachingEbook: () => Promise<void>;
   isAnimatingWindow: boolean;
   pendingUpdate: Update | null;
   updateCheckStatus: "idle" | "checking" | "upToDate" | "error";
@@ -1105,6 +1124,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   freeWriteFocus: "notepad",
   teachingPdfLibrary: [],
   freeWriteActivePdfId: null,
+  teachingEbookWindowOpen: false,
   miniModeActive: false,
   miniModeKeyboardVisible: false,
   miniModeManualExpand: false,
@@ -2092,6 +2112,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setTeachingLesson: (lesson) => {
     const prev = get().teachingLesson;
+    if (lesson !== "language") {
+      void get().closeTeachingEbook();
+    }
     const nextState =
       lesson === "language" && get().musicTeachingEnabled
         ? initLanguageLessonState(get().settings, get().languagePackId, get().customLanguagePacks)
@@ -2375,6 +2398,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   disableMusicTeaching: async (options) => {
+    void get().closeTeachingEbook();
     if (!get().musicTeachingEnabled && get().phrasesVisibleBeforeTeaching === null) {
       if (options?.hidePhrases) {
         await get().updateSettings({ phrasesVisible: false });
@@ -2551,6 +2575,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (tab !== "spelling" && get().languageLessonPlaying) {
       get().stopLanguageLessonPlayback();
     }
+    if (tab === "schoolBooks") {
+      void get().openTeachingEbook();
+    } else {
+      void get().hideTeachingEbook();
+    }
     set({
       languageSubjectTab: tab,
       freeWriteFocus: tab === "freeWrite" ? "notepad" : get().freeWriteFocus,
@@ -2708,6 +2737,89 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (get().settings.freeWriteLastPdfId === id) {
         await get().updateSettings({ freeWriteLastPdfId: null });
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  openTeachingEbook: async () => {
+    try {
+      const last =
+        sanitizeTeachingEbookUrl(get().settings.freeWriteEbookLastUrl) ?? TEACHING_EBOOK_HOME;
+      await invoke("cmd_open_teaching_ebook", { url: last });
+      set({ teachingEbookWindowOpen: true });
+      void get().syncWindowFocusable();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  teachingEbookHome: async () => {
+    try {
+      await invoke("cmd_teaching_ebook_home");
+      set({ teachingEbookWindowOpen: true });
+      await get().updateSettings({ freeWriteEbookLastUrl: TEACHING_EBOOK_HOME });
+      void get().syncWindowFocusable();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  teachingEbookBack: async () => {
+    try {
+      await invoke("cmd_teaching_ebook_back");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  teachingEbookReload: async () => {
+    try {
+      await invoke("cmd_teaching_ebook_reload");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  closeTeachingEbook: async () => {
+    try {
+      await invoke("cmd_close_teaching_ebook");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    } finally {
+      set({ teachingEbookWindowOpen: false });
+      void get().syncWindowFocusable();
+    }
+  },
+
+  hideTeachingEbook: async () => {
+    try {
+      await invoke("cmd_hide_teaching_ebook");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  syncTeachingEbookBounds: async (bounds) => {
+    try {
+      await invoke("cmd_sync_teaching_ebook_bounds", { bounds });
+    } catch {
+      // Overlay may not exist yet.
+    }
+  },
+
+  focusTeachingEbook: async () => {
+    try {
+      await invoke("cmd_focus_teaching_ebook");
+      set({ teachingEbookWindowOpen: true });
+      void get().syncWindowFocusable();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       notify.error(message);
@@ -2942,6 +3054,18 @@ void listen<{ data_url: string }>("input-preview-frame", (event) => {
 
 void listen("input-preview-cleared", () => {
   useAppStore.setState({ inputPreviewFrame: null });
+});
+
+void listen<string>(TEACHING_EBOOK_NAVIGATED_EVENT, (event) => {
+  const url = sanitizeTeachingEbookUrl(event.payload);
+  if (!url) return;
+  useAppStore.setState({ teachingEbookWindowOpen: true });
+  void useAppStore.getState().updateSettings({ freeWriteEbookLastUrl: url });
+});
+
+void listen(TEACHING_EBOOK_DESTROYED_EVENT, () => {
+  useAppStore.setState({ teachingEbookWindowOpen: false });
+  void useAppStore.getState().syncWindowFocusable();
 });
 
 /**

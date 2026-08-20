@@ -46,6 +46,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   teachingTabSpelling: "Orthographe",
   teachingTabFreeWrite: "Écriture libre",
+  teachingTabSchoolBooks: "Manuels scolaires",
   freeWriteNotepad: "Bloc-notes",
   freeWriteClearAll: "Tout effacer",
   freeWriteClearConfirm: "Effacer tout le brouillon du bloc-notes ?",
@@ -61,6 +62,18 @@ export const fr: Record<keyof typeof en, string> = {
   freeWritePdfPrevPage: "Page précédente",
   freeWritePdfNextPage: "Page suivante",
   freeWriteRemovePdf: "Supprimer",
+
+  freeWriteModePdf: "PDF",
+  freeWriteModeEbook: "Manuels scolaires",
+  freeWriteEbookHome: "Accueil du catalogue",
+  freeWriteEbookBack: "Retour",
+  freeWriteEbookReload: "Recharger",
+  freeWriteEbookFocus: "Afficher la fenêtre du livre",
+  freeWriteEbookClose: "Fermer la fenêtre du livre",
+  freeWriteEbookOpen: "Ouvrir les manuels scolaires",
+  freeWriteEbookHint:
+    "Les manuels s'ouvrent dans une fenêtre séparée. Accueil mène au catalogue ; choisissez une matière. Les liens restent dans cette fenêtre.",
+  freeWriteEbookCatalog: "Catalogue de manuels interactifs (ebooks.edu.gr)",
 
   comingSoon: "Bientôt disponible",
 

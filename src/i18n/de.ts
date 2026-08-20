@@ -46,6 +46,7 @@ export const de: Record<keyof typeof en, string> = {
 
   teachingTabSpelling: "Rechtschreibung",
   teachingTabFreeWrite: "Freies Schreiben",
+  teachingTabSchoolBooks: "Schulbücher",
   freeWriteNotepad: "Notizblock",
   freeWriteClearAll: "Alles löschen",
   freeWriteClearConfirm: "Gesamten Notizblock-Entwurf löschen?",
@@ -61,6 +62,18 @@ export const de: Record<keyof typeof en, string> = {
   freeWritePdfPrevPage: "Vorherige Seite",
   freeWritePdfNextPage: "Nächste Seite",
   freeWriteRemovePdf: "Entfernen",
+
+  freeWriteModePdf: "PDF",
+  freeWriteModeEbook: "Schulbücher",
+  freeWriteEbookHome: "Katalog-Start",
+  freeWriteEbookBack: "Zurück",
+  freeWriteEbookReload: "Neu laden",
+  freeWriteEbookFocus: "Buchfenster zeigen",
+  freeWriteEbookClose: "Buchfenster schließen",
+  freeWriteEbookOpen: "Schulbücher öffnen",
+  freeWriteEbookHint:
+    "Schulbücher öffnen in einem eigenen Fenster. Start führt zum Katalog; Fach wählen. Links bleiben in diesem Fenster.",
+  freeWriteEbookCatalog: "Interaktiver Schulbuch-Katalog (ebooks.edu.gr)",
 
   comingSoon: "Demnächst",
 

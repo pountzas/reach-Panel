@@ -124,6 +124,10 @@ export interface AppSettings {
   freeWriteNotepadLineNumbers?: boolean;
   /** Teaching → Language → Free write: last opened PDF library id. */
   freeWriteLastPdfId?: string | null;
+  /** Free write right pane: local PDF library or school-book window. */
+  freeWriteRightMode?: "pdf" | "ebook";
+  /** Last allowlisted ebooks.edu.gr URL opened in the book window. */
+  freeWriteEbookLastUrl?: string | null;
   /** Teaching → Language: ignore letter case when checking spelling (default true). */
   languageLessonIgnoreCase?: boolean;
   /** Teaching → Language: ignore accent marks / tones when checking (default true). */
@@ -263,6 +267,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   freeWriteNotepadWrap: true,
   freeWriteNotepadLineNumbers: true,
   freeWriteLastPdfId: null,
+  freeWriteRightMode: "pdf",
+  freeWriteEbookLastUrl: null,
   languageLessonIgnoreCase: true,
   languageLessonIgnoreTones: true,
 };

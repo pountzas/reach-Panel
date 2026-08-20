@@ -10,6 +10,7 @@ mod prediction;
 mod profiles;
 mod services;
 mod stt;
+mod teaching_ebook;
 mod teaching_pdf;
 mod tts;
 mod window;
@@ -761,6 +762,54 @@ fn cmd_save_teaching_pdfs(
 }
 
 #[tauri::command]
+fn cmd_open_teaching_ebook(app: tauri::AppHandle, url: Option<String>) -> Result<(), String> {
+    teaching_ebook::open_teaching_ebook(&app, url)
+}
+
+#[tauri::command]
+fn cmd_teaching_ebook_home(app: tauri::AppHandle) -> Result<(), String> {
+    teaching_ebook::teaching_ebook_home(&app)
+}
+
+#[tauri::command]
+fn cmd_teaching_ebook_back(app: tauri::AppHandle) -> Result<(), String> {
+    teaching_ebook::teaching_ebook_back(&app)
+}
+
+#[tauri::command]
+fn cmd_teaching_ebook_reload(app: tauri::AppHandle) -> Result<(), String> {
+    teaching_ebook::teaching_ebook_reload(&app)
+}
+
+#[tauri::command]
+fn cmd_close_teaching_ebook(app: tauri::AppHandle) -> Result<(), String> {
+    teaching_ebook::close_teaching_ebook(&app)
+}
+
+#[tauri::command]
+fn cmd_hide_teaching_ebook(app: tauri::AppHandle) -> Result<(), String> {
+    teaching_ebook::hide_teaching_ebook(&app)
+}
+
+#[tauri::command]
+fn cmd_sync_teaching_ebook_bounds(
+    app: tauri::AppHandle,
+    bounds: teaching_ebook::EbookOverlayBounds,
+) -> Result<(), String> {
+    teaching_ebook::sync_teaching_ebook_bounds(&app, bounds)
+}
+
+#[tauri::command]
+fn cmd_focus_teaching_ebook(app: tauri::AppHandle) -> Result<(), String> {
+    teaching_ebook::focus_teaching_ebook(&app)
+}
+
+#[tauri::command]
+fn cmd_teaching_ebook_is_open(app: tauri::AppHandle) -> bool {
+    teaching_ebook::teaching_ebook_is_open(&app)
+}
+
+#[tauri::command]
 async fn cmd_list_installed_apps() -> Result<Vec<installed_apps::InstalledApp>, String> {
     tokio::task::spawn_blocking(installed_apps::list_installed_apps)
         .await
@@ -1309,6 +1358,15 @@ pub fn run() {
             cmd_delete_imported_song,
             cmd_list_teaching_pdfs,
             cmd_save_teaching_pdfs,
+            cmd_open_teaching_ebook,
+            cmd_teaching_ebook_home,
+            cmd_teaching_ebook_back,
+            cmd_teaching_ebook_reload,
+            cmd_close_teaching_ebook,
+            cmd_hide_teaching_ebook,
+            cmd_sync_teaching_ebook_bounds,
+            cmd_focus_teaching_ebook,
+            cmd_teaching_ebook_is_open,
             cmd_list_custom_language_packs,
             cmd_upsert_custom_language_pack,
             cmd_delete_custom_language_pack,

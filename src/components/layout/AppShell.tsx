@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { exit } from "@tauri-apps/plugin-process";
 import { ResizableSplitPane } from "./ResizableSplitPane";
@@ -11,6 +11,7 @@ import { MusicLessonPanel } from "../music/MusicLessonPanel";
 import { MathLessonPanel } from "../teaching/MathLessonPanel";
 import { LanguageLessonPanel } from "../teaching/LanguageLessonPanel";
 import { FreeWritePanel } from "../teaching/FreeWritePanel";
+import { SchoolBooksPanel } from "../teaching/SchoolBooksPanel";
 import { TeachingSubjectShell } from "../teaching/TeachingSubjectShell";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { SectionCanvas } from "./SectionCanvas";
@@ -49,14 +50,18 @@ function LanguageTeachingBody() {
   const tabs: { id: LanguageSubjectTab; label: string }[] = [
     { id: "spelling", label: t("teachingTabSpelling") },
     { id: "freeWrite", label: t("teachingTabFreeWrite") },
+    { id: "schoolBooks", label: t("teachingTabSchoolBooks") },
   ];
+  let body: ReactNode = <LanguageLessonPanel />;
+  if (languageSubjectTab === "freeWrite") body = <FreeWritePanel />;
+  else if (languageSubjectTab === "schoolBooks") body = <SchoolBooksPanel />;
   return (
     <TeachingSubjectShell
       tabs={tabs}
       activeId={languageSubjectTab}
       onChange={setLanguageSubjectTab}
     >
-      {languageSubjectTab === "freeWrite" ? <FreeWritePanel /> : <LanguageLessonPanel />}
+      {body}
     </TeachingSubjectShell>
   );
 }

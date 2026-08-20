@@ -46,6 +46,7 @@ export const it: Record<keyof typeof en, string> = {
 
   teachingTabSpelling: "Ortografia",
   teachingTabFreeWrite: "Scrittura libera",
+  teachingTabSchoolBooks: "Libri scolastici",
   freeWriteNotepad: "Blocco note",
   freeWriteClearAll: "Cancella tutto",
   freeWriteClearConfirm: "Cancellare l'intero bozza del blocco note?",
@@ -61,6 +62,18 @@ export const it: Record<keyof typeof en, string> = {
   freeWritePdfPrevPage: "Pagina precedente",
   freeWritePdfNextPage: "Pagina successiva",
   freeWriteRemovePdf: "Rimuovi",
+
+  freeWriteModePdf: "PDF",
+  freeWriteModeEbook: "Libri scolastici",
+  freeWriteEbookHome: "Home catalogo",
+  freeWriteEbookBack: "Indietro",
+  freeWriteEbookReload: "Ricarica",
+  freeWriteEbookFocus: "Mostra finestra libro",
+  freeWriteEbookClose: "Chiudi finestra libro",
+  freeWriteEbookOpen: "Apri libri scolastici",
+  freeWriteEbookHint:
+    "I libri scolastici si aprono in una finestra separata. Home apre il catalogo; scegli una materia. I link restano in quella finestra.",
+  freeWriteEbookCatalog: "Catalogo libri scolastici interattivi (ebooks.edu.gr)",
 
   comingSoon: "Prossimamente",
 

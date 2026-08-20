@@ -49,6 +49,7 @@ export const el: Record<keyof typeof en, string> = {
 
   teachingTabSpelling: "Ορθογραφία",
   teachingTabFreeWrite: "Ελεύθερη γραφή",
+  teachingTabSchoolBooks: "Σχολικά βιβλία",
   freeWriteNotepad: "Σημειωματάριο",
   freeWriteClearAll: "Διαγραφή όλων",
   freeWriteClearConfirm: "Διαγραφή ολόκληρου του προσχεδίου;",
@@ -64,6 +65,18 @@ export const el: Record<keyof typeof en, string> = {
   freeWritePdfPrevPage: "Προηγούμενη σελίδα",
   freeWritePdfNextPage: "Επόμενη σελίδα",
   freeWriteRemovePdf: "Αφαίρεση",
+
+  freeWriteModePdf: "PDF",
+  freeWriteModeEbook: "Σχολικά βιβλία",
+  freeWriteEbookHome: "Αρχική καταλόγου",
+  freeWriteEbookBack: "Πίσω",
+  freeWriteEbookReload: "Ανανέωση",
+  freeWriteEbookFocus: "Εμφάνιση παραθύρου βιβλίου",
+  freeWriteEbookClose: "Κλείσιμο παραθύρου βιβλίου",
+  freeWriteEbookOpen: "Άνοιγμα σχολικών βιβλίων",
+  freeWriteEbookHint:
+    "Τα σχολικά βιβλία ανοίγουν σε ξεχωριστό παράθυρο. Η Αρχική οδηγεί στον κατάλογο· επιλέξτε μάθημα. Οι σύνδεσμοι μένουν στο ίδιο παράθυρο.",
+  freeWriteEbookCatalog: "Κατάλογος διαδραστικών σχολικών βιβλίων (ebooks.edu.gr)",
 
   comingSoon: "Σύντομα",
 

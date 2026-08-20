@@ -1,4 +1,4 @@
-export type LanguageSubjectTab = "spelling" | "freeWrite";
+export type LanguageSubjectTab = "spelling" | "freeWrite" | "schoolBooks";
 export type FreeWriteFocus = "notepad" | "pdf";
 
 export type FreeWriteModeInput = {
