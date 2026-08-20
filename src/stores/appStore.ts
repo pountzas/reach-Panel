@@ -107,6 +107,15 @@ import {
   languageAnswersMatch,
 } from "../lib/language";
 import {
+  clampFreeWriteZoom,
+  isFreeWriteCaptureActive,
+  removeTeachingPdfEntry,
+  upsertTeachingPdfEntry,
+  type FreeWriteFocus,
+  type LanguageSubjectTab,
+  type TeachingPdfEntry,
+} from "../lib/teaching";
+import {
   type GreekPendingAccent,
 } from "../lib/language/greekCompose";
 import {
@@ -176,13 +185,21 @@ function greekComposeContextFromState(state: {
   customLanguagePacks: LanguagePack[];
   languageLessonPlaying?: boolean;
   languageListAuthoringActive?: boolean;
+  languageSubjectTab?: LanguageSubjectTab;
 }): GreekComposeContext {
   const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
   return {
     typingLanguage: state.settings.typingLanguage,
     keyboardLayout: state.keyboardLayout,
     onscreenLayout: state.settings.onscreenLayout,
-    languageLessonActive: isLanguageLessonCaptureActive(state),
+    languageLessonActive: isLanguageLessonCaptureActive({
+      musicTeachingEnabled: state.musicTeachingEnabled,
+      teachingLesson: state.teachingLesson,
+      settings: state.settings,
+      languageLessonPlaying: state.languageLessonPlaying,
+      languageListAuthoringActive: state.languageListAuthoringActive,
+      languageSubjectTab: state.languageSubjectTab ?? "spelling",
+    }),
     lessonLanguage:
       pack?.lessonLanguage ?? state.settings.languageLessonLanguage,
   };
@@ -194,6 +211,7 @@ function languageLessonModeFromState(state: {
   settings: AppSettings;
   languageLessonPlaying: boolean;
   languageListAuthoringActive: boolean;
+  languageSubjectTab: LanguageSubjectTab;
 }) {
   return {
     musicTeachingEnabled: state.musicTeachingEnabled,
@@ -201,7 +219,30 @@ function languageLessonModeFromState(state: {
     settings: state.settings,
     languageLessonPlaying: state.languageLessonPlaying,
     languageListAuthoringActive: state.languageListAuthoringActive,
+    languageSubjectTab: state.languageSubjectTab,
   };
+}
+
+function freeWriteModeFromState(state: {
+  musicTeachingEnabled: boolean;
+  teachingLesson: TeachingLesson;
+  settings: AppSettings;
+  languageSubjectTab: LanguageSubjectTab;
+  freeWriteFocus: FreeWriteFocus;
+}) {
+  return {
+    musicTeachingEnabled: state.musicTeachingEnabled,
+    teachingLesson: state.teachingLesson,
+    settings: state.settings,
+    languageSubjectTab: state.languageSubjectTab,
+    freeWriteFocus: state.freeWriteFocus,
+  };
+}
+
+function teachingPdfFileName(path: string): string {
+  const normalized = path.replace(/\\/g, "/");
+  const parts = normalized.split("/");
+  return parts[parts.length - 1] || path;
 }
 
 function clearGreekPendingAccent() {
@@ -593,6 +634,14 @@ interface AppStore {
   languageListAuthoringActive: boolean;
   languageListAuthoringField: LanguageListAuthoringField;
   languageListAuthoringHandlers: LanguageListAuthoringHandlers | null;
+  /** Session-only: Language subject tab (Spelling | Free write). */
+  languageSubjectTab: LanguageSubjectTab;
+  /** Session-only: Free write pane focus target. */
+  freeWriteFocus: FreeWriteFocus;
+  /** Global teaching PDF library (app data). */
+  teachingPdfLibrary: TeachingPdfEntry[];
+  /** Session-only: active Free write PDF id. */
+  freeWriteActivePdfId: string | null;
   /** Mini Mode shell active (single/mirror or override). */
   miniModeActive: boolean;
   /** Whether the mini-mode keyboard is popped (vs collapsed FAB). */
@@ -716,6 +765,19 @@ interface AppStore {
   languageKeyInput: (ch: string, options?: { physicalKey?: string }) => void;
   languageBackspace: () => void;
   checkLanguageAnswer: () => void;
+  setLanguageSubjectTab: (tab: LanguageSubjectTab) => void;
+  setFreeWriteFocus: (focus: FreeWriteFocus) => void;
+  freeWriteNotepadInput: (ch: string) => void;
+  freeWriteNotepadBackspace: () => void;
+  setFreeWriteNotepadText: (text: string) => void;
+  clearFreeWriteNotepad: () => void;
+  setFreeWriteNotepadZoom: (zoom: number) => void;
+  setFreeWriteNotepadWrap: (wrap: boolean) => void;
+  setFreeWriteNotepadLineNumbers: (on: boolean) => void;
+  loadTeachingPdfLibrary: () => Promise<void>;
+  pickTeachingPdf: () => Promise<void>;
+  openTeachingPdf: (id: string) => Promise<void>;
+  removeTeachingPdf: (id: string) => Promise<void>;
   isAnimatingWindow: boolean;
   pendingUpdate: Update | null;
   updateCheckStatus: "idle" | "checking" | "upToDate" | "error";
@@ -1035,6 +1097,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   languageListAuthoringActive: false,
   languageListAuthoringField: "title",
   languageListAuthoringHandlers: null,
+  languageSubjectTab: "spelling",
+  freeWriteFocus: "notepad",
+  teachingPdfLibrary: [],
+  freeWriteActivePdfId: null,
   miniModeActive: false,
   miniModeKeyboardVisible: false,
   miniModeManualExpand: false,
@@ -1968,7 +2034,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const state = get();
     const needsFocus =
       state.pendingUpdate !== null ||
-      isLanguageLessonCaptureActive(languageLessonModeFromState(state));
+      isLanguageLessonCaptureActive(languageLessonModeFromState(state)) ||
+      isFreeWriteCaptureActive(freeWriteModeFromState(state));
     await invoke("cmd_set_window_focusable", { focusable: needsFocus });
   },
 
@@ -2474,6 +2541,128 @@ export const useAppStore = create<AppStore>((set, get) => ({
           : state.languageLessonPlaying,
       ...clearGreekPendingAccent(),
     });
+  },
+
+  setLanguageSubjectTab: (tab) => {
+    if (tab !== "spelling" && get().languageLessonPlaying) {
+      get().stopLanguageLessonPlayback();
+    }
+    set({
+      languageSubjectTab: tab,
+      freeWriteFocus: tab === "freeWrite" ? "notepad" : get().freeWriteFocus,
+    });
+    void get().syncWindowFocusable();
+  },
+
+  setFreeWriteFocus: (focus) => {
+    set({ freeWriteFocus: focus });
+    void get().syncWindowFocusable();
+  },
+
+  freeWriteNotepadInput: (ch) => {
+    if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
+    const text = get().settings.freeWriteNotepadText ?? "";
+    void get().updateSettings({ freeWriteNotepadText: text + ch });
+  },
+
+  freeWriteNotepadBackspace: () => {
+    if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
+    const text = get().settings.freeWriteNotepadText ?? "";
+    if (!text) return;
+    void get().updateSettings({ freeWriteNotepadText: text.slice(0, -1) });
+  },
+
+  setFreeWriteNotepadText: (text) => {
+    void get().updateSettings({ freeWriteNotepadText: text });
+  },
+
+  clearFreeWriteNotepad: () => {
+    void get().updateSettings({ freeWriteNotepadText: "" });
+  },
+
+  setFreeWriteNotepadZoom: (zoom) => {
+    void get().updateSettings({ freeWriteNotepadZoom: clampFreeWriteZoom(zoom) });
+  },
+
+  setFreeWriteNotepadWrap: (wrap) => {
+    void get().updateSettings({ freeWriteNotepadWrap: wrap });
+  },
+
+  setFreeWriteNotepadLineNumbers: (on) => {
+    void get().updateSettings({ freeWriteNotepadLineNumbers: on });
+  },
+
+  loadTeachingPdfLibrary: async () => {
+    try {
+      const entries = await invoke<TeachingPdfEntry[]>("cmd_list_teaching_pdfs");
+      const teachingPdfLibrary = Array.isArray(entries)
+        ? entries.filter((e) => e && typeof e.id === "string" && typeof e.path === "string")
+        : [];
+      const lastId = get().settings.freeWriteLastPdfId ?? null;
+      const freeWriteActivePdfId =
+        lastId && teachingPdfLibrary.some((e) => e.id === lastId)
+          ? lastId
+          : get().freeWriteActivePdfId;
+      set({ teachingPdfLibrary, freeWriteActivePdfId });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  pickTeachingPdf: async () => {
+    try {
+      const path = await invoke<string | null>("cmd_pick_teaching_pdf");
+      if (!path) return;
+      const existing = get().teachingPdfLibrary.find((e) => e.path === path);
+      const entry: TeachingPdfEntry = {
+        id: existing?.id ?? crypto.randomUUID(),
+        title: teachingPdfFileName(path),
+        path,
+        lastOpenedAt: new Date().toISOString(),
+      };
+      const teachingPdfLibrary = upsertTeachingPdfEntry(get().teachingPdfLibrary, entry);
+      await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
+      set({ teachingPdfLibrary, freeWriteActivePdfId: entry.id });
+      await get().updateSettings({ freeWriteLastPdfId: entry.id });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  openTeachingPdf: async (id) => {
+    const entry = get().teachingPdfLibrary.find((e) => e.id === id);
+    if (!entry) return;
+    try {
+      const updated: TeachingPdfEntry = {
+        ...entry,
+        lastOpenedAt: new Date().toISOString(),
+      };
+      const teachingPdfLibrary = upsertTeachingPdfEntry(get().teachingPdfLibrary, updated);
+      await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
+      set({ teachingPdfLibrary, freeWriteActivePdfId: id });
+      await get().updateSettings({ freeWriteLastPdfId: id });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+
+  removeTeachingPdf: async (id) => {
+    try {
+      const teachingPdfLibrary = removeTeachingPdfEntry(get().teachingPdfLibrary, id);
+      await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
+      const freeWriteActivePdfId =
+        get().freeWriteActivePdfId === id ? null : get().freeWriteActivePdfId;
+      set({ teachingPdfLibrary, freeWriteActivePdfId });
+      if (get().settings.freeWriteLastPdfId === id) {
+        await get().updateSettings({ freeWriteLastPdfId: null });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
   },
 
   reportMusicKeyPlayed: (keyId) => {

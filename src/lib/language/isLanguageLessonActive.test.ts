@@ -12,7 +12,7 @@ const base = {
 };
 
 describe("isLanguageLessonActive", () => {
-  it("is true only for teaching + synthesizer mode + language lesson", () => {
+  it("is true only for teaching + synthesizer mode + language Spelling tab", () => {
     expect(isLanguageLessonActive(base)).toBe(true);
     expect(
       isLanguageLessonActive({
@@ -24,6 +24,12 @@ describe("isLanguageLessonActive", () => {
       isLanguageLessonActive({
         ...base,
         musicTeachingEnabled: false,
+      }),
+    ).toBe(false);
+    expect(
+      isLanguageLessonActive({
+        ...base,
+        languageSubjectTab: "freeWrite",
       }),
     ).toBe(false);
   });

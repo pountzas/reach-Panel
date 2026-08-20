@@ -1,16 +1,22 @@
+import type { LanguageSubjectTab } from "../teaching";
+
 export type LanguageLessonModeInput = {
   musicTeachingEnabled: boolean;
   teachingLesson: "music" | "math" | "language";
   settings: { keyboardSectionMode?: string };
   languageLessonPlaying?: boolean;
   languageListAuthoringActive?: boolean;
+  /** When omitted, treated as `"spelling"` for back-compat. */
+  languageSubjectTab?: LanguageSubjectTab;
 };
 
 export function isLanguageLessonActive(input: LanguageLessonModeInput): boolean {
+  const tab = input.languageSubjectTab ?? "spelling";
   return (
     input.musicTeachingEnabled &&
     input.settings.keyboardSectionMode === "synthesizer" &&
-    input.teachingLesson === "language"
+    input.teachingLesson === "language" &&
+    tab === "spelling"
   );
 }
 
