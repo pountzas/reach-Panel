@@ -769,6 +769,10 @@ interface AppStore {
   setFreeWriteFocus: (focus: FreeWriteFocus) => void;
   freeWriteNotepadInput: (ch: string) => void;
   freeWriteNotepadBackspace: () => void;
+  applyFreeWriteLayoutTranslation: (
+    translation: LayoutKeyTranslation,
+    options?: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
+  ) => void;
   setFreeWriteNotepadText: (text: string) => void;
   clearFreeWriteNotepad: () => void;
   setFreeWriteNotepadZoom: (zoom: number) => void;
@@ -2561,15 +2565,60 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   freeWriteNotepadInput: (ch) => {
     if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
-    const text = get().settings.freeWriteNotepadText ?? "";
-    void get().updateSettings({ freeWriteNotepadText: text + ch });
+    const state = get();
+    const greek = greekComposeEnabled({
+      typingLanguage: state.settings.typingLanguage,
+      keyboardLayout: state.keyboardLayout,
+      onscreenLayout: state.settings.onscreenLayout,
+      languageLessonActive: true,
+      lessonLanguage:
+        state.settings.typingLanguage === "el" ? "el" : state.settings.languageLessonLanguage,
+    });
+    const text = state.settings.freeWriteNotepadText ?? "";
+    const result = processCharacterInput(text, state.greekPendingAccent, ch, {
+      greekCompose: greek,
+    });
+    set({ greekPendingAccent: result.pendingAccent });
+    void get().updateSettings({ freeWriteNotepadText: result.buffer });
   },
 
   freeWriteNotepadBackspace: () => {
     if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
-    const text = get().settings.freeWriteNotepadText ?? "";
+    const state = get();
+    if (state.greekPendingAccent) {
+      set(clearGreekPendingAccent());
+      return;
+    }
+    const text = state.settings.freeWriteNotepadText ?? "";
     if (!text) return;
     void get().updateSettings({ freeWriteNotepadText: text.slice(0, -1) });
+  },
+
+  applyFreeWriteLayoutTranslation: (translation, options) => {
+    if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
+    const state = get();
+    const greek = greekComposeEnabled({
+      typingLanguage: state.settings.typingLanguage,
+      keyboardLayout: state.keyboardLayout,
+      onscreenLayout: state.settings.onscreenLayout,
+      languageLessonActive: true,
+      lessonLanguage:
+        state.settings.typingLanguage === "el" ? "el" : state.settings.languageLessonLanguage,
+    });
+    const text = state.settings.freeWriteNotepadText ?? "";
+    const result = applyGreekLayoutTranslation(
+      text,
+      state.greekPendingAccent,
+      translation,
+      {
+        physicalKey: options?.physicalKey,
+        shift: options?.shift,
+        fallbackOutput: options?.fallbackOutput,
+        greekCompose: greek,
+      },
+    );
+    set({ greekPendingAccent: result.pending });
+    void get().updateSettings({ freeWriteNotepadText: result.buffer });
   },
 
   setFreeWriteNotepadText: (text) => {

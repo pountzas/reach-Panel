@@ -1,4 +1,4 @@
-import { en } from "./en";
+﻿import { en } from "./en";
 
 export const de: Record<keyof typeof en, string> = {
   appTitle: "ReachPanel",
@@ -15,9 +15,9 @@ export const de: Record<keyof typeof en, string> = {
 
   settings: "Einstellungen",
 
-  close: "Schließen",
+  close: "SchlieÃŸen",
 
-  add: "Hinzufügen",
+  add: "HinzufÃ¼gen",
 
   appNotInstalled: "{app} ist nicht installiert.",
 
@@ -43,7 +43,43 @@ export const de: Record<keyof typeof en, string> = {
 
   teachingLessonLanguage: "Sprache",
 
-  comingSoon: "Demnächst",
+
+  teachingTabSpelling: "Rechtschreibung",
+
+  teachingTabFreeWrite: "Freies Schreiben",
+
+  freeWriteNotepad: "Notizblock",
+
+  freeWriteClearAll: "Alles löschen",
+
+  freeWriteClearConfirm: "Gesamten Notizblock-Entwurf löschen?",
+
+  freeWriteZoomIn: "Vergrößern",
+
+  freeWriteZoomOut: "Verkleinern",
+
+  freeWriteWordWrap: "Zeilenumbruch",
+
+  freeWriteLineNumbers: "Zeilennummern",
+
+  freeWriteNotepadEmpty: "Notizen hier tippen…",
+
+  freeWriteOpenPdf: "PDF öffnen…",
+
+  freeWriteRecentPdfs: "Zuletzt verwendete PDFs",
+
+  freeWritePdfMissing: "Diese PDF-Datei wurde nicht gefunden.",
+
+  freeWritePdfEmpty: "Öffnen Sie ein PDF zum Lesen neben Ihren Notizen.",
+
+  freeWritePdfPrevPage: "Vorherige Seite",
+
+  freeWritePdfNextPage: "Nächste Seite",
+
+  freeWriteRemovePdf: "Entfernen",
+
+
+  comingSoon: "DemnÃ¤chst",
 
   mathLessonTitle: "Mathematik",
 
@@ -51,7 +87,7 @@ export const de: Record<keyof typeof en, string> = {
 
   languageLesson: "Sprachlektion",
 
-  selectLanguagePack: "Wortliste wählen",
+  selectLanguagePack: "Wortliste wÃ¤hlen",
 
   languagePackBuiltIn: "Eingebaute Listen",
 
@@ -59,11 +95,11 @@ export const de: Record<keyof typeof en, string> = {
 
   languageYourAnswer: "Ihre Schreibweise",
 
-  languageCheck: "Prüfen",
+  languageCheck: "PrÃ¼fen",
 
-  languageIncorrect: "Noch nicht richtig — erneut versuchen",
+  languageIncorrect: "Noch nicht richtig â€” erneut versuchen",
 
-  languageUpcomingTasks: "Kommende Wörter",
+  languageUpcomingTasks: "Kommende WÃ¶rter",
 
   languageAgeBand: "Altersstufe",
 
@@ -73,44 +109,44 @@ export const de: Record<keyof typeof en, string> = {
 
   languageLessonLangEn: "Englisch",
 
-  languageAgeBandEarly: "Früh (6–8)",
+  languageAgeBandEarly: "FrÃ¼h (6â€“8)",
 
-  languageAgeBandPrimary: "Grundschule (9–11)",
+  languageAgeBandPrimary: "Grundschule (9â€“11)",
 
-  languageAgeBandLowerSecondary: "Unterstufe (12–14)",
+  languageAgeBandLowerSecondary: "Unterstufe (12â€“14)",
 
   languageAgeBandUpperSecondary: "Oberstufe (15+)",
 
-  languageLessonIgnoreCase: "Groß-/Kleinschreibung ignorieren",
+  languageLessonIgnoreCase: "GroÃŸ-/Kleinschreibung ignorieren",
 
-  languageLessonIgnoreTones: "Akzente (Töne) beim Prüfen ignorieren",
+  languageLessonIgnoreTones: "Akzente (TÃ¶ne) beim PrÃ¼fen ignorieren",
 
-  languageLessonTonesOff: "Töne: nicht erforderlich",
+  languageLessonTonesOff: "TÃ¶ne: nicht erforderlich",
 
-  languageLessonTonesOn: "Töne: erforderlich",
+  languageLessonTonesOn: "TÃ¶ne: erforderlich",
 
   languageNewList: "Neue Wortliste",
 
   languageNewListTitle: "Listentitel",
 
-  languageNewListWords: "Wörter (eins pro Zeile)",
+  languageNewListWords: "WÃ¶rter (eins pro Zeile)",
 
   languageNewListSave: "Liste speichern",
 
   languageNewListCancel: "Abbrechen",
 
-  languageNewListEmpty: "Mindestens ein Wort hinzufügen",
-  languagePressPlayToSpell: "Drücken Sie Abspielen, um mit dem Buchstabieren zu beginnen",
-  languageNewListKeyboardHint: "Titel und Wörter links mit der Tastatur eingeben",
+  languageNewListEmpty: "Mindestens ein Wort hinzufÃ¼gen",
+  languagePressPlayToSpell: "DrÃ¼cken Sie Abspielen, um mit dem Buchstabieren zu beginnen",
+  languageNewListKeyboardHint: "Titel und WÃ¶rter links mit der Tastatur eingeben",
 
   languagePackMyLists: "Meine Listen",
 
-  deleteLanguagePack: "Liste löschen",
+  deleteLanguagePack: "Liste lÃ¶schen",
 
-  confirmDeleteLanguagePack: "„{title}“ löschen?",
+  confirmDeleteLanguagePack: "â€ž{title}â€œ lÃ¶schen?",
 
   modeTabletsHint:
-    "Normal und Mini sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer. Begleiter startet die Tablet-Brücke; ausgewählt ist er nur, solange ein Tablet verbunden ist.",
+    "Normal und Mini sind Tastatur. Unterricht Ã¶ffnet Lektionen; Musik zeigt den Synthesizer. Begleiter startet die Tablet-BrÃ¼cke; ausgewÃ¤hlt ist er nur, solange ein Tablet verbunden ist.",
 
   miniModeAutoDescription:
     "Auf einem einzelnen Display oder bei gespiegelter Einrichtung erscheint die Tastatur automatisch, wenn Sie ein Eingabefeld antippen.",
@@ -127,27 +163,27 @@ export const de: Record<keyof typeof en, string> = {
 
   inputPreviewLabel: "Zieleingabe",
 
-  inputPreviewWaiting: "Vorschau wird geladen…",
+  inputPreviewWaiting: "Vorschau wird geladenâ€¦",
 
   miniModeTransparentDescription:
     "Tasten nur mit Umrissen anzeigen, damit Apps darunter sichtbar bleiben.",
 
   transparentKeyColor: "Farbe der transparenten Tasten",
 
-  transparentKeyColorWhite: "Weiß",
+  transparentKeyColorWhite: "WeiÃŸ",
 
   transparentKeyColorDarkGray: "Dunkelgrau",
 
   transparentKeyColorSilver: "Silber",
 
-  miniModeCollapse: "Zurück zum Mini-Modus",
+  miniModeCollapse: "ZurÃ¼ck zum Mini-Modus",
 
-  largeHeaders: "Große Header für einfacheres Ändern der Größe",
+  largeHeaders: "GroÃŸe Header fÃ¼r einfacheres Ã„ndern der GrÃ¶ÃŸe",
 
   largeHeadersHint:
-    "Verdoppelt die Headerhöhe und die Header-Schaltflächen. Ziehen Sie den leeren Headerbereich, um Abschnitts- oder Fensterhöhe zu ändern.",
+    "Verdoppelt die HeaderhÃ¶he und die Header-SchaltflÃ¤chen. Ziehen Sie den leeren Headerbereich, um Abschnitts- oder FensterhÃ¶he zu Ã¤ndern.",
 
-  primary: "Primär",
+  primary: "PrimÃ¤r",
 
   mouse: "Maus",
 
@@ -177,16 +213,16 @@ export const de: Record<keyof typeof en, string> = {
 
   showQuickActionsBar: "Schnellaktionsleiste anzeigen",
 
-  phrasesAndSuggestions: "Phrasen & Vorschläge",
+  phrasesAndSuggestions: "Phrasen & VorschlÃ¤ge",
 
   showPhrasesSection: "Phrasenbereich anzeigen",
 
   showSuggestionsBar: "Vorschlagsleiste anzeigen",
 
-  predictionDictionaries: "Vorhersage-Wörterbücher",
+  predictionDictionaries: "Vorhersage-WÃ¶rterbÃ¼cher",
 
   predictionDictionariesHint:
-    "Englisch ist enthalten. Andere Sprachen bei Bedarf herunterladen. Vorschläge folgen der Tipp-Sprache.",
+    "Englisch ist enthalten. Andere Sprachen bei Bedarf herunterladen. VorschlÃ¤ge folgen der Tipp-Sprache.",
 
   wordPackInstalled: "Installiert",
 
@@ -196,15 +232,15 @@ export const de: Record<keyof typeof en, string> = {
 
   wordPackUninstall: "Entfernen",
 
-  wordPackInstalling: "Wird installiert…",
+  wordPackInstalling: "Wird installiertâ€¦",
 
-  wordPackUninstalling: "Wird entfernt…",
+  wordPackUninstalling: "Wird entferntâ€¦",
 
   wordPackRequired: "Erforderlich",
 
-  wordPackInstallFailed: "Wörterbuch konnte nicht installiert werden",
+  wordPackInstallFailed: "WÃ¶rterbuch konnte nicht installiert werden",
 
-  wordPackUninstallFailed: "Wörterbuch konnte nicht entfernt werden",
+  wordPackUninstallFailed: "WÃ¶rterbuch konnte nicht entfernt werden",
 
   showDictationControl: "Diktat anzeigen (Mikrofon)",
 
@@ -215,7 +251,7 @@ export const de: Record<keyof typeof en, string> = {
   taskbarPosition: "Taskleistenposition",
 
   taskbarPositionHint:
-    "Verschiebt die Windows-Taskleiste an eine andere Bildschirmkante. Unter Windows 11 sind links und rechts nicht unterstützt.",
+    "Verschiebt die Windows-Taskleiste an eine andere Bildschirmkante. Unter Windows 11 sind links und rechts nicht unterstÃ¼tzt.",
 
   taskbarPositionBottom: "Unten",
 
@@ -228,19 +264,19 @@ export const de: Record<keyof typeof en, string> = {
   taskbarPositionApplied: "Taskleistenposition aktualisiert. Explorer wurde neu gestartet.",
 
   taskbarPositionUnsupported:
-    "Diese Taskleistenposition wird von dieser Windows-Version nicht unterstützt.",
+    "Diese Taskleistenposition wird von dieser Windows-Version nicht unterstÃ¼tzt.",
 
-  taskbarPositionFailed: "Taskleistenposition konnte nicht geändert werden.",
+  taskbarPositionFailed: "Taskleistenposition konnte nicht geÃ¤ndert werden.",
 
   opacity: "Deckkraft",
 
   appLanguage: "App-Sprache",
 
-  appLanguageHint: "Menüs, Phrasen und Sprache",
+  appLanguageHint: "MenÃ¼s, Phrasen und Sprache",
 
   typingLanguage: "Eingabesprache",
 
-  typingLanguageHint: "Windows-Tastatursprache für die Eingabe",
+  typingLanguageHint: "Windows-Tastatursprache fÃ¼r die Eingabe",
 
   onscreenLayout: "Bildschirmlayout",
 
@@ -254,7 +290,7 @@ export const de: Record<keyof typeof en, string> = {
 
   languageGerman: "Deutsch",
 
-  languageFrench: "Französisch",
+  languageFrench: "FranzÃ¶sisch",
 
   languageItalian: "Italienisch",
 
@@ -263,23 +299,23 @@ export const de: Record<keyof typeof en, string> = {
   languagePortuguese: "Portugiesisch",
 
 
-  resetSettings: "Einstellungen zurücksetzen",
+  resetSettings: "Einstellungen zurÃ¼cksetzen",
 
   resetSettingsHint:
-    "Stellt Layout, Monitorposition, Panelgrößen und alle anderen Einstellungen auf die Standardwerte zurück.",
+    "Stellt Layout, Monitorposition, PanelgrÃ¶ÃŸen und alle anderen Einstellungen auf die Standardwerte zurÃ¼ck.",
 
-  resetUi: "Oberfläche zurücksetzen",
+  resetUi: "OberflÃ¤che zurÃ¼cksetzen",
 
   resetUiHint:
-    "Stellt alle Einstellungen (Thema, Sichtbarkeit, Layout, Sprachen) zurück. Behält Schnellaktionen, Makros, Phrasen und Vorhersagen.",
+    "Stellt alle Einstellungen (Thema, Sichtbarkeit, Layout, Sprachen) zurÃ¼ck. BehÃ¤lt Schnellaktionen, Makros, Phrasen und Vorhersagen.",
 
-  wipeProfile: "Profil löschen",
+  wipeProfile: "Profil lÃ¶schen",
 
   wipeProfileHint:
-    "Löscht Schnellaktionen, Makros, Phrasen, Vorhersagen und Kopfverfolgung und setzt alle Einstellungen zurück.",
+    "LÃ¶scht Schnellaktionen, Makros, Phrasen, Vorhersagen und Kopfverfolgung und setzt alle Einstellungen zurÃ¼ck.",
 
   wipeProfileConfirm:
-    "Dieses Profil löschen? Alle Schnellaktionen, Makros, Phrasen, Vorhersagen und Einstellungen werden zurückgesetzt.",
+    "Dieses Profil lÃ¶schen? Alle Schnellaktionen, Makros, Phrasen, Vorhersagen und Einstellungen werden zurÃ¼ckgesetzt.",
 
   saveProfile: "Profil speichern",
 
@@ -292,7 +328,7 @@ export const de: Record<keyof typeof en, string> = {
 
   profileDeleted: "Profil entfernt.",
 
-  profileWiped: "Profil gelöscht.",
+  profileWiped: "Profil gelÃ¶scht.",
 
   layoutEdit: "Layout bearbeiten",
 
@@ -320,7 +356,7 @@ export const de: Record<keyof typeof en, string> = {
 
   inputError: "Eingabefehler:",
 
-  dismiss: "Schließen",
+  dismiss: "SchlieÃŸen",
 
   appearance: "Darstellung",
 
@@ -352,45 +388,45 @@ export const de: Record<keyof typeof en, string> = {
 
   synthesizerHint: "Tippen Sie Tasten, um Noten zu spielen",
 
-  synthesizerVolume: "Lautstärke",
+  synthesizerVolume: "LautstÃ¤rke",
 
   dictationStart: "Diktat starten",
 
   dictationStop: "Diktat stoppen",
 
-  dictationListening: "Hört zu…",
+  dictationListening: "HÃ¶rt zuâ€¦",
 
   dictationErrorNoLanguage:
-    "Spracherkennung für diese Eingabesprache ist nicht installiert. Fügen Sie das Sprachpaket unter Windows-Einstellungen → Zeit und Sprache → Sprache hinzu und versuchen Sie es erneut.",
+    "Spracherkennung fÃ¼r diese Eingabesprache ist nicht installiert. FÃ¼gen Sie das Sprachpaket unter Windows-Einstellungen â†’ Zeit und Sprache â†’ Sprache hinzu und versuchen Sie es erneut.",
 
-  dictationErrorUnavailable: "Sprachdiktat ist nur unter Windows verfügbar.",
+  dictationErrorUnavailable: "Sprachdiktat ist nur unter Windows verfÃ¼gbar.",
 
   dictationErrorSpeechPrivacy:
-    "Online-Spracherkennung ist in Windows deaktiviert. Aktivieren Sie sie unter Datenschutz und Sicherheit → Sprache und versuchen Sie es erneut. (Dies ist keine Mikrofonberechtigung.)",
+    "Online-Spracherkennung ist in Windows deaktiviert. Aktivieren Sie sie unter Datenschutz und Sicherheit â†’ Sprache und versuchen Sie es erneut. (Dies ist keine Mikrofonberechtigung.)",
 
   dictationErrorGroqKey:
-    "Windows-Spracherkennung unterstützt diese Sprache nicht. Fügen Sie in den Einstellungen einen kostenlosen Groq-API-Schlüssel hinzu (console.groq.com).",
+    "Windows-Spracherkennung unterstÃ¼tzt diese Sprache nicht. FÃ¼gen Sie in den Einstellungen einen kostenlosen Groq-API-SchlÃ¼ssel hinzu (console.groq.com).",
 
   dictationErrorGroqApi:
-    "Cloud-Diktat fehlgeschlagen. Prüfen Sie Internetverbindung und Groq-API-Schlüssel und versuchen Sie es erneut.",
+    "Cloud-Diktat fehlgeschlagen. PrÃ¼fen Sie Internetverbindung und Groq-API-SchlÃ¼ssel und versuchen Sie es erneut.",
 
   dictationUnavailableUnsupported:
-    "Diktat nicht verfügbar — fügen Sie in den Einstellungen einen kostenlosen Groq-API-Schlüssel für diese Sprache hinzu",
+    "Diktat nicht verfÃ¼gbar â€” fÃ¼gen Sie in den Einstellungen einen kostenlosen Groq-API-SchlÃ¼ssel fÃ¼r diese Sprache hinzu",
 
-  dictationUnavailableOffline: "Diktat nicht verfügbar — eine Internetverbindung ist erforderlich",
+  dictationUnavailableOffline: "Diktat nicht verfÃ¼gbar â€” eine Internetverbindung ist erforderlich",
 
   dictationGroqRemainingToday: "Verbleibende Groq-Anfragen heute",
 
-  dictationOpenSpeechSettings: "Spracheinstellungen öffnen",
+  dictationOpenSpeechSettings: "Spracheinstellungen Ã¶ffnen",
 
   dictationOpenSpeechLanguageSettings: "Sprachsprache installieren",
 
-  dictationOpenAppSettings: "Einstellungen öffnen",
+  dictationOpenAppSettings: "Einstellungen Ã¶ffnen",
 
-  groqApiKeyLabel: "Groq-API-Schlüssel (Cloud-Diktat)",
+  groqApiKeyLabel: "Groq-API-SchlÃ¼ssel (Cloud-Diktat)",
 
   groqApiKeyHint:
-    "Erforderlich für Sprachen, die Windows nicht unterstützt (z. B. Griechisch). Kostenloser Schlüssel unter console.groq.com. Sie können auch die Umgebungsvariable GROQ_API_KEY setzen.",
+    "Erforderlich fÃ¼r Sprachen, die Windows nicht unterstÃ¼tzt (z. B. Griechisch). Kostenloser SchlÃ¼ssel unter console.groq.com. Sie kÃ¶nnen auch die Umgebungsvariable GROQ_API_KEY setzen.",
 
   mute: "Stumm",
 
@@ -414,9 +450,9 @@ export const de: Record<keyof typeof en, string> = {
 
   loadSong: "Laden",
 
-  deleteSong: "Löschen",
+  deleteSong: "LÃ¶schen",
 
-  confirmDeleteSong: "Importiertes Lied „{title}“ löschen?",
+  confirmDeleteSong: "Importiertes Lied â€ž{title}â€œ lÃ¶schen?",
 
   builtInSongs: "Eingebaut",
 
@@ -433,7 +469,7 @@ export const de: Record<keyof typeof en, string> = {
   songNeedsOctaves: "Verschieben Sie das Klavier auf {range}, um dieses Lied abzudecken",
 
   songWiderThanPiano:
-    "Dieses Lied ist breiter als 5 Oktaven — einige Noten liegen außerhalb. Mit ◀ ▶ verschieben.",
+    "Dieses Lied ist breiter als 5 Oktaven â€” einige Noten liegen auÃŸerhalb. Mit â—€ â–¶ verschieben.",
 
   pianoRange: "Klavier",
 
@@ -441,7 +477,7 @@ export const de: Record<keyof typeof en, string> = {
 
   shiftPianoLower: "Klavier tiefer verschieben",
 
-  shiftPianoHigher: "Klavier höher verschieben",
+  shiftPianoHigher: "Klavier hÃ¶her verschieben",
 
   octavesShort: "Oktaven",
 
@@ -463,7 +499,7 @@ export const de: Record<keyof typeof en, string> = {
 
   inputAreaCompact: "Tastatur und Trackpad maximieren",
 
-  showMouseBottomRow: "Zeile Ziehen, Präzision & Scrollen anzeigen",
+  showMouseBottomRow: "Zeile Ziehen, PrÃ¤zision & Scrollen anzeigen",
 
   resizeInputRow: "Tastatur- und Mauspanels skalieren",
 
@@ -473,7 +509,7 @@ export const de: Record<keyof typeof en, string> = {
 
   mousePanelColor: "Mauspanel",
 
-  chooseBackgroundImage: "Hintergrundbild wählen",
+  chooseBackgroundImage: "Hintergrundbild wÃ¤hlen",
 
   removeBackgroundImage: "Hintergrundbild entfernen",
 
@@ -483,19 +519,19 @@ export const de: Record<keyof typeof en, string> = {
 
   createProfile: "Profildatei erstellen",
 
-  updateAvailable: "Update verfügbar",
+  updateAvailable: "Update verfÃ¼gbar",
 
-  updateVersionInfo: "Eine neue Version ist verfügbar:",
+  updateVersionInfo: "Eine neue Version ist verfÃ¼gbar:",
 
   updateNow: "Jetzt aktualisieren",
 
-  updateLater: "Später",
+  updateLater: "SpÃ¤ter",
 
-  skipThisVersion: "Diese Version überspringen",
+  skipThisVersion: "Diese Version Ã¼berspringen",
 
-  updateDownloading: "Update wird heruntergeladen…",
+  updateDownloading: "Update wird heruntergeladenâ€¦",
 
-  updatePreparing: "Download wird vorbereitet…",
+  updatePreparing: "Download wird vorbereitetâ€¦",
 
   updateFailed: "Update fehlgeschlagen:",
 
@@ -505,7 +541,7 @@ export const de: Record<keyof typeof en, string> = {
 
   updateUpToDate: "Sie haben die neueste Version.",
 
-  updateCheckFailed: "Updates konnten nicht geprüft werden.",
+  updateCheckFailed: "Updates konnten nicht geprÃ¼ft werden.",
 
   settingsVisibleSections: "Sichtbare Bereiche",
 
@@ -521,15 +557,15 @@ export const de: Record<keyof typeof en, string> = {
 
   quickActionTypeUrl: "URL",
 
-  quickActionAdd: "Aktion hinzufügen",
+  quickActionAdd: "Aktion hinzufÃ¼gen",
 
-  quickActionDelete: "Löschen",
+  quickActionDelete: "LÃ¶schen",
 
-  quickActionSearchApps: "Installierte Programme suchen…",
+  quickActionSearchApps: "Installierte Programme suchenâ€¦",
 
-  quickActionBrowse: "Durchsuchen…",
+  quickActionBrowse: "Durchsuchenâ€¦",
 
-  quickActionLoadingApps: "Installierte Programme werden geladen…",
+  quickActionLoadingApps: "Installierte Programme werden geladenâ€¦",
 
   quickActionNoApps: "Keine passenden Programme gefunden.",
 
@@ -568,7 +604,7 @@ export const de: Record<keyof typeof en, string> = {
   companionUsbStep4: "On the tablet, scan the updated QR (or paste JSON). Same protocol as Wi-Fi.",
   companionUsbStep5: "Already paired? Scanning the new QR updates the IP and reconnects when the host ID matches.",
 
-  aboutDescription: "Assistive virtuelle Tastatur und Maus für Windows.",
+  aboutDescription: "Assistive virtuelle Tastatur und Maus fÃ¼r Windows.",
 
   aboutVersion: "Version",
 

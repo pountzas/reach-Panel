@@ -22,6 +22,7 @@ function languageLessonModeFromStore(state: ReturnType<typeof useAppStore.getSta
     settings: state.settings,
     languageLessonPlaying: state.languageLessonPlaying,
     languageListAuthoringActive: state.languageListAuthoringActive,
+    languageSubjectTab: state.languageSubjectTab,
   };
 }
 
@@ -46,6 +47,7 @@ export function useLanguageLessonPhysicalKeyboard() {
   const settings = useAppStore((s) => s.settings);
   const languageLessonPlaying = useAppStore((s) => s.languageLessonPlaying);
   const languageListAuthoringActive = useAppStore((s) => s.languageListAuthoringActive);
+  const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
   const languageKeyInput = useAppStore((s) => s.languageKeyInput);
   const languageBackspace = useAppStore((s) => s.languageBackspace);
   const checkLanguageAnswer = useAppStore((s) => s.checkLanguageAnswer);
@@ -60,6 +62,7 @@ export function useLanguageLessonPhysicalKeyboard() {
     settings,
     languageLessonPlaying,
     languageListAuthoringActive,
+    languageSubjectTab,
   });
 
   useEffect(() => {

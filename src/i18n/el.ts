@@ -1,4 +1,4 @@
-import { en } from "./en";
+﻿import { en } from "./en";
 
 
 
@@ -6,540 +6,576 @@ export const el: Record<keyof typeof en, string> = {
 
   appTitle: "ReachPanel",
 
-  collapse: "Σύμπτυξη",
+  collapse: "Î£ÏÎ¼Ï€Ï„Ï…Î¾Î·",
 
-  expand: "Ανάπτυξη",
+  expand: "Î‘Î½Î¬Ï€Ï„Ï…Î¾Î·",
 
-  minimizeSection: "Σμίκρυνση",
+  minimizeSection: "Î£Î¼Î¯ÎºÏÏ…Î½ÏƒÎ·",
 
-  dockSection: "Πρόσδεση ενότητας",
+  dockSection: "Î ÏÏŒÏƒÎ´ÎµÏƒÎ· ÎµÎ½ÏŒÏ„Î·Ï„Î±Ï‚",
 
-  undockSection: "Αποδέσμευση ενότητας",
+  undockSection: "Î‘Ï€Î¿Î´Î­ÏƒÎ¼ÎµÏ…ÏƒÎ· ÎµÎ½ÏŒÏ„Î·Ï„Î±Ï‚",
 
-  settings: "Ρυθμίσεις",
+  settings: "Î¡Ï…Î¸Î¼Î¯ÏƒÎµÎ¹Ï‚",
 
-  close: "Κλείσιμο",
+  close: "ÎšÎ»ÎµÎ¯ÏƒÎ¹Î¼Î¿",
 
-  add: "Προσθήκη",
+  add: "Î ÏÎ¿ÏƒÎ¸Î®ÎºÎ·",
 
-  appNotInstalled: "Το {app} δεν είναι εγκατεστημένο.",
+  appNotInstalled: "Î¤Î¿ {app} Î´ÎµÎ½ ÎµÎ¯Î½Î±Î¹ ÎµÎ³ÎºÎ±Ï„ÎµÏƒÏ„Î·Î¼Î­Î½Î¿.",
 
-  installApp: "Εγκατάσταση",
+  installApp: "Î•Î³ÎºÎ±Ï„Î¬ÏƒÏ„Î±ÏƒÎ·",
 
-  profile: "Προφίλ",
+  profile: "Î ÏÎ¿Ï†Î¯Î»",
 
-  accessibilityScreen: "Οθόνη προσβασιμότητας",
+  accessibilityScreen: "ÎŸÎ¸ÏŒÎ½Î· Ï€ÏÎ¿ÏƒÎ²Î±ÏƒÎ¹Î¼ÏŒÏ„Î·Ï„Î±Ï‚",
 
-  miniMode: "Λειτουργία Mini",
+  miniMode: "Î›ÎµÎ¹Ï„Î¿Ï…ÏÎ³Î¯Î± Mini",
 
-  modeNormal: "Κανονική",
+  modeNormal: "ÎšÎ±Î½Î¿Î½Î¹ÎºÎ®",
 
   modeMini: "Mini",
 
-  modeTeaching: "Διδασκαλία",
+  modeTeaching: "Î”Î¹Î´Î±ÏƒÎºÎ±Î»Î¯Î±",
 
-  modeCompanion: "Συνοδός",
+  modeCompanion: "Î£Ï…Î½Î¿Î´ÏŒÏ‚",
 
-  teachingLessonMusic: "Μουσική",
+  teachingLessonMusic: "ÎœÎ¿Ï…ÏƒÎ¹ÎºÎ®",
 
-  teachingLessonMath: "Μαθηματικά",
+  teachingLessonMath: "ÎœÎ±Î¸Î·Î¼Î±Ï„Î¹ÎºÎ¬",
 
-  teachingLessonLanguage: "Γλώσσα",
+  teachingLessonLanguage: "Î“Î»ÏŽÏƒÏƒÎ±",
 
-  comingSoon: "Σύντομα",
 
-  mathLessonTitle: "Μαθηματικά",
+  teachingTabSpelling: "Ορθογραφία",
 
-  languageLessonTitle: "Γλώσσα",
+  teachingTabFreeWrite: "Ελεύθερη γραφή",
 
-  languageLesson: "Μάθημα γλώσσας",
+  freeWriteNotepad: "Σημειωματάριο",
 
-  selectLanguagePack: "Επιλογή λίστας λέξεων",
+  freeWriteClearAll: "Διαγραφή όλων",
 
-  languagePackBuiltIn: "Ενσωματωμένες λίστες",
+  freeWriteClearConfirm: "Διαγραφή ολόκληρου του προσχεδίου;",
 
-  languagePrompt: "Γράψε αυτή τη λέξη",
+  freeWriteZoomIn: "Μεγέθυνση",
 
-  languageYourAnswer: "Η ορθογραφία σου",
+  freeWriteZoomOut: "Σμίκρυνση",
 
-  languageCheck: "Έλεγχος",
+  freeWriteWordWrap: "Αναδίπλωση κειμένου",
 
-  languageIncorrect: "Όχι ακόμα — δοκίμασε ξανά",
+  freeWriteLineNumbers: "Αριθμοί γραμμών",
 
-  languageUpcomingTasks: "Επόμενες λέξεις",
+  freeWriteNotepadEmpty: "Πληκτρολογήστε σημειώσεις εδώ…",
 
-  languageAgeBand: "Ηλικιακή ομάδα",
+  freeWriteOpenPdf: "Άνοιγμα PDF…",
 
-  languageLessonLanguage: "Γλώσσα",
+  freeWriteRecentPdfs: "Πρόσφατα PDF",
 
-  languageLessonLangEl: "Ελληνικά",
+  freeWritePdfMissing: "Αυτό το αρχείο PDF δεν βρέθηκε.",
 
-  languageLessonLangEn: "Αγγλικά",
+  freeWritePdfEmpty: "Ανοίξτε ένα PDF για ανάγνωση δίπλα στις σημειώσεις σας.",
 
-  languageAgeBandEarly: "Μικρή (6–8)",
+  freeWritePdfPrevPage: "Προηγούμενη σελίδα",
 
-  languageAgeBandPrimary: "Δημοτικό (9–11)",
+  freeWritePdfNextPage: "Επόμενη σελίδα",
 
-  languageAgeBandLowerSecondary: "Γυμνάσιο (12–14)",
+  freeWriteRemovePdf: "Αφαίρεση",
 
-  languageAgeBandUpperSecondary: "Λύκειο (15+)",
 
-  languageLessonIgnoreCase: "Αγνόηση πεζών/κεφαλαίων στον έλεγχο",
+  comingSoon: "Î£ÏÎ½Ï„Î¿Î¼Î±",
 
-  languageLessonIgnoreTones: "Αγνόηση τόνων στον έλεγχο",
+  mathLessonTitle: "ÎœÎ±Î¸Î·Î¼Î±Ï„Î¹ÎºÎ¬",
 
-  languageLessonTonesOff: "Τόνοι: όχι απαραίτητοι",
+  languageLessonTitle: "Î“Î»ÏŽÏƒÏƒÎ±",
 
-  languageLessonTonesOn: "Τόνοι: απαιτούνται",
+  languageLesson: "ÎœÎ¬Î¸Î·Î¼Î± Î³Î»ÏŽÏƒÏƒÎ±Ï‚",
 
-  languageNewList: "Νέα λίστα λέξεων",
+  selectLanguagePack: "Î•Ï€Î¹Î»Î¿Î³Î® Î»Î¯ÏƒÏ„Î±Ï‚ Î»Î­Î¾ÎµÏ‰Î½",
 
-  languageNewListTitle: "Τίτλος λίστας",
+  languagePackBuiltIn: "Î•Î½ÏƒÏ‰Î¼Î±Ï„Ï‰Î¼Î­Î½ÎµÏ‚ Î»Î¯ÏƒÏ„ÎµÏ‚",
 
-  languageNewListWords: "Λέξεις (μία ανά γραμμή)",
+  languagePrompt: "Î“ÏÎ¬ÏˆÎµ Î±Ï…Ï„Î® Ï„Î· Î»Î­Î¾Î·",
 
-  languageNewListSave: "Αποθήκευση λίστας",
+  languageYourAnswer: "Î— Î¿ÏÎ¸Î¿Î³ÏÎ±Ï†Î¯Î± ÏƒÎ¿Ï…",
 
-  languageNewListCancel: "Άκυρο",
+  languageCheck: "ÎˆÎ»ÎµÎ³Ï‡Î¿Ï‚",
 
-  languageNewListEmpty: "Πρόσθεσε τουλάχιστον μία λέξη",
-  languagePressPlayToSpell: "Πάτα Αναπαραγωγή για να ξεκινήσεις την ορθογραφία",
-  languageNewListKeyboardHint: "Χρησιμοποίησε το πληκτρολόγιο για τον τίτλο και τις λέξεις στα αριστερά",
+  languageIncorrect: "ÎŒÏ‡Î¹ Î±ÎºÏŒÎ¼Î± â€” Î´Î¿ÎºÎ¯Î¼Î±ÏƒÎµ Î¾Î±Î½Î¬",
 
-  languagePackMyLists: "Οι λίστες μου",
+  languageUpcomingTasks: "Î•Ï€ÏŒÎ¼ÎµÎ½ÎµÏ‚ Î»Î­Î¾ÎµÎ¹Ï‚",
 
-  deleteLanguagePack: "Διαγραφή λίστας",
+  languageAgeBand: "Î—Î»Î¹ÎºÎ¹Î±ÎºÎ® Î¿Î¼Î¬Î´Î±",
 
-  confirmDeleteLanguagePack: "Διαγραφή «{title}»;",
+  languageLessonLanguage: "Î“Î»ÏŽÏƒÏƒÎ±",
+
+  languageLessonLangEl: "Î•Î»Î»Î·Î½Î¹ÎºÎ¬",
+
+  languageLessonLangEn: "Î‘Î³Î³Î»Î¹ÎºÎ¬",
+
+  languageAgeBandEarly: "ÎœÎ¹ÎºÏÎ® (6â€“8)",
+
+  languageAgeBandPrimary: "Î”Î·Î¼Î¿Ï„Î¹ÎºÏŒ (9â€“11)",
+
+  languageAgeBandLowerSecondary: "Î“Ï…Î¼Î½Î¬ÏƒÎ¹Î¿ (12â€“14)",
+
+  languageAgeBandUpperSecondary: "Î›ÏÎºÎµÎ¹Î¿ (15+)",
+
+  languageLessonIgnoreCase: "Î‘Î³Î½ÏŒÎ·ÏƒÎ· Ï€ÎµÎ¶ÏŽÎ½/ÎºÎµÏ†Î±Î»Î±Î¯Ï‰Î½ ÏƒÏ„Î¿Î½ Î­Î»ÎµÎ³Ï‡Î¿",
+
+  languageLessonIgnoreTones: "Î‘Î³Î½ÏŒÎ·ÏƒÎ· Ï„ÏŒÎ½Ï‰Î½ ÏƒÏ„Î¿Î½ Î­Î»ÎµÎ³Ï‡Î¿",
+
+  languageLessonTonesOff: "Î¤ÏŒÎ½Î¿Î¹: ÏŒÏ‡Î¹ Î±Ï€Î±ÏÎ±Î¯Ï„Î·Ï„Î¿Î¹",
+
+  languageLessonTonesOn: "Î¤ÏŒÎ½Î¿Î¹: Î±Ï€Î±Î¹Ï„Î¿ÏÎ½Ï„Î±Î¹",
+
+  languageNewList: "ÎÎ­Î± Î»Î¯ÏƒÏ„Î± Î»Î­Î¾ÎµÏ‰Î½",
+
+  languageNewListTitle: "Î¤Î¯Ï„Î»Î¿Ï‚ Î»Î¯ÏƒÏ„Î±Ï‚",
+
+  languageNewListWords: "Î›Î­Î¾ÎµÎ¹Ï‚ (Î¼Î¯Î± Î±Î½Î¬ Î³ÏÎ±Î¼Î¼Î®)",
+
+  languageNewListSave: "Î‘Ï€Î¿Î¸Î®ÎºÎµÏ…ÏƒÎ· Î»Î¯ÏƒÏ„Î±Ï‚",
+
+  languageNewListCancel: "Î†ÎºÏ…ÏÎ¿",
+
+  languageNewListEmpty: "Î ÏÏŒÏƒÎ¸ÎµÏƒÎµ Ï„Î¿Ï…Î»Î¬Ï‡Î¹ÏƒÏ„Î¿Î½ Î¼Î¯Î± Î»Î­Î¾Î·",
+  languagePressPlayToSpell: "Î Î¬Ï„Î± Î‘Î½Î±Ï€Î±ÏÎ±Î³Ï‰Î³Î® Î³Î¹Î± Î½Î± Î¾ÎµÎºÎ¹Î½Î®ÏƒÎµÎ¹Ï‚ Ï„Î·Î½ Î¿ÏÎ¸Î¿Î³ÏÎ±Ï†Î¯Î±",
+  languageNewListKeyboardHint: "Î§ÏÎ·ÏƒÎ¹Î¼Î¿Ï€Î¿Î¯Î·ÏƒÎµ Ï„Î¿ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î¹Î¿ Î³Î¹Î± Ï„Î¿Î½ Ï„Î¯Ï„Î»Î¿ ÎºÎ±Î¹ Ï„Î¹Ï‚ Î»Î­Î¾ÎµÎ¹Ï‚ ÏƒÏ„Î± Î±ÏÎ¹ÏƒÏ„ÎµÏÎ¬",
+
+  languagePackMyLists: "ÎŸÎ¹ Î»Î¯ÏƒÏ„ÎµÏ‚ Î¼Î¿Ï…",
+
+  deleteLanguagePack: "Î”Î¹Î±Î³ÏÎ±Ï†Î® Î»Î¯ÏƒÏ„Î±Ï‚",
+
+  confirmDeleteLanguagePack: "Î”Î¹Î±Î³ÏÎ±Ï†Î® Â«{title}Â»;",
 
   modeTabletsHint:
-    "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή. Ο Συνοδός ξεκινά τη γέφυρα του tablet· επιλέγεται μόνο όσο είναι συνδεδεμένο ένα tablet.",
+    "ÎšÎ±Î½Î¿Î½Î¹ÎºÎ® ÎºÎ±Î¹ Mini ÎµÎ¯Î½Î±Î¹ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î¹Î¿. Î— Î”Î¹Î´Î±ÏƒÎºÎ±Î»Î¯Î± Î±Î½Î¿Î¯Î³ÎµÎ¹ Î¼Î±Î¸Î®Î¼Î±Ï„Î±Â· Î· ÎœÎ¿Ï…ÏƒÎ¹ÎºÎ® Î´ÎµÎ¯Ï‡Î½ÎµÎ¹ Ï„Î¿Î½ ÏƒÏ…Î½Î¸ÎµÏ„Î·Ï„Î®. ÎŸ Î£Ï…Î½Î¿Î´ÏŒÏ‚ Î¾ÎµÎºÎ¹Î½Î¬ Ï„Î· Î³Î­Ï†Ï…ÏÎ± Ï„Î¿Ï… tabletÂ· ÎµÏ€Î¹Î»Î­Î³ÎµÏ„Î±Î¹ Î¼ÏŒÎ½Î¿ ÏŒÏƒÎ¿ ÎµÎ¯Î½Î±Î¹ ÏƒÏ…Î½Î´ÎµÎ´ÎµÎ¼Î­Î½Î¿ Î­Î½Î± tablet.",
 
   miniModeAutoDescription:
-    "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
+    "Î£Îµ Î¼Î¯Î± Î¿Î¸ÏŒÎ½Î· Î® ÏƒÎµ ÎºÎ±Ï„Î¿Ï€Ï„ÏÎ¹ÎºÎ® Î´Î¹Î¬Ï„Î±Î¾Î·, Ï„Î¿ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î¹Î¿ ÎµÎ¼Ï†Î±Î½Î¯Î¶ÎµÏ„Î±Î¹ Î±Ï…Ï„ÏŒÎ¼Î±Ï„Î± ÏŒÏ„Î±Î½ Ï€Î±Ï„Î¬Ï„Îµ Î­Î½Î± Ï€ÎµÎ´Î¯Î¿ ÎµÎ¹ÏƒÎ±Î³Ï‰Î³Î®Ï‚.",
 
-  miniModeOverrideLabel: "Λειτουργία Mini",
+  miniModeOverrideLabel: "Î›ÎµÎ¹Ï„Î¿Ï…ÏÎ³Î¯Î± Mini",
 
-  miniModeOverrideAuto: "Αυτόματο",
+  miniModeOverrideAuto: "Î‘Ï…Ï„ÏŒÎ¼Î±Ï„Î¿",
 
-  miniModeOverrideOn: "Ενεργό",
+  miniModeOverrideOn: "Î•Î½ÎµÏÎ³ÏŒ",
 
-  miniModeOverrideOff: "Ανενεργό",
+  miniModeOverrideOff: "Î‘Î½ÎµÎ½ÎµÏÎ³ÏŒ",
 
-  miniModeTransparent: "Διαφανές πληκτρολόγιο",
+  miniModeTransparent: "Î”Î¹Î±Ï†Î±Î½Î­Ï‚ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î¹Î¿",
 
-  inputPreviewLabel: "Πεδίο προορισμού",
+  inputPreviewLabel: "Î ÎµÎ´Î¯Î¿ Ï€ÏÎ¿Î¿ÏÎ¹ÏƒÎ¼Î¿Ï",
 
-  inputPreviewWaiting: "Αναμονή προεπισκόπησης…",
+  inputPreviewWaiting: "Î‘Î½Î±Î¼Î¿Î½Î® Ï€ÏÎ¿ÎµÏ€Î¹ÏƒÎºÏŒÏ€Î·ÏƒÎ·Ï‚â€¦",
 
   miniModeTransparentDescription:
-    "Εμφάνιση πλήκτρων μόνο με περίγραμμα ώστε να φαίνονται οι εφαρμογές από πίσω.",
+    "Î•Î¼Ï†Î¬Î½Î¹ÏƒÎ· Ï€Î»Î®ÎºÏ„ÏÏ‰Î½ Î¼ÏŒÎ½Î¿ Î¼Îµ Ï€ÎµÏÎ¯Î³ÏÎ±Î¼Î¼Î± ÏŽÏƒÏ„Îµ Î½Î± Ï†Î±Î¯Î½Î¿Î½Ï„Î±Î¹ Î¿Î¹ ÎµÏ†Î±ÏÎ¼Î¿Î³Î­Ï‚ Î±Ï€ÏŒ Ï€Î¯ÏƒÏ‰.",
 
-  transparentKeyColor: "Χρώμα διαφανών πλήκτρων",
+  transparentKeyColor: "Î§ÏÏŽÎ¼Î± Î´Î¹Î±Ï†Î±Î½ÏŽÎ½ Ï€Î»Î®ÎºÏ„ÏÏ‰Î½",
 
-  transparentKeyColorWhite: "Λευκό",
+  transparentKeyColorWhite: "Î›ÎµÏ…ÎºÏŒ",
 
-  transparentKeyColorDarkGray: "Σκούρο γκρι",
+  transparentKeyColorDarkGray: "Î£ÎºÎ¿ÏÏÎ¿ Î³ÎºÏÎ¹",
 
-  transparentKeyColorSilver: "Ασημί",
+  transparentKeyColorSilver: "Î‘ÏƒÎ·Î¼Î¯",
 
-  miniModeCollapse: "Επιστροφή στη λειτουργία Mini",
+  miniModeCollapse: "Î•Ï€Î¹ÏƒÏ„ÏÎ¿Ï†Î® ÏƒÏ„Î· Î»ÎµÎ¹Ï„Î¿Ï…ÏÎ³Î¯Î± Mini",
 
-  largeHeaders: "Μεγάλα headers για εύκολη αλλαγή μεγέθους",
+  largeHeaders: "ÎœÎµÎ³Î¬Î»Î± headers Î³Î¹Î± ÎµÏÎºÎ¿Î»Î· Î±Î»Î»Î±Î³Î® Î¼ÎµÎ³Î­Î¸Î¿Ï…Ï‚",
 
   largeHeadersHint:
-    "Διπλασιάζει το ύψος των headers και τα κουμπιά τους. Σύρετε την κενή περιοχή του header για να αλλάξετε το ύψος ενότητας ή παραθύρου.",
+    "Î”Î¹Ï€Î»Î±ÏƒÎ¹Î¬Î¶ÎµÎ¹ Ï„Î¿ ÏÏˆÎ¿Ï‚ Ï„Ï‰Î½ headers ÎºÎ±Î¹ Ï„Î± ÎºÎ¿Ï…Î¼Ï€Î¹Î¬ Ï„Î¿Ï…Ï‚. Î£ÏÏÎµÏ„Îµ Ï„Î·Î½ ÎºÎµÎ½Î® Ï€ÎµÏÎ¹Î¿Ï‡Î® Ï„Î¿Ï… header Î³Î¹Î± Î½Î± Î±Î»Î»Î¬Î¾ÎµÏ„Îµ Ï„Î¿ ÏÏˆÎ¿Ï‚ ÎµÎ½ÏŒÏ„Î·Ï„Î±Ï‚ Î® Ï€Î±ÏÎ±Î¸ÏÏÎ¿Ï….",
 
-  primary: "Κύρια",
+  primary: "ÎšÏÏÎ¹Î±",
 
-  mouse: "Ποντίκι",
+  mouse: "Î Î¿Î½Ï„Î¯ÎºÎ¹",
 
-  numpad: "Αριθμητικό",
+  numpad: "Î‘ÏÎ¹Î¸Î¼Î·Ï„Î¹ÎºÏŒ",
 
-  mousePanelLeft: "Αριστερά του πληκτρολογίου",
+  mousePanelLeft: "Î‘ÏÎ¹ÏƒÏ„ÎµÏÎ¬ Ï„Î¿Ï… Ï€Î»Î·ÎºÏ„ÏÎ¿Î»Î¿Î³Î¯Î¿Ï…",
 
-  mousePanelRight: "Δεξιά του πληκτρολογίου",
+  mousePanelRight: "Î”ÎµÎ¾Î¹Î¬ Ï„Î¿Ï… Ï€Î»Î·ÎºÏ„ÏÎ¿Î»Î¿Î³Î¯Î¿Ï…",
 
-  showMouseSection: "Εμφάνιση τμήματος ποντικιού",
+  showMouseSection: "Î•Î¼Ï†Î¬Î½Î¹ÏƒÎ· Ï„Î¼Î®Î¼Î±Ï„Î¿Ï‚ Ï€Î¿Î½Ï„Î¹ÎºÎ¹Î¿Ï",
 
-  hideMouseSection: "Απόκρυψη τμήματος ποντικιού",
+  hideMouseSection: "Î‘Ï€ÏŒÎºÏÏ…ÏˆÎ· Ï„Î¼Î®Î¼Î±Ï„Î¿Ï‚ Ï€Î¿Î½Ï„Î¹ÎºÎ¹Î¿Ï",
 
-  speed: "Ταχύτητα",
+  speed: "Î¤Î±Ï‡ÏÏ„Î·Ï„Î±",
 
-  speedSlow: "Αργή",
+  speedSlow: "Î‘ÏÎ³Î®",
 
-  speedVerySlow: "Πολύ αργή",
+  speedVerySlow: "Î Î¿Î»Ï Î±ÏÎ³Î®",
 
-  speedMedium: "Μέτρια",
+  speedMedium: "ÎœÎ­Ï„ÏÎ¹Î±",
 
-  speedFast: "Γρήγορη",
+  speedFast: "Î“ÏÎ®Î³Î¿ÏÎ·",
 
-  speedVeryFast: "Πολύ γρήγορη",
+  speedVeryFast: "Î Î¿Î»Ï Î³ÏÎ®Î³Î¿ÏÎ·",
 
-  quickActions: "Γρήγορες ενέργειες",
+  quickActions: "Î“ÏÎ®Î³Î¿ÏÎµÏ‚ ÎµÎ½Î­ÏÎ³ÎµÎ¹ÎµÏ‚",
 
-  showQuickActionsBar: "Εμφάνιση γρήγορων ενεργειών",
+  showQuickActionsBar: "Î•Î¼Ï†Î¬Î½Î¹ÏƒÎ· Î³ÏÎ®Î³Î¿ÏÏ‰Î½ ÎµÎ½ÎµÏÎ³ÎµÎ¹ÏŽÎ½",
 
-  phrasesAndSuggestions: "Φράσεις & Προτάσεις",
+  phrasesAndSuggestions: "Î¦ÏÎ¬ÏƒÎµÎ¹Ï‚ & Î ÏÎ¿Ï„Î¬ÏƒÎµÎ¹Ï‚",
 
-  showPhrasesSection: "Εμφάνιση φράσεων",
+  showPhrasesSection: "Î•Î¼Ï†Î¬Î½Î¹ÏƒÎ· Ï†ÏÎ¬ÏƒÎµÏ‰Î½",
 
-  showSuggestionsBar: "Εμφάνιση προτάσεων",
+  showSuggestionsBar: "Î•Î¼Ï†Î¬Î½Î¹ÏƒÎ· Ï€ÏÎ¿Ï„Î¬ÏƒÎµÏ‰Î½",
 
-  predictionDictionaries: "Λεξικά πρόβλεψης",
+  predictionDictionaries: "Î›ÎµÎ¾Î¹ÎºÎ¬ Ï€ÏÏŒÎ²Î»ÎµÏˆÎ·Ï‚",
 
   predictionDictionariesHint:
-    "Τα Αγγλικά περιλαμβάνονται. Κατεβάστε άλλες γλώσσες όπως χρειάζεται. Οι προτάσεις ακολουθούν τη γλώσσα πληκτρολόγησης.",
+    "Î¤Î± Î‘Î³Î³Î»Î¹ÎºÎ¬ Ï€ÎµÏÎ¹Î»Î±Î¼Î²Î¬Î½Î¿Î½Ï„Î±Î¹. ÎšÎ±Ï„ÎµÎ²Î¬ÏƒÏ„Îµ Î¬Î»Î»ÎµÏ‚ Î³Î»ÏŽÏƒÏƒÎµÏ‚ ÏŒÏ€Ï‰Ï‚ Ï‡ÏÎµÎ¹Î¬Î¶ÎµÏ„Î±Î¹. ÎŸÎ¹ Ï€ÏÎ¿Ï„Î¬ÏƒÎµÎ¹Ï‚ Î±ÎºÎ¿Î»Î¿Ï…Î¸Î¿ÏÎ½ Ï„Î· Î³Î»ÏŽÏƒÏƒÎ± Ï€Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î·ÏƒÎ·Ï‚.",
 
-  wordPackInstalled: "Εγκατεστημένο",
+  wordPackInstalled: "Î•Î³ÎºÎ±Ï„ÎµÏƒÏ„Î·Î¼Î­Î½Î¿",
 
-  wordPackNotInstalled: "Μη εγκατεστημένο",
+  wordPackNotInstalled: "ÎœÎ· ÎµÎ³ÎºÎ±Ï„ÎµÏƒÏ„Î·Î¼Î­Î½Î¿",
 
-  wordPackInstall: "Εγκατάσταση",
+  wordPackInstall: "Î•Î³ÎºÎ±Ï„Î¬ÏƒÏ„Î±ÏƒÎ·",
 
-  wordPackUninstall: "Αφαίρεση",
+  wordPackUninstall: "Î‘Ï†Î±Î¯ÏÎµÏƒÎ·",
 
-  wordPackInstalling: "Εγκατάσταση…",
+  wordPackInstalling: "Î•Î³ÎºÎ±Ï„Î¬ÏƒÏ„Î±ÏƒÎ·â€¦",
 
-  wordPackUninstalling: "Αφαίρεση…",
+  wordPackUninstalling: "Î‘Ï†Î±Î¯ÏÎµÏƒÎ·â€¦",
 
-  wordPackRequired: "Απαιτείται",
+  wordPackRequired: "Î‘Ï€Î±Î¹Ï„ÎµÎ¯Ï„Î±Î¹",
 
-  wordPackInstallFailed: "Αποτυχία εγκατάστασης λεξικού",
+  wordPackInstallFailed: "Î‘Ï€Î¿Ï„Ï…Ï‡Î¯Î± ÎµÎ³ÎºÎ±Ï„Î¬ÏƒÏ„Î±ÏƒÎ·Ï‚ Î»ÎµÎ¾Î¹ÎºÎ¿Ï",
 
-  wordPackUninstallFailed: "Αποτυχία αφαίρεσης λεξικού",
+  wordPackUninstallFailed: "Î‘Ï€Î¿Ï„Ï…Ï‡Î¯Î± Î±Ï†Î±Î¯ÏÎµÏƒÎ·Ï‚ Î»ÎµÎ¾Î¹ÎºÎ¿Ï",
 
-  showDictationControl: "Εμφάνιση υπαγόρευσης (μικρόφωνο)",
+  showDictationControl: "Î•Î¼Ï†Î¬Î½Î¹ÏƒÎ· Ï…Ï€Î±Î³ÏŒÏÎµÏ…ÏƒÎ·Ï‚ (Î¼Î¹ÎºÏÏŒÏ†Ï‰Î½Î¿)",
 
-  showInputPreview: "Ζωντανή προεπισκόπηση εισόδου (Normal)",
+  showInputPreview: "Î–Ï‰Î½Ï„Î±Î½Î® Ï€ÏÎ¿ÎµÏ€Î¹ÏƒÎºÏŒÏ€Î·ÏƒÎ· ÎµÎ¹ÏƒÏŒÎ´Î¿Ï… (Normal)",
 
-  showInputPreviewMiniMode: "Ζωντανή προεπισκόπηση εισόδου (Mini Mode)",
+  showInputPreviewMiniMode: "Î–Ï‰Î½Ï„Î±Î½Î® Ï€ÏÎ¿ÎµÏ€Î¹ÏƒÎºÏŒÏ€Î·ÏƒÎ· ÎµÎ¹ÏƒÏŒÎ´Î¿Ï… (Mini Mode)",
 
-  taskbarPosition: "Θέση γραμμής εργασιών",
+  taskbarPosition: "Î˜Î­ÏƒÎ· Î³ÏÎ±Î¼Î¼Î®Ï‚ ÎµÏÎ³Î±ÏƒÎ¹ÏŽÎ½",
 
   taskbarPositionHint:
-    "Μετακινεί τη γραμμή εργασιών Windows σε άλλη άκρη της οθόνης. Στα Windows 11 δεν υποστηρίζονται αριστερά ή δεξιά.",
+    "ÎœÎµÏ„Î±ÎºÎ¹Î½ÎµÎ¯ Ï„Î· Î³ÏÎ±Î¼Î¼Î® ÎµÏÎ³Î±ÏƒÎ¹ÏŽÎ½ Windows ÏƒÎµ Î¬Î»Î»Î· Î¬ÎºÏÎ· Ï„Î·Ï‚ Î¿Î¸ÏŒÎ½Î·Ï‚. Î£Ï„Î± Windows 11 Î´ÎµÎ½ Ï…Ï€Î¿ÏƒÏ„Î·ÏÎ¯Î¶Î¿Î½Ï„Î±Î¹ Î±ÏÎ¹ÏƒÏ„ÎµÏÎ¬ Î® Î´ÎµÎ¾Î¹Î¬.",
 
-  taskbarPositionBottom: "Κάτω",
+  taskbarPositionBottom: "ÎšÎ¬Ï„Ï‰",
 
-  taskbarPositionTop: "Πάνω",
+  taskbarPositionTop: "Î Î¬Î½Ï‰",
 
-  taskbarPositionLeft: "Αριστερά",
+  taskbarPositionLeft: "Î‘ÏÎ¹ÏƒÏ„ÎµÏÎ¬",
 
-  taskbarPositionRight: "Δεξιά",
+  taskbarPositionRight: "Î”ÎµÎ¾Î¹Î¬",
 
-  taskbarPositionApplied: "Η θέση της γραμμής εργασιών ενημερώθηκε. Ο Explorer επανεκκινήθηκε.",
+  taskbarPositionApplied: "Î— Î¸Î­ÏƒÎ· Ï„Î·Ï‚ Î³ÏÎ±Î¼Î¼Î®Ï‚ ÎµÏÎ³Î±ÏƒÎ¹ÏŽÎ½ ÎµÎ½Î·Î¼ÎµÏÏŽÎ¸Î·ÎºÎµ. ÎŸ Explorer ÎµÏ€Î±Î½ÎµÎºÎºÎ¹Î½Î®Î¸Î·ÎºÎµ.",
 
   taskbarPositionUnsupported:
-    "Αυτή η θέση γραμμής εργασιών δεν υποστηρίζεται σε αυτή την έκδοση Windows.",
+    "Î‘Ï…Ï„Î® Î· Î¸Î­ÏƒÎ· Î³ÏÎ±Î¼Î¼Î®Ï‚ ÎµÏÎ³Î±ÏƒÎ¹ÏŽÎ½ Î´ÎµÎ½ Ï…Ï€Î¿ÏƒÏ„Î·ÏÎ¯Î¶ÎµÏ„Î±Î¹ ÏƒÎµ Î±Ï…Ï„Î® Ï„Î·Î½ Î­ÎºÎ´Î¿ÏƒÎ· Windows.",
 
-  taskbarPositionFailed: "Δεν ήταν δυνατή η αλλαγή θέσης γραμμής εργασιών.",
+  taskbarPositionFailed: "Î”ÎµÎ½ Î®Ï„Î±Î½ Î´Ï…Î½Î±Ï„Î® Î· Î±Î»Î»Î±Î³Î® Î¸Î­ÏƒÎ·Ï‚ Î³ÏÎ±Î¼Î¼Î®Ï‚ ÎµÏÎ³Î±ÏƒÎ¹ÏŽÎ½.",
 
-  opacity: "Διαφάνεια",
+  opacity: "Î”Î¹Î±Ï†Î¬Î½ÎµÎ¹Î±",
 
-  appLanguage: "Γλώσσα εφαρμογής",
+  appLanguage: "Î“Î»ÏŽÏƒÏƒÎ± ÎµÏ†Î±ÏÎ¼Î¿Î³Î®Ï‚",
 
-  appLanguageHint: "Μενού, φράσεις και ομιλία",
+  appLanguageHint: "ÎœÎµÎ½Î¿Ï, Ï†ÏÎ¬ÏƒÎµÎ¹Ï‚ ÎºÎ±Î¹ Î¿Î¼Î¹Î»Î¯Î±",
 
-  typingLanguage: "Γλώσσα πληκτρολογίου",
+  typingLanguage: "Î“Î»ÏŽÏƒÏƒÎ± Ï€Î»Î·ÎºÏ„ÏÎ¿Î»Î¿Î³Î¯Î¿Ï…",
 
-  typingLanguageHint: "Γλώσσα πληκτρολογίου Windows για πληκτρολόγηση",
+  typingLanguageHint: "Î“Î»ÏŽÏƒÏƒÎ± Ï€Î»Î·ÎºÏ„ÏÎ¿Î»Î¿Î³Î¯Î¿Ï… Windows Î³Î¹Î± Ï€Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î·ÏƒÎ·",
 
-  onscreenLayout: "Διάταξη οθόνης",
+  onscreenLayout: "Î”Î¹Î¬Ï„Î±Î¾Î· Î¿Î¸ÏŒÎ½Î·Ï‚",
 
-  onscreenLayoutHint: "Διάταξη πλήκτρων στο εικονικό πληκτρολόγιο",
+  onscreenLayoutHint: "Î”Î¹Î¬Ï„Î±Î¾Î· Ï€Î»Î®ÎºÏ„ÏÏ‰Î½ ÏƒÏ„Î¿ ÎµÎ¹ÎºÎ¿Î½Î¹ÎºÏŒ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î¹Î¿",
 
-  onscreenLayoutAuto: "Αυτόματο (ακολουθεί Windows)",
+  onscreenLayoutAuto: "Î‘Ï…Ï„ÏŒÎ¼Î±Ï„Î¿ (Î±ÎºÎ¿Î»Î¿Ï…Î¸ÎµÎ¯ Windows)",
 
   languageEnglish: "English",
 
-  languageGreek: "Ελληνικά",
+  languageGreek: "Î•Î»Î»Î·Î½Î¹ÎºÎ¬",
 
-  languageGerman: "Γερμανικά",
+  languageGerman: "Î“ÎµÏÎ¼Î±Î½Î¹ÎºÎ¬",
 
-  languageFrench: "Γαλλικά",
+  languageFrench: "Î“Î±Î»Î»Î¹ÎºÎ¬",
 
-  languageItalian: "Ιταλικά",
+  languageItalian: "Î™Ï„Î±Î»Î¹ÎºÎ¬",
 
-  languageSpanish: "Ισπανικά",
+  languageSpanish: "Î™ÏƒÏ€Î±Î½Î¹ÎºÎ¬",
 
-  languagePortuguese: "Πορτογαλικά",
+  languagePortuguese: "Î Î¿ÏÏ„Î¿Î³Î±Î»Î¹ÎºÎ¬",
 
-  resetSettings: "Επαναφορά ρυθμίσεων",
+  resetSettings: "Î•Ï€Î±Î½Î±Ï†Î¿ÏÎ¬ ÏÏ…Î¸Î¼Î¯ÏƒÎµÏ‰Î½",
 
   resetSettingsHint:
 
-    "Επαναφέρει διάταξη, θέση οθόνης, μεγέθη πάνελ και όλες τις ρυθμίσεις στις προεπιλογές.",
+    "Î•Ï€Î±Î½Î±Ï†Î­ÏÎµÎ¹ Î´Î¹Î¬Ï„Î±Î¾Î·, Î¸Î­ÏƒÎ· Î¿Î¸ÏŒÎ½Î·Ï‚, Î¼ÎµÎ³Î­Î¸Î· Ï€Î¬Î½ÎµÎ» ÎºÎ±Î¹ ÏŒÎ»ÎµÏ‚ Ï„Î¹Ï‚ ÏÏ…Î¸Î¼Î¯ÏƒÎµÎ¹Ï‚ ÏƒÏ„Î¹Ï‚ Ï€ÏÎ¿ÎµÏ€Î¹Î»Î¿Î³Î­Ï‚.",
 
-  resetUi: "Επαναφορά διεπαφής",
+  resetUi: "Î•Ï€Î±Î½Î±Ï†Î¿ÏÎ¬ Î´Î¹ÎµÏ€Î±Ï†Î®Ï‚",
 
   resetUiHint:
-    "Επαναφέρει όλες τις ρυθμίσεις (θέμα, ορατότητα, διάταξη, γλώσσες) στις προεπιλογές. Διατηρεί γρήγορες ενέργειες, μακροεντολές, φράσεις και προβλέψεις.",
+    "Î•Ï€Î±Î½Î±Ï†Î­ÏÎµÎ¹ ÏŒÎ»ÎµÏ‚ Ï„Î¹Ï‚ ÏÏ…Î¸Î¼Î¯ÏƒÎµÎ¹Ï‚ (Î¸Î­Î¼Î±, Î¿ÏÎ±Ï„ÏŒÏ„Î·Ï„Î±, Î´Î¹Î¬Ï„Î±Î¾Î·, Î³Î»ÏŽÏƒÏƒÎµÏ‚) ÏƒÏ„Î¹Ï‚ Ï€ÏÎ¿ÎµÏ€Î¹Î»Î¿Î³Î­Ï‚. Î”Î¹Î±Ï„Î·ÏÎµÎ¯ Î³ÏÎ®Î³Î¿ÏÎµÏ‚ ÎµÎ½Î­ÏÎ³ÎµÎ¹ÎµÏ‚, Î¼Î±ÎºÏÎ¿ÎµÎ½Ï„Î¿Î»Î­Ï‚, Ï†ÏÎ¬ÏƒÎµÎ¹Ï‚ ÎºÎ±Î¹ Ï€ÏÎ¿Î²Î»Î­ÏˆÎµÎ¹Ï‚.",
 
-  wipeProfile: "Εκκαθάριση προφίλ",
+  wipeProfile: "Î•ÎºÎºÎ±Î¸Î¬ÏÎ¹ÏƒÎ· Ï€ÏÎ¿Ï†Î¯Î»",
 
   wipeProfileHint:
-    "Διαγράφει γρήγορες ενέργειες, μακροεντολές, φράσεις, προβλέψεις και παρακολούθηση κεφαλής, και επαναφέρει όλες τις ρυθμίσεις.",
+    "Î”Î¹Î±Î³ÏÎ¬Ï†ÎµÎ¹ Î³ÏÎ®Î³Î¿ÏÎµÏ‚ ÎµÎ½Î­ÏÎ³ÎµÎ¹ÎµÏ‚, Î¼Î±ÎºÏÎ¿ÎµÎ½Ï„Î¿Î»Î­Ï‚, Ï†ÏÎ¬ÏƒÎµÎ¹Ï‚, Ï€ÏÎ¿Î²Î»Î­ÏˆÎµÎ¹Ï‚ ÎºÎ±Î¹ Ï€Î±ÏÎ±ÎºÎ¿Î»Î¿ÏÎ¸Î·ÏƒÎ· ÎºÎµÏ†Î±Î»Î®Ï‚, ÎºÎ±Î¹ ÎµÏ€Î±Î½Î±Ï†Î­ÏÎµÎ¹ ÏŒÎ»ÎµÏ‚ Ï„Î¹Ï‚ ÏÏ…Î¸Î¼Î¯ÏƒÎµÎ¹Ï‚.",
 
   wipeProfileConfirm:
-    "Εκκαθάριση αυτού του προφίλ; Όλες οι γρήγορες ενέργειες, μακροεντολές, φράσεις, προβλέψεις και ρυθμίσεις θα επαναφερθούν.",
+    "Î•ÎºÎºÎ±Î¸Î¬ÏÎ¹ÏƒÎ· Î±Ï…Ï„Î¿Ï Ï„Î¿Ï… Ï€ÏÎ¿Ï†Î¯Î»; ÎŒÎ»ÎµÏ‚ Î¿Î¹ Î³ÏÎ®Î³Î¿ÏÎµÏ‚ ÎµÎ½Î­ÏÎ³ÎµÎ¹ÎµÏ‚, Î¼Î±ÎºÏÎ¿ÎµÎ½Ï„Î¿Î»Î­Ï‚, Ï†ÏÎ¬ÏƒÎµÎ¹Ï‚, Ï€ÏÎ¿Î²Î»Î­ÏˆÎµÎ¹Ï‚ ÎºÎ±Î¹ ÏÏ…Î¸Î¼Î¯ÏƒÎµÎ¹Ï‚ Î¸Î± ÎµÏ€Î±Î½Î±Ï†ÎµÏÎ¸Î¿ÏÎ½.",
 
-  saveProfile: "Αποθήκευση προφίλ",
+  saveProfile: "Î‘Ï€Î¿Î¸Î®ÎºÎµÏ…ÏƒÎ· Ï€ÏÎ¿Ï†Î¯Î»",
 
-  profileSaved: "Το προφίλ αποθηκεύτηκε.",
+  profileSaved: "Î¤Î¿ Ï€ÏÎ¿Ï†Î¯Î» Î±Ï€Î¿Î¸Î·ÎºÎµÏÏ„Î·ÎºÎµ.",
 
-  deleteProfile: "Διαγραφή προφίλ",
+  deleteProfile: "Î”Î¹Î±Î³ÏÎ±Ï†Î® Ï€ÏÎ¿Ï†Î¯Î»",
 
   deleteProfileConfirm:
-    "Διαγραφή αυτού του προφίλ; Αν είναι ενεργό, θα δημιουργηθεί νέο προεπιλεγμένο προφίλ.",
+    "Î”Î¹Î±Î³ÏÎ±Ï†Î® Î±Ï…Ï„Î¿Ï Ï„Î¿Ï… Ï€ÏÎ¿Ï†Î¯Î»; Î‘Î½ ÎµÎ¯Î½Î±Î¹ ÎµÎ½ÎµÏÎ³ÏŒ, Î¸Î± Î´Î·Î¼Î¹Î¿Ï…ÏÎ³Î·Î¸ÎµÎ¯ Î½Î­Î¿ Ï€ÏÎ¿ÎµÏ€Î¹Î»ÎµÎ³Î¼Î­Î½Î¿ Ï€ÏÎ¿Ï†Î¯Î».",
 
-  profileDeleted: "Το προφίλ διαγράφηκε.",
+  profileDeleted: "Î¤Î¿ Ï€ÏÎ¿Ï†Î¯Î» Î´Î¹Î±Î³ÏÎ¬Ï†Î·ÎºÎµ.",
 
-  profileWiped: "Το προφίλ εκκαθαρίστηκε.",
+  profileWiped: "Î¤Î¿ Ï€ÏÎ¿Ï†Î¯Î» ÎµÎºÎºÎ±Î¸Î±ÏÎ¯ÏƒÏ„Î·ÎºÎµ.",
 
-  layoutEdit: "Επεξεργασία διάταξης",
+  layoutEdit: "Î•Ï€ÎµÎ¾ÎµÏÎ³Î±ÏƒÎ¯Î± Î´Î¹Î¬Ï„Î±Î¾Î·Ï‚",
 
-  layoutEditDone: "Τέλος",
+  layoutEditDone: "Î¤Î­Î»Î¿Ï‚",
 
-  dragToMove: "Σύρετε για μετακίνηση",
+  dragToMove: "Î£ÏÏÎµÏ„Îµ Î³Î¹Î± Î¼ÎµÏ„Î±ÎºÎ¯Î½Î·ÏƒÎ·",
 
-  macroBuilder: "Δημιουργός μακροεντολών",
+  macroBuilder: "Î”Î·Î¼Î¹Î¿Ï…ÏÎ³ÏŒÏ‚ Î¼Î±ÎºÏÎ¿ÎµÎ½Ï„Î¿Î»ÏŽÎ½",
 
-  headTracking: "Παρακολούθηση κεφαλής",
+  headTracking: "Î Î±ÏÎ±ÎºÎ¿Î»Î¿ÏÎ¸Î·ÏƒÎ· ÎºÎµÏ†Î±Î»Î®Ï‚",
 
-  phrases: "Φράσεις",
+  phrases: "Î¦ÏÎ¬ÏƒÎµÎ¹Ï‚",
 
-  emergency: "Επείγον",
+  emergency: "Î•Ï€ÎµÎ¯Î³Î¿Î½",
 
-  showEmergency: "Επείγον",
+  showEmergency: "Î•Ï€ÎµÎ¯Î³Î¿Î½",
 
-  predictionsOff: "Οι προτάσεις είναι απενεργοποιημένες",
+  predictionsOff: "ÎŸÎ¹ Ï€ÏÎ¿Ï„Î¬ÏƒÎµÎ¹Ï‚ ÎµÎ¯Î½Î±Î¹ Î±Ï€ÎµÎ½ÎµÏÎ³Î¿Ï€Î¿Î¹Î·Î¼Î­Î½ÎµÏ‚",
 
-  enable: "Ενεργοποίηση",
+  enable: "Î•Î½ÎµÏÎ³Î¿Ï€Î¿Î¯Î·ÏƒÎ·",
 
-  suggest: "Πρόταση:",
+  suggest: "Î ÏÏŒÏ„Î±ÏƒÎ·:",
 
-  turnOff: "Απενεργοποίηση",
+  turnOff: "Î‘Ï€ÎµÎ½ÎµÏÎ³Î¿Ï€Î¿Î¯Î·ÏƒÎ·",
 
-  inputError: "Σφάλμα εισόδου:",
+  inputError: "Î£Ï†Î¬Î»Î¼Î± ÎµÎ¹ÏƒÏŒÎ´Î¿Ï…:",
 
-  dismiss: "Απόρριψη",
+  dismiss: "Î‘Ï€ÏŒÏÏÎ¹ÏˆÎ·",
 
-  appearance: "Εμφάνιση",
+  appearance: "Î•Î¼Ï†Î¬Î½Î¹ÏƒÎ·",
 
-  colorProfile: "Προφίλ χρωμάτων",
+  colorProfile: "Î ÏÎ¿Ï†Î¯Î» Ï‡ÏÏ‰Î¼Î¬Ï„Ï‰Î½",
 
-  colorProfileLightGrey: "Ανοιχτό γκρι",
+  colorProfileLightGrey: "Î‘Î½Î¿Î¹Ï‡Ï„ÏŒ Î³ÎºÏÎ¹",
 
-  colorProfileDarkGrey: "Σκούρο γκρι",
+  colorProfileDarkGrey: "Î£ÎºÎ¿ÏÏÎ¿ Î³ÎºÏÎ¹",
 
-  colorProfileCustom: "Προσαρμοσμένο",
+  colorProfileCustom: "Î ÏÎ¿ÏƒÎ±ÏÎ¼Î¿ÏƒÎ¼Î­Î½Î¿",
 
-  headerTextColor: "Κείμενο κεφαλίδας",
+  headerTextColor: "ÎšÎµÎ¯Î¼ÎµÎ½Î¿ ÎºÎµÏ†Î±Î»Î¯Î´Î±Ï‚",
 
-  appBackgroundColor: "Φόντο εφαρμογής",
+  appBackgroundColor: "Î¦ÏŒÎ½Ï„Î¿ ÎµÏ†Î±ÏÎ¼Î¿Î³Î®Ï‚",
 
-  headerColor: "Γραμμή κεφαλίδας",
+  headerColor: "Î“ÏÎ±Î¼Î¼Î® ÎºÎµÏ†Î±Î»Î¯Î´Î±Ï‚",
 
-  keyboardBackgroundColor: "Φόντο πληκτρολογίου",
+  keyboardBackgroundColor: "Î¦ÏŒÎ½Ï„Î¿ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»Î¿Î³Î¯Î¿Ï…",
 
-  keyboard: "Πληκτρολόγιο",
+  keyboard: "Î Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î¹Î¿",
 
-  fnKeyMode: "Συμπεριφορά πλήκτρου Fn",
+  fnKeyMode: "Î£Ï…Î¼Ï€ÎµÏÎ¹Ï†Î¿ÏÎ¬ Ï€Î»Î®ÎºÏ„ÏÎ¿Ï… Fn",
 
-  fnKeyModeOneShot: "Μίας χρήσης (το Fn απενεργοποιείται μετά από κάθε F-key)",
+  fnKeyModeOneShot: "ÎœÎ¯Î±Ï‚ Ï‡ÏÎ®ÏƒÎ·Ï‚ (Ï„Î¿ Fn Î±Ï€ÎµÎ½ÎµÏÎ³Î¿Ï€Î¿Î¹ÎµÎ¯Ï„Î±Î¹ Î¼ÎµÏ„Î¬ Î±Ï€ÏŒ ÎºÎ¬Î¸Îµ F-key)",
 
-  fnKeyModeLatched: "Κλειδωμένο (το Fn μένει ενεργό μέχρι να το πατήσετε ξανά)",
+  fnKeyModeLatched: "ÎšÎ»ÎµÎ¹Î´Ï‰Î¼Î­Î½Î¿ (Ï„Î¿ Fn Î¼Î­Î½ÎµÎ¹ ÎµÎ½ÎµÏÎ³ÏŒ Î¼Î­Ï‡ÏÎ¹ Î½Î± Ï„Î¿ Ï€Î±Ï„Î®ÏƒÎµÏ„Îµ Î¾Î±Î½Î¬)",
 
-  synthesizer: "Συνθετητής",
+  synthesizer: "Î£Ï…Î½Î¸ÎµÏ„Î·Ï„Î®Ï‚",
 
-  synthesizerHint: "Πατήστε πλήκτρα για να παίξετε νότες",
+  synthesizerHint: "Î Î±Ï„Î®ÏƒÏ„Îµ Ï€Î»Î®ÎºÏ„ÏÎ± Î³Î¹Î± Î½Î± Ï€Î±Î¯Î¾ÎµÏ„Îµ Î½ÏŒÏ„ÎµÏ‚",
 
-  synthesizerVolume: "Ένταση",
+  synthesizerVolume: "ÎˆÎ½Ï„Î±ÏƒÎ·",
 
-  dictationStart: "Έναρξη υπαγόρευσης",
+  dictationStart: "ÎˆÎ½Î±ÏÎ¾Î· Ï…Ï€Î±Î³ÏŒÏÎµÏ…ÏƒÎ·Ï‚",
 
-  dictationStop: "Διακοπή υπαγόρευσης",
+  dictationStop: "Î”Î¹Î±ÎºÎ¿Ï€Î® Ï…Ï€Î±Î³ÏŒÏÎµÏ…ÏƒÎ·Ï‚",
 
-  dictationListening: "Ακούει…",
+  dictationListening: "Î‘ÎºÎ¿ÏÎµÎ¹â€¦",
 
   dictationErrorNoLanguage:
-    "Η αναγνώριση ομιλίας για αυτή τη γλώσσα πληκτρολόγησης δεν είναι εγκατεστημένη. Προσθέστε το πακέτο ομιλίας στις Ρυθμίσεις Windows → Ώρα και γλώσσα → Ομιλία (ή Γλώσσα και περιοχή) και δοκιμάστε ξανά.",
+    "Î— Î±Î½Î±Î³Î½ÏŽÏÎ¹ÏƒÎ· Î¿Î¼Î¹Î»Î¯Î±Ï‚ Î³Î¹Î± Î±Ï…Ï„Î® Ï„Î· Î³Î»ÏŽÏƒÏƒÎ± Ï€Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î·ÏƒÎ·Ï‚ Î´ÎµÎ½ ÎµÎ¯Î½Î±Î¹ ÎµÎ³ÎºÎ±Ï„ÎµÏƒÏ„Î·Î¼Î­Î½Î·. Î ÏÎ¿ÏƒÎ¸Î­ÏƒÏ„Îµ Ï„Î¿ Ï€Î±ÎºÎ­Ï„Î¿ Î¿Î¼Î¹Î»Î¯Î±Ï‚ ÏƒÏ„Î¹Ï‚ Î¡Ï…Î¸Î¼Î¯ÏƒÎµÎ¹Ï‚ Windows â†’ ÎÏÎ± ÎºÎ±Î¹ Î³Î»ÏŽÏƒÏƒÎ± â†’ ÎŸÎ¼Î¹Î»Î¯Î± (Î® Î“Î»ÏŽÏƒÏƒÎ± ÎºÎ±Î¹ Ï€ÎµÏÎ¹Î¿Ï‡Î®) ÎºÎ±Î¹ Î´Î¿ÎºÎ¹Î¼Î¬ÏƒÏ„Îµ Î¾Î±Î½Î¬.",
 
   dictationErrorUnavailable:
-    "Η υπαγόρευση φωνής είναι διαθέσιμη μόνο στα Windows.",
+    "Î— Ï…Ï€Î±Î³ÏŒÏÎµÏ…ÏƒÎ· Ï†Ï‰Î½Î®Ï‚ ÎµÎ¯Î½Î±Î¹ Î´Î¹Î±Î¸Î­ÏƒÎ¹Î¼Î· Î¼ÏŒÎ½Î¿ ÏƒÏ„Î± Windows.",
 
   dictationErrorSpeechPrivacy:
-    "Η διαδικτυακή αναγνώριση ομιλίας είναι απενεργοποιημένη στα Windows. Ενεργοποιήστε την στις Ρυθμίσεις → Απόρρητο και ασφάλεια → Ομιλία και δοκιμάστε ξανά. (Δεν είναι αίτημα άδειας μικροφώνου.)",
+    "Î— Î´Î¹Î±Î´Î¹ÎºÏ„Ï…Î±ÎºÎ® Î±Î½Î±Î³Î½ÏŽÏÎ¹ÏƒÎ· Î¿Î¼Î¹Î»Î¯Î±Ï‚ ÎµÎ¯Î½Î±Î¹ Î±Ï€ÎµÎ½ÎµÏÎ³Î¿Ï€Î¿Î¹Î·Î¼Î­Î½Î· ÏƒÏ„Î± Windows. Î•Î½ÎµÏÎ³Î¿Ï€Î¿Î¹Î®ÏƒÏ„Îµ Ï„Î·Î½ ÏƒÏ„Î¹Ï‚ Î¡Ï…Î¸Î¼Î¯ÏƒÎµÎ¹Ï‚ â†’ Î‘Ï€ÏŒÏÏÎ·Ï„Î¿ ÎºÎ±Î¹ Î±ÏƒÏ†Î¬Î»ÎµÎ¹Î± â†’ ÎŸÎ¼Î¹Î»Î¯Î± ÎºÎ±Î¹ Î´Î¿ÎºÎ¹Î¼Î¬ÏƒÏ„Îµ Î¾Î±Î½Î¬. (Î”ÎµÎ½ ÎµÎ¯Î½Î±Î¹ Î±Î¯Ï„Î·Î¼Î± Î¬Î´ÎµÎ¹Î±Ï‚ Î¼Î¹ÎºÏÎ¿Ï†ÏŽÎ½Î¿Ï….)",
 
   dictationErrorGroqKey:
-    "Η αναγνώριση ομιλίας των Windows δεν υποστηρίζει αυτή τη γλώσσα. Προσθέστε ένα δωρεάν κλειδί Groq στις Ρυθμίσεις για υπαγόρευση (console.groq.com).",
+    "Î— Î±Î½Î±Î³Î½ÏŽÏÎ¹ÏƒÎ· Î¿Î¼Î¹Î»Î¯Î±Ï‚ Ï„Ï‰Î½ Windows Î´ÎµÎ½ Ï…Ï€Î¿ÏƒÏ„Î·ÏÎ¯Î¶ÎµÎ¹ Î±Ï…Ï„Î® Ï„Î· Î³Î»ÏŽÏƒÏƒÎ±. Î ÏÎ¿ÏƒÎ¸Î­ÏƒÏ„Îµ Î­Î½Î± Î´Ï‰ÏÎµÎ¬Î½ ÎºÎ»ÎµÎ¹Î´Î¯ Groq ÏƒÏ„Î¹Ï‚ Î¡Ï…Î¸Î¼Î¯ÏƒÎµÎ¹Ï‚ Î³Î¹Î± Ï…Ï€Î±Î³ÏŒÏÎµÏ…ÏƒÎ· (console.groq.com).",
 
   dictationErrorGroqApi:
-    "Η υπαγόρευση cloud απέτυχε. Ελέγξτε τη σύνδεση στο διαδίκτυο και το κλειδί Groq και δοκιμάστε ξανά.",
+    "Î— Ï…Ï€Î±Î³ÏŒÏÎµÏ…ÏƒÎ· cloud Î±Ï€Î­Ï„Ï…Ï‡Îµ. Î•Î»Î­Î³Î¾Ï„Îµ Ï„Î· ÏƒÏÎ½Î´ÎµÏƒÎ· ÏƒÏ„Î¿ Î´Î¹Î±Î´Î¯ÎºÏ„Ï…Î¿ ÎºÎ±Î¹ Ï„Î¿ ÎºÎ»ÎµÎ¹Î´Î¯ Groq ÎºÎ±Î¹ Î´Î¿ÎºÎ¹Î¼Î¬ÏƒÏ„Îµ Î¾Î±Î½Î¬.",
 
   dictationUnavailableUnsupported:
-    "Η υπαγόρευση δεν είναι διαθέσιμη — προσθέστε ένα δωρεάν κλειδί Groq στις Ρυθμίσεις για αυτή τη γλώσσα",
+    "Î— Ï…Ï€Î±Î³ÏŒÏÎµÏ…ÏƒÎ· Î´ÎµÎ½ ÎµÎ¯Î½Î±Î¹ Î´Î¹Î±Î¸Î­ÏƒÎ¹Î¼Î· â€” Ï€ÏÎ¿ÏƒÎ¸Î­ÏƒÏ„Îµ Î­Î½Î± Î´Ï‰ÏÎµÎ¬Î½ ÎºÎ»ÎµÎ¹Î´Î¯ Groq ÏƒÏ„Î¹Ï‚ Î¡Ï…Î¸Î¼Î¯ÏƒÎµÎ¹Ï‚ Î³Î¹Î± Î±Ï…Ï„Î® Ï„Î· Î³Î»ÏŽÏƒÏƒÎ±",
 
   dictationUnavailableOffline:
-    "Η υπαγόρευση δεν είναι διαθέσιμη — απαιτείται σύνδεση στο διαδίκτυο",
+    "Î— Ï…Ï€Î±Î³ÏŒÏÎµÏ…ÏƒÎ· Î´ÎµÎ½ ÎµÎ¯Î½Î±Î¹ Î´Î¹Î±Î¸Î­ÏƒÎ¹Î¼Î· â€” Î±Ï€Î±Î¹Ï„ÎµÎ¯Ï„Î±Î¹ ÏƒÏÎ½Î´ÎµÏƒÎ· ÏƒÏ„Î¿ Î´Î¹Î±Î´Î¯ÎºÏ„Ï…Î¿",
 
-  dictationGroqRemainingToday: "Υπολειπόμενα αιτήματα Groq σήμερα",
+  dictationGroqRemainingToday: "Î¥Ï€Î¿Î»ÎµÎ¹Ï€ÏŒÎ¼ÎµÎ½Î± Î±Î¹Ï„Î®Î¼Î±Ï„Î± Groq ÏƒÎ®Î¼ÎµÏÎ±",
 
-  dictationOpenSpeechSettings: "Άνοιγμα ρυθμίσεων ομιλίας",
+  dictationOpenSpeechSettings: "Î†Î½Î¿Î¹Î³Î¼Î± ÏÏ…Î¸Î¼Î¯ÏƒÎµÏ‰Î½ Î¿Î¼Î¹Î»Î¯Î±Ï‚",
 
-  dictationOpenSpeechLanguageSettings: "Εγκατάσταση γλώσσας ομιλίας",
+  dictationOpenSpeechLanguageSettings: "Î•Î³ÎºÎ±Ï„Î¬ÏƒÏ„Î±ÏƒÎ· Î³Î»ÏŽÏƒÏƒÎ±Ï‚ Î¿Î¼Î¹Î»Î¯Î±Ï‚",
 
-  dictationOpenAppSettings: "Άνοιγμα ρυθμίσεων",
+  dictationOpenAppSettings: "Î†Î½Î¿Î¹Î³Î¼Î± ÏÏ…Î¸Î¼Î¯ÏƒÎµÏ‰Î½",
 
-  groqApiKeyLabel: "Κλειδί Groq API (υπαγόρευση cloud)",
+  groqApiKeyLabel: "ÎšÎ»ÎµÎ¹Î´Î¯ Groq API (Ï…Ï€Î±Î³ÏŒÏÎµÏ…ÏƒÎ· cloud)",
 
   groqApiKeyHint:
-    "Απαιτείται για γλώσσες που δεν υποστηρίζουν τα Windows (π.χ. ελληνικά). Δωρεάν κλειδί στο console.groq.com. Μπορείτε επίσης να ορίσετε τη μεταβλητή περιβάλλοντος GROQ_API_KEY.",
+    "Î‘Ï€Î±Î¹Ï„ÎµÎ¯Ï„Î±Î¹ Î³Î¹Î± Î³Î»ÏŽÏƒÏƒÎµÏ‚ Ï€Î¿Ï… Î´ÎµÎ½ Ï…Ï€Î¿ÏƒÏ„Î·ÏÎ¯Î¶Î¿Ï…Î½ Ï„Î± Windows (Ï€.Ï‡. ÎµÎ»Î»Î·Î½Î¹ÎºÎ¬). Î”Ï‰ÏÎµÎ¬Î½ ÎºÎ»ÎµÎ¹Î´Î¯ ÏƒÏ„Î¿ console.groq.com. ÎœÏ€Î¿ÏÎµÎ¯Ï„Îµ ÎµÏ€Î¯ÏƒÎ·Ï‚ Î½Î± Î¿ÏÎ¯ÏƒÎµÏ„Îµ Ï„Î· Î¼ÎµÏ„Î±Î²Î»Î·Ï„Î® Ï€ÎµÏÎ¹Î²Î¬Î»Î»Î¿Î½Ï„Î¿Ï‚ GROQ_API_KEY.",
 
-  mute: "Σίγαση",
+  mute: "Î£Î¯Î³Î±ÏƒÎ·",
 
-  unmute: "Ξεσίγαση",
+  unmute: "ÎžÎµÏƒÎ¯Î³Î±ÏƒÎ·",
 
-  teachMusic: "Διδασκαλία",
+  teachMusic: "Î”Î¹Î´Î±ÏƒÎºÎ±Î»Î¯Î±",
 
-  stopTeaching: "Διακοπή διδασκαλίας",
+  stopTeaching: "Î”Î¹Î±ÎºÎ¿Ï€Î® Î´Î¹Î´Î±ÏƒÎºÎ±Î»Î¯Î±Ï‚",
 
-  musicLesson: "Μάθημα μουσικής",
+  musicLesson: "ÎœÎ¬Î¸Î·Î¼Î± Î¼Î¿Ï…ÏƒÎ¹ÎºÎ®Ï‚",
 
-  partiture: "Παρτιτούρα",
+  partiture: "Î Î±ÏÏ„Î¹Ï„Î¿ÏÏÎ±",
 
-  selectSong: "Τραγούδι",
+  selectSong: "Î¤ÏÎ±Î³Î¿ÏÎ´Î¹",
 
-  restartLesson: "Επανεκκίνηση",
+  restartLesson: "Î•Ï€Î±Î½ÎµÎºÎºÎ¯Î½Î·ÏƒÎ·",
 
-  playSong: "Αναπαραγωγή",
+  playSong: "Î‘Î½Î±Ï€Î±ÏÎ±Î³Ï‰Î³Î®",
 
-  stopSong: "Διακοπή",
+  stopSong: "Î”Î¹Î±ÎºÎ¿Ï€Î®",
 
-  loadSong: "Φόρτωση",
+  loadSong: "Î¦ÏŒÏÏ„Ï‰ÏƒÎ·",
 
-  deleteSong: "Διαγραφή",
+  deleteSong: "Î”Î¹Î±Î³ÏÎ±Ï†Î®",
 
-  confirmDeleteSong: "Διαγραφή εισαγμένου τραγουδιού «{title}»;",
+  confirmDeleteSong: "Î”Î¹Î±Î³ÏÎ±Ï†Î® ÎµÎ¹ÏƒÎ±Î³Î¼Î­Î½Î¿Ï… Ï„ÏÎ±Î³Î¿Ï…Î´Î¹Î¿Ï Â«{title}Â»;",
 
-  builtInSongs: "Ενσωματωμένα",
+  builtInSongs: "Î•Î½ÏƒÏ‰Î¼Î±Ï„Ï‰Î¼Î­Î½Î±",
 
-  importedSongs: "Εισαγμένα",
+  importedSongs: "Î•Î¹ÏƒÎ±Î³Î¼Î­Î½Î±",
 
-  playingNote: "Παίζει",
+  playingNote: "Î Î±Î¯Î¶ÎµÎ¹",
 
-  waitingForNote: "Παίξε",
+  waitingForNote: "Î Î±Î¯Î¾Îµ",
 
-  lessonComplete: "Το τραγούδι ολοκληρώθηκε!",
+  lessonComplete: "Î¤Î¿ Ï„ÏÎ±Î³Î¿ÏÎ´Î¹ Î¿Î»Î¿ÎºÎ»Î·ÏÏŽÎ¸Î·ÎºÎµ!",
 
-  upcomingNotes: "Επόμενες νότες",
+  upcomingNotes: "Î•Ï€ÏŒÎ¼ÎµÎ½ÎµÏ‚ Î½ÏŒÏ„ÎµÏ‚",
 
-  songNeedsOctaves: "Μετακινήστε το πιάνο στο {range} για να καλύψει το τραγούδι",
+  songNeedsOctaves: "ÎœÎµÏ„Î±ÎºÎ¹Î½Î®ÏƒÏ„Îµ Ï„Î¿ Ï€Î¹Î¬Î½Î¿ ÏƒÏ„Î¿ {range} Î³Î¹Î± Î½Î± ÎºÎ±Î»ÏÏˆÎµÎ¹ Ï„Î¿ Ï„ÏÎ±Î³Î¿ÏÎ´Î¹",
 
   songWiderThanPiano:
-    "Το τραγούδι είναι μεγαλύτερο από 5 οκτάβες — κάποιες νότες είναι εκτός. Χρησιμοποιήστε ◀ ▶ για μετατόπιση.",
+    "Î¤Î¿ Ï„ÏÎ±Î³Î¿ÏÎ´Î¹ ÎµÎ¯Î½Î±Î¹ Î¼ÎµÎ³Î±Î»ÏÏ„ÎµÏÎ¿ Î±Ï€ÏŒ 5 Î¿ÎºÏ„Î¬Î²ÎµÏ‚ â€” ÎºÎ¬Ï€Î¿Î¹ÎµÏ‚ Î½ÏŒÏ„ÎµÏ‚ ÎµÎ¯Î½Î±Î¹ ÎµÎºÏ„ÏŒÏ‚. Î§ÏÎ·ÏƒÎ¹Î¼Î¿Ï€Î¿Î¹Î®ÏƒÏ„Îµ â—€ â–¶ Î³Î¹Î± Î¼ÎµÏ„Î±Ï„ÏŒÏ€Î¹ÏƒÎ·.",
 
-  pianoRange: "Πιάνο",
+  pianoRange: "Î Î¹Î¬Î½Î¿",
 
-  songRange: "Τραγούδι",
+  songRange: "Î¤ÏÎ±Î³Î¿ÏÎ´Î¹",
 
-  shiftPianoLower: "Μετατόπιση πιάνου χαμηλότερα",
+  shiftPianoLower: "ÎœÎµÏ„Î±Ï„ÏŒÏ€Î¹ÏƒÎ· Ï€Î¹Î¬Î½Î¿Ï… Ï‡Î±Î¼Î·Î»ÏŒÏ„ÎµÏÎ±",
 
-  shiftPianoHigher: "Μετατόπιση πιάνου ψηλότερα",
+  shiftPianoHigher: "ÎœÎµÏ„Î±Ï„ÏŒÏ€Î¹ÏƒÎ· Ï€Î¹Î¬Î½Î¿Ï… ÏˆÎ·Î»ÏŒÏ„ÎµÏÎ±",
 
-  octavesShort: "οκτάβες",
+  octavesShort: "Î¿ÎºÏ„Î¬Î²ÎµÏ‚",
 
-  mouseHiddenForWidePiano: "Το ποντίκι κρύβεται με 5 οκτάβες",
+  mouseHiddenForWidePiano: "Î¤Î¿ Ï€Î¿Î½Ï„Î¯ÎºÎ¹ ÎºÏÏÎ²ÎµÏ„Î±Î¹ Î¼Îµ 5 Î¿ÎºÏ„Î¬Î²ÎµÏ‚",
 
-  octaveCount2: "2 οκτάβες",
+  octaveCount2: "2 Î¿ÎºÏ„Î¬Î²ÎµÏ‚",
 
-  octaveCount3: "3 οκτάβες",
+  octaveCount3: "3 Î¿ÎºÏ„Î¬Î²ÎµÏ‚",
 
-  octaveCount4: "4 οκτάβες",
+  octaveCount4: "4 Î¿ÎºÏ„Î¬Î²ÎµÏ‚",
 
-  octaveCount5: "5 οκτάβες",
+  octaveCount5: "5 Î¿ÎºÏ„Î¬Î²ÎµÏ‚",
 
-  showKeyboardModeToggle: "Εμφάνιση εναλλαγής πληκτρολογίου / συνθετητή",
+  showKeyboardModeToggle: "Î•Î¼Ï†Î¬Î½Î¹ÏƒÎ· ÎµÎ½Î±Î»Î»Î±Î³Î®Ï‚ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»Î¿Î³Î¯Î¿Ï… / ÏƒÏ…Î½Î¸ÎµÏ„Î·Ï„Î®",
 
-  keyboardSectionMode: "Λειτουργία τμήματος πληκτρολογίου",
+  keyboardSectionMode: "Î›ÎµÎ¹Ï„Î¿Ï…ÏÎ³Î¯Î± Ï„Î¼Î®Î¼Î±Ï„Î¿Ï‚ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»Î¿Î³Î¯Î¿Ï…",
 
-  inputAreaNormal: "Κανονική προβολή",
+  inputAreaNormal: "ÎšÎ±Î½Î¿Î½Î¹ÎºÎ® Ï€ÏÎ¿Î²Î¿Î»Î®",
 
-  inputAreaCompact: "Μεγιστοποίηση πληκτρολογίου και trackpad",
+  inputAreaCompact: "ÎœÎµÎ³Î¹ÏƒÏ„Î¿Ï€Î¿Î¯Î·ÏƒÎ· Ï€Î»Î·ÎºÏ„ÏÎ¿Î»Î¿Î³Î¯Î¿Ï… ÎºÎ±Î¹ trackpad",
 
-  showMouseBottomRow: "Εμφάνιση σειράς drag, precision & scroll",
+  showMouseBottomRow: "Î•Î¼Ï†Î¬Î½Î¹ÏƒÎ· ÏƒÎµÎ¹ÏÎ¬Ï‚ drag, precision & scroll",
 
-  resizeInputRow: "Αλλαγή μεγέθους πληκτρολογίου και ποντικιού",
+  resizeInputRow: "Î‘Î»Î»Î±Î³Î® Î¼ÎµÎ³Î­Î¸Î¿Ï…Ï‚ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»Î¿Î³Î¯Î¿Ï… ÎºÎ±Î¹ Ï€Î¿Î½Ï„Î¹ÎºÎ¹Î¿Ï",
 
-  keyColor: "Χρώμα πλήκτρων",
+  keyColor: "Î§ÏÏŽÎ¼Î± Ï€Î»Î®ÎºÏ„ÏÏ‰Î½",
 
-  keyTextColor: "Χρώμα κειμένου πλήκτρων",
+  keyTextColor: "Î§ÏÏŽÎ¼Î± ÎºÎµÎ¹Î¼Î­Î½Î¿Ï… Ï€Î»Î®ÎºÏ„ÏÏ‰Î½",
 
-  mousePanelColor: "Πάνελ ποντικιού",
+  mousePanelColor: "Î Î¬Î½ÎµÎ» Ï€Î¿Î½Ï„Î¹ÎºÎ¹Î¿Ï",
 
-  chooseBackgroundImage: "Επιλογή εικόνας φόντου",
+  chooseBackgroundImage: "Î•Ï€Î¹Î»Î¿Î³Î® ÎµÎ¹ÎºÏŒÎ½Î±Ï‚ Ï†ÏŒÎ½Ï„Î¿Ï…",
 
-  removeBackgroundImage: "Αφαίρεση εικόνας φόντου",
+  removeBackgroundImage: "Î‘Ï†Î±Î¯ÏÎµÏƒÎ· ÎµÎ¹ÎºÏŒÎ½Î±Ï‚ Ï†ÏŒÎ½Ï„Î¿Ï…",
 
-  backgroundImageOpacity: "Ορατότητα εικόνας φόντου",
+  backgroundImageOpacity: "ÎŸÏÎ±Ï„ÏŒÏ„Î·Ï„Î± ÎµÎ¹ÎºÏŒÎ½Î±Ï‚ Ï†ÏŒÎ½Ï„Î¿Ï…",
 
-  newProfileFileName: "Όνομα νέου αρχείου προφίλ",
+  newProfileFileName: "ÎŒÎ½Î¿Î¼Î± Î½Î­Î¿Ï… Î±ÏÏ‡ÎµÎ¯Î¿Ï… Ï€ÏÎ¿Ï†Î¯Î»",
 
-  createProfile: "Δημιουργία αρχείου προφίλ",
+  createProfile: "Î”Î·Î¼Î¹Î¿Ï…ÏÎ³Î¯Î± Î±ÏÏ‡ÎµÎ¯Î¿Ï… Ï€ÏÎ¿Ï†Î¯Î»",
 
-  updateAvailable: "Διαθέσιμη ενημέρωση",
+  updateAvailable: "Î”Î¹Î±Î¸Î­ÏƒÎ¹Î¼Î· ÎµÎ½Î·Î¼Î­ÏÏ‰ÏƒÎ·",
 
-  updateVersionInfo: "Υπάρχει νέα έκδοση:",
+  updateVersionInfo: "Î¥Ï€Î¬ÏÏ‡ÎµÎ¹ Î½Î­Î± Î­ÎºÎ´Î¿ÏƒÎ·:",
 
-  updateNow: "Ενημέρωση τώρα",
+  updateNow: "Î•Î½Î·Î¼Î­ÏÏ‰ÏƒÎ· Ï„ÏŽÏÎ±",
 
-  updateLater: "Αργότερα",
+  updateLater: "Î‘ÏÎ³ÏŒÏ„ÎµÏÎ±",
 
-  skipThisVersion: "Παράλειψη αυτής της έκδοσης",
+  skipThisVersion: "Î Î±ÏÎ¬Î»ÎµÎ¹ÏˆÎ· Î±Ï…Ï„Î®Ï‚ Ï„Î·Ï‚ Î­ÎºÎ´Î¿ÏƒÎ·Ï‚",
 
-  updateDownloading: "Λήψη ενημέρωσης…",
+  updateDownloading: "Î›Î®ÏˆÎ· ÎµÎ½Î·Î¼Î­ÏÏ‰ÏƒÎ·Ï‚â€¦",
 
-  updatePreparing: "Προετοιμασία λήψης…",
+  updatePreparing: "Î ÏÎ¿ÎµÏ„Î¿Î¹Î¼Î±ÏƒÎ¯Î± Î»Î®ÏˆÎ·Ï‚â€¦",
 
-  updateFailed: "Η ενημέρωση απέτυχε:",
+  updateFailed: "Î— ÎµÎ½Î·Î¼Î­ÏÏ‰ÏƒÎ· Î±Ï€Î­Ï„Ï…Ï‡Îµ:",
 
-  updateRetry: "Επανάληψη",
+  updateRetry: "Î•Ï€Î±Î½Î¬Î»Î·ÏˆÎ·",
 
-  checkForUpdates: "Έλεγχος για ενημερώσεις",
+  checkForUpdates: "ÎˆÎ»ÎµÎ³Ï‡Î¿Ï‚ Î³Î¹Î± ÎµÎ½Î·Î¼ÎµÏÏŽÏƒÎµÎ¹Ï‚",
 
-  updateUpToDate: "Έχετε την τελευταία έκδοση.",
+  updateUpToDate: "ÎˆÏ‡ÎµÏ„Îµ Ï„Î·Î½ Ï„ÎµÎ»ÎµÏ…Ï„Î±Î¯Î± Î­ÎºÎ´Î¿ÏƒÎ·.",
 
-  updateCheckFailed: "Δεν ήταν δυνατός ο έλεγχος για ενημερώσεις.",
+  updateCheckFailed: "Î”ÎµÎ½ Î®Ï„Î±Î½ Î´Ï…Î½Î±Ï„ÏŒÏ‚ Î¿ Î­Î»ÎµÎ³Ï‡Î¿Ï‚ Î³Î¹Î± ÎµÎ½Î·Î¼ÎµÏÏŽÏƒÎµÎ¹Ï‚.",
 
 
-  settingsVisibleSections: "Ορατά τμήματα",
+  settingsVisibleSections: "ÎŸÏÎ±Ï„Î¬ Ï„Î¼Î®Î¼Î±Ï„Î±",
 
-  settingsGeneral: "Γενικά",
+  settingsGeneral: "Î“ÎµÎ½Î¹ÎºÎ¬",
 
-  settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
+  settingsToolsMaintenance: "Î•ÏÎ³Î±Î»ÎµÎ¯Î± & Î£Ï…Î½Ï„Î®ÏÎ·ÏƒÎ·",
 
-  quickActionLabel: "Ετικέτα",
+  quickActionLabel: "Î•Ï„Î¹ÎºÎ­Ï„Î±",
 
-  quickActionTarget: "Στόχος (εφαρμογή ή URL)",
+  quickActionTarget: "Î£Ï„ÏŒÏ‡Î¿Ï‚ (ÎµÏ†Î±ÏÎ¼Î¿Î³Î® Î® URL)",
 
-  quickActionTypeApp: "Εφαρμογή",
+  quickActionTypeApp: "Î•Ï†Î±ÏÎ¼Î¿Î³Î®",
 
   quickActionTypeUrl: "URL",
 
-  quickActionAdd: "Προσθήκη ενέργειας",
+  quickActionAdd: "Î ÏÎ¿ÏƒÎ¸Î®ÎºÎ· ÎµÎ½Î­ÏÎ³ÎµÎ¹Î±Ï‚",
 
-  quickActionDelete: "Διαγραφή",
+  quickActionDelete: "Î”Î¹Î±Î³ÏÎ±Ï†Î®",
 
-  quickActionSearchApps: "Αναζήτηση εγκατεστημένων προγραμμάτων…",
+  quickActionSearchApps: "Î‘Î½Î±Î¶Î®Ï„Î·ÏƒÎ· ÎµÎ³ÎºÎ±Ï„ÎµÏƒÏ„Î·Î¼Î­Î½Ï‰Î½ Ï€ÏÎ¿Î³ÏÎ±Î¼Î¼Î¬Ï„Ï‰Î½â€¦",
 
-  quickActionBrowse: "Εξερεύνηση…",
+  quickActionBrowse: "Î•Î¾ÎµÏÎµÏÎ½Î·ÏƒÎ·â€¦",
 
-  quickActionLoadingApps: "Φόρτωση εγκατεστημένων προγραμμάτων…",
+  quickActionLoadingApps: "Î¦ÏŒÏÏ„Ï‰ÏƒÎ· ÎµÎ³ÎºÎ±Ï„ÎµÏƒÏ„Î·Î¼Î­Î½Ï‰Î½ Ï€ÏÎ¿Î³ÏÎ±Î¼Î¼Î¬Ï„Ï‰Î½â€¦",
 
-  quickActionNoApps: "Δεν βρέθηκαν προγράμματα.",
+  quickActionNoApps: "Î”ÎµÎ½ Î²ÏÎ­Î¸Î·ÎºÎ±Î½ Ï€ÏÎ¿Î³ÏÎ¬Î¼Î¼Î±Ï„Î±.",
 
-  settingsAbout: "Σχετικά",
+  settingsAbout: "Î£Ï‡ÎµÏ„Î¹ÎºÎ¬",
 
   settingsCompanion: "Companion",
   companionDescription: "Pair an Android tablet to control this PC over Wi-Fi. The tablet becomes the control surface while connected.",
@@ -575,21 +611,21 @@ export const el: Record<keyof typeof en, string> = {
   companionUsbStep5: "Already paired? Scanning the new QR updates the IP and reconnects when the host ID matches.",
 
   aboutDescription:
-    "Εικονικό πληκτρολόγιο και ποντίκι προσβασιμότητας για Windows.",
+    "Î•Î¹ÎºÎ¿Î½Î¹ÎºÏŒ Ï€Î»Î·ÎºÏ„ÏÎ¿Î»ÏŒÎ³Î¹Î¿ ÎºÎ±Î¹ Ï€Î¿Î½Ï„Î¯ÎºÎ¹ Ï€ÏÎ¿ÏƒÎ²Î±ÏƒÎ¹Î¼ÏŒÏ„Î·Ï„Î±Ï‚ Î³Î¹Î± Windows.",
 
-  aboutVersion: "Έκδοση",
+  aboutVersion: "ÎˆÎºÎ´Î¿ÏƒÎ·",
 
-  aboutCreatedBy: "Δημιουργός",
+  aboutCreatedBy: "Î”Î·Î¼Î¹Î¿Ï…ÏÎ³ÏŒÏ‚",
 
   aboutGitHub: "GitHub",
 
-  aboutSource: "Πηγαίος κώδικας",
+  aboutSource: "Î Î·Î³Î±Î¯Î¿Ï‚ ÎºÏŽÎ´Î¹ÎºÎ±Ï‚",
 
   aboutTwitter: "X",
 
   aboutLinkedIn: "LinkedIn",
 
-  aboutWebsite: "Ιστοσελίδα",
+  aboutWebsite: "Î™ÏƒÏ„Î¿ÏƒÎµÎ»Î¯Î´Î±",
 
   aboutEmail: "Email",
 

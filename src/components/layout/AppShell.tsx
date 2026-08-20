@@ -10,12 +10,16 @@ import { PhrasePanel } from "../phrases/PhrasePanel";
 import { MusicLessonPanel } from "../music/MusicLessonPanel";
 import { MathLessonPanel } from "../teaching/MathLessonPanel";
 import { LanguageLessonPanel } from "../teaching/LanguageLessonPanel";
+import { FreeWritePanel } from "../teaching/FreeWritePanel";
+import { TeachingSubjectShell } from "../teaching/TeachingSubjectShell";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
 import type { TeachingLesson } from "../../stores/appStore";
+import type { LanguageSubjectTab } from "../../lib/teaching";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useLanguageLessonPhysicalKeyboard } from "../../hooks/useLanguageLessonPhysicalKeyboard";
+import { useFreeWritePhysicalKeyboard } from "../../hooks/useFreeWritePhysicalKeyboard";
 import { CollapseIcon, CloseIcon, SettingsIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { CollapsedFab } from "./CollapsedFab";
@@ -38,6 +42,25 @@ import {
   resolveV1SectionVisibility,
 } from "../../lib/v1HiddenFeatures";
 
+function LanguageTeachingBody() {
+  const { t } = useTranslation();
+  const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
+  const setLanguageSubjectTab = useAppStore((s) => s.setLanguageSubjectTab);
+  const tabs: { id: LanguageSubjectTab; label: string }[] = [
+    { id: "spelling", label: t("teachingTabSpelling") },
+    { id: "freeWrite", label: t("teachingTabFreeWrite") },
+  ];
+  return (
+    <TeachingSubjectShell
+      tabs={tabs}
+      activeId={languageSubjectTab}
+      onChange={setLanguageSubjectTab}
+    >
+      {languageSubjectTab === "freeWrite" ? <FreeWritePanel /> : <LanguageLessonPanel />}
+    </TeachingSubjectShell>
+  );
+}
+
 function renderTeachingLessonPanel(lesson: TeachingLesson) {
   switch (lesson) {
     case "music":
@@ -45,7 +68,7 @@ function renderTeachingLessonPanel(lesson: TeachingLesson) {
     case "math":
       return <MathLessonPanel />;
     case "language":
-      return <LanguageLessonPanel />;
+      return <LanguageTeachingBody />;
     default: {
       const _exhaustive: never = lesson;
       return _exhaustive;
@@ -120,6 +143,7 @@ function contentHeightRatioFromSettings(
 
 export function AppShell() {
   useLanguageLessonPhysicalKeyboard();
+  useFreeWritePhysicalKeyboard();
   const settings = useAppStore((s) => s.settings);
   const monitors = useAppStore((s) => s.monitors);
   const setShowSettings = useAppStore((s) => s.setShowSettings);

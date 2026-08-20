@@ -1,4 +1,4 @@
-import { en } from "./en";
+﻿import { en } from "./en";
 
 export const pt: Record<keyof typeof en, string> = {
   appTitle: "ReachPanel",
@@ -9,23 +9,23 @@ export const pt: Record<keyof typeof en, string> = {
 
   minimizeSection: "Minimizar",
 
-  dockSection: "Ancorar secção",
+  dockSection: "Ancorar secÃ§Ã£o",
 
-  undockSection: "Desancorar secção",
+  undockSection: "Desancorar secÃ§Ã£o",
 
-  settings: "Definições",
+  settings: "DefiniÃ§Ãµes",
 
   close: "Fechar",
 
   add: "Adicionar",
 
-  appNotInstalled: "{app} não está instalado.",
+  appNotInstalled: "{app} nÃ£o estÃ¡ instalado.",
 
   installApp: "Instalar",
 
   profile: "Perfil",
 
-  accessibilityScreen: "Ecrã de acessibilidade",
+  accessibilityScreen: "EcrÃ£ de acessibilidade",
 
   miniMode: "Modo Mini",
 
@@ -37,19 +37,55 @@ export const pt: Record<keyof typeof en, string> = {
 
   modeCompanion: "Companheiro",
 
-  teachingLessonMusic: "Música",
+  teachingLessonMusic: "MÃºsica",
 
-  teachingLessonMath: "Matemática",
+  teachingLessonMath: "MatemÃ¡tica",
 
   teachingLessonLanguage: "Idioma",
 
+
+  teachingTabSpelling: "Ortografia",
+
+  teachingTabFreeWrite: "Escrita livre",
+
+  freeWriteNotepad: "Bloco de notas",
+
+  freeWriteClearAll: "Limpar tudo",
+
+  freeWriteClearConfirm: "Limpar todo o rascunho do bloco de notas?",
+
+  freeWriteZoomIn: "Aumentar zoom",
+
+  freeWriteZoomOut: "Diminuir zoom",
+
+  freeWriteWordWrap: "Quebra de linha",
+
+  freeWriteLineNumbers: "Números de linha",
+
+  freeWriteNotepadEmpty: "Digite notas aqui…",
+
+  freeWriteOpenPdf: "Abrir PDF…",
+
+  freeWriteRecentPdfs: "PDFs recentes",
+
+  freeWritePdfMissing: "Este arquivo PDF não foi encontrado.",
+
+  freeWritePdfEmpty: "Abra um PDF para ler ao lado das suas notas.",
+
+  freeWritePdfPrevPage: "Página anterior",
+
+  freeWritePdfNextPage: "Próxima página",
+
+  freeWriteRemovePdf: "Remover",
+
+
   comingSoon: "Em breve",
 
-  mathLessonTitle: "Matemática",
+  mathLessonTitle: "MatemÃ¡tica",
 
   languageLessonTitle: "Idioma",
 
-  languageLesson: "Lição de idioma",
+  languageLesson: "LiÃ§Ã£o de idioma",
 
   selectLanguagePack: "Escolher lista de palavras",
 
@@ -61,37 +97,37 @@ export const pt: Record<keyof typeof en, string> = {
 
   languageCheck: "Verificar",
 
-  languageIncorrect: "Ainda não — tente de novo",
+  languageIncorrect: "Ainda nÃ£o â€” tente de novo",
 
   languageUpcomingTasks: "Palavras seguintes",
 
-  languageAgeBand: "Faixa etária",
+  languageAgeBand: "Faixa etÃ¡ria",
 
   languageLessonLanguage: "Idioma",
 
   languageLessonLangEl: "Grego",
 
-  languageLessonLangEn: "Inglês",
+  languageLessonLangEn: "InglÃªs",
 
-  languageAgeBandEarly: "Inicial (6–8)",
+  languageAgeBandEarly: "Inicial (6â€“8)",
 
-  languageAgeBandPrimary: "Primário (9–11)",
+  languageAgeBandPrimary: "PrimÃ¡rio (9â€“11)",
 
-  languageAgeBandLowerSecondary: "Secundário I (12–14)",
+  languageAgeBandLowerSecondary: "SecundÃ¡rio I (12â€“14)",
 
-  languageAgeBandUpperSecondary: "Secundário II (15+)",
+  languageAgeBandUpperSecondary: "SecundÃ¡rio II (15+)",
 
-  languageLessonIgnoreCase: "Ignorar maiúsculas/minúsculas",
+  languageLessonIgnoreCase: "Ignorar maiÃºsculas/minÃºsculas",
 
-  languageLessonIgnoreTones: "Ignorar acentos na verificação",
+  languageLessonIgnoreTones: "Ignorar acentos na verificaÃ§Ã£o",
 
-  languageLessonTonesOff: "Acentos: não obrigatórios",
+  languageLessonTonesOff: "Acentos: nÃ£o obrigatÃ³rios",
 
-  languageLessonTonesOn: "Acentos: obrigatórios",
+  languageLessonTonesOn: "Acentos: obrigatÃ³rios",
 
   languageNewList: "Nova lista de palavras",
 
-  languageNewListTitle: "Título da lista",
+  languageNewListTitle: "TÃ­tulo da lista",
 
   languageNewListWords: "Palavras (uma por linha)",
 
@@ -100,24 +136,24 @@ export const pt: Record<keyof typeof en, string> = {
   languageNewListCancel: "Cancelar",
 
   languageNewListEmpty: "Adicione pelo menos uma palavra",
-  languagePressPlayToSpell: "Prima Reproduzir para começar a soletrar",
-  languageNewListKeyboardHint: "Use o teclado para o título e as palavras à esquerda",
+  languagePressPlayToSpell: "Prima Reproduzir para comeÃ§ar a soletrar",
+  languageNewListKeyboardHint: "Use o teclado para o tÃ­tulo e as palavras Ã  esquerda",
 
   languagePackMyLists: "As minhas listas",
 
   deleteLanguagePack: "Eliminar lista",
 
-  confirmDeleteLanguagePack: "Eliminar “{title}”?",
+  confirmDeleteLanguagePack: "Eliminar â€œ{title}â€?",
 
   modeTabletsHint:
-    "Normal e Mini são teclado. Ensino abre lições; Música mostra o sintetizador. Companheiro inicia a ponte do tablet; só fica selecionado enquanto um tablet estiver ligado.",
+    "Normal e Mini sÃ£o teclado. Ensino abre liÃ§Ãµes; MÃºsica mostra o sintetizador. Companheiro inicia a ponte do tablet; sÃ³ fica selecionado enquanto um tablet estiver ligado.",
 
   miniModeAutoDescription:
-    "Num ecrã único ou configuração em espelho, o teclado aparece automaticamente quando toca num campo de entrada.",
+    "Num ecrÃ£ Ãºnico ou configuraÃ§Ã£o em espelho, o teclado aparece automaticamente quando toca num campo de entrada.",
 
   miniModeOverrideLabel: "Modo Mini",
 
-  miniModeOverrideAuto: "Automático",
+  miniModeOverrideAuto: "AutomÃ¡tico",
 
   miniModeOverrideOn: "Ativado",
 
@@ -127,10 +163,10 @@ export const pt: Record<keyof typeof en, string> = {
 
   inputPreviewLabel: "Campo de destino",
 
-  inputPreviewWaiting: "A aguardar pré-visualização…",
+  inputPreviewWaiting: "A aguardar prÃ©-visualizaÃ§Ã£oâ€¦",
 
   miniModeTransparentDescription:
-    "Mostrar teclas apenas com contornos para ver as aplicações por detrás.",
+    "Mostrar teclas apenas com contornos para ver as aplicaÃ§Ãµes por detrÃ¡s.",
 
   transparentKeyColor: "Cor das teclas transparentes",
 
@@ -142,24 +178,24 @@ export const pt: Record<keyof typeof en, string> = {
 
   miniModeCollapse: "Voltar ao Modo Mini",
 
-  largeHeaders: "Cabeçalhos grandes para redimensionar mais facilmente",
+  largeHeaders: "CabeÃ§alhos grandes para redimensionar mais facilmente",
 
   largeHeadersHint:
-    "Duplica a altura dos cabeçalhos e dos botões. Arraste a área vazia do cabeçalho para alterar a altura da secção ou da janela.",
+    "Duplica a altura dos cabeÃ§alhos e dos botÃµes. Arraste a Ã¡rea vazia do cabeÃ§alho para alterar a altura da secÃ§Ã£o ou da janela.",
 
   primary: "Principal",
 
   mouse: "Rato",
 
-  numpad: "Teclado numérico",
+  numpad: "Teclado numÃ©rico",
 
-  mousePanelLeft: "À esquerda do teclado",
+  mousePanelLeft: "Ã€ esquerda do teclado",
 
-  mousePanelRight: "À direita do teclado",
+  mousePanelRight: "Ã€ direita do teclado",
 
-  showMouseSection: "Mostrar secção do rato",
+  showMouseSection: "Mostrar secÃ§Ã£o do rato",
 
-  hideMouseSection: "Ocultar secção do rato",
+  hideMouseSection: "Ocultar secÃ§Ã£o do rato",
 
   speed: "Velocidade",
 
@@ -167,55 +203,55 @@ export const pt: Record<keyof typeof en, string> = {
 
   speedVerySlow: "Muito lenta",
 
-  speedMedium: "Média",
+  speedMedium: "MÃ©dia",
 
-  speedFast: "Rápida",
+  speedFast: "RÃ¡pida",
 
-  speedVeryFast: "Muito rápida",
+  speedVeryFast: "Muito rÃ¡pida",
 
-  quickActions: "Ações rápidas",
+  quickActions: "AÃ§Ãµes rÃ¡pidas",
 
-  showQuickActionsBar: "Mostrar barra de ações rápidas",
+  showQuickActionsBar: "Mostrar barra de aÃ§Ãµes rÃ¡pidas",
 
-  phrasesAndSuggestions: "Frases e sugestões",
+  phrasesAndSuggestions: "Frases e sugestÃµes",
 
-  showPhrasesSection: "Mostrar secção de frases",
+  showPhrasesSection: "Mostrar secÃ§Ã£o de frases",
 
-  showSuggestionsBar: "Mostrar barra de sugestões",
+  showSuggestionsBar: "Mostrar barra de sugestÃµes",
 
-  predictionDictionaries: "Dicionários de previsão",
+  predictionDictionaries: "DicionÃ¡rios de previsÃ£o",
 
   predictionDictionariesHint:
-    "O inglês está incluído. Baixe outros idiomas conforme necessário. As sugestões seguem o idioma de digitação.",
+    "O inglÃªs estÃ¡ incluÃ­do. Baixe outros idiomas conforme necessÃ¡rio. As sugestÃµes seguem o idioma de digitaÃ§Ã£o.",
 
   wordPackInstalled: "Instalado",
 
-  wordPackNotInstalled: "Não instalado",
+  wordPackNotInstalled: "NÃ£o instalado",
 
   wordPackInstall: "Instalar",
 
   wordPackUninstall: "Remover",
 
-  wordPackInstalling: "A instalar…",
+  wordPackInstalling: "A instalarâ€¦",
 
-  wordPackUninstalling: "A remover…",
+  wordPackUninstalling: "A removerâ€¦",
 
-  wordPackRequired: "Obrigatório",
+  wordPackRequired: "ObrigatÃ³rio",
 
-  wordPackInstallFailed: "Não foi possível instalar o dicionário",
+  wordPackInstallFailed: "NÃ£o foi possÃ­vel instalar o dicionÃ¡rio",
 
-  wordPackUninstallFailed: "Não foi possível remover o dicionário",
+  wordPackUninstallFailed: "NÃ£o foi possÃ­vel remover o dicionÃ¡rio",
 
   showDictationControl: "Mostrar ditado (microfone)",
 
-  showInputPreview: "Pré-visualização ao vivo do campo (Normal)",
+  showInputPreview: "PrÃ©-visualizaÃ§Ã£o ao vivo do campo (Normal)",
 
-  showInputPreviewMiniMode: "Pré-visualização ao vivo do campo (Modo Mini)",
+  showInputPreviewMiniMode: "PrÃ©-visualizaÃ§Ã£o ao vivo do campo (Modo Mini)",
 
-  taskbarPosition: "Posição da barra de tarefas",
+  taskbarPosition: "PosiÃ§Ã£o da barra de tarefas",
 
   taskbarPositionHint:
-    "Move a barra de tarefas do Windows para outra borda do ecrã. O Windows 11 não suporta esquerda ou direita.",
+    "Move a barra de tarefas do Windows para outra borda do ecrÃ£. O Windows 11 nÃ£o suporta esquerda ou direita.",
 
   taskbarPositionBottom: "Em baixo",
 
@@ -225,16 +261,16 @@ export const pt: Record<keyof typeof en, string> = {
 
   taskbarPositionRight: "Direita",
 
-  taskbarPositionApplied: "Posição da barra de tarefas atualizada. O Explorer foi reiniciado.",
+  taskbarPositionApplied: "PosiÃ§Ã£o da barra de tarefas atualizada. O Explorer foi reiniciado.",
 
   taskbarPositionUnsupported:
-    "Essa posição da barra de tarefas não é suportada nesta versão do Windows.",
+    "Essa posiÃ§Ã£o da barra de tarefas nÃ£o Ã© suportada nesta versÃ£o do Windows.",
 
-  taskbarPositionFailed: "Não foi possível alterar a posição da barra de tarefas.",
+  taskbarPositionFailed: "NÃ£o foi possÃ­vel alterar a posiÃ§Ã£o da barra de tarefas.",
 
   opacity: "Opacidade",
 
-  appLanguage: "Idioma da aplicação",
+  appLanguage: "Idioma da aplicaÃ§Ã£o",
 
   appLanguageHint: "Menus, frases e voz",
 
@@ -242,9 +278,9 @@ export const pt: Record<keyof typeof en, string> = {
 
   typingLanguageHint: "Idioma do teclado Windows para escrever",
 
-  onscreenLayout: "Disposição no ecrã",
+  onscreenLayout: "DisposiÃ§Ã£o no ecrÃ£",
 
-  onscreenLayoutHint: "Disposição das teclas no teclado virtual",
+  onscreenLayoutHint: "DisposiÃ§Ã£o das teclas no teclado virtual",
 
   onscreenLayoutAuto: "Auto (seguir Windows)",
 
@@ -252,34 +288,34 @@ export const pt: Record<keyof typeof en, string> = {
 
   languageGreek: "Grego",
 
-  languageGerman: "Alemão",
+  languageGerman: "AlemÃ£o",
 
-  languageFrench: "Francês",
+  languageFrench: "FrancÃªs",
 
   languageItalian: "Italiano",
 
   languageSpanish: "Espanhol",
 
-  languagePortuguese: "Português",
+  languagePortuguese: "PortuguÃªs",
 
 
-  resetSettings: "Repor definições",
+  resetSettings: "Repor definiÃ§Ãµes",
 
   resetSettingsHint:
-    "Restaura a disposição, a posição do monitor, os tamanhos dos painéis e todas as outras definições predefinidas.",
+    "Restaura a disposiÃ§Ã£o, a posiÃ§Ã£o do monitor, os tamanhos dos painÃ©is e todas as outras definiÃ§Ãµes predefinidas.",
 
   resetUi: "Repor interface",
 
   resetUiHint:
-    "Restaura todas as definições (tema, visibilidade, disposição, idiomas). Mantém ações rápidas, macros, frases e previsões.",
+    "Restaura todas as definiÃ§Ãµes (tema, visibilidade, disposiÃ§Ã£o, idiomas). MantÃ©m aÃ§Ãµes rÃ¡pidas, macros, frases e previsÃµes.",
 
   wipeProfile: "Limpar perfil",
 
   wipeProfileHint:
-    "Limpa ações rápidas, macros, frases, previsões e seguimento da cabeça e repõe todas as definições.",
+    "Limpa aÃ§Ãµes rÃ¡pidas, macros, frases, previsÃµes e seguimento da cabeÃ§a e repÃµe todas as definiÃ§Ãµes.",
 
   wipeProfileConfirm:
-    "Limpar este perfil? Todas as ações rápidas, macros, frases, previsões e definições serão repostas.",
+    "Limpar este perfil? Todas as aÃ§Ãµes rÃ¡pidas, macros, frases, previsÃµes e definiÃ§Ãµes serÃ£o repostas.",
 
   saveProfile: "Guardar perfil",
 
@@ -287,33 +323,33 @@ export const pt: Record<keyof typeof en, string> = {
 
   deleteProfile: "Eliminar perfil",
 
-  deleteProfileConfirm: "Eliminar este perfil? Se estiver ativo, será criado um novo perfil predefinido.",
+  deleteProfileConfirm: "Eliminar este perfil? Se estiver ativo, serÃ¡ criado um novo perfil predefinido.",
 
   profileDeleted: "Perfil eliminado.",
 
   profileWiped: "Perfil limpo.",
 
-  layoutEdit: "Editar disposição",
+  layoutEdit: "Editar disposiÃ§Ã£o",
 
-  layoutEditDone: "Concluído",
+  layoutEditDone: "ConcluÃ­do",
 
   dragToMove: "Arrastar para mover",
 
   macroBuilder: "Criador de macros",
 
-  headTracking: "Seguimento da cabeça",
+  headTracking: "Seguimento da cabeÃ§a",
 
   phrases: "Frases",
 
-  emergency: "Emergência",
+  emergency: "EmergÃªncia",
 
-  showEmergency: "Emergência",
+  showEmergency: "EmergÃªncia",
 
-  predictionsOff: "Previsões desativadas",
+  predictionsOff: "PrevisÃµes desativadas",
 
   enable: "Ativar",
 
-  suggest: "Sugestão:",
+  suggest: "SugestÃ£o:",
 
   turnOff: "Desativar",
 
@@ -331,11 +367,11 @@ export const pt: Record<keyof typeof en, string> = {
 
   colorProfileCustom: "Personalizado",
 
-  headerTextColor: "Texto do cabeçalho",
+  headerTextColor: "Texto do cabeÃ§alho",
 
-  appBackgroundColor: "Fundo da aplicação",
+  appBackgroundColor: "Fundo da aplicaÃ§Ã£o",
 
-  headerColor: "Barra de cabeçalho",
+  headerColor: "Barra de cabeÃ§alho",
 
   keyboardBackgroundColor: "Fundo do teclado",
 
@@ -343,9 +379,9 @@ export const pt: Record<keyof typeof en, string> = {
 
   fnKeyMode: "Comportamento da tecla Fn",
 
-  fnKeyModeOneShot: "Uma vez (Fn desliga após cada tecla F)",
+  fnKeyModeOneShot: "Uma vez (Fn desliga apÃ³s cada tecla F)",
 
-  fnKeyModeLatched: "Bloqueado (Fn permanece ativo até tocar novamente)",
+  fnKeyModeLatched: "Bloqueado (Fn permanece ativo atÃ© tocar novamente)",
 
   synthesizer: "Sintetizador",
 
@@ -357,39 +393,39 @@ export const pt: Record<keyof typeof en, string> = {
 
   dictationStop: "Parar ditado",
 
-  dictationListening: "A ouvir…",
+  dictationListening: "A ouvirâ€¦",
 
   dictationErrorNoLanguage:
-    "O reconhecimento de voz para este idioma de escrita não está instalado. Adicione o pacote de voz em Definições do Windows → Hora e idioma → Voz e tente novamente.",
+    "O reconhecimento de voz para este idioma de escrita nÃ£o estÃ¡ instalado. Adicione o pacote de voz em DefiniÃ§Ãµes do Windows â†’ Hora e idioma â†’ Voz e tente novamente.",
 
-  dictationErrorUnavailable: "O ditado por voz só está disponível no Windows.",
+  dictationErrorUnavailable: "O ditado por voz sÃ³ estÃ¡ disponÃ­vel no Windows.",
 
   dictationErrorSpeechPrivacy:
-    "O reconhecimento de voz online está desativado no Windows. Ative-o em Privacidade e segurança → Voz e tente novamente. (Não é uma permissão do microfone.)",
+    "O reconhecimento de voz online estÃ¡ desativado no Windows. Ative-o em Privacidade e seguranÃ§a â†’ Voz e tente novamente. (NÃ£o Ã© uma permissÃ£o do microfone.)",
 
   dictationErrorGroqKey:
-    "O reconhecimento de voz do Windows não suporta este idioma. Adicione uma chave API Groq gratuita nas Definições (console.groq.com).",
+    "O reconhecimento de voz do Windows nÃ£o suporta este idioma. Adicione uma chave API Groq gratuita nas DefiniÃ§Ãµes (console.groq.com).",
 
   dictationErrorGroqApi:
-    "Falha no ditado na cloud. Verifique a ligação à Internet e a chave API Groq e tente novamente.",
+    "Falha no ditado na cloud. Verifique a ligaÃ§Ã£o Ã  Internet e a chave API Groq e tente novamente.",
 
   dictationUnavailableUnsupported:
-    "Ditado indisponível — adicione uma chave API Groq gratuita nas Definições para este idioma",
+    "Ditado indisponÃ­vel â€” adicione uma chave API Groq gratuita nas DefiniÃ§Ãµes para este idioma",
 
-  dictationUnavailableOffline: "Ditado indisponível — é necessária uma ligação à Internet",
+  dictationUnavailableOffline: "Ditado indisponÃ­vel â€” Ã© necessÃ¡ria uma ligaÃ§Ã£o Ã  Internet",
 
   dictationGroqRemainingToday: "Pedidos Groq restantes hoje",
 
-  dictationOpenSpeechSettings: "Abrir definições de voz",
+  dictationOpenSpeechSettings: "Abrir definiÃ§Ãµes de voz",
 
   dictationOpenSpeechLanguageSettings: "Instalar idioma de voz",
 
-  dictationOpenAppSettings: "Abrir Definições",
+  dictationOpenAppSettings: "Abrir DefiniÃ§Ãµes",
 
   groqApiKeyLabel: "Chave API Groq (ditado na cloud)",
 
   groqApiKeyHint:
-    "Necessária para idiomas que o Windows não suporta (p. ex. grego). Chave gratuita em console.groq.com. Também pode definir a variável de ambiente GROQ_API_KEY.",
+    "NecessÃ¡ria para idiomas que o Windows nÃ£o suporta (p. ex. grego). Chave gratuita em console.groq.com. TambÃ©m pode definir a variÃ¡vel de ambiente GROQ_API_KEY.",
 
   mute: "Silenciar",
 
@@ -399,11 +435,11 @@ export const pt: Record<keyof typeof en, string> = {
 
   stopTeaching: "Parar de ensinar",
 
-  musicLesson: "Lição de música",
+  musicLesson: "LiÃ§Ã£o de mÃºsica",
 
   partiture: "Partitura",
 
-  selectSong: "Canção",
+  selectSong: "CanÃ§Ã£o",
 
   restartLesson: "Reiniciar",
 
@@ -415,7 +451,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   deleteSong: "Eliminar",
 
-  confirmDeleteSong: "Eliminar a canção importada «{title}»?",
+  confirmDeleteSong: "Eliminar a canÃ§Ã£o importada Â«{title}Â»?",
 
   builtInSongs: "Integradas",
 
@@ -425,18 +461,18 @@ export const pt: Record<keyof typeof en, string> = {
 
   waitingForNote: "Toque",
 
-  lessonComplete: "Canção concluída!",
+  lessonComplete: "CanÃ§Ã£o concluÃ­da!",
 
-  upcomingNotes: "Próximas notas",
+  upcomingNotes: "PrÃ³ximas notas",
 
-  songNeedsOctaves: "Mova o piano para {range} para cobrir esta canção",
+  songNeedsOctaves: "Mova o piano para {range} para cobrir esta canÃ§Ã£o",
 
   songWiderThanPiano:
-    "Esta canção é mais ampla do que 5 oitavas — algumas notas ficam fora. Use ◀ ▶ para deslocar.",
+    "Esta canÃ§Ã£o Ã© mais ampla do que 5 oitavas â€” algumas notas ficam fora. Use â—€ â–¶ para deslocar.",
 
   pianoRange: "Piano",
 
-  songRange: "Canção",
+  songRange: "CanÃ§Ã£o",
 
   shiftPianoLower: "Deslocar piano para baixo",
 
@@ -456,15 +492,15 @@ export const pt: Record<keyof typeof en, string> = {
 
   showKeyboardModeToggle: "Mostrar comutador teclado / sintetizador",
 
-  keyboardSectionMode: "Modo da secção do teclado",
+  keyboardSectionMode: "Modo da secÃ§Ã£o do teclado",
 
   inputAreaNormal: "Vista normal",
 
   inputAreaCompact: "Maximizar teclado e trackpad",
 
-  showMouseBottomRow: "Mostrar linha arrastar, precisão e deslocamento",
+  showMouseBottomRow: "Mostrar linha arrastar, precisÃ£o e deslocamento",
 
-  resizeInputRow: "Redimensionar painéis de teclado e rato",
+  resizeInputRow: "Redimensionar painÃ©is de teclado e rato",
 
   keyColor: "Cor das teclas",
 
@@ -482,35 +518,35 @@ export const pt: Record<keyof typeof en, string> = {
 
   createProfile: "Criar ficheiro de perfil",
 
-  updateAvailable: "Atualização disponível",
+  updateAvailable: "AtualizaÃ§Ã£o disponÃ­vel",
 
-  updateVersionInfo: "Está disponível uma nova versão:",
+  updateVersionInfo: "EstÃ¡ disponÃ­vel uma nova versÃ£o:",
 
   updateNow: "Atualizar agora",
 
   updateLater: "Mais tarde",
 
-  skipThisVersion: "Ignorar esta versão",
+  skipThisVersion: "Ignorar esta versÃ£o",
 
-  updateDownloading: "A transferir atualização…",
+  updateDownloading: "A transferir atualizaÃ§Ã£oâ€¦",
 
-  updatePreparing: "A preparar transferência…",
+  updatePreparing: "A preparar transferÃªnciaâ€¦",
 
-  updateFailed: "Falha na atualização:",
+  updateFailed: "Falha na atualizaÃ§Ã£o:",
 
   updateRetry: "Tentar novamente",
 
-  checkForUpdates: "Procurar atualizações",
+  checkForUpdates: "Procurar atualizaÃ§Ãµes",
 
-  updateUpToDate: "Tem a versão mais recente.",
+  updateUpToDate: "Tem a versÃ£o mais recente.",
 
-  updateCheckFailed: "Não foi possível procurar atualizações.",
+  updateCheckFailed: "NÃ£o foi possÃ­vel procurar atualizaÃ§Ãµes.",
 
-  settingsVisibleSections: "Secções visíveis",
+  settingsVisibleSections: "SecÃ§Ãµes visÃ­veis",
 
   settingsGeneral: "Geral",
 
-  settingsToolsMaintenance: "Ferramentas e manutenção",
+  settingsToolsMaintenance: "Ferramentas e manutenÃ§Ã£o",
 
   quickActionLabel: "Etiqueta",
 
@@ -520,15 +556,15 @@ export const pt: Record<keyof typeof en, string> = {
 
   quickActionTypeUrl: "URL",
 
-  quickActionAdd: "Adicionar ação",
+  quickActionAdd: "Adicionar aÃ§Ã£o",
 
   quickActionDelete: "Eliminar",
 
-  quickActionSearchApps: "Procurar programas instalados…",
+  quickActionSearchApps: "Procurar programas instaladosâ€¦",
 
-  quickActionBrowse: "Procurar…",
+  quickActionBrowse: "Procurarâ€¦",
 
-  quickActionLoadingApps: "A carregar programas instalados…",
+  quickActionLoadingApps: "A carregar programas instaladosâ€¦",
 
   quickActionNoApps: "Nenhum programa correspondente.",
 
@@ -567,15 +603,15 @@ export const pt: Record<keyof typeof en, string> = {
   companionUsbStep4: "On the tablet, scan the updated QR (or paste JSON). Same protocol as Wi-Fi.",
   companionUsbStep5: "Already paired? Scanning the new QR updates the IP and reconnects when the host ID matches.",
 
-  aboutDescription: "Teclado e rato virtuais de assistência para Windows.",
+  aboutDescription: "Teclado e rato virtuais de assistÃªncia para Windows.",
 
-  aboutVersion: "Versão",
+  aboutVersion: "VersÃ£o",
 
   aboutCreatedBy: "Criado por",
 
   aboutGitHub: "GitHub",
 
-  aboutSource: "Código-fonte",
+  aboutSource: "CÃ³digo-fonte",
 
   aboutTwitter: "X",
 

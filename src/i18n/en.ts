@@ -42,6 +42,40 @@ export const en = {
 
   teachingLessonLanguage: "Language",
 
+  teachingTabSpelling: "Spelling",
+
+  teachingTabFreeWrite: "Free write",
+
+  freeWriteNotepad: "Notepad",
+
+  freeWriteClearAll: "Clear all",
+
+  freeWriteClearConfirm: "Clear the entire notepad draft?",
+
+  freeWriteZoomIn: "Zoom in",
+
+  freeWriteZoomOut: "Zoom out",
+
+  freeWriteWordWrap: "Word wrap",
+
+  freeWriteLineNumbers: "Line numbers",
+
+  freeWriteNotepadEmpty: "Type notes here…",
+
+  freeWriteOpenPdf: "Open PDF…",
+
+  freeWriteRecentPdfs: "Recent PDFs",
+
+  freeWritePdfMissing: "This PDF file could not be found.",
+
+  freeWritePdfEmpty: "Open a PDF to read beside your notes.",
+
+  freeWritePdfPrevPage: "Previous page",
+
+  freeWritePdfNextPage: "Next page",
+
+  freeWriteRemovePdf: "Remove",
+
   comingSoon: "Coming soon",
 
   mathLessonTitle: "Mathematics",

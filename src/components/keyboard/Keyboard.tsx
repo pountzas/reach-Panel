@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { isLanguageLessonCaptureActive } from "../../lib/language";
+import { isFreeWriteCaptureActive } from "../../lib/teaching";
 import { useAppStore } from "../../stores/appStore";
 import {
   displayLabel,
@@ -70,6 +71,11 @@ export function Keyboard() {
   const languageLessonPlaying = useAppStore((s) => s.languageLessonPlaying);
   const languageListAuthoringActive = useAppStore((s) => s.languageListAuthoringActive);
   const languageListAuthoringHandlers = useAppStore((s) => s.languageListAuthoringHandlers);
+  const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
+  const freeWriteFocus = useAppStore((s) => s.freeWriteFocus);
+  const freeWriteNotepadInput = useAppStore((s) => s.freeWriteNotepadInput);
+  const freeWriteNotepadBackspace = useAppStore((s) => s.freeWriteNotepadBackspace);
+  const applyFreeWriteLayoutTranslation = useAppStore((s) => s.applyFreeWriteLayoutTranslation);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
 
@@ -103,13 +109,34 @@ export function Keyboard() {
     settings,
     languageLessonPlaying,
     languageListAuthoringActive,
+    languageSubjectTab,
   };
+  const freeWriteMode = {
+    musicTeachingEnabled,
+    teachingLesson,
+    settings,
+    languageSubjectTab,
+    freeWriteFocus,
+  };
+  const freeWriteCaptureActive = isFreeWriteCaptureActive(freeWriteMode);
+  const freeWritePdfFocus =
+    musicTeachingEnabled &&
+    settings.keyboardSectionMode === "synthesizer" &&
+    teachingLesson === "language" &&
+    languageSubjectTab === "freeWrite" &&
+    freeWriteFocus === "pdf";
   const greekKeyboardActive = greekComposeEnabled({
     typingLanguage: settings.typingLanguage,
     keyboardLayout,
     onscreenLayout: settings.onscreenLayout,
     languageLessonActive: isLanguageLessonCaptureActive(languageLessonMode),
     lessonLanguage: settings.languageLessonLanguage,
+  });
+  const greekFreeWriteActive = greekComposeEnabled({
+    typingLanguage: settings.typingLanguage,
+    keyboardLayout,
+    onscreenLayout: settings.onscreenLayout,
+    languageLessonActive: freeWriteCaptureActive,
   });
   const transparent = isTransparentUiActive(settings, miniModeActive);
   const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
@@ -273,6 +300,49 @@ export function Keyboard() {
         }
       }
       clearModifiersAfterKey(usedFnLang);
+      return;
+    }
+
+    if (freeWriteCaptureActive) {
+      if (keyDef.modifier) return;
+      if (key === "backspace") {
+        freeWriteNotepadBackspace();
+        if (greekFreeWriteActive) {
+          void invoke("cmd_reset_layout_compose_state", {
+            hkl: physicalKeyState.systemHkl || null,
+          });
+        }
+        return;
+      }
+      if (key === "enter") {
+        freeWriteNotepadInput("\n");
+        return;
+      }
+      if (key === "space") {
+        freeWriteNotepadInput(" ");
+        return;
+      }
+      const usedFnFw = fnActive && isFnMappedKey(keyDef.key);
+      if (greekFreeWriteActive && keyDef.physicalKey) {
+        const translation = await translateLayoutKey(keyDef.physicalKey);
+        applyFreeWriteLayoutTranslation(translation, greekTranslateOptions(keyDef));
+        clearModifiersAfterKey(usedFnFw);
+        return;
+      }
+      const fwOutput = resolveKeyOutput(
+        keyDef,
+        physicalKeyState.capsLock,
+        shiftActive,
+        fnActive,
+        typingLocale,
+      );
+      if (fwOutput) freeWriteNotepadInput(fwOutput);
+      clearModifiersAfterKey(usedFnFw);
+      return;
+    }
+
+    // Free write PDF focus: do not inject externally or into notepad.
+    if (freeWritePdfFocus) {
       return;
     }
 
