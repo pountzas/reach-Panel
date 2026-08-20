@@ -430,15 +430,12 @@ export function PlayIcon({ className = iconClass }: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fill="currentColor"
+      stroke="none"
       className={className}
       aria-hidden
     >
-      <path d="M8 5v14l11-7-7z" />
+      <path d="M8 5.5v13l11-6.5-11-6.5z" />
     </svg>
   );
 }
