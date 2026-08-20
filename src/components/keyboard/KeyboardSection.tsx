@@ -1,7 +1,6 @@
 import {
   CollapseIcon,
   MouseIcon,
-  TeachingLessonIcon,
   TransparentKeyboardIcon,
 } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
@@ -11,9 +10,8 @@ import { SynthVolumeControl } from "./SynthVolumeControl";
 import { PianoRangeControl } from "./PianoRangeControl";
 import {
   KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS,
-  modeToggleSegmentPosition,
 } from "../../lib/buttonClasses";
-import { useAppStore, type TeachingLesson } from "../../stores/appStore";
+import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
@@ -23,7 +21,6 @@ import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, 
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
   isSynthesizerUiActive,
-  isTeachingSessionActive,
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
 
@@ -40,17 +37,11 @@ export function KeyboardSection() {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
-  const setTeachingLesson = useAppStore((s) => s.setTeachingLesson);
   const musicSongId = useAppStore((s) => s.musicSongId);
   const importedSongs = useAppStore((s) => s.importedSongs);
   const hasInputTarget = useAppStore((s) => s.physicalKeyState.hasInputTarget);
   const companionSessionLive = useAppStore((s) => s.companionSessionLive);
   const { t } = useTranslation();
-  const teachingActive =
-    isTeachingSessionActive(
-      musicTeachingEnabled,
-      settings.keyboardSectionMode,
-    ) && !miniModeActive;
   const showSynth =
     isSynthesizerUiActive(
       musicTeachingEnabled,
@@ -84,10 +75,8 @@ export function KeyboardSection() {
     : undefined;
   const showMiniModeToolbar = miniModeActive && !showSynth && !compact;
   const showTransparentColorButton = transparentUi && showTransparentToggle;
-  const showLessonToggle = teachingActive && !compact;
   const showSynthToolbar = showSynth && !compact;
   const showToolbar =
-    showLessonToggle ||
     showSynthToolbar ||
     showInputPreview ||
     showSuggestions ||
@@ -105,12 +94,6 @@ export function KeyboardSection() {
     settings.synthesizerStartOctave,
     octaveCount,
   );
-
-  const lessonButtons: { id: TeachingLesson; labelKey: "teachingLessonLanguage" | "teachingLessonMusic" | "teachingLessonMath" }[] = [
-    { id: "language", labelKey: "teachingLessonLanguage" },
-    { id: "music", labelKey: "teachingLessonMusic" },
-    { id: "math", labelKey: "teachingLessonMath" },
-  ];
 
   const auxCenterMinHeightPx =
     (showInputPreview ? INPUT_PREVIEW_STRIP_HEIGHT_PX : 0) +
@@ -141,8 +124,7 @@ export function KeyboardSection() {
               </div>
             )}
           </div>
-          {(showLessonToggle ||
-            showSynthToolbar ||
+          {(showSynthToolbar ||
             showTransparentToggle ||
             showMiniModeCollapse) ? (
             <div
@@ -237,29 +219,6 @@ export function KeyboardSection() {
                   >
                     <TransparentKeyboardIcon className="h-4 w-4" />
                   </ModeToggleButton>
-                </ModeToggleGroup>
-              )}
-              {showLessonToggle && (
-                <ModeToggleGroup>
-                  {lessonButtons.map((lesson, index) => (
-                    <ModeToggleButton
-                      key={lesson.id}
-                      active={
-                        musicTeachingEnabled && teachingLesson === lesson.id
-                      }
-                      position={modeToggleSegmentPosition(
-                        index,
-                        lessonButtons.length,
-                      )}
-                      label={t(lesson.labelKey)}
-                      onClick={() => setTeachingLesson(lesson.id)}
-                    >
-                      <TeachingLessonIcon
-                        lesson={lesson.id}
-                        className="h-4 w-4"
-                      />
-                    </ModeToggleButton>
-                  ))}
                 </ModeToggleGroup>
               )}
               {showSynthToolbar && (

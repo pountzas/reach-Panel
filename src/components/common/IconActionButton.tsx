@@ -16,6 +16,8 @@ interface IconActionButtonProps {
   size?: IconActionButtonSize;
   /** Default `above`. Use `below` for top-edge header actions. */
   tooltipPlacement?: HoverTooltipPlacement;
+  /** When true, marks the control as selected (light gray icon). */
+  pressed?: boolean;
 }
 
 export function IconActionButton({
@@ -26,16 +28,19 @@ export function IconActionButton({
   className = "",
   size = "sm",
   tooltipPlacement = "above",
+  pressed = false,
 }: IconActionButtonProps) {
   const sizeClass = size === "lg" ? "h-12 w-12" : "h-6 w-6";
+  const pressedClass = pressed ? "bg-black/10 text-slate-400" : "";
 
   return (
     <button
       type="button"
-      className={`group relative flex ${sizeClass} shrink-0 items-center justify-center rounded transition-colors hover:bg-black/10 disabled:opacity-50 disabled:hover:bg-transparent ${className}`}
+      className={`group relative flex ${sizeClass} shrink-0 items-center justify-center rounded transition-colors hover:bg-black/10 disabled:opacity-50 disabled:hover:bg-transparent ${pressedClass} ${className}`.trim()}
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
+      aria-pressed={pressed}
     >
       {children}
       <HoverTooltip label={label} placement={tooltipPlacement} />
