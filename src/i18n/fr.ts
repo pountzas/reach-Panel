@@ -49,6 +49,64 @@ export const fr: Record<keyof typeof en, string> = {
 
   languageLessonTitle: "Langue",
 
+  languageLesson: "Leçon de langue",
+
+  selectLanguagePack: "Choisir une liste de mots",
+
+  languagePackBuiltIn: "Listes intégrées",
+
+  languagePrompt: "Épelez ce mot",
+
+  languageYourAnswer: "Votre réponse",
+
+  languageCheck: "Vérifier",
+
+  languageIncorrect: "Pas encore — réessayez",
+
+  languageUpcomingTasks: "Mots suivants",
+
+  languageAgeBand: "Tranche d'âge",
+
+  languageLessonLanguage: "Langue",
+
+  languageLessonLangEl: "Grec",
+
+  languageLessonLangEn: "Anglais",
+
+  languageAgeBandEarly: "Jeune (6–8)",
+
+  languageAgeBandPrimary: "Primaire (9–11)",
+
+  languageAgeBandLowerSecondary: "Collège (12–14)",
+
+  languageAgeBandUpperSecondary: "Lycée (15+)",
+
+  languageLessonIgnoreCase: "Ignorer la casse",
+
+  languageLessonIgnoreTones: "Ignorer les accents à la vérification",
+
+  languageLessonTonesOff: "Accents : non exigés",
+
+  languageLessonTonesOn: "Accents : exigés",
+
+  languageNewList: "Nouvelle liste de mots",
+
+  languageNewListTitle: "Titre de la liste",
+
+  languageNewListWords: "Mots (un par ligne)",
+
+  languageNewListSave: "Enregistrer la liste",
+
+  languageNewListCancel: "Annuler",
+
+  languageNewListEmpty: "Ajoutez au moins un mot",
+
+  languagePackMyLists: "Mes listes",
+
+  deleteLanguagePack: "Supprimer la liste",
+
+  confirmDeleteLanguagePack: "Supprimer « {title} » ?",
+
   modeTabletsHint:
     "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon démarre le pont tablette ; il n'est sélectionné que lorsqu'une tablette est connectée.",
 

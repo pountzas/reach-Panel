@@ -91,7 +91,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 
 - **Normal** — full typing keyboard and predictive suggestions
 - **Mini** — compact keyboard; collapses to a branded FAB when idle; optional transparent outlined keys (white / dark gray / silver)
-- **Teaching** — fullscreen work area with Music lesson + piano/synth (2–5 octaves, partiture, built-in songs and file import); Math and Language lesson slots are placeholders for now
+- **Teaching** — fullscreen work area with Music lesson + piano/synth (2–5 octaves, partiture, built-in songs and file import); Language spelling lists (built-in and custom, optional Greek tone checking); Math is a placeholder for now
 
 ### Keyboard
 

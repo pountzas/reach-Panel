@@ -48,6 +48,64 @@ export const en = {
 
   languageLessonTitle: "Language",
 
+  languageLesson: "Language lesson",
+
+  selectLanguagePack: "Select word list",
+
+  languagePackBuiltIn: "Built-in lists",
+
+  languagePrompt: "Spell this word",
+
+  languageYourAnswer: "Your spelling",
+
+  languageCheck: "Check",
+
+  languageIncorrect: "Not quite — try again",
+
+  languageUpcomingTasks: "Upcoming words",
+
+  languageAgeBand: "Age band",
+
+  languageLessonLanguage: "Language",
+
+  languageLessonLangEl: "Greek",
+
+  languageLessonLangEn: "English",
+
+  languageAgeBandEarly: "Early (6–8)",
+
+  languageAgeBandPrimary: "Primary (9–11)",
+
+  languageAgeBandLowerSecondary: "Lower secondary (12–14)",
+
+  languageAgeBandUpperSecondary: "Upper secondary (15+)",
+
+  languageLessonIgnoreCase: "Ignore letter case when checking",
+
+  languageLessonIgnoreTones: "Ignore accent marks (tones) when checking",
+
+  languageLessonTonesOff: "Tones: not required",
+
+  languageLessonTonesOn: "Tones: required",
+
+  languageNewList: "New word list",
+
+  languageNewListTitle: "List title",
+
+  languageNewListWords: "Words (one per line)",
+
+  languageNewListSave: "Save list",
+
+  languageNewListCancel: "Cancel",
+
+  languageNewListEmpty: "Add at least one word",
+
+  languagePackMyLists: "My lists",
+
+  deleteLanguagePack: "Delete list",
+
+  confirmDeleteLanguagePack: "Delete “{title}”?",
+
   modeTabletsHint:
     "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion starts the tablet bridge; it is selected only while a tablet is connected.",
 

@@ -25,6 +25,7 @@ import {
   isSynthesizerUiActive,
   isTeachingSessionActive,
 } from "../../lib/appModeLayout";
+import { isLanguageLessonActive } from "../../lib/language";
 
 /** Reserved height for suggestion chips so appearing tags do not shrink keys. */
 const SUGGESTION_ROW_MIN_CLASS = "min-h-8";
@@ -63,7 +64,13 @@ export function KeyboardSection() {
     !companionSessionLive &&
     hasInputTarget &&
     isInputPreviewActiveForMode(settings, miniModeActive);
-  const showSuggestions = !showSynth && settings.suggestionsVisible && !compact;
+  const languageLessonActive = isLanguageLessonActive({
+    musicTeachingEnabled,
+    teachingLesson,
+    settings,
+  });
+  const showSuggestions =
+    !showSynth && settings.suggestionsVisible && !compact && !languageLessonActive;
   const transparentUi = isTransparentUiActive(settings, miniModeActive);
   const showTransparentToggle = miniModeActive && !showSynth && !compact;
   const showMiniModeCollapse =

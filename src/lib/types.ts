@@ -3,6 +3,7 @@ import type { MouseSpeed } from "./mouseSpeed";
 import type { ColorProfileId } from "./colorProfiles";
 import { COLOR_PROFILE_PRESETS } from "./colorProfiles";
 import type { SynthOctaveCount } from "./music/octaveCount";
+import type { LanguageAgeBand, LessonLanguage } from "./language/types";
 
 export type { MouseSpeed };
 export type { SynthOctaveCount };
@@ -103,6 +104,16 @@ export interface AppSettings {
   transparentKeyColor?: TransparentKeyColor;
   touchLayout?: LayoutSnapshot;
   mouseLayout?: LayoutSnapshot;
+  /** Teaching → Language: lesson content language (EL / EN). */
+  languageLessonLanguage?: LessonLanguage;
+  /** Teaching → Language: age band for built-in pack filtering. */
+  languageLessonAgeBand?: LanguageAgeBand;
+  /** Teaching → Language: left column width fraction (ResizableSplitPane, ratioSide left). */
+  languageLessonLeftRatio?: number;
+  /** Teaching → Language: ignore letter case when checking spelling (default true). */
+  languageLessonIgnoreCase?: boolean;
+  /** Teaching → Language: ignore accent marks / tones when checking (default true). */
+  languageLessonIgnoreTones?: boolean;
 }
 
 export interface ProfileFileInfo {
@@ -228,4 +239,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   largeHeaders: false,
   transparentKeyColor: "white",
   miniModeOverride: false,
+  languageLessonLanguage: "el",
+  languageLessonAgeBand: "primary",
+  languageLessonLeftRatio: 0.4,
+  languageLessonIgnoreCase: true,
+  languageLessonIgnoreTones: true,
 };

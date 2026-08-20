@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { isLanguageLessonActive } from "../../lib/language";
 import { useAppStore } from "../../stores/appStore";
 import {
   displayLabel,
@@ -13,6 +14,11 @@ import {
   resolveKeyOutput,
   resolveOnscreenLayout,
 } from "../../lib/keyboardLayouts";
+import { greekComposeEnabled } from "../../lib/keyboardCharacterInput";
+import {
+  greekTranslateFallback,
+  type LayoutKeyTranslation,
+} from "../../lib/layoutKeyTranslation";
 import { KeyButton } from "./KeyButton";
 import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
@@ -36,7 +42,7 @@ export function Keyboard() {
   const pollKeyboardState = useAppStore((s) => s.pollKeyboardState);
   const clearSticky = useAppStore((s) => s.clearSticky);
   const clearStickyExceptFn = useAppStore((s) => s.clearStickyExceptFn);
-  const appendTyped = useAppStore((s) => s.appendTyped);
+  const typeCharacter = useAppStore((s) => s.typeCharacter);
   const backspaceTyped = useAppStore((s) => s.backspaceTyped);
   const setTypedBuffer = useAppStore((s) => s.setTypedBuffer);
   const loadSuggestions = useAppStore((s) => s.loadSuggestions);
@@ -54,6 +60,15 @@ export function Keyboard() {
   const stopDictation = useAppStore((s) => s.stopDictation);
   const sttCapability = useAppStore((s) => s.sttCapability);
   const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
+  const applyTypedLayoutTranslation = useAppStore((s) => s.applyTypedLayoutTranslation);
+  const applyLanguageLayoutTranslation = useAppStore(
+    (s) => s.applyLanguageLayoutTranslation,
+  );
+  const languageKeyInput = useAppStore((s) => s.languageKeyInput);
+  const languageBackspace = useAppStore((s) => s.languageBackspace);
+  const checkLanguageAnswer = useAppStore((s) => s.checkLanguageAnswer);
+  const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const teachingLesson = useAppStore((s) => s.teachingLesson);
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const langKeyAnchorRef = useRef<HTMLDivElement>(null);
@@ -79,6 +94,17 @@ export function Keyboard() {
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
   const fontSize = settings.keyboardFontSize ?? 18;
   const typingLocale = settings.typingLanguage || "en";
+  const greekKeyboardActive = greekComposeEnabled({
+    typingLanguage: settings.typingLanguage,
+    keyboardLayout,
+    onscreenLayout: settings.onscreenLayout,
+    languageLessonActive: isLanguageLessonActive({
+      musicTeachingEnabled,
+      teachingLesson,
+      settings,
+    }),
+    lessonLanguage: settings.languageLessonLanguage,
+  });
   const transparent = isTransparentUiActive(settings, miniModeActive);
   const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
   const keyTextColor = transparent
@@ -128,6 +154,25 @@ export function Keyboard() {
     setLanguagePickerOpen(!languagePickerOpen);
   };
 
+  const translateLayoutKey = async (physicalKey: string): Promise<LayoutKeyTranslation> =>
+    invoke<LayoutKeyTranslation>("cmd_translate_layout_key", {
+      physicalKey,
+      shift: shiftActive,
+      hkl: physicalKeyState.systemHkl || null,
+    });
+
+  const greekTranslateOptions = (keyDef: KeyDef) => ({
+    physicalKey: keyDef.physicalKey,
+    shift: shiftActive,
+    fallbackOutput: greekTranslateFallback(
+      keyDef,
+      physicalKeyState.capsLock,
+      shiftActive,
+      fnActive,
+      typingLocale,
+    ),
+  });
+
   const handleKey = async (keyDef: KeyDef) => {
     const key = keyDef.key;
 
@@ -158,6 +203,53 @@ export function Keyboard() {
       setLanguagePickerOpen(false);
     }
 
+    const languageLessonActive = isLanguageLessonActive({
+      musicTeachingEnabled,
+      teachingLesson,
+      settings,
+    });
+
+    if (languageLessonActive) {
+      if (keyDef.modifier) {
+        return;
+      }
+      if (key === "backspace") {
+        languageBackspace();
+        if (greekKeyboardActive) {
+          void invoke("cmd_reset_layout_compose_state", {
+            hkl: physicalKeyState.systemHkl || null,
+          });
+        }
+        return;
+      }
+      if (key === "enter") {
+        checkLanguageAnswer();
+        return;
+      }
+      if (key === "space") {
+        return;
+      }
+      const usedFnLang = fnActive && isFnMappedKey(keyDef.key);
+      if (greekKeyboardActive && keyDef.physicalKey) {
+        const translation = await translateLayoutKey(keyDef.physicalKey);
+        applyLanguageLayoutTranslation(translation, greekTranslateOptions(keyDef));
+        clearModifiersAfterKey(usedFnLang);
+        return;
+      }
+      const langOutput = resolveKeyOutput(
+        keyDef,
+        physicalKeyState.capsLock,
+        shiftActive,
+        fnActive,
+        typingLocale,
+      );
+      if (langOutput.length === 1 || keyDef.physicalKey) {
+        languageKeyInput(langOutput, { physicalKey: keyDef.physicalKey });
+      }
+      clearModifiersAfterKey(usedFnLang);
+      return;
+    }
+
     if (keyDef.modifier) {
       toggleSticky(key);
       return;
@@ -165,6 +257,11 @@ export function Keyboard() {
 
     if (key === "backspace") {
       backspaceTyped();
+      if (greekKeyboardActive) {
+        void invoke("cmd_reset_layout_compose_state", {
+          hkl: physicalKeyState.systemHkl || null,
+        });
+      }
       await invoke("cmd_press_key", { request: { key: "backspace", modifiers: [] } });
       await loadSuggestions();
       await pollError();
@@ -185,10 +282,12 @@ export function Keyboard() {
 
     if (key === "space") {
       await recordTypedWord();
-      appendTyped(" ");
-      await invoke("cmd_press_key", {
-        request: { key: "space", modifiers: [...activeModifiers] },
-      });
+      const inject = typeCharacter(" ");
+      if (inject) {
+        await invoke("cmd_press_key", {
+          request: { key: "space", modifiers: [...activeModifiers] },
+        });
+      }
       clearModifiersAfterKey(false);
       await loadSuggestions();
       await pollError();
@@ -196,6 +295,24 @@ export function Keyboard() {
     }
 
     const usedFn = fnActive && isFnMappedKey(keyDef.key);
+    if (greekKeyboardActive && keyDef.physicalKey) {
+      const translation = await translateLayoutKey(keyDef.physicalKey);
+      const inject = applyTypedLayoutTranslation(translation, greekTranslateOptions(keyDef));
+      if (inject) {
+        await invoke("cmd_press_key", {
+          request: {
+            key: inject,
+            modifiers: [...activeModifiers],
+            physicalKey: keyDef.physicalKey,
+          },
+        });
+      }
+      clearModifiersAfterKey(usedFn);
+      await loadSuggestions();
+      await pollError();
+      return;
+    }
+
     const output = resolveKeyOutput(
       keyDef,
       physicalKeyState.capsLock,
@@ -203,10 +320,22 @@ export function Keyboard() {
       fnActive,
       typingLocale,
     );
-    if (output.length === 1) appendTyped(output);
-    await invoke("cmd_press_key", {
-      request: { key: output, modifiers: [...activeModifiers] },
-    });
+    if (output.length === 1 || keyDef.physicalKey) {
+      const inject = typeCharacter(output, { physicalKey: keyDef.physicalKey });
+      if (inject) {
+        await invoke("cmd_press_key", {
+          request: {
+            key: inject,
+            modifiers: [...activeModifiers],
+            physicalKey: keyDef.physicalKey,
+          },
+        });
+      }
+    } else {
+      await invoke("cmd_press_key", {
+        request: { key: output, modifiers: [...activeModifiers] },
+      });
+    }
     clearModifiersAfterKey(usedFn);
     await loadSuggestions();
     await pollError();

@@ -1,6 +1,8 @@
 export interface KeyDef {
   label: string;
   key: string;
+  /** QWERTY-position id before live layout labels are applied. */
+  physicalKey?: string;
   width?: number;
   modifier?: boolean;
   shiftLabel?: string;
@@ -193,6 +195,19 @@ export function resolveLetterCase(
     : key.toLocaleLowerCase(locale);
 }
 
+/** Windows EL: QWERTY physical slot → unshifted glyph when ToUnicodeEx returns empty. */
+const GREEK_PHYSICAL_UNSHIFTED: Record<string, string> = {
+  q: ";",
+};
+
+export function greekPhysicalOutput(
+  physicalKey: string,
+  shift: boolean,
+): string | undefined {
+  if (shift) return undefined;
+  return GREEK_PHYSICAL_UNSHIFTED[physicalKey.toLowerCase()];
+}
+
 export function resolveKeyOutput(
   keyDef: KeyDef,
   capsLock: boolean,
@@ -201,6 +216,10 @@ export function resolveKeyOutput(
   locale = "en",
 ): string {
   if (keyDef.modifier || keyDef.key.length > 1) return keyDef.key;
+  if (!keyDef.key && keyDef.physicalKey) {
+    const greek = greekPhysicalOutput(keyDef.physicalKey, shift);
+    if (greek) return greek;
+  }
   if (fnActive) {
     const fnKey = FN_KEY_MAP[keyDef.key];
     if (fnKey) return fnKey;
@@ -421,19 +440,40 @@ export function applyLayoutKeyLabels(
   rows: KeyDef[][],
   labels: LayoutKeyLabel[],
 ): KeyDef[][] {
-  if (!labels.length) return rows;
+  if (!labels.length) return attachPhysicalKeys(rows);
   const byKey = new Map(labels.map((l) => [l.key.toLowerCase(), l]));
   return rows.map((row) =>
     row.map((k) => {
       if (k.modifier || k.key.length > 1) return k;
       const mapped = byKey.get(k.key.toLowerCase());
-      if (!mapped) return k;
+      const physicalKey = k.key;
+      if (!mapped) {
+        return { ...k, physicalKey };
+      }
+      const unshifted =
+        mapped.label || greekPhysicalOutput(physicalKey, false) || k.key;
       return {
         ...k,
-        key: mapped.label,
-        label: mapped.label,
+        physicalKey,
+        key: unshifted,
+        label: mapped.label || greekPhysicalOutput(physicalKey, false) || k.label,
         shiftLabel: mapped.shiftLabel ?? k.shiftLabel,
       };
+    }),
+  );
+}
+
+/** Copy QWERTY-position ids onto a layout grid (for dead-key resolution). */
+export function attachPhysicalKeys(
+  rows: KeyDef[][],
+  template: KeyDef[][] = QWERTY_ROWS,
+): KeyDef[][] {
+  return rows.map((row, ri) =>
+    row.map((k, ci) => {
+      if (k.physicalKey || k.modifier || k.key.length > 1) return k;
+      const ref = template[ri]?.[ci];
+      if (!ref || ref.modifier || ref.key.length > 1) return k;
+      return { ...k, physicalKey: ref.key };
     }),
   );
 }
@@ -447,7 +487,9 @@ export function getLayoutRows(
   if (layoutLabels && layoutLabels.length > 0) {
     return applyLayoutKeyLabels(QWERTY_ROWS, layoutLabels);
   }
-  if (layoutName === "Greek" || language === "el") return GREEK_ROWS;
+  if (layoutName === "Greek" || language === "el") {
+    return attachPhysicalKeys(GREEK_ROWS);
+  }
   if (layoutName === "AZERTY") {
     return QWERTY_ROWS.map((row) =>
       row.map((k) => {

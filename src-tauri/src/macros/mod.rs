@@ -69,6 +69,7 @@ pub async fn run_macro(
                     press_key(KeyPressRequest {
                         key,
                         modifiers,
+                        physical_key: None,
                     })
                 })
                 .await?;

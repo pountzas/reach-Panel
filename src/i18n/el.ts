@@ -52,6 +52,64 @@ export const el: Record<keyof typeof en, string> = {
 
   languageLessonTitle: "Γλώσσα",
 
+  languageLesson: "Μάθημα γλώσσας",
+
+  selectLanguagePack: "Επιλογή λίστας λέξεων",
+
+  languagePackBuiltIn: "Ενσωματωμένες λίστες",
+
+  languagePrompt: "Γράψε αυτή τη λέξη",
+
+  languageYourAnswer: "Η ορθογραφία σου",
+
+  languageCheck: "Έλεγχος",
+
+  languageIncorrect: "Όχι ακόμα — δοκίμασε ξανά",
+
+  languageUpcomingTasks: "Επόμενες λέξεις",
+
+  languageAgeBand: "Ηλικιακή ομάδα",
+
+  languageLessonLanguage: "Γλώσσα",
+
+  languageLessonLangEl: "Ελληνικά",
+
+  languageLessonLangEn: "Αγγλικά",
+
+  languageAgeBandEarly: "Μικρή (6–8)",
+
+  languageAgeBandPrimary: "Δημοτικό (9–11)",
+
+  languageAgeBandLowerSecondary: "Γυμνάσιο (12–14)",
+
+  languageAgeBandUpperSecondary: "Λύκειο (15+)",
+
+  languageLessonIgnoreCase: "Αγνόηση πεζών/κεφαλαίων στον έλεγχο",
+
+  languageLessonIgnoreTones: "Αγνόηση τόνων στον έλεγχο",
+
+  languageLessonTonesOff: "Τόνοι: όχι απαραίτητοι",
+
+  languageLessonTonesOn: "Τόνοι: απαιτούνται",
+
+  languageNewList: "Νέα λίστα λέξεων",
+
+  languageNewListTitle: "Τίτλος λίστας",
+
+  languageNewListWords: "Λέξεις (μία ανά γραμμή)",
+
+  languageNewListSave: "Αποθήκευση λίστας",
+
+  languageNewListCancel: "Άκυρο",
+
+  languageNewListEmpty: "Πρόσθεσε τουλάχιστον μία λέξη",
+
+  languagePackMyLists: "Οι λίστες μου",
+
+  deleteLanguagePack: "Διαγραφή λίστας",
+
+  confirmDeleteLanguagePack: "Διαγραφή «{title}»;",
+
   modeTabletsHint:
     "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή. Ο Συνοδός ξεκινά τη γέφυρα του tablet· επιλέγεται μόνο όσο είναι συνδεδεμένο ένα tablet.",
 

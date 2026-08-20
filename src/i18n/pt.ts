@@ -49,6 +49,64 @@ export const pt: Record<keyof typeof en, string> = {
 
   languageLessonTitle: "Idioma",
 
+  languageLesson: "Lição de idioma",
+
+  selectLanguagePack: "Escolher lista de palavras",
+
+  languagePackBuiltIn: "Listas integradas",
+
+  languagePrompt: "Soletre esta palavra",
+
+  languageYourAnswer: "A sua resposta",
+
+  languageCheck: "Verificar",
+
+  languageIncorrect: "Ainda não — tente de novo",
+
+  languageUpcomingTasks: "Palavras seguintes",
+
+  languageAgeBand: "Faixa etária",
+
+  languageLessonLanguage: "Idioma",
+
+  languageLessonLangEl: "Grego",
+
+  languageLessonLangEn: "Inglês",
+
+  languageAgeBandEarly: "Inicial (6–8)",
+
+  languageAgeBandPrimary: "Primário (9–11)",
+
+  languageAgeBandLowerSecondary: "Secundário I (12–14)",
+
+  languageAgeBandUpperSecondary: "Secundário II (15+)",
+
+  languageLessonIgnoreCase: "Ignorar maiúsculas/minúsculas",
+
+  languageLessonIgnoreTones: "Ignorar acentos na verificação",
+
+  languageLessonTonesOff: "Acentos: não obrigatórios",
+
+  languageLessonTonesOn: "Acentos: obrigatórios",
+
+  languageNewList: "Nova lista de palavras",
+
+  languageNewListTitle: "Título da lista",
+
+  languageNewListWords: "Palavras (uma por linha)",
+
+  languageNewListSave: "Guardar lista",
+
+  languageNewListCancel: "Cancelar",
+
+  languageNewListEmpty: "Adicione pelo menos uma palavra",
+
+  languagePackMyLists: "As minhas listas",
+
+  deleteLanguagePack: "Eliminar lista",
+
+  confirmDeleteLanguagePack: "Eliminar “{title}”?",
+
   modeTabletsHint:
     "Normal e Mini são teclado. Ensino abre lições; Música mostra o sintetizador. Companheiro inicia a ponte do tablet; só fica selecionado enquanto um tablet estiver ligado.",
 

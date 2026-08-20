@@ -49,6 +49,64 @@ export const es: Record<keyof typeof en, string> = {
 
   languageLessonTitle: "Idioma",
 
+  languageLesson: "Lección de idioma",
+
+  selectLanguagePack: "Elegir lista de palabras",
+
+  languagePackBuiltIn: "Listas integradas",
+
+  languagePrompt: "Deletrea esta palabra",
+
+  languageYourAnswer: "Tu respuesta",
+
+  languageCheck: "Comprobar",
+
+  languageIncorrect: "Aún no — inténtalo de nuevo",
+
+  languageUpcomingTasks: "Palabras siguientes",
+
+  languageAgeBand: "Grupo de edad",
+
+  languageLessonLanguage: "Idioma",
+
+  languageLessonLangEl: "Griego",
+
+  languageLessonLangEn: "Inglés",
+
+  languageAgeBandEarly: "Inicial (6–8)",
+
+  languageAgeBandPrimary: "Primaria (9–11)",
+
+  languageAgeBandLowerSecondary: "Secundaria baja (12–14)",
+
+  languageAgeBandUpperSecondary: "Secundaria alta (15+)",
+
+  languageLessonIgnoreCase: "Ignorar mayúsculas/minúsculas",
+
+  languageLessonIgnoreTones: "Ignorar acentos al comprobar",
+
+  languageLessonTonesOff: "Tildes: no obligatorias",
+
+  languageLessonTonesOn: "Tildes: obligatorias",
+
+  languageNewList: "Nueva lista de palabras",
+
+  languageNewListTitle: "Título de la lista",
+
+  languageNewListWords: "Palabras (una por línea)",
+
+  languageNewListSave: "Guardar lista",
+
+  languageNewListCancel: "Cancelar",
+
+  languageNewListEmpty: "Añade al menos una palabra",
+
+  languagePackMyLists: "Mis listas",
+
+  deleteLanguagePack: "Eliminar lista",
+
+  confirmDeleteLanguagePack: "¿Eliminar «{title}»?",
+
   modeTabletsHint:
     "Normal y Mini son teclado. Enseñanza abre lecciones; Música muestra el sintetizador. Compañero inicia el puente de la tableta; solo queda seleccionado mientras hay una tableta conectada.",
 

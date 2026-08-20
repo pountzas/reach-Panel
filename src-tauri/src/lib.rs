@@ -3,6 +3,7 @@ mod db;
 mod icons;
 mod installed_apps;
 mod input;
+mod language;
 mod macros;
 mod music;
 mod prediction;
@@ -21,6 +22,7 @@ use db::{
 use input::{
     begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position, get_input_methods,
     get_keyboard_layout, get_keyboard_state, get_layout_key_labels, mouse_click,
+    reset_layout_compose_state, translate_layout_key_press, LayoutKeyTranslation,
     mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
     press_key, press_media_key, set_input_method_by_hkl, set_input_method_by_language,
     set_system_language, type_text, windows_ui_language, InputMethod, KeyPressRequest,
@@ -192,6 +194,20 @@ fn cmd_set_input_method(hkl: u64, state: State<AppState>) -> CommandResult {
 #[tauri::command]
 fn cmd_get_layout_key_labels(hkl: Option<u64>) -> Vec<LayoutKeyLabel> {
     get_layout_key_labels(hkl)
+}
+
+#[tauri::command]
+fn cmd_translate_layout_key(
+    physical_key: String,
+    shift: bool,
+    hkl: Option<u64>,
+) -> LayoutKeyTranslation {
+    translate_layout_key_press(&physical_key, shift, hkl)
+}
+
+#[tauri::command]
+fn cmd_reset_layout_compose_state(hkl: Option<u64>) {
+    reset_layout_compose_state(hkl);
 }
 
 #[tauri::command]
@@ -742,6 +758,24 @@ fn cmd_delete_imported_song(app: tauri::AppHandle, id: String) -> Result<(), Str
 }
 
 #[tauri::command]
+fn cmd_list_custom_language_packs(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    Ok(serde_json::Value::Array(language::list_custom_language_packs(&app)?))
+}
+
+#[tauri::command]
+fn cmd_upsert_custom_language_pack(
+    app: tauri::AppHandle,
+    pack: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    language::upsert_custom_language_pack(&app, pack)
+}
+
+#[tauri::command]
+fn cmd_delete_custom_language_pack(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    language::delete_custom_language_pack(&app, &id)
+}
+
+#[tauri::command]
 fn cmd_update_profile_settings(
     profile_id: String,
     settings_json: String,
@@ -1174,6 +1208,8 @@ pub fn run() {
             cmd_get_input_methods,
             cmd_set_input_method,
             cmd_get_layout_key_labels,
+            cmd_translate_layout_key,
+            cmd_reset_layout_compose_state,
             cmd_move_cursor_relative,
             cmd_trackpad_gesture_begin,
             cmd_trackpad_gesture_end,
@@ -1207,6 +1243,9 @@ pub fn run() {
             cmd_list_imported_songs,
             cmd_upsert_imported_song,
             cmd_delete_imported_song,
+            cmd_list_custom_language_packs,
+            cmd_upsert_custom_language_pack,
+            cmd_delete_custom_language_pack,
             cmd_update_profile_settings,
             cmd_get_quick_actions,
             cmd_save_quick_action,

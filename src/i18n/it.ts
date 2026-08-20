@@ -49,6 +49,64 @@ export const it: Record<keyof typeof en, string> = {
 
   languageLessonTitle: "Lingua",
 
+  languageLesson: "Lezione di lingua",
+
+  selectLanguagePack: "Seleziona lista di parole",
+
+  languagePackBuiltIn: "Liste integrate",
+
+  languagePrompt: "Scrivi questa parola",
+
+  languageYourAnswer: "La tua risposta",
+
+  languageCheck: "Controlla",
+
+  languageIncorrect: "Non ancora — riprova",
+
+  languageUpcomingTasks: "Parole successive",
+
+  languageAgeBand: "Fascia d'età",
+
+  languageLessonLanguage: "Lingua",
+
+  languageLessonLangEl: "Greco",
+
+  languageLessonLangEn: "Inglese",
+
+  languageAgeBandEarly: "Primini (6–8)",
+
+  languageAgeBandPrimary: "Primaria (9–11)",
+
+  languageAgeBandLowerSecondary: "Secondaria I (12–14)",
+
+  languageAgeBandUpperSecondary: "Secondaria II (15+)",
+
+  languageLessonIgnoreCase: "Ignora maiuscole/minuscole",
+
+  languageLessonIgnoreTones: "Ignora gli accenti nel controllo",
+
+  languageLessonTonesOff: "Accenti: non obbligatori",
+
+  languageLessonTonesOn: "Accenti: obbligatori",
+
+  languageNewList: "Nuova lista di parole",
+
+  languageNewListTitle: "Titolo della lista",
+
+  languageNewListWords: "Parole (una per riga)",
+
+  languageNewListSave: "Salva lista",
+
+  languageNewListCancel: "Annulla",
+
+  languageNewListEmpty: "Aggiungi almeno una parola",
+
+  languagePackMyLists: "Le mie liste",
+
+  deleteLanguagePack: "Elimina lista",
+
+  confirmDeleteLanguagePack: "Eliminare “{title}”?",
+
   modeTabletsHint:
     "Normale e Mini sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno avvia il ponte del tablet; è selezionato solo mentre un tablet è connesso.",
 

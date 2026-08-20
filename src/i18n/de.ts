@@ -49,6 +49,64 @@ export const de: Record<keyof typeof en, string> = {
 
   languageLessonTitle: "Sprache",
 
+  languageLesson: "Sprachlektion",
+
+  selectLanguagePack: "Wortliste wählen",
+
+  languagePackBuiltIn: "Eingebaute Listen",
+
+  languagePrompt: "Wort buchstabieren",
+
+  languageYourAnswer: "Ihre Schreibweise",
+
+  languageCheck: "Prüfen",
+
+  languageIncorrect: "Noch nicht richtig — erneut versuchen",
+
+  languageUpcomingTasks: "Kommende Wörter",
+
+  languageAgeBand: "Altersstufe",
+
+  languageLessonLanguage: "Sprache",
+
+  languageLessonLangEl: "Griechisch",
+
+  languageLessonLangEn: "Englisch",
+
+  languageAgeBandEarly: "Früh (6–8)",
+
+  languageAgeBandPrimary: "Grundschule (9–11)",
+
+  languageAgeBandLowerSecondary: "Unterstufe (12–14)",
+
+  languageAgeBandUpperSecondary: "Oberstufe (15+)",
+
+  languageLessonIgnoreCase: "Groß-/Kleinschreibung ignorieren",
+
+  languageLessonIgnoreTones: "Akzente (Töne) beim Prüfen ignorieren",
+
+  languageLessonTonesOff: "Töne: nicht erforderlich",
+
+  languageLessonTonesOn: "Töne: erforderlich",
+
+  languageNewList: "Neue Wortliste",
+
+  languageNewListTitle: "Listentitel",
+
+  languageNewListWords: "Wörter (eins pro Zeile)",
+
+  languageNewListSave: "Liste speichern",
+
+  languageNewListCancel: "Abbrechen",
+
+  languageNewListEmpty: "Mindestens ein Wort hinzufügen",
+
+  languagePackMyLists: "Meine Listen",
+
+  deleteLanguagePack: "Liste löschen",
+
+  confirmDeleteLanguagePack: "„{title}“ löschen?",
+
   modeTabletsHint:
     "Normal und Mini sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer. Begleiter startet die Tablet-Brücke; ausgewählt ist er nur, solange ein Tablet verbunden ist.",
 

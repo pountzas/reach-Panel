@@ -15,6 +15,7 @@ import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
 import type { TeachingLesson } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useLanguageLessonPhysicalKeyboard } from "../../hooks/useLanguageLessonPhysicalKeyboard";
 import { CollapseIcon, CloseIcon, SettingsIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { CollapsedFab } from "./CollapsedFab";
@@ -118,6 +119,7 @@ function contentHeightRatioFromSettings(
 }
 
 export function AppShell() {
+  useLanguageLessonPhysicalKeyboard();
   const settings = useAppStore((s) => s.settings);
   const monitors = useAppStore((s) => s.monitors);
   const setShowSettings = useAppStore((s) => s.setShowSettings);

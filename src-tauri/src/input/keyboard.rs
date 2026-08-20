@@ -1,6 +1,8 @@
 use super::focus_target::{get_effective_input_hwnd, with_target_focus};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, GetKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
     KEYEVENTF_KEYUP, KEYEVENTF_UNICODE, VIRTUAL_KEY, VK_BACK, VK_CAPITAL, VK_CONTROL, VK_DELETE,
@@ -9,9 +11,13 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 };
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct KeyPressRequest {
     pub key: String,
     pub modifiers: Vec<String>,
+    /// QWERTY physical slot (e.g. "q") when the injected character must not use US VK mapping.
+    #[serde(default)]
+    pub physical_key: Option<String>,
 }
 
 fn modifier_vk(name: &str) -> Option<VIRTUAL_KEY> {
@@ -142,7 +148,20 @@ fn press_key_impl(request: KeyPressRequest) -> Result<()> {
 
     if key.len() == 1 {
         let ch = key.chars().next().unwrap();
+        // Greek EL maps ";" to the Q slot — char_to_vk(';') hits tonos (VK 0xBA) instead.
         if ch.is_ascii() {
+            if let Some(pk) = request.physical_key.as_deref() {
+                if let Some(vk) = qwerty_key_to_vk(pk) {
+                    send_vk(VIRTUAL_KEY(vk), false)?;
+                    send_vk(VIRTUAL_KEY(vk), true)?;
+                    for modifier in request.modifiers.iter().rev() {
+                        if let Some(vk) = modifier_vk(modifier) {
+                            send_vk(vk, true)?;
+                        }
+                    }
+                    return Ok(());
+                }
+            }
             if let Some(vk) = char_to_vk(ch) {
                 let needs_shift = ch.is_ascii_uppercase()
                     || matches!(ch, '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*' | '(' | ')');
@@ -736,16 +755,19 @@ pub fn get_layout_key_labels(hkl_value: Option<u64>) -> Vec<LayoutKeyLabel> {
 
     let mut labels = Vec::with_capacity(KEYS.len());
     for &(key, vk) in KEYS {
-        let label = to_unicode_for_vk(hkl, vk, false);
-        let shift_label = to_unicode_for_vk(hkl, vk, true);
+        let mut label = to_unicode_for_vk(hkl, vk, false);
         if label.is_empty() {
-            continue;
+            if let Some(fallback) = greek_physical_fallback(vk, false, hkl) {
+                label = fallback;
+            }
         }
+        let shift_label = to_unicode_for_vk(hkl, vk, true);
         let shift_label = if shift_label.is_empty() || shift_label == label {
             None
         } else {
             Some(shift_label)
         };
+        // Include dead-key slots (often empty) so the frontend keeps physicalKey ";".
         labels.push(LayoutKeyLabel {
             key: key.to_string(),
             label,
@@ -773,10 +795,297 @@ fn to_unicode_for_vk(
         let _ = ToUnicodeEx(vk as u32, scan, &state, &mut buf, 0, hkl);
         let mut buf = [0u16; 8];
         let result = ToUnicodeEx(vk as u32, scan, &state, &mut buf, 0, hkl);
-        if result >= 1 {
-            String::from_utf16_lossy(&buf[..result as usize])
+        if result != 0 {
+            let len = if result > 0 {
+                result as usize
+            } else {
+                // Dead key (result < 0): spacing accent may still be in the buffer.
+                buf.iter().position(|&c| c == 0).unwrap_or(0)
+            };
+            if len > 0 {
+                return String::from_utf16_lossy(&buf[..len]);
+            }
+        }
+        String::new()
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LayoutKeyTranslation {
+    pub text: String,
+    pub dead: bool,
+}
+
+fn qwerty_key_to_vk(key: &str) -> Option<u16> {
+    const KEYS: &[(&str, u16)] = &[
+        ("`", 0xC0),
+        ("1", 0x31),
+        ("2", 0x32),
+        ("3", 0x33),
+        ("4", 0x34),
+        ("5", 0x35),
+        ("6", 0x36),
+        ("7", 0x37),
+        ("8", 0x38),
+        ("9", 0x39),
+        ("0", 0x30),
+        ("-", 0xBD),
+        ("=", 0xBB),
+        ("q", 0x51),
+        ("w", 0x57),
+        ("e", 0x45),
+        ("r", 0x52),
+        ("t", 0x54),
+        ("y", 0x59),
+        ("u", 0x55),
+        ("i", 0x49),
+        ("o", 0x4F),
+        ("p", 0x50),
+        ("[", 0xDB),
+        ("]", 0xDD),
+        ("\\", 0xDC),
+        ("a", 0x41),
+        ("s", 0x53),
+        ("d", 0x44),
+        ("f", 0x46),
+        ("g", 0x47),
+        ("h", 0x48),
+        ("j", 0x4A),
+        ("k", 0x4B),
+        ("l", 0x4C),
+        (";", 0xBA),
+        ("'", 0xDE),
+        ("z", 0x5A),
+        ("x", 0x58),
+        ("c", 0x43),
+        ("v", 0x56),
+        ("b", 0x42),
+        ("n", 0x4E),
+        ("m", 0x4D),
+        (",", 0xBC),
+        (".", 0xBE),
+        ("/", 0xBF),
+    ];
+    KEYS.iter().find(|(k, _)| *k == key).map(|(_, vk)| *vk)
+}
+
+#[derive(Clone, Copy)]
+struct PendingDeadKey {
+    vk: u16,
+    shift: bool,
+}
+
+fn pending_dead_keys() -> &'static Mutex<HashMap<u64, PendingDeadKey>> {
+    static MAP: OnceLock<Mutex<HashMap<u64, PendingDeadKey>>> = OnceLock::new();
+    MAP.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn is_layout_dead_key_vk(vk: u16) -> bool {
+    // Only the QWERTY ; and ' slots are layout dead keys (tonos / dialytika).
+    vk == 0xBA || vk == 0xDE
+}
+
+fn is_greek_hkl(hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL) -> bool {
+    const LANG_GREEK: u32 = 0x0408;
+    (hkl.0 as u32) & 0xFFFF == LANG_GREEK
+}
+
+fn greek_physical_fallback(vk: u16, shift: bool, hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL) -> Option<String> {
+    if shift || !is_greek_hkl(hkl) {
+        return None;
+    }
+    // QWERTY q slot → Greek question mark (;)
+    if vk == 0x51 {
+        return Some(";".to_string());
+    }
+    None
+}
+
+fn flush_thread_dead_state(hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL) {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC};
+
+    unsafe {
+        let scan = MapVirtualKeyExW(VK_SPACE.0 as u32, MAPVK_VK_TO_VSC, hkl);
+        let state = [0u8; 256];
+        let mut buf = [0u16; 8];
+        let _ = ToUnicodeEx(
+            VK_SPACE.0 as u32,
+            scan,
+            &state,
+            &mut buf,
+            0,
+            hkl,
+        );
+    }
+}
+
+fn is_spacing_accent_text(text: &str) -> bool {
+    !text.is_empty()
+        && text
+            .chars()
+            .all(|c| matches!(c, '\u{00B4}' | '\u{0384}' | '\u{1FFD}' | '\u{00A8}'))
+}
+
+fn to_unicode_ex(
+    vk: u32,
+    shift: bool,
+    hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL,
+) -> (i32, String) {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC};
+
+    unsafe {
+        let scan = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, hkl);
+        let mut state = [0u8; 256];
+        if shift {
+            state[VK_SHIFT.0 as usize] = 0x80;
+        }
+        let mut buf = [0u16; 8];
+        let result = ToUnicodeEx(vk, scan, &state, &mut buf, 0, hkl);
+        let text = if result != 0 {
+            let len = if result > 0 {
+                result as usize
+            } else {
+                buf.iter().position(|&c| c == 0).unwrap_or(0)
+            };
+            if len > 0 {
+                String::from_utf16_lossy(&buf[..len])
+            } else {
+                String::new()
+            }
         } else {
             String::new()
+        };
+        (result, text)
+    }
+}
+
+/// Translate a QWERTY-position key via the active Windows layout.
+/// Tracks pending dead keys in-process because ToUnicodeEx state is thread-local.
+pub fn translate_layout_key_press(
+    physical_key: &str,
+    shift: bool,
+    hkl_value: Option<u64>,
+) -> LayoutKeyTranslation {
+    use windows::Win32::UI::Input::KeyboardAndMouse::HKL;
+
+    let Some(vk) = qwerty_key_to_vk(physical_key) else {
+        return LayoutKeyTranslation {
+            text: String::new(),
+            dead: false,
+        };
+    };
+
+    let hkl = match hkl_value {
+        Some(v) if v != 0 => HKL(v as _),
+        _ => active_hkl(),
+    };
+    let hkl_id = hkl.0 as u64;
+
+    if let Some(dead) = pending_dead_keys().lock().unwrap().remove(&hkl_id) {
+        if is_layout_dead_key_vk(dead.vk) {
+            let (replay_result, _) = to_unicode_ex(dead.vk as u32, dead.shift, hkl);
+            let _ = replay_result;
         }
+    }
+
+    let (result, text) = to_unicode_ex(vk as u32, shift, hkl);
+
+    if result < 0 || is_spacing_accent_text(&text) {
+        if is_layout_dead_key_vk(vk) {
+            pending_dead_keys()
+                .lock()
+                .unwrap()
+                .insert(hkl_id, PendingDeadKey { vk, shift });
+            return LayoutKeyTranslation {
+                text: String::new(),
+                dead: true,
+            };
+        }
+        flush_thread_dead_state(hkl);
+        let (retry_result, retry_text) = to_unicode_ex(vk as u32, shift, hkl);
+        if retry_result > 0 && !retry_text.is_empty() && !is_spacing_accent_text(&retry_text) {
+            pending_dead_keys().lock().unwrap().remove(&hkl_id);
+            return LayoutKeyTranslation {
+                text: retry_text,
+                dead: false,
+            };
+        }
+        return LayoutKeyTranslation {
+            text: String::new(),
+            dead: false,
+        };
+    }
+
+    if result > 0 && !text.is_empty() {
+        pending_dead_keys().lock().unwrap().remove(&hkl_id);
+        return LayoutKeyTranslation {
+            text,
+            dead: false,
+        };
+    }
+
+    pending_dead_keys().lock().unwrap().remove(&hkl_id);
+    if let Some(fallback) = greek_physical_fallback(vk, shift, hkl) {
+        return LayoutKeyTranslation {
+            text: fallback,
+            dead: false,
+        };
+    }
+    LayoutKeyTranslation {
+        text: String::new(),
+        dead: false,
+    }
+}
+
+/// Cancel a pending dead key in the current thread's keyboard layout state.
+pub fn reset_layout_compose_state(hkl_value: Option<u64>) {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{MapVirtualKeyExW, ToUnicodeEx, HKL, MAPVK_VK_TO_VSC};
+
+    let hkl = match hkl_value {
+        Some(v) if v != 0 => HKL(v as _),
+        _ => active_hkl(),
+    };
+    let hkl_id = hkl.0 as u64;
+    pending_dead_keys().lock().unwrap().remove(&hkl_id);
+
+    unsafe {
+        let scan = MapVirtualKeyExW(VK_SPACE.0 as u32, MAPVK_VK_TO_VSC, hkl);
+        let state = [0u8; 256];
+        let mut buf = [0u16; 8];
+        let _ = ToUnicodeEx(
+            VK_SPACE.0 as u32,
+            scan,
+            &state,
+            &mut buf,
+            0,
+            hkl,
+        );
+    }
+}
+
+#[cfg(test)]
+mod translate_tests {
+    use super::{reset_layout_compose_state, translate_layout_key_press};
+
+    #[test]
+    fn greek_tonos_then_o_produces_omicron_with_accent() {
+        reset_layout_compose_state(None);
+        let tonos = translate_layout_key_press(";", false, None);
+        // When the active Windows layout is not Greek, ";" is a normal key — JS compose handles that.
+        if !tonos.dead && tonos.text == ";" {
+            reset_layout_compose_state(None);
+            return;
+        }
+        assert!(tonos.dead, "tonos key should be dead, got {:?}", tonos);
+        assert!(tonos.text.is_empty());
+
+        let vowel = translate_layout_key_press("o", false, None);
+        assert!(
+            vowel.text.contains('\u{03CC}'),
+            "expected ό, got {:?}",
+            vowel.text
+        );
+        reset_layout_compose_state(None);
     }
 }

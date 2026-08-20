@@ -4,7 +4,7 @@
 # auto_discover: opt-in only. Enable after you trust this workspace checkout;
 # do not turn on by default for every clone.
 
-auto_discover = false
+auto_discover = true
 session_management = true
 event_streaming = false
 performance_profiling = false
