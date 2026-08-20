@@ -112,6 +112,18 @@ export interface AppSettings {
   languageLessonLeftRatio?: number;
   /** Teaching → Music: left column width fraction (ResizableSplitPane, ratioSide left). */
   musicLessonLeftRatio?: number;
+  /** Teaching → Language → Free write: left (notepad) width fraction. */
+  freeWriteLeftRatio?: number;
+  /** Teaching → Language → Free write: notepad draft (plain text). */
+  freeWriteNotepadText?: string;
+  /** Teaching → Language → Free write: notepad zoom percent (75–200). */
+  freeWriteNotepadZoom?: number;
+  /** Teaching → Language → Free write: word wrap. */
+  freeWriteNotepadWrap?: boolean;
+  /** Teaching → Language → Free write: show line-number gutter. */
+  freeWriteNotepadLineNumbers?: boolean;
+  /** Teaching → Language → Free write: last opened PDF library id. */
+  freeWriteLastPdfId?: string | null;
   /** Teaching → Language: ignore letter case when checking spelling (default true). */
   languageLessonIgnoreCase?: boolean;
   /** Teaching → Language: ignore accent marks / tones when checking (default true). */
@@ -245,6 +257,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   languageLessonAgeBand: "primary",
   languageLessonLeftRatio: 0.4,
   musicLessonLeftRatio: 0.4,
+  freeWriteLeftRatio: 0.4,
+  freeWriteNotepadText: "",
+  freeWriteNotepadZoom: 100,
+  freeWriteNotepadWrap: true,
+  freeWriteNotepadLineNumbers: true,
+  freeWriteLastPdfId: null,
   languageLessonIgnoreCase: true,
   languageLessonIgnoreTones: true,
 };
