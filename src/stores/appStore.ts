@@ -102,6 +102,8 @@ import {
   defaultLanguagePackId,
   getLanguagePackById,
   isLanguageLessonActive,
+  isLanguageLessonCaptureActive,
+  isLanguageLessonSpellingActive,
   languageAnswersMatch,
 } from "../lib/language";
 import {
@@ -119,12 +121,28 @@ import {
 import type { LanguagePack, LessonLanguage } from "../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../lib/language/types";
 
+export type LanguageListAuthoringField = "title" | "words";
+
+export type LanguageListAuthoringHandlers = {
+  keyInput: (ch: string, options?: { physicalKey?: string }) => void;
+  backspace: () => void;
+  enter: () => void;
+  layoutTranslation: (
+    translation: LayoutKeyTranslation,
+    options: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
+  ) => void;
+};
+
 function emptyLanguageLessonState() {
   return {
     languagePackId: null as string | null,
     languageTaskIndex: 0,
     languageInputBuffer: "",
     languageAnswerIncorrect: false,
+    languageLessonPlaying: false,
+    languageListAuthoringActive: false,
+    languageListAuthoringField: "title" as LanguageListAuthoringField,
+    languageListAuthoringHandlers: null as LanguageListAuthoringHandlers | null,
   };
 }
 
@@ -156,15 +174,33 @@ function greekComposeContextFromState(state: {
   teachingLesson: TeachingLesson;
   languagePackId: string | null;
   customLanguagePacks: LanguagePack[];
+  languageLessonPlaying?: boolean;
+  languageListAuthoringActive?: boolean;
 }): GreekComposeContext {
   const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
   return {
     typingLanguage: state.settings.typingLanguage,
     keyboardLayout: state.keyboardLayout,
     onscreenLayout: state.settings.onscreenLayout,
-    languageLessonActive: isLanguageLessonActive(state),
+    languageLessonActive: isLanguageLessonCaptureActive(state),
     lessonLanguage:
       pack?.lessonLanguage ?? state.settings.languageLessonLanguage,
+  };
+}
+
+function languageLessonModeFromState(state: {
+  musicTeachingEnabled: boolean;
+  teachingLesson: TeachingLesson;
+  settings: AppSettings;
+  languageLessonPlaying: boolean;
+  languageListAuthoringActive: boolean;
+}) {
+  return {
+    musicTeachingEnabled: state.musicTeachingEnabled,
+    teachingLesson: state.teachingLesson,
+    settings: state.settings,
+    languageLessonPlaying: state.languageLessonPlaying,
+    languageListAuthoringActive: state.languageListAuthoringActive,
   };
 }
 
@@ -551,6 +587,12 @@ interface AppStore {
   languageTaskIndex: number;
   languageInputBuffer: string;
   languageAnswerIncorrect: boolean;
+  /** Session-only: spelling lesson in progress (Play), like musicPlaybackActive. */
+  languageLessonPlaying: boolean;
+  /** Session-only: keyboard routes into the new custom list form. */
+  languageListAuthoringActive: boolean;
+  languageListAuthoringField: LanguageListAuthoringField;
+  languageListAuthoringHandlers: LanguageListAuthoringHandlers | null;
   /** Mini Mode shell active (single/mirror or override). */
   miniModeActive: boolean;
   /** Whether the mini-mode keyboard is popped (vs collapsed FAB). */
@@ -664,6 +706,13 @@ interface AppStore {
   deleteCustomLanguagePack: (id: string) => Promise<void>;
   setLanguagePackId: (id: string) => void;
   restartLanguageLesson: () => void;
+  startLanguageLessonPlayback: () => void;
+  stopLanguageLessonPlayback: () => void;
+  setLanguageListAuthoringActive: (active: boolean) => void;
+  setLanguageListAuthoringField: (field: LanguageListAuthoringField) => void;
+  registerLanguageListAuthoringHandlers: (
+    handlers: LanguageListAuthoringHandlers | null,
+  ) => void;
   languageKeyInput: (ch: string, options?: { physicalKey?: string }) => void;
   languageBackspace: () => void;
   checkLanguageAnswer: () => void;
@@ -982,6 +1031,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   languageTaskIndex: 0,
   languageInputBuffer: "",
   languageAnswerIncorrect: false,
+  languageLessonPlaying: false,
+  languageListAuthoringActive: false,
+  languageListAuthoringField: "title",
+  languageListAuthoringHandlers: null,
   miniModeActive: false,
   miniModeKeyboardVisible: false,
   miniModeManualExpand: false,
@@ -1578,7 +1631,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     return result.inject || null;
   },
   applyLanguageLayoutTranslation: (translation, options) => {
-    if (!isLanguageLessonActive(get())) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get()))) return;
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
     const result = applyGreekLayoutTranslation(
@@ -1912,13 +1965,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   syncWindowFocusable: async () => {
+    const state = get();
     const needsFocus =
-      get().pendingUpdate !== null ||
-      isLanguageLessonActive({
-        musicTeachingEnabled: get().musicTeachingEnabled,
-        teachingLesson: get().teachingLesson,
-        settings: get().settings,
-      });
+      state.pendingUpdate !== null ||
+      isLanguageLessonCaptureActive(languageLessonModeFromState(state));
     await invoke("cmd_set_window_focusable", { focusable: needsFocus });
   },
 
@@ -2303,6 +2353,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       languageTaskIndex: 0,
       languageInputBuffer: "",
       languageAnswerIncorrect: false,
+      languageLessonPlaying: false,
       ...clearGreekPendingAccent(),
     });
   },
@@ -2312,12 +2363,55 @@ export const useAppStore = create<AppStore>((set, get) => ({
       languageTaskIndex: 0,
       languageInputBuffer: "",
       languageAnswerIncorrect: false,
+      languageLessonPlaying: false,
       ...clearGreekPendingAccent(),
     });
   },
 
+  startLanguageLessonPlayback: () => {
+    const state = get();
+    if (!isLanguageLessonActive(languageLessonModeFromState(state))) return;
+    const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
+    if (!pack || pack.tasks.length === 0) return;
+    set({
+      languageLessonPlaying: true,
+      languageTaskIndex: 0,
+      languageInputBuffer: "",
+      languageAnswerIncorrect: false,
+      ...clearGreekPendingAccent(),
+    });
+    void get().syncWindowFocusable();
+  },
+
+  stopLanguageLessonPlayback: () => {
+    if (!get().languageLessonPlaying) return;
+    set({ languageLessonPlaying: false });
+    void get().syncWindowFocusable();
+  },
+
+  setLanguageListAuthoringActive: (active) => {
+    set({
+      languageListAuthoringActive: active,
+      ...(active
+        ? { languageLessonPlaying: false, languageListAuthoringField: "title" as const }
+        : {
+            languageListAuthoringField: "title" as const,
+            languageListAuthoringHandlers: null,
+          }),
+    });
+    void get().syncWindowFocusable();
+  },
+
+  setLanguageListAuthoringField: (field) => {
+    set({ languageListAuthoringField: field });
+  },
+
+  registerLanguageListAuthoringHandlers: (handlers) => {
+    set({ languageListAuthoringHandlers: handlers });
+  },
+
   languageKeyInput: (ch, options) => {
-    if (!isLanguageLessonActive(get())) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get()))) return;
 
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
@@ -2335,7 +2429,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   languageBackspace: () => {
-    if (!isLanguageLessonActive(get())) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get()))) return;
     set((state) => {
       if (state.greekPendingAccent) {
         return {
@@ -2352,7 +2446,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   checkLanguageAnswer: () => {
     const state = get();
-    if (!isLanguageLessonActive(state)) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(state))) return;
     const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
     if (!pack) return;
     const expected = currentSpellAnswer(pack, state.languageTaskIndex);
@@ -2374,6 +2468,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       languageTaskIndex: state.languageTaskIndex + 1,
       languageInputBuffer: "",
       languageAnswerIncorrect: false,
+      languageLessonPlaying:
+        state.languageTaskIndex + 1 >= pack.tasks.length
+          ? false
+          : state.languageLessonPlaying,
       ...clearGreekPendingAccent(),
     });
   },

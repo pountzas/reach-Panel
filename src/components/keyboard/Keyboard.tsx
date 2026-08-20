@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { isLanguageLessonActive } from "../../lib/language";
+import { isLanguageLessonCaptureActive } from "../../lib/language";
 import { useAppStore } from "../../stores/appStore";
 import {
   displayLabel,
@@ -67,6 +67,9 @@ export function Keyboard() {
   const languageKeyInput = useAppStore((s) => s.languageKeyInput);
   const languageBackspace = useAppStore((s) => s.languageBackspace);
   const checkLanguageAnswer = useAppStore((s) => s.checkLanguageAnswer);
+  const languageLessonPlaying = useAppStore((s) => s.languageLessonPlaying);
+  const languageListAuthoringActive = useAppStore((s) => s.languageListAuthoringActive);
+  const languageListAuthoringHandlers = useAppStore((s) => s.languageListAuthoringHandlers);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
 
@@ -94,15 +97,18 @@ export function Keyboard() {
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
   const fontSize = settings.keyboardFontSize ?? 18;
   const typingLocale = settings.typingLanguage || "en";
+  const languageLessonMode = {
+    musicTeachingEnabled,
+    teachingLesson,
+    settings,
+    languageLessonPlaying,
+    languageListAuthoringActive,
+  };
   const greekKeyboardActive = greekComposeEnabled({
     typingLanguage: settings.typingLanguage,
     keyboardLayout,
     onscreenLayout: settings.onscreenLayout,
-    languageLessonActive: isLanguageLessonActive({
-      musicTeachingEnabled,
-      teachingLesson,
-      settings,
-    }),
+    languageLessonActive: isLanguageLessonCaptureActive(languageLessonMode),
     lessonLanguage: settings.languageLessonLanguage,
   });
   const transparent = isTransparentUiActive(settings, miniModeActive);
@@ -203,36 +209,52 @@ export function Keyboard() {
       setLanguagePickerOpen(false);
     }
 
-    const languageLessonActive = isLanguageLessonActive({
-      musicTeachingEnabled,
-      teachingLesson,
-      settings,
-    });
+    const languageCaptureActive = isLanguageLessonCaptureActive(languageLessonMode);
 
-    if (languageLessonActive) {
+    if (languageCaptureActive) {
+      const authoringHandlers = languageListAuthoringHandlers;
+      if (languageListAuthoringActive && !authoringHandlers) {
+        return;
+      }
       if (keyDef.modifier) {
         return;
       }
       if (key === "backspace") {
-        languageBackspace();
-        if (greekKeyboardActive) {
-          void invoke("cmd_reset_layout_compose_state", {
-            hkl: physicalKeyState.systemHkl || null,
-          });
+        if (languageListAuthoringActive) {
+          authoringHandlers!.backspace();
+        } else {
+          languageBackspace();
+          if (greekKeyboardActive) {
+            void invoke("cmd_reset_layout_compose_state", {
+              hkl: physicalKeyState.systemHkl || null,
+            });
+          }
         }
         return;
       }
       if (key === "enter") {
-        checkLanguageAnswer();
+        if (languageListAuthoringActive) {
+          authoringHandlers!.enter();
+        } else {
+          checkLanguageAnswer();
+        }
         return;
       }
       if (key === "space") {
+        if (languageListAuthoringActive) {
+          authoringHandlers!.keyInput(" ");
+        }
         return;
       }
       const usedFnLang = fnActive && isFnMappedKey(keyDef.key);
       if (greekKeyboardActive && keyDef.physicalKey) {
         const translation = await translateLayoutKey(keyDef.physicalKey);
-        applyLanguageLayoutTranslation(translation, greekTranslateOptions(keyDef));
+        const translateOptions = greekTranslateOptions(keyDef);
+        if (languageListAuthoringActive) {
+          authoringHandlers!.layoutTranslation(translation, translateOptions);
+        } else {
+          applyLanguageLayoutTranslation(translation, translateOptions);
+        }
         clearModifiersAfterKey(usedFnLang);
         return;
       }
@@ -244,7 +266,11 @@ export function Keyboard() {
         typingLocale,
       );
       if (langOutput.length === 1 || keyDef.physicalKey) {
-        languageKeyInput(langOutput, { physicalKey: keyDef.physicalKey });
+        if (languageListAuthoringActive) {
+          authoringHandlers!.keyInput(langOutput, { physicalKey: keyDef.physicalKey });
+        } else {
+          languageKeyInput(langOutput, { physicalKey: keyDef.physicalKey });
+        }
       }
       clearModifiersAfterKey(usedFnLang);
       return;

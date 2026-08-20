@@ -100,6 +100,8 @@ export const de: Record<keyof typeof en, string> = {
   languageNewListCancel: "Abbrechen",
 
   languageNewListEmpty: "Mindestens ein Wort hinzufügen",
+  languagePressPlayToSpell: "Drücken Sie Abspielen, um mit dem Buchstabieren zu beginnen",
+  languageNewListKeyboardHint: "Titel und Wörter links mit der Tastatur eingeben",
 
   languagePackMyLists: "Meine Listen",
 

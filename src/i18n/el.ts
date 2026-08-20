@@ -103,6 +103,8 @@ export const el: Record<keyof typeof en, string> = {
   languageNewListCancel: "Άκυρο",
 
   languageNewListEmpty: "Πρόσθεσε τουλάχιστον μία λέξη",
+  languagePressPlayToSpell: "Πάτα Αναπαραγωγή για να ξεκινήσεις την ορθογραφία",
+  languageNewListKeyboardHint: "Χρησιμοποίησε το πληκτρολόγιο για τον τίτλο και τις λέξεις στα αριστερά",
 
   languagePackMyLists: "Οι λίστες μου",
 

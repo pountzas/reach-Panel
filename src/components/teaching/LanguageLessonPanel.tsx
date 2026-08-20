@@ -4,9 +4,7 @@ import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
-import { HoverTooltip } from "../common/HoverTooltip";
-import { PlusIcon, RestartIcon, TrashIcon } from "../common/SectionIcons";
-import { ResizableSplitPane } from "../layout/ResizableSplitPane";
+import { PlayIcon, PlusIcon, RestartIcon, StopIcon, TrashIcon } from "../common/SectionIcons";
 import {
   DEFAULT_LANGUAGE_AGE_BAND,
   defaultLanguagePackId,
@@ -17,47 +15,16 @@ import {
 } from "../../lib/language";
 import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
 import { NewLanguageListForm } from "./NewLanguageListForm";
+import {
+  DEFAULT_TEACHING_LESSON_LEFT_RATIO,
+  TeachingLessonPane,
+  TeachingLessonPanel,
+  TeachingLessonToolbarButton,
+} from "./TeachingLessonPanel";
 
 const TASK_SLOT_REM = 1.75;
 const TASK_GAP_REM = 0.35;
 const TOOLBAR_ICON_CLASS = "h-5 w-5";
-const DEFAULT_LEFT_RATIO = 0.4;
-
-function LanguageToolbarButton({
-  label,
-  onClick,
-  disabled,
-  backgroundColor,
-  borderColor,
-  color,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  backgroundColor: string;
-  borderColor: string;
-  color: string;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-md border disabled:opacity-50"
-      style={{
-        borderColor,
-        backgroundColor,
-        color,
-      }}
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-    >
-      {children}
-      <HoverTooltip label={label} />
-    </button>
-  );
-}
 
 function LessonSelectField({
   label,
@@ -65,12 +32,14 @@ function LessonSelectField({
   onChange,
   children,
   surface,
+  disabled,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   children: ReactNode;
   surface: { panelBorder: string; panelBg: string; panelText: string; panelMutedText: string };
+  disabled?: boolean;
 }) {
   const selectStyle: CSSProperties = {
     borderColor: surface.panelBorder,
@@ -85,9 +54,10 @@ function LessonSelectField({
     >
       <span>{label}</span>
       <select
-        className="w-full min-w-0 rounded-md border px-2 py-1.5 text-sm"
+        className="w-full min-w-0 rounded-md border px-2 py-1.5 text-sm disabled:opacity-50"
         style={selectStyle}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       >
         {children}
@@ -124,10 +94,13 @@ export function LanguageLessonPanel() {
   const languageTaskIndex = useAppStore((s) => s.languageTaskIndex);
   const languageInputBuffer = useAppStore((s) => s.languageInputBuffer);
   const languageAnswerIncorrect = useAppStore((s) => s.languageAnswerIncorrect);
+  const languageLessonPlaying = useAppStore((s) => s.languageLessonPlaying);
   const customLanguagePacks = useAppStore((s) => s.customLanguagePacks);
   const setLanguagePackId = useAppStore((s) => s.setLanguagePackId);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const restartLanguageLesson = useAppStore((s) => s.restartLanguageLesson);
+  const startLanguageLessonPlayback = useAppStore((s) => s.startLanguageLessonPlayback);
+  const stopLanguageLessonPlayback = useAppStore((s) => s.stopLanguageLessonPlayback);
   const checkLanguageAnswer = useAppStore((s) => s.checkLanguageAnswer);
   const createCustomLanguagePack = useAppStore((s) => s.createCustomLanguagePack);
   const deleteCustomLanguagePack = useAppStore((s) => s.deleteCustomLanguagePack);
@@ -138,7 +111,7 @@ export function LanguageLessonPanel() {
   const ageBand = settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND;
   const lessonLanguage: LessonLanguage = settings.languageLessonLanguage ?? "el";
   const ignoreTones = settings.languageLessonIgnoreTones !== false;
-  const leftRatio = settings.languageLessonLeftRatio ?? DEFAULT_LEFT_RATIO;
+  const leftRatio = settings.languageLessonLeftRatio ?? DEFAULT_TEACHING_LESSON_LEFT_RATIO;
   const availablePacks = listBuiltInPacksForBandAndLanguage(ageBand, lessonLanguage);
   const myLists = listCustomPacksForLanguage(customLanguagePacks, lessonLanguage);
   const selectedPack = getLanguagePackById(languagePackId, customLanguagePacks);
@@ -170,7 +143,7 @@ export function LanguageLessonPanel() {
   };
 
   const leftColumn = creatingList ? (
-    <div className="flex h-full min-h-0 min-w-0 flex-col gap-2 overflow-x-hidden overflow-y-auto p-2">
+    <TeachingLessonPane>
       <span className="min-w-0 truncate text-sm font-semibold">{t("languageNewList")}</span>
       <NewLanguageListForm
         lessonLanguage={lessonLanguage}
@@ -182,23 +155,47 @@ export function LanguageLessonPanel() {
         }}
         onCancel={() => setCreatingList(false)}
       />
-    </div>
+    </TeachingLessonPane>
   ) : (
-    <div className="flex h-full min-h-0 min-w-0 flex-col gap-2 overflow-x-hidden overflow-y-auto p-2">
+    <TeachingLessonPane>
       <div className="flex min-w-0 items-center justify-between gap-2">
         <span className="min-w-0 truncate text-sm font-semibold">{t("languageLesson")}</span>
         <div className="flex shrink-0 items-center gap-1">
-          <LanguageToolbarButton
+          <TeachingLessonToolbarButton
             label={t("languageNewList")}
-            onClick={() => setCreatingList(true)}
+            onClick={() => {
+              stopLanguageLessonPlayback();
+              setCreatingList(true);
+            }}
+            disabled={languageLessonPlaying}
             borderColor={surface.panelBorder}
             backgroundColor={surface.panelBg}
             color={surface.panelText}
           >
             <PlusIcon className={TOOLBAR_ICON_CLASS} />
-          </LanguageToolbarButton>
+          </TeachingLessonToolbarButton>
+          <TeachingLessonToolbarButton
+            label={languageLessonPlaying ? t("stopSong") : t("playSong")}
+            onClick={() => {
+              if (languageLessonPlaying) {
+                stopLanguageLessonPlayback();
+              } else {
+                startLanguageLessonPlayback();
+              }
+            }}
+            disabled={!pack || pack.tasks.length === 0}
+            borderColor={surface.panelBorder}
+            backgroundColor={languageLessonPlaying ? "#fde68a" : surface.panelBg}
+            color={surface.panelText}
+          >
+            {languageLessonPlaying ? (
+              <StopIcon className={TOOLBAR_ICON_CLASS} />
+            ) : (
+              <PlayIcon className={TOOLBAR_ICON_CLASS} />
+            )}
+          </TeachingLessonToolbarButton>
           {pack && isCaregiverLanguagePack(pack) ? (
-            <LanguageToolbarButton
+            <TeachingLessonToolbarButton
               label={t("deleteLanguagePack")}
               onClick={() => {
                 const ok = window.confirm(
@@ -208,22 +205,24 @@ export function LanguageLessonPanel() {
                   void deleteCustomLanguagePack(pack.id);
                 }
               }}
+              disabled={languageLessonPlaying}
               borderColor={surface.panelBorder}
               backgroundColor={surface.panelBg}
               color={surface.panelText}
             >
               <TrashIcon className={TOOLBAR_ICON_CLASS} />
-            </LanguageToolbarButton>
+            </TeachingLessonToolbarButton>
           ) : null}
-          <LanguageToolbarButton
+          <TeachingLessonToolbarButton
             label={t("restartLesson")}
             onClick={() => restartLanguageLesson()}
+            disabled={languageLessonPlaying}
             borderColor={surface.panelBorder}
             backgroundColor={surface.panelBg}
             color={surface.panelText}
           >
             <RestartIcon className={TOOLBAR_ICON_CLASS} />
-          </LanguageToolbarButton>
+          </TeachingLessonToolbarButton>
         </div>
       </div>
 
@@ -237,6 +236,7 @@ export function LanguageLessonPanel() {
             selectPackForFilters(ageBand, language);
           }}
           surface={surface}
+          disabled={languageLessonPlaying}
         >
           <option value="el">{t("languageLessonLangEl")}</option>
           <option value="en">{t("languageLessonLangEn")}</option>
@@ -250,6 +250,7 @@ export function LanguageLessonPanel() {
             selectPackForFilters(band, lessonLanguage);
           }}
           surface={surface}
+          disabled={languageLessonPlaying}
         >
           <option value="early">{t("languageAgeBandEarly")}</option>
           <option value="primary">{t("languageAgeBandPrimary")}</option>
@@ -264,13 +265,14 @@ export function LanguageLessonPanel() {
       >
         <span>{t("selectLanguagePack")}</span>
         <select
-          className="min-w-0 w-full rounded-md border px-2 py-1.5 text-sm"
+          className="min-w-0 w-full rounded-md border px-2 py-1.5 text-sm disabled:opacity-50"
           style={{
             borderColor: surface.panelBorder,
             backgroundColor: surface.panelBg,
             color: surface.panelText,
           }}
           value={pack?.id ?? ""}
+          disabled={languageLessonPlaying}
           onChange={(event) => setLanguagePackId(event.target.value)}
         >
           <optgroup label={t("languagePackBuiltIn")}>
@@ -295,13 +297,14 @@ export function LanguageLessonPanel() {
       {lessonLanguage === "el" ? (
         <button
           type="button"
-          className="shrink-0 self-stretch rounded-md border px-3 py-2 text-left text-sm font-semibold"
+          className="shrink-0 self-stretch rounded-md border px-3 py-2 text-left text-sm font-semibold disabled:opacity-50"
           style={{
             borderColor: ignoreTones ? surface.panelBorder : surface.panelText,
             backgroundColor: ignoreTones ? surface.panelBg : "#fde68a",
             color: surface.panelText,
           }}
           aria-pressed={!ignoreTones}
+          disabled={languageLessonPlaying}
           onClick={() =>
             void updateSettings({ languageLessonIgnoreTones: !ignoreTones })
           }
@@ -322,12 +325,26 @@ export function LanguageLessonPanel() {
           </span>
         </div>
       )}
-    </div>
+    </TeachingLessonPane>
   );
 
   const rightColumn = (
-    <div className="flex h-full min-h-0 min-w-0 flex-col gap-2 overflow-hidden p-2">
-      {completed ? (
+    <TeachingLessonPane scroll={false}>
+      {creatingList ? (
+        <p
+          className="flex flex-1 items-center justify-center px-2 text-center text-sm"
+          style={{ color: surface.panelMutedText }}
+        >
+          {t("languageNewListKeyboardHint")}
+        </p>
+      ) : !languageLessonPlaying ? (
+        <p
+          className="flex flex-1 items-center justify-center px-2 text-center text-sm"
+          style={{ color: surface.panelMutedText }}
+        >
+          {t("languagePressPlayToSpell")}
+        </p>
+      ) : completed ? (
         <p className="flex flex-1 items-center justify-center text-lg font-semibold text-emerald-600">
           {t("lessonComplete")}
         </p>
@@ -423,33 +440,18 @@ export function LanguageLessonPanel() {
           </button>
         </>
       ) : null}
-    </div>
+    </TeachingLessonPane>
   );
 
   return (
-    <div
-      className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border"
-      style={{
-        backgroundColor: surface.panelBg,
-        borderColor: surface.panelBorder,
-        color: surface.panelText,
-      }}
-    >
-      <ResizableSplitPane
-        ratioSide="left"
-        rightRatio={leftRatio}
-        onRightRatioChange={(languageLessonLeftRatio) =>
-          void updateSettings({ languageLessonLeftRatio })
-        }
-        minLeftWidth={120}
-        minRightWidth={140}
-        maxRightRatio={0.72}
-        minSizedWindowRatio={0.2}
-        splitterColor={surface.panelBorder}
-        splitterLineWidth={2}
-        left={leftColumn}
-        right={rightColumn}
-      />
-    </div>
+    <TeachingLessonPanel
+      surface={surface}
+      leftRatio={leftRatio}
+      onLeftRatioChange={(languageLessonLeftRatio) =>
+        void updateSettings({ languageLessonLeftRatio })
+      }
+      left={leftColumn}
+      right={rightColumn}
+    />
   );
 }

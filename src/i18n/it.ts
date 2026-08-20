@@ -100,6 +100,8 @@ export const it: Record<keyof typeof en, string> = {
   languageNewListCancel: "Annulla",
 
   languageNewListEmpty: "Aggiungi almeno una parola",
+  languagePressPlayToSpell: "Premi Riproduci per iniziare a scrivere",
+  languageNewListKeyboardHint: "Usa la tastiera per titolo e parole a sinistra",
 
   languagePackMyLists: "Le mie liste",
 

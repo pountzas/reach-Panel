@@ -2,7 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect } from "react";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { greekComposeEnabled } from "../lib/keyboardCharacterInput";
-import { getLanguagePackById, isLanguageLessonActive } from "../lib/language";
+import {
+  getLanguagePackById,
+  isLanguageLessonCaptureActive,
+  isLanguageLessonSpellingActive,
+} from "../lib/language";
 import { isShiftActive } from "../lib/keyboardLayouts";
 import {
   physicalKeyFromKeyboardCode,
@@ -11,8 +15,18 @@ import {
 } from "../lib/layoutKeyTranslation";
 import { useAppStore } from "../stores/appStore";
 
+function languageLessonModeFromStore(state: ReturnType<typeof useAppStore.getState>) {
+  return {
+    musicTeachingEnabled: state.musicTeachingEnabled,
+    teachingLesson: state.teachingLesson,
+    settings: state.settings,
+    languageLessonPlaying: state.languageLessonPlaying,
+    languageListAuthoringActive: state.languageListAuthoringActive,
+  };
+}
+
 function greekLessonComposeContext(state: ReturnType<typeof useAppStore.getState>) {
-  const pack = getLanguagePackById(state.languagePackId);
+  const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
   return {
     typingLanguage: state.settings.typingLanguage,
     keyboardLayout: state.keyboardLayout,
@@ -23,13 +37,15 @@ function greekLessonComposeContext(state: ReturnType<typeof useAppStore.getState
 }
 
 /**
- * While Language lesson is active, capture hardware keyboard input on the host
- * window (touchscreen typing still goes through Keyboard.tsx).
+ * While Language lesson capture is active (Play or list authoring), capture hardware
+ * keyboard input on the host window (touchscreen typing still goes through Keyboard.tsx).
  */
 export function useLanguageLessonPhysicalKeyboard() {
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const settings = useAppStore((s) => s.settings);
+  const languageLessonPlaying = useAppStore((s) => s.languageLessonPlaying);
+  const languageListAuthoringActive = useAppStore((s) => s.languageListAuthoringActive);
   const languageKeyInput = useAppStore((s) => s.languageKeyInput);
   const languageBackspace = useAppStore((s) => s.languageBackspace);
   const checkLanguageAnswer = useAppStore((s) => s.checkLanguageAnswer);
@@ -38,10 +54,12 @@ export function useLanguageLessonPhysicalKeyboard() {
   );
   const syncWindowFocusable = useAppStore((s) => s.syncWindowFocusable);
 
-  const active = isLanguageLessonActive({
+  const active = isLanguageLessonCaptureActive({
     musicTeachingEnabled,
     teachingLesson,
     settings,
+    languageLessonPlaying,
+    languageListAuthoringActive,
   });
 
   useEffect(() => {
@@ -66,27 +84,39 @@ export function useLanguageLessonPhysicalKeyboard() {
             hkl: state.physicalKeyState.systemHkl || null,
           },
         );
-        applyLanguageLayoutTranslation(translation, {
+        const options = {
           physicalKey,
           shift,
           fallbackOutput: greekPhysicalTranslateFallback(physicalKey, shift),
-        });
+        };
+        if (state.languageListAuthoringActive) {
+          state.languageListAuthoringHandlers?.layoutTranslation(translation, options);
+          return;
+        }
+        applyLanguageLayoutTranslation(translation, options);
       });
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!isLanguageLessonActive(useAppStore.getState())) return;
+      const state = useAppStore.getState();
+      if (!isLanguageLessonCaptureActive(languageLessonModeFromStore(state))) return;
+
+      const authoring = state.languageListAuthoringActive;
+      const handlers = state.languageListAuthoringHandlers;
 
       if (event.key === "Backspace") {
         event.preventDefault();
         event.stopPropagation();
         if (!event.repeat) {
-          languageBackspace();
-          const state = useAppStore.getState();
-          if (greekComposeEnabled(greekLessonComposeContext(state))) {
-            void invoke("cmd_reset_layout_compose_state", {
-              hkl: state.physicalKeyState.systemHkl || null,
-            });
+          if (authoring) {
+            handlers?.backspace();
+          } else {
+            languageBackspace();
+            if (greekComposeEnabled(greekLessonComposeContext(state))) {
+              void invoke("cmd_reset_layout_compose_state", {
+                hkl: state.physicalKeyState.systemHkl || null,
+              });
+            }
           }
         }
         return;
@@ -96,7 +126,11 @@ export function useLanguageLessonPhysicalKeyboard() {
         event.preventDefault();
         event.stopPropagation();
         if (!event.repeat) {
-          checkLanguageAnswer();
+          if (authoring) {
+            handlers?.enter();
+          } else if (isLanguageLessonSpellingActive(languageLessonModeFromStore(state))) {
+            checkLanguageAnswer();
+          }
         }
         return;
       }
@@ -104,6 +138,9 @@ export function useLanguageLessonPhysicalKeyboard() {
       if (event.key === " " || event.code === "Space") {
         event.preventDefault();
         event.stopPropagation();
+        if (!event.repeat && authoring) {
+          handlers?.keyInput(" ");
+        }
         return;
       }
 
@@ -111,7 +148,6 @@ export function useLanguageLessonPhysicalKeyboard() {
         return;
       }
 
-      const state = useAppStore.getState();
       const greek = greekComposeEnabled(greekLessonComposeContext(state));
       const physicalKey = physicalKeyFromKeyboardCode(event.code);
       const shift = isShiftActive(state.physicalKeyState, state.stickyModifiers);
@@ -138,7 +174,14 @@ export function useLanguageLessonPhysicalKeyboard() {
         return;
       }
 
-      languageKeyInput(event.key, { physicalKey });
+      if (authoring) {
+        handlers?.keyInput(event.key, { physicalKey });
+        return;
+      }
+
+      if (isLanguageLessonSpellingActive(languageLessonModeFromStore(state))) {
+        languageKeyInput(event.key, { physicalKey });
+      }
     };
 
     window.addEventListener("keydown", onKeyDown, true);

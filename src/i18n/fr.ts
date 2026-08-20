@@ -100,6 +100,8 @@ export const fr: Record<keyof typeof en, string> = {
   languageNewListCancel: "Annuler",
 
   languageNewListEmpty: "Ajoutez au moins un mot",
+  languagePressPlayToSpell: "Appuyez sur Lire pour commencer l'orthographe",
+  languageNewListKeyboardHint: "Utilisez le clavier pour saisir le titre et les mots à gauche",
 
   languagePackMyLists: "Mes listes",
 

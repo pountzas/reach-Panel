@@ -99,6 +99,8 @@ export const en = {
   languageNewListCancel: "Cancel",
 
   languageNewListEmpty: "Add at least one word",
+  languagePressPlayToSpell: "Press Play to start spelling",
+  languageNewListKeyboardHint: "Use the keyboard to type in the title and word fields on the left",
 
   languagePackMyLists: "My lists",
 
