@@ -110,6 +110,8 @@ export interface AppSettings {
   languageLessonAgeBand?: LanguageAgeBand;
   /** Teaching → Language: left column width fraction (ResizableSplitPane, ratioSide left). */
   languageLessonLeftRatio?: number;
+  /** Teaching → Music: left column width fraction (ResizableSplitPane, ratioSide left). */
+  musicLessonLeftRatio?: number;
   /** Teaching → Language: ignore letter case when checking spelling (default true). */
   languageLessonIgnoreCase?: boolean;
   /** Teaching → Language: ignore accent marks / tones when checking (default true). */
@@ -242,6 +244,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   languageLessonLanguage: "el",
   languageLessonAgeBand: "primary",
   languageLessonLeftRatio: 0.4,
+  musicLessonLeftRatio: 0.4,
   languageLessonIgnoreCase: true,
   languageLessonIgnoreTones: true,
 };
