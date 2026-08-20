@@ -7,7 +7,7 @@
 
 ## 1. Goals
 
-- Give caregivers/students a **Free write** workspace under Teaching → Language: write notes while reading a PDF without leaving ReachPanel.
+- Give caregivers/students a **Free write** workspace under Teaching → Language: write notes in a **Notepad-like editor** (zoom, wrap) while reading a PDF without leaving ReachPanel.
 - Keep Language **Spelling** lesson intact; switch via **tabs under the teaching section header**.
 - Ship a **reusable tab system** so Math (later) can add its own tabs without inventing a second chrome pattern.
 - Persist a **per-profile notepad draft** and a **small PDF library / recent list**.
@@ -105,17 +105,40 @@ Reuse `TeachingLessonPanel` (or identical split contract):
 
 | Side | Content |
 | --- | --- |
-| **Left** | Notepad (multiline text area + toolbar: Clear all) |
+| **Left** | Notepad editor (toolbar: zoom, wrap, clear; scrollable body) |
 | **Right** | PDF viewer + library controls (Open…, recent list) |
 
 Persist left ratio as `freeWriteLeftRatio` (default ~0.4), same pattern as `languageLessonLeftRatio` / `musicLessonLeftRatio`.
 
-### 7.2 Notepad
+### 7.2 Notepad (advanced plain-text editor)
 
-- Single draft string persisted **per profile** (settings or profile-backed store field, e.g. `freeWriteNotepadText`).
+Aim for a **Windows Notepad–like** writing surface for touch + on-screen keyboard — more than a bare `<textarea>`, still **plain text** (no bold/italic/fonts picker in v1).
+
+**Content**
+
+- Single draft string persisted **per profile** (e.g. `freeWriteNotepadText`).
 - **Clear all** confirms, then empties and saves.
-- Focusable; when focused, on-screen keyboard appends/edits this buffer (same Greek compose path as language authoring where applicable).
-- No rich text in v1 (plain text).
+- Focusable; when focused, on-screen keyboard appends/edits this buffer (Greek compose path as for language authoring where applicable).
+
+**Toolbar (touch-friendly)**
+
+| Control | Behavior |
+| --- | --- |
+| **Zoom − / +** (and optional % label) | Scales editor text (e.g. 75%–200%, step 10–25%). Persist `freeWriteNotepadZoom` per profile. |
+| **Word wrap** toggle | On/off; persist `freeWriteNotepadWrap` (default on). |
+| **Clear all** | Confirm → empty draft. |
+
+**Editor chrome**
+
+- Large, readable caret and line spacing suitable for motor accessibility.
+- Vertical scroll when content exceeds the pane; horizontal scroll only when wrap is off.
+- Status hint optional (e.g. character count) — nice-to-have, not required for v1.
+- Undo/redo via standard editor behavior if easy with the chosen control; not a hard requirement if it fights touch keyboard capture.
+
+**Out of scope for notepad v1**
+
+- Rich text, spellcheck UI, find/replace, print, save-as separate files (draft stays profile-backed).
+- Multiple notepad documents / tabs inside Free write.
 
 ### 7.3 PDF library
 
@@ -172,6 +195,7 @@ At minimum (all UI locales):
 - `teachingTabSpelling`
 - `teachingTabFreeWrite`
 - `freeWriteNotepad` / `freeWriteClearAll` / `freeWriteClearConfirm`
+- `freeWriteZoomIn` / `freeWriteZoomOut` / `freeWriteWordWrap`
 - `freeWriteOpenPdf` / `freeWriteRecentPdfs` / `freeWritePdfMissing`
 - Empty states: no PDF selected, empty notepad hint
 
@@ -189,10 +213,11 @@ At minimum (all UI locales):
 
 1. `TeachingSubjectTabs` + Language shell wiring (`spelling` \| `freeWrite`).
 2. Persist notepad text + `freeWriteLeftRatio` + PDF library store/commands.
-3. `FreeWritePanel` (notepad + PDF pane) on `TeachingLessonPanel`.
+3. `FreeWritePanel` (notepad editor with zoom/wrap + PDF pane) on `TeachingLessonPanel`.
 4. Keyboard / physical capture gate for Free write focus.
-5. i18n + README.
-6. Leave Math/Music tab hooks documented but unused.
+5. Persist notepad text, zoom, wrap, left ratio, and PDF library.
+6. i18n + README.
+7. Leave Math/Music tab hooks documented but unused.
 
 ## 13. Open points for plan (non-blocking for this spec)
 
@@ -203,7 +228,7 @@ At minimum (all UI locales):
 ## 14. Success criteria
 
 - From Teaching → Language, caregiver switches Spelling ↔ Free write via tabs under the header.
-- Free write shows notepad \| PDF with resizable divider; Open PDF + recent list works across restarts when files exist.
-- Notepad survives profile save/load; Clear all empties it after confirm.
+- Free write shows notepad \| PDF with resizable divider; notepad supports zoom and word wrap; Open PDF + recent list works across restarts when files exist.
+- Notepad text (and zoom/wrap prefs) survive profile save/load; Clear all empties the draft after confirm.
 - On-screen keyboard types into the focused Free write pane without sending spelling-buffer or external injection while Free write is active.
 - Music unchanged; Math can add tabs later through the same shell.
