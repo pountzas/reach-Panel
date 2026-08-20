@@ -3,12 +3,14 @@ mod db;
 mod icons;
 mod installed_apps;
 mod input;
+mod language;
 mod macros;
 mod music;
 mod prediction;
 mod profiles;
 mod services;
 mod stt;
+mod teaching_pdf;
 mod tts;
 mod window;
 
@@ -21,6 +23,7 @@ use db::{
 use input::{
     begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position, get_input_methods,
     get_keyboard_layout, get_keyboard_state, get_layout_key_labels, mouse_click,
+    reset_layout_compose_state, translate_layout_key_press, LayoutKeyTranslation,
     mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
     press_key, press_media_key, set_input_method_by_hkl, set_input_method_by_language,
     set_system_language, type_text, windows_ui_language, InputMethod, KeyPressRequest,
@@ -192,6 +195,20 @@ fn cmd_set_input_method(hkl: u64, state: State<AppState>) -> CommandResult {
 #[tauri::command]
 fn cmd_get_layout_key_labels(hkl: Option<u64>) -> Vec<LayoutKeyLabel> {
     get_layout_key_labels(hkl)
+}
+
+#[tauri::command]
+fn cmd_translate_layout_key(
+    physical_key: String,
+    shift: bool,
+    hkl: Option<u64>,
+) -> LayoutKeyTranslation {
+    translate_layout_key_press(&physical_key, shift, hkl)
+}
+
+#[tauri::command]
+fn cmd_reset_layout_compose_state(hkl: Option<u64>) {
+    reset_layout_compose_state(hkl);
 }
 
 #[tauri::command]
@@ -668,6 +685,27 @@ fn pick_music_song_file(app: &tauri::AppHandle) -> Result<Option<String>, String
     }))
 }
 
+fn pick_teaching_pdf(app: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    window
+        .set_always_on_top(false)
+        .map_err(|e| e.to_string())?;
+    let _restore = RestoreAlwaysOnTop(app.clone());
+
+    let file = rfd::FileDialog::new()
+        .add_filter("PDF", &["pdf"])
+        .set_parent(&window)
+        .pick_file();
+
+    Ok(file.map(|p| {
+        teaching_pdf::allow_teaching_pdf_read_path(&p);
+        p.to_string_lossy().into_owned()
+    }))
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct MusicFilePayload {
@@ -680,6 +718,46 @@ async fn cmd_pick_music_song_file(app: tauri::AppHandle) -> Result<Option<String
     tokio::task::spawn_blocking(move || pick_music_song_file(&app))
         .await
         .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn cmd_pick_teaching_pdf(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || pick_teaching_pdf(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TeachingPdfPayload {
+    path: String,
+    content_base64: String,
+}
+
+#[tauri::command]
+fn cmd_read_teaching_pdf(app: tauri::AppHandle, path: String) -> Result<TeachingPdfPayload, String> {
+    let bytes = teaching_pdf::read_teaching_pdf_bytes(&app, &path)?;
+    Ok(TeachingPdfPayload {
+        path,
+        content_base64: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes),
+    })
+}
+
+#[tauri::command]
+fn cmd_list_teaching_pdfs(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    Ok(serde_json::Value::Array(teaching_pdf::list_teaching_pdfs(&app)?))
+}
+
+#[tauri::command]
+fn cmd_save_teaching_pdfs(
+    app: tauri::AppHandle,
+    entries: serde_json::Value,
+) -> Result<(), String> {
+    let list = match entries {
+        serde_json::Value::Array(items) => items,
+        _ => return Err("Teaching PDF library must be a JSON array".to_string()),
+    };
+    teaching_pdf::save_teaching_pdfs(&app, list)
 }
 
 #[tauri::command]
@@ -739,6 +817,24 @@ fn cmd_upsert_imported_song(
 #[tauri::command]
 fn cmd_delete_imported_song(app: tauri::AppHandle, id: String) -> Result<(), String> {
     music::delete_imported_song(&app, &id)
+}
+
+#[tauri::command]
+fn cmd_list_custom_language_packs(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    Ok(serde_json::Value::Array(language::list_custom_language_packs(&app)?))
+}
+
+#[tauri::command]
+fn cmd_upsert_custom_language_pack(
+    app: tauri::AppHandle,
+    pack: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    language::upsert_custom_language_pack(&app, pack)
+}
+
+#[tauri::command]
+fn cmd_delete_custom_language_pack(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    language::delete_custom_language_pack(&app, &id)
 }
 
 #[tauri::command]
@@ -1174,6 +1270,8 @@ pub fn run() {
             cmd_get_input_methods,
             cmd_set_input_method,
             cmd_get_layout_key_labels,
+            cmd_translate_layout_key,
+            cmd_reset_layout_compose_state,
             cmd_move_cursor_relative,
             cmd_trackpad_gesture_begin,
             cmd_trackpad_gesture_end,
@@ -1201,12 +1299,19 @@ pub fn run() {
             cmd_get_windows_ui_language,
             cmd_pick_background_image,
             cmd_pick_music_song_file,
+            cmd_pick_teaching_pdf,
             cmd_list_installed_apps,
             cmd_pick_app_executable,
             cmd_read_music_file,
+            cmd_read_teaching_pdf,
             cmd_list_imported_songs,
             cmd_upsert_imported_song,
             cmd_delete_imported_song,
+            cmd_list_teaching_pdfs,
+            cmd_save_teaching_pdfs,
+            cmd_list_custom_language_packs,
+            cmd_upsert_custom_language_pack,
+            cmd_delete_custom_language_pack,
             cmd_update_profile_settings,
             cmd_get_quick_actions,
             cmd_save_quick_action,

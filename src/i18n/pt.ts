@@ -43,11 +43,90 @@ export const pt: Record<keyof typeof en, string> = {
 
   teachingLessonLanguage: "Idioma",
 
+
+  teachingTabSpelling: "Ortografia",
+  teachingTabFreeWrite: "Escrita livre",
+  freeWriteNotepad: "Bloco de notas",
+  freeWriteClearAll: "Limpar tudo",
+  freeWriteClearConfirm: "Limpar todo o rascunho do bloco de notas?",
+  freeWriteZoomIn: "Aumentar zoom",
+  freeWriteZoomOut: "Diminuir zoom",
+  freeWriteWordWrap: "Quebra de linha",
+  freeWriteLineNumbers: "Números de linha",
+  freeWriteNotepadEmpty: "Digite notas aqui…",
+  freeWriteOpenPdf: "Abrir PDF…",
+  freeWriteRecentPdfs: "PDFs recentes",
+  freeWritePdfMissing: "Este arquivo PDF não foi encontrado.",
+  freeWritePdfEmpty: "Abra um PDF para ler ao lado das suas notas.",
+  freeWritePdfPrevPage: "Página anterior",
+  freeWritePdfNextPage: "Próxima página",
+  freeWriteRemovePdf: "Remover",
+
   comingSoon: "Em breve",
 
   mathLessonTitle: "Matemática",
 
   languageLessonTitle: "Idioma",
+
+  languageLesson: "Lição de idioma",
+
+  selectLanguagePack: "Escolher lista de palavras",
+
+  languagePackBuiltIn: "Listas integradas",
+
+  languagePrompt: "Soletre esta palavra",
+
+  languageYourAnswer: "A sua resposta",
+
+  languageCheck: "Verificar",
+
+  languageIncorrect: "Ainda não — tente de novo",
+
+  languageUpcomingTasks: "Palavras seguintes",
+
+  languageAgeBand: "Faixa etária",
+
+  languageLessonLanguage: "Idioma",
+
+  languageLessonLangEl: "Grego",
+
+  languageLessonLangEn: "Inglês",
+
+  languageAgeBandEarly: "Inicial (6–8)",
+
+  languageAgeBandPrimary: "Primário (9–11)",
+
+  languageAgeBandLowerSecondary: "Secundário I (12–14)",
+
+  languageAgeBandUpperSecondary: "Secundário II (15+)",
+
+  languageLessonIgnoreCase: "Ignorar maiúsculas/minúsculas",
+
+  languageLessonIgnoreTones: "Ignorar acentos na verificação",
+
+  languageLessonTonesOff: "Acentos: não obrigatórios",
+
+  languageLessonTonesOn: "Acentos: obrigatórios",
+
+  languageNewList: "Nova lista de palavras",
+
+  languageNewListTitle: "Título da lista",
+
+  languageNewListWords: "Palavras (uma por linha)",
+
+  languageNewListSave: "Guardar lista",
+
+  languageNewListCancel: "Cancelar",
+
+  languageNewListEmpty: "Adicione pelo menos uma palavra",
+  languagePressPlayToSpell: "Prima Reproduzir para começar a soletrar",
+  languageNewListKeyboardHint: "Use o teclado para o título e as palavras à esquerda",
+
+  languagePackMyLists: "As minhas listas",
+
+  deleteLanguagePack: "Eliminar lista",
+
+  confirmDeleteLanguagePack: "Eliminar “{title}”?",
 
   modeTabletsHint:
     "Normal e Mini são teclado. Ensino abre lições; Música mostra o sintetizador. Companheiro inicia a ponte do tablet; só fica selecionado enquanto um tablet estiver ligado.",

@@ -20,6 +20,7 @@ import {
   PinIcon,
 } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
+import { TeachingLessonModeToggle } from "../teaching/TeachingLessonModeToggle";
 
 const EDGE_SIZE = 6;
 const MIN_SECTION_WIDTH = 160;
@@ -223,7 +224,9 @@ export function FloatingSection({
         }}
       >
         <div
-          className="section-drag-handle flex shrink-0 cursor-grab items-center justify-between border-b px-2 active:cursor-grabbing"
+          className={`section-drag-handle flex shrink-0 cursor-grab items-center border-b px-2 active:cursor-grabbing ${
+            showMusicLesson ? "grid grid-cols-[1fr_auto_1fr] gap-2" : "justify-between"
+          }`}
           style={{
             height: headerHeight,
             backgroundColor: surface.panelHeaderBg,
@@ -232,12 +235,17 @@ export function FloatingSection({
           }}
         >
           <span
-            className={`truncate font-medium ${largeHeaders ? "text-sm" : "text-xs"}`}
+            className={`min-w-0 truncate font-medium ${largeHeaders ? "text-sm" : "text-xs"}`}
             style={{ color: surface.panelMutedText }}
           >
             {t(sectionTitleKey)}
           </span>
-          <div className="section-no-drag ml-1 flex shrink-0 items-center gap-0.5">
+          {showMusicLesson ? (
+            <div className="section-no-drag flex items-center justify-center">
+              <TeachingLessonModeToggle />
+            </div>
+          ) : null}
+          <div className="section-no-drag ml-1 flex shrink-0 items-center justify-end gap-0.5">
             <IconActionButton
               label={t("dockSection")}
               onClick={() => onDock(id)}

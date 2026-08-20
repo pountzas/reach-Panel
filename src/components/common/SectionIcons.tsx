@@ -430,15 +430,12 @@ export function PlayIcon({ className = iconClass }: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fill="currentColor"
+      stroke="none"
       className={className}
       aria-hidden
     >
-      <path d="M8 5v14l11-7-7z" />
+      <path d="M8 5.5v13l11-6.5-11-6.5z" />
     </svg>
   );
 }
@@ -476,6 +473,24 @@ export function RestartIcon({ className = iconClass }: IconProps) {
       <path d="M21 3v5h-5" />
       <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
       <path d="M3 21v-5h5" />
+    </svg>
+  );
+}
+
+export function PlusIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
     </svg>
   );
 }

@@ -27,6 +27,9 @@ import {
   resolveSelectedAppMode,
   type AppModeTablet,
 } from "../../lib/appModeLayout";
+import { defaultLanguagePackId } from "../../lib/language";
+import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
+import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -324,6 +327,7 @@ export function SettingsPanel() {
     teachingLesson,
     setAppMode,
     setTeachingLesson,
+    setLanguagePackId,
     setShowSettings,
     setShowMacroBuilder,
     setShowHeadTrackingWizard,
@@ -661,6 +665,71 @@ export function SettingsPanel() {
                     </button>
                   );
                 })}
+              </div>
+            )}
+            {selectedMode === "teaching" && (
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block min-w-0 text-sm" style={{ color: surface.panelText }}>
+                    {t("languageLessonLanguage")}
+                    <ThemedSelect
+                      value={settings.languageLessonLanguage ?? "el"}
+                      onChange={(v) => {
+                        const language = v as LessonLanguage;
+                        const band =
+                          settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND;
+                        void updateSettings({ languageLessonLanguage: language });
+                        if (teachingLesson === "language") {
+                          setLanguagePackId(defaultLanguagePackId(band, language));
+                        }
+                      }}
+                      surface={surface}
+                    >
+                      <option value="el">{t("languageLessonLangEl")}</option>
+                      <option value="en">{t("languageLessonLangEn")}</option>
+                    </ThemedSelect>
+                  </label>
+                  <label className="block min-w-0 text-sm" style={{ color: surface.panelText }}>
+                    {t("languageAgeBand")}
+                    <ThemedSelect
+                      value={settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND}
+                      onChange={(v) => {
+                        const band = v as LanguageAgeBand;
+                        const language = settings.languageLessonLanguage ?? "el";
+                        void updateSettings({ languageLessonAgeBand: band });
+                        if (teachingLesson === "language") {
+                          setLanguagePackId(defaultLanguagePackId(band, language));
+                        }
+                      }}
+                      surface={surface}
+                    >
+                      <option value="early">{t("languageAgeBandEarly")}</option>
+                      <option value="primary">{t("languageAgeBandPrimary")}</option>
+                      <option value="lower_secondary">
+                        {t("languageAgeBandLowerSecondary")}
+                      </option>
+                      <option value="upper_secondary">
+                        {t("languageAgeBandUpperSecondary")}
+                      </option>
+                    </ThemedSelect>
+                  </label>
+                </div>
+                <ToggleRow
+                  label={t("languageLessonIgnoreCase")}
+                  checked={settings.languageLessonIgnoreCase !== false}
+                  onChange={(checked) =>
+                    updateSettings({ languageLessonIgnoreCase: checked })
+                  }
+                  surface={surface}
+                />
+                <ToggleRow
+                  label={t("languageLessonIgnoreTones")}
+                  checked={settings.languageLessonIgnoreTones !== false}
+                  onChange={(checked) =>
+                    updateSettings({ languageLessonIgnoreTones: checked })
+                  }
+                  surface={surface}
+                />
               </div>
             )}
             <div className="mt-3">

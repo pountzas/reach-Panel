@@ -13,6 +13,9 @@ import { useAppStore } from "../../stores/appStore";
 const STEP_PX = 6;
 const STAFF_PAD_TOP = 28;
 const STAFF_PAD_BOTTOM = 28;
+/** Clearance for note head + active ring beyond the extreme staff position. */
+const VERTICAL_CLEARANCE_PX = 14;
+const STEM_LEN_STEPS = 3.2;
 const NOTE_START_X = 52;
 const UNIT_ADVANCE_PX = 22;
 const NOTE_HEAD_RX = 5;
@@ -30,12 +33,49 @@ type PartitureViewProps = {
   completed: boolean;
 };
 
-function staffY(staffPos: number): number {
-  return STAFF_PAD_TOP + staffPos * STEP_PX;
+function staffY(staffPos: number, padTop: number): number {
+  return padTop + staffPos * STEP_PX;
 }
 
 function noteStemUp(staffPos: number): boolean {
   return staffPos >= STAFF_STEP_COUNT / 2;
+}
+
+/** Pads so ledger lines and stems for this song fit inside the SVG. */
+function computeStaffVerticalPads(notes: PartitureNoteLayout[]): {
+  padTop: number;
+  padBottom: number;
+  contentHeight: number;
+} {
+  let minStaff = 0;
+  let maxStaff = STAFF_STEP_COUNT;
+  for (const note of notes) {
+    minStaff = Math.min(minStaff, note.staffPos);
+    maxStaff = Math.max(maxStaff, note.staffPos);
+    for (const ledger of ledgerLinePositions(note.staffPos)) {
+      minStaff = Math.min(minStaff, ledger);
+      maxStaff = Math.max(maxStaff, ledger);
+    }
+    if (note.duration !== "whole") {
+      if (noteStemUp(note.staffPos)) {
+        minStaff = Math.min(minStaff, note.staffPos - STEM_LEN_STEPS);
+      } else {
+        maxStaff = Math.max(maxStaff, note.staffPos + STEM_LEN_STEPS);
+      }
+    }
+  }
+
+  const staffBlock = STAFF_STEP_COUNT * STEP_PX;
+  const padTop = Math.max(STAFF_PAD_TOP, VERTICAL_CLEARANCE_PX - minStaff * STEP_PX);
+  const padBottom = Math.max(
+    STAFF_PAD_BOTTOM,
+    maxStaff * STEP_PX + VERTICAL_CLEARANCE_PX - staffBlock,
+  );
+  return {
+    padTop,
+    padBottom,
+    contentHeight: padTop + staffBlock + padBottom,
+  };
 }
 
 function scrollDurationMs(song: MusicSong, activeIndex: number, indexDelta: number): number {
@@ -53,18 +93,20 @@ function NoteGlyph({
   color,
   opacity,
   active,
+  padTop,
 }: {
   note: PartitureNoteLayout;
   x: number;
   color: string;
   opacity: number;
   active: boolean;
+  padTop: number;
 }) {
-  const cy = staffY(note.staffPos);
+  const cy = staffY(note.staffPos, padTop);
   const filled = note.duration !== "whole" && note.duration !== "half";
   const hasStem = note.duration !== "whole";
   const stemUp = noteStemUp(note.staffPos);
-  const stemLen = STEP_PX * 3.2;
+  const stemLen = STEP_PX * STEM_LEN_STEPS;
   const stemX = stemUp ? x + NOTE_HEAD_RX - 1 : x - NOTE_HEAD_RX + 1;
   const stemY1 = cy;
   const stemY2 = stemUp ? cy - stemLen : cy + stemLen;
@@ -83,8 +125,8 @@ function NoteGlyph({
           key={`ledger-${pos}`}
           x1={x - 9}
           x2={x + 9}
-          y1={staffY(pos)}
-          y2={staffY(pos)}
+          y1={staffY(pos, padTop)}
+          y2={staffY(pos, padTop)}
           stroke="currentColor"
           strokeWidth={1.25}
         />
@@ -156,6 +198,7 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
   const viewportRef = useRef<HTMLDivElement>(null);
   const prevIndexRef = useRef(activeIndex);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
   const [transitionMs, setTransitionMs] = useState(320);
 
   const layout = useMemo(
@@ -174,16 +217,33 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
     return xs;
   }, [layout]);
 
+  const vertical = useMemo(
+    () =>
+      layout && layout.notes.length > 0
+        ? computeStaffVerticalPads(layout.notes)
+        : {
+            padTop: STAFF_PAD_TOP,
+            padBottom: STAFF_PAD_BOTTOM,
+            contentHeight: STAFF_PAD_TOP + STAFF_STEP_COUNT * STEP_PX + STAFF_PAD_BOTTOM,
+          },
+    [layout],
+  );
+
   const svgWidth = Math.max(
     200,
     (positions[positions.length - 1] ?? NOTE_START_X) + 40,
   );
-  const svgHeight = STAFF_PAD_TOP + STAFF_STEP_COUNT * STEP_PX + STAFF_PAD_BOTTOM;
+  const svgHeight = Math.max(vertical.contentHeight, viewportHeight);
+  const padTop =
+    vertical.padTop + Math.max(0, (svgHeight - vertical.contentHeight) / 2);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const measure = () => setViewportWidth(viewport.clientWidth);
+    const measure = () => {
+      setViewportWidth(viewport.clientWidth);
+      setViewportHeight(viewport.clientHeight);
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(viewport);
@@ -255,7 +315,7 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
               aria-label={t("partiture")}
             >
               {Array.from({ length: 5 }, (_, i) => {
-                const y = staffY(i * 2);
+                const y = staffY(i * 2, padTop);
                 return (
                   <line
                     key={`staff-${i}`}
@@ -271,7 +331,7 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
               })}
               <text
                 x={14}
-                y={staffY(6) + 2}
+                y={staffY(6, padTop) + 2}
                 fill={surface.panelText}
                 fontSize={36}
                 fontFamily="serif"
@@ -290,6 +350,7 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
                     color={isActive ? "#92400e" : surface.panelText}
                     opacity={isActive ? 1 : isPast ? 0.35 : 0.85}
                     active={isActive}
+                    padTop={padTop}
                   />
                 );
               })}
