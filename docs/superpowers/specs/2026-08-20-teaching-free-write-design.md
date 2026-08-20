@@ -73,7 +73,7 @@
 
 - Renders a horizontal tab strip **directly under** the teaching section header content area (inside the phrases/teaching slot, above the active panel).
 - Props: `tabs: { id, labelKey }[]`, `activeId`, `onChange`.
-- Visual language: readable touch targets; active tab clearly distinct (align with existing surface colors; avoid inventing a new brand look).
+- Visual language: **Chrome-style browser tabs** attached flush under the header (rounded top, active tab blends into the panel body; not toolbar/pill buttons). Readable touch targets; surface colors only.
 - When a subject declares **zero or one** tab, **hide** the strip (Music stays chrome-free).
 
 ### 6.2 Subject registry (conceptual)

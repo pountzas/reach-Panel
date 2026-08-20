@@ -1,31 +1,31 @@
-﻿import { en } from "./en";
+import { en } from "./en";
 
 export const fr: Record<keyof typeof en, string> = {
   appTitle: "ReachPanel",
 
-  collapse: "RÃ©duire",
+  collapse: "Réduire",
 
-  expand: "DÃ©velopper",
+  expand: "Développer",
 
-  minimizeSection: "RÃ©duire",
+  minimizeSection: "Réduire",
 
   dockSection: "Ancrer la section",
 
-  undockSection: "DÃ©tacher la section",
+  undockSection: "Détacher la section",
 
-  settings: "ParamÃ¨tres",
+  settings: "Paramètres",
 
   close: "Fermer",
 
   add: "Ajouter",
 
-  appNotInstalled: "{app} nâ€™est pas installÃ©.",
+  appNotInstalled: "{app} n’est pas installé.",
 
   installApp: "Installer",
 
   profile: "Profil",
 
-  accessibilityScreen: "Ã‰cran dâ€™accessibilitÃ©",
+  accessibilityScreen: "Écran d’accessibilité",
 
   miniMode: "Mode Mini",
 
@@ -39,69 +39,52 @@ export const fr: Record<keyof typeof en, string> = {
 
   teachingLessonMusic: "Musique",
 
-  teachingLessonMath: "MathÃ©matiques",
+  teachingLessonMath: "Mathématiques",
 
   teachingLessonLanguage: "Langue",
 
 
   teachingTabSpelling: "Orthographe",
-
   teachingTabFreeWrite: "Écriture libre",
-
   freeWriteNotepad: "Bloc-notes",
-
   freeWriteClearAll: "Tout effacer",
-
   freeWriteClearConfirm: "Effacer tout le brouillon du bloc-notes ?",
-
   freeWriteZoomIn: "Zoom avant",
-
   freeWriteZoomOut: "Zoom arrière",
-
   freeWriteWordWrap: "Retour à la ligne",
-
   freeWriteLineNumbers: "Numéros de ligne",
-
   freeWriteNotepadEmpty: "Tapez des notes ici…",
-
   freeWriteOpenPdf: "Ouvrir un PDF…",
-
   freeWriteRecentPdfs: "PDF récents",
-
   freeWritePdfMissing: "Ce fichier PDF est introuvable.",
-
   freeWritePdfEmpty: "Ouvrez un PDF à lire à côté de vos notes.",
-
   freeWritePdfPrevPage: "Page précédente",
-
   freeWritePdfNextPage: "Page suivante",
-
   freeWriteRemovePdf: "Supprimer",
 
+  comingSoon: "Bientôt disponible",
 
-  comingSoon: "BientÃ´t disponible",
-
-  mathLessonTitle: "MathÃ©matiques",
+  mathLessonTitle: "Mathématiques",
 
   languageLessonTitle: "Langue",
 
-  languageLesson: "LeÃ§on de langue",
+  languageLesson: "Leçon de langue",
 
   selectLanguagePack: "Choisir une liste de mots",
 
-  languagePackBuiltIn: "Listes intÃ©grÃ©es",
+  languagePackBuiltIn: "Listes intégrées",
 
-  languagePrompt: "Ã‰pelez ce mot",
+  languagePrompt: "Épelez ce mot",
 
-  languageYourAnswer: "Votre rÃ©ponse",
+  languageYourAnswer: "Votre réponse",
 
-  languageCheck: "VÃ©rifier",
+  languageCheck: "Vérifier",
 
-  languageIncorrect: "Pas encore â€” rÃ©essayez",
+  languageIncorrect: "Pas encore — réessayez",
 
   languageUpcomingTasks: "Mots suivants",
 
-  languageAgeBand: "Tranche d'Ã¢ge",
+  languageAgeBand: "Tranche d'âge",
 
   languageLessonLanguage: "Langue",
 
@@ -109,21 +92,21 @@ export const fr: Record<keyof typeof en, string> = {
 
   languageLessonLangEn: "Anglais",
 
-  languageAgeBandEarly: "Jeune (6â€“8)",
+  languageAgeBandEarly: "Jeune (6–8)",
 
-  languageAgeBandPrimary: "Primaire (9â€“11)",
+  languageAgeBandPrimary: "Primaire (9–11)",
 
-  languageAgeBandLowerSecondary: "CollÃ¨ge (12â€“14)",
+  languageAgeBandLowerSecondary: "Collège (12–14)",
 
-  languageAgeBandUpperSecondary: "LycÃ©e (15+)",
+  languageAgeBandUpperSecondary: "Lycée (15+)",
 
   languageLessonIgnoreCase: "Ignorer la casse",
 
-  languageLessonIgnoreTones: "Ignorer les accents Ã  la vÃ©rification",
+  languageLessonIgnoreTones: "Ignorer les accents à la vérification",
 
-  languageLessonTonesOff: "Accents : non exigÃ©s",
+  languageLessonTonesOff: "Accents : non exigés",
 
-  languageLessonTonesOn: "Accents : exigÃ©s",
+  languageLessonTonesOn: "Accents : exigés",
 
   languageNewList: "Nouvelle liste de mots",
 
@@ -137,61 +120,61 @@ export const fr: Record<keyof typeof en, string> = {
 
   languageNewListEmpty: "Ajoutez au moins un mot",
   languagePressPlayToSpell: "Appuyez sur Lire pour commencer l'orthographe",
-  languageNewListKeyboardHint: "Utilisez le clavier pour saisir le titre et les mots Ã  gauche",
+  languageNewListKeyboardHint: "Utilisez le clavier pour saisir le titre et les mots à gauche",
 
   languagePackMyLists: "Mes listes",
 
   deleteLanguagePack: "Supprimer la liste",
 
-  confirmDeleteLanguagePack: "Supprimer Â« {title} Â» ?",
+  confirmDeleteLanguagePack: "Supprimer « {title} » ?",
 
   modeTabletsHint:
-    "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leÃ§ons ; Musique affiche le synthÃ©tiseur. Compagnon dÃ©marre le pont tablette ; il n'est sÃ©lectionnÃ© que lorsqu'une tablette est connectÃ©e.",
+    "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon démarre le pont tablette ; il n'est sélectionné que lorsqu'une tablette est connectée.",
 
   miniModeAutoDescription:
-    "Sur un seul Ã©cran ou une configuration en miroir, le clavier apparaÃ®t automatiquement lorsque vous touchez un champ de saisie.",
+    "Sur un seul écran ou une configuration en miroir, le clavier apparaît automatiquement lorsque vous touchez un champ de saisie.",
 
   miniModeOverrideLabel: "Mode Mini",
 
   miniModeOverrideAuto: "Automatique",
 
-  miniModeOverrideOn: "ActivÃ©",
+  miniModeOverrideOn: "Activé",
 
-  miniModeOverrideOff: "DÃ©sactivÃ©",
+  miniModeOverrideOff: "Désactivé",
 
   miniModeTransparent: "Clavier transparent",
 
   inputPreviewLabel: "Champ cible",
 
-  inputPreviewWaiting: "AperÃ§u en attenteâ€¦",
+  inputPreviewWaiting: "Aperçu en attente…",
 
   miniModeTransparentDescription:
-    "Afficher les touches avec des contours uniquement pour voir les applications en arriÃ¨re-plan.",
+    "Afficher les touches avec des contours uniquement pour voir les applications en arrière-plan.",
 
   transparentKeyColor: "Couleur des touches transparentes",
 
   transparentKeyColorWhite: "Blanc",
 
-  transparentKeyColorDarkGray: "Gris foncÃ©",
+  transparentKeyColorDarkGray: "Gris foncé",
 
   transparentKeyColorSilver: "Argent",
 
   miniModeCollapse: "Retour au Mode Mini",
 
-  largeHeaders: "En-tÃªtes larges pour un redimensionnement plus facile",
+  largeHeaders: "En-têtes larges pour un redimensionnement plus facile",
 
   largeHeadersHint:
-    "Double la hauteur des en-tÃªtes et des boutons. Faites glisser la zone vide de lâ€™en-tÃªte pour changer la hauteur de la section ou de la fenÃªtre.",
+    "Double la hauteur des en-têtes et des boutons. Faites glisser la zone vide de l’en-tête pour changer la hauteur de la section ou de la fenêtre.",
 
   primary: "Principal",
 
   mouse: "Souris",
 
-  numpad: "PavÃ© numÃ©rique",
+  numpad: "Pavé numérique",
 
-  mousePanelLeft: "Ã€ gauche du clavier",
+  mousePanelLeft: "À gauche du clavier",
 
-  mousePanelRight: "Ã€ droite du clavier",
+  mousePanelRight: "À droite du clavier",
 
   showMouseSection: "Afficher la section souris",
 
@@ -201,17 +184,17 @@ export const fr: Record<keyof typeof en, string> = {
 
   speedSlow: "Lente",
 
-  speedVerySlow: "TrÃ¨s lente",
+  speedVerySlow: "Très lente",
 
   speedMedium: "Moyenne",
 
   speedFast: "Rapide",
 
-  speedVeryFast: "TrÃ¨s rapide",
+  speedVeryFast: "Très rapide",
 
   quickActions: "Actions rapides",
 
-  showQuickActionsBar: "Afficher la barre dâ€™actions rapides",
+  showQuickActionsBar: "Afficher la barre d’actions rapides",
 
   phrasesAndSuggestions: "Phrases et suggestions",
 
@@ -219,39 +202,39 @@ export const fr: Record<keyof typeof en, string> = {
 
   showSuggestionsBar: "Afficher la barre de suggestions",
 
-  predictionDictionaries: "Dictionnaires de prÃ©diction",
+  predictionDictionaries: "Dictionnaires de prédiction",
 
   predictionDictionariesHint:
-    "Lâ€™anglais est inclus. TÃ©lÃ©chargez dâ€™autres langues au besoin. Les suggestions suivent la langue de saisie.",
+    "L’anglais est inclus. Téléchargez d’autres langues au besoin. Les suggestions suivent la langue de saisie.",
 
-  wordPackInstalled: "InstallÃ©",
+  wordPackInstalled: "Installé",
 
-  wordPackNotInstalled: "Non installÃ©",
+  wordPackNotInstalled: "Non installé",
 
   wordPackInstall: "Installer",
 
   wordPackUninstall: "Supprimer",
 
-  wordPackInstalling: "Installationâ€¦",
+  wordPackInstalling: "Installation…",
 
-  wordPackUninstalling: "Suppressionâ€¦",
+  wordPackUninstalling: "Suppression…",
 
   wordPackRequired: "Obligatoire",
 
-  wordPackInstallFailed: "Impossible dâ€™installer le dictionnaire",
+  wordPackInstallFailed: "Impossible d’installer le dictionnaire",
 
   wordPackUninstallFailed: "Impossible de supprimer le dictionnaire",
 
-  showDictationControl: "Afficher la dictÃ©e (micro)",
+  showDictationControl: "Afficher la dictée (micro)",
 
-  showInputPreview: "AperÃ§u en direct du champ (Normal)",
+  showInputPreview: "Aperçu en direct du champ (Normal)",
 
-  showInputPreviewMiniMode: "AperÃ§u en direct du champ (Mode Mini)",
+  showInputPreviewMiniMode: "Aperçu en direct du champ (Mode Mini)",
 
-  taskbarPosition: "Position de la barre des tÃ¢ches",
+  taskbarPosition: "Position de la barre des tâches",
 
   taskbarPositionHint:
-    "DÃ©place la barre des tÃ¢ches Windows vers un autre bord de l'Ã©cran. Windows 11 ne prend pas en charge gauche ni droite.",
+    "Déplace la barre des tâches Windows vers un autre bord de l'écran. Windows 11 ne prend pas en charge gauche ni droite.",
 
   taskbarPositionBottom: "Bas",
 
@@ -261,16 +244,16 @@ export const fr: Record<keyof typeof en, string> = {
 
   taskbarPositionRight: "Droite",
 
-  taskbarPositionApplied: "Position de la barre des tÃ¢ches mise Ã  jour. Explorer a redÃ©marrÃ©.",
+  taskbarPositionApplied: "Position de la barre des tâches mise à jour. Explorer a redémarré.",
 
   taskbarPositionUnsupported:
-    "Cette position de barre des tÃ¢ches n'est pas prise en charge sur cette version de Windows.",
+    "Cette position de barre des tâches n'est pas prise en charge sur cette version de Windows.",
 
-  taskbarPositionFailed: "Impossible de modifier la position de la barre des tÃ¢ches.",
+  taskbarPositionFailed: "Impossible de modifier la position de la barre des tâches.",
 
-  opacity: "OpacitÃ©",
+  opacity: "Opacité",
 
-  appLanguage: "Langue de lâ€™application",
+  appLanguage: "Langue de l’application",
 
   appLanguageHint: "Menus, phrases et parole",
 
@@ -278,7 +261,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   typingLanguageHint: "Langue du clavier Windows pour la saisie",
 
-  onscreenLayout: "Disposition Ã  lâ€™Ã©cran",
+  onscreenLayout: "Disposition à l’écran",
 
   onscreenLayoutHint: "Disposition des touches du clavier virtuel",
 
@@ -290,7 +273,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   languageGerman: "Allemand",
 
-  languageFrench: "FranÃ§ais",
+  languageFrench: "Français",
 
   languageItalian: "Italien",
 
@@ -299,45 +282,45 @@ export const fr: Record<keyof typeof en, string> = {
   languagePortuguese: "Portugais",
 
 
-  resetSettings: "RÃ©initialiser les paramÃ¨tres",
+  resetSettings: "Réinitialiser les paramètres",
 
   resetSettingsHint:
-    "Restaure la disposition, la position du moniteur, les tailles des panneaux et tous les autres paramÃ¨tres par dÃ©faut.",
+    "Restaure la disposition, la position du moniteur, les tailles des panneaux et tous les autres paramètres par défaut.",
 
-  resetUi: "RÃ©initialiser lâ€™interface",
+  resetUi: "Réinitialiser l’interface",
 
   resetUiHint:
-    "Restaure tous les paramÃ¨tres (thÃ¨me, visibilitÃ©, disposition, langues). Conserve les actions rapides, macros, phrases et prÃ©dictions.",
+    "Restaure tous les paramètres (thème, visibilité, disposition, langues). Conserve les actions rapides, macros, phrases et prédictions.",
 
   wipeProfile: "Effacer le profil",
 
   wipeProfileHint:
-    "Efface les actions rapides, macros, phrases, prÃ©dictions et suivi de tÃªte, et rÃ©initialise tous les paramÃ¨tres.",
+    "Efface les actions rapides, macros, phrases, prédictions et suivi de tête, et réinitialise tous les paramètres.",
 
   wipeProfileConfirm:
-    "Effacer ce profil ? Toutes les actions rapides, macros, phrases, prÃ©dictions et paramÃ¨tres seront rÃ©initialisÃ©s.",
+    "Effacer ce profil ? Toutes les actions rapides, macros, phrases, prédictions et paramètres seront réinitialisés.",
 
   saveProfile: "Enregistrer le profil",
 
-  profileSaved: "Profil enregistrÃ©.",
+  profileSaved: "Profil enregistré.",
 
   deleteProfile: "Supprimer le profil",
 
-  deleteProfileConfirm: "Supprimer ce profil ? Sâ€™il est actif, un nouveau profil par dÃ©faut sera crÃ©Ã©.",
+  deleteProfileConfirm: "Supprimer ce profil ? S’il est actif, un nouveau profil par défaut sera créé.",
 
-  profileDeleted: "Profil supprimÃ©.",
+  profileDeleted: "Profil supprimé.",
 
-  profileWiped: "Profil effacÃ©.",
+  profileWiped: "Profil effacé.",
 
   layoutEdit: "Modifier la disposition",
 
-  layoutEditDone: "TerminÃ©",
+  layoutEditDone: "Terminé",
 
-  dragToMove: "Glisser pour dÃ©placer",
+  dragToMove: "Glisser pour déplacer",
 
-  macroBuilder: "CrÃ©ateur de macros",
+  macroBuilder: "Créateur de macros",
 
-  headTracking: "Suivi de tÃªte",
+  headTracking: "Suivi de tête",
 
   phrases: "Phrases",
 
@@ -345,13 +328,13 @@ export const fr: Record<keyof typeof en, string> = {
 
   showEmergency: "Urgence",
 
-  predictionsOff: "PrÃ©dictions dÃ©sactivÃ©es",
+  predictionsOff: "Prédictions désactivées",
 
   enable: "Activer",
 
   suggest: "Suggestion :",
 
-  turnOff: "DÃ©sactiver",
+  turnOff: "Désactiver",
 
   inputError: "Erreur de saisie :",
 
@@ -363,79 +346,79 @@ export const fr: Record<keyof typeof en, string> = {
 
   colorProfileLightGrey: "Gris clair",
 
-  colorProfileDarkGrey: "Gris foncÃ©",
+  colorProfileDarkGrey: "Gris foncé",
 
-  colorProfileCustom: "PersonnalisÃ©",
+  colorProfileCustom: "Personnalisé",
 
-  headerTextColor: "Texte de lâ€™en-tÃªte",
+  headerTextColor: "Texte de l’en-tête",
 
-  appBackgroundColor: "ArriÃ¨re-plan de lâ€™app",
+  appBackgroundColor: "Arrière-plan de l’app",
 
-  headerColor: "Barre dâ€™en-tÃªte",
+  headerColor: "Barre d’en-tête",
 
-  keyboardBackgroundColor: "ArriÃ¨re-plan du clavier",
+  keyboardBackgroundColor: "Arrière-plan du clavier",
 
   keyboard: "Clavier",
 
   fnKeyMode: "Comportement de la touche Fn",
 
-  fnKeyModeOneShot: "Une fois (Fn sâ€™Ã©teint aprÃ¨s chaque touche F)",
+  fnKeyModeOneShot: "Une fois (Fn s’éteint après chaque touche F)",
 
-  fnKeyModeLatched: "VerrouillÃ© (Fn reste actif jusquâ€™Ã  un nouvel appui)",
+  fnKeyModeLatched: "Verrouillé (Fn reste actif jusqu’à un nouvel appui)",
 
-  synthesizer: "SynthÃ©tiseur",
+  synthesizer: "Synthétiseur",
 
   synthesizerHint: "Appuyez sur les touches pour jouer des notes",
 
   synthesizerVolume: "Volume",
 
-  dictationStart: "DÃ©marrer la dictÃ©e",
+  dictationStart: "Démarrer la dictée",
 
-  dictationStop: "ArrÃªter la dictÃ©e",
+  dictationStop: "Arrêter la dictée",
 
-  dictationListening: "Ã‰couteâ€¦",
+  dictationListening: "Écoute…",
 
   dictationErrorNoLanguage:
-    "La reconnaissance vocale pour cette langue de saisie nâ€™est pas installÃ©e. Ajoutez le pack vocal dans ParamÃ¨tres Windows â†’ Heure et langue â†’ Parole, puis rÃ©essayez.",
+    "La reconnaissance vocale pour cette langue de saisie n’est pas installée. Ajoutez le pack vocal dans Paramètres Windows → Heure et langue → Parole, puis réessayez.",
 
-  dictationErrorUnavailable: "La dictÃ©e vocale nâ€™est disponible que sous Windows.",
+  dictationErrorUnavailable: "La dictée vocale n’est disponible que sous Windows.",
 
   dictationErrorSpeechPrivacy:
-    "La reconnaissance vocale en ligne est dÃ©sactivÃ©e dans Windows. Activez-la dans ConfidentialitÃ© et sÃ©curitÃ© â†’ Parole, puis rÃ©essayez. (Ce nâ€™est pas une demande dâ€™autorisation du micro.)",
+    "La reconnaissance vocale en ligne est désactivée dans Windows. Activez-la dans Confidentialité et sécurité → Parole, puis réessayez. (Ce n’est pas une demande d’autorisation du micro.)",
 
   dictationErrorGroqKey:
-    "La reconnaissance vocale Windows ne prend pas en charge cette langue. Ajoutez une clÃ© API Groq gratuite dans les ParamÃ¨tres (console.groq.com).",
+    "La reconnaissance vocale Windows ne prend pas en charge cette langue. Ajoutez une clé API Groq gratuite dans les Paramètres (console.groq.com).",
 
   dictationErrorGroqApi:
-    "Ã‰chec de la dictÃ©e cloud. VÃ©rifiez votre connexion Internet et votre clÃ© API Groq, puis rÃ©essayez.",
+    "Échec de la dictée cloud. Vérifiez votre connexion Internet et votre clé API Groq, puis réessayez.",
 
   dictationUnavailableUnsupported:
-    "DictÃ©e indisponible â€” ajoutez une clÃ© API Groq gratuite dans les ParamÃ¨tres pour cette langue",
+    "Dictée indisponible — ajoutez une clé API Groq gratuite dans les Paramètres pour cette langue",
 
-  dictationUnavailableOffline: "DictÃ©e indisponible â€” une connexion Internet est requise",
+  dictationUnavailableOffline: "Dictée indisponible — une connexion Internet est requise",
 
-  dictationGroqRemainingToday: "RequÃªtes Groq restantes aujourd'hui",
+  dictationGroqRemainingToday: "Requêtes Groq restantes aujourd'hui",
 
-  dictationOpenSpeechSettings: "Ouvrir les paramÃ¨tres de parole",
+  dictationOpenSpeechSettings: "Ouvrir les paramètres de parole",
 
   dictationOpenSpeechLanguageSettings: "Installer la langue de parole",
 
-  dictationOpenAppSettings: "Ouvrir les ParamÃ¨tres",
+  dictationOpenAppSettings: "Ouvrir les Paramètres",
 
-  groqApiKeyLabel: "ClÃ© API Groq (dictÃ©e cloud)",
+  groqApiKeyLabel: "Clé API Groq (dictée cloud)",
 
   groqApiKeyHint:
-    "NÃ©cessaire pour les langues non prises en charge par Windows (ex. grec). ClÃ© gratuite sur console.groq.com. Vous pouvez aussi dÃ©finir la variable dâ€™environnement GROQ_API_KEY.",
+    "Nécessaire pour les langues non prises en charge par Windows (ex. grec). Clé gratuite sur console.groq.com. Vous pouvez aussi définir la variable d’environnement GROQ_API_KEY.",
 
   mute: "Muet",
 
-  unmute: "RÃ©activer le son",
+  unmute: "Réactiver le son",
 
   teachMusic: "Enseigner",
 
-  stopTeaching: "ArrÃªter lâ€™enseignement",
+  stopTeaching: "Arrêter l’enseignement",
 
-  musicLesson: "LeÃ§on de musique",
+  musicLesson: "Leçon de musique",
 
   partiture: "Partition",
 
@@ -445,42 +428,42 @@ export const fr: Record<keyof typeof en, string> = {
 
   playSong: "Lire",
 
-  stopSong: "ArrÃªter",
+  stopSong: "Arrêter",
 
   loadSong: "Charger",
 
   deleteSong: "Supprimer",
 
-  confirmDeleteSong: "Supprimer la chanson importÃ©e Â« {title} Â» ?",
+  confirmDeleteSong: "Supprimer la chanson importée « {title} » ?",
 
-  builtInSongs: "IntÃ©grÃ©es",
+  builtInSongs: "Intégrées",
 
-  importedSongs: "ImportÃ©es",
+  importedSongs: "Importées",
 
   playingNote: "Lecture",
 
   waitingForNote: "Jouer",
 
-  lessonComplete: "Chanson terminÃ©e !",
+  lessonComplete: "Chanson terminée !",
 
-  upcomingNotes: "Notes Ã  venir",
+  upcomingNotes: "Notes à venir",
 
-  songNeedsOctaves: "DÃ©placez le piano sur {range} pour couvrir cette chanson",
+  songNeedsOctaves: "Déplacez le piano sur {range} pour couvrir cette chanson",
 
   songWiderThanPiano:
-    "Cette chanson dÃ©passe 5 octaves â€” certaines notes sont hors fenÃªtre. Utilisez â—€ â–¶ pour dÃ©caler.",
+    "Cette chanson dépasse 5 octaves — certaines notes sont hors fenêtre. Utilisez ◀ ▶ pour décaler.",
 
   pianoRange: "Piano",
 
   songRange: "Chanson",
 
-  shiftPianoLower: "DÃ©caler le piano plus bas",
+  shiftPianoLower: "Décaler le piano plus bas",
 
-  shiftPianoHigher: "DÃ©caler le piano plus haut",
+  shiftPianoHigher: "Décaler le piano plus haut",
 
   octavesShort: "octaves",
 
-  mouseHiddenForWidePiano: "Souris masquÃ©e avec 5 octaves",
+  mouseHiddenForWidePiano: "Souris masquée avec 5 octaves",
 
   octaveCount2: "2 octaves",
 
@@ -490,15 +473,15 @@ export const fr: Record<keyof typeof en, string> = {
 
   octaveCount5: "5 octaves",
 
-  showKeyboardModeToggle: "Afficher la bascule clavier / synthÃ©tiseur",
+  showKeyboardModeToggle: "Afficher la bascule clavier / synthétiseur",
 
   keyboardSectionMode: "Mode de la section clavier",
 
   inputAreaNormal: "Vue normale",
 
-  inputAreaCompact: "Maximiser clavier et pavÃ© tactile",
+  inputAreaCompact: "Maximiser clavier et pavé tactile",
 
-  showMouseBottomRow: "Afficher la ligne glisser, prÃ©cision et dÃ©filement",
+  showMouseBottomRow: "Afficher la ligne glisser, précision et défilement",
 
   resizeInputRow: "Redimensionner les panneaux clavier et souris",
 
@@ -510,45 +493,45 @@ export const fr: Record<keyof typeof en, string> = {
 
   chooseBackgroundImage: "Choisir une image de fond",
 
-  removeBackgroundImage: "Supprimer lâ€™image de fond",
+  removeBackgroundImage: "Supprimer l’image de fond",
 
-  backgroundImageOpacity: "VisibilitÃ© de lâ€™image de fond",
+  backgroundImageOpacity: "Visibilité de l’image de fond",
 
   newProfileFileName: "Nom du nouveau fichier de profil",
 
-  createProfile: "CrÃ©er un fichier de profil",
+  createProfile: "Créer un fichier de profil",
 
-  updateAvailable: "Mise Ã  jour disponible",
+  updateAvailable: "Mise à jour disponible",
 
   updateVersionInfo: "Une nouvelle version est disponible :",
 
-  updateNow: "Mettre Ã  jour maintenant",
+  updateNow: "Mettre à jour maintenant",
 
   updateLater: "Plus tard",
 
   skipThisVersion: "Ignorer cette version",
 
-  updateDownloading: "TÃ©lÃ©chargement de la mise Ã  jourâ€¦",
+  updateDownloading: "Téléchargement de la mise à jour…",
 
-  updatePreparing: "PrÃ©paration du tÃ©lÃ©chargementâ€¦",
+  updatePreparing: "Préparation du téléchargement…",
 
-  updateFailed: "Ã‰chec de la mise Ã  jour :",
+  updateFailed: "Échec de la mise à jour :",
 
-  updateRetry: "RÃ©essayer",
+  updateRetry: "Réessayer",
 
-  checkForUpdates: "Rechercher les mises Ã  jour",
+  checkForUpdates: "Rechercher les mises à jour",
 
-  updateUpToDate: "Vous avez la derniÃ¨re version.",
+  updateUpToDate: "Vous avez la dernière version.",
 
-  updateCheckFailed: "Impossible de vÃ©rifier les mises Ã  jour.",
+  updateCheckFailed: "Impossible de vérifier les mises à jour.",
 
   settingsVisibleSections: "Sections visibles",
 
-  settingsGeneral: "GÃ©nÃ©ral",
+  settingsGeneral: "Général",
 
   settingsToolsMaintenance: "Outils et maintenance",
 
-  quickActionLabel: "LibellÃ©",
+  quickActionLabel: "Libellé",
 
   quickActionTarget: "Cible (app ou URL)",
 
@@ -560,15 +543,15 @@ export const fr: Record<keyof typeof en, string> = {
 
   quickActionDelete: "Supprimer",
 
-  quickActionSearchApps: "Rechercher des programmes installÃ©sâ€¦",
+  quickActionSearchApps: "Rechercher des programmes installés…",
 
-  quickActionBrowse: "Parcourirâ€¦",
+  quickActionBrowse: "Parcourir…",
 
-  quickActionLoadingApps: "Chargement des programmes installÃ©sâ€¦",
+  quickActionLoadingApps: "Chargement des programmes installés…",
 
   quickActionNoApps: "Aucun programme correspondant.",
 
-  settingsAbout: "Ã€ propos",
+  settingsAbout: "À propos",
 
   settingsCompanion: "Companion",
   companionDescription: "Pair an Android tablet to control this PC over Wi-Fi. The tablet becomes the control surface while connected.",
@@ -603,11 +586,11 @@ export const fr: Record<keyof typeof en, string> = {
   companionUsbStep4: "On the tablet, scan the updated QR (or paste JSON). Same protocol as Wi-Fi.",
   companionUsbStep5: "Already paired? Scanning the new QR updates the IP and reconnects when the host ID matches.",
 
-  aboutDescription: "Clavier et souris virtuels dâ€™assistance pour Windows.",
+  aboutDescription: "Clavier et souris virtuels d’assistance pour Windows.",
 
   aboutVersion: "Version",
 
-  aboutCreatedBy: "CrÃ©Ã© par",
+  aboutCreatedBy: "Créé par",
 
   aboutGitHub: "GitHub",
 

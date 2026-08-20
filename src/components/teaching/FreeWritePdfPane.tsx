@@ -1,7 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import * as pdfjs from "pdfjs-dist";
+import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import { sortTeachingPdfEntriesByRecent } from "../../lib/teaching";
 import { useAppStore } from "../../stores/appStore";
@@ -39,55 +40,130 @@ export function FreeWritePdfPane() {
     [teachingPdfLibrary],
   );
   const active = recent.find((e) => e.id === freeWriteActivePdfId) ?? null;
+  const activePath = active?.path ?? null;
 
   const [page, setPage] = useState(1);
   const [pageCount, setPageCount] = useState(0);
   const [viewerZoom, setViewerZoom] = useState(100);
   const [error, setError] = useState<string | null>(null);
-  const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
+  const [docReadyPath, setDocReadyPath] = useState<string | null>(null);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [canvasMounted, setCanvasMounted] = useState(false);
+  const docRef = useRef<PDFDocumentProxy | null>(null);
+  const renderTaskRef = useRef<RenderTask | null>(null);
+  const missingLabelRef = useRef(t("freeWritePdfMissing"));
+  missingLabelRef.current = t("freeWritePdfMissing");
+
+  const setCanvasNode = useCallback((el: HTMLCanvasElement | null) => {
+    canvasRef.current = el;
+    setCanvasMounted(Boolean(el));
+  }, []);
 
   useEffect(() => {
     void loadTeachingPdfLibrary();
   }, [loadTeachingPdfLibrary]);
 
+  // Load (or clear) the PDF document when the active path changes.
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+
+    async function loadDocument() {
+      renderTaskRef.current?.cancel();
+      renderTaskRef.current = null;
+      if (docRef.current) {
+        void docRef.current.destroy();
+        docRef.current = null;
+      }
+      setDocReadyPath(null);
       setError(null);
-      setPageCount(0);
-      if (!active || !canvasEl) return;
+
+      if (!activePath) {
+        setPageCount(0);
+        return;
+      }
+
       try {
         const payload = await invoke<PdfPayload>("cmd_read_teaching_pdf", {
-          path: active.path,
+          path: activePath,
         });
         if (cancelled) return;
         const data = base64ToUint8Array(payload.contentBase64);
         const doc = await pdfjs.getDocument({ data }).promise;
-        if (cancelled) return;
-        setPageCount(doc.numPages);
-        const pageNum = Math.min(Math.max(1, page), doc.numPages);
-        if (pageNum !== page) {
-          setPage(pageNum);
+        if (cancelled) {
+          void doc.destroy();
           return;
         }
-        const pdfPage = await doc.getPage(pageNum);
-        const viewport = pdfPage.getViewport({ scale: viewerZoom / 100 });
-        const context = canvasEl.getContext("2d");
-        if (!context) return;
-        canvasEl.width = viewport.width;
-        canvasEl.height = viewport.height;
-        await pdfPage.render({ canvasContext: context, viewport, canvas: canvasEl }).promise;
+        docRef.current = doc;
+        setPageCount(doc.numPages);
+        setPage((prev) => Math.min(Math.max(1, prev), doc.numPages));
+        setDocReadyPath(activePath);
       } catch (err) {
         if (cancelled) return;
         const message = err instanceof Error ? err.message : String(err);
-        setError(message || t("freeWritePdfMissing"));
+        setPageCount(0);
+        setError(message || missingLabelRef.current);
       }
     }
-    void load();
+
+    void loadDocument();
     return () => {
       cancelled = true;
+      renderTaskRef.current?.cancel();
+      renderTaskRef.current = null;
+      if (docRef.current) {
+        void docRef.current.destroy();
+        docRef.current = null;
+      }
     };
-  }, [active, canvasEl, page, viewerZoom, t]);
+  }, [activePath]);
+
+  // Paint the current page whenever doc / page / zoom / canvas is ready.
+  useEffect(() => {
+    const doc = docRef.current;
+    const canvas = canvasRef.current;
+    if (!doc || !canvas || !canvasMounted || docReadyPath !== activePath || !activePath) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function paint() {
+      renderTaskRef.current?.cancel();
+      renderTaskRef.current = null;
+      try {
+        const pageNum = Math.min(Math.max(1, page), doc!.numPages);
+        const pdfPage = await doc!.getPage(pageNum);
+        if (cancelled) return;
+        const viewport = pdfPage.getViewport({ scale: viewerZoom / 100 });
+        const context = canvas!.getContext("2d");
+        if (!context) return;
+        canvas!.width = viewport.width;
+        canvas!.height = viewport.height;
+        const task = pdfPage.render({
+          canvasContext: context,
+          viewport,
+          canvas: canvas!,
+        });
+        renderTaskRef.current = task;
+        await task.promise;
+      } catch (err) {
+        if (cancelled) return;
+        // pdf.js throws on intentional cancel — ignore those.
+        const name = err && typeof err === "object" && "name" in err ? String(err.name) : "";
+        if (name === "RenderingCancelledException") return;
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message || missingLabelRef.current);
+      }
+    }
+
+    void paint();
+    return () => {
+      cancelled = true;
+      renderTaskRef.current?.cancel();
+      renderTaskRef.current = null;
+    };
+  }, [activePath, docReadyPath, page, viewerZoom, canvasMounted]);
 
   return (
     <div
@@ -225,7 +301,7 @@ export function FreeWritePdfPane() {
             {t("freeWritePdfEmpty")}
           </p>
         ) : (
-          <canvas ref={setCanvasEl} className="mx-auto block max-w-full" />
+          <canvas ref={setCanvasNode} className="mx-auto block max-w-full" />
         )}
       </div>
     </div>

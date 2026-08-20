@@ -7,7 +7,11 @@ export type TeachingSubjectTabOption<T extends string = string> = {
   label: string;
 };
 
-/** Horizontal subject tabs under the teaching section header. Hidden when ≤1 tab. */
+/**
+ * Chrome-style subject tabs attached under the teaching section header.
+ * Hidden when ≤1 tab. Pulls flush against the header by canceling the
+ * section content `p-1` padding.
+ */
 export function TeachingSubjectTabs<T extends string>({
   tabs,
   activeId,
@@ -24,9 +28,13 @@ export function TeachingSubjectTabs<T extends string>({
 
   return (
     <div
-      className="flex shrink-0 items-center gap-1 border-b px-2 py-1.5"
-      style={{ borderColor: surface.panelBorder, backgroundColor: surface.panelBg }}
+      className="-mx-1 -mt-1 mb-1 flex shrink-0 items-end gap-0.5 border-b px-2 pt-1.5"
+      style={{
+        borderColor: surface.panelBorder,
+        backgroundColor: surface.panelHeaderBg,
+      }}
       role="tablist"
+      aria-label="Teaching subject tabs"
     >
       {tabs.map((tab) => {
         const active = tab.id === activeId;
@@ -36,11 +44,18 @@ export function TeachingSubjectTabs<T extends string>({
             type="button"
             role="tab"
             aria-selected={active}
-            className="h-10 min-w-[7rem] rounded-md border px-3 text-sm font-medium"
+            className="relative h-9 min-w-[7.5rem] max-w-[12rem] truncate rounded-t-lg border px-3 text-sm font-medium"
             style={{
               borderColor: surface.panelBorder,
-              backgroundColor: active ? (settings.headerBgColor ?? surface.panelBg) : "transparent",
-              color: active ? surface.panelText : surface.panelMutedText,
+              borderBottomColor: active
+                ? (settings.headerBgColor ?? surface.panelHeaderBg)
+                : "transparent",
+              backgroundColor: active
+                ? (settings.headerBgColor ?? surface.panelHeaderBg)
+                : "transparent",
+              color: active ? "#ffffff" : surface.panelMutedText,
+              marginBottom: -1,
+              zIndex: active ? 1 : 0,
             }}
             onClick={() => onChange(tab.id)}
           >

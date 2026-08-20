@@ -1,4 +1,4 @@
-﻿import { en } from "./en";
+import { en } from "./en";
 
 export const it: Record<keyof typeof en, string> = {
   appTitle: "ReachPanel",
@@ -19,15 +19,15 @@ export const it: Record<keyof typeof en, string> = {
 
   add: "Aggiungi",
 
-  appNotInstalled: "{app} non Ã¨ installato.",
+  appNotInstalled: "{app} non è installato.",
 
   installApp: "Installa",
 
   profile: "Profilo",
 
-  accessibilityScreen: "Schermo di accessibilitÃ ",
+  accessibilityScreen: "Schermo di accessibilità",
 
-  miniMode: "ModalitÃ  Mini",
+  miniMode: "Modalità Mini",
 
   modeNormal: "Normale",
 
@@ -45,39 +45,22 @@ export const it: Record<keyof typeof en, string> = {
 
 
   teachingTabSpelling: "Ortografia",
-
   teachingTabFreeWrite: "Scrittura libera",
-
   freeWriteNotepad: "Blocco note",
-
   freeWriteClearAll: "Cancella tutto",
-
   freeWriteClearConfirm: "Cancellare l'intero bozza del blocco note?",
-
   freeWriteZoomIn: "Ingrandisci",
-
   freeWriteZoomOut: "Riduci",
-
   freeWriteWordWrap: "A capo automatico",
-
   freeWriteLineNumbers: "Numeri di riga",
-
   freeWriteNotepadEmpty: "Digita note qui…",
-
   freeWriteOpenPdf: "Apri PDF…",
-
   freeWriteRecentPdfs: "PDF recenti",
-
   freeWritePdfMissing: "Questo file PDF non è stato trovato.",
-
   freeWritePdfEmpty: "Apri un PDF da leggere accanto alle note.",
-
   freeWritePdfPrevPage: "Pagina precedente",
-
   freeWritePdfNextPage: "Pagina successiva",
-
   freeWriteRemovePdf: "Rimuovi",
-
 
   comingSoon: "Prossimamente",
 
@@ -97,11 +80,11 @@ export const it: Record<keyof typeof en, string> = {
 
   languageCheck: "Controlla",
 
-  languageIncorrect: "Non ancora â€” riprova",
+  languageIncorrect: "Non ancora — riprova",
 
   languageUpcomingTasks: "Parole successive",
 
-  languageAgeBand: "Fascia d'etÃ ",
+  languageAgeBand: "Fascia d'età",
 
   languageLessonLanguage: "Lingua",
 
@@ -109,11 +92,11 @@ export const it: Record<keyof typeof en, string> = {
 
   languageLessonLangEn: "Inglese",
 
-  languageAgeBandEarly: "Primini (6â€“8)",
+  languageAgeBandEarly: "Primini (6–8)",
 
-  languageAgeBandPrimary: "Primaria (9â€“11)",
+  languageAgeBandPrimary: "Primaria (9–11)",
 
-  languageAgeBandLowerSecondary: "Secondaria I (12â€“14)",
+  languageAgeBandLowerSecondary: "Secondaria I (12–14)",
 
   languageAgeBandUpperSecondary: "Secondaria II (15+)",
 
@@ -143,15 +126,15 @@ export const it: Record<keyof typeof en, string> = {
 
   deleteLanguagePack: "Elimina lista",
 
-  confirmDeleteLanguagePack: "Eliminare â€œ{title}â€?",
+  confirmDeleteLanguagePack: "Eliminare “{title}”?",
 
   modeTabletsHint:
-    "Normale e Mini sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno avvia il ponte del tablet; Ã¨ selezionato solo mentre un tablet Ã¨ connesso.",
+    "Normale e Mini sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno avvia il ponte del tablet; è selezionato solo mentre un tablet è connesso.",
 
   miniModeAutoDescription:
     "Su un singolo display o in configurazione speculare, la tastiera appare automaticamente quando tocchi un campo di input.",
 
-  miniModeOverrideLabel: "ModalitÃ  Mini",
+  miniModeOverrideLabel: "Modalità Mini",
 
   miniModeOverrideAuto: "Automatica",
 
@@ -163,7 +146,7 @@ export const it: Record<keyof typeof en, string> = {
 
   inputPreviewLabel: "Campo di destinazione",
 
-  inputPreviewWaiting: "In attesa dell'anteprimaâ€¦",
+  inputPreviewWaiting: "In attesa dell'anteprima…",
 
   miniModeTransparentDescription:
     "Mostra i tasti solo con contorno per vedere le app sottostanti.",
@@ -176,12 +159,12 @@ export const it: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Argento",
 
-  miniModeCollapse: "Torna alla ModalitÃ  Mini",
+  miniModeCollapse: "Torna alla Modalità Mini",
 
-  largeHeaders: "Intestazioni grandi per ridimensionare piÃ¹ facilmente",
+  largeHeaders: "Intestazioni grandi per ridimensionare più facilmente",
 
   largeHeadersHint:
-    "Raddoppia lâ€™altezza delle intestazioni e dei pulsanti. Trascina lâ€™area vuota dellâ€™intestazione per cambiare lâ€™altezza della sezione o della finestra.",
+    "Raddoppia l’altezza delle intestazioni e dei pulsanti. Trascina l’area vuota dell’intestazione per cambiare l’altezza della sezione o della finestra.",
 
   primary: "Principale",
 
@@ -197,7 +180,7 @@ export const it: Record<keyof typeof en, string> = {
 
   hideMouseSection: "Nascondi sezione mouse",
 
-  speed: "VelocitÃ ",
+  speed: "Velocità",
 
   speedSlow: "Lenta",
 
@@ -222,7 +205,7 @@ export const it: Record<keyof typeof en, string> = {
   predictionDictionaries: "Dizionari di previsione",
 
   predictionDictionariesHint:
-    "Lâ€™inglese Ã¨ incluso. Scarica altre lingue se necessario. I suggerimenti seguono la lingua di digitazione.",
+    "L’inglese è incluso. Scarica altre lingue se necessario. I suggerimenti seguono la lingua di digitazione.",
 
   wordPackInstalled: "Installato",
 
@@ -232,9 +215,9 @@ export const it: Record<keyof typeof en, string> = {
 
   wordPackUninstall: "Rimuovi",
 
-  wordPackInstalling: "Installazioneâ€¦",
+  wordPackInstalling: "Installazione…",
 
-  wordPackUninstalling: "Rimozioneâ€¦",
+  wordPackUninstalling: "Rimozione…",
 
   wordPackRequired: "Obbligatorio",
 
@@ -246,7 +229,7 @@ export const it: Record<keyof typeof en, string> = {
 
   showInputPreview: "Anteprima live del campo (Normal)",
 
-  showInputPreviewMiniMode: "Anteprima live del campo (ModalitÃ  Mini)",
+  showInputPreviewMiniMode: "Anteprima live del campo (Modalità Mini)",
 
   taskbarPosition: "Posizione barra delle applicazioni",
 
@@ -264,13 +247,13 @@ export const it: Record<keyof typeof en, string> = {
   taskbarPositionApplied: "Posizione barra aggiornata. Explorer riavviato.",
 
   taskbarPositionUnsupported:
-    "Questa posizione della barra non Ã¨ supportata su questa versione di Windows.",
+    "Questa posizione della barra non è supportata su questa versione di Windows.",
 
   taskbarPositionFailed: "Impossibile cambiare la posizione della barra.",
 
-  opacity: "OpacitÃ ",
+  opacity: "Opacità",
 
-  appLanguage: "Lingua dellâ€™app",
+  appLanguage: "Lingua dell’app",
 
   appLanguageHint: "Menu, frasi e parlato",
 
@@ -307,7 +290,7 @@ export const it: Record<keyof typeof en, string> = {
   resetUi: "Reimposta interfaccia",
 
   resetUiHint:
-    "Ripristina tutte le impostazioni (tema, visibilitÃ , layout, lingue). Mantiene azioni rapide, macro, frasi e previsioni.",
+    "Ripristina tutte le impostazioni (tema, visibilità, layout, lingue). Mantiene azioni rapide, macro, frasi e previsioni.",
 
   wipeProfile: "Cancella profilo",
 
@@ -324,7 +307,7 @@ export const it: Record<keyof typeof en, string> = {
   deleteProfile: "Elimina profilo",
 
   deleteProfileConfirm:
-    "Eliminare questo profilo? Se Ã¨ attivo, verrÃ  creato un nuovo profilo predefinito.",
+    "Eliminare questo profilo? Se è attivo, verrà creato un nuovo profilo predefinito.",
 
   profileDeleted: "Profilo eliminato.",
 
@@ -370,7 +353,7 @@ export const it: Record<keyof typeof en, string> = {
 
   headerTextColor: "Testo intestazione",
 
-  appBackgroundColor: "Sfondo dellâ€™app",
+  appBackgroundColor: "Sfondo dell’app",
 
   headerColor: "Barra intestazione",
 
@@ -382,7 +365,7 @@ export const it: Record<keyof typeof en, string> = {
 
   fnKeyModeOneShot: "Una volta (Fn si spegne dopo ogni tasto F)",
 
-  fnKeyModeLatched: "Bloccato (Fn resta attivo finchÃ© non lo tocchi di nuovo)",
+  fnKeyModeLatched: "Bloccato (Fn resta attivo finché non lo tocchi di nuovo)",
 
   synthesizer: "Sintetizzatore",
 
@@ -394,15 +377,15 @@ export const it: Record<keyof typeof en, string> = {
 
   dictationStop: "Interrompi dettatura",
 
-  dictationListening: "In ascoltoâ€¦",
+  dictationListening: "In ascolto…",
 
   dictationErrorNoLanguage:
-    "Il riconoscimento vocale per questa lingua di digitazione non Ã¨ installato. Aggiungi il pacchetto vocale in Impostazioni Windows â†’ Ora e lingua â†’ Voce, poi riprova.",
+    "Il riconoscimento vocale per questa lingua di digitazione non è installato. Aggiungi il pacchetto vocale in Impostazioni Windows → Ora e lingua → Voce, poi riprova.",
 
-  dictationErrorUnavailable: "La dettatura vocale Ã¨ disponibile solo su Windows.",
+  dictationErrorUnavailable: "La dettatura vocale è disponibile solo su Windows.",
 
   dictationErrorSpeechPrivacy:
-    "Il riconoscimento vocale online Ã¨ disattivato in Windows. Attivalo in Privacy e sicurezza â†’ Voce, poi riprova. (Non Ã¨ una richiesta di permesso del microfono.)",
+    "Il riconoscimento vocale online è disattivato in Windows. Attivalo in Privacy e sicurezza → Voce, poi riprova. (Non è una richiesta di permesso del microfono.)",
 
   dictationErrorGroqKey:
     "Il riconoscimento vocale di Windows non supporta questa lingua. Aggiungi una chiave API Groq gratuita nelle Impostazioni (console.groq.com).",
@@ -411,9 +394,9 @@ export const it: Record<keyof typeof en, string> = {
     "Dettatura cloud non riuscita. Controlla la connessione Internet e la chiave API Groq, poi riprova.",
 
   dictationUnavailableUnsupported:
-    "Dettatura non disponibile â€” aggiungi una chiave API Groq gratuita nelle Impostazioni per questa lingua",
+    "Dettatura non disponibile — aggiungi una chiave API Groq gratuita nelle Impostazioni per questa lingua",
 
-  dictationUnavailableOffline: "Dettatura non disponibile â€” Ã¨ richiesta una connessione Internet",
+  dictationUnavailableOffline: "Dettatura non disponibile — è richiesta una connessione Internet",
 
   dictationGroqRemainingToday: "Richieste Groq rimanenti oggi",
 
@@ -426,7 +409,7 @@ export const it: Record<keyof typeof en, string> = {
   groqApiKeyLabel: "Chiave API Groq (dettatura cloud)",
 
   groqApiKeyHint:
-    "Necessaria per le lingue non supportate da Windows (es. greco). Chiave gratuita su console.groq.com. Puoi anche impostare la variabile dâ€™ambiente GROQ_API_KEY.",
+    "Necessaria per le lingue non supportate da Windows (es. greco). Chiave gratuita su console.groq.com. Puoi anche impostare la variabile d’ambiente GROQ_API_KEY.",
 
   mute: "Silenzia",
 
@@ -452,7 +435,7 @@ export const it: Record<keyof typeof en, string> = {
 
   deleteSong: "Elimina",
 
-  confirmDeleteSong: "Eliminare il brano importato Â«{title}Â»?",
+  confirmDeleteSong: "Eliminare il brano importato «{title}»?",
 
   builtInSongs: "Integrati",
 
@@ -469,15 +452,15 @@ export const it: Record<keyof typeof en, string> = {
   songNeedsOctaves: "Sposta il pianoforte su {range} per coprire questo brano",
 
   songWiderThanPiano:
-    "Questo brano Ã¨ piÃ¹ ampio di 5 ottave â€” alcune note sono fuori. Usa â—€ â–¶ per spostare.",
+    "Questo brano è più ampio di 5 ottave — alcune note sono fuori. Usa ◀ ▶ per spostare.",
 
   pianoRange: "Pianoforte",
 
   songRange: "Brano",
 
-  shiftPianoLower: "Sposta il pianoforte piÃ¹ in basso",
+  shiftPianoLower: "Sposta il pianoforte più in basso",
 
-  shiftPianoHigher: "Sposta il pianoforte piÃ¹ in alto",
+  shiftPianoHigher: "Sposta il pianoforte più in alto",
 
   octavesShort: "ottave",
 
@@ -493,7 +476,7 @@ export const it: Record<keyof typeof en, string> = {
 
   showKeyboardModeToggle: "Mostra commutatore tastiera / sintetizzatore",
 
-  keyboardSectionMode: "ModalitÃ  sezione tastiera",
+  keyboardSectionMode: "Modalità sezione tastiera",
 
   inputAreaNormal: "Vista normale",
 
@@ -513,7 +496,7 @@ export const it: Record<keyof typeof en, string> = {
 
   removeBackgroundImage: "Rimuovi immagine di sfondo",
 
-  backgroundImageOpacity: "VisibilitÃ  immagine di sfondo",
+  backgroundImageOpacity: "Visibilità immagine di sfondo",
 
   newProfileFileName: "Nome nuovo file profilo",
 
@@ -521,17 +504,17 @@ export const it: Record<keyof typeof en, string> = {
 
   updateAvailable: "Aggiornamento disponibile",
 
-  updateVersionInfo: "Ãˆ disponibile una nuova versione:",
+  updateVersionInfo: "È disponibile una nuova versione:",
 
   updateNow: "Aggiorna ora",
 
-  updateLater: "PiÃ¹ tardi",
+  updateLater: "Più tardi",
 
   skipThisVersion: "Salta questa versione",
 
-  updateDownloading: "Download dellâ€™aggiornamentoâ€¦",
+  updateDownloading: "Download dell’aggiornamento…",
 
-  updatePreparing: "Preparazione del downloadâ€¦",
+  updatePreparing: "Preparazione del download…",
 
   updateFailed: "Aggiornamento non riuscito:",
 
@@ -539,7 +522,7 @@ export const it: Record<keyof typeof en, string> = {
 
   checkForUpdates: "Controlla aggiornamenti",
 
-  updateUpToDate: "Hai lâ€™ultima versione.",
+  updateUpToDate: "Hai l’ultima versione.",
 
   updateCheckFailed: "Impossibile controllare gli aggiornamenti.",
 
@@ -561,11 +544,11 @@ export const it: Record<keyof typeof en, string> = {
 
   quickActionDelete: "Elimina",
 
-  quickActionSearchApps: "Cerca programmi installatiâ€¦",
+  quickActionSearchApps: "Cerca programmi installati…",
 
-  quickActionBrowse: "Sfogliaâ€¦",
+  quickActionBrowse: "Sfoglia…",
 
-  quickActionLoadingApps: "Caricamento programmi installatiâ€¦",
+  quickActionLoadingApps: "Caricamento programmi installati…",
 
   quickActionNoApps: "Nessun programma corrispondente.",
 
