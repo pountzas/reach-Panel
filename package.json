@@ -22,6 +22,7 @@
     "@tauri-apps/plugin-updater": "^2.10.1",
     "@tonejs/midi": "^2.0.28",
     "jszip": "^3.10.1",
+    "pdfjs-dist": "^5.7.284",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

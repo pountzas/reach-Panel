@@ -144,7 +144,8 @@ fn hwnd_rect(hwnd: HWND) -> Option<RectI> {
     })
 }
 
-fn collect_tray_rects() -> Vec<RectI> {
+/// All taskbar tray window rects (primary + secondary monitors).
+pub fn collect_tray_rects() -> Vec<RectI> {
     let mut rects = Vec::new();
 
     if let Ok(primary) = unsafe { FindWindowW(w!("Shell_TrayWnd"), PCWSTR::null()) } {

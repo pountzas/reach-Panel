@@ -43,11 +43,90 @@ export const fr: Record<keyof typeof en, string> = {
 
   teachingLessonLanguage: "Langue",
 
+
+  teachingTabSpelling: "Orthographe",
+  teachingTabFreeWrite: "Écriture libre",
+  freeWriteNotepad: "Bloc-notes",
+  freeWriteClearAll: "Tout effacer",
+  freeWriteClearConfirm: "Effacer tout le brouillon du bloc-notes ?",
+  freeWriteZoomIn: "Zoom avant",
+  freeWriteZoomOut: "Zoom arrière",
+  freeWriteWordWrap: "Retour à la ligne",
+  freeWriteLineNumbers: "Numéros de ligne",
+  freeWriteNotepadEmpty: "Tapez des notes ici…",
+  freeWriteOpenPdf: "Ouvrir un PDF…",
+  freeWriteRecentPdfs: "PDF récents",
+  freeWritePdfMissing: "Ce fichier PDF est introuvable.",
+  freeWritePdfEmpty: "Ouvrez un PDF à lire à côté de vos notes.",
+  freeWritePdfPrevPage: "Page précédente",
+  freeWritePdfNextPage: "Page suivante",
+  freeWriteRemovePdf: "Supprimer",
+
   comingSoon: "Bientôt disponible",
 
   mathLessonTitle: "Mathématiques",
 
   languageLessonTitle: "Langue",
+
+  languageLesson: "Leçon de langue",
+
+  selectLanguagePack: "Choisir une liste de mots",
+
+  languagePackBuiltIn: "Listes intégrées",
+
+  languagePrompt: "Épelez ce mot",
+
+  languageYourAnswer: "Votre réponse",
+
+  languageCheck: "Vérifier",
+
+  languageIncorrect: "Pas encore — réessayez",
+
+  languageUpcomingTasks: "Mots suivants",
+
+  languageAgeBand: "Tranche d'âge",
+
+  languageLessonLanguage: "Langue",
+
+  languageLessonLangEl: "Grec",
+
+  languageLessonLangEn: "Anglais",
+
+  languageAgeBandEarly: "Jeune (6–8)",
+
+  languageAgeBandPrimary: "Primaire (9–11)",
+
+  languageAgeBandLowerSecondary: "Collège (12–14)",
+
+  languageAgeBandUpperSecondary: "Lycée (15+)",
+
+  languageLessonIgnoreCase: "Ignorer la casse",
+
+  languageLessonIgnoreTones: "Ignorer les accents à la vérification",
+
+  languageLessonTonesOff: "Accents : non exigés",
+
+  languageLessonTonesOn: "Accents : exigés",
+
+  languageNewList: "Nouvelle liste de mots",
+
+  languageNewListTitle: "Titre de la liste",
+
+  languageNewListWords: "Mots (un par ligne)",
+
+  languageNewListSave: "Enregistrer la liste",
+
+  languageNewListCancel: "Annuler",
+
+  languageNewListEmpty: "Ajoutez au moins un mot",
+  languagePressPlayToSpell: "Appuyez sur Lire pour commencer l'orthographe",
+  languageNewListKeyboardHint: "Utilisez le clavier pour saisir le titre et les mots à gauche",
+
+  languagePackMyLists: "Mes listes",
+
+  deleteLanguagePack: "Supprimer la liste",
+
+  confirmDeleteLanguagePack: "Supprimer « {title} » ?",
 
   modeTabletsHint:
     "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon démarre le pont tablette ; il n'est sélectionné que lorsqu'une tablette est connectée.",
@@ -64,6 +143,10 @@ export const fr: Record<keyof typeof en, string> = {
   miniModeOverrideOff: "Désactivé",
 
   miniModeTransparent: "Clavier transparent",
+
+  inputPreviewLabel: "Champ cible",
+
+  inputPreviewWaiting: "Aperçu en attente…",
 
   miniModeTransparentDescription:
     "Afficher les touches avec des contours uniquement pour voir les applications en arrière-plan.",
@@ -143,6 +226,30 @@ export const fr: Record<keyof typeof en, string> = {
   wordPackUninstallFailed: "Impossible de supprimer le dictionnaire",
 
   showDictationControl: "Afficher la dictée (micro)",
+
+  showInputPreview: "Aperçu en direct du champ (Normal)",
+
+  showInputPreviewMiniMode: "Aperçu en direct du champ (Mode Mini)",
+
+  taskbarPosition: "Position de la barre des tâches",
+
+  taskbarPositionHint:
+    "Déplace la barre des tâches Windows vers un autre bord de l'écran. Windows 11 ne prend pas en charge gauche ni droite.",
+
+  taskbarPositionBottom: "Bas",
+
+  taskbarPositionTop: "Haut",
+
+  taskbarPositionLeft: "Gauche",
+
+  taskbarPositionRight: "Droite",
+
+  taskbarPositionApplied: "Position de la barre des tâches mise à jour. Explorer a redémarré.",
+
+  taskbarPositionUnsupported:
+    "Cette position de barre des tâches n'est pas prise en charge sur cette version de Windows.",
+
+  taskbarPositionFailed: "Impossible de modifier la position de la barre des tâches.",
 
   opacity: "Opacité",
 

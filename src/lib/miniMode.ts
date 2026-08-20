@@ -117,6 +117,17 @@ export function isTransparentUiActive(
   return Boolean(miniModeActive && settings.miniModeTransparent);
 }
 
+/** Whether the live input preview should show (and capture) for the current mode. */
+export function isInputPreviewActiveForMode(
+  settings: AppSettings,
+  miniModeActive: boolean,
+): boolean {
+  if (miniModeActive) {
+    return settings.inputPreviewMiniModeVisible !== false;
+  }
+  return settings.inputPreviewVisible !== false;
+}
+
 export function resolveTransparentKeyColor(
   id?: string | null,
 ): TransparentKeyColor {

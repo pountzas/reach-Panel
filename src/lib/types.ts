@@ -3,6 +3,7 @@ import type { MouseSpeed } from "./mouseSpeed";
 import type { ColorProfileId } from "./colorProfiles";
 import { COLOR_PROFILE_PRESETS } from "./colorProfiles";
 import type { SynthOctaveCount } from "./music/octaveCount";
+import type { LanguageAgeBand, LessonLanguage } from "./language/types";
 
 export type { MouseSpeed };
 export type { SynthOctaveCount };
@@ -16,6 +17,8 @@ export type OnscreenLayout = "auto" | "QWERTY" | "QWERTZ" | "AZERTY" | "Greek";
 export type TransparentKeyColor = "white" | "dark-gray" | "silver";
 
 export type PointerInputKind = "touch" | "mouse";
+/** Windows taskbar edge preference (applied via system automation). */
+export type TaskbarPosition = "bottom" | "top" | "left" | "right";
 
 export interface LayoutSnapshot {
   sectionStack?: SectionStackState;
@@ -54,8 +57,14 @@ export interface AppSettings {
   quickActionsVisible: boolean;
   phrasesVisible: boolean;
   suggestionsVisible: boolean;
-  /** When false, hides the toolbar mic / dictation control. */
+  /** When false, hides the keyboard mic / dictation key. */
   dictationVisible: boolean;
+  /** Live thumbnail of the focused external input field above the keyboard (Normal mode). */
+  inputPreviewVisible?: boolean;
+  /** Live input preview while Mini Mode keyboard is shown. */
+  inputPreviewMiniModeVisible?: boolean;
+  /** Preferred Windows taskbar edge; applied when changed in Settings. */
+  taskbarPositionPreference?: TaskbarPosition;
   /** Free Groq API key for cloud dictation when Windows speech packs are unavailable (e.g. Greek). */
   groqApiKey?: string;
   emergencyVisible: boolean;
@@ -95,6 +104,30 @@ export interface AppSettings {
   transparentKeyColor?: TransparentKeyColor;
   touchLayout?: LayoutSnapshot;
   mouseLayout?: LayoutSnapshot;
+  /** Teaching → Language: lesson content language (EL / EN). */
+  languageLessonLanguage?: LessonLanguage;
+  /** Teaching → Language: age band for built-in pack filtering. */
+  languageLessonAgeBand?: LanguageAgeBand;
+  /** Teaching → Language: left column width fraction (ResizableSplitPane, ratioSide left). */
+  languageLessonLeftRatio?: number;
+  /** Teaching → Music: left column width fraction (ResizableSplitPane, ratioSide left). */
+  musicLessonLeftRatio?: number;
+  /** Teaching → Language → Free write: left (notepad) width fraction. */
+  freeWriteLeftRatio?: number;
+  /** Teaching → Language → Free write: notepad draft (plain text). */
+  freeWriteNotepadText?: string;
+  /** Teaching → Language → Free write: notepad zoom percent (75–200). */
+  freeWriteNotepadZoom?: number;
+  /** Teaching → Language → Free write: word wrap. */
+  freeWriteNotepadWrap?: boolean;
+  /** Teaching → Language → Free write: show line-number gutter. */
+  freeWriteNotepadLineNumbers?: boolean;
+  /** Teaching → Language → Free write: last opened PDF library id. */
+  freeWriteLastPdfId?: string | null;
+  /** Teaching → Language: ignore letter case when checking spelling (default true). */
+  languageLessonIgnoreCase?: boolean;
+  /** Teaching → Language: ignore accent marks / tones when checking (default true). */
+  languageLessonIgnoreTones?: boolean;
 }
 
 export interface ProfileFileInfo {
@@ -197,7 +230,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   quickActionsVisible: false,
   phrasesVisible: false,
   suggestionsVisible: false,
-  dictationVisible: false,
+  dictationVisible: true,
+  inputPreviewVisible: true,
+  inputPreviewMiniModeVisible: true,
+  taskbarPositionPreference: "bottom",
   groqApiKey: "",
   emergencyVisible: false,
   accessibilityMonitorId: 0,
@@ -217,4 +253,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
   largeHeaders: false,
   transparentKeyColor: "white",
   miniModeOverride: false,
+  languageLessonLanguage: "el",
+  languageLessonAgeBand: "primary",
+  languageLessonLeftRatio: 0.4,
+  musicLessonLeftRatio: 0.4,
+  freeWriteLeftRatio: 0.4,
+  freeWriteNotepadText: "",
+  freeWriteNotepadZoom: 100,
+  freeWriteNotepadWrap: true,
+  freeWriteNotepadLineNumbers: true,
+  freeWriteLastPdfId: null,
+  languageLessonIgnoreCase: true,
+  languageLessonIgnoreTones: true,
 };

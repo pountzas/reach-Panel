@@ -19,6 +19,7 @@ import {
 } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { InputAreaViewButtons } from "./InputAreaViewButtons";
+import { TeachingLessonModeToggle } from "../teaching/TeachingLessonModeToggle";
 
 const SECTION_TITLE_KEY: Record<SectionId, TranslationKey> = {
   "quick-actions": "quickActions",
@@ -114,7 +115,9 @@ export function DockedSection({
     >
       <div className="flex h-full flex-col overflow-hidden">
         <div
-          className="flex shrink-0 cursor-grab items-center justify-between border-b px-2 active:cursor-grabbing"
+          className={`flex shrink-0 cursor-grab items-center border-b px-2 active:cursor-grabbing ${
+            showMusicLesson ? "grid grid-cols-[1fr_auto_1fr] gap-2" : "justify-between"
+          }`}
           style={{
             height: headerHeight,
             backgroundColor: surface.panelHeaderBg,
@@ -146,16 +149,21 @@ export function DockedSection({
           }}
         >
           <span
-            className={`truncate font-medium ${largeHeaders ? "text-sm" : "text-xs"}`}
+            className={`min-w-0 truncate font-medium ${largeHeaders ? "text-sm" : "text-xs"}`}
             style={{ color: surface.panelMutedText }}
           >
             {t(sectionTitleKey)}
           </span>
+          {showMusicLesson ? (
+            <div className="section-no-drag flex items-center justify-center">
+              <TeachingLessonModeToggle />
+            </div>
+          ) : null}
           {slot.id === "input-row" ? (
             <InputAreaViewButtons />
           ) : (
             showPanelControls && (
-              <div className="section-no-drag ml-1 flex shrink-0 items-center gap-0.5">
+              <div className="section-no-drag ml-1 flex shrink-0 items-center justify-end gap-0.5">
                 {canUndock && (
                   <IconActionButton
                     label={t("undockSection")}

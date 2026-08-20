@@ -43,11 +43,90 @@ export const it: Record<keyof typeof en, string> = {
 
   teachingLessonLanguage: "Lingua",
 
+
+  teachingTabSpelling: "Ortografia",
+  teachingTabFreeWrite: "Scrittura libera",
+  freeWriteNotepad: "Blocco note",
+  freeWriteClearAll: "Cancella tutto",
+  freeWriteClearConfirm: "Cancellare l'intero bozza del blocco note?",
+  freeWriteZoomIn: "Ingrandisci",
+  freeWriteZoomOut: "Riduci",
+  freeWriteWordWrap: "A capo automatico",
+  freeWriteLineNumbers: "Numeri di riga",
+  freeWriteNotepadEmpty: "Digita note qui…",
+  freeWriteOpenPdf: "Apri PDF…",
+  freeWriteRecentPdfs: "PDF recenti",
+  freeWritePdfMissing: "Questo file PDF non è stato trovato.",
+  freeWritePdfEmpty: "Apri un PDF da leggere accanto alle note.",
+  freeWritePdfPrevPage: "Pagina precedente",
+  freeWritePdfNextPage: "Pagina successiva",
+  freeWriteRemovePdf: "Rimuovi",
+
   comingSoon: "Prossimamente",
 
   mathLessonTitle: "Matematica",
 
   languageLessonTitle: "Lingua",
+
+  languageLesson: "Lezione di lingua",
+
+  selectLanguagePack: "Seleziona lista di parole",
+
+  languagePackBuiltIn: "Liste integrate",
+
+  languagePrompt: "Scrivi questa parola",
+
+  languageYourAnswer: "La tua risposta",
+
+  languageCheck: "Controlla",
+
+  languageIncorrect: "Non ancora — riprova",
+
+  languageUpcomingTasks: "Parole successive",
+
+  languageAgeBand: "Fascia d'età",
+
+  languageLessonLanguage: "Lingua",
+
+  languageLessonLangEl: "Greco",
+
+  languageLessonLangEn: "Inglese",
+
+  languageAgeBandEarly: "Primini (6–8)",
+
+  languageAgeBandPrimary: "Primaria (9–11)",
+
+  languageAgeBandLowerSecondary: "Secondaria I (12–14)",
+
+  languageAgeBandUpperSecondary: "Secondaria II (15+)",
+
+  languageLessonIgnoreCase: "Ignora maiuscole/minuscole",
+
+  languageLessonIgnoreTones: "Ignora gli accenti nel controllo",
+
+  languageLessonTonesOff: "Accenti: non obbligatori",
+
+  languageLessonTonesOn: "Accenti: obbligatori",
+
+  languageNewList: "Nuova lista di parole",
+
+  languageNewListTitle: "Titolo della lista",
+
+  languageNewListWords: "Parole (una per riga)",
+
+  languageNewListSave: "Salva lista",
+
+  languageNewListCancel: "Annulla",
+
+  languageNewListEmpty: "Aggiungi almeno una parola",
+  languagePressPlayToSpell: "Premi Riproduci per iniziare a scrivere",
+  languageNewListKeyboardHint: "Usa la tastiera per titolo e parole a sinistra",
+
+  languagePackMyLists: "Le mie liste",
+
+  deleteLanguagePack: "Elimina lista",
+
+  confirmDeleteLanguagePack: "Eliminare “{title}”?",
 
   modeTabletsHint:
     "Normale e Mini sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno avvia il ponte del tablet; è selezionato solo mentre un tablet è connesso.",
@@ -64,6 +143,10 @@ export const it: Record<keyof typeof en, string> = {
   miniModeOverrideOff: "Disattiva",
 
   miniModeTransparent: "Tastiera trasparente",
+
+  inputPreviewLabel: "Campo di destinazione",
+
+  inputPreviewWaiting: "In attesa dell'anteprima…",
 
   miniModeTransparentDescription:
     "Mostra i tasti solo con contorno per vedere le app sottostanti.",
@@ -143,6 +226,30 @@ export const it: Record<keyof typeof en, string> = {
   wordPackUninstallFailed: "Impossibile rimuovere il dizionario",
 
   showDictationControl: "Mostra dettatura (microfono)",
+
+  showInputPreview: "Anteprima live del campo (Normal)",
+
+  showInputPreviewMiniMode: "Anteprima live del campo (Modalità Mini)",
+
+  taskbarPosition: "Posizione barra delle applicazioni",
+
+  taskbarPositionHint:
+    "Sposta la barra delle applicazioni di Windows su un altro bordo dello schermo. Windows 11 non supporta sinistra o destra.",
+
+  taskbarPositionBottom: "In basso",
+
+  taskbarPositionTop: "In alto",
+
+  taskbarPositionLeft: "A sinistra",
+
+  taskbarPositionRight: "A destra",
+
+  taskbarPositionApplied: "Posizione barra aggiornata. Explorer riavviato.",
+
+  taskbarPositionUnsupported:
+    "Questa posizione della barra non è supportata su questa versione di Windows.",
+
+  taskbarPositionFailed: "Impossibile cambiare la posizione della barra.",
 
   opacity: "Opacità",
 

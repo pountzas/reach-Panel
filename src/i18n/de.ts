@@ -43,11 +43,90 @@ export const de: Record<keyof typeof en, string> = {
 
   teachingLessonLanguage: "Sprache",
 
+
+  teachingTabSpelling: "Rechtschreibung",
+  teachingTabFreeWrite: "Freies Schreiben",
+  freeWriteNotepad: "Notizblock",
+  freeWriteClearAll: "Alles löschen",
+  freeWriteClearConfirm: "Gesamten Notizblock-Entwurf löschen?",
+  freeWriteZoomIn: "Vergrößern",
+  freeWriteZoomOut: "Verkleinern",
+  freeWriteWordWrap: "Zeilenumbruch",
+  freeWriteLineNumbers: "Zeilennummern",
+  freeWriteNotepadEmpty: "Notizen hier tippen…",
+  freeWriteOpenPdf: "PDF öffnen…",
+  freeWriteRecentPdfs: "Zuletzt verwendete PDFs",
+  freeWritePdfMissing: "Diese PDF-Datei wurde nicht gefunden.",
+  freeWritePdfEmpty: "Öffnen Sie ein PDF zum Lesen neben Ihren Notizen.",
+  freeWritePdfPrevPage: "Vorherige Seite",
+  freeWritePdfNextPage: "Nächste Seite",
+  freeWriteRemovePdf: "Entfernen",
+
   comingSoon: "Demnächst",
 
   mathLessonTitle: "Mathematik",
 
   languageLessonTitle: "Sprache",
+
+  languageLesson: "Sprachlektion",
+
+  selectLanguagePack: "Wortliste wählen",
+
+  languagePackBuiltIn: "Eingebaute Listen",
+
+  languagePrompt: "Wort buchstabieren",
+
+  languageYourAnswer: "Ihre Schreibweise",
+
+  languageCheck: "Prüfen",
+
+  languageIncorrect: "Noch nicht richtig — erneut versuchen",
+
+  languageUpcomingTasks: "Kommende Wörter",
+
+  languageAgeBand: "Altersstufe",
+
+  languageLessonLanguage: "Sprache",
+
+  languageLessonLangEl: "Griechisch",
+
+  languageLessonLangEn: "Englisch",
+
+  languageAgeBandEarly: "Früh (6–8)",
+
+  languageAgeBandPrimary: "Grundschule (9–11)",
+
+  languageAgeBandLowerSecondary: "Unterstufe (12–14)",
+
+  languageAgeBandUpperSecondary: "Oberstufe (15+)",
+
+  languageLessonIgnoreCase: "Groß-/Kleinschreibung ignorieren",
+
+  languageLessonIgnoreTones: "Akzente (Töne) beim Prüfen ignorieren",
+
+  languageLessonTonesOff: "Töne: nicht erforderlich",
+
+  languageLessonTonesOn: "Töne: erforderlich",
+
+  languageNewList: "Neue Wortliste",
+
+  languageNewListTitle: "Listentitel",
+
+  languageNewListWords: "Wörter (eins pro Zeile)",
+
+  languageNewListSave: "Liste speichern",
+
+  languageNewListCancel: "Abbrechen",
+
+  languageNewListEmpty: "Mindestens ein Wort hinzufügen",
+  languagePressPlayToSpell: "Drücken Sie Abspielen, um mit dem Buchstabieren zu beginnen",
+  languageNewListKeyboardHint: "Titel und Wörter links mit der Tastatur eingeben",
+
+  languagePackMyLists: "Meine Listen",
+
+  deleteLanguagePack: "Liste löschen",
+
+  confirmDeleteLanguagePack: "„{title}“ löschen?",
 
   modeTabletsHint:
     "Normal und Mini sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer. Begleiter startet die Tablet-Brücke; ausgewählt ist er nur, solange ein Tablet verbunden ist.",
@@ -64,6 +143,10 @@ export const de: Record<keyof typeof en, string> = {
   miniModeOverrideOff: "Aus",
 
   miniModeTransparent: "Transparente Tastatur",
+
+  inputPreviewLabel: "Zieleingabe",
+
+  inputPreviewWaiting: "Vorschau wird geladen…",
 
   miniModeTransparentDescription:
     "Tasten nur mit Umrissen anzeigen, damit Apps darunter sichtbar bleiben.",
@@ -143,6 +226,30 @@ export const de: Record<keyof typeof en, string> = {
   wordPackUninstallFailed: "Wörterbuch konnte nicht entfernt werden",
 
   showDictationControl: "Diktat anzeigen (Mikrofon)",
+
+  showInputPreview: "Live-Eingabevorschau (Normal)",
+
+  showInputPreviewMiniMode: "Live-Eingabevorschau (Mini-Modus)",
+
+  taskbarPosition: "Taskleistenposition",
+
+  taskbarPositionHint:
+    "Verschiebt die Windows-Taskleiste an eine andere Bildschirmkante. Unter Windows 11 sind links und rechts nicht unterstützt.",
+
+  taskbarPositionBottom: "Unten",
+
+  taskbarPositionTop: "Oben",
+
+  taskbarPositionLeft: "Links",
+
+  taskbarPositionRight: "Rechts",
+
+  taskbarPositionApplied: "Taskleistenposition aktualisiert. Explorer wurde neu gestartet.",
+
+  taskbarPositionUnsupported:
+    "Diese Taskleistenposition wird von dieser Windows-Version nicht unterstützt.",
+
+  taskbarPositionFailed: "Taskleistenposition konnte nicht geändert werden.",
 
   opacity: "Deckkraft",
 

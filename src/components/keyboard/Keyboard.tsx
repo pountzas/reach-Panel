@@ -1,5 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { isLanguageLessonCaptureActive } from "../../lib/language";
+import { isFreeWriteCaptureActive } from "../../lib/teaching";
 import { useAppStore } from "../../stores/appStore";
 import {
   displayLabel,
@@ -8,11 +10,18 @@ import {
   isFnMappedKey,
   isKeyActive,
   isShiftActive,
+  isSpecialLabeledKey,
   KeyDef,
   resolveKeyOutput,
   resolveOnscreenLayout,
 } from "../../lib/keyboardLayouts";
+import { greekComposeEnabled } from "../../lib/keyboardCharacterInput";
+import {
+  greekTranslateFallback,
+  type LayoutKeyTranslation,
+} from "../../lib/layoutKeyTranslation";
 import { KeyButton } from "./KeyButton";
+import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
 import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
 import { DictationVisualizer } from "./DictationVisualizer";
@@ -34,7 +43,7 @@ export function Keyboard() {
   const pollKeyboardState = useAppStore((s) => s.pollKeyboardState);
   const clearSticky = useAppStore((s) => s.clearSticky);
   const clearStickyExceptFn = useAppStore((s) => s.clearStickyExceptFn);
-  const appendTyped = useAppStore((s) => s.appendTyped);
+  const typeCharacter = useAppStore((s) => s.typeCharacter);
   const backspaceTyped = useAppStore((s) => s.backspaceTyped);
   const setTypedBuffer = useAppStore((s) => s.setTypedBuffer);
   const loadSuggestions = useAppStore((s) => s.loadSuggestions);
@@ -49,8 +58,26 @@ export function Keyboard() {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const dictationState = useAppStore((s) => s.dictationState);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
+  const stopDictation = useAppStore((s) => s.stopDictation);
   const sttCapability = useAppStore((s) => s.sttCapability);
   const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
+  const applyTypedLayoutTranslation = useAppStore((s) => s.applyTypedLayoutTranslation);
+  const applyLanguageLayoutTranslation = useAppStore(
+    (s) => s.applyLanguageLayoutTranslation,
+  );
+  const languageKeyInput = useAppStore((s) => s.languageKeyInput);
+  const languageBackspace = useAppStore((s) => s.languageBackspace);
+  const checkLanguageAnswer = useAppStore((s) => s.checkLanguageAnswer);
+  const languageLessonPlaying = useAppStore((s) => s.languageLessonPlaying);
+  const languageListAuthoringActive = useAppStore((s) => s.languageListAuthoringActive);
+  const languageListAuthoringHandlers = useAppStore((s) => s.languageListAuthoringHandlers);
+  const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
+  const freeWriteFocus = useAppStore((s) => s.freeWriteFocus);
+  const freeWriteNotepadInput = useAppStore((s) => s.freeWriteNotepadInput);
+  const freeWriteNotepadBackspace = useAppStore((s) => s.freeWriteNotepadBackspace);
+  const applyFreeWriteLayoutTranslation = useAppStore((s) => s.applyFreeWriteLayoutTranslation);
+  const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const teachingLesson = useAppStore((s) => s.teachingLesson);
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const langKeyAnchorRef = useRef<HTMLDivElement>(null);
@@ -64,14 +91,53 @@ export function Keyboard() {
     keyboardLayout,
     settings.typingLanguage,
   );
-  const rows = getLayoutRows(
+  const baseRows = getLayoutRows(
     effectiveLayout,
     settings.typingLanguage,
     followWindowsLayout ? layoutKeyLabels : undefined,
   );
+  const rows = useMemo(() => {
+    if (settings.dictationVisible) return baseRows;
+    return baseRows.map((row) => row.filter((k) => k.key !== "dictate"));
+  }, [baseRows, settings.dictationVisible]);
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
   const fontSize = settings.keyboardFontSize ?? 18;
   const typingLocale = settings.typingLanguage || "en";
+  const languageLessonMode = {
+    musicTeachingEnabled,
+    teachingLesson,
+    settings,
+    languageLessonPlaying,
+    languageListAuthoringActive,
+    languageSubjectTab,
+  };
+  const freeWriteMode = {
+    musicTeachingEnabled,
+    teachingLesson,
+    settings,
+    languageSubjectTab,
+    freeWriteFocus,
+  };
+  const freeWriteCaptureActive = isFreeWriteCaptureActive(freeWriteMode);
+  const freeWritePdfFocus =
+    musicTeachingEnabled &&
+    settings.keyboardSectionMode === "synthesizer" &&
+    teachingLesson === "language" &&
+    languageSubjectTab === "freeWrite" &&
+    freeWriteFocus === "pdf";
+  const greekKeyboardActive = greekComposeEnabled({
+    typingLanguage: settings.typingLanguage,
+    keyboardLayout,
+    onscreenLayout: settings.onscreenLayout,
+    languageLessonActive: isLanguageLessonCaptureActive(languageLessonMode),
+    lessonLanguage: settings.languageLessonLanguage,
+  });
+  const greekFreeWriteActive = greekComposeEnabled({
+    typingLanguage: settings.typingLanguage,
+    keyboardLayout,
+    onscreenLayout: settings.onscreenLayout,
+    languageLessonActive: freeWriteCaptureActive,
+  });
   const transparent = isTransparentUiActive(settings, miniModeActive);
   const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
   const keyTextColor = transparent
@@ -88,6 +154,12 @@ export function Keyboard() {
   useEffect(() => {
     void refreshSttCapability();
   }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
+
+  useEffect(() => {
+    if (!settings.dictationVisible && dictationState !== "idle") {
+      void stopDictation();
+    }
+  }, [settings.dictationVisible, dictationState, stopDictation]);
 
   let dictateAriaLabel = listening ? t("dictationStop") : t("dictationStart");
   if (dictateDisabled) {
@@ -114,6 +186,25 @@ export function Keyboard() {
     await loadInputMethods();
     setLanguagePickerOpen(!languagePickerOpen);
   };
+
+  const translateLayoutKey = async (physicalKey: string): Promise<LayoutKeyTranslation> =>
+    invoke<LayoutKeyTranslation>("cmd_translate_layout_key", {
+      physicalKey,
+      shift: shiftActive,
+      hkl: physicalKeyState.systemHkl || null,
+    });
+
+  const greekTranslateOptions = (keyDef: KeyDef) => ({
+    physicalKey: keyDef.physicalKey,
+    shift: shiftActive,
+    fallbackOutput: greekTranslateFallback(
+      keyDef,
+      physicalKeyState.capsLock,
+      shiftActive,
+      fnActive,
+      typingLocale,
+    ),
+  });
 
   const handleKey = async (keyDef: KeyDef) => {
     const key = keyDef.key;
@@ -145,6 +236,116 @@ export function Keyboard() {
       setLanguagePickerOpen(false);
     }
 
+    const languageCaptureActive = isLanguageLessonCaptureActive(languageLessonMode);
+
+    if (languageCaptureActive) {
+      const authoringHandlers = languageListAuthoringHandlers;
+      if (languageListAuthoringActive && !authoringHandlers) {
+        return;
+      }
+      if (keyDef.modifier) {
+        return;
+      }
+      if (key === "backspace") {
+        if (languageListAuthoringActive) {
+          authoringHandlers!.backspace();
+        } else {
+          languageBackspace();
+          if (greekKeyboardActive) {
+            void invoke("cmd_reset_layout_compose_state", {
+              hkl: physicalKeyState.systemHkl || null,
+            });
+          }
+        }
+        return;
+      }
+      if (key === "enter") {
+        if (languageListAuthoringActive) {
+          authoringHandlers!.enter();
+        } else {
+          checkLanguageAnswer();
+        }
+        return;
+      }
+      if (key === "space") {
+        if (languageListAuthoringActive) {
+          authoringHandlers!.keyInput(" ");
+        }
+        return;
+      }
+      const usedFnLang = fnActive && isFnMappedKey(keyDef.key);
+      if (greekKeyboardActive && keyDef.physicalKey) {
+        const translation = await translateLayoutKey(keyDef.physicalKey);
+        const translateOptions = greekTranslateOptions(keyDef);
+        if (languageListAuthoringActive) {
+          authoringHandlers!.layoutTranslation(translation, translateOptions);
+        } else {
+          applyLanguageLayoutTranslation(translation, translateOptions);
+        }
+        clearModifiersAfterKey(usedFnLang);
+        return;
+      }
+      const langOutput = resolveKeyOutput(
+        keyDef,
+        physicalKeyState.capsLock,
+        shiftActive,
+        fnActive,
+        typingLocale,
+      );
+      if (langOutput.length === 1 || keyDef.physicalKey) {
+        if (languageListAuthoringActive) {
+          authoringHandlers!.keyInput(langOutput, { physicalKey: keyDef.physicalKey });
+        } else {
+          languageKeyInput(langOutput, { physicalKey: keyDef.physicalKey });
+        }
+      }
+      clearModifiersAfterKey(usedFnLang);
+      return;
+    }
+
+    if (freeWriteCaptureActive) {
+      if (keyDef.modifier) return;
+      if (key === "backspace") {
+        freeWriteNotepadBackspace();
+        if (greekFreeWriteActive) {
+          void invoke("cmd_reset_layout_compose_state", {
+            hkl: physicalKeyState.systemHkl || null,
+          });
+        }
+        return;
+      }
+      if (key === "enter") {
+        freeWriteNotepadInput("\n");
+        return;
+      }
+      if (key === "space") {
+        freeWriteNotepadInput(" ");
+        return;
+      }
+      const usedFnFw = fnActive && isFnMappedKey(keyDef.key);
+      if (greekFreeWriteActive && keyDef.physicalKey) {
+        const translation = await translateLayoutKey(keyDef.physicalKey);
+        applyFreeWriteLayoutTranslation(translation, greekTranslateOptions(keyDef));
+        clearModifiersAfterKey(usedFnFw);
+        return;
+      }
+      const fwOutput = resolveKeyOutput(
+        keyDef,
+        physicalKeyState.capsLock,
+        shiftActive,
+        fnActive,
+        typingLocale,
+      );
+      if (fwOutput) freeWriteNotepadInput(fwOutput);
+      clearModifiersAfterKey(usedFnFw);
+      return;
+    }
+
+    // Free write PDF focus: do not inject externally or into notepad.
+    if (freeWritePdfFocus) {
+      return;
+    }
+
     if (keyDef.modifier) {
       toggleSticky(key);
       return;
@@ -152,6 +353,11 @@ export function Keyboard() {
 
     if (key === "backspace") {
       backspaceTyped();
+      if (greekKeyboardActive) {
+        void invoke("cmd_reset_layout_compose_state", {
+          hkl: physicalKeyState.systemHkl || null,
+        });
+      }
       await invoke("cmd_press_key", { request: { key: "backspace", modifiers: [] } });
       await loadSuggestions();
       await pollError();
@@ -172,10 +378,12 @@ export function Keyboard() {
 
     if (key === "space") {
       await recordTypedWord();
-      appendTyped(" ");
-      await invoke("cmd_press_key", {
-        request: { key: "space", modifiers: [...activeModifiers] },
-      });
+      const inject = typeCharacter(" ");
+      if (inject) {
+        await invoke("cmd_press_key", {
+          request: { key: "space", modifiers: [...activeModifiers] },
+        });
+      }
       clearModifiersAfterKey(false);
       await loadSuggestions();
       await pollError();
@@ -183,6 +391,24 @@ export function Keyboard() {
     }
 
     const usedFn = fnActive && isFnMappedKey(keyDef.key);
+    if (greekKeyboardActive && keyDef.physicalKey) {
+      const translation = await translateLayoutKey(keyDef.physicalKey);
+      const inject = applyTypedLayoutTranslation(translation, greekTranslateOptions(keyDef));
+      if (inject) {
+        await invoke("cmd_press_key", {
+          request: {
+            key: inject,
+            modifiers: [...activeModifiers],
+            physicalKey: keyDef.physicalKey,
+          },
+        });
+      }
+      clearModifiersAfterKey(usedFn);
+      await loadSuggestions();
+      await pollError();
+      return;
+    }
+
     const output = resolveKeyOutput(
       keyDef,
       physicalKeyState.capsLock,
@@ -190,10 +416,22 @@ export function Keyboard() {
       fnActive,
       typingLocale,
     );
-    if (output.length === 1) appendTyped(output);
-    await invoke("cmd_press_key", {
-      request: { key: output, modifiers: [...activeModifiers] },
-    });
+    if (output.length === 1 || keyDef.physicalKey) {
+      const inject = typeCharacter(output, { physicalKey: keyDef.physicalKey });
+      if (inject) {
+        await invoke("cmd_press_key", {
+          request: {
+            key: inject,
+            modifiers: [...activeModifiers],
+            physicalKey: keyDef.physicalKey,
+          },
+        });
+      }
+    } else {
+      await invoke("cmd_press_key", {
+        request: { key: output, modifiers: [...activeModifiers] },
+      });
+    }
     clearModifiersAfterKey(usedFn);
     await loadSuggestions();
     await pollError();
@@ -215,7 +453,7 @@ export function Keyboard() {
   return (
     <div
       ref={ref}
-      className="relative flex h-full w-full flex-col rounded-xl p-2"
+      className={`relative flex h-full w-full flex-col rounded-xl px-2 pb-2 ${miniModeActive ? "pt-1" : "pt-2"}`}
       style={{
         backgroundColor: transparent
           ? "transparent"
@@ -267,16 +505,24 @@ export function Keyboard() {
               );
             }
             if (!isLang) {
+              const specialKey = isSpecialLabeledKey(k.key);
               return (
                 <KeyButton
                   key={`${ri}-${k.key}-${k.label}-${ci}`}
-                  label={displayLabel(
-                    k,
-                    physicalKeyState.capsLock,
-                    shiftActive,
-                    fnActive,
-                    typingLocale,
-                  )}
+                  label={
+                    specialKey ? (
+                      <SpecialKeyLabel keyName={k.key} fontSize={fontSize} />
+                    ) : (
+                      displayLabel(
+                        k,
+                        physicalKeyState.capsLock,
+                        shiftActive,
+                        fnActive,
+                        typingLocale,
+                      )
+                    )
+                  }
+                  ariaLabel={specialKey ? specialKeyAriaLabel(k.key) : undefined}
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}

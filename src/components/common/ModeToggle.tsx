@@ -5,7 +5,7 @@ import {
   modeToggleRadiusClass,
   type ModeTogglePosition,
 } from "../../lib/buttonClasses";
-import { HoverTooltip } from "./HoverTooltip";
+import { HoverTooltip, type HoverTooltipAlign, type HoverTooltipPlacement } from "./HoverTooltip";
 
 interface ModeToggleButtonProps {
   active: boolean;
@@ -16,6 +16,10 @@ interface ModeToggleButtonProps {
   activeClassName?: string;
   disabled?: boolean;
   style?: CSSProperties;
+  /** Default `above`. Use `below` for top-edge toolbar controls. */
+  tooltipPlacement?: HoverTooltipPlacement;
+  /** Default `center`. Use `end` on right-edge toolbar buttons. */
+  tooltipAlign?: HoverTooltipAlign;
 }
 
 export function ModeToggleButton({
@@ -27,6 +31,8 @@ export function ModeToggleButton({
   activeClassName,
   disabled = false,
   style,
+  tooltipPlacement = "above",
+  tooltipAlign = "center",
 }: ModeToggleButtonProps) {
   return (
     <button
@@ -39,7 +45,7 @@ export function ModeToggleButton({
       style={style}
     >
       {children}
-      <HoverTooltip label={label} />
+      <HoverTooltip label={label} placement={tooltipPlacement} align={tooltipAlign} />
     </button>
   );
 }

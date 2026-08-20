@@ -52,6 +52,7 @@ function MainApp() {
   const loadSuggestions = useAppStore((s) => s.loadSuggestions);
   const setLastError = useAppStore((s) => s.setLastError);
   const loadImportedSongs = useAppStore((s) => s.loadImportedSongs);
+  const loadCustomLanguagePacks = useAppStore((s) => s.loadCustomLanguagePacks);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,6 +62,7 @@ function MainApp() {
         await loadProfileFiles();
         if (cancelled) return;
         await loadImportedSongs();
+        await loadCustomLanguagePacks();
         await loadMonitors();
         if (cancelled) return;
         await useAppStore.getState().refreshMiniModeState({ animate: false });
@@ -115,6 +117,7 @@ function MainApp() {
   }, [
     loadProfileFiles,
     loadImportedSongs,
+    loadCustomLanguagePacks,
     loadMonitors,
     loadKeyboardLayout,
     loadInputMethods,

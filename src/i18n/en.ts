@@ -1,4 +1,4 @@
-﻿export const en = {
+export const en = {
 
   appTitle: "ReachPanel",
 
@@ -42,11 +42,105 @@
 
   teachingLessonLanguage: "Language",
 
+  teachingTabSpelling: "Spelling",
+
+  teachingTabFreeWrite: "Free write",
+
+  freeWriteNotepad: "Notepad",
+
+  freeWriteClearAll: "Clear all",
+
+  freeWriteClearConfirm: "Clear the entire notepad draft?",
+
+  freeWriteZoomIn: "Zoom in",
+
+  freeWriteZoomOut: "Zoom out",
+
+  freeWriteWordWrap: "Word wrap",
+
+  freeWriteLineNumbers: "Line numbers",
+
+  freeWriteNotepadEmpty: "Type notes here…",
+
+  freeWriteOpenPdf: "Open PDF…",
+
+  freeWriteRecentPdfs: "Recent PDFs",
+
+  freeWritePdfMissing: "This PDF file could not be found.",
+
+  freeWritePdfEmpty: "Open a PDF to read beside your notes.",
+
+  freeWritePdfPrevPage: "Previous page",
+
+  freeWritePdfNextPage: "Next page",
+
+  freeWriteRemovePdf: "Remove",
+
   comingSoon: "Coming soon",
 
   mathLessonTitle: "Mathematics",
 
   languageLessonTitle: "Language",
+
+  languageLesson: "Language lesson",
+
+  selectLanguagePack: "Select word list",
+
+  languagePackBuiltIn: "Built-in lists",
+
+  languagePrompt: "Spell this word",
+
+  languageYourAnswer: "Your spelling",
+
+  languageCheck: "Check",
+
+  languageIncorrect: "Not quite — try again",
+
+  languageUpcomingTasks: "Upcoming words",
+
+  languageAgeBand: "Age band",
+
+  languageLessonLanguage: "Language",
+
+  languageLessonLangEl: "Greek",
+
+  languageLessonLangEn: "English",
+
+  languageAgeBandEarly: "Early (6–8)",
+
+  languageAgeBandPrimary: "Primary (9–11)",
+
+  languageAgeBandLowerSecondary: "Lower secondary (12–14)",
+
+  languageAgeBandUpperSecondary: "Upper secondary (15+)",
+
+  languageLessonIgnoreCase: "Ignore letter case when checking",
+
+  languageLessonIgnoreTones: "Ignore accent marks (tones) when checking",
+
+  languageLessonTonesOff: "Tones: not required",
+
+  languageLessonTonesOn: "Tones: required",
+
+  languageNewList: "New word list",
+
+  languageNewListTitle: "List title",
+
+  languageNewListWords: "Words (one per line)",
+
+  languageNewListSave: "Save list",
+
+  languageNewListCancel: "Cancel",
+
+  languageNewListEmpty: "Add at least one word",
+  languagePressPlayToSpell: "Press Play to start spelling",
+  languageNewListKeyboardHint: "Use the keyboard to type in the title and word fields on the left",
+
+  languagePackMyLists: "My lists",
+
+  deleteLanguagePack: "Delete list",
+
+  confirmDeleteLanguagePack: "Delete “{title}”?",
 
   modeTabletsHint:
     "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion starts the tablet bridge; it is selected only while a tablet is connected.",
@@ -63,6 +157,10 @@
   miniModeOverrideOff: "Off",
 
   miniModeTransparent: "Transparent keyboard",
+
+  inputPreviewLabel: "Target input",
+
+  inputPreviewWaiting: "Waiting for preview…",
 
   miniModeTransparentDescription:
     "Show keys with outlines only so you can see through to your apps.",
@@ -142,6 +240,30 @@
   wordPackUninstallFailed: "Could not remove dictionary",
 
   showDictationControl: "Show dictation (mic)",
+
+  showInputPreview: "Live input preview (Normal)",
+
+  showInputPreviewMiniMode: "Live input preview (Mini Mode)",
+
+  taskbarPosition: "Taskbar position",
+
+  taskbarPositionHint:
+    "Applies to the accessibility monitor selected above. Extended displays: only that screen's taskbar changes. Mirrored/duplicate displays: all copies of that screen update together. Windows 11 stable may refuse top/left/right.",
+
+  taskbarPositionBottom: "Bottom",
+
+  taskbarPositionTop: "Top",
+
+  taskbarPositionLeft: "Left",
+
+  taskbarPositionRight: "Right",
+
+  taskbarPositionApplied: "Taskbar position updated. Explorer restarted.",
+
+  taskbarPositionUnsupported:
+    "That taskbar position is not supported on this version of Windows.",
+
+  taskbarPositionFailed: "Could not change taskbar position.",
 
   opacity: "Opacity",
 

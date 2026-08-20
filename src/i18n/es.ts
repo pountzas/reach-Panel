@@ -43,11 +43,90 @@ export const es: Record<keyof typeof en, string> = {
 
   teachingLessonLanguage: "Idioma",
 
+
+  teachingTabSpelling: "Ortografía",
+  teachingTabFreeWrite: "Escritura libre",
+  freeWriteNotepad: "Bloc de notas",
+  freeWriteClearAll: "Borrar todo",
+  freeWriteClearConfirm: "¿Borrar todo el borrador del bloc de notas?",
+  freeWriteZoomIn: "Acercar",
+  freeWriteZoomOut: "Alejar",
+  freeWriteWordWrap: "Ajuste de línea",
+  freeWriteLineNumbers: "Números de línea",
+  freeWriteNotepadEmpty: "Escribe notas aquí…",
+  freeWriteOpenPdf: "Abrir PDF…",
+  freeWriteRecentPdfs: "PDF recientes",
+  freeWritePdfMissing: "No se encontró este archivo PDF.",
+  freeWritePdfEmpty: "Abre un PDF para leer junto a tus notas.",
+  freeWritePdfPrevPage: "Página anterior",
+  freeWritePdfNextPage: "Página siguiente",
+  freeWriteRemovePdf: "Eliminar",
+
   comingSoon: "Próximamente",
 
   mathLessonTitle: "Matemáticas",
 
   languageLessonTitle: "Idioma",
+
+  languageLesson: "Lección de idioma",
+
+  selectLanguagePack: "Elegir lista de palabras",
+
+  languagePackBuiltIn: "Listas integradas",
+
+  languagePrompt: "Deletrea esta palabra",
+
+  languageYourAnswer: "Tu respuesta",
+
+  languageCheck: "Comprobar",
+
+  languageIncorrect: "Aún no — inténtalo de nuevo",
+
+  languageUpcomingTasks: "Palabras siguientes",
+
+  languageAgeBand: "Grupo de edad",
+
+  languageLessonLanguage: "Idioma",
+
+  languageLessonLangEl: "Griego",
+
+  languageLessonLangEn: "Inglés",
+
+  languageAgeBandEarly: "Inicial (6–8)",
+
+  languageAgeBandPrimary: "Primaria (9–11)",
+
+  languageAgeBandLowerSecondary: "Secundaria baja (12–14)",
+
+  languageAgeBandUpperSecondary: "Secundaria alta (15+)",
+
+  languageLessonIgnoreCase: "Ignorar mayúsculas/minúsculas",
+
+  languageLessonIgnoreTones: "Ignorar acentos al comprobar",
+
+  languageLessonTonesOff: "Tildes: no obligatorias",
+
+  languageLessonTonesOn: "Tildes: obligatorias",
+
+  languageNewList: "Nueva lista de palabras",
+
+  languageNewListTitle: "Título de la lista",
+
+  languageNewListWords: "Palabras (una por línea)",
+
+  languageNewListSave: "Guardar lista",
+
+  languageNewListCancel: "Cancelar",
+
+  languageNewListEmpty: "Añade al menos una palabra",
+  languagePressPlayToSpell: "Pulsa Reproducir para empezar a deletrear",
+  languageNewListKeyboardHint: "Usa el teclado para escribir el título y las palabras a la izquierda",
+
+  languagePackMyLists: "Mis listas",
+
+  deleteLanguagePack: "Eliminar lista",
+
+  confirmDeleteLanguagePack: "¿Eliminar «{title}»?",
 
   modeTabletsHint:
     "Normal y Mini son teclado. Enseñanza abre lecciones; Música muestra el sintetizador. Compañero inicia el puente de la tableta; solo queda seleccionado mientras hay una tableta conectada.",
@@ -64,6 +143,10 @@ export const es: Record<keyof typeof en, string> = {
   miniModeOverrideOff: "Desactivado",
 
   miniModeTransparent: "Teclado transparente",
+
+  inputPreviewLabel: "Campo de destino",
+
+  inputPreviewWaiting: "Esperando vista previa…",
 
   miniModeTransparentDescription:
     "Mostrar teclas solo con contornos para ver las aplicaciones detrás.",
@@ -143,6 +226,30 @@ export const es: Record<keyof typeof en, string> = {
   wordPackUninstallFailed: "No se pudo quitar el diccionario",
 
   showDictationControl: "Mostrar dictado (micrófono)",
+
+  showInputPreview: "Vista previa en vivo del campo (Normal)",
+
+  showInputPreviewMiniMode: "Vista previa en vivo del campo (Modo Mini)",
+
+  taskbarPosition: "Posición de la barra de tareas",
+
+  taskbarPositionHint:
+    "Mueve la barra de tareas de Windows a otro borde de la pantalla. Windows 11 no admite izquierda ni derecha.",
+
+  taskbarPositionBottom: "Abajo",
+
+  taskbarPositionTop: "Arriba",
+
+  taskbarPositionLeft: "Izquierda",
+
+  taskbarPositionRight: "Derecha",
+
+  taskbarPositionApplied: "Posición de la barra de tareas actualizada. Explorer se reinició.",
+
+  taskbarPositionUnsupported:
+    "Esa posición de la barra de tareas no es compatible con esta versión de Windows.",
+
+  taskbarPositionFailed: "No se pudo cambiar la posición de la barra de tareas.",
 
   opacity: "Opacidad",
 

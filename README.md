@@ -91,7 +91,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 
 - **Normal** — full typing keyboard and predictive suggestions
 - **Mini** — compact keyboard; collapses to a branded FAB when idle; optional transparent outlined keys (white / dark gray / silver)
-- **Teaching** — fullscreen work area with Music lesson + piano/synth (2–5 octaves, partiture, built-in songs and file import); Math and Language lesson slots are placeholders for now
+- **Teaching** — fullscreen work area; switch Language / Music / Math from the lesson section header. Music: piano/synth (2–5 octaves), partiture, built-in songs and file import, resizable lesson split. Language: Spelling (Play to spell from built-in or custom lists, optional Greek tone checking) and Free write (notepad + PDF library/viewer); Math is a placeholder for now
 
 ### Keyboard
 
@@ -101,7 +101,14 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - Language switch key with country flag icons (follows installed Windows keyboards)
 - On-screen layout override (auto / QWERTY / QWERTZ / AZERTY / Greek)
 - Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle
-- Dictation key beside Right Ctrl (see Voice dictation below)
+- Dictation key beside Right Ctrl (see Voice dictation below); show/hide the mic key under **Settings → Visible sections**
+- **Input preview** — when an external text field is targeted, a live thumbnail of that field appears above the keyboard. **Normal mode:** **Settings → Visible sections → Live input preview (Normal)**. **Mini Mode:** **Settings → Mini Mode → Live input preview (Mini Mode)**. Each mode has its own toggle (both on by default). Disabled during Companion sessions. Protected or DRM content may appear black; some custom controls may not expose a usable screen region.
+- Special keys use symbols (Enter ↵, Shift ⇧, Backspace ⌫, Space ␣)
+- Right-click / long-press context menus are suppressed on the keyboard and main app surface
+
+### Windows integration
+
+- **Taskbar position** — **Settings** moves the taskbar on the **accessibility monitor** (the display selected in Settings). On extended desktops each monitor can have its own taskbar edge; on mirrored/duplicate setups all copies of that display update together. **Windows 10:** all four edges. **Windows 11 (stable):** often bottom-only; failed moves revert. Explorer restarts when a change is attempted.
 
 ### Android tablet companion
 

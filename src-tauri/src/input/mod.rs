@@ -2,6 +2,7 @@
 
 pub mod focus_target;
 mod cursor_highlight;
+pub mod input_preview;
 mod keyboard;
 mod mouse;
 

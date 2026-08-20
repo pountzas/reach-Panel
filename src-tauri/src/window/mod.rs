@@ -514,6 +514,11 @@ mod tests {
 }
 
 mod taskbar;
+mod taskbar_position;
 mod windows;
 
+pub use taskbar_position::{
+    apply_taskbar_position_from_str, get_taskbar_position_for_monitor, TaskbarPosition,
+    TaskbarPositionResult,
+};
 pub use windows::{get_window_bounds, list_monitors, monitor_for_rect, set_window_bounds};

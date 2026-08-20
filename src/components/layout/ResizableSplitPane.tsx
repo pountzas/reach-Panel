@@ -21,6 +21,12 @@ interface ResizableSplitPaneProps {
   minLeftWidth?: number;
   minRightWidth?: number;
   maxRightRatio?: number;
+  /** Minimum sized-pane width as a fraction of `window.innerWidth` (e.g. 0.2 = 1/5). */
+  minSizedWindowRatio?: number;
+  /** Visible divider line color (defaults to slate track). */
+  splitterColor?: string;
+  /** Visible divider thickness in px (defaults to 2). */
+  splitterLineWidth?: number;
   /**
    * When true, collapses the sized pane (and splitter) without unmounting
    * either child — keeps React identity of the flex sibling stable.
@@ -37,6 +43,9 @@ export function ResizableSplitPane({
   minLeftWidth = DEFAULT_MIN_LEFT,
   minRightWidth = DEFAULT_MIN_RIGHT,
   maxRightRatio = DEFAULT_MAX_SIZED_RATIO,
+  minSizedWindowRatio,
+  splitterColor,
+  splitterLineWidth = 2,
   sizedPaneCollapsed = false,
 }: ResizableSplitPaneProps) {
   const { t } = useTranslation();
@@ -50,14 +59,20 @@ export function ResizableSplitPane({
 
   const ratioBounds = useCallback(
     (totalWidth: number) => {
-      const minSized = (sizedMinWidth + SPLITTER_WIDTH) / totalWidth;
+      let minSized = (sizedMinWidth + SPLITTER_WIDTH) / totalWidth;
+      if (minSizedWindowRatio != null && minSizedWindowRatio > 0) {
+        minSized = Math.max(
+          minSized,
+          (window.innerWidth * minSizedWindowRatio) / totalWidth,
+        );
+      }
       const maxFromOtherMin =
         (totalWidth - otherMinWidth - SPLITTER_WIDTH) / totalWidth;
       const maxFromWindow = (window.innerWidth * maxRightRatio) / totalWidth;
       const maxSized = Math.min(maxFromOtherMin, maxFromWindow);
       return { minSized, maxSized: Math.max(minSized, maxSized) };
     },
-    [maxRightRatio, otherMinWidth, sizedMinWidth],
+    [maxRightRatio, minSizedWindowRatio, otherMinWidth, sizedMinWidth],
   );
 
   const clampToBounds = useCallback(() => {
@@ -142,7 +157,7 @@ export function ResizableSplitPane({
   const fullPaneStyle = { flex: "1 1 0%", minWidth: 0 };
 
   return (
-    <div ref={containerRef} className="flex min-h-0 flex-1 items-stretch">
+    <div ref={containerRef} className="flex h-full min-h-0 flex-1 items-stretch">
       <div
         className="min-h-0 min-w-0"
         style={
@@ -164,13 +179,27 @@ export function ResizableSplitPane({
           aria-valuemin={0}
           aria-valuemax={maxSizedPercent}
           aria-valuenow={Math.round(rightRatio * 100)}
-          className="group z-20 flex shrink-0 cursor-col-resize items-stretch px-0.5"
+          className="group z-20 flex h-full shrink-0 cursor-col-resize items-stretch self-stretch"
           style={{ width: SPLITTER_WIDTH, touchAction: "none" }}
           onPointerDown={onSplitterPointerDown}
           onPointerMove={splitterDrag.onPointerMove}
           onPointerUp={splitterDrag.onPointerUp}
         >
-          <div className="w-0.5 flex-1 rounded-full bg-slate-300 transition-colors group-hover:bg-slate-500 group-active:bg-slate-600" />
+          <div
+            className={`mx-auto h-full self-stretch ${
+              splitterColor
+                ? ""
+                : "w-0.5 rounded-full bg-slate-300 transition-colors group-hover:bg-slate-500 group-active:bg-slate-600"
+            }`}
+            style={
+              splitterColor
+                ? {
+                    width: splitterLineWidth,
+                    backgroundColor: splitterColor,
+                  }
+                : undefined
+            }
+          />
         </div>
       )}
       <div

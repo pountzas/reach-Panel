@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
@@ -10,7 +10,7 @@ import {
   type ColorProfileId,
   type SurfaceColors,
 } from "../../lib/colorProfiles";
-import type { FnKeyMode, OnscreenLayout, TransparentKeyColor } from "../../lib/types";
+import type { FnKeyMode, OnscreenLayout, TaskbarPosition, TransparentKeyColor } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
 import { ONSCREEN_LAYOUT_OPTIONS } from "../../lib/keyboardLayouts";
@@ -27,6 +27,9 @@ import {
   resolveSelectedAppMode,
   type AppModeTablet,
 } from "../../lib/appModeLayout";
+import { defaultLanguagePackId } from "../../lib/language";
+import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
+import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -324,6 +327,7 @@ export function SettingsPanel() {
     teachingLesson,
     setAppMode,
     setTeachingLesson,
+    setLanguagePackId,
     setShowSettings,
     setShowMacroBuilder,
     setShowHeadTrackingWizard,
@@ -342,6 +346,18 @@ export function SettingsPanel() {
   useEffect(() => {
     void loadInputMethods();
   }, [loadInputMethods]);
+
+  useEffect(() => {
+    if (!settings) return;
+    const monitorId = settings.accessibilityMonitorId;
+    void invoke<TaskbarPosition | null>("cmd_get_taskbar_position", { monitorId }).then(
+      (current) => {
+        if (current && current !== (settings.taskbarPositionPreference ?? "bottom")) {
+          updateSettings({ taskbarPositionPreference: current });
+        }
+      },
+    );
+  }, [settings, updateSettings]);
 
   if (!settings) return null;
 
@@ -370,6 +386,36 @@ export function SettingsPanel() {
     backgroundColor: surface.panelButtonBg,
     borderColor: surface.panelBorder,
     color: surface.panelText,
+  };
+
+  const taskbarPosition = settings.taskbarPositionPreference ?? "bottom";
+
+  const applyTaskbarPosition = async (position: TaskbarPosition) => {
+    const previous = settings.taskbarPositionPreference ?? "bottom";
+    updateSettings({ taskbarPositionPreference: position });
+    try {
+      const result = await invoke<{
+        success: boolean;
+        applied: boolean;
+        message: string;
+        current?: TaskbarPosition | null;
+      }>("cmd_set_taskbar_position", {
+        position,
+        monitorId: settings.accessibilityMonitorId,
+      });
+      if (result.success) {
+        if (result.applied) {
+          notify.success(t("taskbarPositionApplied"));
+        }
+        return;
+      }
+      const actual = result.current ?? previous;
+      updateSettings({ taskbarPositionPreference: actual });
+      notify.info(result.message || t("taskbarPositionUnsupported"));
+    } catch {
+      updateSettings({ taskbarPositionPreference: previous });
+      notify.error(t("taskbarPositionFailed"));
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -532,6 +578,28 @@ export function SettingsPanel() {
             )}
           </SettingsSection>
 
+          <SettingsSection title={t("taskbarPosition")} surface={surface}>
+            <p
+              className="mb-2 px-1 text-xs"
+              style={{ color: surface.panelMutedText }}
+            >
+              {t("taskbarPositionHint")}
+            </p>
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("taskbarPosition")}
+              <ThemedSelect
+                value={taskbarPosition}
+                onChange={(v) => void applyTaskbarPosition(v as TaskbarPosition)}
+                surface={surface}
+              >
+                <option value="bottom">{t("taskbarPositionBottom")}</option>
+                <option value="top">{t("taskbarPositionTop")}</option>
+                <option value="left">{t("taskbarPositionLeft")}</option>
+                <option value="right">{t("taskbarPositionRight")}</option>
+              </ThemedSelect>
+            </label>
+          </SettingsSection>
+
           <SettingsSection title={t("miniMode")} surface={surface}>
             <p
               className="mb-3 px-1 text-xs"
@@ -599,6 +667,82 @@ export function SettingsPanel() {
                 })}
               </div>
             )}
+            {selectedMode === "teaching" && (
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block min-w-0 text-sm" style={{ color: surface.panelText }}>
+                    {t("languageLessonLanguage")}
+                    <ThemedSelect
+                      value={settings.languageLessonLanguage ?? "el"}
+                      onChange={(v) => {
+                        const language = v as LessonLanguage;
+                        const band =
+                          settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND;
+                        void updateSettings({ languageLessonLanguage: language });
+                        if (teachingLesson === "language") {
+                          setLanguagePackId(defaultLanguagePackId(band, language));
+                        }
+                      }}
+                      surface={surface}
+                    >
+                      <option value="el">{t("languageLessonLangEl")}</option>
+                      <option value="en">{t("languageLessonLangEn")}</option>
+                    </ThemedSelect>
+                  </label>
+                  <label className="block min-w-0 text-sm" style={{ color: surface.panelText }}>
+                    {t("languageAgeBand")}
+                    <ThemedSelect
+                      value={settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND}
+                      onChange={(v) => {
+                        const band = v as LanguageAgeBand;
+                        const language = settings.languageLessonLanguage ?? "el";
+                        void updateSettings({ languageLessonAgeBand: band });
+                        if (teachingLesson === "language") {
+                          setLanguagePackId(defaultLanguagePackId(band, language));
+                        }
+                      }}
+                      surface={surface}
+                    >
+                      <option value="early">{t("languageAgeBandEarly")}</option>
+                      <option value="primary">{t("languageAgeBandPrimary")}</option>
+                      <option value="lower_secondary">
+                        {t("languageAgeBandLowerSecondary")}
+                      </option>
+                      <option value="upper_secondary">
+                        {t("languageAgeBandUpperSecondary")}
+                      </option>
+                    </ThemedSelect>
+                  </label>
+                </div>
+                <ToggleRow
+                  label={t("languageLessonIgnoreCase")}
+                  checked={settings.languageLessonIgnoreCase !== false}
+                  onChange={(checked) =>
+                    updateSettings({ languageLessonIgnoreCase: checked })
+                  }
+                  surface={surface}
+                />
+                <ToggleRow
+                  label={t("languageLessonIgnoreTones")}
+                  checked={settings.languageLessonIgnoreTones !== false}
+                  onChange={(checked) =>
+                    updateSettings({ languageLessonIgnoreTones: checked })
+                  }
+                  surface={surface}
+                />
+              </div>
+            )}
+            <div className="mt-3">
+              <ToggleRow
+                label={t("showInputPreviewMiniMode")}
+                checked={settings.inputPreviewMiniModeVisible !== false}
+                disabled={!miniModeActive}
+                onChange={(checked) =>
+                  updateSettings({ inputPreviewMiniModeVisible: checked })
+                }
+                surface={surface}
+              />
+            </div>
             {showMiniTransparentControls && (
               <div className="mt-3">
                 <ToggleRow
@@ -818,7 +962,26 @@ export function SettingsPanel() {
               <ToggleRow
                 label={t("showSuggestionsBar")}
                 checked={settings.suggestionsVisible}
-                onChange={(checked) => updateSettings({ suggestionsVisible: checked })}
+                onChange={(checked) =>
+                  updateSettings({
+                    suggestionsVisible: checked,
+                    predictionEnabled: checked,
+                  })
+                }
+                surface={surface}
+              />
+              <ToggleRow
+                label={t("showDictationControl")}
+                checked={settings.dictationVisible}
+                onChange={(checked) => updateSettings({ dictationVisible: checked })}
+                surface={surface}
+              />
+              <ToggleRow
+                label={t("showInputPreview")}
+                checked={settings.inputPreviewVisible !== false}
+                onChange={(checked) =>
+                  updateSettings({ inputPreviewVisible: checked })
+                }
                 surface={surface}
               />
             </div>

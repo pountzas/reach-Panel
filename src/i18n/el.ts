@@ -46,11 +46,90 @@ export const el: Record<keyof typeof en, string> = {
 
   teachingLessonLanguage: "Γλώσσα",
 
+
+  teachingTabSpelling: "Ορθογραφία",
+  teachingTabFreeWrite: "Ελεύθερη γραφή",
+  freeWriteNotepad: "Σημειωματάριο",
+  freeWriteClearAll: "Διαγραφή όλων",
+  freeWriteClearConfirm: "Διαγραφή ολόκληρου του προσχεδίου;",
+  freeWriteZoomIn: "Μεγέθυνση",
+  freeWriteZoomOut: "Σμίκρυνση",
+  freeWriteWordWrap: "Αναδίπλωση κειμένου",
+  freeWriteLineNumbers: "Αριθμοί γραμμών",
+  freeWriteNotepadEmpty: "Πληκτρολογήστε σημειώσεις εδώ…",
+  freeWriteOpenPdf: "Άνοιγμα PDF…",
+  freeWriteRecentPdfs: "Πρόσφατα PDF",
+  freeWritePdfMissing: "Αυτό το αρχείο PDF δεν βρέθηκε.",
+  freeWritePdfEmpty: "Ανοίξτε ένα PDF για ανάγνωση δίπλα στις σημειώσεις σας.",
+  freeWritePdfPrevPage: "Προηγούμενη σελίδα",
+  freeWritePdfNextPage: "Επόμενη σελίδα",
+  freeWriteRemovePdf: "Αφαίρεση",
+
   comingSoon: "Σύντομα",
 
   mathLessonTitle: "Μαθηματικά",
 
   languageLessonTitle: "Γλώσσα",
+
+  languageLesson: "Μάθημα γλώσσας",
+
+  selectLanguagePack: "Επιλογή λίστας λέξεων",
+
+  languagePackBuiltIn: "Ενσωματωμένες λίστες",
+
+  languagePrompt: "Γράψε αυτή τη λέξη",
+
+  languageYourAnswer: "Η ορθογραφία σου",
+
+  languageCheck: "Έλεγχος",
+
+  languageIncorrect: "Όχι ακόμα — δοκίμασε ξανά",
+
+  languageUpcomingTasks: "Επόμενες λέξεις",
+
+  languageAgeBand: "Ηλικιακή ομάδα",
+
+  languageLessonLanguage: "Γλώσσα",
+
+  languageLessonLangEl: "Ελληνικά",
+
+  languageLessonLangEn: "Αγγλικά",
+
+  languageAgeBandEarly: "Μικρή (6–8)",
+
+  languageAgeBandPrimary: "Δημοτικό (9–11)",
+
+  languageAgeBandLowerSecondary: "Γυμνάσιο (12–14)",
+
+  languageAgeBandUpperSecondary: "Λύκειο (15+)",
+
+  languageLessonIgnoreCase: "Αγνόηση πεζών/κεφαλαίων στον έλεγχο",
+
+  languageLessonIgnoreTones: "Αγνόηση τόνων στον έλεγχο",
+
+  languageLessonTonesOff: "Τόνοι: όχι απαραίτητοι",
+
+  languageLessonTonesOn: "Τόνοι: απαιτούνται",
+
+  languageNewList: "Νέα λίστα λέξεων",
+
+  languageNewListTitle: "Τίτλος λίστας",
+
+  languageNewListWords: "Λέξεις (μία ανά γραμμή)",
+
+  languageNewListSave: "Αποθήκευση λίστας",
+
+  languageNewListCancel: "Άκυρο",
+
+  languageNewListEmpty: "Πρόσθεσε τουλάχιστον μία λέξη",
+  languagePressPlayToSpell: "Πάτα Αναπαραγωγή για να ξεκινήσεις την ορθογραφία",
+  languageNewListKeyboardHint: "Χρησιμοποίησε το πληκτρολόγιο για τον τίτλο και τις λέξεις στα αριστερά",
+
+  languagePackMyLists: "Οι λίστες μου",
+
+  deleteLanguagePack: "Διαγραφή λίστας",
+
+  confirmDeleteLanguagePack: "Διαγραφή «{title}»;",
 
   modeTabletsHint:
     "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή. Ο Συνοδός ξεκινά τη γέφυρα του tablet· επιλέγεται μόνο όσο είναι συνδεδεμένο ένα tablet.",
@@ -67,6 +146,10 @@ export const el: Record<keyof typeof en, string> = {
   miniModeOverrideOff: "Ανενεργό",
 
   miniModeTransparent: "Διαφανές πληκτρολόγιο",
+
+  inputPreviewLabel: "Πεδίο προορισμού",
+
+  inputPreviewWaiting: "Αναμονή προεπισκόπησης…",
 
   miniModeTransparentDescription:
     "Εμφάνιση πλήκτρων μόνο με περίγραμμα ώστε να φαίνονται οι εφαρμογές από πίσω.",
@@ -146,6 +229,30 @@ export const el: Record<keyof typeof en, string> = {
   wordPackUninstallFailed: "Αποτυχία αφαίρεσης λεξικού",
 
   showDictationControl: "Εμφάνιση υπαγόρευσης (μικρόφωνο)",
+
+  showInputPreview: "Ζωντανή προεπισκόπηση εισόδου (Normal)",
+
+  showInputPreviewMiniMode: "Ζωντανή προεπισκόπηση εισόδου (Mini Mode)",
+
+  taskbarPosition: "Θέση γραμμής εργασιών",
+
+  taskbarPositionHint:
+    "Μετακινεί τη γραμμή εργασιών Windows σε άλλη άκρη της οθόνης. Στα Windows 11 δεν υποστηρίζονται αριστερά ή δεξιά.",
+
+  taskbarPositionBottom: "Κάτω",
+
+  taskbarPositionTop: "Πάνω",
+
+  taskbarPositionLeft: "Αριστερά",
+
+  taskbarPositionRight: "Δεξιά",
+
+  taskbarPositionApplied: "Η θέση της γραμμής εργασιών ενημερώθηκε. Ο Explorer επανεκκινήθηκε.",
+
+  taskbarPositionUnsupported:
+    "Αυτή η θέση γραμμής εργασιών δεν υποστηρίζεται σε αυτή την έκδοση Windows.",
+
+  taskbarPositionFailed: "Δεν ήταν δυνατή η αλλαγή θέσης γραμμής εργασιών.",
 
   opacity: "Διαφάνεια",
 
