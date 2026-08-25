@@ -807,52 +807,60 @@ fn get_live_taskbar_position_for_monitor(monitor_id: u32) -> Option<TaskbarPosit
     None
 }
 
-fn wait_for_live_position(
-    monitor_id: u32,
-    expected: TaskbarPosition,
-) -> Option<TaskbarPosition> {
+fn all_targets_report_position(target_ids: &[u32], expected: TaskbarPosition) -> bool {
+    !target_ids.is_empty()
+        && target_ids
+            .iter()
+            .all(|&id| get_taskbar_position_for_monitor(id) == Some(expected))
+}
+
+fn all_live_targets_match(target_ids: &[u32], expected: TaskbarPosition) -> bool {
+    !target_ids.is_empty()
+        && target_ids
+            .iter()
+            .all(|&id| get_live_taskbar_position_for_monitor(id) == Some(expected))
+}
+
+fn wait_for_all_live_positions(target_ids: &[u32], expected: TaskbarPosition) -> bool {
     use std::time::{Duration, Instant};
 
     let deadline = Instant::now() + Duration::from_millis(VERIFY_TIMEOUT_MS);
-    let mut last = None;
     while Instant::now() < deadline {
-        last = get_live_taskbar_position_for_monitor(monitor_id);
-        if last == Some(expected) {
-            return last;
+        if all_live_targets_match(target_ids, expected) {
+            return true;
         }
         std::thread::sleep(Duration::from_millis(VERIFY_POLL_MS));
     }
-    last
+    all_live_targets_match(target_ids, expected)
 }
 
-/// Poll until live tray matches, then settle-check so late OS resets are not false successes.
-fn verify_live_position_applied(
-    monitor_id: u32,
+/// Poll until every mirrored/target monitor's live tray matches, then settle-check.
+fn verify_live_position_applied_for_targets(
+    target_ids: &[u32],
     expected: TaskbarPosition,
 ) -> Option<TaskbarPosition> {
     use std::time::{Duration, Instant};
 
-    let after_poll = wait_for_live_position(monitor_id, expected);
-    if after_poll != Some(expected) {
-        return after_poll;
+    if !wait_for_all_live_positions(target_ids, expected) {
+        return target_ids
+            .first()
+            .and_then(|&id| get_live_taskbar_position_for_monitor(id));
     }
     std::thread::sleep(Duration::from_millis(SETTLE_MS));
-    // Prefer immediate live read; brief retry only if the tray HWND is temporarily missing.
-    let after_settle = get_live_taskbar_position_for_monitor(monitor_id).or_else(|| {
+    // Brief retry if tray HWNDs are temporarily missing after Explorer settles.
+    if !all_live_targets_match(target_ids, expected) {
         let deadline = Instant::now() + Duration::from_millis(1_500);
         while Instant::now() < deadline {
-            if let Some(pos) = get_live_taskbar_position_for_monitor(monitor_id) {
-                return Some(pos);
+            if all_live_targets_match(target_ids, expected) {
+                return Some(expected);
             }
             std::thread::sleep(Duration::from_millis(VERIFY_POLL_MS));
         }
-        None
-    });
-    if live_position_verified(after_poll, after_settle, expected) {
-        Some(expected)
-    } else {
-        after_settle
+        return target_ids
+            .first()
+            .and_then(|&id| get_live_taskbar_position_for_monitor(id));
     }
+    Some(expected)
 }
 
 pub fn get_taskbar_position_from_registry() -> Option<TaskbarPosition> {
@@ -948,12 +956,12 @@ pub fn apply_taskbar_position_for_monitor(
     let mm_key_map = build_mm_key_map(&read_mm_stuck_rects(), &frames);
     let current = get_taskbar_position_for_monitor(monitor_id);
 
-    if current == Some(position) {
+    if all_targets_report_position(&target_ids, position) {
         return TaskbarPositionResult {
             success: true,
             applied: false,
             message: "Taskbar is already in the requested position on this monitor".to_string(),
-            current,
+            current: Some(position),
             requested: Some(position),
             open_taskbar_settings: false,
         };
@@ -968,6 +976,7 @@ pub fn apply_taskbar_position_for_monitor(
     if let Err(message) =
         write_position_to_registry(position, &target_ids, &frames, &mm_key_map, &mut backup)
     {
+        let _ = restore_registry(&backup);
         return fail_result(message, current, position, false);
     }
 
@@ -982,7 +991,7 @@ pub fn apply_taskbar_position_for_monitor(
         );
     }
 
-    let detected = verify_live_position_applied(monitor_id, position);
+    let detected = verify_live_position_applied_for_targets(&target_ids, position);
     if detected != Some(position) {
         let _ = restore_registry(&backup);
         let _ = restart_explorer();
