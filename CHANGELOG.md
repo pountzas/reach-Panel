@@ -5,6 +5,18 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.12.0 (2026-08-25)
+
+## What's Changed
+* feat: per-monitor taskbar control and keyboard UX polish by @pountzas in https://github.com/pountzas/reach-Panel/pull/132
+* feat: live input preview above keyboard with per-mode settings by @pountzas in https://github.com/pountzas/reach-Panel/pull/134
+* feat: add Teaching language spelling lessons with Greek compose and custom lists by @pountzas in https://github.com/pountzas/reach-Panel/pull/135
+* fix: harden Win11 taskbar top apply and drop left/right by @pountzas in https://github.com/pountzas/reach-Panel/pull/142
+* chore: promote dev to main (taskbar top hardening) by @pountzas in https://github.com/pountzas/reach-Panel/pull/143
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.11.2...v0.12.0
+
 ## 0.11.2 (2026-08-20)
 
 ## What's Changed
