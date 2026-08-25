@@ -388,10 +388,11 @@ export function SettingsPanel() {
     color: surface.panelText,
   };
 
-  const taskbarPosition = settings.taskbarPositionPreference ?? "bottom";
+  const taskbarPosition = settings.taskbarPositionPreference === "top" ? "top" : "bottom";
 
   const applyTaskbarPosition = async (position: TaskbarPosition) => {
-    const previous = settings.taskbarPositionPreference ?? "bottom";
+    const previous: TaskbarPosition =
+      settings.taskbarPositionPreference === "top" ? "top" : "bottom";
     updateSettings({ taskbarPositionPreference: position });
     try {
       const result = await invoke<{
@@ -399,6 +400,7 @@ export function SettingsPanel() {
         applied: boolean;
         message: string;
         current?: TaskbarPosition | null;
+        open_taskbar_settings?: boolean;
       }>("cmd_set_taskbar_position", {
         position,
         monitorId: settings.accessibilityMonitorId,
@@ -409,9 +411,17 @@ export function SettingsPanel() {
         }
         return;
       }
-      const actual = result.current ?? previous;
+      const actual: TaskbarPosition =
+        result.current === "top" || result.current === "bottom"
+          ? result.current
+          : previous;
       updateSettings({ taskbarPositionPreference: actual });
       notify.info(result.message || t("taskbarPositionUnsupported"));
+      if (result.open_taskbar_settings) {
+        void invoke("cmd_open_windows_settings", {
+          uri: "ms-settings:taskbar",
+        }).catch(() => {});
+      }
     } catch {
       updateSettings({ taskbarPositionPreference: previous });
       notify.error(t("taskbarPositionFailed"));
@@ -594,8 +604,6 @@ export function SettingsPanel() {
               >
                 <option value="bottom">{t("taskbarPositionBottom")}</option>
                 <option value="top">{t("taskbarPositionTop")}</option>
-                <option value="left">{t("taskbarPositionLeft")}</option>
-                <option value="right">{t("taskbarPositionRight")}</option>
               </ThemedSelect>
             </label>
           </SettingsSection>

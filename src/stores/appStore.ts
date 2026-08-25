@@ -834,6 +834,8 @@ function parseSettings(json: string): AppSettings {
       parsed.keyboardSectionMode,
       false,
     );
+    const taskbarPositionPreference =
+      parsed.taskbarPositionPreference === "top" ? "top" : "bottom";
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
@@ -844,6 +846,7 @@ function parseSettings(json: string): AppSettings {
       mousePanelSide,
       miniModeOverride,
       keyboardSectionMode,
+      taskbarPositionPreference,
       sectionStack: resolveSectionStack(parsed.sectionStack, parsed.sectionLayouts),
       synthesizerOctaveCount: resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
       synthesizerStartOctave: resolveSynthStartOctave(

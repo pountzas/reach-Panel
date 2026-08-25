@@ -234,15 +234,11 @@ export const de: Record<keyof typeof en, string> = {
   taskbarPosition: "Taskleistenposition",
 
   taskbarPositionHint:
-    "Verschiebt die Windows-Taskleiste an eine andere Bildschirmkante. Unter Windows 11 sind links und rechts nicht unterstützt.",
+    "Gilt für den oben gewählten Barrierefreiheitsmonitor. Nur oben oder unten. Windows 11 kann oben ablehnen; dann: Einstellungen → Personalisierung → Taskleiste.",
 
   taskbarPositionBottom: "Unten",
 
   taskbarPositionTop: "Oben",
-
-  taskbarPositionLeft: "Links",
-
-  taskbarPositionRight: "Rechts",
 
   taskbarPositionApplied: "Taskleistenposition aktualisiert. Explorer wurde neu gestartet.",
 

@@ -108,7 +108,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 
 ### Windows integration
 
-- **Taskbar position** — **Settings** moves the taskbar on the **accessibility monitor** (the display selected in Settings). On extended desktops each monitor can have its own taskbar edge; on mirrored/duplicate setups all copies of that display update together. **Windows 10:** all four edges. **Windows 11 (stable):** often bottom-only; failed moves revert. Explorer restarts when a change is attempted.
+- **Taskbar position** — **Settings** moves the taskbar on the **accessibility monitor** (the display selected in Settings) between **top** and **bottom** only. On extended desktops each monitor can have its own taskbar edge; on mirrored/duplicate setups all copies of that display update together. **Windows 10:** top/bottom via StuckRects. **Windows 11:** top when the OS still honors StuckRects / `TaskbarLocation` (verified via live tray geometry after Explorer restart). Builds that reject the move fail without a false success and may open **Settings → Personalization → Taskbar**. Explorer restarts when a change is attempted.
 
 ### Android tablet companion
 
