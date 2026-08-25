@@ -37,6 +37,9 @@ export const fr: Record<keyof typeof en, string> = {
 
   modeCompanion: "Compagnon",
 
+  modeCompanionUnavailable:
+    "Indisponible tant que le pont companion n’est pas démarré ou qu’aucune tablette n’est appariée (Réglages → Compagnon).",
+
   teachingLessonMusic: "Musique",
 
   teachingLessonMath: "Mathématiques",
@@ -129,7 +132,7 @@ export const fr: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "Supprimer « {title} » ?",
 
   modeTabletsHint:
-    "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon démarre le pont tablette ; il n'est sélectionné que lorsqu'une tablette est connectée.",
+    "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon reste indisponible tant que le pont n’est pas démarré ou qu’aucune tablette n’est appariée ; sélectionné quand une tablette est connectée.",
 
   miniModeAutoDescription:
     "Sur un seul écran ou une configuration en miroir, le clavier apparaît automatiquement lorsque vous touchez un champ de saisie.",
@@ -234,15 +237,11 @@ export const fr: Record<keyof typeof en, string> = {
   taskbarPosition: "Position de la barre des tâches",
 
   taskbarPositionHint:
-    "Déplace la barre des tâches Windows vers un autre bord de l'écran. Windows 11 ne prend pas en charge gauche ni droite.",
+    "S'applique au moniteur d'accessibilité sélectionné ci-dessus. Haut ou bas uniquement. Windows 11 peut refuser le haut ; alors : Paramètres → Personnalisation → Barre des tâches.",
 
   taskbarPositionBottom: "Bas",
 
   taskbarPositionTop: "Haut",
-
-  taskbarPositionLeft: "Gauche",
-
-  taskbarPositionRight: "Droite",
 
   taskbarPositionApplied: "Position de la barre des tâches mise à jour. Explorer a redémarré.",
 

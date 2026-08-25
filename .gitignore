@@ -40,3 +40,7 @@ src-tauri/.tauri/
 
 # Expo local state
 companion/.expo/
+
+# Cargo target dir when builds land at repo root
+target/
+

@@ -36,6 +36,9 @@ export const en = {
 
   modeCompanion: "Companion",
 
+  modeCompanionUnavailable:
+    "Unavailable until you start the companion bridge or pair a tablet (Settings → Companion).",
+
   teachingLessonMusic: "Music",
 
   teachingLessonMath: "Mathematics",
@@ -143,7 +146,7 @@ export const en = {
   confirmDeleteLanguagePack: "Delete “{title}”?",
 
   modeTabletsHint:
-    "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion starts the tablet bridge; it is selected only while a tablet is connected.",
+    "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion stays unavailable until the bridge is started or a tablet is paired; it becomes the selected mode while a tablet is connected.",
 
   miniModeAutoDescription:
     "On a single display or mirrored setup, the keyboard appears automatically when you tap an input field.",
@@ -248,15 +251,11 @@ export const en = {
   taskbarPosition: "Taskbar position",
 
   taskbarPositionHint:
-    "Applies to the accessibility monitor selected above. Extended displays: only that screen's taskbar changes. Mirrored/duplicate displays: all copies of that screen update together. Windows 11 stable may refuse top/left/right.",
+    "Applies to the accessibility monitor selected above. Extended displays: only that screen's taskbar changes. Mirrored/duplicate displays: all copies of that screen update together. Top or bottom only. Windows 11 may refuse top; if the move does not stick, use Settings → Personalization → Taskbar when a position control is available.",
 
   taskbarPositionBottom: "Bottom",
 
   taskbarPositionTop: "Top",
-
-  taskbarPositionLeft: "Left",
-
-  taskbarPositionRight: "Right",
 
   taskbarPositionApplied: "Taskbar position updated. Explorer restarted.",
 

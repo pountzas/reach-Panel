@@ -37,6 +37,9 @@ export const it: Record<keyof typeof en, string> = {
 
   modeCompanion: "Compagno",
 
+  modeCompanionUnavailable:
+    "Non disponibile finché non avvii il bridge companion o associ un tablet (Impostazioni → Compagno).",
+
   teachingLessonMusic: "Musica",
 
   teachingLessonMath: "Matematica",
@@ -129,7 +132,7 @@ export const it: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "Eliminare “{title}”?",
 
   modeTabletsHint:
-    "Normale e Mini sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno avvia il ponte del tablet; è selezionato solo mentre un tablet è connesso.",
+    "Normale e Mini sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno resta non disponibile finché il bridge non è avviato o un tablet non è associato; selezionato mentre un tablet è connesso.",
 
   miniModeAutoDescription:
     "Su un singolo display o in configurazione speculare, la tastiera appare automaticamente quando tocchi un campo di input.",
@@ -234,15 +237,11 @@ export const it: Record<keyof typeof en, string> = {
   taskbarPosition: "Posizione barra delle applicazioni",
 
   taskbarPositionHint:
-    "Sposta la barra delle applicazioni di Windows su un altro bordo dello schermo. Windows 11 non supporta sinistra o destra.",
+    "Si applica al monitor di accessibilità selezionato sopra. Solo in alto o in basso. Windows 11 può rifiutare l'alto; allora: Impostazioni → Personalizzazione → Barra delle applicazioni.",
 
   taskbarPositionBottom: "In basso",
 
   taskbarPositionTop: "In alto",
-
-  taskbarPositionLeft: "A sinistra",
-
-  taskbarPositionRight: "A destra",
 
   taskbarPositionApplied: "Posizione barra aggiornata. Explorer riavviato.",
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -27,6 +28,10 @@ import {
   resolveSelectedAppMode,
   type AppModeTablet,
 } from "../../lib/appModeLayout";
+import {
+  isCompanionTabletEnabled,
+  type CompanionUiState,
+} from "../../lib/companionSession";
 import { defaultLanguagePackId } from "../../lib/language";
 import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
@@ -56,6 +61,7 @@ function ModeTabletButton({
   label,
   pressed,
   disabled,
+  title,
   surface,
   onSelect,
 }: {
@@ -63,6 +69,7 @@ function ModeTabletButton({
   label: string;
   pressed: boolean;
   disabled: boolean;
+  title?: string;
   surface: SurfaceColors;
   onSelect: (mode: AppModeTablet) => void;
 }) {
@@ -72,7 +79,8 @@ function ModeTabletButton({
       disabled={disabled}
       aria-disabled={disabled}
       aria-pressed={pressed}
-      className="rounded-lg border px-2 py-3 text-sm font-semibold transition-colors disabled:opacity-50"
+      title={title}
+      className="rounded-lg border px-2 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       style={{
         backgroundColor: pressed ? surface.insetBg : surface.panelButtonBg,
         borderColor: pressed ? surface.panelText : surface.panelBorder,
@@ -323,6 +331,8 @@ export function SettingsPanel() {
     monitors,
     miniModeActive,
     companionModeActive,
+    companionBridgeArmed,
+    companionSessionLive,
     musicTeachingEnabled,
     teachingLesson,
     setAppMode,
@@ -342,10 +352,38 @@ export function SettingsPanel() {
   } = useAppStore();
   const { t } = useTranslation();
   const [newProfileName, setNewProfileName] = useState("");
+  const [companionBridgeRunning, setCompanionBridgeRunning] = useState(false);
+  const [companionPairedCount, setCompanionPairedCount] = useState(0);
 
   useEffect(() => {
     void loadInputMethods();
   }, [loadInputMethods]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refreshCompanionAvailability = async () => {
+      try {
+        const status = await invoke<CompanionUiState>("cmd_companion_status");
+        if (cancelled) return;
+        setCompanionBridgeRunning(status.running);
+        setCompanionPairedCount(status.pairedDeviceCount);
+      } catch {
+        if (!cancelled) {
+          setCompanionBridgeRunning(false);
+          setCompanionPairedCount(0);
+        }
+      }
+    };
+    void refreshCompanionAvailability();
+    const unlisten = listen<CompanionUiState>("companion-state", (event) => {
+      setCompanionBridgeRunning(event.payload.running);
+      setCompanionPairedCount(event.payload.pairedDeviceCount);
+    });
+    return () => {
+      cancelled = true;
+      void unlisten.then((fn) => fn());
+    };
+  }, []);
 
   useEffect(() => {
     if (!settings) return;
@@ -371,6 +409,12 @@ export function SettingsPanel() {
     miniModeOverride:
       settings.miniModeOverride === true ? true : undefined,
   });
+  const companionTabletEnabled = isCompanionTabletEnabled({
+    bridgeRunning: companionBridgeRunning,
+    pairedDeviceCount: companionPairedCount,
+    companionBridgeArmed,
+    companionSessionLive,
+  });
   const showMiniTransparentControls = selectedMode === "mini";
 
   const activeTypingValue = String(
@@ -388,10 +432,11 @@ export function SettingsPanel() {
     color: surface.panelText,
   };
 
-  const taskbarPosition = settings.taskbarPositionPreference ?? "bottom";
+  const taskbarPosition = settings.taskbarPositionPreference === "top" ? "top" : "bottom";
 
   const applyTaskbarPosition = async (position: TaskbarPosition) => {
-    const previous = settings.taskbarPositionPreference ?? "bottom";
+    const previous: TaskbarPosition =
+      settings.taskbarPositionPreference === "top" ? "top" : "bottom";
     updateSettings({ taskbarPositionPreference: position });
     try {
       const result = await invoke<{
@@ -399,6 +444,7 @@ export function SettingsPanel() {
         applied: boolean;
         message: string;
         current?: TaskbarPosition | null;
+        open_taskbar_settings?: boolean;
       }>("cmd_set_taskbar_position", {
         position,
         monitorId: settings.accessibilityMonitorId,
@@ -409,9 +455,17 @@ export function SettingsPanel() {
         }
         return;
       }
-      const actual = result.current ?? previous;
+      const actual: TaskbarPosition =
+        result.current === "top" || result.current === "bottom"
+          ? result.current
+          : previous;
       updateSettings({ taskbarPositionPreference: actual });
       notify.info(result.message || t("taskbarPositionUnsupported"));
+      if (result.open_taskbar_settings) {
+        void invoke("cmd_open_windows_settings", {
+          uri: "ms-settings:taskbar",
+        }).catch(() => {});
+      }
     } catch {
       updateSettings({ taskbarPositionPreference: previous });
       notify.error(t("taskbarPositionFailed"));
@@ -594,8 +648,6 @@ export function SettingsPanel() {
               >
                 <option value="bottom">{t("taskbarPositionBottom")}</option>
                 <option value="top">{t("taskbarPositionTop")}</option>
-                <option value="left">{t("taskbarPositionLeft")}</option>
-                <option value="right">{t("taskbarPositionRight")}</option>
               </ThemedSelect>
             </label>
           </SettingsSection>
@@ -616,14 +668,23 @@ export function SettingsPanel() {
                   { id: "companion" as const, label: t("modeCompanion") },
                 ] as const
               ).map((mode) => {
-                const pressed = selectedMode === mode.id;
+                const companionDisabled =
+                  mode.id === "companion" && !companionTabletEnabled;
+                const pressed =
+                  selectedMode === mode.id &&
+                  (mode.id !== "companion" || companionTabletEnabled);
                 return (
                   <ModeTabletButton
                     key={mode.id}
                     id={mode.id}
                     label={mode.label}
                     pressed={pressed}
-                    disabled={false}
+                    disabled={companionDisabled}
+                    title={
+                      companionDisabled
+                        ? t("modeCompanionUnavailable")
+                        : undefined
+                    }
                     surface={surface}
                     onSelect={(id) => void setAppMode(id)}
                   />

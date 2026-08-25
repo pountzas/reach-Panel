@@ -4,6 +4,7 @@ import {
   planCompanionLeave,
   shouldIgnoreCompanionIdle,
   shouldStopCompanionBridgeOnHostMode,
+  isCompanionTabletEnabled,
 } from "./companionSession";
 
 describe("mapCompanionSessionPhase", () => {
@@ -86,5 +87,42 @@ describe("shouldStopCompanionBridgeOnHostMode", () => {
 
   it("does not stop the bridge when companion was never armed", () => {
     expect(shouldStopCompanionBridgeOnHostMode(false, false)).toBe(false);
+  });
+});
+
+describe("isCompanionTabletEnabled", () => {
+  it("stays off when the bridge is down and nothing is paired", () => {
+    expect(
+      isCompanionTabletEnabled({ bridgeRunning: false, pairedDeviceCount: 0 }),
+    ).toBe(false);
+  });
+
+  it("enables when the bridge is running", () => {
+    expect(
+      isCompanionTabletEnabled({ bridgeRunning: true, pairedDeviceCount: 0 }),
+    ).toBe(true);
+  });
+
+  it("enables when a tablet is already paired", () => {
+    expect(
+      isCompanionTabletEnabled({ bridgeRunning: false, pairedDeviceCount: 1 }),
+    ).toBe(true);
+  });
+
+  it("enables when the host store already armed or has a live session", () => {
+    expect(
+      isCompanionTabletEnabled({
+        bridgeRunning: false,
+        pairedDeviceCount: 0,
+        companionBridgeArmed: true,
+      }),
+    ).toBe(true);
+    expect(
+      isCompanionTabletEnabled({
+        bridgeRunning: false,
+        pairedDeviceCount: 0,
+        companionSessionLive: true,
+      }),
+    ).toBe(true);
   });
 });

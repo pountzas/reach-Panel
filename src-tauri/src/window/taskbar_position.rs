@@ -1,8 +1,11 @@
 //! Windows taskbar edge automation via Explorer StuckRects3 / MMStuckRects3 registry settings.
 //!
-//! Windows 10: StuckRects3 `Settings` byte 12 (0=left, 1=top, 2=right, 3=bottom) + Explorer restart.
-//! Windows 11: per-monitor `MMStuckRects3` values; primary also uses `StuckRects3`. Changes apply to
-//! the monitor where ReachPanel runs (extended) or all mirrored copies of that display (duplicate).
+//! ReachPanel supports **top** and **bottom** only. StuckRects3 `Settings` byte 12 uses
+//! Windows encoding 1=top, 3=bottom (OS bytes 0/2 for left/right are ignored). On Win11 we also
+//! write `Explorer\\Advanced\\TaskbarLocation` when present.
+//! Apply success requires **live tray HWND geometry** after restart and a settle check — registry
+//! alone is never treated as proof (some builds briefly keep byte 01 then snap back to bottom).
+//! Changes apply to the monitor where ReachPanel runs (extended) or all mirrored copies (duplicate).
 
 use serde::Serialize;
 use std::collections::HashMap;
@@ -13,34 +16,35 @@ use super::{list_monitors, monitor_for_rect, monitors_overlap, MonitorInfo};
 
 const STUCK_RECTS_PATH: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3";
 const MM_STUCK_RECTS_PATH: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MMStuckRects3";
+const ADVANCED_PATH: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced";
+const TASKBAR_LOCATION_VALUE: &str = "TaskbarLocation";
 const SETTINGS_VALUE: &str = "Settings";
 const POSITION_BYTE_INDEX: usize = 12;
 const TRAY_EDGE_TOLERANCE_PX: i32 = 64;
+/// Poll live tray HWNDs until Explorer has created them after restart.
+const VERIFY_POLL_MS: u64 = 250;
+const VERIFY_TIMEOUT_MS: u64 = 6_000;
+/// Extra wait after first live match — some Win11 builds snap back to bottom after init.
+const SETTLE_MS: u64 = 2_500;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TaskbarPosition {
-    Left,
     Top,
-    Right,
     Bottom,
 }
 
 impl TaskbarPosition {
     fn byte(self) -> u8 {
         match self {
-            Self::Left => 0,
             Self::Top => 1,
-            Self::Right => 2,
             Self::Bottom => 3,
         }
     }
 
     fn from_byte(byte: u8) -> Option<Self> {
         match byte {
-            0 => Some(Self::Left),
             1 => Some(Self::Top),
-            2 => Some(Self::Right),
             3 => Some(Self::Bottom),
             _ => None,
         }
@@ -48,9 +52,7 @@ impl TaskbarPosition {
 
     fn parse(value: &str) -> Option<Self> {
         match value.trim().to_ascii_lowercase().as_str() {
-            "left" => Some(Self::Left),
             "top" => Some(Self::Top),
-            "right" => Some(Self::Right),
             "bottom" => Some(Self::Bottom),
             _ => None,
         }
@@ -58,9 +60,7 @@ impl TaskbarPosition {
 
     fn as_str(self) -> &'static str {
         match self {
-            Self::Left => "left",
             Self::Top => "top",
-            Self::Right => "right",
             Self::Bottom => "bottom",
         }
     }
@@ -73,12 +73,17 @@ pub struct TaskbarPositionResult {
     pub message: String,
     pub current: Option<TaskbarPosition>,
     pub requested: Option<TaskbarPosition>,
+    /// When true, UI may open `ms-settings:taskbar` (native position control on some builds).
+    #[serde(default)]
+    pub open_taskbar_settings: bool,
 }
 
 #[derive(Debug, Clone, Default)]
 struct RegistryBackup {
     stuck_rects_settings: Option<Vec<u8>>,
     mm_stuck_rects: HashMap<String, Vec<u8>>,
+    /// Previous `TaskbarLocation` DWORD if we overwrote it (`None` = value was absent).
+    taskbar_location: Option<Option<u32>>,
 }
 
 /// Full monitor bounds (`rcMonitor`) used to match `MMStuckRects3` registry value names.
@@ -251,16 +256,28 @@ fn monitor_frame<'a>(frames: &'a [MonitorFrame], id: u32) -> Option<&'a MonitorF
     frames.iter().find(|m| m.id == id)
 }
 
+/// True OS build via `RtlGetVersion` (avoids GetVersionExW compatibility lies).
 fn windows_build_number() -> u32 {
-    use windows::Win32::System::SystemInformation::{GetVersionExW, OSVERSIONINFOW};
+    #[repr(C)]
+    struct OsVersionInfoW {
+        dw_os_version_info_size: u32,
+        dw_major_version: u32,
+        dw_minor_version: u32,
+        dw_build_number: u32,
+        dw_platform_id: u32,
+        sz_csd_version: [u16; 128],
+    }
+
+    #[link(name = "ntdll")]
+    extern "system" {
+        fn RtlGetVersion(info: *mut OsVersionInfoW) -> i32;
+    }
 
     unsafe {
-        let mut info = OSVERSIONINFOW {
-            dwOSVersionInfoSize: std::mem::size_of::<OSVERSIONINFOW>() as u32,
-            ..Default::default()
-        };
-        if GetVersionExW(&mut info).is_ok() {
-            return info.dwBuildNumber;
+        let mut info = std::mem::zeroed::<OsVersionInfoW>();
+        info.dw_os_version_info_size = std::mem::size_of::<OsVersionInfoW>() as u32;
+        if RtlGetVersion(&mut info) == 0 {
+            return info.dw_build_number;
         }
     }
     0
@@ -270,11 +287,19 @@ fn is_windows_11() -> bool {
     windows_build_number() >= 22000
 }
 
-fn position_supported(position: TaskbarPosition) -> bool {
-    if !is_windows_11() {
-        return true;
-    }
-    !matches!(position, TaskbarPosition::Left | TaskbarPosition::Right)
+/// Native `TaskbarLocation` DWORD (Settings → Taskbar position) on Win11 builds that support it.
+fn should_write_taskbar_location_dword() -> bool {
+    is_windows_11()
+}
+
+/// Success requires live tray geometry to match both after poll and after settle.
+/// Registry alone is never proof — Explorer may still rewrite StuckRects to bottom.
+fn live_position_verified(
+    live_after_poll: Option<TaskbarPosition>,
+    live_after_settle: Option<TaskbarPosition>,
+    expected: TaskbarPosition,
+) -> bool {
+    live_after_poll == Some(expected) && live_after_settle == Some(expected)
 }
 
 fn set_position_byte(data: &mut [u8], position: TaskbarPosition) -> Result<(), String> {
@@ -475,6 +500,7 @@ fn backup_registry_for_targets(touched_mm_keys: &[String]) -> RegistryBackup {
     RegistryBackup {
         stuck_rects_settings: read_registry_binary(STUCK_RECTS_PATH, SETTINGS_VALUE).ok(),
         mm_stuck_rects: filtered,
+        taskbar_location: None,
     }
 }
 
@@ -485,6 +511,16 @@ fn restore_registry(backup: &RegistryBackup) -> Result<(), String> {
     if !backup.mm_stuck_rects.is_empty() {
         write_mm_stuck_rects(&backup.mm_stuck_rects)?;
     }
+    if let Some(previous) = &backup.taskbar_location {
+        match previous {
+            Some(value) => {
+                let _ = write_taskbar_location_dword_raw(*value);
+            }
+            None => {
+                let _ = delete_taskbar_location_dword();
+            }
+        }
+    }
     Ok(())
 }
 
@@ -493,6 +529,7 @@ fn write_position_to_registry(
     target_ids: &[u32],
     frames: &[MonitorFrame],
     mm_key_map: &HashMap<u32, String>,
+    backup: &mut RegistryBackup,
 ) -> Result<Vec<String>, String> {
     let mm_values = read_mm_stuck_rects();
     let mut touched_keys = Vec::new();
@@ -541,25 +578,68 @@ fn write_position_to_registry(
         ));
     }
 
-    if primary_targeted && windows_build_number() >= 26300 {
+    if primary_targeted && should_write_taskbar_location_dword() {
+        backup.taskbar_location = Some(read_taskbar_location_dword());
         let _ = write_taskbar_location_dword(position);
     }
 
     Ok(touched_keys)
 }
 
-fn write_taskbar_location_dword(position: TaskbarPosition) -> Result<(), String> {
+fn read_taskbar_location_dword() -> Option<u32> {
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::ERROR_SUCCESS;
+    use windows::Win32::System::Registry::{
+        RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY_CURRENT_USER, KEY_READ, REG_DWORD,
+    };
+
+    let path_wide: Vec<u16> = ADVANCED_PATH.encode_utf16().chain(std::iter::once(0)).collect();
+    let value_wide: Vec<u16> = TASKBAR_LOCATION_VALUE
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
+
+    unsafe {
+        let mut hkey = Default::default();
+        if RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            PCWSTR(path_wide.as_ptr()),
+            0,
+            KEY_READ,
+            &mut hkey,
+        ) != ERROR_SUCCESS
+        {
+            return None;
+        }
+
+        let mut data_type = REG_DWORD;
+        let mut data = [0u8; 4];
+        let mut size = data.len() as u32;
+        let query = RegQueryValueExW(
+            hkey,
+            PCWSTR(value_wide.as_ptr()),
+            None,
+            Some(&mut data_type),
+            Some(data.as_mut_ptr()),
+            Some(&mut size),
+        );
+        let _ = RegCloseKey(hkey);
+        if query != ERROR_SUCCESS || size < 4 {
+            return None;
+        }
+        Some(u32::from_le_bytes(data))
+    }
+}
+
+fn write_taskbar_location_dword_raw(value: u32) -> Result<(), String> {
     use windows::core::PCWSTR;
     use windows::Win32::Foundation::ERROR_SUCCESS;
     use windows::Win32::System::Registry::{
         RegCloseKey, RegOpenKeyExW, RegSetValueExW, HKEY_CURRENT_USER, KEY_SET_VALUE, REG_DWORD,
     };
 
-    const ADVANCED_PATH: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced";
-    const TASKBAR_LOCATION: &str = "TaskbarLocation";
-
     let path_wide: Vec<u16> = ADVANCED_PATH.encode_utf16().chain(std::iter::once(0)).collect();
-    let value_wide: Vec<u16> = TASKBAR_LOCATION
+    let value_wide: Vec<u16> = TASKBAR_LOCATION_VALUE
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect();
@@ -577,7 +657,6 @@ fn write_taskbar_location_dword(position: TaskbarPosition) -> Result<(), String>
             return Ok(());
         }
 
-        let value = position.byte() as u32;
         let bytes = value.to_le_bytes();
         let set = RegSetValueExW(
             hkey,
@@ -593,6 +672,41 @@ fn write_taskbar_location_dword(position: TaskbarPosition) -> Result<(), String>
     }
 
     Ok(())
+}
+
+fn delete_taskbar_location_dword() -> Result<(), String> {
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::ERROR_SUCCESS;
+    use windows::Win32::System::Registry::{
+        RegCloseKey, RegDeleteValueW, RegOpenKeyExW, HKEY_CURRENT_USER, KEY_SET_VALUE,
+    };
+
+    let path_wide: Vec<u16> = ADVANCED_PATH.encode_utf16().chain(std::iter::once(0)).collect();
+    let value_wide: Vec<u16> = TASKBAR_LOCATION_VALUE
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
+
+    unsafe {
+        let mut hkey = Default::default();
+        if RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            PCWSTR(path_wide.as_ptr()),
+            0,
+            KEY_SET_VALUE,
+            &mut hkey,
+        ) != ERROR_SUCCESS
+        {
+            return Ok(());
+        }
+        let _ = RegDeleteValueW(hkey, PCWSTR(value_wide.as_ptr()));
+        let _ = RegCloseKey(hkey);
+    }
+    Ok(())
+}
+
+fn write_taskbar_location_dword(position: TaskbarPosition) -> Result<(), String> {
+    write_taskbar_location_dword_raw(position.byte() as u32)
 }
 
 fn monitor_id_for_tray(tray: RectI, frames: &[MonitorFrame]) -> Option<u32> {
@@ -632,27 +746,18 @@ fn detect_taskbar_position_for_tray(tray: RectI, frame: &MonitorFrame) -> Option
 
     let w = tray.width();
     let h = tray.height();
-    if w <= 0 || h <= 0 {
+    if w <= 0 || h <= 0 || w <= h {
+        // Vertical (side) taskbars are unsupported — ignore.
         return None;
     }
 
     let rel_top = tray.top - frame.top;
     let rel_bottom = frame.bottom - tray.bottom;
-    let rel_left = tray.left - frame.left;
-    let rel_right = frame.right - tray.right;
 
-    if w > h {
-        if rel_top <= TRAY_EDGE_TOLERANCE_PX {
-            Some(TaskbarPosition::Top)
-        } else if rel_bottom <= TRAY_EDGE_TOLERANCE_PX {
-            Some(TaskbarPosition::Bottom)
-        } else {
-            None
-        }
-    } else if rel_left <= TRAY_EDGE_TOLERANCE_PX {
-        Some(TaskbarPosition::Left)
-    } else if rel_right <= TRAY_EDGE_TOLERANCE_PX {
-        Some(TaskbarPosition::Right)
+    if rel_top <= TRAY_EDGE_TOLERANCE_PX {
+        Some(TaskbarPosition::Top)
+    } else if rel_bottom <= TRAY_EDGE_TOLERANCE_PX {
+        Some(TaskbarPosition::Bottom)
     } else {
         None
     }
@@ -676,9 +781,16 @@ fn get_taskbar_position_from_registry_for_monitor(
 }
 
 pub fn get_taskbar_position_for_monitor(monitor_id: u32) -> Option<TaskbarPosition> {
-    let frames = list_monitor_frames();
-    let mm_key_map = build_mm_key_map(&read_mm_stuck_rects(), &frames);
+    get_live_taskbar_position_for_monitor(monitor_id).or_else(|| {
+        let frames = list_monitor_frames();
+        let mm_key_map = build_mm_key_map(&read_mm_stuck_rects(), &frames);
+        get_taskbar_position_from_registry_for_monitor(monitor_id, &frames, &mm_key_map)
+    })
+}
 
+/// Live tray HWND geometry only — never registry. Used to prove a move stuck.
+fn get_live_taskbar_position_for_monitor(monitor_id: u32) -> Option<TaskbarPosition> {
+    let frames = list_monitor_frames();
     for tray in collect_tray_rects() {
         let Some(tray_monitor) = monitor_id_for_tray(tray, &frames) else {
             continue;
@@ -692,8 +804,63 @@ pub fn get_taskbar_position_for_monitor(monitor_id: u32) -> Option<TaskbarPositi
             }
         }
     }
+    None
+}
 
-    get_taskbar_position_from_registry_for_monitor(monitor_id, &frames, &mm_key_map)
+fn all_targets_report_position(target_ids: &[u32], expected: TaskbarPosition) -> bool {
+    !target_ids.is_empty()
+        && target_ids
+            .iter()
+            .all(|&id| get_taskbar_position_for_monitor(id) == Some(expected))
+}
+
+fn all_live_targets_match(target_ids: &[u32], expected: TaskbarPosition) -> bool {
+    !target_ids.is_empty()
+        && target_ids
+            .iter()
+            .all(|&id| get_live_taskbar_position_for_monitor(id) == Some(expected))
+}
+
+fn wait_for_all_live_positions(target_ids: &[u32], expected: TaskbarPosition) -> bool {
+    use std::time::{Duration, Instant};
+
+    let deadline = Instant::now() + Duration::from_millis(VERIFY_TIMEOUT_MS);
+    while Instant::now() < deadline {
+        if all_live_targets_match(target_ids, expected) {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(VERIFY_POLL_MS));
+    }
+    all_live_targets_match(target_ids, expected)
+}
+
+/// Poll until every mirrored/target monitor's live tray matches, then settle-check.
+fn verify_live_position_applied_for_targets(
+    target_ids: &[u32],
+    expected: TaskbarPosition,
+) -> Option<TaskbarPosition> {
+    use std::time::{Duration, Instant};
+
+    if !wait_for_all_live_positions(target_ids, expected) {
+        return target_ids
+            .first()
+            .and_then(|&id| get_live_taskbar_position_for_monitor(id));
+    }
+    std::thread::sleep(Duration::from_millis(SETTLE_MS));
+    // Brief retry if tray HWNDs are temporarily missing after Explorer settles.
+    if !all_live_targets_match(target_ids, expected) {
+        let deadline = Instant::now() + Duration::from_millis(1_500);
+        while Instant::now() < deadline {
+            if all_live_targets_match(target_ids, expected) {
+                return Some(expected);
+            }
+            std::thread::sleep(Duration::from_millis(VERIFY_POLL_MS));
+        }
+        return target_ids
+            .first()
+            .and_then(|&id| get_live_taskbar_position_for_monitor(id));
+    }
+    Some(expected)
 }
 
 pub fn get_taskbar_position_from_registry() -> Option<TaskbarPosition> {
@@ -756,10 +923,27 @@ fn restart_explorer() -> Result<(), String> {
 fn win11_unsupported_message(requested: TaskbarPosition) -> String {
     format!(
         "Windows 11 kept the taskbar at the bottom — moving it to {} is not supported on this build. \
-         Microsoft removed registry-based taskbar positioning in most Windows 11 releases; \
-         use Settings → Personalization → Taskbar on Insider 25H2+ if available, or keep the taskbar at the bottom.",
+         Microsoft removed registry-based taskbar positioning on many Windows 11 releases. \
+         If Settings → Personalization → Taskbar shows a Taskbar position control, use that; \
+         otherwise keep the taskbar at the bottom.",
         requested.as_str()
     )
+}
+
+fn fail_result(
+    message: String,
+    current: Option<TaskbarPosition>,
+    requested: TaskbarPosition,
+    open_taskbar_settings: bool,
+) -> TaskbarPositionResult {
+    TaskbarPositionResult {
+        success: false,
+        applied: false,
+        message,
+        current,
+        requested: Some(requested),
+        open_taskbar_settings,
+    }
 }
 
 pub fn apply_taskbar_position_for_monitor(
@@ -772,23 +956,14 @@ pub fn apply_taskbar_position_for_monitor(
     let mm_key_map = build_mm_key_map(&read_mm_stuck_rects(), &frames);
     let current = get_taskbar_position_for_monitor(monitor_id);
 
-    if !position_supported(position) {
-        return TaskbarPositionResult {
-            success: false,
-            applied: false,
-            message: "Left and right taskbar positions are not supported on Windows 11.".to_string(),
-            current,
-            requested: Some(position),
-        };
-    }
-
-    if current == Some(position) {
+    if all_targets_report_position(&target_ids, position) {
         return TaskbarPositionResult {
             success: true,
             applied: false,
             message: "Taskbar is already in the requested position on this monitor".to_string(),
-            current,
+            current: Some(position),
             requested: Some(position),
+            open_taskbar_settings: false,
         };
     }
 
@@ -796,36 +971,34 @@ pub fn apply_taskbar_position_for_monitor(
         .iter()
         .filter_map(|id| mm_key_map.get(id).cloned())
         .collect();
-    let backup = backup_registry_for_targets(&touched_mm_keys);
+    let mut backup = backup_registry_for_targets(&touched_mm_keys);
 
-    if let Err(message) = write_position_to_registry(position, &target_ids, &frames, &mm_key_map) {
-        return TaskbarPositionResult {
-            success: false,
-            applied: false,
-            message,
-            current,
-            requested: Some(position),
-        };
+    if let Err(message) =
+        write_position_to_registry(position, &target_ids, &frames, &mm_key_map, &mut backup)
+    {
+        let _ = restore_registry(&backup);
+        return fail_result(message, current, position, false);
     }
 
     if let Err(message) = restart_explorer() {
         let _ = restore_registry(&backup);
         let _ = restart_explorer();
-        return TaskbarPositionResult {
-            success: false,
-            applied: false,
+        return fail_result(
             message,
-            current: get_taskbar_position_for_monitor(monitor_id),
-            requested: Some(position),
-        };
+            get_taskbar_position_for_monitor(monitor_id),
+            position,
+            false,
+        );
     }
 
-    let detected = get_taskbar_position_for_monitor(monitor_id);
+    let detected = verify_live_position_applied_for_targets(&target_ids, position);
     if detected != Some(position) {
         let _ = restore_registry(&backup);
         let _ = restart_explorer();
-        let actual = get_taskbar_position_for_monitor(monitor_id);
-        let message = if is_windows_11() && position != TaskbarPosition::Bottom {
+        let actual = get_live_taskbar_position_for_monitor(monitor_id)
+            .or_else(|| get_taskbar_position_for_monitor(monitor_id));
+        let open_settings = is_windows_11() && position != TaskbarPosition::Bottom;
+        let message = if open_settings {
             win11_unsupported_message(position)
         } else {
             format!(
@@ -836,13 +1009,7 @@ pub fn apply_taskbar_position_for_monitor(
                 position.as_str()
             )
         };
-        return TaskbarPositionResult {
-            success: false,
-            applied: false,
-            message,
-            current: actual,
-            requested: Some(position),
-        };
+        return fail_result(message, actual, position, open_settings);
     }
 
     TaskbarPositionResult {
@@ -851,6 +1018,7 @@ pub fn apply_taskbar_position_for_monitor(
         message: "Taskbar position updated on this monitor".to_string(),
         current: detected,
         requested: Some(position),
+        open_taskbar_settings: false,
     }
 }
 
@@ -877,22 +1045,17 @@ mod tests {
 
     #[test]
     fn position_byte_mapping() {
-        assert_eq!(TaskbarPosition::Left.byte(), 0);
         assert_eq!(TaskbarPosition::Top.byte(), 1);
-        assert_eq!(TaskbarPosition::Right.byte(), 2);
         assert_eq!(TaskbarPosition::Bottom.byte(), 3);
     }
 
     #[test]
     fn position_from_byte_roundtrip() {
-        for pos in [
-            TaskbarPosition::Left,
-            TaskbarPosition::Top,
-            TaskbarPosition::Right,
-            TaskbarPosition::Bottom,
-        ] {
+        for pos in [TaskbarPosition::Top, TaskbarPosition::Bottom] {
             assert_eq!(TaskbarPosition::from_byte(pos.byte()), Some(pos));
         }
+        assert_eq!(TaskbarPosition::from_byte(0), None);
+        assert_eq!(TaskbarPosition::from_byte(2), None);
         assert_eq!(TaskbarPosition::from_byte(9), None);
     }
 
@@ -900,6 +1063,8 @@ mod tests {
     fn parse_position_strings() {
         assert_eq!(TaskbarPosition::parse("bottom"), Some(TaskbarPosition::Bottom));
         assert_eq!(TaskbarPosition::parse("TOP"), Some(TaskbarPosition::Top));
+        assert_eq!(TaskbarPosition::parse("left"), None);
+        assert_eq!(TaskbarPosition::parse("right"), None);
         assert_eq!(TaskbarPosition::parse("invalid"), None);
     }
 
@@ -981,5 +1146,61 @@ mod tests {
             detect_taskbar_position_for_tray(tray, &frame),
             Some(TaskbarPosition::Top)
         );
+    }
+
+    #[test]
+    fn vertical_tray_is_ignored() {
+        let frame = MonitorFrame {
+            id: 0,
+            is_primary: true,
+            left: 0,
+            top: 0,
+            right: 1920,
+            bottom: 1080,
+            device_name: String::new(),
+        };
+        let left_tray = RectI {
+            left: 0,
+            top: 0,
+            right: 48,
+            bottom: 1080,
+        };
+        assert_eq!(detect_taskbar_position_for_tray(left_tray, &frame), None);
+    }
+
+    #[test]
+    fn live_verification_requires_poll_and_settle_match() {
+        assert!(live_position_verified(
+            Some(TaskbarPosition::Top),
+            Some(TaskbarPosition::Top),
+            TaskbarPosition::Top
+        ));
+        assert!(!live_position_verified(
+            Some(TaskbarPosition::Top),
+            Some(TaskbarPosition::Bottom),
+            TaskbarPosition::Top
+        ));
+        assert!(!live_position_verified(
+            Some(TaskbarPosition::Top),
+            None,
+            TaskbarPosition::Top
+        ));
+        assert!(!live_position_verified(
+            None,
+            Some(TaskbarPosition::Top),
+            TaskbarPosition::Top
+        ));
+    }
+
+    #[test]
+    fn registry_match_alone_is_not_live_proof() {
+        // Documented contract: only live tray geometry counts for apply success.
+        let registry_says_top = Some(TaskbarPosition::Top);
+        let live_missing = None;
+        assert!(!live_position_verified(
+            live_missing,
+            registry_says_top,
+            TaskbarPosition::Top
+        ));
     }
 }

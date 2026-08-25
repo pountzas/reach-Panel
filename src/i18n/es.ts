@@ -37,6 +37,9 @@ export const es: Record<keyof typeof en, string> = {
 
   modeCompanion: "Compañero",
 
+  modeCompanionUnavailable:
+    "No disponible hasta que inicies el puente companion o emparejes una tablet (Ajustes → Compañero).",
+
   teachingLessonMusic: "Música",
 
   teachingLessonMath: "Matemáticas",
@@ -129,7 +132,7 @@ export const es: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "¿Eliminar «{title}»?",
 
   modeTabletsHint:
-    "Normal y Mini son teclado. Enseñanza abre lecciones; Música muestra el sintetizador. Compañero inicia el puente de la tableta; solo queda seleccionado mientras hay una tableta conectada.",
+    "Normal y Mini son teclado. Enseñanza abre lecciones; Música muestra el sintetizador. Compañero no está disponible hasta que el puente esté activo o haya una tableta emparejada; se selecciona mientras hay una tableta conectada.",
 
   miniModeAutoDescription:
     "En una sola pantalla o configuración reflejada, el teclado aparece automáticamente al tocar un campo de entrada.",
@@ -234,15 +237,11 @@ export const es: Record<keyof typeof en, string> = {
   taskbarPosition: "Posición de la barra de tareas",
 
   taskbarPositionHint:
-    "Mueve la barra de tareas de Windows a otro borde de la pantalla. Windows 11 no admite izquierda ni derecha.",
+    "Aplica al monitor de accesibilidad seleccionado arriba. Solo arriba o abajo. Windows 11 puede rechazar arriba; entonces: Configuración → Personalización → Barra de tareas.",
 
   taskbarPositionBottom: "Abajo",
 
   taskbarPositionTop: "Arriba",
-
-  taskbarPositionLeft: "Izquierda",
-
-  taskbarPositionRight: "Derecha",
 
   taskbarPositionApplied: "Posición de la barra de tareas actualizada. Explorer se reinició.",
 

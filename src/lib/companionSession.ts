@@ -94,3 +94,18 @@ export function shouldStopCompanionBridgeOnHostMode(
 ): boolean {
   return companionBridgeArmed || companionModeActive;
 }
+
+/** Companion mode tablet is tappable only when the bridge is up or a tablet is already paired. */
+export function isCompanionTabletEnabled(input: {
+  bridgeRunning: boolean;
+  pairedDeviceCount: number;
+  companionBridgeArmed?: boolean;
+  companionSessionLive?: boolean;
+}): boolean {
+  return (
+    input.bridgeRunning ||
+    input.companionBridgeArmed === true ||
+    input.companionSessionLive === true ||
+    input.pairedDeviceCount > 0
+  );
+}
