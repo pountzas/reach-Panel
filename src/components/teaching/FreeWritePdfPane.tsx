@@ -72,7 +72,7 @@ export function FreeWritePdfPane() {
       renderTaskRef.current?.cancel();
       renderTaskRef.current = null;
       if (docRef.current) {
-        void docRef.current.destroy();
+        void docRef.current.loadingTask.destroy();
         docRef.current = null;
       }
       setDocReadyPath(null);
@@ -91,7 +91,7 @@ export function FreeWritePdfPane() {
         const data = base64ToUint8Array(payload.contentBase64);
         const doc = await pdfjs.getDocument({ data }).promise;
         if (cancelled) {
-          void doc.destroy();
+          void doc.loadingTask.destroy();
           return;
         }
         docRef.current = doc;
@@ -112,7 +112,7 @@ export function FreeWritePdfPane() {
       renderTaskRef.current?.cancel();
       renderTaskRef.current = null;
       if (docRef.current) {
-        void docRef.current.destroy();
+        void docRef.current.loadingTask.destroy();
         docRef.current = null;
       }
     };
