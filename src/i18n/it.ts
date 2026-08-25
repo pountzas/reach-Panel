@@ -234,15 +234,11 @@ export const it: Record<keyof typeof en, string> = {
   taskbarPosition: "Posizione barra delle applicazioni",
 
   taskbarPositionHint:
-    "Sposta la barra delle applicazioni di Windows su un altro bordo dello schermo. Windows 11 non supporta sinistra o destra.",
+    "Si applica al monitor di accessibilità selezionato sopra. Solo in alto o in basso. Windows 11 può rifiutare l'alto; allora: Impostazioni → Personalizzazione → Barra delle applicazioni.",
 
   taskbarPositionBottom: "In basso",
 
   taskbarPositionTop: "In alto",
-
-  taskbarPositionLeft: "A sinistra",
-
-  taskbarPositionRight: "A destra",
 
   taskbarPositionApplied: "Posizione barra aggiornata. Explorer riavviato.",
 

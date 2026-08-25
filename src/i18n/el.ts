@@ -237,15 +237,11 @@ export const el: Record<keyof typeof en, string> = {
   taskbarPosition: "Θέση γραμμής εργασιών",
 
   taskbarPositionHint:
-    "Μετακινεί τη γραμμή εργασιών Windows σε άλλη άκρη της οθόνης. Στα Windows 11 δεν υποστηρίζονται αριστερά ή δεξιά.",
+    "Ισχύει για την οθόνη προσβασιμότητας παραπάνω. Μόνο πάνω ή κάτω. Τα Windows 11 μπορεί να αρνηθούν το πάνω· τότε: Ρυθμίσεις → Εξατομίκευση → Γραμμή εργασιών.",
 
   taskbarPositionBottom: "Κάτω",
 
   taskbarPositionTop: "Πάνω",
-
-  taskbarPositionLeft: "Αριστερά",
-
-  taskbarPositionRight: "Δεξιά",
 
   taskbarPositionApplied: "Η θέση της γραμμής εργασιών ενημερώθηκε. Ο Explorer επανεκκινήθηκε.",
 

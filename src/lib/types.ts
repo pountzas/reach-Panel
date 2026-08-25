@@ -17,8 +17,8 @@ export type OnscreenLayout = "auto" | "QWERTY" | "QWERTZ" | "AZERTY" | "Greek";
 export type TransparentKeyColor = "white" | "dark-gray" | "silver";
 
 export type PointerInputKind = "touch" | "mouse";
-/** Windows taskbar edge preference (applied via system automation). */
-export type TaskbarPosition = "bottom" | "top" | "left" | "right";
+/** Windows taskbar edge preference (top / bottom only). */
+export type TaskbarPosition = "bottom" | "top";
 
 export interface LayoutSnapshot {
   sectionStack?: SectionStackState;

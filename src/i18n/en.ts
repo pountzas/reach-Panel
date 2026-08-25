@@ -248,15 +248,11 @@ export const en = {
   taskbarPosition: "Taskbar position",
 
   taskbarPositionHint:
-    "Applies to the accessibility monitor selected above. Extended displays: only that screen's taskbar changes. Mirrored/duplicate displays: all copies of that screen update together. Windows 11 stable may refuse top/left/right.",
+    "Applies to the accessibility monitor selected above. Extended displays: only that screen's taskbar changes. Mirrored/duplicate displays: all copies of that screen update together. Top or bottom only. Windows 11 may refuse top; if the move does not stick, use Settings → Personalization → Taskbar when a position control is available.",
 
   taskbarPositionBottom: "Bottom",
 
   taskbarPositionTop: "Top",
-
-  taskbarPositionLeft: "Left",
-
-  taskbarPositionRight: "Right",
 
   taskbarPositionApplied: "Taskbar position updated. Explorer restarted.",
 

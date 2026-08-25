@@ -234,15 +234,11 @@ export const es: Record<keyof typeof en, string> = {
   taskbarPosition: "Posición de la barra de tareas",
 
   taskbarPositionHint:
-    "Mueve la barra de tareas de Windows a otro borde de la pantalla. Windows 11 no admite izquierda ni derecha.",
+    "Aplica al monitor de accesibilidad seleccionado arriba. Solo arriba o abajo. Windows 11 puede rechazar arriba; entonces: Configuración → Personalización → Barra de tareas.",
 
   taskbarPositionBottom: "Abajo",
 
   taskbarPositionTop: "Arriba",
-
-  taskbarPositionLeft: "Izquierda",
-
-  taskbarPositionRight: "Derecha",
 
   taskbarPositionApplied: "Posición de la barra de tareas actualizada. Explorer se reinició.",
 
