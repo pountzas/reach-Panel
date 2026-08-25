@@ -37,6 +37,9 @@ export const de: Record<keyof typeof en, string> = {
 
   modeCompanion: "Begleiter",
 
+  modeCompanionUnavailable:
+    "Nicht verfügbar, bis die Companion-Brücke gestartet oder ein Tablet gekoppelt ist (Einstellungen → Begleiter).",
+
   teachingLessonMusic: "Musik",
 
   teachingLessonMath: "Mathematik",
@@ -129,7 +132,7 @@ export const de: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "„{title}“ löschen?",
 
   modeTabletsHint:
-    "Normal und Mini sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer. Begleiter startet die Tablet-Brücke; ausgewählt ist er nur, solange ein Tablet verbunden ist.",
+    "Normal und Mini sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer. Begleiter ist erst verfügbar, wenn die Brücke läuft oder ein Tablet gekoppelt ist; ausgewählt während ein Tablet verbunden ist.",
 
   miniModeAutoDescription:
     "Auf einem einzelnen Display oder bei gespiegelter Einrichtung erscheint die Tastatur automatisch, wenn Sie ein Eingabefeld antippen.",

@@ -37,6 +37,9 @@ export const pt: Record<keyof typeof en, string> = {
 
   modeCompanion: "Companheiro",
 
+  modeCompanionUnavailable:
+    "Indisponível até iniciar a bridge companion ou emparelhar um tablet (Definições → Companheiro).",
+
   teachingLessonMusic: "Música",
 
   teachingLessonMath: "Matemática",
@@ -129,7 +132,7 @@ export const pt: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "Eliminar “{title}”?",
 
   modeTabletsHint:
-    "Normal e Mini são teclado. Ensino abre lições; Música mostra o sintetizador. Companheiro inicia a ponte do tablet; só fica selecionado enquanto um tablet estiver ligado.",
+    "Normal e Mini são teclado. Ensino abre lições; Música mostra o sintetizador. Companheiro fica indisponível até a bridge estar ativa ou um tablet emparelhado; fica selecionado enquanto um tablet estiver ligado.",
 
   miniModeAutoDescription:
     "Num ecrã único ou configuração em espelho, o teclado aparece automaticamente quando toca num campo de entrada.",

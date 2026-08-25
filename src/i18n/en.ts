@@ -36,6 +36,9 @@ export const en = {
 
   modeCompanion: "Companion",
 
+  modeCompanionUnavailable:
+    "Unavailable until you start the companion bridge or pair a tablet (Settings → Companion).",
+
   teachingLessonMusic: "Music",
 
   teachingLessonMath: "Mathematics",
@@ -143,7 +146,7 @@ export const en = {
   confirmDeleteLanguagePack: "Delete “{title}”?",
 
   modeTabletsHint:
-    "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion starts the tablet bridge; it is selected only while a tablet is connected.",
+    "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion stays unavailable until the bridge is started or a tablet is paired; it becomes the selected mode while a tablet is connected.",
 
   miniModeAutoDescription:
     "On a single display or mirrored setup, the keyboard appears automatically when you tap an input field.",
