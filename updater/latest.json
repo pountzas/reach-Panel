@@ -1,15 +1,15 @@
 {
-  "version": "0.11.2",
+  "version": "0.12.0",
   "notes": "",
-  "pub_date": "2026-08-20T16:13:19.731Z",
+  "pub_date": "2026-08-25T19:22:26.759Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.11.2/ReachPanel_0.11.2_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0NkelVPWTd2ZWZXNEdaVXJ0THdPUXFGOUtwZitFbVkyM3VMNmpMYlBIOWFXVjM2TTNDQ25GYnhOZTFwcCtiUjI4VS9KR0UwTjl4cEJrMnJxRXo3NFFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MjQyMzIzCWZpbGU6UmVhY2hQYW5lbF8wLjExLjJfeDY0LXNldHVwLmV4ZQpNdk1ZN2FtdTd6N0hOMUkzR05WNUYxejhhZy95eWVrQ1hWUlBSWUFocnJqdWhyNVlNNGRGNmlkREFqVW9GUCs3K0lObUpXelpwdmZkT1E3UlZQUUxCUT09Cg=="
+      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.12.0/ReachPanel_0.12.0_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0dEZ3lwaDlSbW9rZTdEOFA1VnRCU1c5aVowY2dTREEzUWFWb3FONkM3Z3R1YVNPdnVIZjdvYmhVU216T2NYa0hPQ203NXlIc1FHbmVid0JLdHhPVlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3Njg1NjcxCWZpbGU6UmVhY2hQYW5lbF8wLjEyLjBfeDY0LXNldHVwLmV4ZQpCaGZDN2R5c2drWlBjSklyZnpMOHZLTlh0dDBDazlOanVjcE0ydlpFNUNZTjdMUlROYjFFUndJTyt3SEpZaFVFaEUwZ093VnRLQUZyVXB3dmhBRmJEdz09Cg=="
     },
     "windows-x86_64-nsis": {
-      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.11.2/ReachPanel_0.11.2_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0NkelVPWTd2ZWZXNEdaVXJ0THdPUXFGOUtwZitFbVkyM3VMNmpMYlBIOWFXVjM2TTNDQ25GYnhOZTFwcCtiUjI4VS9KR0UwTjl4cEJrMnJxRXo3NFFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3MjQyMzIzCWZpbGU6UmVhY2hQYW5lbF8wLjExLjJfeDY0LXNldHVwLmV4ZQpNdk1ZN2FtdTd6N0hOMUkzR05WNUYxejhhZy95eWVrQ1hWUlBSWUFocnJqdWhyNVlNNGRGNmlkREFqVW9GUCs3K0lObUpXelpwdmZkT1E3UlZQUUxCUT09Cg=="
+      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.12.0/ReachPanel_0.12.0_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0dEZ3lwaDlSbW9rZTdEOFA1VnRCU1c5aVowY2dTREEzUWFWb3FONkM3Z3R1YVNPdnVIZjdvYmhVU216T2NYa0hPQ203NXlIc1FHbmVid0JLdHhPVlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3Njg1NjcxCWZpbGU6UmVhY2hQYW5lbF8wLjEyLjBfeDY0LXNldHVwLmV4ZQpCaGZDN2R5c2drWlBjSklyZnpMOHZLTlh0dDBDazlOanVjcE0ydlpFNUNZTjdMUlROYjFFUndJTyt3SEpZaFVFaEUwZ093VnRLQUZyVXB3dmhBRmJEdz09Cg=="
     }
   }
 }
