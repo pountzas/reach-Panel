@@ -47,4 +47,15 @@ describe("docs/install/index.html downloads page", () => {
       "https://github.com/pountzas/accessibility-keyboard/releases",
     );
   });
+
+  it("loads GitHub download counts next to each CTA", () => {
+    expect(html).toContain("./github-download-counts.mjs");
+    expect(html).toContain("fetchAllGithubReleases");
+    expect(html).toContain('id="download-setup-count"');
+    expect(html).toContain('id="download-msi-count"');
+    expect(html).toContain('id="download-apk-count"');
+    expect(html).toMatch(/id="download-setup-count"[^>]*hidden/);
+    expect(html).toMatch(/id="download-msi-count"[^>]*hidden/);
+    expect(html).toMatch(/id="download-apk-count"[^>]*hidden/);
+  });
 });

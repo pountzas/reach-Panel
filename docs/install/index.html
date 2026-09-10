@@ -56,8 +56,14 @@
       .cta-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.75rem;
+        gap: 0.75rem 1.25rem;
         margin: 0 0 1rem;
+      }
+      .cta-block {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
       }
       .cta {
         display: inline-block;
@@ -67,6 +73,11 @@
         text-decoration: none;
         font-weight: 600;
         border-radius: 0.5rem;
+      }
+      .download-count {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--muted);
       }
       .cta:focus-visible {
         outline: 2px solid #000;
@@ -106,18 +117,24 @@
         <h2>Windows</h2>
         <p id="windows-version" class="version">0.12.0</p>
         <div class="cta-row">
-          <a
-            id="download-setup"
-            class="cta"
-            href="https://github.com/pountzas/reach-Panel/releases/download/v0.12.0/ReachPanel_0.12.0_x64-setup.exe"
-            >Download Setup</a
-          >
-          <a
-            id="download-msi"
-            class="cta"
-            href="https://github.com/pountzas/reach-Panel/releases/download/v0.12.0/ReachPanel_0.12.0_x64_en-US.msi"
-            >Download MSI</a
-          >
+          <div class="cta-block">
+            <a
+              id="download-setup"
+              class="cta"
+              href="https://github.com/pountzas/reach-Panel/releases/download/v0.12.0/ReachPanel_0.12.0_x64-setup.exe"
+              >Download Setup</a
+            >
+            <p id="download-setup-count" class="download-count" hidden></p>
+          </div>
+          <div class="cta-block">
+            <a
+              id="download-msi"
+              class="cta"
+              href="https://github.com/pountzas/reach-Panel/releases/download/v0.12.0/ReachPanel_0.12.0_x64_en-US.msi"
+              >Download MSI</a
+            >
+            <p id="download-msi-count" class="download-count" hidden></p>
+          </div>
         </div>
         <p class="note">
           On older Windows builds you may need the
@@ -131,12 +148,15 @@
         <h2>Android companion</h2>
         <p id="android-version" class="version"></p>
         <div class="cta-row">
-          <a
-            id="download-apk"
-            class="cta"
-            href="https://2zhnilo5gijgvtoh.public.blob.vercel-storage.com/ReachPanel-Companion.apk"
-            >Download APK</a
-          >
+          <div class="cta-block">
+            <a
+              id="download-apk"
+              class="cta"
+              href="https://2zhnilo5gijgvtoh.public.blob.vercel-storage.com/ReachPanel-Companion.apk"
+              >Download APK</a
+            >
+            <p id="download-apk-count" class="download-count" hidden></p>
+          </div>
         </div>
         <p class="note">
           Tablets are required. Phone-sized devices can install this APK but are
@@ -162,6 +182,12 @@
         fetchDownloadsManifest,
         readDownloadUi,
       } from "./apply-downloads-manifest.mjs";
+      import {
+        applyDownloadCounts,
+        fetchAllGithubReleases,
+        readCountUi,
+        sumGithubDownloadCounts,
+      } from "./github-download-counts.mjs";
 
       const DOWNLOADS_LATEST_URL =
         "https://2zhnilo5gijgvtoh.public.blob.vercel-storage.com/downloads/latest.json";
@@ -170,6 +196,15 @@
       if (ui) {
         const manifest = await fetchDownloadsManifest(DOWNLOADS_LATEST_URL);
         applyDownloadsManifest(ui, manifest);
+      }
+
+      const countUi = readCountUi(document);
+      if (countUi) {
+        const releases = await fetchAllGithubReleases();
+        applyDownloadCounts(
+          countUi,
+          releases ? sumGithubDownloadCounts(releases) : null,
+        );
       }
     </script>
   </body>
