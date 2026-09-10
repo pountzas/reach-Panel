@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Install ReachPanel Companion</title>
+    <title>ReachPanel Downloads</title>
     <style>
       :root {
         color-scheme: light;
@@ -28,7 +28,7 @@
         padding: 1.5rem;
       }
       main {
-        max-width: 28rem;
+        max-width: 36rem;
         width: 100%;
       }
       h1 {
@@ -36,14 +36,31 @@
         font-size: 1.75rem;
         letter-spacing: -0.02em;
       }
+      h2 {
+        margin: 1.5rem 0 0.5rem;
+        font-size: 1.15rem;
+      }
       p {
         margin: 0 0 1rem;
         line-height: 1.45;
         color: var(--muted);
       }
+      .version {
+        margin: 0 0 0.75rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .version:empty {
+        display: none;
+      }
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin: 0 0 1rem;
+      }
       .cta {
         display: inline-block;
-        margin: 0.5rem 0 1rem;
         padding: 0.85rem 1.25rem;
         background: var(--btn);
         color: var(--btn-fg);
@@ -58,37 +75,102 @@
       .note {
         font-size: 0.9rem;
       }
-      .maintainer {
+      .status {
+        margin: 0 0 1rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .footer {
         margin-top: 2rem;
         padding-top: 1rem;
         border-top: 1px solid #ddd;
         font-size: 0.8rem;
         color: #777;
       }
+      .footer a {
+        color: inherit;
+      }
     </style>
   </head>
   <body>
-    <!--
-      Maintainers: CI replaces __INSTALL_APK_PUBLIC_URL__ with the Vercel Blob
-      APK URL before deploy. Retarget the .cta href to the Play Store when published.
-    -->
     <main>
-      <h1>ReachPanel Companion</h1>
+      <h1>ReachPanel Downloads</h1>
       <p>
-        Android tablet app that drives the Windows ReachPanel host — keyboard,
-        trackpad, numpad, and dictation over your local network.
+        Windows host keyboard for touchscreen use, plus an optional Android
+        tablet companion for trackpad, numpad, and remote typing.
       </p>
-      <a class="cta" href="__INSTALL_APK_PUBLIC_URL__">Download APK</a>
-      <p class="note">
-        Tablets are required. Phone-sized devices can install this APK but are
-        blocked when the app launches. First install may require allowing
-        installs from this browser (unknown apps). This is a pre-release APK;
-        Expo Go will not work for caregivers.
-      </p>
-      <p class="maintainer">
-        Hosted on Vercel (private GitHub repo). APK served from Vercel Blob at a
-        stable URL. CI replaces the download link placeholder before deploy.
+
+      <p id="status-note" class="status" hidden></p>
+
+      <section id="windows-section">
+        <h2>Windows</h2>
+        <p id="windows-version" class="version">0.12.0</p>
+        <div class="cta-row">
+          <a
+            id="download-setup"
+            class="cta"
+            href="https://github.com/pountzas/reach-Panel/releases/download/v0.12.0/ReachPanel_0.12.0_x64-setup.exe"
+            >Download Setup</a
+          >
+          <a
+            id="download-msi"
+            class="cta"
+            href="https://github.com/pountzas/reach-Panel/releases/download/v0.12.0/ReachPanel_0.12.0_x64_en-US.msi"
+            >Download MSI</a
+          >
+        </div>
+        <p class="note">
+          On older Windows builds you may need the
+          <a href="https://developer.microsoft.com/en-us/microsoft-edge/webview2/"
+            >WebView2 runtime</a
+          >.
+        </p>
+      </section>
+
+      <section id="android-section">
+        <h2>Android companion</h2>
+        <p id="android-version" class="version"></p>
+        <div class="cta-row">
+          <a
+            id="download-apk"
+            class="cta"
+            href="https://2zhnilo5gijgvtoh.public.blob.vercel-storage.com/ReachPanel-Companion.apk"
+            >Download APK</a
+          >
+        </div>
+        <p class="note">
+          Tablets are required. Phone-sized devices can install this APK but are
+          blocked when the app launches. First install may require allowing
+          installs from this browser (unknown apps).
+        </p>
+      </section>
+
+      <p class="footer">
+        Source:
+        <a href="https://github.com/pountzas/accessibility-keyboard"
+          >GitHub repo</a
+        >
+        ·
+        <a href="https://github.com/pountzas/accessibility-keyboard/releases"
+          >Releases</a
+        >
       </p>
     </main>
+    <script type="module">
+      import {
+        applyDownloadsManifest,
+        fetchDownloadsManifest,
+        readDownloadUi,
+      } from "./apply-downloads-manifest.mjs";
+
+      const DOWNLOADS_LATEST_URL =
+        "https://2zhnilo5gijgvtoh.public.blob.vercel-storage.com/downloads/latest.json";
+
+      const ui = readDownloadUi(document);
+      if (ui) {
+        const manifest = await fetchDownloadsManifest(DOWNLOADS_LATEST_URL);
+        applyDownloadsManifest(ui, manifest);
+      }
+    </script>
   </body>
 </html>
