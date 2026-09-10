@@ -117,14 +117,11 @@ export function isTransparentUiActive(
   return Boolean(miniModeActive && settings.miniModeTransparent);
 }
 
-/** Whether the live input preview should show (and capture) for the current mode. */
+/** Whether the live input preview should show (and capture). Ignores mini mode. */
 export function isInputPreviewActiveForMode(
   settings: AppSettings,
-  miniModeActive: boolean,
+  _miniModeActive: boolean,
 ): boolean {
-  if (miniModeActive) {
-    return settings.inputPreviewMiniModeVisible !== false;
-  }
   return settings.inputPreviewVisible !== false;
 }
 

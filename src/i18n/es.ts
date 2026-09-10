@@ -27,7 +27,7 @@ export const es: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Pantalla de accesibilidad",
 
-  miniMode: "Modo Mini",
+  miniMode: "Modo",
 
   modeNormal: "Normal",
 
@@ -230,7 +230,7 @@ export const es: Record<keyof typeof en, string> = {
 
   showDictationControl: "Mostrar dictado (micrófono)",
 
-  showInputPreview: "Vista previa en vivo del campo (Normal)",
+  showInputPreview: "Vista previa en vivo del campo",
 
   showInputPreviewMiniMode: "Vista previa en vivo del campo (Modo Mini)",
 
@@ -552,41 +552,48 @@ export const es: Record<keyof typeof en, string> = {
 
   settingsAbout: "Acerca de",
 
-  settingsCompanion: "Companion",
-  companionDescription: "Pair an Android tablet to control this PC over Wi-Fi. The tablet becomes the control surface while connected.",
+  settingsCompanion: "Compañero",
+  companionDescription:
+    "Empareja una tableta Android para controlar este PC por Wi‑Fi. La tableta se convierte en la superficie de control mientras está conectada.",
   companionDownloadsHint:
-    "Get the tablet APK and Windows installers from the downloads site.",
-  companionOpenDownloads: "Open downloads site",
-  companionBridgeRunning: "Bridge running",
-  companionBridgeStopped: "Bridge stopped",
-  companionPort: "Port",
-  companionSession: "Session",
-  companionSessionIdle: "Idle",
-  companionSessionActive: "Active",
-  companionSessionReconnecting: "Reconnecting",
-  companionConnectedDevice: "Connected device",
-  companionAudioRouting: "Audio routing",
-  companionAudioHost: "Host PC",
-  companionAudioTablet: "Tablet",
-  companionStart: "Start bridge",
-  companionStop: "Stop bridge",
-  companionRefreshQr: "New pairing code",
-  companionQrHint: "Scan this QR with ReachPanel Companion on your tablet.",
-  companionCopyPayload: "Copy pairing JSON",
-  companionCopied: "Pairing JSON copied",
-  companionPairedDevices: "Paired devices",
-  companionNoDevices: "No tablets paired yet.",
-  companionRevoke: "Revoke",
-  companionRevoked: "Device revoked",
-  companionDeviceRevokedBadge: "Revoked",
-  companionLastSeen: "Last seen",
-  companionCandidateIps: "Detected local IPs",
-  companionUsbTitle: "USB tether (no Wi-Fi)",
-  companionUsbStep1: "On the Android tablet: Settings ? Network ? Hotspot & tethering ? enable USB tethering.",
-  companionUsbStep2: "Connect the tablet to this PC with a data USB cable (not charge-only).",
-  companionUsbStep3: "Click New pairing code so the QR uses the USB network IP (often 192.168.42.x or 192.168.137.x).",
-  companionUsbStep4: "On the tablet, scan the updated QR (or paste JSON). Same protocol as Wi-Fi.",
-  companionUsbStep5: "Already paired? Scanning the new QR updates the IP and reconnects when the host ID matches.",
+    "Obtén el APK de la tableta y los instaladores de Windows en el sitio de descargas.",
+  companionOpenDownloads: "Abrir sitio de descargas",
+  companionBridgeRunning: "Puente en ejecución",
+  companionBridgeStopped: "Puente detenido",
+  companionPort: "Puerto",
+  companionSession: "Sesión",
+  companionSessionIdle: "Inactiva",
+  companionSessionActive: "Activa",
+  companionSessionReconnecting: "Reconectando",
+  companionConnectedDevice: "Dispositivo conectado",
+  companionAudioRouting: "Enrutamiento de audio",
+  companionAudioHost: "PC anfitrión",
+  companionAudioTablet: "Tableta",
+  companionStart: "Iniciar puente",
+  companionStop: "Detener puente",
+  companionRefreshQr: "Nuevo código de emparejamiento",
+  companionQrHint: "Escanea este QR con ReachPanel Compañero en tu tableta.",
+  companionQrAlt: "QR de emparejamiento de Compañero",
+  companionCopyPayload: "Copiar JSON de emparejamiento",
+  companionCopied: "JSON de emparejamiento copiado",
+  companionPairedDevices: "Dispositivos emparejados",
+  companionNoDevices: "Aún no hay tabletas emparejadas.",
+  companionRevoke: "Revocar",
+  companionRevoked: "Dispositivo revocado",
+  companionDeviceRevokedBadge: "Revocado",
+  companionLastSeen: "Última vez visto",
+  companionCandidateIps: "IP locales detectadas",
+  companionUsbTitle: "Anclaje USB (sin Wi‑Fi)",
+  companionUsbStep1:
+    "En la tableta Android: Ajustes → Red → Zona Wi‑Fi y anclaje → activa el anclaje USB.",
+  companionUsbStep2:
+    "Conecta la tableta a este PC con un cable USB de datos (no solo de carga).",
+  companionUsbStep3:
+    "Haz clic en «Nuevo código de emparejamiento» para que el QR use la IP de la red USB (a menudo 192.168.42.x o 192.168.137.x).",
+  companionUsbStep4:
+    "En la tableta, escanea el QR actualizado (o pega el JSON). Mismo protocolo que Wi‑Fi — sin pila de controladores USB especial.",
+  companionUsbStep5:
+    "¿Ya emparejada? Escanear el nuevo QR actualiza la IP y reconecta sin un emparejamiento completo cuando coincida el ID del host.",
 
   aboutDescription: "Teclado y ratón virtuales de asistencia para Windows.",
 
