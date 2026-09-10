@@ -2,7 +2,8 @@
 /**
  * Upload an APK to Vercel Blob with a stable pathname (overwrite enabled).
  *
- * Thin wrapper around scripts/upload-to-blob.mjs for existing CI callers.
+ * Resolves @vercel/blob from companion/node_modules so Android CI
+ * (npm ci in companion/ only) can upload without the root package tree.
  *
  * Usage:
  *   node companion/scripts/upload-apk-to-blob.mjs <local-file> [pathname]
@@ -10,39 +11,49 @@
  * Env:
  *   BLOB_READ_WRITE_TOKEN — required
  *
- * Prints the public blob URL to stdout (last line).
+ * Progress goes to stderr. The public blob URL is the last line of stdout.
  */
-import { spawnSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { put } from '@vercel/blob';
+
+import { buildPutOptions } from '../../scripts/upload-to-blob-lib.mjs';
 
 const localPath = process.argv[2];
 const pathname = process.argv[3] || 'ReachPanel-Companion.apk';
+const token = process.env.BLOB_READ_WRITE_TOKEN;
+const contentType = 'application/vnd.android.package-archive';
 
 if (!localPath) {
   console.error('Usage: node companion/scripts/upload-apk-to-blob.mjs <local-file> [pathname]');
   process.exit(1);
 }
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const uploadScript = join(root, 'scripts', 'upload-to-blob.mjs');
-const contentType = 'application/vnd.android.package-archive';
+if (!token) {
+  console.error('BLOB_READ_WRITE_TOKEN is required');
+  process.exit(1);
+}
 
-const result = spawnSync(
-  process.execPath,
-  [uploadScript, localPath, pathname, contentType],
-  {
-    env: process.env,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  },
+let info;
+try {
+  info = await stat(localPath);
+} catch {
+  console.error(`Not a file: ${localPath}`);
+  process.exit(1);
+}
+
+if (!info.isFile()) {
+  console.error(`Not a file: ${localPath}`);
+  process.exit(1);
+}
+
+console.error(`Uploading ${pathname} (${info.size} bytes)...`);
+
+const blob = await put(
+  pathname,
+  createReadStream(localPath),
+  buildPutOptions({ size: info.size, contentType, token }),
 );
 
-if (result.stderr) {
-  process.stderr.write(result.stderr);
-}
-if (result.stdout) {
-  process.stdout.write(result.stdout);
-}
-
-process.exit(result.status ?? 1);
+console.error(`Uploaded ${pathname} (${info.size} bytes)`);
+console.log(blob.url);
