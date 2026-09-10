@@ -674,10 +674,89 @@ pub fn get_input_target_bounds() -> Option<ScreenRect> {
 }
 
 fn query_focused_input_bounds() -> Option<ScreenRect> {
-    if let Some(rect) = uia_focused_element_bounds() {
-        return Some(rect);
+    let uia = uia_focused_element_bounds();
+    let caret = caret_point();
+    if uia.is_some() || caret.is_some() {
+        return line_strip_bounds(uia, caret);
     }
-    caret_bounds().or_else(window_focus_bounds)
+    window_focus_bounds()
+}
+
+/// Target capture strip for the live input preview (~one text line).
+pub const LINE_STRIP_WIDTH: i32 = 320;
+pub const LINE_STRIP_HEIGHT: i32 = 48;
+
+const TALL_UIA_HEIGHT: i32 = 64;
+const NARROW_UIA_WIDTH: i32 = 160;
+const CARET_STRIP_X_PAD: i32 = 160;
+const CARET_STRIP_Y_PAD: i32 = 12;
+
+/// Pure helper: crop/expand UIA + caret into a ~320×48 line strip for BitBlt preview.
+///
+/// Prefer caret when present. Tall UIA is cropped to one line; tiny UIA is expanded;
+/// already line-sized UIA is kept (with a floor of 48px height).
+pub(crate) fn line_strip_bounds(
+    uia: Option<ScreenRect>,
+    caret: Option<(i32, i32)>,
+) -> Option<ScreenRect> {
+    match (uia, caret) {
+        (None, None) => None,
+        (None, Some((x, y))) => Some(strip_around_point(x, y)),
+        (Some(uia), caret) => Some(line_strip_from_uia(uia, caret)),
+    }
+}
+
+fn strip_around_point(x: i32, y: i32) -> ScreenRect {
+    ScreenRect {
+        left: x.saturating_sub(CARET_STRIP_X_PAD),
+        top: y.saturating_sub(CARET_STRIP_Y_PAD),
+        width: LINE_STRIP_WIDTH,
+        height: LINE_STRIP_HEIGHT,
+    }
+}
+
+fn line_strip_from_uia(uia: ScreenRect, caret: Option<(i32, i32)>) -> ScreenRect {
+    let tiny = uia.height < LINE_STRIP_HEIGHT || uia.width < NARROW_UIA_WIDTH;
+    let tall = uia.height > TALL_UIA_HEIGHT;
+
+    if tiny {
+        return match caret {
+            Some((x, y)) => strip_around_point(x, y),
+            None => {
+                let cx = uia.left.saturating_add(uia.width / 2);
+                let cy = uia.top.saturating_add(uia.height / 2);
+                strip_around_point(cx, cy)
+            }
+        };
+    }
+
+    if tall {
+        let (left, width) = match caret {
+            Some((cx, _)) => (cx.saturating_sub(CARET_STRIP_X_PAD), LINE_STRIP_WIDTH),
+            None => (uia.left, uia.width.max(LINE_STRIP_WIDTH)),
+        };
+        let top = match caret {
+            Some((_, cy)) => cy.saturating_sub(CARET_STRIP_Y_PAD),
+            None => {
+                let mid_y = uia.top.saturating_add(uia.height / 2);
+                mid_y.saturating_sub(LINE_STRIP_HEIGHT / 2)
+            }
+        };
+        return ScreenRect {
+            left,
+            top,
+            width,
+            height: LINE_STRIP_HEIGHT,
+        };
+    }
+
+    // Roughly line-sized: keep UIA, ensure at least one-line height.
+    ScreenRect {
+        left: uia.left,
+        top: uia.top,
+        width: uia.width,
+        height: uia.height.max(LINE_STRIP_HEIGHT),
+    }
 }
 
 fn uia_focused_element_bounds() -> Option<ScreenRect> {
@@ -698,7 +777,7 @@ fn uia_element_bounds(element: &IUIAutomationElement) -> Option<ScreenRect> {
     }
 }
 
-fn caret_bounds() -> Option<ScreenRect> {
+fn caret_point() -> Option<(i32, i32)> {
     unsafe {
         let Some(info) = gui_thread_info() else {
             return None;
@@ -719,12 +798,7 @@ fn caret_bounds() -> Option<ScreenRect> {
             return None;
         }
 
-        Some(ScreenRect {
-            left: pt.x.saturating_sub(160),
-            top: pt.y.saturating_sub(12),
-            width: 320,
-            height: 48,
-        })
+        Some((pt.x, pt.y))
     }
 }
 
@@ -935,12 +1009,85 @@ where
 #[cfg(test)]
 mod tests {
     use super::{
-        classify_aria_role, is_editable_class, is_last_real_text_focus_live,
+        classify_aria_role, is_editable_class, is_last_real_text_focus_live, line_strip_bounds,
         satellite_matches_remembered_owner, should_retain_text_focus, uia_control_is_text_input,
-        uia_signals_are_autocomplete_satellite, AriaRoleKind, UiaTextInputSignals,
-        LAST_REAL_TEXT_FOCUS_TTL,
+        uia_signals_are_autocomplete_satellite, AriaRoleKind, ScreenRect, UiaTextInputSignals,
+        LAST_REAL_TEXT_FOCUS_TTL, LINE_STRIP_HEIGHT, LINE_STRIP_WIDTH,
     };
     use std::time::{Duration, Instant};
+
+    fn rect(left: i32, top: i32, width: i32, height: i32) -> ScreenRect {
+        ScreenRect {
+            left,
+            top,
+            width,
+            height,
+        }
+    }
+
+    #[test]
+    fn line_strip_tall_uia_with_caret_crops_to_one_line() {
+        let uia = rect(100, 200, 800, 600);
+        let caret = (100 + 400, 200 + 300); // middle of UIA
+        let strip = line_strip_bounds(Some(uia), Some(caret)).expect("strip");
+        assert_eq!(strip.height, LINE_STRIP_HEIGHT);
+        assert!(strip.width >= LINE_STRIP_WIDTH);
+        assert!(
+            caret.1 >= strip.top && caret.1 < strip.top + strip.height,
+            "caret Y {} not inside strip top={} height={}",
+            caret.1,
+            strip.top,
+            strip.height
+        );
+    }
+
+    #[test]
+    fn line_strip_tiny_uia_with_caret_expands_around_caret() {
+        let uia = rect(500, 400, 40, 16);
+        let caret = (520, 408);
+        let strip = line_strip_bounds(Some(uia), Some(caret)).expect("strip");
+        assert_eq!(strip.width, LINE_STRIP_WIDTH);
+        assert_eq!(strip.height, LINE_STRIP_HEIGHT);
+        assert_eq!(strip.left, caret.0 - 160);
+        assert_eq!(strip.top, caret.1 - 12);
+    }
+
+    #[test]
+    fn line_strip_tiny_uia_without_caret_expands_around_uia() {
+        let uia = rect(500, 400, 40, 16);
+        let strip = line_strip_bounds(Some(uia), None).expect("strip");
+        assert_eq!(strip.width, LINE_STRIP_WIDTH);
+        assert_eq!(strip.height, LINE_STRIP_HEIGHT);
+        let cx = uia.left + uia.width / 2;
+        let cy = uia.top + uia.height / 2;
+        assert_eq!(strip.left, cx - 160);
+        assert_eq!(strip.top, cy - 12);
+    }
+
+    #[test]
+    fn line_strip_already_line_like_uia_stays_about_same_size() {
+        let uia = rect(80, 90, 320, 48);
+        let strip = line_strip_bounds(Some(uia), None).expect("strip");
+        assert_eq!(strip.left, 80);
+        assert_eq!(strip.top, 90);
+        assert_eq!(strip.width, 320);
+        assert_eq!(strip.height, 48);
+    }
+
+    #[test]
+    fn line_strip_caret_only_matches_legacy_caret_bounds() {
+        let caret = (640, 360);
+        let strip = line_strip_bounds(None, Some(caret)).expect("strip");
+        assert_eq!(
+            strip,
+            rect(caret.0 - 160, caret.1 - 12, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT)
+        );
+    }
+
+    #[test]
+    fn line_strip_neither_uia_nor_caret_returns_none() {
+        assert_eq!(line_strip_bounds(None, None), None);
+    }
 
     fn signals(
         control_type: i32,
