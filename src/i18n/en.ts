@@ -608,6 +608,8 @@ export const en = {
 
   companionQrHint: "Scan this QR with ReachPanel Companion on your tablet.",
 
+  companionQrAlt: "Companion pairing QR",
+
   companionCopyPayload: "Copy pairing JSON",
 
   companionCopied: "Pairing JSON copied",
