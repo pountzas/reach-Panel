@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -46,6 +46,13 @@ describe("docs/install/index.html downloads page", () => {
     expect(html).toContain(
       "https://github.com/pountzas/accessibility-keyboard/releases",
     );
+  });
+
+  it("shows the companion QR next to the APK button", () => {
+    expect(html).toContain('id="apk-page-qr"');
+    expect(html).toContain('src="companion-apk-qr.png"');
+    expect(html).toContain("QR code for this downloads page");
+    expect(existsSync(join(__dirname, "companion-apk-qr.png"))).toBe(true);
   });
 
   it("loads GitHub download counts next to each CTA", () => {

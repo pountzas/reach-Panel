@@ -21,4 +21,7 @@ To regenerate the downloads-page QR (same URL; only needed if the URL changes):
 
 ```bash
 npx qrcode -o docs/images/companion-apk-qr.png -t png -w 360 -e H -q 2 "https://reachpanel-companion.vercel.app/"
+cp docs/images/companion-apk-qr.png docs/install/companion-apk-qr.png
 ```
+
+The install-site copy in `docs/install/` is what Vercel serves next to Download APK. Keep both files in sync.

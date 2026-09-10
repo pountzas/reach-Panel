@@ -79,6 +79,24 @@
         font-size: 0.8rem;
         color: var(--muted);
       }
+      .apk-cta-row {
+        align-items: center;
+      }
+      .apk-qr-block {
+        margin: 0;
+      }
+      .apk-qr {
+        display: block;
+        width: 8.5rem;
+        height: 8.5rem;
+        background: #fff;
+        border-radius: 0.35rem;
+      }
+      .apk-qr-block figcaption {
+        margin: 0.35rem 0 0;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
       .cta:focus-visible {
         outline: 2px solid #000;
         outline-offset: 3px;
@@ -147,7 +165,7 @@
       <section id="android-section">
         <h2>Android companion</h2>
         <p id="android-version" class="version"></p>
-        <div class="cta-row">
+        <div class="cta-row apk-cta-row">
           <div class="cta-block">
             <a
               id="download-apk"
@@ -157,6 +175,17 @@
             >
             <p id="download-apk-count" class="download-count" hidden></p>
           </div>
+          <figure class="apk-qr-block">
+            <img
+              id="apk-page-qr"
+              class="apk-qr"
+              src="companion-apk-qr.png"
+              width="136"
+              height="136"
+              alt="QR code for this downloads page"
+            />
+            <figcaption>Scan on the tablet</figcaption>
+          </figure>
         </div>
         <p class="note">
           Tablets are required. Phone-sized devices can install this APK but are
