@@ -590,7 +590,7 @@ export const el: Record<keyof typeof en, string> = {
   companionDeviceRevokedBadge: "Ανακλημένη",
   companionLastSeen: "Τελευταία εμφάνιση",
   companionCandidateIps: "Ανιχνευμένες τοπικές IP",
-  companionUsbTitle: "USB tether (χωρίς Wi‑Fi)",
+  companionUsbTitle: "Σύνδεση USB (χωρίς Wi‑Fi)",
   companionUsbStep1:
     "Στο tablet Android: Ρυθμίσεις → Δίκτυο → Hotspot και κοινή χρήση → ενεργοποιήστε το USB tethering.",
   companionUsbStep2:
