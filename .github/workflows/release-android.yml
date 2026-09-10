@@ -115,7 +115,6 @@ jobs:
       - name: Upload APK to Vercel Blob (public download)
         if: steps.bump.outputs.should_release == 'true'
         id: blob
-        continue-on-error: true
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
         run: |
@@ -128,15 +127,28 @@ jobs:
           node companion/scripts/upload-apk-to-blob.mjs "ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk" "ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk" >/dev/null
           echo "apk_url=$STABLE_URL" >> "$GITHUB_OUTPUT"
           echo "Public APK URL (stable pathname): $STABLE_URL"
-          echo "Optional: set GitHub Actions variable INSTALL_APK_PUBLIC_URL to this URL for manual Deploy install site runs."
 
-      - name: Deploy install site with APK URL
-        if: steps.bump.outputs.should_release == 'true' && steps.blob.outcome == 'success'
+      - name: Install root dependencies
+        if: steps.bump.outputs.should_release == 'true'
+        run: npm ci
+
+      - name: Merge android into downloads manifest
+        if: steps.bump.outputs.should_release == 'true'
+        id: merge_downloads
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          node scripts/merge-downloads-latest.mjs \
+            --platform android \
+            --version "${{ steps.bump.outputs.new_version }}" \
+            --apk-url "${{ steps.blob.outputs.apk_url }}"
+
+      - name: Deploy install site
+        if: steps.bump.outputs.should_release == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          APK_URL: ${{ steps.blob.outputs.apk_url }}
         run: |
           missing=()
           [ -z "$VERCEL_TOKEN" ] && missing+=("VERCEL_TOKEN")
@@ -146,7 +158,6 @@ jobs:
             echo "::error::Missing Vercel secrets for install site deploy: ${missing[*]}"
             exit 1
           fi
-          sed -i "s|__INSTALL_APK_PUBLIC_URL__|${APK_URL}|g" docs/install/index.html
           npx vercel@latest deploy docs/install --prod --yes --token="$VERCEL_TOKEN"
 
       - name: Create GitHub pre-release
