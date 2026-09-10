@@ -83,7 +83,7 @@ npx expo run:android
 - iOS TestFlight
 - Play Store listing
 
-Caregivers install the pre-built APK from the public page: **https://reachpanel-companion.vercel.app/** (see root [README](../README.md#install--connect-the-android-companion)).
+Caregivers get Windows installers and the tablet APK from the same downloads page: **https://reachpanel-companion.vercel.app/** (see root [README - Install & connect the Android companion](../README.md#install--connect-the-android-companion)).
 
 ## Troubleshooting: `ExponentAV` / native module errors
 
