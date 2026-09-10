@@ -2,6 +2,7 @@ use super::focus_target::{get_effective_input_hwnd, with_target_focus};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::cell::RefCell;
 use std::sync::{Mutex, OnceLock};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, GetKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
@@ -9,6 +10,84 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     VK_DOWN, VK_END, VK_ESCAPE, VK_F1, VK_HOME, VK_LMENU, VK_LWIN, VK_LEFT, VK_NEXT, VK_PRIOR,
     VK_RETURN, VK_RIGHT, VK_SHIFT, VK_SPACE, VK_TAB, VK_UP,
 };
+
+static INPUT_SEQUENCE: Mutex<()> = Mutex::new(());
+thread_local! {
+    static HELD_SYNTHETIC_KEYS: RefCell<Vec<VIRTUAL_KEY>> = const { RefCell::new(Vec::new()) };
+}
+
+struct ReleaseSyntheticKeys;
+
+impl Drop for ReleaseSyntheticKeys {
+    fn drop(&mut self) {
+        HELD_SYNTHETIC_KEYS.with(|keys| {
+            for vk in keys.borrow_mut().drain(..).rev() {
+                let input = input_event(InputEvent::Virtual(vk.0, true));
+                unsafe { SendInput(&[input], std::mem::size_of::<INPUT>() as i32); }
+            }
+        });
+    }
+}
+
+fn keyboard_sequence<T>(action: impl FnOnce() -> Result<T>) -> Result<T> {
+    let _sequence = INPUT_SEQUENCE.lock().map_err(|_| anyhow!("Input sequence lock poisoned"))?;
+    let _release = ReleaseSyntheticKeys;
+    action()
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum InputEvent {
+    Unicode(u16, bool),
+    Virtual(u16, bool),
+}
+
+fn input_event(event: InputEvent) -> INPUT {
+    let (key, scan, flags) = match event {
+        InputEvent::Unicode(code, up) => (0, code, KEYEVENTF_UNICODE | if up { KEYEVENTF_KEYUP } else { Default::default() }),
+        InputEvent::Virtual(key, up) => (key, 0, if up { KEYEVENTF_KEYUP } else { Default::default() }),
+    };
+    INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 { ki: KEYBDINPUT { wVk: VIRTUAL_KEY(key), wScan: scan, dwFlags: flags, time: 0, dwExtraInfo: 0 } },
+    }
+}
+
+fn unicode_events(ch: char) -> Vec<InputEvent> {
+    let mut units = [0; 2];
+    ch.encode_utf16(&mut units).iter().flat_map(|&unit| [InputEvent::Unicode(unit, false), InputEvent::Unicode(unit, true)]).collect()
+}
+
+fn literal_text_events(text: &str) -> Vec<InputEvent> {
+    let mut events = Vec::new();
+    let mut chars = text.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch == '\r' || ch == '\n' {
+            if ch == '\r' && chars.peek() == Some(&'\n') { chars.next(); }
+            events.extend([InputEvent::Virtual(VK_RETURN.0, false), InputEvent::Virtual(VK_RETURN.0, true)]);
+        } else {
+            events.extend(unicode_events(ch));
+        }
+    }
+    events
+}
+
+fn send_events_with(events: &[InputEvent], mut send: impl FnMut(&[InputEvent]) -> usize) -> Result<()> {
+    if events.is_empty() { return Ok(()); }
+    let sent = send(events).min(events.len());
+    if sent == events.len() { return Ok(()); }
+    // Events are down/up pairs. A partial write can leave only the last down held.
+    if sent % 2 == 1 {
+        if let Some(up) = events.get(sent) { send(&[*up]); }
+    }
+    Err(anyhow!("SendInput delivered {sent} of {} events", events.len()))
+}
+
+fn send_events(events: &[InputEvent]) -> Result<()> {
+    send_events_with(events, |batch| {
+        let inputs: Vec<_> = batch.iter().copied().map(input_event).collect();
+        unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) as usize }
+    })
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

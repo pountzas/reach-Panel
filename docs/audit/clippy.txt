@@ -1,0 +1,584 @@
+warn: could not canonicalize path C:\Users\nik
+    Blocking waiting for file lock on build directory
+    Checking windows-link v0.2.1
+   Compiling siphasher v1.0.3
+    Checking cfg-if v1.0.4
+    Checking serde_core v1.0.229
+   Compiling zerofrom v0.1.8
+   Compiling itoa v1.0.18
+    Checking windows-sys v0.61.2
+   Compiling memchr v2.8.1
+   Compiling time-core v0.1.8
+   Compiling num-conv v0.2.2
+   Compiling yoke v0.8.3
+   Compiling phf_shared v0.13.1
+   Compiling writeable v0.6.3
+   Compiling litemap v0.8.2
+   Compiling zerovec v0.11.6
+   Compiling zerotrie v0.2.4
+   Compiling phf_generator v0.13.1
+   Compiling thiserror v2.0.18
+   Compiling utf8_iter v1.0.4
+   Compiling phf_codegen v0.13.1
+   Compiling phf_macros v0.13.1
+   Compiling scopeguard v1.2.0
+   Compiling lock_api v0.4.14
+   Compiling string_cache_codegen v0.6.1
+   Compiling parking_lot_core v0.9.12
+   Compiling icu_normalizer_data v2.2.0
+   Compiling tinystr v0.8.3
+   Compiling potential_utf v0.1.5
+   Compiling icu_collections v2.2.0
+   Compiling icu_locale_core v2.2.0
+   Compiling icu_properties_data v2.2.0
+    Checking stable_deref_trait v1.2.1
+   Compiling winnow v1.0.3
+   Compiling web_atoms v0.2.4
+   Compiling parking_lot v0.12.5
+   Compiling toml_parser v1.1.2+spec-1.1.0
+   Compiling phf v0.13.1
+   Compiling zmij v1.0.21
+   Compiling serde_spanned v1.1.1
+   Compiling toml_writer v1.1.1+spec-1.1.0
+   Compiling serde_json v1.0.151
+   Compiling string_cache v0.9.0
+   Compiling icu_provider v2.2.0
+    Checking serde v1.0.229
+   Compiling getrandom v0.4.2
+   Compiling semver v1.0.28
+   Compiling utf-8 v0.7.6
+   Compiling icu_normalizer v2.2.0
+   Compiling log v0.4.32
+   Compiling form_urlencoded v1.2.2
+   Compiling tendril v0.5.0
+   Compiling uuid v1.24.0
+   Compiling icu_properties v2.2.0
+   Compiling selectors v0.36.1
+   Compiling aho-corasick v1.1.4
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling unic-char-range v0.9.0
+   Compiling byteorder v1.5.0
+    Checking smallvec v1.15.1
+    Checking bytes v1.11.1
+   Compiling unic-common v0.9.0
+   Compiling powerfmt v0.2.0
+   Compiling regex-syntax v0.8.11
+   Compiling alloc-no-stdlib v2.0.4
+   Compiling unic-ucd-version v0.9.0
+   Compiling deranged v0.5.8
+   Compiling alloc-stdlib v0.2.2
+   Compiling toml v1.1.2+spec-1.1.0
+   Compiling unic-char-property v0.9.0
+   Compiling idna_adapter v1.2.2
+   Compiling cssparser v0.36.0
+   Compiling idna v1.1.0
+   Compiling markup5ever v0.38.0
+   Compiling url v2.5.8
+   Compiling winapi-util v0.1.11
+   Compiling typeid v1.0.3
+   Compiling fnv v1.0.7
+   Compiling equivalent v1.0.2
+   Compiling cfb v0.7.3
+   Compiling erased-serde v0.4.10
+   Compiling indexmap v2.14.0
+   Compiling same-file v1.0.6
+   Compiling time v0.3.47
+   Compiling regex-automata v0.4.14
+   Compiling html5ever v0.38.0
+   Compiling unic-ucd-ident v0.9.0
+   Compiling brotli-decompressor v5.0.1
+   Compiling jsonptr v0.6.3
+   Compiling thiserror v1.0.69
+   Compiling quick-xml v0.39.4
+   Compiling dunce v1.0.5
+   Compiling base64 v0.22.1
+    Checking once_cell v1.21.4
+   Compiling dom_query v0.27.0
+   Compiling brotli v8.0.3
+   Compiling schemars v0.8.22
+   Compiling cargo_metadata v0.19.2
+   Compiling http v1.4.2
+   Compiling plist v1.9.0
+   Compiling json-patch v3.0.1
+   Compiling regex v1.12.4
+   Compiling infer v0.19.0
+   Compiling serde-untagged v0.1.9
+   Compiling walkdir v2.5.0
+   Compiling urlpattern v0.3.0
+   Compiling ctor v0.8.0
+   Compiling serde_with v3.21.0
+   Compiling anyhow v1.0.104
+   Compiling glob v0.3.3
+    Checking pin-project-lite v0.2.17
+    Checking windows-link v0.1.3
+   Compiling windows_x86_64_msvc v0.52.6
+   Compiling windows-targets v0.52.6
+   Compiling libc v0.2.186
+    Checking percent-encoding v2.3.2
+   Compiling vswhom-sys v0.1.3
+   Compiling windows-sys v0.59.0
+    Checking windows-result v0.3.4
+    Checking windows-strings v0.4.2
+   Compiling vswhom v0.1.0
+    Checking mio v1.2.1
+    Checking socket2 v0.6.4
+    Checking windows-core v0.61.2
+   Compiling rustc_version v0.4.1
+    Checking bitflags v2.13.0
+   Compiling option-ext v0.2.0
+   Compiling dirs-sys v0.5.0
+   Compiling toml v0.9.12+spec-1.1.0
+    Checking tokio v1.53.1
+    Checking foldhash v0.2.0
+   Compiling tauri-utils v2.9.3
+   Compiling heck v0.5.0
+    Checking futures-core v0.3.32
+    Checking hashbrown v0.17.1
+   Compiling dirs v6.0.0
+    Checking windows-threading v0.1.0
+    Checking getrandom v0.2.17
+   Compiling cargo_toml v0.22.3
+    Checking windows-future v0.2.1
+    Checking windows-numerics v0.2.0
+    Checking windows-collections v0.2.0
+   Compiling time-macros v0.2.27
+    Checking raw-window-handle v0.6.2
+    Checking zeroize v1.9.0
+   Compiling winreg v0.55.0
+   Compiling typenum v1.20.1
+   Compiling simd-adler32 v0.3.9
+    Checking rustls-pki-types v1.15.0
+   Compiling embed-resource v3.0.9
+    Checking windows v0.61.3
+   Compiling tauri-winres v0.3.6
+    Checking tracing-core v0.1.36
+   Compiling generic-array v0.14.7
+    Checking dpi v0.1.2
+   Compiling webview2-com-sys v0.38.2
+   Compiling adler2 v2.0.1
+   Compiling miniz_oxide v0.8.9
+    Checking tracing v0.1.44
+    Checking getrandom v0.3.4
+    Checking crossbeam-utils v0.8.21
+   Compiling crc32fast v1.5.0
+    Checking futures-sink v0.3.32
+    Checking untrusted v0.9.0
+    Checking unicode-segmentation v1.13.3
+    Checking ring v0.17.14
+    Checking crossbeam-channel v0.5.15
+   Compiling flate2 v1.1.9
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling fdeflate v0.3.7
+    Checking windows-version v0.1.7
+   Compiling tauri-build v2.6.3
+   Compiling tauri-plugin v2.6.2
+    Checking slab v0.4.12
+    Checking futures-task v0.3.32
+    Checking futures-util v0.3.32
+   Compiling png v0.17.16
+    Checking rustls-webpki v0.103.13
+   Compiling digest v0.10.7
+    Checking cookie v0.18.1
+    Checking zerocopy v0.8.55
+    Checking httparse v1.10.1
+    Checking http-body v1.0.1
+    Checking subtle v2.6.1
+   Compiling cpufeatures v0.2.17
+    Checking rustls v0.23.41
+   Compiling sha2 v0.10.9
+   Compiling ico v0.5.0
+    Checking keyboard-types v0.7.0
+    Checking try-lock v0.2.5
+    Checking tower-service v0.3.3
+    Checking want v0.3.1
+    Checking muda v0.19.2
+   Compiling tauri-codegen v2.6.3
+    Checking softbuffer v0.4.8
+    Checking futures-channel v0.3.32
+    Checking ppv-lite86 v0.2.21
+    Checking atomic-waker v1.1.2
+    Checking hyper v1.10.1
+    Checking serialize-to-javascript v0.1.2
+    Checking tray-icon v0.24.1
+    Checking window-vibrancy v0.6.0
+    Checking rand_core v0.9.5
+    Checking sync_wrapper v1.0.2
+    Checking http-range v0.1.5
+    Checking ipnet v2.12.0
+    Checking tower-layer v0.3.3
+    Checking mime v0.3.17
+    Checking rand_chacha v0.9.0
+    Checking num-traits v0.2.19
+    Checking tokio-rustls v0.26.4
+    Checking tower v0.5.3
+    Checking hyper-util v0.1.20
+    Checking windows_x86_64_msvc v0.53.1
+    Checking windows-result v0.1.2
+    Checking windows-result v0.2.0
+    Checking windows-targets v0.53.5
+    Checking windows-core v0.54.0
+    Checking rand v0.9.5
+    Checking windows-strings v0.1.0
+    Checking sha1 v0.10.7
+    Checking rustls-platform-verifier v0.7.0
+    Checking tower-http v0.6.11
+    Checking http-body-util v0.1.3
+    Checking tokio-util v0.7.18
+    Checking webpki-roots v1.0.9
+    Checking rand_core v0.6.4
+    Checking windows-strings v0.5.1
+    Checking hyper-rustls v0.27.9
+    Checking windows-result v0.4.1
+    Checking fastrand v2.4.1
+    Checking pxfm v0.1.30
+    Checking zune-core v0.5.3
+    Checking data-encoding v2.11.1
+    Checking windows-core v0.62.2
+    Checking tempfile v3.27.0
+    Checking reqwest v0.13.4
+    Checking tungstenite v0.26.2
+    Checking rand_chacha v0.3.1
+    Checking zune-jpeg v0.5.15
+    Checking windows-core v0.58.0
+    Checking webpki-roots v0.26.11
+    Checking windows v0.54.0
+    Checking png v0.18.1
+    Checking libsqlite3-sys v0.38.1
+    Checking windows-sys v0.60.2
+    Checking zip v4.6.1
+    Checking open v5.3.5
+    Checking hashlink v0.12.0
+    Checking windows-threading v0.2.1
+    Checking dasp_sample v0.11.0
+   Compiling tauri v2.11.5
+   Compiling tauri-macros v2.6.3
+   Compiling tauri-plugin-process v2.3.1
+   Compiling tauri-plugin-opener v2.5.4
+   Compiling tauri-plugin-updater v2.10.1
+   Compiling reach-panel v0.12.0 (C:\Users\nik\AppData\Local\Temp\reachpanel-audit-20260910)
+    Checking minisign-verify v0.2.5
+    Checking fallible-iterator v0.3.0
+    Checking bytemuck v1.25.0
+    Checking byteorder-lite v0.1.0
+    Checking fallible-streaming-iterator v0.1.9
+    Checking windows-future v0.3.2
+    Checking rusqlite v0.40.1
+    Checking windows v0.58.0
+    Checking tokio-tungstenite v0.26.2
+    Checking ureq v2.12.1
+    Checking rfd v0.17.2
+    Checking rand v0.8.7
+    Checking chrono v0.4.45
+    Checking moxcms v0.8.1
+    Checking local-ip-address v0.6.13
+    Checking hex v0.4.3
+    Checking image v0.25.10
+    Checking cpal v0.15.3
+    Checking tao v0.35.3
+    Checking webview2-com v0.38.2
+    Checking tauri-runtime v2.11.3
+    Checking wry v0.55.1
+    Checking tauri-runtime-wry v2.11.4
+warning: digits of hex, binary or octal literal not in groups of equal size
+  --> src\installed_apps.rs:25:52
+   |
+25 |     const CLSID_SHELL_LINK: GUID = GUID::from_u128(0x0002_1401_0000_0000_C000_000000000046);
+   |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider: `0x0002_1401_0000_0000_C000_0000_0000_0046`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#unusual_byte_groupings
+   = note: `#[warn(clippy::unusual_byte_groupings)]` on by default
+
+warning: function `live_position_verified` is never used
+   --> src\window\taskbar_position.rs:297:4
+    |
+297 | fn live_position_verified(
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: this `if let` can be collapsed into the outer `if let`
+   --> src\companion\mod.rs:167:9
+    |
+167 | /         if let std::net::IpAddr::V4(v4) = ip {
+168 | |             if !v4.is_loopback() {
+169 | |                 return Some(v4.to_string());
+170 | |             }
+171 | |         }
+    | |_________^
+    |
+help: the outer pattern can be modified to include the inner pattern
+   --> src\companion\mod.rs:166:15
+    |
+166 |     if let Ok(ip) = local_ip_address::local_ip() {
+    |               ^^ replace this binding
+167 |         if let std::net::IpAddr::V4(v4) = ip {
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^ with this pattern
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#collapsible_match
+    = note: `#[warn(clippy::collapsible_match)]` on by default
+
+warning: writing `&PathBuf` instead of `&Path` involves a new object where a slice will do
+   --> src\db\mod.rs:140:38
+    |
+140 |     fn resolve_db_path(app_data_dir: &PathBuf) -> Result<PathBuf> {
+    |                                      ^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#ptr_arg
+    = note: `#[warn(clippy::ptr_arg)]` on by default
+help: change this to
+    |
+140 -     fn resolve_db_path(app_data_dir: &PathBuf) -> Result<PathBuf> {
+140 +     fn resolve_db_path(app_data_dir: &Path) -> Result<PathBuf> {
+    |
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+   --> src\db\mod.rs:275:33
+    |
+275 |     fn locale_seed_phrases() -> &'static [(&'static str, &'static [(&'static str, &'static str, bool, bool)])]
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#type_complexity
+    = note: `#[warn(clippy::type_complexity)]` on by default
+
+warning: manual implementation of `Iterator::find`
+   --> src\icons.rs:135:5
+    |
+135 | /     for candidate in known_install_candidates(&lower) {
+136 | |         if candidate.is_file() {
+137 | |             return Some(candidate);
+...   |
+141 | |     None
+    | |________^ help: replace with an iterator: `known_install_candidates(&lower).into_iter().find(|candidate| candidate.is_file())`
+    |
+    = note: you may need to dereference some variables
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_find
+    = note: `#[warn(clippy::manual_find)]` on by default
+
+warning: unnecessary `if let` since only the `Some` variant of the iterator element is used
+   --> src\icons.rs:166:9
+    |
+166 | /         for root in [&pf, &pf86] {
+167 | |             if let Some(root) = root {
+168 | |                 out.push(root.join("TeamSpeak 3 Client\\ts3client_win64.exe"));
+169 | |                 out.push(root.join("TeamSpeak 3 Client\\ts3client_win32.exe"));
+...   |
+172 | |         }
+    | |_________^
+    |
+help: try `.flatten()` and remove the `if let` statement in the for loop
+   --> src\icons.rs:167:13
+    |
+167 | /             if let Some(root) = root {
+168 | |                 out.push(root.join("TeamSpeak 3 Client\\ts3client_win64.exe"));
+169 | |                 out.push(root.join("TeamSpeak 3 Client\\ts3client_win32.exe"));
+170 | |                 out.push(root.join("TeamSpeak\\TeamSpeak.exe"));
+171 | |             }
+    | |_____________^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_flatten
+    = note: `#[warn(clippy::manual_flatten)]` on by default
+help: try
+    |
+166 ~         for root in [&pf, &pf86].into_iter().flatten() {
+167 +             out.push(root.join("TeamSpeak 3 Client\\ts3client_win64.exe"));
+168 +             out.push(root.join("TeamSpeak 3 Client\\ts3client_win32.exe"));
+169 +             out.push(root.join("TeamSpeak\\TeamSpeak.exe"));
+170 +         }
+    |
+
+warning: casting to the same type is unnecessary (`u32` -> `u32`)
+   --> src\icons.rs:274:32
+    |
+274 |                 biCompression: BI_RGB.0 as u32,
+    |                                ^^^^^^^^^^^^^^^ help: try: `BI_RGB.0`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#unnecessary_cast
+    = note: `#[warn(clippy::unnecessary_cast)]` on by default
+
+warning: consider using `sort_by_key`
+  --> src\installed_apps.rs:69:5
+   |
+69 |     apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#unnecessary_sort_by
+   = note: `#[warn(clippy::unnecessary_sort_by)]` on by default
+help: try
+   |
+69 -     apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+69 +     apps.sort_by_key(|a| a.name.to_lowercase());
+   |
+
+warning: use of `unwrap_or` to construct default value
+   --> src\input\focus_target.rs:435:42
+    |
+435 |             current = GetParent(current).unwrap_or(HWND::default());
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `unwrap_or_default()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#unwrap_or_default
+    = note: `#[warn(clippy::unwrap_or_default)]` on by default
+
+warning: this `let...else` may be rewritten with the `?` operator
+   --> src\input\focus_target.rs:703:9
+    |
+703 | /         let Some(info) = gui_thread_info() else {
+704 | |             return None;
+705 | |         };
+    | |__________^ help: replace it with: `let info = gui_thread_info()?;`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#question_mark
+    = note: `#[warn(clippy::question_mark)]` on by default
+
+warning: use of `unwrap_or` to construct default value
+   --> src\input\focus_target.rs:816:54
+    |
+816 |             let parent = unsafe { GetParent(current).unwrap_or(HWND::default()) };
+    |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `unwrap_or_default()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#unwrap_or_default
+
+warning: casting to the same type is unnecessary (`u32` -> `u32`)
+   --> src\input\input_preview.rs:252:32
+    |
+252 |                 biCompression: BI_RGB.0 as u32,
+    |                                ^^^^^^^^^^^^^^^ help: try: `BI_RGB.0`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#unnecessary_cast
+
+warning: this `impl` can be derived
+  --> src\stt\winrt.rs:30:1
+   |
+30 | / impl Default for DictationRuntime {
+31 | |     fn default() -> Self {
+32 | |         Self {
+33 | |             session: None,
+...  |
+38 | | }
+   | |_^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#derivable_impls
+   = note: `#[warn(clippy::derivable_impls)]` on by default
+help: replace the manual implementation with a derive attribute
+   |
+24 + #[derive(Default)]
+25 | struct DictationRuntime {
+   |
+
+warning: this function has too many arguments (11/7)
+   --> src\window\mod.rs:161:1
+    |
+161 | / pub fn compute_window_layout(
+162 | |     monitors: &[MonitorInfo],
+163 | |     monitor_id: u32,
+164 | |     collapsed: bool,
+...   |
+172 | |     full_work_area: bool,
+173 | | ) -> Result<WindowLayout, String> {
+    | |_________________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+    = note: `#[warn(clippy::too_many_arguments)]` on by default
+
+warning: usage of `contains_key` followed by `insert` on a `HashMap`
+   --> src\window\taskbar_position.rs:210:17
+    |
+210 | /                 if !map.contains_key(&primary.id) {
+211 | |                     map.insert(primary.id, key.clone());
+212 | |                     unassigned_keys.retain(|k| k != &key);
+213 | |                 }
+    | |_________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#map_entry
+    = note: `#[warn(clippy::map_entry)]` on by default
+help: try
+    |
+210 ~                 if let std::collections::hash_map::Entry::Vacant(e) = map.entry(primary.id) {
+211 +                     e.insert(key.clone());
+212 +                     unassigned_keys.retain(|k| k != &key);
+213 +                 }
+    |
+
+warning: the following explicit lifetimes could be elided: 'a
+   --> src\window\taskbar_position.rs:255:18
+    |
+255 | fn monitor_frame<'a>(frames: &'a [MonitorFrame], id: u32) -> Option<&'a MonitorFrame> {
+    |                  ^^           ^^                                     ^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#needless_lifetimes
+    = note: `#[warn(clippy::needless_lifetimes)]` on by default
+help: elide the lifetimes
+    |
+255 - fn monitor_frame<'a>(frames: &'a [MonitorFrame], id: u32) -> Option<&'a MonitorFrame> {
+255 + fn monitor_frame(frames: &[MonitorFrame], id: u32) -> Option<&MonitorFrame> {
+    |
+
+warning: this function has too many arguments (10/7)
+   --> src\lib.rs:337:1
+    |
+337 | / async fn apply_window_layout(
+338 | |     app: &tauri::AppHandle,
+339 | |     monitor_id: u32,
+340 | |     collapsed: bool,
+...   |
+347 | |     full_work_area: bool,
+348 | | ) -> Result<(), String> {
+    | |_______________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (10/7)
+   --> src\lib.rs:390:1
+    |
+390 | / async fn animate_window_layout(
+391 | |     app: &tauri::AppHandle,
+392 | |     monitor_id: u32,
+393 | |     collapsed: bool,
+...   |
+400 | |     full_work_area: bool,
+401 | | ) -> Result<(), String> {
+    | |_______________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (10/7)
+   --> src\lib.rs:443:1
+    |
+443 | / async fn cmd_apply_window_layout(
+444 | |     app: tauri::AppHandle,
+445 | |     monitor_id: u32,
+446 | |     collapsed: bool,
+...   |
+453 | |     full_work_area: Option<bool>,
+454 | | ) -> Result<(), String> {
+    | |_______________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: this function has too many arguments (10/7)
+   --> src\lib.rs:471:1
+    |
+471 | / async fn cmd_animate_window_layout(
+472 | |     app: tauri::AppHandle,
+473 | |     monitor_id: u32,
+474 | |     collapsed: bool,
+...   |
+481 | |     full_work_area: Option<bool>,
+482 | | ) -> Result<(), String> {
+    | |_______________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_many_arguments
+
+warning: using `contains()` instead of `iter().any()` is more efficient
+    --> src\lib.rs:1065:9
+     |
+1065 |       if !ALLOWED_MS_SETTINGS_PAGES
+     |  _________^
+1066 | |         .iter()
+1067 | |         .any(|allowed| *allowed == trimmed)
+     | |___________________________________________^ help: try: `ALLOWED_MS_SETTINGS_PAGES.contains(&trimmed)`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_contains
+     = note: `#[warn(clippy::manual_contains)]` on by default
+
+warning: `reach-panel` (lib) generated 22 warnings (run `cargo clippy --fix --lib -p reach-panel -- ` to apply 10 suggestions)
+warning: `reach-panel` (lib test) generated 21 warnings (21 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 31s
