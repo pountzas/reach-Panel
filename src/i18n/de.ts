@@ -27,7 +27,7 @@ export const de: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Barrierefreiheitsbildschirm",
 
-  miniMode: "Mini-Modus",
+  miniMode: "Modus",
 
   modeNormal: "Normal",
 
@@ -230,7 +230,7 @@ export const de: Record<keyof typeof en, string> = {
 
   showDictationControl: "Diktat anzeigen (Mikrofon)",
 
-  showInputPreview: "Live-Eingabevorschau (Normal)",
+  showInputPreview: "Live-Eingabevorschau",
 
   showInputPreviewMiniMode: "Live-Eingabevorschau (Mini-Modus)",
 

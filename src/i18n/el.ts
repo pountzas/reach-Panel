@@ -30,7 +30,7 @@ export const el: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Οθόνη προσβασιμότητας",
 
-  miniMode: "Λειτουργία Mini",
+  miniMode: "Λειτουργία",
 
   modeNormal: "Κανονική",
 
@@ -233,7 +233,7 @@ export const el: Record<keyof typeof en, string> = {
 
   showDictationControl: "Εμφάνιση υπαγόρευσης (μικρόφωνο)",
 
-  showInputPreview: "Ζωντανή προεπισκόπηση εισόδου (Normal)",
+  showInputPreview: "Ζωντανή προεπισκόπηση εισόδου",
 
   showInputPreviewMiniMode: "Ζωντανή προεπισκόπηση εισόδου (Mini Mode)",
 

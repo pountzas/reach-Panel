@@ -27,7 +27,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Ecrã de acessibilidade",
 
-  miniMode: "Modo Mini",
+  miniMode: "Modo",
 
   modeNormal: "Normal",
 
@@ -230,7 +230,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   showDictationControl: "Mostrar ditado (microfone)",
 
-  showInputPreview: "Pré-visualização ao vivo do campo (Normal)",
+  showInputPreview: "Pré-visualização ao vivo do campo",
 
   showInputPreviewMiniMode: "Pré-visualização ao vivo do campo (Modo Mini)",
 

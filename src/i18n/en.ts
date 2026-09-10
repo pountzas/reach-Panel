@@ -26,7 +26,7 @@ export const en = {
 
   accessibilityScreen: "Accessibility Screen",
 
-  miniMode: "Mini Mode",
+  miniMode: "Mode",
 
   modeNormal: "Normal",
 
@@ -244,7 +244,7 @@ export const en = {
 
   showDictationControl: "Show dictation (mic)",
 
-  showInputPreview: "Live input preview (Normal)",
+  showInputPreview: "Live input preview",
 
   showInputPreviewMiniMode: "Live input preview (Mini Mode)",
 
