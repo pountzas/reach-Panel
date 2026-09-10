@@ -93,6 +93,36 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.exe.sig `
             --clobber
 
+      - name: Upload Windows installers to Blob and merge downloads manifest
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
+        shell: pwsh
+        run: |
+          if (-not $env:BLOB_READ_WRITE_TOKEN) {
+            Write-Error "BLOB_READ_WRITE_TOKEN is not configured in repository secrets."
+            exit 1
+          }
+
+          $exe = Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe" | Select-Object -First 1
+          if (-not $exe) { throw "NSIS installer not found" }
+          $msi = Get-ChildItem "src-tauri/target/release/bundle/msi/*.msi" | Select-Object -First 1
+          if (-not $msi) { throw "MSI installer not found" }
+
+          $exeUrl = (node scripts/upload-to-blob.mjs $exe.FullName ReachPanel-Setup.exe | Select-Object -Last 1).ToString().Trim()
+          if ($LASTEXITCODE -ne 0 -or -not $exeUrl) { throw "Failed to upload ReachPanel-Setup.exe to Blob" }
+
+          $msiUrl = (node scripts/upload-to-blob.mjs $msi.FullName ReachPanel.msi | Select-Object -Last 1).ToString().Trim()
+          if ($LASTEXITCODE -ne 0 -or -not $msiUrl) { throw "Failed to upload ReachPanel.msi to Blob" }
+
+          $version = $env:RELEASE_TAG -replace '^v', ''
+          node scripts/merge-downloads-latest.mjs `
+            --platform windows `
+            --version $version `
+            --exe-url $exeUrl `
+            --msi-url $msiUrl
+          if ($LASTEXITCODE -ne 0) { throw "Failed to merge windows section into downloads/latest.json" }
+
       - name: Upload Windows updater artifact
         uses: actions/upload-artifact@v7
         with:
