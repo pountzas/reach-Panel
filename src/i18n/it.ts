@@ -555,6 +555,9 @@ export const it: Record<keyof typeof en, string> = {
 
   settingsCompanion: "Companion",
   companionDescription: "Pair an Android tablet to control this PC over Wi-Fi. The tablet becomes the control surface while connected.",
+  companionDownloadsHint:
+    "Get the tablet APK and Windows installers from the downloads site.",
+  companionOpenDownloads: "Open downloads site",
   companionBridgeRunning: "Bridge running",
   companionBridgeStopped: "Bridge stopped",
   companionPort: "Port",
@@ -601,6 +604,8 @@ export const it: Record<keyof typeof en, string> = {
   aboutLinkedIn: "LinkedIn",
 
   aboutWebsite: "Sito web",
+
+  aboutDownloads: "Downloads",
 
   aboutEmail: "Email",
 
