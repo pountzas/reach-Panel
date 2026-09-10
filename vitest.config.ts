@@ -9,6 +9,7 @@ export default defineConfig({
       "**/node_modules/**",
       "**/dist/**",
       "companion/**",
+      "scripts/**/*.test.mjs",
     ],
   },
 });
