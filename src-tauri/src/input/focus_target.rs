@@ -6,18 +6,23 @@ use std::sync::{Condvar, Mutex, Once, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
-use windows::Win32::Foundation::{HWND, POINT, RECT};
+use windows::Win32::Foundation::{BOOL, HWND, POINT, RECT};
 use windows::Win32::System::Com::{
-    CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
+    CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, SAFEARRAY,
 };
 use windows::Win32::System::Threading::{
     AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId,
 };
+use windows::Win32::System::Ole::{
+    SafeArrayAccessData, SafeArrayDestroy, SafeArrayGetUBound, SafeArrayUnaccessData,
+};
 use windows::Win32::UI::Accessibility::{
-    CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationValuePattern, SetWinEventHook,
+    CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
+    IUIAutomationTextPattern2, IUIAutomationTextRange, IUIAutomationValuePattern, SetWinEventHook,
+    TextPatternRangeEndpoint_End, TextPatternRangeEndpoint_Start, TextUnit_Character,
     UIA_ComboBoxControlTypeId, UIA_DocumentControlTypeId, UIA_EditControlTypeId,
-    UIA_ListControlTypeId, UIA_ListItemControlTypeId, UIA_ValuePatternId, HWINEVENTHOOK,
-    UIA_CONTROLTYPE_ID,
+    UIA_ListControlTypeId, UIA_ListItemControlTypeId, UIA_TextPattern2Id, UIA_TextPatternId,
+    UIA_ValuePatternId, HWINEVENTHOOK, UIA_CONTROLTYPE_ID,
 };
 use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -670,31 +675,45 @@ fn publish_input_target_bounds(focused: bool) {
 }
 
 pub fn get_input_target_bounds() -> Option<ScreenRect> {
-    TARGET_BOUNDS.lock().ok().and_then(|g| *g)
+    query_focused_input_bounds()
 }
 
 fn query_focused_input_bounds() -> Option<ScreenRect> {
-    let uia = uia_focused_element_bounds();
-    let caret = caret_point();
-    if uia.is_some() || caret.is_some() {
-        return line_strip_bounds(uia, caret);
+    let from_element = with_uia(|automation| {
+        let element = unsafe { automation.GetFocusedElement().ok()? };
+        if uia_element_is_our_process(&element) {
+            return None;
+        }
+        let uia = uia_element_bounds(&element);
+        let win32 = win32_caret_point().filter(|&(x, y)| {
+            uia.map(|b| point_in_rect(b, x, y)).unwrap_or(false)
+        });
+        let caret = win32.or_else(|| uia_caret_point(&element));
+        if uia.is_some() || caret.is_some() {
+            line_strip_bounds(uia, caret)
+        } else {
+            None
+        }
+    })
+    .flatten();
+    if from_element.is_some() {
+        return from_element;
     }
-    window_focus_bounds()
+    line_strip_bounds(None, win32_caret_point()).or_else(window_focus_bounds)
 }
 
 /// Target capture strip for the live input preview (~one text line).
 pub const LINE_STRIP_WIDTH: i32 = 320;
 pub const LINE_STRIP_HEIGHT: i32 = 48;
 
-const TALL_UIA_HEIGHT: i32 = 64;
 const NARROW_UIA_WIDTH: i32 = 160;
-const CARET_STRIP_X_PAD: i32 = 160;
-const CARET_STRIP_Y_PAD: i32 = 12;
 
 /// Pure helper: crop/expand UIA + caret into a ~320×48 line strip for BitBlt preview.
 ///
-/// Prefer caret when present. Tall UIA is cropped to one line; tiny UIA is expanded;
-/// already line-sized UIA is kept (with a floor of 48px height).
+/// The writing caret stays at the center of the strip when the field is large
+/// enough. Caret is used only when it sits inside the UIA rect (GetCaretPos often
+/// reports window chrome). Large fields stay contained. Only fields that are
+/// small in both axes expand around the caret.
 pub(crate) fn line_strip_bounds(
     uia: Option<ScreenRect>,
     caret: Option<(i32, i32)>,
@@ -708,16 +727,46 @@ pub(crate) fn line_strip_bounds(
 
 fn strip_around_point(x: i32, y: i32) -> ScreenRect {
     ScreenRect {
-        left: x.saturating_sub(CARET_STRIP_X_PAD),
-        top: y.saturating_sub(CARET_STRIP_Y_PAD),
+        left: x.saturating_sub(LINE_STRIP_WIDTH / 2),
+        top: y.saturating_sub(LINE_STRIP_HEIGHT / 2),
         width: LINE_STRIP_WIDTH,
         height: LINE_STRIP_HEIGHT,
     }
 }
 
+fn point_in_rect(uia: ScreenRect, x: i32, y: i32) -> bool {
+    x >= uia.left
+        && y >= uia.top
+        && x < uia.left.saturating_add(uia.width)
+        && y < uia.top.saturating_add(uia.height)
+}
+
+/// Crop a 320×48 window that stays inside a large field. The writing caret is
+/// locked to the center of the strip; without a caret, use the field's top-left.
+fn contained_inside_uia(uia: ScreenRect, caret: Option<(i32, i32)>) -> ScreenRect {
+    let width = LINE_STRIP_WIDTH.min(uia.width.max(1));
+    let height = LINE_STRIP_HEIGHT.min(uia.height.max(1));
+    let (anchor_x, anchor_y) = match caret {
+        Some((x, y)) => (x, y),
+        None => (uia.left, uia.top),
+    };
+    let mut left = anchor_x.saturating_sub(width / 2);
+    let mut top = anchor_y.saturating_sub(height / 2);
+    let max_left = uia.left.saturating_add(uia.width.saturating_sub(width));
+    let max_top = uia.top.saturating_add(uia.height.saturating_sub(height));
+    left = left.clamp(uia.left, max_left);
+    top = top.clamp(uia.top, max_top);
+    ScreenRect {
+        left,
+        top,
+        width,
+        height,
+    }
+}
+
 fn line_strip_from_uia(uia: ScreenRect, caret: Option<(i32, i32)>) -> ScreenRect {
-    let tiny = uia.height < LINE_STRIP_HEIGHT || uia.width < NARROW_UIA_WIDTH;
-    let tall = uia.height > TALL_UIA_HEIGHT;
+    let caret = caret.filter(|&(x, y)| point_in_rect(uia, x, y));
+    let tiny = uia.height < LINE_STRIP_HEIGHT && uia.width < NARROW_UIA_WIDTH;
 
     if tiny {
         return match caret {
@@ -730,44 +779,7 @@ fn line_strip_from_uia(uia: ScreenRect, caret: Option<(i32, i32)>) -> ScreenRect
         };
     }
 
-    if tall {
-        let (left, width) = match caret {
-            Some((cx, _)) => (cx.saturating_sub(CARET_STRIP_X_PAD), LINE_STRIP_WIDTH),
-            None => (uia.left, uia.width.max(LINE_STRIP_WIDTH)),
-        };
-        let top = match caret {
-            Some((_, cy)) => cy.saturating_sub(CARET_STRIP_Y_PAD),
-            None => {
-                let mid_y = uia.top.saturating_add(uia.height / 2);
-                mid_y.saturating_sub(LINE_STRIP_HEIGHT / 2)
-            }
-        };
-        return ScreenRect {
-            left,
-            top,
-            width,
-            height: LINE_STRIP_HEIGHT,
-        };
-    }
-
-    // Roughly line-sized: keep UIA, ensure at least one-line height.
-    ScreenRect {
-        left: uia.left,
-        top: uia.top,
-        width: uia.width,
-        height: uia.height.max(LINE_STRIP_HEIGHT),
-    }
-}
-
-fn uia_focused_element_bounds() -> Option<ScreenRect> {
-    with_uia(|automation| {
-        let element = unsafe { automation.GetFocusedElement().ok()? };
-        if uia_element_is_our_process(&element) {
-            return None;
-        }
-        uia_element_bounds(&element)
-    })
-    .flatten()
+    contained_inside_uia(uia, caret)
 }
 
 fn uia_element_bounds(element: &IUIAutomationElement) -> Option<ScreenRect> {
@@ -777,27 +789,127 @@ fn uia_element_bounds(element: &IUIAutomationElement) -> Option<ScreenRect> {
     }
 }
 
-fn caret_point() -> Option<(i32, i32)> {
+fn uia_caret_point(element: &IUIAutomationElement) -> Option<(i32, i32)> {
+    unsafe {
+        if let Ok(pattern2) =
+            element.GetCurrentPatternAs::<IUIAutomationTextPattern2>(UIA_TextPattern2Id)
+        {
+            let mut active = BOOL(0);
+            if let Ok(range) = pattern2.GetCaretRange(&mut active) {
+                if let Some(pt) = text_range_caret_point(&range) {
+                    return Some(pt);
+                }
+            }
+        }
+        let pattern = element
+            .GetCurrentPatternAs::<IUIAutomationTextPattern>(UIA_TextPatternId)
+            .ok()?;
+        let ranges = pattern.GetSelection().ok()?;
+        let len = ranges.Length().ok()?;
+        if len <= 0 {
+            return None;
+        }
+        let range = ranges.GetElement(0).ok()?;
+        text_range_caret_point(&range)
+    }
+}
+
+fn text_range_caret_point(range: &IUIAutomationTextRange) -> Option<(i32, i32)> {
+    if let Some(pt) = bounding_rect_center(range) {
+        return Some(pt);
+    }
+    unsafe {
+        let probe = range.Clone().ok()?;
+        let moved = probe
+            .MoveEndpointByUnit(TextPatternRangeEndpoint_End, TextUnit_Character, 1)
+            .unwrap_or(0);
+        if moved == 0 {
+            let _ = probe.MoveEndpointByUnit(
+                TextPatternRangeEndpoint_Start,
+                TextUnit_Character,
+                -1,
+            );
+        }
+        bounding_rect_center(&probe)
+    }
+}
+
+fn bounding_rect_center(range: &IUIAutomationTextRange) -> Option<(i32, i32)> {
+    unsafe {
+        let psa = range.GetBoundingRectangles().ok()?;
+        first_rect_center(psa)
+    }
+}
+
+fn first_rect_center(psa: *mut SAFEARRAY) -> Option<(i32, i32)> {
+    if psa.is_null() {
+        return None;
+    }
+    unsafe {
+        let mut data: *mut std::ffi::c_void = std::ptr::null_mut();
+        let accessed = SafeArrayAccessData(psa, &mut data).is_ok();
+        let result = if accessed && !data.is_null() {
+            match SafeArrayGetUBound(psa, 1) {
+                Ok(ubound) if ubound >= 3 => {
+                    let vals = std::slice::from_raw_parts(data as *const f64, (ubound + 1) as usize);
+                    let left = vals[0];
+                    let top = vals[1];
+                    let width = vals[2];
+                    let height = vals[3];
+                    Some((
+                        (left + width / 2.0).round() as i32,
+                        (top + height / 2.0).round() as i32,
+                    ))
+                }
+                _ => None,
+            }
+        } else {
+            None
+        };
+        if accessed {
+            let _ = SafeArrayUnaccessData(psa);
+        }
+        let _ = SafeArrayDestroy(psa);
+        result
+    }
+}
+
+fn win32_caret_point() -> Option<(i32, i32)> {
     unsafe {
         let Some(info) = gui_thread_info() else {
             return None;
         };
         let caret_hwnd = if !is_null(info.hwndCaret) && !is_our_window(info.hwndCaret) {
             info.hwndCaret
-        } else if !is_null(info.hwndFocus) && !is_our_window(info.hwndFocus) {
-            info.hwndFocus
         } else {
             return None;
         };
 
-        let mut pt = POINT::default();
-        if GetCaretPos(&mut pt).is_err() {
-            return None;
-        }
-        if !ClientToScreen(caret_hwnd, &mut pt).as_bool() {
-            return None;
+        let rc = info.rcCaret;
+        let w = rc.right.saturating_sub(rc.left);
+        let h = rc.bottom.saturating_sub(rc.top);
+        if w > 0 || h > 0 || rc.left != 0 || rc.top != 0 {
+            let mut pt = POINT {
+                x: rc.left + w / 2,
+                y: rc.top + h / 2,
+            };
+            if ClientToScreen(caret_hwnd, &mut pt).as_bool() {
+                return Some((pt.x, pt.y));
+            }
         }
 
+        let mut pid = 0;
+        let tid = GetWindowThreadProcessId(caret_hwnd, Some(&mut pid));
+        let our = GetCurrentThreadId();
+        let attached = tid != 0 && tid != our && AttachThreadInput(our, tid, true).as_bool();
+        let mut pt = POINT::default();
+        let ok = GetCaretPos(&mut pt).is_ok();
+        if attached {
+            let _ = AttachThreadInput(our, tid, false);
+        }
+        if !ok || !ClientToScreen(caret_hwnd, &mut pt).as_bool() {
+            return None;
+        }
         Some((pt.x, pt.y))
     }
 }
@@ -1031,7 +1143,7 @@ mod tests {
         let caret = (100 + 400, 200 + 300); // middle of UIA
         let strip = line_strip_bounds(Some(uia), Some(caret)).expect("strip");
         assert_eq!(strip.height, LINE_STRIP_HEIGHT);
-        assert!(strip.width >= LINE_STRIP_WIDTH);
+        assert_eq!(strip.width, LINE_STRIP_WIDTH);
         assert!(
             caret.1 >= strip.top && caret.1 < strip.top + strip.height,
             "caret Y {} not inside strip top={} height={}",
@@ -1039,6 +1151,39 @@ mod tests {
             strip.top,
             strip.height
         );
+        assert!(strip.left >= uia.left);
+        assert!(strip.left + strip.width <= uia.left + uia.width);
+        assert_eq!(strip.left + strip.width / 2, caret.0);
+        assert_eq!(strip.top + strip.height / 2, caret.1);
+    }
+
+    #[test]
+    fn line_strip_tall_uia_without_caret_uses_top_left_contained_window() {
+        let uia = rect(100, 200, 800, 600);
+        let strip = line_strip_bounds(Some(uia), None).expect("strip");
+        assert_eq!(strip, rect(100, 200, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT));
+    }
+
+    #[test]
+    fn line_strip_ignores_caret_outside_uia() {
+        let uia = rect(100, 200, 400, 300);
+        let outside = (900, 80); // typical bogus GetCaretPos on window chrome
+        let strip = line_strip_bounds(Some(uia), Some(outside)).expect("strip");
+        assert_eq!(strip, rect(100, 200, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT));
+    }
+
+    #[test]
+    fn line_strip_wide_line_like_uia_is_contained() {
+        let uia = rect(50, 90, 900, 40);
+        let strip = line_strip_bounds(Some(uia), None).expect("strip");
+        assert_eq!(strip, rect(50, 90, LINE_STRIP_WIDTH, 40));
+    }
+
+    #[test]
+    fn line_strip_short_but_wide_enough_stays_inside_field() {
+        let uia = rect(80, 90, 200, 40);
+        let strip = line_strip_bounds(Some(uia), None).expect("strip");
+        assert_eq!(strip, rect(80, 90, 200, 40));
     }
 
     #[test]
@@ -1049,7 +1194,7 @@ mod tests {
         assert_eq!(strip.width, LINE_STRIP_WIDTH);
         assert_eq!(strip.height, LINE_STRIP_HEIGHT);
         assert_eq!(strip.left, caret.0 - 160);
-        assert_eq!(strip.top, caret.1 - 12);
+        assert_eq!(strip.top, caret.1 - 24);
     }
 
     #[test]
@@ -1061,7 +1206,7 @@ mod tests {
         let cx = uia.left + uia.width / 2;
         let cy = uia.top + uia.height / 2;
         assert_eq!(strip.left, cx - 160);
-        assert_eq!(strip.top, cy - 12);
+        assert_eq!(strip.top, cy - 24);
     }
 
     #[test]
@@ -1080,7 +1225,7 @@ mod tests {
         let strip = line_strip_bounds(None, Some(caret)).expect("strip");
         assert_eq!(
             strip,
-            rect(caret.0 - 160, caret.1 - 12, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT)
+            rect(caret.0 - 160, caret.1 - 24, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT)
         );
     }
 

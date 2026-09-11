@@ -40,7 +40,7 @@ export function InputPreview() {
           <img
             src={inputPreviewFrame}
             alt={t("inputPreviewLabel")}
-            className="block h-full w-full object-contain object-left"
+            className="block h-full w-full object-contain object-center"
             draggable={false}
           />
         ) : (

@@ -41,6 +41,7 @@ export function KeyboardSection() {
   const importedSongs = useAppStore((s) => s.importedSongs);
   const hasInputTarget = useAppStore((s) => s.physicalKeyState.hasInputTarget);
   const companionSessionLive = useAppStore((s) => s.companionSessionLive);
+  const suggestionCount = useAppStore((s) => s.suggestions.length);
   const { t } = useTranslation();
   const showSynth =
     isSynthesizerUiActive(
@@ -62,6 +63,7 @@ export function KeyboardSection() {
   });
   const showSuggestions =
     !showSynth && settings.suggestionsVisible && !compact && !languageLessonActive;
+  const hasSuggestionChips = showSuggestions && suggestionCount > 0;
   const transparentUi = isTransparentUiActive(settings, miniModeActive);
   const showTransparentToggle = miniModeActive && !showSynth && !compact;
   const showMiniModeCollapse =
@@ -79,7 +81,7 @@ export function KeyboardSection() {
   const showToolbar =
     showSynthToolbar ||
     showInputPreview ||
-    showSuggestions ||
+    hasSuggestionChips ||
     showTransparentToggle ||
     showMiniModeCollapse;
   const song = musicTeachingEnabled
@@ -97,39 +99,22 @@ export function KeyboardSection() {
 
   const auxCenterMinHeightPx =
     (showInputPreview ? INPUT_PREVIEW_STRIP_HEIGHT_PX : 0) +
-    (showSuggestions ? 32 : 0) +
-    (showInputPreview && showSuggestions ? 8 : 0);
+    (hasSuggestionChips ? 32 : 0) +
+    (showInputPreview && hasSuggestionChips ? 8 : 0);
 
-  return (
-    <div className="flex h-full min-w-0 flex-1 flex-col">
-      {showToolbar && (
-        <div
-          className={`relative z-20 shrink-0 grid w-full grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${showMiniModeToolbar ? "pt-3 pb-1" : compact ? "pt-2" : showSuggestions || showInputPreview ? "pt-2 pb-0" : "pt-6"}`}
-        >
-          <div aria-hidden className="min-w-0" />
-          <div
-            className="flex min-w-0 flex-col items-center justify-end gap-2 overflow-hidden px-1"
-            style={
-              auxCenterMinHeightPx > 0
-                ? { minHeight: auxCenterMinHeightPx }
-                : undefined
-            }
-          >
-            {showInputPreview && <InputPreview />}
-            {showSuggestions && (
-              <div
-                className={`flex w-full items-center justify-center ${SUGGESTION_ROW_MIN_CLASS}`}
-              >
-                <SuggestionsBar />
-              </div>
-            )}
-          </div>
-          {(showSynthToolbar ||
-            showTransparentToggle ||
-            showMiniModeCollapse) ? (
-            <div
-              className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center justify-end gap-2 pr-2`}
-            >
+  const suggestionsRow = hasSuggestionChips ? (
+    <div
+      className={`flex w-full items-center justify-center ${SUGGESTION_ROW_MIN_CLASS}`}
+    >
+      <SuggestionsBar />
+    </div>
+  ) : null;
+
+  const endControls =
+    showSynthToolbar || showTransparentToggle || showMiniModeCollapse ? (
+      <div
+        className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center justify-end gap-2 pr-2`}
+      >
               {showMiniModeCollapse && (
                 <ModeToggleGroup
                   transparentUi={transparentUi}
@@ -275,9 +260,44 @@ export function KeyboardSection() {
                 </>
               )}
             </div>
-          ) : null}
-        </div>
-      )}
+    ) : null;
+
+  return (
+    <div className="flex h-full min-w-0 flex-1 flex-col">
+      {showToolbar &&
+        (showMiniModeToolbar ? (
+          <div
+            className={`relative z-20 flex w-full shrink-0 flex-col overflow-visible pr-1 pt-1 pb-0 ${hasSuggestionChips ? "gap-1" : ""}`}
+          >
+            <div className="flex w-full items-center gap-2">
+              <div
+                className={`flex min-w-0 flex-1 items-center justify-center px-1 ${showInputPreview ? "min-h-[48px]" : ""}`}
+              >
+                {showInputPreview ? <InputPreview /> : null}
+              </div>
+              {endControls}
+            </div>
+            {suggestionsRow}
+          </div>
+        ) : (
+          <div
+            className={`relative z-20 grid w-full shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${compact ? "pt-2" : showInputPreview || hasSuggestionChips ? "pt-1 pb-0" : "pt-6"}`}
+          >
+            <div aria-hidden className="min-w-0" />
+            <div
+            className="flex min-w-0 flex-col items-center justify-end gap-1 overflow-hidden px-1"
+              style={
+                auxCenterMinHeightPx > 0
+                  ? { minHeight: auxCenterMinHeightPx }
+                  : undefined
+              }
+            >
+              {showInputPreview ? <InputPreview /> : null}
+              {suggestionsRow}
+            </div>
+            {endControls}
+          </div>
+        ))}
       {showSynth ? (
         <div className="min-h-0 flex-1">
           <Synthesizer />

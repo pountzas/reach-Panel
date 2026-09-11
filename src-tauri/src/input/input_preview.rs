@@ -24,7 +24,7 @@ use super::focus_target::{get_input_target_bounds, has_input_target, ScreenRect}
 
 const FRAME_INTERVAL: Duration = Duration::from_millis(125);
 const JPEG_QUALITY: u8 = 72;
-const PADDING: i32 = 8;
+const PADDING: i32 = 0;
 const MAX_CAPTURE_WIDTH: i32 = 640;
 const MAX_CAPTURE_HEIGHT: i32 = 120;
 
