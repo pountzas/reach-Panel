@@ -11,4 +11,11 @@ describe("build.yml PR checks", () => {
     expect(yaml).toContain("npm run test:blob");
     expect(yaml).toMatch(/test-blob:/);
   });
+
+  it("uses Node 22 in every job", () => {
+    const versions = [...yaml.matchAll(/^\s+node-version:\s*(\S+)\s*$/gm)].map(
+      (match) => match[1],
+    );
+    expect(versions).toEqual(["22", "22"]);
+  });
 });

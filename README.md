@@ -154,7 +154,7 @@ Companion: Android tablet on the same LAN as the PC, or USB tethering. See [Inst
 
 For development:
 
-- Node.js 18+ (Node 20+ for the companion Expo app)
+- Node.js 22+
 - Rust (via [rustup](https://rustup.rs/))
 - Visual Studio Build Tools with the C++ workload
 

@@ -6,7 +6,7 @@ For the caregiver-facing install and pairing walkthrough (Wi‑Fi + USB tether),
 
 ## Prerequisites
 
-- Node 20+
+- Node 22+
 - Android tablet or emulator (SDK 57 Expo Go **or** a local development build)
 - ReachPanel host running; start the companion bridge from **Settings → Companion** or the Companion mode tablet
 
