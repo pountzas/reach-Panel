@@ -72,6 +72,8 @@ npx expo run:android
 - QR scan + paste pairing JSON (host Settings → Companion shows QR)
 - Auth + credential persistence + reconnect
 - Keyboard, trackpad (tap-to-click), numpad
+- Live host input-preview strip on the keyboard tab (between suggestions and keys)
+- Language control that lists/switches installed Windows keyboards
 - Prediction suggestions
 - Collapsed FAB mode
 - Profile sync panel (`profile.snapshot`)

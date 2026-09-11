@@ -243,6 +243,15 @@ async fn handle_connection(
                 if changed.is_err() {
                     break;
                 }
+                if !session.epoch_matches(connection_epoch) {
+                    let err = Envelope::error(
+                        None,
+                        "unauthorized",
+                        "Session revoked",
+                    );
+                    let _ = send_json(&mut write, &err).await;
+                    break;
+                }
                 let event = preview_rx.borrow_and_update().clone();
                 if let Some(ev) = event {
                     let env = match ev {

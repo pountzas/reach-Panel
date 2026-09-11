@@ -8,7 +8,7 @@ use crate::input::{
 use crate::prediction::{get_suggestions, record_usage};
 use crate::profiles::INTERNAL_PROFILE_ID;
 use crate::services::{build_profile_snapshot, launch_quick_action, type_phrase_text};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter, Manager};
 
 fn active_typing_language(db: &Database, fallback: &str) -> String {
     db.get_profile_by_id(INTERNAL_PROFILE_ID)
@@ -26,27 +26,37 @@ fn active_typing_language(db: &Database, fallback: &str) -> String {
         .unwrap_or_else(|| fallback.to_string())
 }
 
-fn persist_typing_language(db: &Database, lang_tag: &str) -> Result<(), String> {
+fn persist_typing_language(app: &AppHandle, db: &Database, lang_tag: &str) -> Result<(), String> {
     let profile = db
         .get_profile_by_id(INTERNAL_PROFILE_ID)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Active profile not found".to_string())?;
     let mut settings: serde_json::Value = serde_json::from_str(&profile.settings_json)
         .unwrap_or_else(|_| serde_json::json!({}));
-    let Some(obj) = settings.as_object_mut() else {
+    if let Some(obj) = settings.as_object_mut() {
+        obj.insert(
+            "typingLanguage".into(),
+            serde_json::Value::String(lang_tag.to_string()),
+        );
+    } else {
         settings = serde_json::json!({ "typingLanguage": lang_tag });
-        let json = serde_json::to_string(&settings).map_err(|e| e.to_string())?;
-        return db
-            .update_profile_settings(INTERNAL_PROFILE_ID, &json)
-            .map_err(|e| e.to_string());
-    };
-    obj.insert(
-        "typingLanguage".into(),
-        serde_json::Value::String(lang_tag.to_string()),
-    );
+    }
     let json = serde_json::to_string(&settings).map_err(|e| e.to_string())?;
     db.update_profile_settings(INTERNAL_PROFILE_ID, &json)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    // Same durable path as cmd_update_profile_settings — profile JSON file is
+    // re-imported over SQLite on host start.
+    if let Some(state) = app.try_state::<crate::AppState>() {
+        state
+            .profiles
+            .save_active_profile(&state.db)
+            .map_err(|e| e.to_string())?;
+    }
+    let _ = app.emit(
+        "profile-updated",
+        serde_json::json!({ "source": "companion" }),
+    );
+    Ok(())
 }
 
 /// Handle an authenticated companion message. Returns response envelopes (0+).
@@ -313,7 +323,7 @@ pub fn handle_message(
                     "Input method not found after switch",
                 )];
             };
-            if let Err(e) = persist_typing_language(db, &method.lang_tag) {
+            if let Err(e) = persist_typing_language(app, db, &method.lang_tag) {
                 return vec![Envelope::error(id, "persist_failed", e)];
             }
             vec![Envelope::reply(
