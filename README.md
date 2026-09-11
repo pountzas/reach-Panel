@@ -102,7 +102,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - On-screen layout override (auto / QWERTY / QWERTZ / AZERTY / Greek)
 - Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle
 - Dictation key beside Right Ctrl (see Voice dictation below); show/hide the mic key under **Settings → Visible sections**
-- **Input preview** — when an external text field is targeted, a live ~320×48 strip follows the writing caret (clamped inside the field so a tall textarea is not shrunk to a postage stamp) on the keyboard toolbar. Toggle under **Settings → Visible sections → Live input preview** (on by default). Disabled during Companion sessions. Protected or DRM content may appear black; some custom controls may not expose a usable screen region.
+- **Input preview** — when an external text field is targeted, a live ~320×48 strip follows the writing caret (clamped inside the field so a tall textarea is not shrunk to a postage stamp) on the keyboard toolbar. Toggle under **Settings → Visible sections → Live input preview** (on by default). While a companion tablet session is active, the same strip is streamed to the tablet keyboard instead of the minimized host UI. Protected or DRM content may appear black; some custom controls may not expose a usable screen region.
 - Special keys use symbols (Enter ↵, Shift ⇧, Backspace ⌫, Space ␣)
 - Right-click / long-press context menus are suppressed on the keyboard and main app surface
 
@@ -114,6 +114,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 
 - Pair via Settings → Companion (QR, paste JSON, or USB tether)
 - Tablet: keyboard, trackpad (tap-to-click), numpad, dictation, suggestions
+- Keyboard tab shows the live host input-preview strip between suggestions and keys, and a language control that lists/switches installed Windows keyboards (same system language switch as the host Lang key)
 - Host-only injection; Teaching / Music remain on Windows
 
 ### Voice dictation (Windows)

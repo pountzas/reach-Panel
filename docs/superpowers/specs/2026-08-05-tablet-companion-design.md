@@ -169,6 +169,9 @@ Sticky modifiers may live on the tablet UI; host remains authoritative for profi
 | `predict.record` | Record accepted word |
 | `qa.launch` | Launch quick action (url/app) via host opener |
 | `phrase.type` | Type phrase text on host (speak stays on tablet) |
+| `keyboard.languages` | List installed Windows input methods |
+| `keyboard.setLanguage` | Activate HKL + persist `typingLanguage` |
+| `input.preview.frame` / `input.preview.cleared` | Host→tablet live field strip (S→C push) |
 
 ### 6.4 Dictation (later phase)
 
