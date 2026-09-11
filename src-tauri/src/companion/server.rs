@@ -1,5 +1,6 @@
 use super::auth::AuthStore;
 use super::dispatch;
+use super::outbound::{PreviewOutbound, PreviewPush};
 use super::protocol::{Envelope, PROTOCOL_VERSION};
 use super::session::SessionState;
 use crate::db::Database;
@@ -21,6 +22,7 @@ pub async fn run_bridge(
     app: AppHandle,
     auth: Arc<AuthStore>,
     session: Arc<SessionState>,
+    preview: Arc<PreviewOutbound>,
     port: u16,
     mut stop_rx: watch::Receiver<bool>,
     running: Arc<AtomicBool>,
@@ -52,9 +54,12 @@ pub async fn run_bridge(
                         let app = app.clone();
                         let auth = auth.clone();
                         let session = session.clone();
+                        let preview = preview.clone();
                         tauri::async_runtime::spawn(async move {
-                            if let Err(e) =
-                                handle_connection(app, auth, session, stream, peer, port).await
+                            if let Err(e) = handle_connection(
+                                app, auth, session, preview, stream, peer, port,
+                            )
+                            .await
                             {
                                 eprintln!("[companion] connection {peer}: {e}");
                             }
@@ -78,6 +83,7 @@ async fn handle_connection(
     app: AppHandle,
     auth: Arc<AuthStore>,
     session: Arc<SessionState>,
+    preview: Arc<PreviewOutbound>,
     stream: TcpStream,
     peer: SocketAddr,
     bridge_port: u16,
@@ -91,140 +97,174 @@ async fn handle_connection(
     let mut connection_epoch = 0u64;
     let mut device_name = String::from("Tablet");
     let mut hello_seen = false;
+    let mut preview_rx = preview.subscribe();
 
-    while let Some(msg) = read.next().await {
-        let msg = msg.map_err(|e| format!("ws read: {e}"))?;
-        if msg.is_close() {
-            break;
-        }
-        let text = match msg {
-            Message::Text(t) => t.to_string(),
-            Message::Ping(data) => {
-                write
-                    .send(Message::Pong(data))
-                    .await
-                    .map_err(|e| format!("pong: {e}"))?;
-                continue;
-            }
-            Message::Pong(_) | Message::Frame(_) | Message::Binary(_) => continue,
-            Message::Close(_) => break,
-        };
-
-        let env: Envelope = match serde_json::from_str(&text) {
-            Ok(e) => e,
-            Err(e) => {
-                let err = Envelope::error(None, "bad_json", e.to_string());
-                send_json(&mut write, &err).await?;
-                continue;
-            }
-        };
-
-        if env.v != PROTOCOL_VERSION {
-            let err = Envelope::error(
-                env.id.clone(),
-                "version_mismatch",
-                format!("Expected protocol v{PROTOCOL_VERSION}"),
-            );
-            send_json(&mut write, &err).await?;
-            continue;
-        }
-
-        if authenticated && !session.epoch_matches(connection_epoch) {
-            let err = Envelope::error(
-                env.id.clone(),
-                "unauthorized",
-                "Session revoked",
-            );
-            let _ = send_json(&mut write, &err).await;
-            break;
-        }
-
-        match env.msg_type.as_str() {
-            "hello" => {
-                hello_seen = true;
-                if let Some(name) = env.payload.get("deviceName").and_then(|v| v.as_str()) {
-                    if !name.trim().is_empty() {
-                        device_name = name.trim().to_string();
-                    }
+    loop {
+        tokio::select! {
+            msg = read.next() => {
+                let Some(msg) = msg else { break; };
+                let msg = msg.map_err(|e| format!("ws read: {e}"))?;
+                if msg.is_close() {
+                    break;
                 }
-                let host_id = auth.host_id().unwrap_or_default();
-                let reply = Envelope::reply(
-                    env.id.clone(),
-                    "hello.ok",
-                    serde_json::json!({
-                        "hostId": host_id,
-                        "protocolVersion": PROTOCOL_VERSION,
-                    }),
-                );
-                send_json(&mut write, &reply).await?;
-            }
-            "auth" => {
-                if !hello_seen {
-                    let err = Envelope::error(env.id.clone(), "protocol", "Send hello before auth");
+                let text = match msg {
+                    Message::Text(t) => t.to_string(),
+                    Message::Ping(data) => {
+                        write
+                            .send(Message::Pong(data))
+                            .await
+                            .map_err(|e| format!("pong: {e}"))?;
+                        continue;
+                    }
+                    Message::Pong(_) | Message::Frame(_) | Message::Binary(_) => continue,
+                    Message::Close(_) => break,
+                };
+
+                let env: Envelope = match serde_json::from_str(&text) {
+                    Ok(e) => e,
+                    Err(e) => {
+                        let err = Envelope::error(None, "bad_json", e.to_string());
+                        send_json(&mut write, &err).await?;
+                        continue;
+                    }
+                };
+
+                if env.v != PROTOCOL_VERSION {
+                    let err = Envelope::error(
+                        env.id.clone(),
+                        "version_mismatch",
+                        format!("Expected protocol v{PROTOCOL_VERSION}"),
+                    );
                     send_json(&mut write, &err).await?;
                     continue;
                 }
-                match perform_auth(&auth, &env.payload, &device_name) {
-                    Ok((device_id, new_credential, name)) => {
-                        authenticated = true;
-                        device_name = name.clone();
-                        connection_epoch = session.set_active(device_id.clone(), name.clone());
-                        on_session_active(&app);
-                        emit_ui_state(&app, &auth, &session, true, bridge_port);
 
-                        let mut payload = serde_json::json!({
-                            "deviceId": device_id,
-                            "audioRouting": "tablet",
-                            "session": "active",
-                        });
-                        if let Some(cred) = new_credential {
-                            payload
-                                .as_object_mut()
-                                .expect("payload object")
-                                .insert("credential".into(), serde_json::json!(cred));
+                if authenticated && !session.epoch_matches(connection_epoch) {
+                    let err = Envelope::error(
+                        env.id.clone(),
+                        "unauthorized",
+                        "Session revoked",
+                    );
+                    let _ = send_json(&mut write, &err).await;
+                    break;
+                }
+
+                match env.msg_type.as_str() {
+                    "hello" => {
+                        hello_seen = true;
+                        if let Some(name) = env.payload.get("deviceName").and_then(|v| v.as_str()) {
+                            if !name.trim().is_empty() {
+                                device_name = name.trim().to_string();
+                            }
                         }
-
-                        let reply = Envelope::reply(env.id.clone(), "auth.ok", payload);
-                        send_json(&mut write, &reply).await?;
-                        let state_evt = Envelope::event(
-                            "session.state",
+                        let host_id = auth.host_id().unwrap_or_default();
+                        let reply = Envelope::reply(
+                            env.id.clone(),
+                            "hello.ok",
                             serde_json::json!({
-                                "active": true,
-                                "audioRouting": "tablet",
-                                "deviceName": device_name,
+                                "hostId": host_id,
+                                "protocolVersion": PROTOCOL_VERSION,
                             }),
                         );
-                        send_json(&mut write, &state_evt).await?;
+                        send_json(&mut write, &reply).await?;
                     }
-                    Err(e) => {
-                        let err = Envelope::reply(
+                    "auth" => {
+                        if !hello_seen {
+                            let err = Envelope::error(env.id.clone(), "protocol", "Send hello before auth");
+                            send_json(&mut write, &err).await?;
+                            continue;
+                        }
+                        match perform_auth(&auth, &env.payload, &device_name) {
+                            Ok((device_id, new_credential, name)) => {
+                                authenticated = true;
+                                device_name = name.clone();
+                                connection_epoch = session.set_active(device_id.clone(), name.clone());
+                                on_session_active(&app);
+                                emit_ui_state(&app, &auth, &session, true, bridge_port);
+
+                                let mut payload = serde_json::json!({
+                                    "deviceId": device_id,
+                                    "audioRouting": "tablet",
+                                    "session": "active",
+                                });
+                                if let Some(cred) = new_credential {
+                                    payload
+                                        .as_object_mut()
+                                        .expect("payload object")
+                                        .insert("credential".into(), serde_json::json!(cred));
+                                }
+
+                                let reply = Envelope::reply(env.id.clone(), "auth.ok", payload);
+                                send_json(&mut write, &reply).await?;
+                                let state_evt = Envelope::event(
+                                    "session.state",
+                                    serde_json::json!({
+                                        "active": true,
+                                        "audioRouting": "tablet",
+                                        "deviceName": device_name,
+                                    }),
+                                );
+                                send_json(&mut write, &state_evt).await?;
+                            }
+                            Err(e) => {
+                                let err = Envelope::reply(
+                                    env.id.clone(),
+                                    "auth.err",
+                                    serde_json::json!({ "message": e }),
+                                );
+                                send_json(&mut write, &err).await?;
+                            }
+                        }
+                    }
+                    "ping" if authenticated => {
+                        let reply = Envelope::reply(
                             env.id.clone(),
-                            "auth.err",
-                            serde_json::json!({ "message": e }),
+                            "pong",
+                            serde_json::json!({ "t": env.payload.get("t") }),
                         );
+                        send_json(&mut write, &reply).await?;
+                    }
+                    _ if !authenticated => {
+                        let err = Envelope::error(env.id.clone(), "unauthorized", "Authenticate first");
                         send_json(&mut write, &err).await?;
+                    }
+                    _ => {
+                        let state = app
+                            .try_state::<crate::AppState>()
+                            .ok_or_else(|| "AppState missing".to_string())?;
+                        let replies = dispatch_with_db(&app, &state.db, &env);
+                        for reply in replies {
+                            send_json(&mut write, &reply).await?;
+                        }
                     }
                 }
             }
-            "ping" if authenticated => {
-                let reply = Envelope::reply(
-                    env.id.clone(),
-                    "pong",
-                    serde_json::json!({ "t": env.payload.get("t") }),
-                );
-                send_json(&mut write, &reply).await?;
-            }
-            _ if !authenticated => {
-                let err = Envelope::error(env.id.clone(), "unauthorized", "Authenticate first");
-                send_json(&mut write, &err).await?;
-            }
-            _ => {
-                let state = app
-                    .try_state::<crate::AppState>()
-                    .ok_or_else(|| "AppState missing".to_string())?;
-                let replies = dispatch_with_db(&app, &state.db, &env);
-                for reply in replies {
-                    send_json(&mut write, &reply).await?;
+            changed = preview_rx.changed(), if authenticated => {
+                if changed.is_err() {
+                    break;
+                }
+                let event = preview_rx.borrow_and_update().clone();
+                if let Some(ev) = event {
+                    let env = match ev {
+                        PreviewPush::Frame {
+                            data_url,
+                            width,
+                            height,
+                        } => Envelope::event(
+                            "input.preview.frame",
+                            serde_json::json!({
+                                "dataUrl": data_url,
+                                "width": width,
+                                "height": height,
+                            }),
+                        ),
+                        PreviewPush::Cleared => {
+                            Envelope::event("input.preview.cleared", serde_json::json!({}))
+                        }
+                    };
+                    if send_json(&mut write, &env).await.is_err() {
+                        break;
+                    }
                 }
             }
         }

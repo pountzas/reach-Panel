@@ -92,10 +92,11 @@ impl CompanionBridge {
         let running = Arc::new(AtomicBool::new(false));
         let auth = self.auth.clone();
         let session = self.session.clone();
+        let preview = self.preview.clone();
         let running_clone = running.clone();
 
         tauri::async_runtime::spawn(async move {
-            server::run_bridge(app, auth, session, port, stop_rx, running_clone).await;
+            server::run_bridge(app, auth, session, preview, port, stop_rx, running_clone).await;
         });
 
         *runtime_guard = Some(BridgeRuntime { stop_tx, running });
