@@ -162,7 +162,7 @@ jobs:
 
       - name: Create GitHub pre-release
         if: steps.bump.outputs.should_release == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: companion-v${{ steps.bump.outputs.new_version }}
           name: ReachPanel Companion v${{ steps.bump.outputs.new_version }}
