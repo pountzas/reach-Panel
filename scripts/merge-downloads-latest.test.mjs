@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   loadDownloadsManifest,
   mergeDownloadsManifest,
+  mergeWriteNeedsRetry,
   resolveMergeInput,
 } from './merge-downloads-latest-lib.mjs';
 
@@ -109,6 +110,56 @@ test('resolveMergeInput falls back to env for android', () => {
     version: '0.3.0',
     apkUrl: 'https://example.com/apk',
   });
+});
+
+test('mergeWriteNeedsRetry is false when our section landed and the other platform remains', () => {
+  const current = {
+    android: { version: '0.3.0', apkUrl: 'https://example.com/apk' },
+  };
+  const next = {
+    android: current.android,
+    windows: {
+      version: '0.12.0',
+      exeUrl: 'https://example.com/exe',
+      msiUrl: 'https://example.com/msi',
+    },
+    updatedAt: '2026-09-11T00:00:00.000Z',
+  };
+  assert.equal(mergeWriteNeedsRetry(current, next, next, 'windows'), false);
+});
+
+test('mergeWriteNeedsRetry is true when a concurrent writer dropped the other platform', () => {
+  const current = {
+    android: { version: '0.3.0', apkUrl: 'https://example.com/apk' },
+  };
+  const next = {
+    android: current.android,
+    windows: {
+      version: '0.12.0',
+      exeUrl: 'https://example.com/exe',
+      msiUrl: 'https://example.com/msi',
+    },
+  };
+  const written = {
+    windows: next.windows,
+    updatedAt: '2026-09-11T00:00:00.000Z',
+  };
+  assert.equal(mergeWriteNeedsRetry(current, next, written, 'windows'), true);
+});
+
+test('mergeWriteNeedsRetry is true when our platform section is missing after put', () => {
+  const current = {};
+  const next = {
+    windows: {
+      version: '0.12.0',
+      exeUrl: 'https://example.com/exe',
+      msiUrl: 'https://example.com/msi',
+    },
+  };
+  const written = {
+    android: { version: '0.3.0', apkUrl: 'https://example.com/apk' },
+  };
+  assert.equal(mergeWriteNeedsRetry(current, next, written, 'windows'), true);
 });
 
 test('resolveMergeInput throws when windows URLs are missing', () => {

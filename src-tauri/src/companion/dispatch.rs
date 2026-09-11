@@ -31,8 +31,8 @@ fn persist_typing_language(app: &AppHandle, db: &Database, lang_tag: &str) -> Re
         .get_profile_by_id(INTERNAL_PROFILE_ID)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Active profile not found".to_string())?;
-    let mut settings: serde_json::Value = serde_json::from_str(&profile.settings_json)
-        .unwrap_or_else(|_| serde_json::json!({}));
+    let mut settings: serde_json::Value =
+        serde_json::from_str(&profile.settings_json).unwrap_or_else(|_| serde_json::json!({}));
     if let Some(obj) = settings.as_object_mut() {
         obj.insert(
             "typingLanguage".into(),
@@ -42,15 +42,16 @@ fn persist_typing_language(app: &AppHandle, db: &Database, lang_tag: &str) -> Re
         settings = serde_json::json!({ "typingLanguage": lang_tag });
     }
     let json = serde_json::to_string(&settings).map_err(|e| e.to_string())?;
+    let previous_json = profile.settings_json.clone();
     db.update_profile_settings(INTERNAL_PROFILE_ID, &json)
         .map_err(|e| e.to_string())?;
     // Same durable path as cmd_update_profile_settings — profile JSON file is
     // re-imported over SQLite on host start.
     if let Some(state) = app.try_state::<crate::AppState>() {
-        state
-            .profiles
-            .save_active_profile(&state.db)
-            .map_err(|e| e.to_string())?;
+        if let Err(e) = state.profiles.save_active_profile(&state.db) {
+            let _ = db.update_profile_settings(INTERNAL_PROFILE_ID, &previous_json);
+            return Err(e.to_string());
+        }
     }
     let _ = app.emit(
         "profile-updated",
@@ -60,15 +61,15 @@ fn persist_typing_language(app: &AppHandle, db: &Database, lang_tag: &str) -> Re
 }
 
 /// Handle an authenticated companion message. Returns response envelopes (0+).
-pub fn handle_message(
-    app: &AppHandle,
-    db: &Database,
-    env: &Envelope,
-) -> Vec<Envelope> {
+pub fn handle_message(app: &AppHandle, db: &Database, env: &Envelope) -> Vec<Envelope> {
     let id = env.id.clone();
     match env.msg_type.as_str() {
         "ping" => {
-            let t = env.payload.get("t").cloned().unwrap_or(serde_json::json!(null));
+            let t = env
+                .payload
+                .get("t")
+                .cloned()
+                .unwrap_or(serde_json::json!(null));
             vec![Envelope::reply(id, "pong", serde_json::json!({ "t": t }))]
         }
         "key.press" => match serde_json::from_value::<KeyPressRequest>(env.payload.clone()) {
@@ -132,7 +133,11 @@ pub fn handle_message(
             Err(e) => vec![Envelope::error(id, "input_failed", e.to_string())],
         },
         "mouse.scroll" => {
-            let delta = env.payload.get("delta").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+            let delta = env
+                .payload
+                .get("delta")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0) as i32;
             let horizontal = env
                 .payload
                 .get("horizontal")
@@ -306,24 +311,24 @@ pub fn handle_message(
         }
         "keyboard.setLanguage" => {
             let Some(hkl) = env.payload.get("hkl").and_then(|v| v.as_u64()) else {
-                return vec![Envelope::error(
-                    id,
-                    "bad_payload",
-                    "hkl is required",
-                )];
+                return vec![Envelope::error(id, "bad_payload", "hkl is required")];
             };
-            if let Err(e) = set_input_method_by_hkl(hkl) {
-                return vec![Envelope::error(id, "input_failed", e.to_string())];
-            }
             let methods = get_input_methods();
             let Some(method) = methods.into_iter().find(|m| m.hkl == hkl) else {
                 return vec![Envelope::error(
                     id,
                     "input_failed",
-                    "Input method not found after switch",
+                    "Input method not found",
                 )];
             };
+            let previous_hkl = get_keyboard_state().system_hkl;
+            if let Err(e) = set_input_method_by_hkl(hkl) {
+                return vec![Envelope::error(id, "input_failed", e.to_string())];
+            }
             if let Err(e) = persist_typing_language(app, db, &method.lang_tag) {
+                if previous_hkl != 0 && previous_hkl != hkl {
+                    let _ = set_input_method_by_hkl(previous_hkl);
+                }
                 return vec![Envelope::error(id, "persist_failed", e)];
             }
             vec![Envelope::reply(

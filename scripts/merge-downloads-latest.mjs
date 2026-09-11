@@ -20,6 +20,7 @@ import {
   DOWNLOADS_LATEST_PATHNAME,
   loadDownloadsManifest,
   mergeDownloadsManifest,
+  mergeWriteNeedsRetry,
   resolveMergeInput,
 } from './merge-downloads-latest-lib.mjs';
 
@@ -43,28 +44,33 @@ const section =
     ? { version: input.version, exeUrl: input.exeUrl, msiUrl: input.msiUrl }
     : { version: input.version, apkUrl: input.apkUrl };
 
-let current;
-try {
-  current = await loadDownloadsManifest(get, DOWNLOADS_LATEST_PATHNAME, token);
-} catch (err) {
-  console.error(err instanceof Error ? err.message : String(err));
-  process.exit(1);
-}
-
-const next = mergeDownloadsManifest(current, input.platform, section);
-const body = `${JSON.stringify(next, null, 2)}\n`;
+const MAX_ATTEMPTS = 8;
 
 console.error(`Writing ${DOWNLOADS_LATEST_PATHNAME} (${input.platform} ${input.version})...`);
 
 let blob;
 try {
-  blob = await put(DOWNLOADS_LATEST_PATHNAME, body, {
-    access: 'public',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: 'application/json',
-    token,
-  });
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const current = await loadDownloadsManifest(get, DOWNLOADS_LATEST_PATHNAME, token);
+    const next = mergeDownloadsManifest(current, input.platform, section);
+    const body = `${JSON.stringify(next, null, 2)}\n`;
+    blob = await put(DOWNLOADS_LATEST_PATHNAME, body, {
+      access: 'public',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: 'application/json',
+      token,
+    });
+    const written = await loadDownloadsManifest(get, DOWNLOADS_LATEST_PATHNAME, token);
+    if (!mergeWriteNeedsRetry(current, next, written, input.platform)) {
+      break;
+    }
+    if (attempt === MAX_ATTEMPTS - 1) {
+      throw new Error(
+        `Concurrent update to ${DOWNLOADS_LATEST_PATHNAME} overwrote ${input.platform} after ${MAX_ATTEMPTS} attempts`,
+      );
+    }
+  }
 } catch (err) {
   console.error(err instanceof Error ? err.message : String(err));
   process.exit(1);

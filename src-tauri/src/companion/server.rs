@@ -8,10 +8,14 @@ use futures_util::{SinkExt, StreamExt};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::watch;
+use tokio::time::timeout;
 use tokio_tungstenite::tungstenite::Message;
+
+const PREVIEW_WRITE_TIMEOUT: Duration = Duration::from_millis(1500);
 
 pub struct BridgeRuntime {
     pub stop_tx: watch::Sender<bool>,
@@ -205,6 +209,13 @@ async fn handle_connection(
                                     }),
                                 );
                                 send_json(&mut write, &state_evt).await?;
+                                if let Some(ev) = preview.latest() {
+                                    if send_preview(&mut write, &preview_envelope(ev)).await.is_err()
+                                    {
+                                        break;
+                                    }
+                                }
+                                let _ = preview_rx.borrow_and_update();
                             }
                             Err(e) => {
                                 let err = Envelope::reply(
@@ -254,24 +265,7 @@ async fn handle_connection(
                 }
                 let event = preview_rx.borrow_and_update().clone();
                 if let Some(ev) = event {
-                    let env = match ev {
-                        PreviewPush::Frame {
-                            data_url,
-                            width,
-                            height,
-                        } => Envelope::event(
-                            "input.preview.frame",
-                            serde_json::json!({
-                                "dataUrl": data_url,
-                                "width": width,
-                                "height": height,
-                            }),
-                        ),
-                        PreviewPush::Cleared => {
-                            Envelope::event("input.preview.cleared", serde_json::json!({}))
-                        }
-                    };
-                    if send_json(&mut write, &env).await.is_err() {
+                    if send_preview(&mut write, &preview_envelope(ev)).await.is_err() {
                         break;
                     }
                 }
@@ -324,6 +318,35 @@ fn perform_auth(
 
 fn dispatch_with_db(app: &AppHandle, db: &Database, env: &Envelope) -> Vec<Envelope> {
     dispatch::handle_message(app, db, env)
+}
+
+fn preview_envelope(ev: PreviewPush) -> Envelope {
+    match ev {
+        PreviewPush::Frame {
+            data_url,
+            width,
+            height,
+        } => Envelope::event(
+            "input.preview.frame",
+            serde_json::json!({
+                "dataUrl": data_url,
+                "width": width,
+                "height": height,
+            }),
+        ),
+        PreviewPush::Cleared => Envelope::event("input.preview.cleared", serde_json::json!({})),
+    }
+}
+
+async fn send_preview<S>(write: &mut S, env: &Envelope) -> Result<(), String>
+where
+    S: SinkExt<Message> + Unpin,
+    S::Error: std::fmt::Display,
+{
+    match timeout(PREVIEW_WRITE_TIMEOUT, send_json(write, env)).await {
+        Ok(result) => result,
+        Err(_) => Err("preview write timed out".into()),
+    }
 }
 
 async fn send_json<S>(write: &mut S, env: &Envelope) -> Result<(), String>

@@ -15,6 +15,7 @@ import { SuggestionsBar } from '../components/SuggestionsBar';
 import { TrackpadPanel } from '../components/TrackpadPanel';
 import { UsbChecklist } from '../components/UsbChecklist';
 import { useProfileSnapshot } from '../hooks/useProfileSnapshot';
+import { previewDataUrl } from '../lib/previewDataUrl';
 import type { PredictionEntry } from '../types';
 
 type Props = {
@@ -46,9 +47,7 @@ export function ConnectedScreen({
   useEffect(() => {
     return client.onMessage((env) => {
       if (env.type === 'input.preview.frame') {
-        const url =
-          typeof env.payload?.dataUrl === 'string' ? env.payload.dataUrl : null;
-        setPreviewUrl(url);
+        setPreviewUrl(previewDataUrl(env.payload?.dataUrl));
       } else if (env.type === 'input.preview.cleared') {
         setPreviewUrl(null);
       }

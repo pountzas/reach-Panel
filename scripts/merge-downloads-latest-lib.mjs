@@ -96,6 +96,21 @@ export function mergeDownloadsManifest(current, platform, section, now = () => n
   return next;
 }
 
+/**
+ * True when a put() raced with another platform writer and should be retried.
+ * @param {object} current snapshot loaded before merge
+ * @param {object} next merged document we attempted to write
+ * @param {object} written snapshot loaded after put
+ * @param {'windows'|'android'} platform
+ */
+export function mergeWriteNeedsRetry(current, next, written, platform) {
+  if (JSON.stringify(written?.[platform]) !== JSON.stringify(next?.[platform])) {
+    return true;
+  }
+  const other = platform === 'windows' ? 'android' : 'windows';
+  return Boolean(current?.[other]) && !written?.[other];
+}
+
 function readFlag(argv, name) {
   const idx = argv.indexOf(name);
   if (idx === -1) {

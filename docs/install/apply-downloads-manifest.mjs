@@ -3,6 +3,9 @@
  * Works with real DOM elements or plain stubs in unit tests.
  */
 
+const ALLOWED_DOWNLOAD_HOST =
+  "2zhnilo5gijgvtoh.public.blob.vercel-storage.com";
+
 /**
  * @typedef {{ href: string, hidden: boolean }} CtaEl
  * @typedef {{ textContent: string }} TextEl
@@ -34,11 +37,35 @@ export function isDownloadsManifest(value) {
 }
 
 /**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
+function isAllowedDownloadUrl(value) {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.hostname === ALLOWED_DOWNLOAD_HOST &&
+      url.port === "" &&
+      url.username === "" &&
+      url.password === ""
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * @param {WindowsManifest | undefined} windows
  * @returns {boolean}
  */
 function hasWindowsDownloads(windows) {
-  return Boolean(windows?.exeUrl && windows?.msiUrl);
+  return Boolean(
+    windows &&
+      isAllowedDownloadUrl(windows.exeUrl) &&
+      isAllowedDownloadUrl(windows.msiUrl),
+  );
 }
 
 /**
@@ -46,7 +73,7 @@ function hasWindowsDownloads(windows) {
  * @returns {boolean}
  */
 function hasAndroidDownload(android) {
-  return Boolean(android?.apkUrl);
+  return Boolean(android && isAllowedDownloadUrl(android.apkUrl));
 }
 
 /**

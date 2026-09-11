@@ -79,4 +79,32 @@ mod tests {
         out.push(PreviewPush::Cleared);
         assert!(matches!(out.latest(), Some(PreviewPush::Cleared)));
     }
+
+    #[test]
+    fn latest_survives_before_subscribe() {
+        let out = PreviewOutbound::new();
+        out.push(PreviewPush::Frame {
+            data_url: "pre".into(),
+            width: 3,
+            height: 4,
+        });
+        let rx = out.subscribe();
+        match out.latest() {
+            Some(PreviewPush::Frame {
+                data_url,
+                width,
+                height,
+            }) => {
+                assert_eq!(data_url, "pre");
+                assert_eq!(width, 3);
+                assert_eq!(height, 4);
+            }
+            other => panic!("unexpected {other:?}"),
+        }
+        let seen = rx.borrow().clone();
+        match seen {
+            Some(PreviewPush::Frame { data_url, .. }) => assert_eq!(data_url, "pre"),
+            other => panic!("subscriber missed pre-subscribe frame: {other:?}"),
+        }
+    }
 }
