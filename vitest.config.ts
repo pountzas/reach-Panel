@@ -8,7 +8,8 @@ export default defineConfig({
       ...configDefaults.exclude,
       "**/node_modules/**",
       "**/dist/**",
-      "companion/**",
+      "**/*.test.mjs",
+      "**/.worktrees/**",
     ],
   },
 });

@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import QRCode from "qrcode";
 import type { SurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
+import { APP_INFO, openExternalLink } from "../../lib/appInfo";
 import { notify } from "../../lib/notify";
 import { useTranslation } from "../../hooks/useTranslation";
 import {
@@ -129,9 +130,11 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
       return;
     }
     let cancelled = false;
-    void QRCode.toDataURL(JSON.stringify(payload), {
-      width: 220,
-      margin: 1,
+    const { candidateIps: _candidateIps, ...qrPayload } = payload;
+    void QRCode.toDataURL(JSON.stringify(qrPayload), {
+      width: 400,
+      margin: 2,
+      errorCorrectionLevel: "M",
       color: { dark: "#0b1220", light: "#ffffff" },
     })
       .then((url) => {
@@ -230,6 +233,18 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
         {t("companionDescription")}
       </p>
 
+      <p className="text-sm" style={{ color: surface.panelMutedText }}>
+        {t("companionDownloadsHint")}
+      </p>
+      <button
+        type="button"
+        className="rounded-lg border px-3 py-2 text-sm"
+        style={secondaryButtonStyle}
+        onClick={() => openExternalLink(APP_INFO.links.downloads)}
+      >
+        {t("companionOpenDownloads")}
+      </button>
+
       <div
         className="flex flex-wrap items-center gap-3 rounded-lg px-3 py-2.5 text-sm"
         style={{ backgroundColor: surface.insetBg, color: surface.panelText }}
@@ -316,14 +331,14 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
             {qrDataUrl ? (
               <img
                 src={qrDataUrl}
-                alt="Companion pairing QR"
-                width={220}
-                height={220}
+                alt={t("companionQrAlt")}
+                width={400}
+                height={400}
                 className="block"
               />
             ) : (
               <div
-                className="flex h-[220px] w-[220px] items-center justify-center text-sm"
+                className="flex h-[400px] w-[400px] items-center justify-center text-sm"
                 style={{ color: "#64748b" }}
               >
                 …

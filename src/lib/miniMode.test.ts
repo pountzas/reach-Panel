@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS, type MonitorInfo } from "./types";
 import {
+  isInputPreviewActiveForMode,
   isMirroredSetup,
   isMiniModeEligible,
   isTransparentUiActive,
@@ -150,5 +151,33 @@ describe("miniMode", () => {
       border: "#4b5563",
       text: "#4b5563",
     });
+  });
+
+  it("input preview follows inputPreviewVisible in mini and normal", () => {
+    expect(
+      isInputPreviewActiveForMode(
+        { ...DEFAULT_SETTINGS, inputPreviewVisible: true },
+        true,
+      ),
+    ).toBe(true);
+    expect(
+      isInputPreviewActiveForMode(
+        { ...DEFAULT_SETTINGS, inputPreviewVisible: true },
+        false,
+      ),
+    ).toBe(true);
+  });
+
+  it("input preview stays off in mini even if mini-mode flag is on", () => {
+    expect(
+      isInputPreviewActiveForMode(
+        {
+          ...DEFAULT_SETTINGS,
+          inputPreviewVisible: false,
+          inputPreviewMiniModeVisible: true,
+        },
+        true,
+      ),
+    ).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { CompanionClient, ConnectionStatus } from '../companionClient';
 import {
@@ -6,6 +6,7 @@ import {
   type ShellTab,
 } from '../components/CollapsedFab';
 import { DictationPanel } from '../components/DictationPanel';
+import { InputPreview } from '../components/InputPreview';
 import { KeyboardPanel } from '../components/KeyboardPanel';
 import { NumpadPanel } from '../components/NumpadPanel';
 import { ProfilePanel } from '../components/ProfilePanel';
@@ -14,6 +15,7 @@ import { SuggestionsBar } from '../components/SuggestionsBar';
 import { TrackpadPanel } from '../components/TrackpadPanel';
 import { UsbChecklist } from '../components/UsbChecklist';
 import { useProfileSnapshot } from '../hooks/useProfileSnapshot';
+import { previewDataUrl } from '../lib/previewDataUrl';
 import type { PredictionEntry } from '../types';
 
 type Props = {
@@ -34,12 +36,29 @@ export function ConnectedScreen({
   const [collapsed, setCollapsed] = useState(false);
   const [prefix, setPrefix] = useState('');
   const [suggestions, setSuggestions] = useState<PredictionEntry[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { snapshot, error, loading, refresh, language, profileId } =
     useProfileSnapshot(client, status);
 
   const enabled = status === 'connected';
   const predictionEnabled = Boolean(snapshot?.settings.predictionEnabled);
+
+  useEffect(() => {
+    return client.onMessage((env) => {
+      if (env.type === 'input.preview.frame') {
+        setPreviewUrl(previewDataUrl(env.payload?.dataUrl));
+      } else if (env.type === 'input.preview.cleared') {
+        setPreviewUrl(null);
+      }
+    });
+  }, [client]);
+
+  useEffect(() => {
+    if (status !== 'connected' && status !== 'reconnecting') {
+      setPreviewUrl(null);
+    }
+  }, [status]);
 
   const queryPredictions = useCallback(
     async (nextPrefix: string) => {
@@ -168,6 +187,8 @@ export function ConnectedScreen({
         />
       )}
 
+      {tab === 'keyboard' ? <InputPreview dataUrl={previewUrl} /> : null}
+
       <View style={styles.body}>
         {renderTab({
           tab,
@@ -180,6 +201,11 @@ export function ConnectedScreen({
           language,
           onTypedChar,
           onSpecialKey,
+          onLanguageChanged: (_langTag: string) => {
+            setPrefix('');
+            setSuggestions([]);
+            void refresh();
+          },
         })}
       </View>
 
@@ -206,6 +232,7 @@ function renderTab(args: {
   refresh: () => void;
   onTypedChar: (char: string) => void;
   onSpecialKey: (key: string) => void;
+  onLanguageChanged: (langTag: string) => void;
 }) {
   const {
     tab,
@@ -218,6 +245,7 @@ function renderTab(args: {
     refresh,
     onTypedChar,
     onSpecialKey,
+    onLanguageChanged,
   } = args;
 
   switch (tab) {
@@ -226,6 +254,8 @@ function renderTab(args: {
         <KeyboardPanel
           client={client}
           enabled={enabled}
+          typingLanguage={language}
+          onLanguageChanged={onLanguageChanged}
           onTypedChar={onTypedChar}
           onSpecialKey={onSpecialKey}
         />

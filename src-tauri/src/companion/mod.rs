@@ -3,9 +3,12 @@
 mod auth;
 mod dictation;
 mod dispatch;
+mod outbound;
 mod protocol;
 mod server;
 mod session;
+
+pub use outbound::{PreviewOutbound, PreviewPush};
 
 pub use protocol::{
     AudioRouting, CompanionUiState, PairingPayload, DEFAULT_PORT, PROTOCOL_VERSION,
@@ -25,6 +28,7 @@ use tauri::{AppHandle, State};
 pub struct CompanionBridge {
     auth: Arc<AuthStore>,
     session: Arc<SessionState>,
+    preview: Arc<PreviewOutbound>,
     runtime: Mutex<Option<BridgeRuntime>>,
     port: Mutex<u16>,
 }
@@ -34,6 +38,7 @@ impl CompanionBridge {
         Ok(Self {
             auth: Arc::new(AuthStore::open(app_data_dir)?),
             session: Arc::new(SessionState::new()),
+            preview: PreviewOutbound::new(),
             runtime: Mutex::new(None),
             port: Mutex::new(DEFAULT_PORT),
         })
@@ -53,6 +58,10 @@ impl CompanionBridge {
 
     pub fn session(&self) -> &Arc<SessionState> {
         &self.session
+    }
+
+    pub fn preview_outbound(&self) -> Arc<PreviewOutbound> {
+        self.preview.clone()
     }
 
     pub fn ui_state(&self) -> CompanionUiState {
@@ -83,10 +92,11 @@ impl CompanionBridge {
         let running = Arc::new(AtomicBool::new(false));
         let auth = self.auth.clone();
         let session = self.session.clone();
+        let preview = self.preview.clone();
         let running_clone = running.clone();
 
         tauri::async_runtime::spawn(async move {
-            server::run_bridge(app, auth, session, port, stop_rx, running_clone).await;
+            server::run_bridge(app, auth, session, preview, port, stop_rx, running_clone).await;
         });
 
         *runtime_guard = Some(BridgeRuntime { stop_tx, running });
@@ -159,6 +169,23 @@ impl CompanionBridge {
         }
         Ok(())
     }
+}
+
+pub fn push_input_preview_frame(
+    bridge: &CompanionBridge,
+    data_url: String,
+    width: u32,
+    height: u32,
+) {
+    bridge.preview.push(PreviewPush::Frame {
+        data_url,
+        width,
+        height,
+    });
+}
+
+pub fn push_input_preview_cleared(bridge: &CompanionBridge) {
+    bridge.preview.push(PreviewPush::Cleared);
 }
 
 /// Best-effort LAN IPv4 for QR payload (UDP connect trick; no packets sent).

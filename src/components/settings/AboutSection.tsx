@@ -11,6 +11,7 @@ const LINK_BUTTONS: { labelKey: TranslationKey; url: string }[] = [
   { labelKey: "aboutTwitter", url: APP_INFO.links.twitter },
   { labelKey: "aboutLinkedIn", url: APP_INFO.links.linkedin },
   { labelKey: "aboutWebsite", url: APP_INFO.links.website },
+  { labelKey: "aboutDownloads", url: APP_INFO.links.downloads },
   { labelKey: "aboutEmail", url: APP_INFO.links.email },
 ];
 

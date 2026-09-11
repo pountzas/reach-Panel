@@ -104,6 +104,37 @@ impl ProfileStore {
             .map_err(|_| anyhow!("profile IO lock poisoned"))
     }
 
+    /// Accept only a single filename component directly under `profiles_dir`.
+    /// Rejects separators, `.`, `..`, and any path that escapes the profiles dir.
+    fn validated_profile_path(&self, filename: &str) -> Result<PathBuf> {
+        if filename.is_empty()
+            || filename == "."
+            || filename == ".."
+            || filename.contains('/')
+            || filename.contains('\\')
+            || filename.contains('\0')
+        {
+            return Err(anyhow!("Invalid profile filename: {filename}"));
+        }
+        let as_path = Path::new(filename);
+        if as_path.components().count() != 1 {
+            return Err(anyhow!("Invalid profile filename: {filename}"));
+        }
+        match as_path.components().next() {
+            Some(std::path::Component::Normal(_)) => {}
+            _ => return Err(anyhow!("Invalid profile filename: {filename}")),
+        }
+
+        let path = self.profiles_dir.join(filename);
+        let parent = path
+            .parent()
+            .ok_or_else(|| anyhow!("Invalid profile filename: {filename}"))?;
+        if parent != self.profiles_dir {
+            return Err(anyhow!("Invalid profile filename: {filename}"));
+        }
+        Ok(path)
+    }
+
     pub fn ensure_default_profile_file(&self, db: &Database) -> Result<String> {
         let _guard = self.lock_io()?;
         let files = self.list_profile_files()?;
@@ -207,7 +238,7 @@ impl ProfileStore {
         } else {
             format!("{filename}.profile.json")
         };
-        let path = self.profiles_dir.join(&safe_name);
+        let path = self.validated_profile_path(&safe_name)?;
         if path.exists() {
             return Err(anyhow!("Profile file already exists"));
         }
@@ -231,10 +262,10 @@ impl ProfileStore {
         Ok(())
     }
 
-    /// Delete a profile file. If it was active (or last), recreate fresh `default.profile.json`.
+    /// Delete a profile file. If it was active (or last), fall back to `default.profile.json`.
     pub fn delete_profile_file(&self, db: &Database, filename: &str) -> Result<String> {
         let _guard = self.lock_io()?;
-        let path = self.profiles_dir.join(filename);
+        let path = self.validated_profile_path(filename)?;
         if !path.exists() {
             return Err(anyhow!("Profile file not found: {filename}"));
         }
@@ -255,9 +286,14 @@ impl ProfileStore {
     }
 
     fn recreate_default_profile_locked(&self, db: &Database) -> Result<String> {
+        let filename = DEFAULT_PROFILE_FILENAME.to_string();
+        let path = self.profiles_dir.join(&filename);
+        if path.exists() {
+            self.load_profile_file_locked(db, &filename)?;
+            return Ok(filename);
+        }
         let ui_language = windows_ui_language();
         db.reset_profile_to_defaults(INTERNAL_PROFILE_ID, "Default", &ui_language)?;
-        let filename = DEFAULT_PROFILE_FILENAME.to_string();
         self.write_active_filename(&filename)?;
         self.save_active_profile_locked(db)?;
         Ok(filename)
@@ -369,10 +405,7 @@ fn import_profile_into_db(db: &Database, profile_id: &str, file: &ProfileFile) -
     for entry in &file.predictions {
         db.insert_prediction(profile_id, entry)?;
     }
-    db.save_head_tracking_settings(
-        profile_id,
-        &file.head_tracking_settings.to_string(),
-    )?;
+    db.save_head_tracking_settings(profile_id, &file.head_tracking_settings.to_string())?;
     Ok(())
 }
 
@@ -422,7 +455,11 @@ mod tests {
 
         write_profile(&root, "a.profile.json", "A", "#aaa");
         write_profile(&root, "b.profile.json", "B", "#bbb");
-        fs::write(root.join("profiles").join(ACTIVE_PROFILE_CONFIG), "a.profile.json").unwrap();
+        fs::write(
+            root.join("profiles").join(ACTIVE_PROFILE_CONFIG),
+            "a.profile.json",
+        )
+        .unwrap();
 
         // Re-read active after writing config.
         let store = ProfileStore::new(&root).expect("store");
@@ -447,12 +484,18 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(a.settings.get("appBgColor").and_then(|v| v.as_str()), Some("#aaa"));
+        assert_eq!(
+            a.settings.get("appBgColor").and_then(|v| v.as_str()),
+            Some("#aaa")
+        );
         assert_eq!(
             a.settings.get("groqApiKey").and_then(|v| v.as_str()),
             Some("key-#aaa")
         );
-        assert_eq!(b.settings.get("appBgColor").and_then(|v| v.as_str()), Some("#bbb"));
+        assert_eq!(
+            b.settings.get("appBgColor").and_then(|v| v.as_str()),
+            Some("#bbb")
+        );
         assert_eq!(store.active_filename().unwrap(), "b.profile.json");
 
         let _ = fs::remove_dir_all(&root);
@@ -466,7 +509,11 @@ mod tests {
 
         write_profile(&root, "a.profile.json", "A", "#aaa");
         write_profile(&root, "b.profile.json", "B", "#bbb");
-        fs::write(root.join("profiles").join(ACTIVE_PROFILE_CONFIG), "a.profile.json").unwrap();
+        fs::write(
+            root.join("profiles").join(ACTIVE_PROFILE_CONFIG),
+            "a.profile.json",
+        )
+        .unwrap();
 
         let store = ProfileStore::new(&root).expect("store");
         store
@@ -495,8 +542,14 @@ mod tests {
 
         let profile = db.get_profile_by_id(INTERNAL_PROFILE_ID).unwrap().unwrap();
         let settings: serde_json::Value = serde_json::from_str(&profile.settings_json).unwrap();
-        assert_eq!(settings.get("appBgColor").and_then(|v| v.as_str()), Some("#custom-a"));
-        assert_eq!(settings.get("groqApiKey").and_then(|v| v.as_str()), Some("secret-a"));
+        assert_eq!(
+            settings.get("appBgColor").and_then(|v| v.as_str()),
+            Some("#custom-a")
+        );
+        assert_eq!(
+            settings.get("groqApiKey").and_then(|v| v.as_str()),
+            Some("secret-a")
+        );
         assert_eq!(store.active_filename().unwrap(), "a.profile.json");
 
         let _ = fs::remove_dir_all(&root);
@@ -512,7 +565,11 @@ mod tests {
         fs::create_dir_all(root.join("profiles")).unwrap();
         write_profile(&root, "a.profile.json", "A", "#aaa");
         write_profile(&root, "b.profile.json", "B", "#bbb");
-        fs::write(root.join("profiles").join(ACTIVE_PROFILE_CONFIG), "a.profile.json").unwrap();
+        fs::write(
+            root.join("profiles").join(ACTIVE_PROFILE_CONFIG),
+            "a.profile.json",
+        )
+        .unwrap();
 
         let store = Arc::new(ProfileStore::new(&root).expect("store"));
         store
@@ -556,8 +613,16 @@ mod tests {
         )
         .unwrap();
 
-        let a_color = a.settings.get("appBgColor").and_then(|v| v.as_str()).unwrap();
-        let b_color = b.settings.get("appBgColor").and_then(|v| v.as_str()).unwrap();
+        let a_color = a
+            .settings
+            .get("appBgColor")
+            .and_then(|v| v.as_str())
+            .unwrap();
+        let b_color = b
+            .settings
+            .get("appBgColor")
+            .and_then(|v| v.as_str())
+            .unwrap();
         // Neither file should contain the other profile's original marker after a
         // clean final load/save of each.
         assert!(
@@ -581,6 +646,96 @@ mod tests {
         let store = ProfileStore::new(&root).expect("store");
         let err = store.save_active_profile(&db).expect_err("should fail");
         assert!(err.to_string().contains("No active profile file to save"));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn deleting_custom_profile_preserves_existing_default() {
+        let root = temp_dir();
+        let db = Database::new(root.clone()).expect("db");
+        let store = ProfileStore::new(&root).expect("store");
+        store.ensure_default_profile_file(&db).unwrap();
+        db.update_profile_settings(
+            INTERNAL_PROFILE_ID,
+            r##"{"uiLanguage":"en","appBgColor":"#123456"}"##,
+        )
+        .unwrap();
+        store.save_active_profile(&db).unwrap();
+
+        let default = root.join("profiles").join(DEFAULT_PROFILE_FILENAME);
+        let before = fs::read(&default).unwrap();
+
+        store.create_profile_file(&db, "custom", "Custom").unwrap();
+        store
+            .delete_profile_file(&db, "custom.profile.json")
+            .unwrap();
+
+        assert_eq!(
+            fs::read(&default).unwrap(),
+            before,
+            "Deleting Custom must not overwrite the unrelated Default profile"
+        );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn failed_create_keeps_original_active_profile_and_settings() {
+        let root = temp_dir();
+        let db = Database::new(root.clone()).expect("db");
+        let store = ProfileStore::new(&root).expect("store");
+        store.ensure_default_profile_file(&db).unwrap();
+        db.update_profile_settings(
+            INTERNAL_PROFILE_ID,
+            r##"{"uiLanguage":"en","appBgColor":"#123456"}"##,
+        )
+        .unwrap();
+        store.save_active_profile(&db).unwrap();
+
+        let before_file = store.active_filename().unwrap();
+        let before_settings = db
+            .get_profile_by_id(INTERNAL_PROFILE_ID)
+            .unwrap()
+            .unwrap()
+            .settings_json;
+
+        assert!(store
+            .create_profile_file(&db, "missing-directory/child", "Child")
+            .is_err());
+        assert_eq!(
+            store.active_filename().unwrap(),
+            before_file,
+            "A failed Create must leave the current profile active"
+        );
+        assert_eq!(
+            db.get_profile_by_id(INTERNAL_PROFILE_ID)
+                .unwrap()
+                .unwrap()
+                .settings_json,
+            before_settings
+        );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn delete_rejects_paths_outside_profiles_directory() {
+        let root = temp_dir();
+        let db = Database::new(root.clone()).expect("db");
+        let store = ProfileStore::new(&root).expect("store");
+        store.ensure_default_profile_file(&db).unwrap();
+
+        let unrelated = root.join("unrelated.txt");
+        fs::write(&unrelated, "must survive").unwrap();
+
+        let result = store.delete_profile_file(&db, "../unrelated.txt");
+        assert!(
+            result.is_err(),
+            "Profile delete accepted a path outside profiles"
+        );
+        assert!(unrelated.exists());
+        assert_eq!(fs::read_to_string(&unrelated).unwrap(), "must survive");
+
         let _ = fs::remove_dir_all(&root);
     }
 }

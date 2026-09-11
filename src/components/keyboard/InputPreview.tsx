@@ -24,7 +24,7 @@ export function InputPreview() {
 
   return (
     <div
-      className="flex w-full max-w-[min(100%,22rem)] shrink-0 justify-center"
+      className="flex pb-1 w-full max-w-[min(100%,25rem)] shrink-0 justify-center"
       aria-live="polite"
     >
       <div
@@ -40,7 +40,7 @@ export function InputPreview() {
           <img
             src={inputPreviewFrame}
             alt={t("inputPreviewLabel")}
-            className="block h-full w-full object-contain object-left"
+            className="block h-full w-full object-contain object-center"
             draggable={false}
           />
         ) : (

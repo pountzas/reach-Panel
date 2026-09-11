@@ -48,7 +48,7 @@ use window::{
 
 pub(crate) struct AppState {
     pub(crate) db: Database,
-    profiles: ProfileStore,
+    pub(crate) profiles: ProfileStore,
     last_error: Mutex<Option<String>>,
 }
 

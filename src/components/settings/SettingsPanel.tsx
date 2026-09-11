@@ -793,17 +793,6 @@ export function SettingsPanel() {
                 />
               </div>
             )}
-            <div className="mt-3">
-              <ToggleRow
-                label={t("showInputPreviewMiniMode")}
-                checked={settings.inputPreviewMiniModeVisible !== false}
-                disabled={!miniModeActive}
-                onChange={(checked) =>
-                  updateSettings({ inputPreviewMiniModeVisible: checked })
-                }
-                surface={surface}
-              />
-            </div>
             {showMiniTransparentControls && (
               <div className="mt-3">
                 <ToggleRow

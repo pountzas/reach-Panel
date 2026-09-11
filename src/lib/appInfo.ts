@@ -10,6 +10,7 @@ export const APP_INFO = {
     linkedin: "https://www.linkedin.com/in/nikos-pountzas/",
     website: "https://pountzas-portfolio.vercel.app/",
     email: "mailto:nikos@pountzas.gr",
+    downloads: "https://reachpanel-companion.vercel.app/",
   },
 } as const;
 

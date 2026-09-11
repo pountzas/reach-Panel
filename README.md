@@ -10,11 +10,13 @@ Built with Tauri, React, Rust, and SQLite. An optional Android tablet companion 
 
 ## Download (Windows)
 
-Pre-built installers are on the [Releases](https://github.com/pountzas/reach-Panel/releases) page.
+Get `ReachPanel-Setup.exe` or `ReachPanel.msi` from **https://reachpanel-companion.vercel.app/** or from [GitHub Releases](https://github.com/pountzas/reach-Panel/releases).
 
-1. Download the latest `.msi` or `.exe` installer for Windows.
+1. Download the latest Setup.exe or MSI.
 2. Run the installer. On older Windows builds, you may need the [WebView2 runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
 3. Open the app on your accessibility touchscreen, select a profile in Settings, and position the window on the correct display.
+
+In the app, **Settings → About** and **Settings → Companion** also open this downloads site.
 
 ## Install & connect the Android companion
 
@@ -24,19 +26,17 @@ Pairing stays in **Settings → Companion** (Start bridge / QR). The Companion m
 
 ### 1. Install ReachPanel on Windows
 
-Use a [release installer](https://github.com/pountzas/reach-Panel/releases) or, for contributors, `npm run tauri dev` (the companion bridge can start from Settings).
+Use the downloads page or a [GitHub release installer](https://github.com/pountzas/reach-Panel/releases). Contributors can run `npm run tauri dev` (the companion bridge can start from Settings).
 
 ### 2. Install the companion on an Android tablet
 
-**Caregivers:** download the pre-built APK from the public install page:
+**Caregivers:** the same downloads page has the APK and the Windows installers:
 
 **https://reachpanel-companion.vercel.app/**
 
 Scan this QR on the tablet to open that page, then tap **Download APK**:
 
-<img src="docs/images/companion-apk-qr.png" alt="QR code for the ReachPanel Companion APK install page" width="220" />
-
-(After the first Vercel deploy, update this URL and regenerate the QR if your project name differs.)
+<img src="docs/images/companion-apk-qr.png" alt="QR code for the ReachPanel downloads page" width="220" />
 
 1. Open the link (or scan the QR) on the tablet and tap **Download APK**.
 2. Allow installs from the browser if Android prompts (unknown apps).
@@ -102,7 +102,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - On-screen layout override (auto / QWERTY / QWERTZ / AZERTY / Greek)
 - Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle
 - Dictation key beside Right Ctrl (see Voice dictation below); show/hide the mic key under **Settings → Visible sections**
-- **Input preview** — when an external text field is targeted, a live thumbnail of that field appears above the keyboard. **Normal mode:** **Settings → Visible sections → Live input preview (Normal)**. **Mini Mode:** **Settings → Mini Mode → Live input preview (Mini Mode)**. Each mode has its own toggle (both on by default). Disabled during Companion sessions. Protected or DRM content may appear black; some custom controls may not expose a usable screen region.
+- **Input preview** — when an external text field is targeted, a live ~320×48 strip follows the writing caret (clamped inside the field so a tall textarea is not shrunk to a postage stamp) on the keyboard toolbar. Toggle under **Settings → Visible sections → Live input preview** (on by default). While a companion tablet session is active, the same strip is streamed to the tablet keyboard instead of the minimized host UI. Protected or DRM content may appear black; some custom controls may not expose a usable screen region.
 - Special keys use symbols (Enter ↵, Shift ⇧, Backspace ⌫, Space ␣)
 - Right-click / long-press context menus are suppressed on the keyboard and main app surface
 
@@ -114,6 +114,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 
 - Pair via Settings → Companion (QR, paste JSON, or USB tether)
 - Tablet: keyboard, trackpad (tap-to-click), numpad, dictation, suggestions
+- Keyboard tab shows the live host input-preview strip between suggestions and keys, and a language control that lists/switches installed Windows keyboards (same system language switch as the host Lang key)
 - Host-only injection; Teaching / Music remain on Windows
 
 ### Voice dictation (Windows)
@@ -174,7 +175,9 @@ Companion app: [companion/README.md](companion/README.md).
 
 ### Public install site (Vercel)
 
-The caregiver APK page lives at [docs/install/index.html](docs/install/index.html) and deploys to Vercel. CI replaces `__INSTALL_APK_PUBLIC_URL__` with the Blob URL before publish.
+[docs/install/index.html](docs/install/index.html) is the dual-platform downloads page (Windows + Android). It deploys to Vercel and loads versions and hrefs from public Blob `downloads/latest.json` (that pathname only, not Tauri `updater/latest.json`).
+
+Windows release CI uploads `ReachPanel-Setup.exe` and `ReachPanel.msi`, then merge-patches the Windows section of the manifest. Android CI uploads `ReachPanel-Companion.apk` and merge-patches the Android section. Both need `BLOB_READ_WRITE_TOKEN`.
 
 One-time GitHub Actions secrets (Settings → Secrets and variables → Actions):
 
@@ -185,9 +188,9 @@ One-time GitHub Actions secrets (Settings → Secrets and variables → Actions)
 | `VERCEL_TOKEN` | Vercel deploy |
 | `VERCEL_ORG_ID` | Vercel team / user |
 | `VERCEL_PROJECT_ID` | Vercel project for `docs/install` |
-| `BLOB_READ_WRITE_TOKEN` | Upload APK to Vercel Blob |
+| `BLOB_READ_WRITE_TOKEN` | Upload Windows installers and the APK to Vercel Blob (required for both release workflows) |
 
-Optional repository variable: `INSTALL_APK_PUBLIC_URL` (override the default Blob URL if needed).
+`INSTALL_APK_PUBLIC_URL` is optional legacy only. The page no longer gets CTA hrefs from that variable.
 
 Before the first CI run, inside `companion/`: `eas init` and `eas credentials` for Android signing.
 

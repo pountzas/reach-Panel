@@ -72,6 +72,8 @@ npx expo run:android
 - QR scan + paste pairing JSON (host Settings → Companion shows QR)
 - Auth + credential persistence + reconnect
 - Keyboard, trackpad (tap-to-click), numpad
+- Live host input-preview strip on the keyboard tab (between suggestions and keys)
+- Language control that lists/switches installed Windows keyboards
 - Prediction suggestions
 - Collapsed FAB mode
 - Profile sync panel (`profile.snapshot`)
@@ -83,7 +85,7 @@ npx expo run:android
 - iOS TestFlight
 - Play Store listing
 
-Caregivers install the pre-built APK from the public page: **https://reachpanel-companion.vercel.app/** (see root [README](../README.md#install--connect-the-android-companion)).
+Caregivers get Windows installers and the tablet APK from the same downloads page: **https://reachpanel-companion.vercel.app/** (see root [README - Install & connect the Android companion](../README.md#install--connect-the-android-companion)).
 
 ## Troubleshooting: `ExponentAV` / native module errors
 

@@ -1,11 +1,18 @@
-use crate::db::{Database, Phrase, PhraseCategory, Profile, QuickAction};
+use crate::db::{Database, Phrase, PhraseCategory, QuickAction};
 use serde::Serialize;
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PublicProfile {
+    pub id: String,
+    pub name: String,
+    pub created_at: String,
+}
 
 /// Tablet-relevant profile data. Never includes API keys or secrets.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProfileSnapshot {
-    pub profile: Profile,
+    pub profile: PublicProfile,
     pub phrases: Vec<Phrase>,
     pub phrase_categories: Vec<PhraseCategory>,
     pub quick_actions: Vec<QuickAction>,
@@ -41,7 +48,7 @@ pub fn build_profile_snapshot(
         .map_err(|e| e.to_string())?;
 
     Ok(ProfileSnapshot {
-        profile,
+        profile: PublicProfile { id: profile.id, name: profile.name, created_at: profile.created_at },
         phrases,
         phrase_categories,
         quick_actions,
@@ -49,20 +56,35 @@ pub fn build_profile_snapshot(
     })
 }
 
-fn sanitize_settings_for_tablet(mut settings: serde_json::Value) -> serde_json::Value {
-    const REDACT_KEYS: &[&str] = &[
-        "groqApiKey",
-        "groq_api_key",
-        "apiKey",
-        "api_key",
-        "openaiApiKey",
-        "secret",
-        "token",
-    ];
-    if let Some(obj) = settings.as_object_mut() {
-        for key in REDACT_KEYS {
-            obj.remove(*key);
+fn sanitize_settings_for_tablet(settings: serde_json::Value) -> serde_json::Value {
+    // Copy only known, correctly typed preferences. Future host settings remain private.
+    let mut public = serde_json::Map::new();
+    if let Some(language) = settings.get("typingLanguage").and_then(|v| v.as_str()) {
+        public.insert("typingLanguage".into(), language.into());
+    }
+    for key in ["predictionEnabled", "phrasesVisible", "quickActionsVisible", "mouseVisible"] {
+        if let Some(value) = settings.get(key).and_then(|v| v.as_bool()) {
+            public.insert(key.into(), value.into());
         }
     }
-    settings
+    serde_json::Value::Object(public)
+}
+#[cfg(test)]
+mod audit_snapshot_regression {
+    use super::*;
+
+    #[test]
+    fn serialized_tablet_snapshot_contains_no_host_api_key() {
+        let root = std::env::temp_dir().join(format!("reachpanel-snapshot-audit-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&root).unwrap();
+        let db = Database::new(root).unwrap();
+        db.ensure_internal_profile("active", "Audit", "en").unwrap();
+        db.update_profile_settings("active",
+            r#"{"uiLanguage":"en","groqApiKey":"AUDIT_SENTINEL_NOT_A_REAL_KEY"}"#).unwrap();
+        let snapshot = build_profile_snapshot(&db, "active", "en").unwrap();
+        assert!(snapshot.settings.get("groqApiKey").is_none());
+        let wire = serde_json::to_string(&snapshot).unwrap();
+        assert!(!wire.contains("AUDIT_SENTINEL_NOT_A_REAL_KEY"),
+            "Host API key leaked through profile.settings_json despite sanitized settings");
+    }
 }

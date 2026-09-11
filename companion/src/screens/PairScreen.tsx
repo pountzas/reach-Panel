@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -18,12 +18,21 @@ type Props = {
   onPair: (payload: PairingPayload) => void;
 };
 
+const SCAN_DEBOUNCE_MS = 1500;
+
 export function PairScreen({ busy, error, onPair }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [manual, setManual] = useState('');
   const [scanEnabled, setScanEnabled] = useState(true);
   const [localError, setLocalError] = useState<string | null>(null);
   const [showUsb, setShowUsb] = useState(false);
+  const lastScanRef = useRef<{ data: string; at: number } | null>(null);
+
+  useEffect(() => {
+    if (error && !busy) {
+      setScanEnabled(true);
+    }
+  }, [error, busy]);
 
   const submitRaw = (raw: string) => {
     try {
@@ -35,6 +44,16 @@ export function PairScreen({ busy, error, onPair }: Props) {
       setLocalError(e instanceof Error ? e.message : 'Invalid QR payload');
       setScanEnabled(true);
     }
+  };
+
+  const handleBarcodeScan = (data: string) => {
+    const now = Date.now();
+    const last = lastScanRef.current;
+    if (last && last.data === data && now - last.at < SCAN_DEBOUNCE_MS) {
+      return;
+    }
+    lastScanRef.current = { data, at: now };
+    submitRaw(data);
   };
 
   if (showUsb) {
@@ -73,7 +92,7 @@ export function PairScreen({ busy, error, onPair }: Props) {
             onBarcodeScanned={
               scanEnabled && !busy
                 ? ({ data }) => {
-                    submitRaw(data);
+                    handleBarcodeScan(data);
                   }
                 : undefined
             }
@@ -135,7 +154,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cameraBox: {
-    height: 240,
+    height: 360,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: '#1c2433',

@@ -453,7 +453,7 @@ export function Keyboard() {
   return (
     <div
       ref={ref}
-      className={`relative flex h-full w-full flex-col rounded-xl px-2 pb-2 ${miniModeActive ? "pt-1" : "pt-2"}`}
+      className={`relative flex h-full w-full flex-col rounded-xl px-2 pb-2 ${miniModeActive ? "pt-0" : "pt-2"}`}
       style={{
         backgroundColor: transparent
           ? "transparent"
