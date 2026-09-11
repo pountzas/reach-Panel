@@ -1,9 +1,19 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { CompanionClient } from '../companionClient';
+import {
+  flagCodeForLanguage,
+  languageDisplayCode,
+} from '../lib/flagCodeForLanguage';
+import type { InputMethod } from '../types';
+import { CountryFlag } from './CountryFlag';
+import { LanguagePickerModal } from './LanguagePickerModal';
 
 type Props = {
   client: CompanionClient;
   enabled: boolean;
+  typingLanguage: string;
+  onLanguageChanged: (langTag: string) => void;
   onTypedChar?: (char: string) => void;
   onSpecialKey?: (key: string) => void;
 };
@@ -18,9 +28,13 @@ const ROWS: string[][] = [
 export function KeyboardPanel({
   client,
   enabled,
+  typingLanguage,
+  onLanguageChanged,
   onTypedChar,
   onSpecialKey,
 }: Props) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   const pressKey = (key: string, modifiers: string[] = []) => {
     if (!enabled) {
       return;
@@ -37,6 +51,12 @@ export function KeyboardPanel({
     onTypedChar?.(text);
   };
 
+  const onPicked = (method: InputMethod) => {
+    onLanguageChanged(method.langTag);
+  };
+
+  const langCode = languageDisplayCode(typingLanguage);
+
   return (
     <View style={styles.wrap}>
       {ROWS.map((row) => (
@@ -52,6 +72,24 @@ export function KeyboardPanel({
         </View>
       ))}
       <View style={styles.row}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Language ${langCode}`}
+          disabled={!enabled}
+          onPress={() => setPickerOpen(true)}
+          style={({ pressed }) => [
+            styles.key,
+            styles.langKey,
+            !enabled && styles.keyDisabled,
+            pressed && enabled && styles.keyPressed,
+          ]}
+        >
+          <CountryFlag
+            country={flagCodeForLanguage(typingLanguage)}
+            size={18}
+          />
+          <Text style={styles.keyLabel}>{langCode}</Text>
+        </Pressable>
         <KeyButton
           label="Space"
           flex={3}
@@ -71,6 +109,14 @@ export function KeyboardPanel({
           enabled={enabled}
         />
       </View>
+
+      <LanguagePickerModal
+        visible={pickerOpen}
+        client={client}
+        activeHkl={null}
+        onClose={() => setPickerOpen(false)}
+        onPicked={onPicked}
+      />
     </View>
   );
 }
@@ -123,6 +169,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
+  },
+  langKey: {
+    flex: 1.1,
+    flexDirection: 'row',
+    gap: 6,
   },
   keyPressed: {
     backgroundColor: '#3d4a63',

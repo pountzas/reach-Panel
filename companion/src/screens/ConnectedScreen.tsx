@@ -202,6 +202,11 @@ export function ConnectedScreen({
           language,
           onTypedChar,
           onSpecialKey,
+          onLanguageChanged: (_langTag: string) => {
+            setPrefix('');
+            setSuggestions([]);
+            void refresh();
+          },
         })}
       </View>
 
@@ -228,6 +233,7 @@ function renderTab(args: {
   refresh: () => void;
   onTypedChar: (char: string) => void;
   onSpecialKey: (key: string) => void;
+  onLanguageChanged: (langTag: string) => void;
 }) {
   const {
     tab,
@@ -240,6 +246,7 @@ function renderTab(args: {
     refresh,
     onTypedChar,
     onSpecialKey,
+    onLanguageChanged,
   } = args;
 
   switch (tab) {
@@ -248,6 +255,8 @@ function renderTab(args: {
         <KeyboardPanel
           client={client}
           enabled={enabled}
+          typingLanguage={language}
+          onLanguageChanged={onLanguageChanged}
           onTypedChar={onTypedChar}
           onSpecialKey={onSpecialKey}
         />

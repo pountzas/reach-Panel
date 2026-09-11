@@ -40,6 +40,14 @@ export type PredictionEntry = {
   frequency: number;
 };
 
+export type InputMethod = {
+  hkl: number;
+  langTag: string;
+  displayName: string;
+  layoutName: string;
+  klid: string;
+};
+
 export type TabletSettings = {
   typingLanguage?: string;
   predictionEnabled?: boolean;
