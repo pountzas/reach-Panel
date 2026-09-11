@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { CompanionClient, ConnectionStatus } from '../companionClient';
 import {
@@ -6,6 +6,7 @@ import {
   type ShellTab,
 } from '../components/CollapsedFab';
 import { DictationPanel } from '../components/DictationPanel';
+import { InputPreview } from '../components/InputPreview';
 import { KeyboardPanel } from '../components/KeyboardPanel';
 import { NumpadPanel } from '../components/NumpadPanel';
 import { ProfilePanel } from '../components/ProfilePanel';
@@ -34,12 +35,31 @@ export function ConnectedScreen({
   const [collapsed, setCollapsed] = useState(false);
   const [prefix, setPrefix] = useState('');
   const [suggestions, setSuggestions] = useState<PredictionEntry[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { snapshot, error, loading, refresh, language, profileId } =
     useProfileSnapshot(client, status);
 
   const enabled = status === 'connected';
   const predictionEnabled = Boolean(snapshot?.settings.predictionEnabled);
+
+  useEffect(() => {
+    return client.onMessage((env) => {
+      if (env.type === 'input.preview.frame') {
+        const url =
+          typeof env.payload?.dataUrl === 'string' ? env.payload.dataUrl : null;
+        setPreviewUrl(url);
+      } else if (env.type === 'input.preview.cleared') {
+        setPreviewUrl(null);
+      }
+    });
+  }, [client]);
+
+  useEffect(() => {
+    if (status !== 'connected' && status !== 'reconnecting') {
+      setPreviewUrl(null);
+    }
+  }, [status]);
 
   const queryPredictions = useCallback(
     async (nextPrefix: string) => {
@@ -167,6 +187,8 @@ export function ConnectedScreen({
           }}
         />
       )}
+
+      {tab === 'keyboard' ? <InputPreview dataUrl={previewUrl} /> : null}
 
       <View style={styles.body}>
         {renderTab({
