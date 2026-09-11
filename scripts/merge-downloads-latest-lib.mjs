@@ -4,6 +4,9 @@
 
 export const DOWNLOADS_LATEST_PATHNAME = 'downloads/latest.json';
 
+export const DOWNLOADS_LATEST_PUBLIC_URL =
+  'https://2zhnilo5gijgvtoh.public.blob.vercel-storage.com/downloads/latest.json';
+
 function isNotFoundError(err) {
   if (!err || typeof err !== 'object') {
     return false;
@@ -26,36 +29,56 @@ async function streamToString(stream) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+async function readTextFromGetResult(result, fetchImpl) {
+  if (typeof result === 'string') {
+    return result;
+  }
+  if (result?.stream) {
+    return streamToString(result.stream);
+  }
+  if (typeof result?.text === 'function') {
+    return result.text();
+  }
+  const url =
+    typeof result?.downloadUrl === 'string'
+      ? result.downloadUrl
+      : typeof result?.url === 'string'
+        ? result.url
+        : null;
+  if (url && fetchImpl) {
+    const response = await fetchImpl(url, { cache: 'no-store' });
+    if (response.ok) {
+      return response.text();
+    }
+  }
+  return '';
+}
+
 /**
  * Load downloads/latest.json via an injectable get() (from @vercel/blob).
- * Missing / 404 → {}. Other errors propagate.
+ * Missing / 404 → {}. Empty or unreadable get() results can fall back to the
+ * public URL when fetchImpl is provided. Other errors propagate.
  */
-export async function loadDownloadsManifest(getFn, pathname, token) {
+export async function loadDownloadsManifest(getFn, pathname, token, fetchImpl) {
   let result;
   try {
     result = await getFn(pathname, { access: 'public', token, useCache: false });
   } catch (err) {
-    if (isNotFoundError(err)) {
-      return {};
+    if (!isNotFoundError(err)) {
+      throw err;
     }
-    throw err;
+    result = null;
   }
 
-  if (result == null) {
-    return {};
-  }
+  let text = result == null ? '' : await readTextFromGetResult(result, fetchImpl);
 
-  let text;
-  if (typeof result === 'string') {
-    text = result;
-  } else if (result.stream) {
-    text = await streamToString(result.stream);
-  } else if (typeof result.text === 'function') {
-    text = await result.text();
-  } else if (result.statusCode === 304) {
-    return {};
-  } else {
-    return {};
+  if ((!text || !text.trim()) && fetchImpl) {
+    const response = await fetchImpl(`${DOWNLOADS_LATEST_PUBLIC_URL}?t=${Date.now()}`, {
+      cache: 'no-store',
+    });
+    if (response.ok) {
+      text = await response.text();
+    }
   }
 
   if (!text || !text.trim()) {
@@ -63,6 +86,33 @@ export async function loadDownloadsManifest(getFn, pathname, token) {
   }
 
   return JSON.parse(text);
+}
+
+export function otherPlatform(platform) {
+  return platform === 'windows' ? 'android' : 'windows';
+}
+
+/**
+ * Keep the other platform when a later load comes back empty or stripped.
+ */
+export function restoreRememberedPlatform(loaded, rememberedOther, platform) {
+  const other = otherPlatform(platform);
+  const current = { ...loaded };
+  if (rememberedOther && !current[other]) {
+    current[other] = rememberedOther;
+  }
+  return current;
+}
+
+export function nextRememberedPlatform(manifest, rememberedOther, platform) {
+  const other = otherPlatform(platform);
+  return manifest?.[other] ?? rememberedOther;
+}
+
+export function hasManifestContent(manifest) {
+  return Boolean(
+    manifest && (manifest.windows || manifest.android || manifest.updatedAt),
+  );
 }
 
 /**
@@ -104,10 +154,13 @@ export function mergeDownloadsManifest(current, platform, section, now = () => n
  * @param {'windows'|'android'} platform
  */
 export function mergeWriteNeedsRetry(current, next, written, platform) {
+  if (!hasManifestContent(written)) {
+    return false;
+  }
   if (JSON.stringify(written?.[platform]) !== JSON.stringify(next?.[platform])) {
     return true;
   }
-  const other = platform === 'windows' ? 'android' : 'windows';
+  const other = otherPlatform(platform);
   return Boolean(current?.[other]) && !written?.[other];
 }
 

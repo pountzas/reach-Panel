@@ -35,7 +35,7 @@ describe("applyDownloadsManifest", () => {
     expect(ui.statusNote.textContent.length).toBeGreaterThan(0);
   });
 
-  it("hides Android CTAs when android is missing from the manifest", () => {
+  it("keeps Android fallbacks when android is missing from the manifest", () => {
     const ui = makeUi();
     applyDownloadsManifest(ui, {
       windows: {
@@ -48,13 +48,14 @@ describe("applyDownloadsManifest", () => {
     expect(ui.setupCta.href).toBe(blobUrl("setup.exe"));
     expect(ui.msiCta.href).toBe(blobUrl("app.msi"));
     expect(ui.windowsVersion.textContent).toBe("0.13.0");
-    expect(ui.apkCta.hidden).toBe(true);
-    expect(ui.androidSection.hidden).toBe(true);
+    expect(ui.apkCta.href).toBe("fallback-apk");
+    expect(ui.apkCta.hidden).toBe(false);
+    expect(ui.androidSection.hidden).toBe(false);
     expect(ui.statusNote.hidden).toBe(false);
     expect(ui.statusNote.textContent).toMatch(/android/i);
   });
 
-  it("hides Windows CTAs when windows is missing from the manifest", () => {
+  it("keeps Windows fallbacks when windows is missing from the manifest", () => {
     const ui = makeUi();
     applyDownloadsManifest(ui, {
       android: {
@@ -65,9 +66,11 @@ describe("applyDownloadsManifest", () => {
 
     expect(ui.apkCta.href).toBe(blobUrl("app.apk"));
     expect(ui.androidVersion.textContent).toBe("0.3.0");
-    expect(ui.setupCta.hidden).toBe(true);
-    expect(ui.msiCta.hidden).toBe(true);
-    expect(ui.windowsSection.hidden).toBe(true);
+    expect(ui.setupCta.href).toBe("fallback-setup");
+    expect(ui.msiCta.href).toBe("fallback-msi");
+    expect(ui.setupCta.hidden).toBe(false);
+    expect(ui.msiCta.hidden).toBe(false);
+    expect(ui.windowsSection.hidden).toBe(false);
     expect(ui.statusNote.hidden).toBe(false);
     expect(ui.statusNote.textContent).toMatch(/windows/i);
   });
@@ -116,9 +119,10 @@ describe("applyDownloadsManifest", () => {
     expect(ui.setupCta.href).toBe("fallback-setup");
     expect(ui.msiCta.href).toBe("fallback-msi");
     expect(ui.apkCta.href).toBe(blobUrl("app.apk"));
-    expect(ui.setupCta.hidden).toBe(true);
-    expect(ui.msiCta.hidden).toBe(true);
+    expect(ui.setupCta.hidden).toBe(false);
+    expect(ui.msiCta.hidden).toBe(false);
     expect(ui.apkCta.hidden).toBe(false);
+    expect(ui.windowsSection.hidden).toBe(false);
     expect(ui.statusNote.hidden).toBe(false);
     expect(ui.statusNote.textContent).toMatch(/windows/i);
   });
@@ -140,9 +144,10 @@ describe("applyDownloadsManifest", () => {
     expect(ui.setupCta.href).toBe("fallback-setup");
     expect(ui.msiCta.href).toBe("fallback-msi");
     expect(ui.apkCta.href).toBe(blobUrl("app.apk"));
-    expect(ui.setupCta.hidden).toBe(true);
-    expect(ui.msiCta.hidden).toBe(true);
+    expect(ui.setupCta.hidden).toBe(false);
+    expect(ui.msiCta.hidden).toBe(false);
     expect(ui.apkCta.hidden).toBe(false);
+    expect(ui.windowsSection.hidden).toBe(false);
     expect(ui.statusNote.hidden).toBe(false);
     expect(ui.statusNote.textContent).toMatch(/windows/i);
   });
@@ -164,9 +169,10 @@ describe("applyDownloadsManifest", () => {
     expect(ui.setupCta.href).toBe("fallback-setup");
     expect(ui.msiCta.href).toBe("fallback-msi");
     expect(ui.apkCta.href).toBe(blobUrl("app.apk"));
-    expect(ui.setupCta.hidden).toBe(true);
-    expect(ui.msiCta.hidden).toBe(true);
+    expect(ui.setupCta.hidden).toBe(false);
+    expect(ui.msiCta.hidden).toBe(false);
     expect(ui.apkCta.hidden).toBe(false);
+    expect(ui.windowsSection.hidden).toBe(false);
     expect(ui.statusNote.hidden).toBe(false);
     expect(ui.statusNote.textContent).toMatch(/windows/i);
   });
