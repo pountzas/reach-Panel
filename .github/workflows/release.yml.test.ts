@@ -29,4 +29,9 @@ describe("release.yml Windows Blob downloads upload", () => {
     const blobSection = yaml.slice(Math.max(0, idx - 400), idx + 800);
     expect(blobSection).not.toMatch(/continue-on-error\s*:\s*true/);
   });
+
+  it("uses Node 22", () => {
+    expect(yaml).toMatch(/node-version:\s*22\b/);
+    expect(yaml).not.toMatch(/node-version:\s*20\b/);
+  });
 });

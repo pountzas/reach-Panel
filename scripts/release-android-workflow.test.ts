@@ -36,6 +36,10 @@ describe("release-android.yml downloads landing contract", () => {
     }
   });
 
+  it("uses Node 22 so eas-cli@latest can install", () => {
+    expect(yaml).toMatch(/node-version:\s*22\b/);
+  });
+
   it("deploys install site without sed inject of INSTALL_APK placeholder", () => {
     expect(yaml).not.toContain("__INSTALL_APK_PUBLIC_URL__");
     expect(yaml).not.toMatch(/\bsed\s+-i\b/);
