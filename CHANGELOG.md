@@ -5,6 +5,18 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.0 (2026-09-11)
+
+## What's Changed
+* chore(deps): bump the npm-minor-and-patch group across 1 directory with 5 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/141
+* fix: resolve pdfjs-dist Dependabot alert (GHSA-hq66-cqwq-w95j) by @pountzas in https://github.com/pountzas/reach-Panel/pull/145
+* feat: dual-platform downloads landing page by @pountzas in https://github.com/pountzas/reach-Panel/pull/149
+* fix: companion i18n, QR scan, shared live preview, line-strip crop by @pountzas in https://github.com/pountzas/reach-Panel/pull/150
+* feat: companion live preview, language switch, and downloads landing by @pountzas in https://github.com/pountzas/reach-Panel/pull/151
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.12.0...v0.13.0
+
 ## 0.12.0 (2026-08-25)
 
 ## What's Changed
