@@ -18,10 +18,9 @@ import { get, put } from '@vercel/blob';
 
 import {
   DOWNLOADS_LATEST_PATHNAME,
-  hasManifestContent,
   loadDownloadsManifest,
   mergeDownloadsManifest,
-  mergeWriteNeedsRetry,
+  mergeWriteFollowUp,
   nextRememberedPlatform,
   resolveMergeInput,
   restoreRememberedPlatform,
@@ -87,20 +86,26 @@ try {
       fetch,
     );
     rememberedOther = nextRememberedPlatform(written, rememberedOther, input.platform);
-    if (!mergeWriteNeedsRetry(current, next, written, input.platform)) {
-      break;
+    const followUp = mergeWriteFollowUp(
+      current,
+      next,
+      written,
+      input.platform,
+      attempt === MAX_ATTEMPTS - 1,
+    );
+    if (followUp === 'retry') {
+      continue;
     }
-    if (attempt === MAX_ATTEMPTS - 1) {
-      if (!hasManifestContent(written)) {
-        console.error(
-          `Post-write read of ${DOWNLOADS_LATEST_PATHNAME} was inconclusive; treating put as success`,
-        );
-        break;
-      }
+    if (followUp === 'inconclusive') {
+      console.error(
+        `Post-write read of ${DOWNLOADS_LATEST_PATHNAME} was inconclusive; treating put as success`,
+      );
+    } else if (followUp === 'conflict') {
       throw new Error(
         `Concurrent update to ${DOWNLOADS_LATEST_PATHNAME} overwrote ${input.platform} after ${MAX_ATTEMPTS} attempts`,
       );
     }
+    break;
   }
 } catch (err) {
   console.error(err instanceof Error ? err.message : String(err));

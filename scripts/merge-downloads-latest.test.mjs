@@ -5,6 +5,7 @@ import {
   DOWNLOADS_LATEST_PUBLIC_URL,
   loadDownloadsManifest,
   mergeDownloadsManifest,
+  mergeWriteFollowUp,
   mergeWriteNeedsRetry,
   restoreRememberedPlatform,
   resolveMergeInput,
@@ -164,7 +165,7 @@ test('mergeWriteNeedsRetry is true when our platform section is missing after pu
   assert.equal(mergeWriteNeedsRetry(current, next, written, 'windows'), true);
 });
 
-test('mergeWriteNeedsRetry is false when the post-put read is empty', () => {
+test('empty post-put read retries before the final attempt', () => {
   const current = {
     android: { version: '0.3.0', apkUrl: 'https://example.com/apk' },
   };
@@ -176,7 +177,9 @@ test('mergeWriteNeedsRetry is false when the post-put read is empty', () => {
       msiUrl: 'https://example.com/msi',
     },
   };
-  assert.equal(mergeWriteNeedsRetry(current, next, {}, 'windows'), false);
+  const written = {};
+  assert.equal(mergeWriteFollowUp(current, next, written, 'windows', false), 'retry');
+  assert.equal(mergeWriteFollowUp(current, next, written, 'windows', true), 'inconclusive');
 });
 
 test('restoreRememberedPlatform keeps android when a later load is empty', () => {

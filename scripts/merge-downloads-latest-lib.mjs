@@ -148,20 +148,33 @@ export function mergeDownloadsManifest(current, platform, section, now = () => n
 
 /**
  * True when a put() raced with another platform writer and should be retried.
+ * Empty post-put reads are handled by mergeWriteFollowUp, not here.
  * @param {object} current snapshot loaded before merge
  * @param {object} next merged document we attempted to write
  * @param {object} written snapshot loaded after put
  * @param {'windows'|'android'} platform
  */
 export function mergeWriteNeedsRetry(current, next, written, platform) {
-  if (!hasManifestContent(written)) {
-    return false;
-  }
   if (JSON.stringify(written?.[platform]) !== JSON.stringify(next?.[platform])) {
     return true;
   }
   const other = otherPlatform(platform);
   return Boolean(current?.[other]) && !written?.[other];
+}
+
+/**
+ * What the merge loop should do after a post-put read.
+ * Empty reads retry until the last attempt, then count as inconclusive success.
+ * @returns {'done' | 'retry' | 'inconclusive' | 'conflict'}
+ */
+export function mergeWriteFollowUp(current, next, written, platform, isLastAttempt) {
+  if (!hasManifestContent(written)) {
+    return isLastAttempt ? 'inconclusive' : 'retry';
+  }
+  if (!mergeWriteNeedsRetry(current, next, written, platform)) {
+    return 'done';
+  }
+  return isLastAttempt ? 'conflict' : 'retry';
 }
 
 function readFlag(argv, name) {
