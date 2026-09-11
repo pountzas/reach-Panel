@@ -175,7 +175,7 @@ Companion app: [companion/README.md](companion/README.md).
 
 ### Public install site (Vercel)
 
-[docs/install/index.html](docs/install/index.html) is the dual-platform downloads page (Windows + Android). It deploys to Vercel and loads versions and hrefs from public Blob `downloads/latest.json` (that pathname only, not Tauri `updater/latest.json`).
+[docs/install/index.html](docs/install/index.html) is the dual-platform downloads page (Windows + Android). It deploys to Vercel and loads versions and hrefs from public Blob `downloads/latest.json` (that pathname only, not Tauri `updater/latest.json`). If a platform is missing from that file, the page keeps the shipped fallback links and QR visible.
 
 Windows release CI uploads `ReachPanel-Setup.exe` and `ReachPanel.msi`, then merge-patches the Windows section of the manifest. Android CI uploads `ReachPanel-Companion.apk` and merge-patches the Android section. Both need `BLOB_READ_WRITE_TOKEN`.
 

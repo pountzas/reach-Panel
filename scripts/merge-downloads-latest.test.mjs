@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  DOWNLOADS_LATEST_PUBLIC_URL,
   loadDownloadsManifest,
   mergeDownloadsManifest,
   mergeWriteNeedsRetry,
+  restoreRememberedPlatform,
   resolveMergeInput,
 } from './merge-downloads-latest-lib.mjs';
 
@@ -160,6 +162,68 @@ test('mergeWriteNeedsRetry is true when our platform section is missing after pu
     android: { version: '0.3.0', apkUrl: 'https://example.com/apk' },
   };
   assert.equal(mergeWriteNeedsRetry(current, next, written, 'windows'), true);
+});
+
+test('mergeWriteNeedsRetry is false when the post-put read is empty', () => {
+  const current = {
+    android: { version: '0.3.0', apkUrl: 'https://example.com/apk' },
+  };
+  const next = {
+    android: current.android,
+    windows: {
+      version: '0.12.0',
+      exeUrl: 'https://example.com/exe',
+      msiUrl: 'https://example.com/msi',
+    },
+  };
+  assert.equal(mergeWriteNeedsRetry(current, next, {}, 'windows'), false);
+});
+
+test('restoreRememberedPlatform keeps android when a later load is empty', () => {
+  const remembered = { version: '0.3.0', apkUrl: 'https://example.com/apk' };
+  const restored = restoreRememberedPlatform({}, remembered, 'windows');
+  assert.deepEqual(restored.android, remembered);
+});
+
+test('restoreRememberedPlatform prefers a freshly loaded other platform', () => {
+  const remembered = { version: '0.3.0', apkUrl: 'https://example.com/apk' };
+  const loaded = {
+    android: { version: '0.3.1', apkUrl: 'https://example.com/apk-new' },
+  };
+  const restored = restoreRememberedPlatform(loaded, remembered, 'windows');
+  assert.deepEqual(restored.android, loaded.android);
+});
+
+test('loadDownloadsManifest falls back to the public URL when get returns null', async () => {
+  const android = { version: '0.3.0', apkUrl: 'https://example.com/apk' };
+  const get = async () => null;
+  const fetchImpl = async (url) => {
+    assert.match(String(url), new RegExp(DOWNLOADS_LATEST_PUBLIC_URL.replaceAll('.', '\\.')));
+    return {
+      ok: true,
+      text: async () => JSON.stringify({ android }),
+    };
+  };
+  const manifest = await loadDownloadsManifest(get, 'downloads/latest.json', 'tok', fetchImpl);
+  assert.deepEqual(manifest.android, android);
+});
+
+test('loadDownloadsManifest reads result.url when stream/text are missing', async () => {
+  const windows = {
+    version: '0.13.1',
+    exeUrl: 'https://example.com/exe',
+    msiUrl: 'https://example.com/msi',
+  };
+  const get = async () => ({ url: 'https://blob.example/downloads/latest.json' });
+  const fetchImpl = async (url) => {
+    assert.equal(url, 'https://blob.example/downloads/latest.json');
+    return {
+      ok: true,
+      text: async () => JSON.stringify({ windows }),
+    };
+  };
+  const manifest = await loadDownloadsManifest(get, 'downloads/latest.json', 'tok', fetchImpl);
+  assert.deepEqual(manifest.windows, windows);
 });
 
 test('resolveMergeInput throws when windows URLs are missing', () => {

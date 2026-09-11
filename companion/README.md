@@ -85,7 +85,7 @@ npx expo run:android
 - iOS TestFlight
 - Play Store listing
 
-Caregivers get Windows installers and the tablet APK from the same downloads page: **https://reachpanel-companion.vercel.app/** (see root [README - Install & connect the Android companion](../README.md#install--connect-the-android-companion)).
+Caregivers get Windows installers and the tablet APK from the same downloads page: **https://reachpanel-companion.vercel.app/** (see root [README - Install & connect the Android companion](../README.md#install--connect-the-android-companion)). The APK button and QR stay on that page even if the latest version list is briefly missing Android.
 
 ## Troubleshooting: `ExponentAV` / native module errors
 

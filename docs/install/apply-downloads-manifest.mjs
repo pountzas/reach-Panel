@@ -1,6 +1,7 @@
 /**
  * Apply downloads/latest.json to install-page CTA state.
  * Works with real DOM elements or plain stubs in unit tests.
+ * Missing or rejected platform URLs keep the HTML fallbacks visible.
  */
 
 const ALLOWED_DOWNLOAD_HOST =
@@ -126,10 +127,6 @@ export function applyDownloadsManifest(ui, manifest) {
     if (manifest.windows.version) {
       ui.windowsVersion.textContent = manifest.windows.version;
     }
-  } else {
-    ui.setupCta.hidden = true;
-    ui.msiCta.hidden = true;
-    ui.windowsSection.hidden = true;
   }
 
   if (androidOk) {
@@ -139,9 +136,6 @@ export function applyDownloadsManifest(ui, manifest) {
     if (manifest.android.version) {
       ui.androidVersion.textContent = manifest.android.version;
     }
-  } else {
-    ui.apkCta.hidden = true;
-    ui.androidSection.hidden = true;
   }
 
   if (!windowsOk) {
