@@ -5,6 +5,15 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.2 (2026-09-11)
+
+## What's Changed
+* fix: stop downloads merge retries from wiping the Android APK by @pountzas in https://github.com/pountzas/reach-Panel/pull/155
+* fix: stop downloads merge retries from wiping the Android APK by @pountzas in https://github.com/pountzas/reach-Panel/pull/156
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.13.1...v0.13.2
+
 ## 0.13.1 (2026-09-11)
 
 ## What's Changed
