@@ -5,6 +5,14 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.1 (2026-09-11)
+
+## What's Changed
+* ci: use Node 22 so current eas-cli can install by @pountzas in https://github.com/pountzas/reach-Panel/pull/153
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.13.0...v0.13.1
+
 ## 0.13.0 (2026-09-11)
 
 ## What's Changed
