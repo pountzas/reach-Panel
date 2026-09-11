@@ -1,13 +1,53 @@
 use super::protocol::Envelope;
 use crate::db::Database;
 use crate::input::{
-    mouse_click, mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative,
-    press_combo, press_key, type_text, KeyPressRequest,
+    get_input_methods, get_keyboard_state, mouse_click, mouse_double_click, mouse_scroll,
+    move_cursor_absolute, move_cursor_relative, press_combo, press_key, set_input_method_by_hkl,
+    type_text, KeyPressRequest,
 };
 use crate::prediction::{get_suggestions, record_usage};
 use crate::profiles::INTERNAL_PROFILE_ID;
 use crate::services::{build_profile_snapshot, launch_quick_action, type_phrase_text};
 use tauri::AppHandle;
+
+fn active_typing_language(db: &Database, fallback: &str) -> String {
+    db.get_profile_by_id(INTERNAL_PROFILE_ID)
+        .ok()
+        .flatten()
+        .and_then(|p| {
+            serde_json::from_str::<serde_json::Value>(&p.settings_json)
+                .ok()
+                .and_then(|v| {
+                    v.get("typingLanguage")
+                        .and_then(|t| t.as_str())
+                        .map(|s| s.to_string())
+                })
+        })
+        .unwrap_or_else(|| fallback.to_string())
+}
+
+fn persist_typing_language(db: &Database, lang_tag: &str) -> Result<(), String> {
+    let profile = db
+        .get_profile_by_id(INTERNAL_PROFILE_ID)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Active profile not found".to_string())?;
+    let mut settings: serde_json::Value = serde_json::from_str(&profile.settings_json)
+        .unwrap_or_else(|_| serde_json::json!({}));
+    let Some(obj) = settings.as_object_mut() else {
+        settings = serde_json::json!({ "typingLanguage": lang_tag });
+        let json = serde_json::to_string(&settings).map_err(|e| e.to_string())?;
+        return db
+            .update_profile_settings(INTERNAL_PROFILE_ID, &json)
+            .map_err(|e| e.to_string());
+    };
+    obj.insert(
+        "typingLanguage".into(),
+        serde_json::Value::String(lang_tag.to_string()),
+    );
+    let json = serde_json::to_string(&settings).map_err(|e| e.to_string())?;
+    db.update_profile_settings(INTERNAL_PROFILE_ID, &json)
+        .map_err(|e| e.to_string())
+}
 
 /// Handle an authenticated companion message. Returns response envelopes (0+).
 pub fn handle_message(
@@ -236,6 +276,56 @@ pub fn handle_message(
                 Ok(payload) => vec![Envelope::reply(id, "dictation.final", payload)],
                 Err(e) => vec![Envelope::error(id, "dictation_failed", e)],
             }
+        }
+        "keyboard.languages" => {
+            let methods = get_input_methods();
+            let state = get_keyboard_state();
+            let typing_language = active_typing_language(db, &state.system_language);
+            match serde_json::to_value(&methods) {
+                Ok(methods_json) => vec![Envelope::reply(
+                    id,
+                    "keyboard.languages.ok",
+                    serde_json::json!({
+                        "methods": methods_json,
+                        "activeHkl": state.system_hkl,
+                        "typingLanguage": typing_language,
+                    }),
+                )],
+                Err(e) => vec![Envelope::error(id, "languages_failed", e.to_string())],
+            }
+        }
+        "keyboard.setLanguage" => {
+            let Some(hkl) = env.payload.get("hkl").and_then(|v| v.as_u64()) else {
+                return vec![Envelope::error(
+                    id,
+                    "bad_payload",
+                    "hkl is required",
+                )];
+            };
+            if let Err(e) = set_input_method_by_hkl(hkl) {
+                return vec![Envelope::error(id, "input_failed", e.to_string())];
+            }
+            let methods = get_input_methods();
+            let Some(method) = methods.into_iter().find(|m| m.hkl == hkl) else {
+                return vec![Envelope::error(
+                    id,
+                    "input_failed",
+                    "Input method not found after switch",
+                )];
+            };
+            if let Err(e) = persist_typing_language(db, &method.lang_tag) {
+                return vec![Envelope::error(id, "persist_failed", e)];
+            }
+            vec![Envelope::reply(
+                id,
+                "keyboard.setLanguage.ok",
+                serde_json::json!({
+                    "hkl": method.hkl,
+                    "langTag": method.lang_tag,
+                    "layoutName": method.layout_name,
+                    "klid": method.klid,
+                }),
+            )]
         }
         other => vec![Envelope::error(
             id,
