@@ -76,6 +76,7 @@ fn ensure_worker() {
 }
 
 fn preview_loop() {
+    let mut was_companion_live = false;
     loop {
         {
             let guard = WORKER_LOCK.lock().unwrap_or_else(|e| e.into_inner());
@@ -85,26 +86,32 @@ fn preview_loop() {
         }
         DIRTY.store(false, Ordering::Release);
 
-        if !PREVIEW_ENABLED.load(Ordering::Acquire) {
-            continue;
-        }
-        if companion_session_live() {
+        let companion_live = companion_session_live();
+        if companion_live && !was_companion_live {
+            // Clear desktop strip once when the tablet takes over; keep capturing.
             emit_cleared();
+        }
+        was_companion_live = companion_live;
+
+        // Desktop setting may be off; companion still gets frames while live.
+        if !PREVIEW_ENABLED.load(Ordering::Acquire) && !companion_live {
             continue;
         }
         if !has_input_target() {
-            emit_cleared();
+            route_cleared(companion_live);
             continue;
         }
         let Some(bounds) = get_input_target_bounds() else {
-            emit_cleared();
+            route_cleared(companion_live);
             continue;
         };
         match capture_region_jpeg(&bounds) {
             Ok((jpeg, width, height)) => {
                 let b64 = STANDARD.encode(jpeg);
                 let data_url = format!("data:image/jpeg;base64,{b64}");
-                if let Some(app) = APP_HANDLE.get() {
+                if companion_live {
+                    push_frame_to_companion(data_url, width, height);
+                } else if let Some(app) = APP_HANDLE.get() {
                     let _ = app.emit(
                         "input-preview-frame",
                         InputPreviewFramePayload {
@@ -129,6 +136,34 @@ fn companion_session_live() -> bool {
     app.try_state::<crate::companion::CompanionBridge>()
         .map(|bridge| bridge.session().tablet_audio_active())
         .unwrap_or(false)
+}
+
+fn route_cleared(companion_live: bool) {
+    if companion_live {
+        push_cleared_to_companion();
+    } else {
+        emit_cleared();
+    }
+}
+
+fn push_frame_to_companion(data_url: String, width: u32, height: u32) {
+    let Some(app) = APP_HANDLE.get() else {
+        return;
+    };
+    let Some(bridge) = app.try_state::<crate::companion::CompanionBridge>() else {
+        return;
+    };
+    crate::companion::push_input_preview_frame(&bridge, data_url, width, height);
+}
+
+fn push_cleared_to_companion() {
+    let Some(app) = APP_HANDLE.get() else {
+        return;
+    };
+    let Some(bridge) = app.try_state::<crate::companion::CompanionBridge>() else {
+        return;
+    };
+    crate::companion::push_input_preview_cleared(&bridge);
 }
 
 fn emit_cleared() {
