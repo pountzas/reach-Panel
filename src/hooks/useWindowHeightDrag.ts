@@ -9,12 +9,24 @@ import {
   isTeachingFullWorkArea,
 } from "../lib/v1HiddenFeatures";
 
+type WindowHeightDragRef = {
+  region: WindowHeightDragRegion;
+  latestRatio: number;
+};
+
+type WindowHeightDragHandlers = {
+  onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
+  onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
+  onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
+  onPointerCancel: (event: ReactPointerEvent<HTMLElement>) => void;
+};
+
 /**
  * Window-height drag for dedicated grip handles (full header + mini toolbar).
  * Maps absolute screenY → ratio so the top edge tracks the cursor (no clientY
  * feedback while the window resizes under the pointer).
  */
-export const useWindowHeightDrag = () => {
+export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
   const settings = useAppStore((s) => s.settings);
   const monitors = useAppStore((s) => s.monitors);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
@@ -22,10 +34,7 @@ export const useWindowHeightDrag = () => {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const applyWindowHeightRatioLive = useAppStore((s) => s.applyWindowHeightRatioLive);
 
-  const windowResizeRef = useRef<{
-    region: WindowHeightDragRegion;
-    latestRatio: number;
-  } | null>(null);
+  const windowResizeRef = useRef<WindowHeightDragRef | null>(null);
   const resizeRafRef = useRef<number | null>(null);
 
   const fullWorkArea = isTeachingFullWorkArea({
@@ -33,7 +42,7 @@ export const useWindowHeightDrag = () => {
     keyboardSectionMode: settings.keyboardSectionMode,
   });
 
-  useEffect(() => {
+  useEffect((): (() => void) => {
     return () => {
       if (resizeRafRef.current !== null) {
         cancelAnimationFrame(resizeRafRef.current);
