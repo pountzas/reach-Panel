@@ -43,6 +43,7 @@ import {
   clampWindowHeightRatio,
   computeContentHeightRatioFromSettings,
 } from "../lib/sectionLayouts";
+import { shouldApplyLiveWindowHeightRatio } from "../lib/windowHeightDrag";
 import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
 import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled, isInputPreviewActiveForMode } from "../lib/miniMode";
 import {
@@ -1547,8 +1548,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings, miniModeActive, musicTeachingEnabled } = get();
-    if (settings.collapsed || miniModeActive) return;
+    const { settings, musicTeachingEnabled } = get();
+    if (
+      !shouldApplyLiveWindowHeightRatio({
+        collapsed: settings.collapsed,
+        miniModeActive: get().miniModeActive,
+      })
+    ) {
+      return;
+    }
     const heightRatio = Math.max(
       computeContentHeightRatioFromSettings(
         settings,

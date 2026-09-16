@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { type CSSProperties } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { exit } from "@tauri-apps/plugin-process";
 import { ResizableSplitPane } from "./ResizableSplitPane";
@@ -20,15 +20,17 @@ import type { LanguageSubjectTab } from "../../lib/teaching";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useLanguageLessonPhysicalKeyboard } from "../../hooks/useLanguageLessonPhysicalKeyboard";
 import { useFreeWritePhysicalKeyboard } from "../../hooks/useFreeWritePhysicalKeyboard";
-import { CollapseIcon, CloseIcon, SettingsIcon } from "../common/SectionIcons";
+import { useWindowHeightDrag } from "../../hooks/useWindowHeightDrag";
+import {
+  CollapseIcon,
+  CloseIcon,
+  HeightGripIcon,
+  SettingsIcon,
+} from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { CollapsedFab } from "./CollapsedFab";
 import { MiniModeShell } from "./MiniModeShell";
-import {
-  appHeaderHeightPx,
-  clampWindowHeightRatio,
-  computeContentHeightRatioFromSettings,
-} from "../../lib/sectionLayouts";
+import { appHeaderHeightPx } from "../../lib/sectionLayouts";
 import { closeAllToolWindows } from "../../lib/toolWindows";
 import { resolveMiniModeEnabled } from "../../lib/miniMode";
 import { isTeachingSessionActive } from "../../lib/appModeLayout";
@@ -37,7 +39,6 @@ import {
   effectiveMouseVisible,
   effectiveQuickActionsVisible,
   isMusicLessonSlotVisible,
-  isTeachingFullWorkArea,
   isV1FeatureHidden,
   resolveV1SectionVisibility,
 } from "../../lib/v1HiddenFeatures";
@@ -105,42 +106,6 @@ function InputRowPanel() {
   );
 }
 
-function monitorRegionHeight(
-  monitors: { id: number; height: number; is_primary: boolean }[],
-  monitorId: number,
-  fullWorkArea: boolean,
-): number {
-  const monitor =
-    monitors.find((m) => m.id === monitorId) ??
-    monitors.find((m) => m.is_primary) ??
-    monitors[0];
-  if (!monitor) return window.innerHeight;
-  // Match Rust compute_window_layout: full_work_area or dual-monitor = full
-  // work area; single = bottom half.
-  return fullWorkArea || monitors.length >= 2 ? monitor.height : monitor.height / 2;
-}
-
-function contentHeightRatioFromSettings(
-  settings: {
-    quickActionsVisible: boolean;
-    phrasesVisible: boolean;
-    windowHeightRatio?: number;
-    keyboardSectionMode: string;
-  },
-  musicTeachingEnabled: boolean,
-): number {
-  const lessonSlotVisible = isMusicLessonSlotVisible({
-    musicTeachingEnabled,
-    keyboardSectionMode: settings.keyboardSectionMode,
-  });
-  const contentRatio = computeContentHeightRatioFromSettings(
-    settings,
-    lessonSlotVisible,
-  );
-  if (settings.windowHeightRatio == null) return contentRatio;
-  return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
-}
-
 export function AppShell() {
   useLanguageLessonPhysicalKeyboard();
   useFreeWritePhysicalKeyboard();
@@ -149,11 +114,11 @@ export function AppShell() {
   const setShowSettings = useAppStore((s) => s.setShowSettings);
   const toggleCollapsed = useAppStore((s) => s.toggleCollapsed);
   const updateSettings = useAppStore((s) => s.updateSettings);
-  const applyWindowHeightRatioLive = useAppStore((s) => s.applyWindowHeightRatioLive);
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const { t } = useTranslation();
+  const heightDrag = useWindowHeightDrag();
   const largeHeaders = effectiveLargeHeaders(settings.largeHeaders);
   const headerHeight = appHeaderHeightPx(largeHeaders);
   const iconSize = largeHeaders ? "lg" : "sm";
@@ -163,10 +128,6 @@ export function AppShell() {
     keyboardSectionMode: settings.keyboardSectionMode,
     teachingLesson,
   });
-  const fullWorkArea = isTeachingFullWorkArea({
-    musicTeachingEnabled,
-    keyboardSectionMode: settings.keyboardSectionMode,
-  });
   const sectionVisibility = resolveV1SectionVisibility({
     quickActionsVisible: settings.quickActionsVisible,
     phrasesVisible: settings.phrasesVisible,
@@ -174,73 +135,11 @@ export function AppShell() {
   });
   const quickActionsVisible = effectiveQuickActionsVisible(settings.quickActionsVisible);
   const phrasesSlotVisible = sectionVisibility.phrases;
-  const windowResizeRef = useRef<{
-    startY: number;
-    startRatio: number;
-    regionHeight: number;
-    latestRatio: number;
-  } | null>(null);
-  const resizeRafRef = useRef<number | null>(null);
 
   const handleCloseApp = () => {
     void closeAllToolWindows().finally(() => {
       void exit(0);
     });
-  };
-
-  const onWindowHeaderPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
-    if (!largeHeaders) return;
-    if ((event.target as HTMLElement).closest(".section-no-drag")) return;
-
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    const regionHeight = monitorRegionHeight(
-      monitors,
-      settings.accessibilityMonitorId,
-      fullWorkArea,
-    );
-    const startRatio = contentHeightRatioFromSettings(settings, musicTeachingEnabled);
-    windowResizeRef.current = {
-      startY: event.clientY,
-      startRatio,
-      regionHeight,
-      latestRatio: startRatio,
-    };
-  };
-
-  const onWindowHeaderPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
-    const drag = windowResizeRef.current;
-    if (!drag) return;
-
-    // Drag up → taller window (bottom edge fixed).
-    const delta = event.clientY - drag.startY;
-    const nextRatio = clampWindowHeightRatio(
-      drag.startRatio - delta / drag.regionHeight,
-    );
-    drag.latestRatio = nextRatio;
-    if (resizeRafRef.current !== null) return;
-    resizeRafRef.current = requestAnimationFrame(() => {
-      resizeRafRef.current = null;
-      const current = windowResizeRef.current;
-      if (!current) return;
-      void applyWindowHeightRatioLive(current.latestRatio);
-    });
-  };
-
-  const onWindowHeaderPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
-    const drag = windowResizeRef.current;
-    if (!drag) return;
-    windowResizeRef.current = null;
-    if (resizeRafRef.current !== null) {
-      cancelAnimationFrame(resizeRafRef.current);
-      resizeRafRef.current = null;
-    }
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // Already released.
-    }
-    void updateSettings({ windowHeightRatio: drag.latestRatio });
   };
 
   // Mini Mode: keyboard+suggestions or collapsed FAB — not the full app chrome.
@@ -298,22 +197,30 @@ export function AppShell() {
 
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         <header
-          className="flex shrink-0 items-center justify-between px-3"
+          className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center px-3"
           style={{
             height: headerHeight,
             backgroundColor: settings.headerBgColor ?? "#1e293b",
             color: settings.headerTextColor ?? "#ffffff",
-            cursor: largeHeaders ? "ns-resize" : undefined,
           }}
-          onPointerDown={largeHeaders ? onWindowHeaderPointerDown : undefined}
-          onPointerMove={largeHeaders ? onWindowHeaderPointerMove : undefined}
-          onPointerUp={largeHeaders ? onWindowHeaderPointerUp : undefined}
-          onPointerCancel={largeHeaders ? onWindowHeaderPointerUp : undefined}
         >
-          <span className={`font-semibold ${largeHeaders ? "text-lg" : ""}`}>
+          <div className="flex items-center justify-start">
+            <button
+              type="button"
+              aria-label="Resize window height"
+              className="flex h-8 w-8 cursor-ns-resize items-center justify-center rounded bg-white/10 hover:bg-white/20"
+              style={{ touchAction: "none" }}
+              {...heightDrag}
+            >
+              <HeightGripIcon className={iconClass} />
+            </button>
+          </div>
+          <span
+            className={`justify-self-center font-semibold ${largeHeaders ? "text-lg" : ""}`}
+          >
             {t("appTitle")}
           </span>
-          <div className="section-no-drag flex gap-1">
+          <div className="section-no-drag flex justify-end gap-1">
             <IconActionButton
               label={t("collapse")}
               onClick={toggleCollapsed}

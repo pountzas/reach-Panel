@@ -645,6 +645,27 @@ export function EnvelopeIcon({ className = iconClass }: IconProps) {
   );
 }
 
+/** Horizontal bars — ns-resize window-height grip. */
+export function HeightGripIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M5 9h14" />
+      <path d="M5 15h14" />
+      <path d="M8 6h8" />
+      <path d="M8 18h8" />
+    </svg>
+  );
+}
+
 /** Outlined keys / see-through keyboard (transparent mini mode). */
 export function TransparentKeyboardIcon({ className = iconClass }: IconProps) {
   return (
