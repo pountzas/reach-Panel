@@ -10,6 +10,8 @@ export const el: Record<keyof typeof en, string> = {
 
   expand: "Ανάπτυξη",
 
+  resizeWindowHeight: "Αλλαγή ύψους παραθύρου",
+
   minimizeSection: "Σμίκρυνση",
 
   dockSection: "Πρόσδεση ενότητας",

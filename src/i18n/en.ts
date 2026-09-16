@@ -6,6 +6,8 @@ export const en = {
 
   expand: "Expand",
 
+  resizeWindowHeight: "Resize window height",
+
   minimizeSection: "Minimize",
 
   dockSection: "Dock section",

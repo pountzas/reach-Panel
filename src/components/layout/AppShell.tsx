@@ -1,6 +1,5 @@
-import { type CSSProperties } from "react";
+import { type CSSProperties, type JSX } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { exit } from "@tauri-apps/plugin-process";
 import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
@@ -31,7 +30,6 @@ import { IconActionButton } from "../common/IconActionButton";
 import { CollapsedFab } from "./CollapsedFab";
 import { MiniModeShell } from "./MiniModeShell";
 import { appHeaderHeightPx } from "../../lib/sectionLayouts";
-import { closeAllToolWindows } from "../../lib/toolWindows";
 import { resolveMiniModeEnabled } from "../../lib/miniMode";
 import { isTeachingSessionActive } from "../../lib/appModeLayout";
 import {
@@ -42,8 +40,9 @@ import {
   isV1FeatureHidden,
   resolveV1SectionVisibility,
 } from "../../lib/v1HiddenFeatures";
+import { handleCloseApp } from "./appShellUtils";
 
-function LanguageTeachingBody() {
+const LanguageTeachingBody = (): JSX.Element => {
   const { t } = useTranslation();
   const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
   const setLanguageSubjectTab = useAppStore((s) => s.setLanguageSubjectTab);
@@ -60,9 +59,9 @@ function LanguageTeachingBody() {
       {languageSubjectTab === "freeWrite" ? <FreeWritePanel /> : <LanguageLessonPanel />}
     </TeachingSubjectShell>
   );
-}
+};
 
-function renderTeachingLessonPanel(lesson: TeachingLesson) {
+const renderTeachingLessonPanel = (lesson: TeachingLesson): JSX.Element => {
   switch (lesson) {
     case "music":
       return <MusicLessonPanel />;
@@ -75,9 +74,9 @@ function renderTeachingLessonPanel(lesson: TeachingLesson) {
       return _exhaustive;
     }
   }
-}
+};
 
-function InputRowPanel() {
+const InputRowPanel = (): JSX.Element => {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const mouseSide = settings.mousePanelSide ?? "right";
@@ -104,7 +103,7 @@ function InputRowPanel() {
       />
     </div>
   );
-}
+};
 
 export function AppShell() {
   useLanguageLessonPhysicalKeyboard();
@@ -135,12 +134,6 @@ export function AppShell() {
   });
   const quickActionsVisible = effectiveQuickActionsVisible(settings.quickActionsVisible);
   const phrasesSlotVisible = sectionVisibility.phrases;
-
-  const handleCloseApp = () => {
-    void closeAllToolWindows().finally(() => {
-      void exit(0);
-    });
-  };
 
   // Mini Mode: keyboard+suggestions or collapsed FAB — not the full app chrome.
   // Teaching wins: never host Teaching inside MiniModeShell.

@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { useAppStore } from "../stores/appStore";
 import {
   nextWindowHeightRatioFromScreenY,
@@ -9,12 +9,24 @@ import {
   isTeachingFullWorkArea,
 } from "../lib/v1HiddenFeatures";
 
+type WindowHeightDragRef = {
+  region: WindowHeightDragRegion;
+  latestRatio: number;
+};
+
+type WindowHeightDragHandlers = {
+  onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
+  onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
+  onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
+  onPointerCancel: (event: ReactPointerEvent<HTMLElement>) => void;
+};
+
 /**
  * Window-height drag for dedicated grip handles (full header + mini toolbar).
  * Maps absolute screenY → ratio so the top edge tracks the cursor (no clientY
  * feedback while the window resizes under the pointer).
  */
-export function useWindowHeightDrag() {
+export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
   const settings = useAppStore((s) => s.settings);
   const monitors = useAppStore((s) => s.monitors);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
@@ -22,16 +34,23 @@ export function useWindowHeightDrag() {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const applyWindowHeightRatioLive = useAppStore((s) => s.applyWindowHeightRatioLive);
 
-  const windowResizeRef = useRef<{
-    region: WindowHeightDragRegion;
-    latestRatio: number;
-  } | null>(null);
+  const windowResizeRef = useRef<WindowHeightDragRef | null>(null);
   const resizeRafRef = useRef<number | null>(null);
 
   const fullWorkArea = isTeachingFullWorkArea({
     musicTeachingEnabled,
     keyboardSectionMode: settings.keyboardSectionMode,
   });
+
+  useEffect((): (() => void) => {
+    return () => {
+      if (resizeRafRef.current !== null) {
+        cancelAnimationFrame(resizeRafRef.current);
+        resizeRafRef.current = null;
+      }
+      windowResizeRef.current = null;
+    };
+  }, []);
 
   const onWindowHeightPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest(".section-no-drag")) return;
@@ -95,4 +114,4 @@ export function useWindowHeightDrag() {
     onPointerUp: onWindowHeightPointerUp,
     onPointerCancel: onWindowHeightPointerUp,
   };
-}
+};

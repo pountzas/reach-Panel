@@ -2,7 +2,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect } from "react";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { greekComposeEnabled } from "../lib/keyboardCharacterInput";
-import { isFreeWriteCaptureActive } from "../lib/teaching";
+import {
+  isFreeWriteCaptureActive,
+  type FreeWriteModeInput,
+} from "../lib/teaching";
 import { isShiftActive } from "../lib/keyboardLayouts";
 import {
   physicalKeyFromKeyboardCode,
@@ -11,21 +14,21 @@ import {
 } from "../lib/layoutKeyTranslation";
 import { useAppStore } from "../stores/appStore";
 
-function freeWriteModeFromStore(state: ReturnType<typeof useAppStore.getState>) {
-  return {
-    musicTeachingEnabled: state.musicTeachingEnabled,
-    teachingLesson: state.teachingLesson,
-    settings: state.settings,
-    languageSubjectTab: state.languageSubjectTab,
-    freeWriteFocus: state.freeWriteFocus,
-  };
-}
+const freeWriteModeFromStore = (
+  state: ReturnType<typeof useAppStore.getState>,
+): FreeWriteModeInput => ({
+  musicTeachingEnabled: state.musicTeachingEnabled,
+  teachingLesson: state.teachingLesson,
+  settings: state.settings,
+  languageSubjectTab: state.languageSubjectTab,
+  freeWriteFocus: state.freeWriteFocus,
+});
 
 /**
  * While Free write notepad capture is active, capture hardware keyboard input
  * on the host window (touchscreen typing still goes through Keyboard.tsx).
  */
-export function useFreeWritePhysicalKeyboard() {
+export const useFreeWritePhysicalKeyboard = (): void => {
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const settings = useAppStore((s) => s.settings);
@@ -44,7 +47,7 @@ export function useFreeWritePhysicalKeyboard() {
     freeWriteFocus,
   });
 
-  useEffect(() => {
+  useEffect((): (() => void) | void => {
     if (!active) return;
 
     void syncWindowFocusable();
@@ -54,7 +57,11 @@ export function useFreeWritePhysicalKeyboard() {
 
     let translateQueue = Promise.resolve();
 
-    const queueLayoutTranslation = (physicalKey: string, shift: boolean) => {
+    const queueLayoutTranslation = (
+      physicalKey: string,
+      shift: boolean,
+      capsLock: boolean,
+    ) => {
       translateQueue = translateQueue.then(async () => {
         const state = useAppStore.getState();
         if (!isFreeWriteCaptureActive(freeWriteModeFromStore(state))) return;
@@ -63,7 +70,7 @@ export function useFreeWritePhysicalKeyboard() {
           {
             physicalKey,
             shift,
-            capsLock: state.physicalKeyState.capsLock,
+            capsLock,
             hkl: state.physicalKeyState.systemHkl || null,
           },
         );
@@ -110,12 +117,13 @@ export function useFreeWritePhysicalKeyboard() {
       });
       const physicalKey = physicalKeyFromKeyboardCode(event.code);
       const shift = isShiftActive(state.physicalKeyState, state.stickyModifiers);
+      const capsLock = state.physicalKeyState.capsLock;
 
       if (event.key === "Dead") {
         event.preventDefault();
         event.stopPropagation();
         if (!event.repeat && greek && physicalKey) {
-          queueLayoutTranslation(physicalKey, shift);
+          queueLayoutTranslation(physicalKey, shift, capsLock);
         }
         return;
       }
@@ -127,7 +135,7 @@ export function useFreeWritePhysicalKeyboard() {
       if (event.repeat) return;
 
       if (greek && physicalKey) {
-        queueLayoutTranslation(physicalKey, shift);
+        queueLayoutTranslation(physicalKey, shift, capsLock);
         return;
       }
 
@@ -146,4 +154,4 @@ export function useFreeWritePhysicalKeyboard() {
     freeWriteNotepadInput,
     syncWindowFocusable,
   ]);
-}
+};

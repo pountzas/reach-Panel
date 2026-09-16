@@ -27,6 +27,7 @@ describe("useKeyRepeat", () => {
       result.current.pointerHandlers.onPointerDown?.();
     });
     expect(onFire).toHaveBeenCalledTimes(1);
+    expect(onFire).toHaveBeenLastCalledWith({ repeat: false });
 
     act(() => {
       vi.advanceTimersByTime(KEY_REPEAT_INITIAL_DELAY_MS - 1);
@@ -37,11 +38,13 @@ describe("useKeyRepeat", () => {
       vi.advanceTimersByTime(1);
     });
     expect(onFire).toHaveBeenCalledTimes(2);
+    expect(onFire).toHaveBeenLastCalledWith({ repeat: true });
 
     act(() => {
       vi.advanceTimersByTime(KEY_REPEAT_INTERVAL_MS);
     });
     expect(onFire).toHaveBeenCalledTimes(3);
+    expect(onFire).toHaveBeenLastCalledWith({ repeat: true });
 
     act(() => {
       vi.advanceTimersByTime(KEY_REPEAT_INTERVAL_MS * 2);

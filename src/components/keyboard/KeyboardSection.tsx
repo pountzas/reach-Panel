@@ -275,7 +275,7 @@ export function KeyboardSection() {
             <div className="flex w-full items-center gap-2">
               <button
                 type="button"
-                aria-label="Resize window height"
+                aria-label={t("resizeWindowHeight")}
                 className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} w-8 shrink-0 cursor-ns-resize items-center justify-center rounded ${
                   transparentUi
                     ? "bg-transparent"

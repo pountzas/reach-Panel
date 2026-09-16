@@ -3,40 +3,55 @@ export const KEY_REPEAT_INITIAL_DELAY_MS = 500;
 export const KEY_REPEAT_INTERVAL_MS = 33;
 
 /**
- * Skip-while-in-flight gate for async key injects under hold-to-repeat.
- * If a prior call is still pending, later ticks are dropped (coalesce depth 0 pending).
+ * Serial inject gate: discrete presses always queue; repeat ticks coalesce to
+ * at most one pending after the current invocation finishes.
  */
-export type SkipWhileInFlight = {
-  run: (fn: () => void | Promise<void>) => void;
-  isInFlight: () => boolean;
+export type SerialCoalesceGate = {
+  /** Always run after prior work (discrete key presses). */
+  enqueue: (fn: () => void | Promise<void>) => void;
+  /** Coalesce while busy — keep only the latest pending repeat tick. */
+  coalesce: (fn: () => void | Promise<void>) => void;
 };
 
-export function createSkipWhileInFlight(): SkipWhileInFlight {
-  let inFlight = false;
-  return {
-    run(fn) {
-      if (inFlight) return;
-      inFlight = true;
-      let result: void | Promise<void>;
-      try {
-        result = fn();
-      } catch {
-        inFlight = false;
-        return;
-      }
-      if (result != null && typeof (result as PromiseLike<void>).then === "function") {
-        void Promise.resolve(result).then(
-          () => {
-            inFlight = false;
-          },
-          () => {
-            inFlight = false;
-          },
-        );
-        return;
-      }
-      inFlight = false;
-    },
-    isInFlight: () => inFlight,
+export const createSerialCoalesceGate = (): SerialCoalesceGate => {
+  let chain: Promise<void> = Promise.resolve();
+  let pendingRepeat: (() => void | Promise<void>) | null = null;
+  let busy = false;
+
+  const invoke = async (fn: () => void | Promise<void>) => {
+    try {
+      await fn();
+    } catch {
+      // Swallow so the chain continues (same as prior skip-gate behavior).
+    }
   };
-}
+
+  const run = async (fn: () => void | Promise<void>) => {
+    busy = true;
+    try {
+      await invoke(fn);
+      // Drain coalesced repeat ticks before releasing busy so enqueue order
+      // stays serial and pending work is not lost across microtask gaps.
+      while (pendingRepeat) {
+        const next = pendingRepeat;
+        pendingRepeat = null;
+        await invoke(next);
+      }
+    } finally {
+      busy = false;
+    }
+  };
+
+  return {
+    enqueue(fn) {
+      chain = chain.then(() => run(fn));
+    },
+    coalesce(fn) {
+      if (busy) {
+        pendingRepeat = fn;
+        return;
+      }
+      chain = chain.then(() => run(fn));
+    },
+  };
+};

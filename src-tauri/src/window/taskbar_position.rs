@@ -294,6 +294,7 @@ fn should_write_taskbar_location_dword() -> bool {
 
 /// Success requires live tray geometry to match both after poll and after settle.
 /// Registry alone is never proof — Explorer may still rewrite StuckRects to bottom.
+#[cfg(test)]
 fn live_position_verified(
     live_after_poll: Option<TaskbarPosition>,
     live_after_settle: Option<TaskbarPosition>,
