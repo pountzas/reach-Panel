@@ -2,6 +2,16 @@ import type { KeyDef } from "../../lib/keyboardLayouts";
 import { greekTranslateFallback } from "../../lib/layoutKeyTranslation";
 import type { FnKeyMode } from "../../lib/types";
 
+type GreekTranslateOptions = {
+  physicalKey: string | undefined;
+  shift: boolean;
+  fallbackOutput: string | undefined;
+};
+
+type HandleKeyOptions = {
+  deferSuggestions?: boolean;
+};
+
 export const clearModifiersAfterKey = (
   fnKeyMode: FnKeyMode,
   activeModifiers: readonly string[],
@@ -22,7 +32,7 @@ export const greekTranslateOptions = (
   shiftActive: boolean,
   fnActive: boolean,
   typingLocale: string,
-) => {
+): GreekTranslateOptions => {
   return {
     physicalKey: keyDef.physicalKey,
     shift: shiftActive,
@@ -39,7 +49,7 @@ export const greekTranslateOptions = (
 export const inject = (
   handleKey: (
     keyDef: KeyDef,
-    options?: { deferSuggestions?: boolean },
+    options?: HandleKeyOptions,
   ) => void | Promise<void>,
   keyDef: KeyDef,
 ): () => void | Promise<void> => {
