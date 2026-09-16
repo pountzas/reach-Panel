@@ -11,15 +11,13 @@ import {
 } from "../lib/layoutKeyTranslation";
 import { useAppStore } from "../stores/appStore";
 
-function freeWriteModeFromStore(state: ReturnType<typeof useAppStore.getState>) {
-  return {
-    musicTeachingEnabled: state.musicTeachingEnabled,
-    teachingLesson: state.teachingLesson,
-    settings: state.settings,
-    languageSubjectTab: state.languageSubjectTab,
-    freeWriteFocus: state.freeWriteFocus,
-  };
-}
+const freeWriteModeFromStore = (state: ReturnType<typeof useAppStore.getState>) => ({
+  musicTeachingEnabled: state.musicTeachingEnabled,
+  teachingLesson: state.teachingLesson,
+  settings: state.settings,
+  languageSubjectTab: state.languageSubjectTab,
+  freeWriteFocus: state.freeWriteFocus,
+});
 
 /**
  * While Free write notepad capture is active, capture hardware keyboard input
@@ -54,7 +52,11 @@ export function useFreeWritePhysicalKeyboard() {
 
     let translateQueue = Promise.resolve();
 
-    const queueLayoutTranslation = (physicalKey: string, shift: boolean) => {
+    const queueLayoutTranslation = (
+      physicalKey: string,
+      shift: boolean,
+      capsLock: boolean,
+    ) => {
       translateQueue = translateQueue.then(async () => {
         const state = useAppStore.getState();
         if (!isFreeWriteCaptureActive(freeWriteModeFromStore(state))) return;
@@ -63,7 +65,7 @@ export function useFreeWritePhysicalKeyboard() {
           {
             physicalKey,
             shift,
-            capsLock: state.physicalKeyState.capsLock,
+            capsLock,
             hkl: state.physicalKeyState.systemHkl || null,
           },
         );
@@ -110,12 +112,13 @@ export function useFreeWritePhysicalKeyboard() {
       });
       const physicalKey = physicalKeyFromKeyboardCode(event.code);
       const shift = isShiftActive(state.physicalKeyState, state.stickyModifiers);
+      const capsLock = state.physicalKeyState.capsLock;
 
       if (event.key === "Dead") {
         event.preventDefault();
         event.stopPropagation();
         if (!event.repeat && greek && physicalKey) {
-          queueLayoutTranslation(physicalKey, shift);
+          queueLayoutTranslation(physicalKey, shift, capsLock);
         }
         return;
       }
@@ -127,7 +130,7 @@ export function useFreeWritePhysicalKeyboard() {
       if (event.repeat) return;
 
       if (greek && physicalKey) {
-        queueLayoutTranslation(physicalKey, shift);
+        queueLayoutTranslation(physicalKey, shift, capsLock);
         return;
       }
 
