@@ -2,27 +2,27 @@ import type { KeyDef } from "../../lib/keyboardLayouts";
 import { greekTranslateFallback } from "../../lib/layoutKeyTranslation";
 import type { FnKeyMode } from "../../lib/types";
 
-export function clearModifiersAfterKey(
+export const clearModifiersAfterKey = (
   fnKeyMode: FnKeyMode,
   activeModifiers: readonly string[],
   usedFn: boolean,
   clearStickyExceptFn: () => void,
   clearSticky: () => void,
-): void {
+): void => {
   if (fnKeyMode === "latched") {
     if (activeModifiers.length) clearStickyExceptFn();
     return;
   }
   if (activeModifiers.length || usedFn) clearSticky();
-}
+};
 
-export function greekTranslateOptions(
+export const greekTranslateOptions = (
   keyDef: KeyDef,
   capsLock: boolean,
   shiftActive: boolean,
   fnActive: boolean,
   typingLocale: string,
-) {
+) => {
   return {
     physicalKey: keyDef.physicalKey,
     shift: shiftActive,
@@ -34,23 +34,23 @@ export function greekTranslateOptions(
       typingLocale,
     ),
   };
-}
+};
 
-export function inject(
+export const inject = (
   handleKey: (
     keyDef: KeyDef,
     options?: { deferSuggestions?: boolean },
   ) => void | Promise<void>,
   keyDef: KeyDef,
-): () => void | Promise<void> {
+): () => void | Promise<void> => {
   return () => handleKey(keyDef, { deferSuggestions: true });
-}
+};
 
-export async function openLanguagePicker(
+export const openLanguagePicker = async (
   loadInputMethods: () => Promise<void>,
   languagePickerOpen: boolean,
   setLanguagePickerOpen: (open: boolean) => void,
-): Promise<void> {
+): Promise<void> => {
   await loadInputMethods();
   setLanguagePickerOpen(!languagePickerOpen);
-}
+};
