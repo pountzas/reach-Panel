@@ -1,4 +1,10 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type JSX,
+  type ReactNode,
+} from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
@@ -55,6 +61,16 @@ const fieldStyle = (surface: SurfaceColors): CSSProperties => ({
   color: surface.panelText,
 });
 
+type ModeTabletButtonProps = {
+  id: AppModeTablet;
+  label: string;
+  pressed: boolean;
+  disabled: boolean;
+  title?: string;
+  surface: SurfaceColors;
+  onSelect: (mode: AppModeTablet) => void;
+};
+
 const ModeTabletButton = ({
   id,
   label,
@@ -63,15 +79,7 @@ const ModeTabletButton = ({
   title,
   surface,
   onSelect,
-}: {
-  id: AppModeTablet;
-  label: string;
-  pressed: boolean;
-  disabled: boolean;
-  title?: string;
-  surface: SurfaceColors;
-  onSelect: (mode: AppModeTablet) => void;
-}) => {
+}: ModeTabletButtonProps): JSX.Element => {
   return (
     <button
       type="button"
@@ -98,17 +106,19 @@ const ModeTabletButton = ({
   );
 };
 
+type ColorFieldProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  surface: SurfaceColors;
+};
+
 const ColorField = ({
   label,
   value,
   onChange,
   surface,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  surface: SurfaceColors;
-}) => {
+}: ColorFieldProps): JSX.Element => {
   return (
     <label className="text-sm" style={{ color: surface.panelText }}>
       {label}
@@ -132,19 +142,21 @@ const ColorField = ({
   );
 };
 
+type ToggleRowProps = {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  surface: SurfaceColors;
+  disabled?: boolean;
+};
+
 const ToggleRow = ({
   label,
   checked,
   onChange,
   surface,
   disabled = false,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  surface: SurfaceColors;
-  disabled?: boolean;
-}) => {
+}: ToggleRowProps): JSX.Element => {
   return (
     <label
       className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
@@ -163,6 +175,15 @@ const ToggleRow = ({
   );
 };
 
+type ThemedSelectProps = {
+  value: string;
+  onChange: (value: string) => void;
+  surface: SurfaceColors;
+  children: ReactNode;
+  className?: string;
+  disabled?: boolean;
+};
+
 const ThemedSelect = ({
   value,
   onChange,
@@ -170,14 +191,7 @@ const ThemedSelect = ({
   children,
   className = "mt-1 w-full rounded border px-2 py-1.5 text-sm",
   disabled = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  surface: SurfaceColors;
-  children: ReactNode;
-  className?: string;
-  disabled?: boolean;
-}) => {
+}: ThemedSelectProps): JSX.Element => {
   return (
     <select
       className={className}
@@ -198,7 +212,11 @@ type WordPackInfo = {
   bundled: boolean;
 };
 
-const WordPackDictionaries = ({ surface }: { surface: SurfaceColors }) => {
+type WordPackDictionariesProps = {
+  surface: SurfaceColors;
+};
+
+const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JSX.Element => {
   const { t } = useTranslation();
   const [packs, setPacks] = useState<WordPackInfo[]>([]);
   const [busyLang, setBusyLang] = useState<string | null>(null);
@@ -222,7 +240,7 @@ const WordPackDictionaries = ({ surface }: { surface: SurfaceColors }) => {
     setPacks(list);
   };
 
-  useEffect(() => {
+  useEffect((): void => {
     void refresh().catch((error) => {
       notify.error(error instanceof Error ? error.message : String(error));
     });
@@ -350,15 +368,15 @@ export function SettingsPanel() {
     physicalKeyState,
   } = useAppStore();
   const { t } = useTranslation();
-  const [newProfileName, setNewProfileName] = useState("");
-  const [companionBridgeRunning, setCompanionBridgeRunning] = useState(false);
-  const [companionPairedCount, setCompanionPairedCount] = useState(0);
+  const [newProfileName, setNewProfileName] = useState<string>("");
+  const [companionBridgeRunning, setCompanionBridgeRunning] = useState<boolean>(false);
+  const [companionPairedCount, setCompanionPairedCount] = useState<number>(0);
 
-  useEffect(() => {
+  useEffect((): void => {
     void loadInputMethods();
   }, [loadInputMethods]);
 
-  useEffect(() => {
+  useEffect((): (() => void) => {
     let cancelled = false;
     const refreshCompanionAvailability = async () => {
       try {
@@ -384,7 +402,7 @@ export function SettingsPanel() {
     };
   }, []);
 
-  useEffect(() => {
+  useEffect((): void => {
     if (!settings) return;
     const monitorId = settings.accessibilityMonitorId;
     void invoke<TaskbarPosition | null>("cmd_get_taskbar_position", { monitorId }).then(
