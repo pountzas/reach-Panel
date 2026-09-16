@@ -43,7 +43,7 @@ import {
   resolveV1SectionVisibility,
 } from "../../lib/v1HiddenFeatures";
 
-function LanguageTeachingBody() {
+const LanguageTeachingBody = () => {
   const { t } = useTranslation();
   const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
   const setLanguageSubjectTab = useAppStore((s) => s.setLanguageSubjectTab);
@@ -60,7 +60,7 @@ function LanguageTeachingBody() {
       {languageSubjectTab === "freeWrite" ? <FreeWritePanel /> : <LanguageLessonPanel />}
     </TeachingSubjectShell>
   );
-}
+};
 
 function renderTeachingLessonPanel(lesson: TeachingLesson) {
   switch (lesson) {
