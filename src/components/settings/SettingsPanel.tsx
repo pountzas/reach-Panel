@@ -49,15 +49,13 @@ const TRANSPARENT_KEY_COLOR_LABEL_KEYS: Record<TransparentKeyColor, TranslationK
   silver: "transparentKeyColorSilver",
 };
 
-function fieldStyle(surface: SurfaceColors): CSSProperties {
-  return {
-    backgroundColor: surface.insetBg,
-    borderColor: surface.insetBorder,
-    color: surface.panelText,
-  };
-}
+const fieldStyle = (surface: SurfaceColors): CSSProperties => ({
+  backgroundColor: surface.insetBg,
+  borderColor: surface.insetBorder,
+  color: surface.panelText,
+});
 
-function ModeTabletButton({
+const ModeTabletButton = ({
   id,
   label,
   pressed,
@@ -73,7 +71,7 @@ function ModeTabletButton({
   title?: string;
   surface: SurfaceColors;
   onSelect: (mode: AppModeTablet) => void;
-}) {
+}) => {
   return (
     <button
       type="button"
@@ -98,9 +96,9 @@ function ModeTabletButton({
       {label}
     </button>
   );
-}
+};
 
-function ColorField({
+const ColorField = ({
   label,
   value,
   onChange,
@@ -110,7 +108,7 @@ function ColorField({
   value: string;
   onChange: (value: string) => void;
   surface: SurfaceColors;
-}) {
+}) => {
   return (
     <label className="text-sm" style={{ color: surface.panelText }}>
       {label}
@@ -132,9 +130,9 @@ function ColorField({
       </div>
     </label>
   );
-}
+};
 
-function ToggleRow({
+const ToggleRow = ({
   label,
   checked,
   onChange,
@@ -146,7 +144,7 @@ function ToggleRow({
   onChange: (checked: boolean) => void;
   surface: SurfaceColors;
   disabled?: boolean;
-}) {
+}) => {
   return (
     <label
       className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
@@ -163,9 +161,9 @@ function ToggleRow({
       />
     </label>
   );
-}
+};
 
-function ThemedSelect({
+const ThemedSelect = ({
   value,
   onChange,
   surface,
@@ -179,7 +177,7 @@ function ThemedSelect({
   children: ReactNode;
   className?: string;
   disabled?: boolean;
-}) {
+}) => {
   return (
     <select
       className={className}
@@ -191,7 +189,7 @@ function ThemedSelect({
       {children}
     </select>
   );
-}
+};
 
 type WordPackInfo = {
   language: string;
@@ -200,7 +198,7 @@ type WordPackInfo = {
   bundled: boolean;
 };
 
-function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
+const WordPackDictionaries = ({ surface }: { surface: SurfaceColors }) => {
   const { t } = useTranslation();
   const [packs, setPacks] = useState<WordPackInfo[]>([]);
   const [busyLang, setBusyLang] = useState<string | null>(null);
@@ -316,7 +314,7 @@ function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
       </ul>
     </div>
   );
-}
+};
 
 export function SettingsPanel() {
   const {
@@ -1051,23 +1049,30 @@ export function SettingsPanel() {
                 <option value="latched">{t("fnKeyModeLatched")}</option>
               </ThemedSelect>
             </label>
-            <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
-              {t("groqApiKeyLabel")}
-              <input
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                className="mt-1 w-full rounded border px-2 py-1.5 text-sm outline-none"
-                style={{
-                  backgroundColor: surface.panelButtonBg,
-                  borderColor: surface.panelBorder,
-                  color: surface.panelText,
-                }}
-                value={settings.groqApiKey ?? ""}
-                onChange={(e) => void updateSettings({ groqApiKey: e.target.value })}
-                placeholder="gsk_…"
-              />
-              <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
+            <div className="mt-3">
+              <label
+                className="block text-sm"
+                htmlFor="settings-groq-api-key"
+                style={{ color: surface.panelText }}
+              >
+                {t("groqApiKeyLabel")}
+                <input
+                  id="settings-groq-api-key"
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="mt-1 w-full rounded border px-2 py-1.5 text-sm outline-none"
+                  style={{
+                    backgroundColor: surface.panelButtonBg,
+                    borderColor: surface.panelBorder,
+                    color: surface.panelText,
+                  }}
+                  value={settings.groqApiKey ?? ""}
+                  onChange={(e) => void updateSettings({ groqApiKey: e.target.value })}
+                  placeholder="gsk_…"
+                />
+                <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
+              </label>
               <button
                 type="button"
                 className="mt-2 rounded-lg border px-3 py-2 text-sm"
@@ -1076,7 +1081,7 @@ export function SettingsPanel() {
               >
                 {t("groqApiKeyLink")}
               </button>
-            </label>
+            </div>
           </SettingsSection>
 
           {!isV1FeatureHidden("mouse") && (
