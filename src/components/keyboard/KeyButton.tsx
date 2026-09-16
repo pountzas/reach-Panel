@@ -1,7 +1,6 @@
 import {
   useEffect,
   useRef,
-  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
@@ -13,6 +12,7 @@ import {
 } from "../../hooks/useKeyRepeat";
 import { usePressableButton } from "../../hooks/usePressableButton";
 import type { TransparentKeyColor } from "../../lib/types";
+import { clearClickSuppress, handleClick as handleKeyButtonClick } from "./keyButtonUtils";
 
 type KeyButtonProps = {
   label: ReactNode;
@@ -82,10 +82,6 @@ export function KeyButton({
     }
   }, [disabled, repeatOnHold]);
 
-  const clearClickSuppress = () => {
-    suppressClickForPointerIdRef.current = null;
-  };
-
   const pointerHandlers = {
     onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
       if (repeatOnHold) {
@@ -103,37 +99,13 @@ export function KeyButton({
     onPointerLeave: (event: ReactPointerEvent<HTMLButtonElement>) => {
       pressableHandlers.onPointerLeave();
       repeatHandlers.onPointerLeave?.(event);
-      clearClickSuppress();
+      clearClickSuppress(suppressClickForPointerIdRef);
     },
     onPointerCancel: (event: ReactPointerEvent<HTMLButtonElement>) => {
       pressableHandlers.onPointerLeave();
       repeatHandlers.onPointerCancel?.(event);
-      clearClickSuppress();
+      clearClickSuppress(suppressClickForPointerIdRef);
     },
-  };
-
-  const handleClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    if (repeatOnHold) {
-      const suppressId = suppressClickForPointerIdRef.current;
-      const native = event.nativeEvent as MouseEvent & { pointerId?: number };
-      const clickPointerId =
-        typeof native.pointerId === "number" ? native.pointerId : null;
-      // Suppress only the compatibility click for the active hold pointer.
-      // Keyboard/programmatic clicks use detail === 0 and must still fire.
-      const isCompatClickForHold =
-        suppressId !== null &&
-        event.detail > 0 &&
-        (clickPointerId === null || clickPointerId === suppressId);
-      if (isCompatClickForHold) {
-        clearClickSuppress();
-        return;
-      }
-      clearClickSuppress();
-      onPress({ repeat: false });
-      onHoldEnd?.();
-      return;
-    }
-    onPress();
   };
 
   const inGrid = gridColumn !== undefined && gridRow !== undefined;
@@ -192,7 +164,15 @@ export function KeyButton({
       }
       disabled={disabled}
       aria-label={ariaLabel}
-      onClick={handleClick}
+      onClick={(event) =>
+        handleKeyButtonClick(
+          event,
+          repeatOnHold,
+          suppressClickForPointerIdRef,
+          onPress,
+          onHoldEnd,
+        )
+      }
       onContextMenu={(e) => e.preventDefault()}
       {...pointerHandlers}
     >
