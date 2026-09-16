@@ -36,6 +36,7 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
 import { isTransparentUiActive, transparentKeyPalette } from "../../lib/miniMode";
 import type { OnscreenLayout } from "../../lib/types";
+import { clearModifiersAfterKey } from "./keyboardUtils";
 
 export function Keyboard() {
   const settings = useAppStore((s) => s.settings);
@@ -182,14 +183,6 @@ export function Keyboard() {
     dictateAriaLabel = `${dictateAriaLabel}. ${t("dictationGroqRemainingToday")} ${groqRemainingPercent}%`;
   }
 
-  const clearModifiersAfterKey = (usedFn: boolean) => {
-    if (settings.fnKeyMode === "latched") {
-      if (activeModifiers.length) clearStickyExceptFn();
-      return;
-    }
-    if (activeModifiers.length || usedFn) clearSticky();
-  };
-
   const openLanguagePicker = async () => {
     await loadInputMethods();
     setLanguagePickerOpen(!languagePickerOpen);
@@ -295,7 +288,13 @@ export function Keyboard() {
         } else {
           applyLanguageLayoutTranslation(translation, translateOptions);
         }
-        clearModifiersAfterKey(usedFnLang);
+        clearModifiersAfterKey(
+          settings.fnKeyMode,
+          activeModifiers,
+          usedFnLang,
+          clearStickyExceptFn,
+          clearSticky,
+        );
         return;
       }
       const langOutput = resolveKeyOutput(
@@ -312,7 +311,13 @@ export function Keyboard() {
           languageKeyInput(langOutput, { physicalKey: keyDef.physicalKey });
         }
       }
-      clearModifiersAfterKey(usedFnLang);
+      clearModifiersAfterKey(
+        settings.fnKeyMode,
+        activeModifiers,
+        usedFnLang,
+        clearStickyExceptFn,
+        clearSticky,
+      );
       return;
     }
 
@@ -339,7 +344,13 @@ export function Keyboard() {
       if (greekFreeWriteActive && keyDef.physicalKey) {
         const translation = await translateLayoutKey(keyDef.physicalKey);
         applyFreeWriteLayoutTranslation(translation, greekTranslateOptions(keyDef));
-        clearModifiersAfterKey(usedFnFw);
+        clearModifiersAfterKey(
+          settings.fnKeyMode,
+          activeModifiers,
+          usedFnFw,
+          clearStickyExceptFn,
+          clearSticky,
+        );
         return;
       }
       const fwOutput = resolveKeyOutput(
@@ -350,7 +361,13 @@ export function Keyboard() {
         typingLocale,
       );
       if (fwOutput) freeWriteNotepadInput(fwOutput);
-      clearModifiersAfterKey(usedFnFw);
+      clearModifiersAfterKey(
+        settings.fnKeyMode,
+        activeModifiers,
+        usedFnFw,
+        clearStickyExceptFn,
+        clearSticky,
+      );
       return;
     }
 
@@ -385,7 +402,13 @@ export function Keyboard() {
       await invoke("cmd_press_key", {
         request: { key: "enter", modifiers: [...activeModifiers] },
       });
-      clearModifiersAfterKey(false);
+      clearModifiersAfterKey(
+        settings.fnKeyMode,
+        activeModifiers,
+        false,
+        clearStickyExceptFn,
+        clearSticky,
+      );
       await loadSuggestions();
       await pollError();
       return;
@@ -399,7 +422,13 @@ export function Keyboard() {
           request: { key: "space", modifiers: [...activeModifiers] },
         });
       }
-      clearModifiersAfterKey(false);
+      clearModifiersAfterKey(
+        settings.fnKeyMode,
+        activeModifiers,
+        false,
+        clearStickyExceptFn,
+        clearSticky,
+      );
       await loadSuggestions();
       await pollError();
       return;
@@ -418,7 +447,13 @@ export function Keyboard() {
           },
         });
       }
-      clearModifiersAfterKey(usedFn);
+      clearModifiersAfterKey(
+        settings.fnKeyMode,
+        activeModifiers,
+        usedFn,
+        clearStickyExceptFn,
+        clearSticky,
+      );
       await loadSuggestions();
       await pollError();
       return;
@@ -447,7 +482,13 @@ export function Keyboard() {
         request: { key: output, modifiers: [...activeModifiers] },
       });
     }
-    clearModifiersAfterKey(usedFn);
+    clearModifiersAfterKey(
+      settings.fnKeyMode,
+      activeModifiers,
+      usedFn,
+      clearStickyExceptFn,
+      clearSticky,
+    );
     await loadSuggestions();
     await pollError();
   };
