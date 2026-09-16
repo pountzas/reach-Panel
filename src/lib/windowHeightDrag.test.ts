@@ -76,7 +76,13 @@ describe("nextWindowHeightRatioFromScreenY", () => {
 
   it("clamps when the pointer is above or below the allowed band", () => {
     expect(nextWindowHeightRatioFromScreenY(0, region)).toBe(WINDOW_HEIGHT_RATIO_MAX);
-    expect(nextWindowHeightRatioFromScreenY(900, region)).toBe(WINDOW_HEIGHT_RATIO_MIN);
+    // Below 1/5 of the region → min ratio 0.2
+    expect(nextWindowHeightRatioFromScreenY(950, region)).toBe(WINDOW_HEIGHT_RATIO_MIN);
+    expect(WINDOW_HEIGHT_RATIO_MIN).toBe(0.2);
+  });
+
+  it("allows shrinking to one-fifth of the region", () => {
+    expect(nextWindowHeightRatioFromScreenY(900, region)).toBeCloseTo(0.2, 10);
   });
 
   it("tracks the cursor absolutely (same screenY → same ratio regardless of prior ratio)", () => {

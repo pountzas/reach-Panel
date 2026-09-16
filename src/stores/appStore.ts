@@ -493,7 +493,9 @@ function heightRatioFromSettings(
   if (settings.windowHeightRatio == null) {
     return contentRatio;
   }
-  return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
+  // Explicit grip override wins — do not floor to contentRatio or shrink
+  // snaps back to full when all sections are visible.
+  return clampWindowHeightRatio(settings.windowHeightRatio);
 }
 
 /** Apply effective v1 chrome reads without wiping unrelated stored prefs. */
@@ -1238,10 +1240,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       ...partial,
       ...(partial.synthesizerOctaveCount !== undefined
         ? {
-            synthesizerOctaveCount: resolveSynthOctaveCount(
-              partial.synthesizerOctaveCount,
-            ),
-          }
+          synthesizerOctaveCount: resolveSynthOctaveCount(
+            partial.synthesizerOctaveCount,
+          ),
+        }
         : {}),
     };
     // Explicit undefined clears a persisted Teaching 1.0 (spread alone keeps the old value).
@@ -2474,9 +2476,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       ...(active
         ? { languageLessonPlaying: false, languageListAuthoringField: "title" as const }
         : {
-            languageListAuthoringField: "title" as const,
-            languageListAuthoringHandlers: null,
-          }),
+          languageListAuthoringField: "title" as const,
+          languageListAuthoringHandlers: null,
+        }),
     });
     void get().syncWindowFocusable();
   },
