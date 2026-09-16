@@ -40,7 +40,7 @@ export const useKeyRepeat = ({
     enabledRef.current = enabled;
   });
 
-  const clearTimers = useCallback((): void => {
+  const clearTimers = useCallback<() => void>(() => {
     if (delayIdRef.current !== null) {
       clearTimeout(delayIdRef.current);
       delayIdRef.current = null;
@@ -51,14 +51,14 @@ export const useKeyRepeat = ({
     }
   }, []);
 
-  const stop = useCallback((): void => {
+  const stop = useCallback<() => void>(() => {
     if (!holdingRef.current) return;
     holdingRef.current = false;
     clearTimers();
     onStopRef.current?.();
   }, [clearTimers]);
 
-  const start = useCallback((): void => {
+  const start = useCallback<() => void>(() => {
     if (!enabledRef.current) return;
     clearTimers();
     holdingRef.current = true;
