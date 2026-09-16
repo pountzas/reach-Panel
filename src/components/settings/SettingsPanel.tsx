@@ -42,6 +42,12 @@ import { GROQ_API_KEYS_URL, openExternalLink } from "../../lib/appInfo";
 import { defaultLanguagePackId } from "../../lib/language";
 import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
+import {
+  applyTaskbarPosition,
+  handleDeleteProfile,
+  handleSaveProfile,
+  handleWipeProfile,
+} from "./settingsPanelUtils";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -451,74 +457,6 @@ export function SettingsPanel() {
 
   const taskbarPosition = settings.taskbarPositionPreference === "top" ? "top" : "bottom";
 
-  const applyTaskbarPosition = async (position: TaskbarPosition) => {
-    const previous: TaskbarPosition =
-      settings.taskbarPositionPreference === "top" ? "top" : "bottom";
-    updateSettings({ taskbarPositionPreference: position });
-    try {
-      const result = await invoke<{
-        success: boolean;
-        applied: boolean;
-        message: string;
-        current?: TaskbarPosition | null;
-        open_taskbar_settings?: boolean;
-      }>("cmd_set_taskbar_position", {
-        position,
-        monitorId: settings.accessibilityMonitorId,
-      });
-      if (result.success) {
-        if (result.applied) {
-          notify.success(t("taskbarPositionApplied"));
-        }
-        return;
-      }
-      const actual: TaskbarPosition =
-        result.current === "top" || result.current === "bottom"
-          ? result.current
-          : previous;
-      updateSettings({ taskbarPositionPreference: actual });
-      notify.info(result.message || t("taskbarPositionUnsupported"));
-      if (result.open_taskbar_settings) {
-        void invoke("cmd_open_windows_settings", {
-          uri: "ms-settings:taskbar",
-        }).catch(() => {});
-      }
-    } catch {
-      updateSettings({ taskbarPositionPreference: previous });
-      notify.error(t("taskbarPositionFailed"));
-    }
-  };
-
-  const handleSaveProfile = async () => {
-    try {
-      await saveActiveProfile();
-      notify.success(t("profileSaved"));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : String(error));
-    }
-  };
-
-  const handleDeleteProfile = async () => {
-    if (!activeProfileFile) return;
-    if (!window.confirm(t("deleteProfileConfirm"))) return;
-    try {
-      await deleteProfileFile(activeProfileFile);
-      notify.success(t("profileDeleted"));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : String(error));
-    }
-  };
-
-  const handleWipeProfile = async () => {
-    if (!window.confirm(t("wipeProfileConfirm"))) return;
-    try {
-      await wipeActiveProfile();
-      notify.success(t("profileWiped"));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : String(error));
-    }
-  };
-
   return (
     <div
       className="flex h-full w-full flex-col overflow-hidden"
@@ -559,7 +497,7 @@ export function SettingsPanel() {
                 type="button"
                 className="rounded-lg px-3 py-1.5 text-sm"
                 style={{ backgroundColor: headerBg, color: headerText }}
-                onClick={() => void handleSaveProfile()}
+                onClick={() => void handleSaveProfile(saveActiveProfile, t)}
               >
                 {t("saveProfile")}
               </button>
@@ -567,7 +505,9 @@ export function SettingsPanel() {
                 type="button"
                 className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700"
                 style={{ backgroundColor: surface.insetBg }}
-                onClick={() => void handleDeleteProfile()}
+                onClick={() =>
+                  void handleDeleteProfile(activeProfileFile, deleteProfileFile, t)
+                }
                 disabled={!activeProfileFile}
               >
                 {t("deleteProfile")}
@@ -660,7 +600,15 @@ export function SettingsPanel() {
               {t("taskbarPosition")}
               <ThemedSelect
                 value={taskbarPosition}
-                onChange={(v) => void applyTaskbarPosition(v as TaskbarPosition)}
+                onChange={(v) =>
+                  void applyTaskbarPosition(
+                    v as TaskbarPosition,
+                    settings.taskbarPositionPreference,
+                    settings.accessibilityMonitorId,
+                    updateSettings,
+                    t,
+                  )
+                }
                 surface={surface}
               >
                 <option value="bottom">{t("taskbarPositionBottom")}</option>
@@ -1267,7 +1215,7 @@ export function SettingsPanel() {
               type="button"
               className="mt-3 w-full rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700"
               style={{ backgroundColor: surface.insetBg }}
-              onClick={() => void handleWipeProfile()}
+              onClick={() => void handleWipeProfile(wipeActiveProfile, t)}
             >
               {t("wipeProfile")}
             </button>
