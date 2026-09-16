@@ -69,4 +69,32 @@ describe("createSerialCoalesceGate", () => {
       expect(runs.mock.calls.map((c) => c[0])).toEqual(["a", "d"]);
     });
   });
+
+  it("whenIdle waits for queued and coalesced work before resolving", async () => {
+    const gate = createSerialCoalesceGate();
+    const order: string[] = [];
+    let resolveFirst!: () => void;
+    const first = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+
+    gate.enqueue(async () => {
+      order.push("inject");
+      await first;
+    });
+    await Promise.resolve();
+
+    gate.coalesce(async () => {
+      order.push("repeat");
+    });
+
+    const idle = gate.whenIdle().then(() => {
+      order.push("idle");
+    });
+
+    expect(order).toEqual(["inject"]);
+    resolveFirst();
+    await idle;
+    expect(order).toEqual(["inject", "repeat", "idle"]);
+  });
 });

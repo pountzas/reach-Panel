@@ -605,7 +605,13 @@ export function Keyboard() {
                   active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
                   repeatOnHold={isBackspace}
                   onHoldEnd={
-                    isBackspace ? () => void loadSuggestions() : undefined
+                    isBackspace
+                      ? () => {
+                        void backspaceInjectGate
+                          .whenIdle()
+                          .then(() => loadSuggestions());
+                      }
+                      : undefined
                   }
                   onPress={(meta) => {
                     if (isBackspace) {
