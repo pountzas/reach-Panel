@@ -5,26 +5,28 @@ import {
   KEY_REPEAT_INTERVAL_MS,
 } from "../lib/keyRepeat";
 
-export interface UseKeyRepeatOptions {
-  enabled?: boolean;
-  onFire: () => void;
-  onStop?: () => void;
-}
+export type KeyRepeatFireMeta = { repeat: boolean };
 
-export interface KeyRepeatPointerHandlers {
+export type UseKeyRepeatOptions = {
+  enabled?: boolean;
+  onFire: (meta: KeyRepeatFireMeta) => void;
+  onStop?: () => void;
+};
+
+export type KeyRepeatPointerHandlers = {
   onPointerDown?: (event?: ReactPointerEvent) => void;
   onPointerUp?: (event?: ReactPointerEvent) => void;
   onPointerLeave?: (event?: ReactPointerEvent) => void;
   onPointerCancel?: (event?: ReactPointerEvent) => void;
-}
+};
 
-export function useKeyRepeat({
+export const useKeyRepeat = ({
   enabled = false,
   onFire,
   onStop,
 }: UseKeyRepeatOptions): {
   pointerHandlers: KeyRepeatPointerHandlers;
-} {
+} => {
   const onFireRef = useRef(onFire);
   const onStopRef = useRef(onStop);
   const enabledRef = useRef(enabled);
@@ -35,9 +37,8 @@ export function useKeyRepeat({
   useEffect(() => {
     onFireRef.current = onFire;
     onStopRef.current = onStop;
+    enabledRef.current = enabled;
   });
-
-  enabledRef.current = enabled;
 
   const clearTimers = useCallback(() => {
     if (delayIdRef.current !== null) {
@@ -61,14 +62,14 @@ export function useKeyRepeat({
     if (!enabledRef.current) return;
     clearTimers();
     holdingRef.current = true;
-    onFireRef.current();
+    onFireRef.current({ repeat: false });
     delayIdRef.current = setTimeout(() => {
       delayIdRef.current = null;
       if (!enabledRef.current || !holdingRef.current) return;
-      onFireRef.current();
+      onFireRef.current({ repeat: true });
       intervalIdRef.current = setInterval(() => {
         if (!enabledRef.current || !holdingRef.current) return;
-        onFireRef.current();
+        onFireRef.current({ repeat: true });
       }, KEY_REPEAT_INTERVAL_MS);
     }, KEY_REPEAT_INITIAL_DELAY_MS);
   }, [clearTimers]);
@@ -90,4 +91,4 @@ export function useKeyRepeat({
       onPointerCancel: () => stop(),
     },
   };
-}
+};
