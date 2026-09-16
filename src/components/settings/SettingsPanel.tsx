@@ -32,6 +32,7 @@ import {
   isCompanionTabletEnabled,
   type CompanionUiState,
 } from "../../lib/companionSession";
+import { GROQ_API_KEYS_URL, openExternalLink } from "../../lib/appInfo";
 import { defaultLanguagePackId } from "../../lib/language";
 import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
@@ -1067,6 +1068,14 @@ export function SettingsPanel() {
                 placeholder="gsk_…"
               />
               <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
+              <button
+                type="button"
+                className="mt-2 rounded-lg border px-3 py-2 text-sm"
+                style={secondaryButtonStyle}
+                onClick={() => openExternalLink(GROQ_API_KEYS_URL)}
+              >
+                {t("groqApiKeyLink")}
+              </button>
             </label>
           </SettingsSection>
 

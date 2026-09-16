@@ -104,6 +104,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - Dictation key beside Right Ctrl (see Voice dictation below); show/hide the mic key under **Settings → Visible sections**
 - **Input preview** — when an external text field is targeted, a live ~320×48 strip follows the writing caret (clamped inside the field so a tall textarea is not shrunk to a postage stamp) on the keyboard toolbar. Toggle under **Settings → Visible sections → Live input preview** (on by default). While a companion tablet session is active, the same strip is streamed to the tablet keyboard instead of the minimized host UI. Protected or DRM content may appear black; some custom controls may not expose a usable screen region.
 - Special keys use symbols (Enter ↵, Shift ⇧, Backspace ⌫, Space ␣)
+- Backspace press-and-hold repeats like a Windows keyboard (~500ms delay, then ~33ms)
 - Right-click / long-press context menus are suppressed on the keyboard and main app surface
 
 ### Windows integration

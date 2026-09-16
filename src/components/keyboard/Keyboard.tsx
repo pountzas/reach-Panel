@@ -20,6 +20,7 @@ import {
   greekTranslateFallback,
   type LayoutKeyTranslation,
 } from "../../lib/layoutKeyTranslation";
+import { createSkipWhileInFlight } from "../../lib/keyRepeat";
 import { KeyButton } from "./KeyButton";
 import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
@@ -81,6 +82,8 @@ export function Keyboard() {
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const langKeyAnchorRef = useRef<HTMLDivElement>(null);
+  /** Serialize Backspace hold ticks so cmd_press_key does not overlap. */
+  const backspaceRepeatGate = useRef(createSkipWhileInFlight()).current;
   const { t } = useTranslation();
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const fnActive = isFnActive(stickyModifiers);
@@ -191,6 +194,7 @@ export function Keyboard() {
     invoke<LayoutKeyTranslation>("cmd_translate_layout_key", {
       physicalKey,
       shift: shiftActive,
+      capsLock: physicalKeyState.capsLock,
       hkl: physicalKeyState.systemHkl || null,
     });
 
@@ -206,8 +210,12 @@ export function Keyboard() {
     ),
   });
 
-  const handleKey = async (keyDef: KeyDef) => {
+  const handleKey = async (
+    keyDef: KeyDef,
+    options?: { deferSuggestions?: boolean },
+  ) => {
     const key = keyDef.key;
+    const deferSuggestions = options?.deferSuggestions === true;
 
     if (key === "capslock") {
       await invoke("cmd_press_key", {
@@ -359,7 +367,9 @@ export function Keyboard() {
         });
       }
       await invoke("cmd_press_key", { request: { key: "backspace", modifiers: [] } });
-      await loadSuggestions();
+      if (!deferSuggestions) {
+        await loadSuggestions();
+      }
       await pollError();
       return;
     }
@@ -506,6 +516,7 @@ export function Keyboard() {
             }
             if (!isLang) {
               const specialKey = isSpecialLabeledKey(k.key);
+              const isBackspace = k.key === "backspace";
               return (
                 <KeyButton
                   key={`${ri}-${k.key}-${k.label}-${ci}`}
@@ -533,7 +544,19 @@ export function Keyboard() {
                   transparent={transparent}
                   outlineColor={settings.transparentKeyColor}
                   active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
-                  onPress={() => handleKey(k)}
+                  repeatOnHold={isBackspace}
+                  onHoldEnd={
+                    isBackspace ? () => void loadSuggestions() : undefined
+                  }
+                  onPress={() => {
+                    if (isBackspace) {
+                      backspaceRepeatGate.run(() =>
+                        handleKey(k, { deferSuggestions: true }),
+                      );
+                      return;
+                    }
+                    void handleKey(k);
+                  }}
                 />
               );
             }

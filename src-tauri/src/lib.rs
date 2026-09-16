@@ -201,9 +201,10 @@ fn cmd_get_layout_key_labels(hkl: Option<u64>) -> Vec<LayoutKeyLabel> {
 fn cmd_translate_layout_key(
     physical_key: String,
     shift: bool,
+    caps_lock: bool,
     hkl: Option<u64>,
 ) -> LayoutKeyTranslation {
-    translate_layout_key_press(&physical_key, shift, hkl)
+    translate_layout_key_press(&physical_key, shift, caps_lock, hkl)
 }
 
 #[tauri::command]
