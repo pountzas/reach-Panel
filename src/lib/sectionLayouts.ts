@@ -4,8 +4,8 @@ export const SECTION_HEADER_HEIGHT_PX = 28;
 export const SECTION_HEADER_HEIGHT_LARGE_PX = 56;
 export const APP_HEADER_HEIGHT_PX = 48;
 export const APP_HEADER_HEIGHT_LARGE_PX = 96;
-/** Clamp for optional user-dragged OS window height ratio (min = 1/5 of region). */
-export const WINDOW_HEIGHT_RATIO_MIN = 0.2;
+/** Clamp for optional user-dragged OS window height ratio (min = 35% of region). */
+export const WINDOW_HEIGHT_RATIO_MIN = 0.35;
 export const WINDOW_HEIGHT_RATIO_MAX = 1;
 
 const GAP_PCT = 1;
