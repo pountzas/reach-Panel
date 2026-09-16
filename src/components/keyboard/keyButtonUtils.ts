@@ -1,19 +1,19 @@
 import type { MutableRefObject, MouseEvent as ReactMouseEvent } from "react";
 import type { KeyRepeatFireMeta } from "../../hooks/useKeyRepeat";
 
-export function clearClickSuppress(
+export const clearClickSuppress = (
   suppressClickForPointerIdRef: MutableRefObject<number | null>,
-): void {
+): void => {
   suppressClickForPointerIdRef.current = null;
-}
+};
 
-export function handleClick(
+export const handleClick = (
   event: ReactMouseEvent<HTMLButtonElement>,
   repeatOnHold: boolean,
   suppressClickForPointerIdRef: MutableRefObject<number | null>,
   onPress: (meta?: KeyRepeatFireMeta) => void,
   onHoldEnd?: () => void,
-): void {
+): void => {
   if (repeatOnHold) {
     const suppressId = suppressClickForPointerIdRef.current;
     const native = event.nativeEvent as MouseEvent & { pointerId?: number };
@@ -35,4 +35,4 @@ export function handleClick(
     return;
   }
   onPress();
-}
+};
