@@ -98,4 +98,31 @@ describe("useKeyRepeat", () => {
     });
     expect(onFire).not.toHaveBeenCalled();
   });
+
+  it("stops timers and calls onStop when enabled becomes false mid-hold", () => {
+    const onFire = vi.fn();
+    const onStop = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) =>
+        useKeyRepeat({ enabled, onFire, onStop }),
+      { initialProps: { enabled: true } },
+    );
+
+    act(() => {
+      result.current.pointerHandlers.onPointerDown?.();
+      vi.advanceTimersByTime(KEY_REPEAT_INITIAL_DELAY_MS);
+    });
+    expect(onFire).toHaveBeenCalledTimes(2);
+
+    act(() => {
+      rerender({ enabled: false });
+    });
+    expect(onStop).toHaveBeenCalledTimes(1);
+
+    const firesAtDisable = onFire.mock.calls.length;
+    act(() => {
+      vi.advanceTimersByTime(KEY_REPEAT_INTERVAL_MS * 10);
+    });
+    expect(onFire).toHaveBeenCalledTimes(firesAtDisable);
+  });
 });

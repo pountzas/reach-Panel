@@ -27,6 +27,7 @@ export function useKeyRepeat({
 } {
   const onFireRef = useRef(onFire);
   const onStopRef = useRef(onStop);
+  const enabledRef = useRef(enabled);
   const delayIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdingRef = useRef(false);
@@ -35,6 +36,8 @@ export function useKeyRepeat({
     onFireRef.current = onFire;
     onStopRef.current = onStop;
   });
+
+  enabledRef.current = enabled;
 
   const clearTimers = useCallback(() => {
     if (delayIdRef.current !== null) {
@@ -55,24 +58,29 @@ export function useKeyRepeat({
   }, [clearTimers]);
 
   const start = useCallback(() => {
-    if (!enabled) return;
+    if (!enabledRef.current) return;
     clearTimers();
     holdingRef.current = true;
     onFireRef.current();
     delayIdRef.current = setTimeout(() => {
       delayIdRef.current = null;
+      if (!enabledRef.current || !holdingRef.current) return;
       onFireRef.current();
       intervalIdRef.current = setInterval(() => {
+        if (!enabledRef.current || !holdingRef.current) return;
         onFireRef.current();
       }, KEY_REPEAT_INTERVAL_MS);
     }, KEY_REPEAT_INITIAL_DELAY_MS);
-  }, [enabled, clearTimers]);
+  }, [clearTimers]);
+
+  // Mid-hold disable (e.g. KeyButton disabled) must tear down timers + onStop.
+  useEffect(() => {
+    if (!enabled) {
+      stop();
+    }
+  }, [enabled, stop]);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
-
-  if (!enabled) {
-    return { pointerHandlers: {} };
-  }
 
   return {
     pointerHandlers: {

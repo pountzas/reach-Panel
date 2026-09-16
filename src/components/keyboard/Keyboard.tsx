@@ -20,6 +20,7 @@ import {
   greekTranslateFallback,
   type LayoutKeyTranslation,
 } from "../../lib/layoutKeyTranslation";
+import { createSkipWhileInFlight } from "../../lib/keyRepeat";
 import { KeyButton } from "./KeyButton";
 import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
@@ -81,6 +82,8 @@ export function Keyboard() {
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const langKeyAnchorRef = useRef<HTMLDivElement>(null);
+  /** Serialize Backspace hold ticks so cmd_press_key does not overlap. */
+  const backspaceRepeatGate = useRef(createSkipWhileInFlight()).current;
   const { t } = useTranslation();
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const fnActive = isFnActive(stickyModifiers);
@@ -545,12 +548,15 @@ export function Keyboard() {
                   onHoldEnd={
                     isBackspace ? () => void loadSuggestions() : undefined
                   }
-                  onPress={() =>
-                    void handleKey(
-                      k,
-                      isBackspace ? { deferSuggestions: true } : undefined,
-                    )
-                  }
+                  onPress={() => {
+                    if (isBackspace) {
+                      backspaceRepeatGate.run(() =>
+                        handleKey(k, { deferSuggestions: true }),
+                      );
+                      return;
+                    }
+                    void handleKey(k);
+                  }}
                 />
               );
             }
