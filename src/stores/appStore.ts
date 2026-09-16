@@ -1548,22 +1548,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings, musicTeachingEnabled } = get();
+    const { settings, musicTeachingEnabled, miniModeActive } = get();
     if (
       !shouldApplyLiveWindowHeightRatio({
         collapsed: settings.collapsed,
-        miniModeActive: get().miniModeActive,
+        miniModeActive,
       })
     ) {
       return;
     }
-    const heightRatio = Math.max(
-      computeContentHeightRatioFromSettings(
-        settings,
-        lessonSlotVisibleFromState(settings, musicTeachingEnabled),
-      ),
-      clampWindowHeightRatio(ratio),
-    );
+    // Grip maps cursor → ratio directly. Do not floor to contentRatio here —
+    // that locked full layouts at 1.0 and made the handle feel stuck/weird.
+    const heightRatio = clampWindowHeightRatio(ratio);
     if (
       liveHeightRatioPreview !== null &&
       Math.abs(liveHeightRatioPreview - heightRatio) < 0.002
@@ -1595,15 +1591,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
     liveHeightRatioPreview = pending;
     liveHeightRatioInFlight = true;
     try {
+      const mini = get().miniModeActive;
       await invoke("cmd_apply_window_layout", {
         monitorId: latest.accessibilityMonitorId,
         collapsed: false,
         collapsedDictation: false,
         heightRatio: pending,
-        fullWorkArea: teachingFullWorkAreaActive(
-          latest,
-          get().musicTeachingEnabled,
-        ),
+        miniMode: mini,
+        miniKeyboardVisible: mini ? get().miniModeKeyboardVisible : false,
+        miniKeyboardHeightRatio: mini ? pending : undefined,
+        fullWorkArea: teachingFullWorkAreaActive(latest, musicTeachingEnabled),
       });
     } catch {
       // Rejected ratio must not block near-equal retries.
