@@ -1,4 +1,4 @@
-import { type CSSProperties } from "react";
+import { type CSSProperties, type JSX } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { exit } from "@tauri-apps/plugin-process";
 import { ResizableSplitPane } from "./ResizableSplitPane";
@@ -43,7 +43,7 @@ import {
   resolveV1SectionVisibility,
 } from "../../lib/v1HiddenFeatures";
 
-const LanguageTeachingBody = () => {
+const LanguageTeachingBody = (): JSX.Element => {
   const { t } = useTranslation();
   const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
   const setLanguageSubjectTab = useAppStore((s) => s.setLanguageSubjectTab);
@@ -62,7 +62,7 @@ const LanguageTeachingBody = () => {
   );
 };
 
-const renderTeachingLessonPanel = (lesson: TeachingLesson) => {
+const renderTeachingLessonPanel = (lesson: TeachingLesson): JSX.Element => {
   switch (lesson) {
     case "music":
       return <MusicLessonPanel />;
@@ -77,7 +77,7 @@ const renderTeachingLessonPanel = (lesson: TeachingLesson) => {
   }
 };
 
-const InputRowPanel = () => {
+const InputRowPanel = (): JSX.Element => {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const mouseSide = settings.mousePanelSide ?? "right";
