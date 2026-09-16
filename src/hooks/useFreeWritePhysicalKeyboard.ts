@@ -63,6 +63,7 @@ export function useFreeWritePhysicalKeyboard() {
           {
             physicalKey,
             shift,
+            capsLock: state.physicalKeyState.capsLock,
             hkl: state.physicalKeyState.systemHkl || null,
           },
         );

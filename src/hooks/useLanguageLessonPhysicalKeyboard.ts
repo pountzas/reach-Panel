@@ -84,6 +84,7 @@ export function useLanguageLessonPhysicalKeyboard() {
           {
             physicalKey,
             shift,
+            capsLock: state.physicalKeyState.capsLock,
             hkl: state.physicalKeyState.systemHkl || null,
           },
         );

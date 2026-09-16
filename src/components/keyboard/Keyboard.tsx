@@ -191,6 +191,7 @@ export function Keyboard() {
     invoke<LayoutKeyTranslation>("cmd_translate_layout_key", {
       physicalKey,
       shift: shiftActive,
+      capsLock: physicalKeyState.capsLock,
       hkl: physicalKeyState.systemHkl || null,
     });
 

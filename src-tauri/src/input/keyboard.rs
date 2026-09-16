@@ -953,6 +953,7 @@ fn qwerty_key_to_vk(key: &str) -> Option<u16> {
 struct PendingDeadKey {
     vk: u16,
     shift: bool,
+    caps_lock: bool,
 }
 
 fn pending_dead_keys() -> &'static Mutex<HashMap<u64, PendingDeadKey>> {
@@ -1009,6 +1010,7 @@ fn is_spacing_accent_text(text: &str) -> bool {
 fn to_unicode_ex(
     vk: u32,
     shift: bool,
+    caps_lock: bool,
     hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL,
 ) -> (i32, String) {
     use windows::Win32::UI::Input::KeyboardAndMouse::{MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC};
@@ -1018,6 +1020,10 @@ fn to_unicode_ex(
         let mut state = [0u8; 256];
         if shift {
             state[VK_SHIFT.0 as usize] = 0x80;
+        }
+        if caps_lock {
+            // ToUnicodeEx reads Caps Lock via the toggle bit (low bit), not the down bit.
+            state[VK_CAPITAL.0 as usize] = 0x01;
         }
         let mut buf = [0u16; 8];
         let result = ToUnicodeEx(vk, scan, &state, &mut buf, 0, hkl);
@@ -1044,6 +1050,7 @@ fn to_unicode_ex(
 pub fn translate_layout_key_press(
     physical_key: &str,
     shift: bool,
+    caps_lock: bool,
     hkl_value: Option<u64>,
 ) -> LayoutKeyTranslation {
     use windows::Win32::UI::Input::KeyboardAndMouse::HKL;
@@ -1063,26 +1070,27 @@ pub fn translate_layout_key_press(
 
     if let Some(dead) = pending_dead_keys().lock().unwrap().remove(&hkl_id) {
         if is_layout_dead_key_vk(dead.vk) {
-            let (replay_result, _) = to_unicode_ex(dead.vk as u32, dead.shift, hkl);
+            let (replay_result, _) =
+                to_unicode_ex(dead.vk as u32, dead.shift, dead.caps_lock, hkl);
             let _ = replay_result;
         }
     }
 
-    let (result, text) = to_unicode_ex(vk as u32, shift, hkl);
+    let (result, text) = to_unicode_ex(vk as u32, shift, caps_lock, hkl);
 
     if result < 0 || is_spacing_accent_text(&text) {
         if is_layout_dead_key_vk(vk) {
             pending_dead_keys()
                 .lock()
                 .unwrap()
-                .insert(hkl_id, PendingDeadKey { vk, shift });
+                .insert(hkl_id, PendingDeadKey { vk, shift, caps_lock });
             return LayoutKeyTranslation {
                 text: String::new(),
                 dead: true,
             };
         }
         flush_thread_dead_state(hkl);
-        let (retry_result, retry_text) = to_unicode_ex(vk as u32, shift, hkl);
+        let (retry_result, retry_text) = to_unicode_ex(vk as u32, shift, caps_lock, hkl);
         if retry_result > 0 && !retry_text.is_empty() && !is_spacing_accent_text(&retry_text) {
             pending_dead_keys().lock().unwrap().remove(&hkl_id);
             return LayoutKeyTranslation {
@@ -1145,12 +1153,14 @@ pub fn reset_layout_compose_state(hkl_value: Option<u64>) {
 
 #[cfg(test)]
 mod translate_tests {
-    use super::{reset_layout_compose_state, translate_layout_key_press};
+    use super::{
+        load_layout_for_language, reset_layout_compose_state, translate_layout_key_press,
+    };
 
     #[test]
     fn greek_tonos_then_o_produces_omicron_with_accent() {
         reset_layout_compose_state(None);
-        let tonos = translate_layout_key_press(";", false, None);
+        let tonos = translate_layout_key_press(";", false, false, None);
         // When the active Windows layout is not Greek, ";" is a normal key — JS compose handles that.
         if !tonos.dead && tonos.text == ";" {
             reset_layout_compose_state(None);
@@ -1159,12 +1169,44 @@ mod translate_tests {
         assert!(tonos.dead, "tonos key should be dead, got {:?}", tonos);
         assert!(tonos.text.is_empty());
 
-        let vowel = translate_layout_key_press("o", false, None);
+        let vowel = translate_layout_key_press("o", false, false, None);
         assert!(
             vowel.text.contains('\u{03CC}'),
             "expected ό, got {:?}",
             vowel.text
         );
         reset_layout_compose_state(None);
+    }
+
+    #[test]
+    fn greek_caps_lock_uppercases_letter_and_xor_with_shift() {
+        reset_layout_compose_state(None);
+        let Ok(hkl) = load_layout_for_language("el") else {
+            return;
+        };
+        let hkl_val = Some(hkl.0 as u64);
+
+        let lower = translate_layout_key_press("a", false, false, hkl_val);
+        if !lower.text.contains('\u{03B1}') {
+            // Greek layout unavailable in this environment.
+            reset_layout_compose_state(hkl_val);
+            return;
+        }
+
+        let caps = translate_layout_key_press("a", false, true, hkl_val);
+        assert!(
+            caps.text.contains('\u{0391}'),
+            "Caps Lock should produce Α, got {:?}",
+            caps.text
+        );
+
+        let caps_shift = translate_layout_key_press("a", true, true, hkl_val);
+        assert!(
+            caps_shift.text.contains('\u{03B1}'),
+            "Caps+Shift XOR should produce α, got {:?}",
+            caps_shift.text
+        );
+
+        reset_layout_compose_state(hkl_val);
     }
 }
