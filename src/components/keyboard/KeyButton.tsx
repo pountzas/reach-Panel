@@ -76,7 +76,7 @@ export function KeyButton({
   });
 
   // Aborted holds (disable mid-hold) must not block a later keyboard click.
-  useEffect(() => {
+  useEffect((): void => {
     if (disabled || !repeatOnHold) {
       suppressClickForPointerIdRef.current = null;
     }
