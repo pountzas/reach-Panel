@@ -2,7 +2,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect } from "react";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { greekComposeEnabled } from "../lib/keyboardCharacterInput";
-import { isFreeWriteCaptureActive } from "../lib/teaching";
+import {
+  isFreeWriteCaptureActive,
+  type FreeWriteModeInput,
+} from "../lib/teaching";
 import { isShiftActive } from "../lib/keyboardLayouts";
 import {
   physicalKeyFromKeyboardCode,
@@ -11,7 +14,9 @@ import {
 } from "../lib/layoutKeyTranslation";
 import { useAppStore } from "../stores/appStore";
 
-const freeWriteModeFromStore = (state: ReturnType<typeof useAppStore.getState>) => ({
+const freeWriteModeFromStore = (
+  state: ReturnType<typeof useAppStore.getState>,
+): FreeWriteModeInput => ({
   musicTeachingEnabled: state.musicTeachingEnabled,
   teachingLesson: state.teachingLesson,
   settings: state.settings,
@@ -23,7 +28,7 @@ const freeWriteModeFromStore = (state: ReturnType<typeof useAppStore.getState>) 
  * While Free write notepad capture is active, capture hardware keyboard input
  * on the host window (touchscreen typing still goes through Keyboard.tsx).
  */
-export const useFreeWritePhysicalKeyboard = () => {
+export const useFreeWritePhysicalKeyboard = (): void => {
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const settings = useAppStore((s) => s.settings);
@@ -42,7 +47,7 @@ export const useFreeWritePhysicalKeyboard = () => {
     freeWriteFocus,
   });
 
-  useEffect(() => {
+  useEffect((): (() => void) | void => {
     if (!active) return;
 
     void syncWindowFocusable();
