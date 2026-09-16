@@ -1,11 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect } from "react";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { greekComposeEnabled } from "../lib/keyboardCharacterInput";
+import {
+  greekComposeEnabled,
+  type GreekComposeContext,
+} from "../lib/keyboardCharacterInput";
 import {
   getLanguagePackById,
   isLanguageLessonCaptureActive,
   isLanguageLessonSpellingActive,
+  type LanguageLessonModeInput,
 } from "../lib/language";
 import { isShiftActive } from "../lib/keyboardLayouts";
 import {
@@ -15,7 +19,9 @@ import {
 } from "../lib/layoutKeyTranslation";
 import { useAppStore } from "../stores/appStore";
 
-const languageLessonModeFromStore = (state: ReturnType<typeof useAppStore.getState>) => ({
+const languageLessonModeFromStore = (
+  state: ReturnType<typeof useAppStore.getState>,
+): LanguageLessonModeInput => ({
   musicTeachingEnabled: state.musicTeachingEnabled,
   teachingLesson: state.teachingLesson,
   settings: state.settings,
@@ -24,7 +30,9 @@ const languageLessonModeFromStore = (state: ReturnType<typeof useAppStore.getSta
   languageSubjectTab: state.languageSubjectTab,
 });
 
-const greekLessonComposeContext = (state: ReturnType<typeof useAppStore.getState>) => {
+const greekLessonComposeContext = (
+  state: ReturnType<typeof useAppStore.getState>,
+): GreekComposeContext => {
   const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
   return {
     typingLanguage: state.settings.typingLanguage,
@@ -39,7 +47,7 @@ const greekLessonComposeContext = (state: ReturnType<typeof useAppStore.getState
  * While Language lesson capture is active (Play or list authoring), capture hardware
  * keyboard input on the host window (touchscreen typing still goes through Keyboard.tsx).
  */
-export const useLanguageLessonPhysicalKeyboard = () => {
+export const useLanguageLessonPhysicalKeyboard = (): void => {
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const settings = useAppStore((s) => s.settings);
@@ -63,7 +71,7 @@ export const useLanguageLessonPhysicalKeyboard = () => {
     languageSubjectTab,
   });
 
-  useEffect(() => {
+  useEffect((): (() => void) | void => {
     if (!active) return;
 
     void syncWindowFocusable();
