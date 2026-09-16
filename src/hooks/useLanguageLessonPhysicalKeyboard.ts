@@ -39,7 +39,7 @@ const greekLessonComposeContext = (state: ReturnType<typeof useAppStore.getState
  * While Language lesson capture is active (Play or list authoring), capture hardware
  * keyboard input on the host window (touchscreen typing still goes through Keyboard.tsx).
  */
-export function useLanguageLessonPhysicalKeyboard() {
+export const useLanguageLessonPhysicalKeyboard = () => {
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const settings = useAppStore((s) => s.settings);
@@ -204,4 +204,4 @@ export function useLanguageLessonPhysicalKeyboard() {
     languageKeyInput,
     syncWindowFocusable,
   ]);
-}
+};
