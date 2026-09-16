@@ -23,7 +23,7 @@ const freeWriteModeFromStore = (state: ReturnType<typeof useAppStore.getState>) 
  * While Free write notepad capture is active, capture hardware keyboard input
  * on the host window (touchscreen typing still goes through Keyboard.tsx).
  */
-export function useFreeWritePhysicalKeyboard() {
+export const useFreeWritePhysicalKeyboard = () => {
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const settings = useAppStore((s) => s.settings);
@@ -149,4 +149,4 @@ export function useFreeWritePhysicalKeyboard() {
     freeWriteNotepadInput,
     syncWindowFocusable,
   ]);
-}
+};
