@@ -1,6 +1,11 @@
-import { type ReactNode } from "react";
+import {
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 import { transparentOutlineStyle } from "../../lib/miniMode";
+import { useKeyRepeat } from "../../hooks/useKeyRepeat";
 import { usePressableButton } from "../../hooks/usePressableButton";
 import type { TransparentKeyColor } from "../../lib/types";
 
@@ -23,6 +28,13 @@ interface KeyButtonProps {
   outlineColor?: TransparentKeyColor | string | null;
   /** Pin label to the bottom edge of the key (e.g. wide Space bar). */
   labelAlign?: "center" | "bottom";
+  /**
+   * When true, fire onPress on pointerdown and then on key-repeat timers
+   * instead of relying on click (which would double-fire after pointerup).
+   */
+  repeatOnHold?: boolean;
+  /** Called when a press-and-hold repeat ends (pointer up / leave / cancel). */
+  onHoldEnd?: () => void;
   onPress: () => void;
 }
 
@@ -43,9 +55,57 @@ export function KeyButton({
   transparent = false,
   outlineColor,
   labelAlign = "center",
+  repeatOnHold = false,
+  onHoldEnd,
   onPress,
 }: KeyButtonProps) {
-  const { pressedClass, pointerHandlers } = usePressableButton(active ?? false);
+  const suppressClickRef = useRef(false);
+  const { pressedClass, pointerHandlers: pressableHandlers } = usePressableButton(
+    active ?? false,
+  );
+  const { pointerHandlers: repeatHandlers } = useKeyRepeat({
+    enabled: repeatOnHold && !disabled,
+    onFire: onPress,
+    onStop: onHoldEnd,
+  });
+
+  const pointerHandlers = {
+    onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (repeatOnHold) {
+        suppressClickRef.current = true;
+      }
+      pressableHandlers.onPointerDown();
+      repeatHandlers.onPointerDown?.(event);
+    },
+    onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      pressableHandlers.onPointerUp();
+      repeatHandlers.onPointerUp?.(event);
+    },
+    onPointerLeave: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      pressableHandlers.onPointerLeave();
+      repeatHandlers.onPointerLeave?.(event);
+    },
+    onPointerCancel: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      pressableHandlers.onPointerLeave();
+      repeatHandlers.onPointerCancel?.(event);
+    },
+  };
+
+  const handleClick = () => {
+    if (repeatOnHold) {
+      // Pointer path already fired via useKeyRepeat; ignore the compatibility click.
+      if (suppressClickRef.current) {
+        suppressClickRef.current = false;
+        return;
+      }
+      // Keyboard / synthetic activation (no pointerdown).
+      onPress();
+      onHoldEnd?.();
+      return;
+    }
+    onPress();
+  };
+
   const inGrid = gridColumn !== undefined && gridRow !== undefined;
   const alignBottom = labelAlign === "bottom";
 
@@ -102,7 +162,7 @@ export function KeyButton({
       }
       disabled={disabled}
       aria-label={ariaLabel}
-      onClick={onPress}
+      onClick={handleClick}
       onContextMenu={(e) => e.preventDefault()}
       {...pointerHandlers}
     >

@@ -207,8 +207,12 @@ export function Keyboard() {
     ),
   });
 
-  const handleKey = async (keyDef: KeyDef) => {
+  const handleKey = async (
+    keyDef: KeyDef,
+    options?: { deferSuggestions?: boolean },
+  ) => {
     const key = keyDef.key;
+    const deferSuggestions = options?.deferSuggestions === true;
 
     if (key === "capslock") {
       await invoke("cmd_press_key", {
@@ -360,7 +364,9 @@ export function Keyboard() {
         });
       }
       await invoke("cmd_press_key", { request: { key: "backspace", modifiers: [] } });
-      await loadSuggestions();
+      if (!deferSuggestions) {
+        await loadSuggestions();
+      }
       await pollError();
       return;
     }
@@ -507,6 +513,7 @@ export function Keyboard() {
             }
             if (!isLang) {
               const specialKey = isSpecialLabeledKey(k.key);
+              const isBackspace = k.key === "backspace";
               return (
                 <KeyButton
                   key={`${ri}-${k.key}-${k.label}-${ci}`}
@@ -534,7 +541,16 @@ export function Keyboard() {
                   transparent={transparent}
                   outlineColor={settings.transparentKeyColor}
                   active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
-                  onPress={() => handleKey(k)}
+                  repeatOnHold={isBackspace}
+                  onHoldEnd={
+                    isBackspace ? () => void loadSuggestions() : undefined
+                  }
+                  onPress={() =>
+                    void handleKey(
+                      k,
+                      isBackspace ? { deferSuggestions: true } : undefined,
+                    )
+                  }
                 />
               );
             }
