@@ -20,7 +20,10 @@ import {
   greekTranslateFallback,
   type LayoutKeyTranslation,
 } from "../../lib/layoutKeyTranslation";
-import { createSkipWhileInFlight } from "../../lib/keyRepeat";
+import {
+  createSerialCoalesceGate,
+  type SerialCoalesceGate,
+} from "../../lib/keyRepeat";
 import { KeyButton } from "./KeyButton";
 import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
@@ -83,7 +86,9 @@ export function Keyboard() {
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const langKeyAnchorRef = useRef<HTMLDivElement>(null);
   /** Serialize Backspace hold ticks so cmd_press_key does not overlap. */
-  const backspaceRepeatGate = useRef(createSkipWhileInFlight()).current;
+  const backspaceInjectGate = useRef<SerialCoalesceGate>(
+    createSerialCoalesceGate(),
+  ).current;
   const { t } = useTranslation();
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const fnActive = isFnActive(stickyModifiers);
@@ -99,7 +104,7 @@ export function Keyboard() {
     settings.typingLanguage,
     followWindowsLayout ? layoutKeyLabels : undefined,
   );
-  const rows = useMemo(() => {
+  const rows = useMemo<KeyDef[][]>(() => {
     if (settings.dictationVisible) return baseRows;
     return baseRows.map((row) => row.filter((k) => k.key !== "dictate"));
   }, [baseRows, settings.dictationVisible]);
@@ -154,11 +159,11 @@ export function Keyboard() {
   const captureAudio = sttCapability?.engine !== "groq";
   const groqRemainingPercent = useGroqDailyQuota(sttCapability?.engine);
 
-  useEffect(() => {
+  useEffect((): void => {
     void refreshSttCapability();
   }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
 
-  useEffect(() => {
+  useEffect((): void => {
     if (!settings.dictationVisible && dictationState !== "idle") {
       void stopDictation();
     }
@@ -548,11 +553,15 @@ export function Keyboard() {
                   onHoldEnd={
                     isBackspace ? () => void loadSuggestions() : undefined
                   }
-                  onPress={() => {
+                  onPress={(meta) => {
                     if (isBackspace) {
-                      backspaceRepeatGate.run(() =>
-                        handleKey(k, { deferSuggestions: true }),
-                      );
+                      const inject = () =>
+                        handleKey(k, { deferSuggestions: true });
+                      if (meta?.repeat) {
+                        backspaceInjectGate.coalesce(inject);
+                      } else {
+                        backspaceInjectGate.enqueue(inject);
+                      }
                       return;
                     }
                     void handleKey(k);
