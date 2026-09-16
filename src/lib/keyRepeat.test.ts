@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   KEY_REPEAT_INITIAL_DELAY_MS,
   KEY_REPEAT_INTERVAL_MS,
-  createSkipWhileInFlight,
+  createSerialCoalesceGate,
 } from "./keyRepeat";
 
 describe("keyRepeat constants", () => {
@@ -12,43 +12,61 @@ describe("keyRepeat constants", () => {
   });
 });
 
-describe("createSkipWhileInFlight", () => {
-  it("skips while a prior async call is in flight, then accepts the next", async () => {
-    const gate = createSkipWhileInFlight();
+describe("createSerialCoalesceGate", () => {
+  it("queues discrete presses so none are skipped", async () => {
+    const gate = createSerialCoalesceGate();
+    const order: number[] = [];
     let resolveFirst!: () => void;
     const first = new Promise<void>((resolve) => {
       resolveFirst = resolve;
     });
-    const fn = vi.fn(() => first);
 
-    gate.run(fn);
-    gate.run(fn);
-    gate.run(fn);
-    expect(fn).toHaveBeenCalledTimes(1);
-    expect(gate.isInFlight()).toBe(true);
-
-    resolveFirst();
-    await first;
-    await Promise.resolve();
-    expect(gate.isInFlight()).toBe(false);
-
-    gate.run(fn);
-    expect(fn).toHaveBeenCalledTimes(2);
-  });
-
-  it("allows the next run after a sync throw settles", async () => {
-    const gate = createSkipWhileInFlight();
-    const fn = vi.fn(() => {
-      throw new Error("boom");
+    gate.enqueue(async () => {
+      order.push(1);
+      await first;
+    });
+    gate.enqueue(async () => {
+      order.push(2);
+    });
+    gate.enqueue(async () => {
+      order.push(3);
     });
 
-    gate.run(fn);
     await Promise.resolve();
-    await Promise.resolve();
-    expect(gate.isInFlight()).toBe(false);
+    expect(order).toEqual([1]);
+    resolveFirst();
+    await vi.waitFor(() => {
+      expect(order).toEqual([1, 2, 3]);
+    });
+  });
 
-    const ok = vi.fn();
-    gate.run(ok);
-    expect(ok).toHaveBeenCalledTimes(1);
+  it("coalesces repeat ticks while busy to a single pending run", async () => {
+    const gate = createSerialCoalesceGate();
+    const runs = vi.fn();
+    let resolveFirst!: () => void;
+    const first = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+
+    gate.enqueue(async () => {
+      runs("a");
+      await first;
+    });
+    await Promise.resolve();
+
+    gate.coalesce(async () => {
+      runs("b");
+    });
+    gate.coalesce(async () => {
+      runs("c");
+    });
+    gate.coalesce(async () => {
+      runs("d");
+    });
+
+    resolveFirst();
+    await vi.waitFor(() => {
+      expect(runs.mock.calls.map((c) => c[0])).toEqual(["a", "d"]);
+    });
   });
 });

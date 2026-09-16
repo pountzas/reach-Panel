@@ -7,6 +7,8 @@ export const pt: Record<keyof typeof en, string> = {
 
   expand: "Expandir",
 
+  resizeWindowHeight: "Redimensionar altura da janela",
+
   minimizeSection: "Minimizar",
 
   dockSection: "Ancorar secção",

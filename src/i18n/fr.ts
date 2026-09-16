@@ -7,6 +7,8 @@ export const fr: Record<keyof typeof en, string> = {
 
   expand: "Développer",
 
+  resizeWindowHeight: "Redimensionner la hauteur de la fenêtre",
+
   minimizeSection: "Réduire",
 
   dockSection: "Ancrer la section",

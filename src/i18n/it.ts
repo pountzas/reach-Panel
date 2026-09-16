@@ -7,6 +7,8 @@ export const it: Record<keyof typeof en, string> = {
 
   expand: "Espandi",
 
+  resizeWindowHeight: "Ridimensiona altezza finestra",
+
   minimizeSection: "Riduci",
 
   dockSection: "Ancora sezione",
