@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { useAppStore } from "../stores/appStore";
 import {
   nextWindowHeightRatioFromScreenY,
@@ -14,7 +14,7 @@ import {
  * Maps absolute screenY → ratio so the top edge tracks the cursor (no clientY
  * feedback while the window resizes under the pointer).
  */
-export function useWindowHeightDrag() {
+export const useWindowHeightDrag = () => {
   const settings = useAppStore((s) => s.settings);
   const monitors = useAppStore((s) => s.monitors);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
@@ -32,6 +32,16 @@ export function useWindowHeightDrag() {
     musicTeachingEnabled,
     keyboardSectionMode: settings.keyboardSectionMode,
   });
+
+  useEffect(() => {
+    return () => {
+      if (resizeRafRef.current !== null) {
+        cancelAnimationFrame(resizeRafRef.current);
+        resizeRafRef.current = null;
+      }
+      windowResizeRef.current = null;
+    };
+  }, []);
 
   const onWindowHeightPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest(".section-no-drag")) return;
@@ -95,4 +105,4 @@ export function useWindowHeightDrag() {
     onPointerUp: onWindowHeightPointerUp,
     onPointerCancel: onWindowHeightPointerUp,
   };
-}
+};
