@@ -408,7 +408,9 @@ export const it: Record<keyof typeof en, string> = {
   groqApiKeyLabel: "Chiave API Groq (dettatura cloud)",
 
   groqApiKeyHint:
-    "Necessaria per le lingue non supportate da Windows (es. greco). Chiave gratuita su console.groq.com. Puoi anche impostare la variabile d’ambiente GROQ_API_KEY.",
+    "Necessaria per le lingue non supportate da Windows (es. greco). Puoi anche impostare la variabile d’ambiente GROQ_API_KEY.",
+
+  groqApiKeyLink: "Ottieni chiave API Groq gratuita",
 
   mute: "Silenzia",
 
