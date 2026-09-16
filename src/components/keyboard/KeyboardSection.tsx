@@ -1,5 +1,6 @@
 import {
   CollapseIcon,
+  HeightGripIcon,
   MouseIcon,
   TransparentKeyboardIcon,
 } from "../common/SectionIcons";
@@ -13,6 +14,7 @@ import {
 } from "../../lib/buttonClasses";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useWindowHeightDrag } from "../../hooks/useWindowHeightDrag";
 import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
 import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
@@ -43,6 +45,7 @@ export function KeyboardSection() {
   const companionSessionLive = useAppStore((s) => s.companionSessionLive);
   const suggestionCount = useAppStore((s) => s.suggestions.length);
   const { t } = useTranslation();
+  const heightDrag = useWindowHeightDrag();
   const showSynth =
     isSynthesizerUiActive(
       musicTeachingEnabled,
@@ -270,6 +273,22 @@ export function KeyboardSection() {
             className={`relative z-20 flex w-full shrink-0 flex-col overflow-visible pr-1 pt-1 pb-0 ${hasSuggestionChips ? "gap-1" : ""}`}
           >
             <div className="flex w-full items-center gap-2">
+              <button
+                type="button"
+                aria-label={t("resizeWindowHeight")}
+                className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} w-8 shrink-0 cursor-ns-resize items-center justify-center rounded ${
+                  transparentUi
+                    ? "bg-transparent"
+                    : "bg-slate-200/80 text-slate-700 hover:bg-slate-300/80"
+                }`}
+                style={{
+                  touchAction: "none",
+                  ...(transparentToolbarStyle ?? {}),
+                }}
+                {...heightDrag}
+              >
+                <HeightGripIcon className="h-4 w-4" />
+              </button>
               <div
                 className={`flex min-w-0 flex-1 items-center justify-center px-1 ${showInputPreview ? "min-h-[48px]" : ""}`}
               >

@@ -10,6 +10,8 @@ export const el: Record<keyof typeof en, string> = {
 
   expand: "Ανάπτυξη",
 
+  resizeWindowHeight: "Αλλαγή ύψους παραθύρου",
+
   minimizeSection: "Σμίκρυνση",
 
   dockSection: "Πρόσδεση ενότητας",
@@ -413,7 +415,9 @@ export const el: Record<keyof typeof en, string> = {
   groqApiKeyLabel: "Κλειδί Groq API (υπαγόρευση cloud)",
 
   groqApiKeyHint:
-    "Απαιτείται για γλώσσες που δεν υποστηρίζουν τα Windows (π.χ. ελληνικά). Δωρεάν κλειδί στο console.groq.com. Μπορείτε επίσης να ορίσετε τη μεταβλητή περιβάλλοντος GROQ_API_KEY.",
+    "Απαιτείται για γλώσσες που δεν υποστηρίζουν τα Windows (π.χ. ελληνικά). Μπορείτε επίσης να ορίσετε τη μεταβλητή περιβάλλοντος GROQ_API_KEY.",
+
+  groqApiKeyLink: "Λήψη δωρεάν κλειδιού Groq API",
 
   mute: "Σίγαση",
 

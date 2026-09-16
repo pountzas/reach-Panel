@@ -1,11 +1,14 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "../../hooks/useTranslation";
+import {
+  aboutLinkIconFor,
+  type AboutLinkLabelKey,
+} from "../../lib/aboutLinkIcon";
 import { APP_INFO, openExternalLink } from "../../lib/appInfo";
 import type { SurfaceColors } from "../../lib/colorProfiles";
 import { getCurrentAppVersion } from "../../lib/updater";
-import type { TranslationKey } from "../../i18n";
 
-const LINK_BUTTONS: { labelKey: TranslationKey; url: string }[] = [
+const LINK_BUTTONS: { labelKey: AboutLinkLabelKey; url: string }[] = [
   { labelKey: "aboutGitHub", url: APP_INFO.links.github },
   { labelKey: "aboutSource", url: APP_INFO.links.githubRepo },
   { labelKey: "aboutTwitter", url: APP_INFO.links.twitter },
@@ -60,17 +63,21 @@ export function AboutSection({ surface }: AboutSectionProps) {
       </p>
 
       <div className="flex flex-wrap gap-2">
-        {LINK_BUTTONS.map(({ labelKey, url }) => (
-          <button
-            key={labelKey}
-            type="button"
-            className="rounded-lg border px-3 py-2 text-sm"
-            style={secondaryButtonStyle}
-            onClick={() => openExternalLink(url)}
-          >
-            {t(labelKey)}
-          </button>
-        ))}
+        {LINK_BUTTONS.map(({ labelKey, url }) => {
+          const Icon = aboutLinkIconFor(labelKey);
+          return (
+            <button
+              key={labelKey}
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm"
+              style={secondaryButtonStyle}
+              onClick={() => openExternalLink(url)}
+            >
+              <Icon className="h-4 w-4" />
+              {t(labelKey)}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

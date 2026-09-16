@@ -1,11 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect } from "react";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { greekComposeEnabled } from "../lib/keyboardCharacterInput";
+import {
+  greekComposeEnabled,
+  type GreekComposeContext,
+} from "../lib/keyboardCharacterInput";
 import {
   getLanguagePackById,
   isLanguageLessonCaptureActive,
   isLanguageLessonSpellingActive,
+  type LanguageLessonModeInput,
 } from "../lib/language";
 import { isShiftActive } from "../lib/keyboardLayouts";
 import {
@@ -15,18 +19,20 @@ import {
 } from "../lib/layoutKeyTranslation";
 import { useAppStore } from "../stores/appStore";
 
-function languageLessonModeFromStore(state: ReturnType<typeof useAppStore.getState>) {
-  return {
-    musicTeachingEnabled: state.musicTeachingEnabled,
-    teachingLesson: state.teachingLesson,
-    settings: state.settings,
-    languageLessonPlaying: state.languageLessonPlaying,
-    languageListAuthoringActive: state.languageListAuthoringActive,
-    languageSubjectTab: state.languageSubjectTab,
-  };
-}
+const languageLessonModeFromStore = (
+  state: ReturnType<typeof useAppStore.getState>,
+): LanguageLessonModeInput => ({
+  musicTeachingEnabled: state.musicTeachingEnabled,
+  teachingLesson: state.teachingLesson,
+  settings: state.settings,
+  languageLessonPlaying: state.languageLessonPlaying,
+  languageListAuthoringActive: state.languageListAuthoringActive,
+  languageSubjectTab: state.languageSubjectTab,
+});
 
-function greekLessonComposeContext(state: ReturnType<typeof useAppStore.getState>) {
+const greekLessonComposeContext = (
+  state: ReturnType<typeof useAppStore.getState>,
+): GreekComposeContext => {
   const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
   return {
     typingLanguage: state.settings.typingLanguage,
@@ -35,13 +41,13 @@ function greekLessonComposeContext(state: ReturnType<typeof useAppStore.getState
     languageLessonActive: true as const,
     lessonLanguage: pack?.lessonLanguage ?? state.settings.languageLessonLanguage,
   };
-}
+};
 
 /**
  * While Language lesson capture is active (Play or list authoring), capture hardware
  * keyboard input on the host window (touchscreen typing still goes through Keyboard.tsx).
  */
-export function useLanguageLessonPhysicalKeyboard() {
+export const useLanguageLessonPhysicalKeyboard = (): void => {
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const settings = useAppStore((s) => s.settings);
@@ -65,7 +71,7 @@ export function useLanguageLessonPhysicalKeyboard() {
     languageSubjectTab,
   });
 
-  useEffect(() => {
+  useEffect((): (() => void) | void => {
     if (!active) return;
 
     void syncWindowFocusable();
@@ -76,7 +82,11 @@ export function useLanguageLessonPhysicalKeyboard() {
     // Serialize layout translations so tonos + vowel cannot reorder across async IPC.
     let translateQueue = Promise.resolve();
 
-    const queueLayoutTranslation = (physicalKey: string, shift: boolean) => {
+    const queueLayoutTranslation = (
+      physicalKey: string,
+      shift: boolean,
+      capsLock: boolean,
+    ) => {
       translateQueue = translateQueue.then(async () => {
         const state = useAppStore.getState();
         const translation = await invoke<LayoutKeyTranslation>(
@@ -84,6 +94,7 @@ export function useLanguageLessonPhysicalKeyboard() {
           {
             physicalKey,
             shift,
+            capsLock,
             hkl: state.physicalKeyState.systemHkl || null,
           },
         );
@@ -154,12 +165,13 @@ export function useLanguageLessonPhysicalKeyboard() {
       const greek = greekComposeEnabled(greekLessonComposeContext(state));
       const physicalKey = physicalKeyFromKeyboardCode(event.code);
       const shift = isShiftActive(state.physicalKeyState, state.stickyModifiers);
+      const capsLock = state.physicalKeyState.capsLock;
 
       if (event.key === "Dead") {
         event.preventDefault();
         event.stopPropagation();
         if (!event.repeat && greek && physicalKey) {
-          queueLayoutTranslation(physicalKey, shift);
+          queueLayoutTranslation(physicalKey, shift, capsLock);
         }
         return;
       }
@@ -173,7 +185,7 @@ export function useLanguageLessonPhysicalKeyboard() {
       if (event.repeat) return;
 
       if (greek && physicalKey) {
-        queueLayoutTranslation(physicalKey, shift);
+        queueLayoutTranslation(physicalKey, shift, capsLock);
         return;
       }
 
@@ -200,4 +212,4 @@ export function useLanguageLessonPhysicalKeyboard() {
     languageKeyInput,
     syncWindowFocusable,
   ]);
-}
+};

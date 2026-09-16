@@ -1,4 +1,10 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type JSX,
+  type ReactNode,
+} from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
@@ -32,9 +38,16 @@ import {
   isCompanionTabletEnabled,
   type CompanionUiState,
 } from "../../lib/companionSession";
+import { GROQ_API_KEYS_URL, openExternalLink } from "../../lib/appInfo";
 import { defaultLanguagePackId } from "../../lib/language";
 import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
+import {
+  applyTaskbarPosition,
+  handleDeleteProfile,
+  handleSaveProfile,
+  handleWipeProfile,
+} from "./settingsPanelUtils";
 
 const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
   "light-grey": "colorProfileLightGrey",
@@ -48,23 +61,13 @@ const TRANSPARENT_KEY_COLOR_LABEL_KEYS: Record<TransparentKeyColor, TranslationK
   silver: "transparentKeyColorSilver",
 };
 
-function fieldStyle(surface: SurfaceColors): CSSProperties {
-  return {
-    backgroundColor: surface.insetBg,
-    borderColor: surface.insetBorder,
-    color: surface.panelText,
-  };
-}
+const fieldStyle = (surface: SurfaceColors): CSSProperties => ({
+  backgroundColor: surface.insetBg,
+  borderColor: surface.insetBorder,
+  color: surface.panelText,
+});
 
-function ModeTabletButton({
-  id,
-  label,
-  pressed,
-  disabled,
-  title,
-  surface,
-  onSelect,
-}: {
+type ModeTabletButtonProps = {
   id: AppModeTablet;
   label: string;
   pressed: boolean;
@@ -72,7 +75,17 @@ function ModeTabletButton({
   title?: string;
   surface: SurfaceColors;
   onSelect: (mode: AppModeTablet) => void;
-}) {
+};
+
+const ModeTabletButton = ({
+  id,
+  label,
+  pressed,
+  disabled,
+  title,
+  surface,
+  onSelect,
+}: ModeTabletButtonProps): JSX.Element => {
   return (
     <button
       type="button"
@@ -97,19 +110,21 @@ function ModeTabletButton({
       {label}
     </button>
   );
-}
+};
 
-function ColorField({
-  label,
-  value,
-  onChange,
-  surface,
-}: {
+type ColorFieldProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
   surface: SurfaceColors;
-}) {
+};
+
+const ColorField = ({
+  label,
+  value,
+  onChange,
+  surface,
+}: ColorFieldProps): JSX.Element => {
   return (
     <label className="text-sm" style={{ color: surface.panelText }}>
       {label}
@@ -131,21 +146,23 @@ function ColorField({
       </div>
     </label>
   );
-}
+};
 
-function ToggleRow({
-  label,
-  checked,
-  onChange,
-  surface,
-  disabled = false,
-}: {
+type ToggleRowProps = {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
   surface: SurfaceColors;
   disabled?: boolean;
-}) {
+};
+
+const ToggleRow = ({
+  label,
+  checked,
+  onChange,
+  surface,
+  disabled = false,
+}: ToggleRowProps): JSX.Element => {
   return (
     <label
       className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
@@ -162,23 +179,25 @@ function ToggleRow({
       />
     </label>
   );
-}
+};
 
-function ThemedSelect({
-  value,
-  onChange,
-  surface,
-  children,
-  className = "mt-1 w-full rounded border px-2 py-1.5 text-sm",
-  disabled = false,
-}: {
+type ThemedSelectProps = {
   value: string;
   onChange: (value: string) => void;
   surface: SurfaceColors;
   children: ReactNode;
   className?: string;
   disabled?: boolean;
-}) {
+};
+
+const ThemedSelect = ({
+  value,
+  onChange,
+  surface,
+  children,
+  className = "mt-1 w-full rounded border px-2 py-1.5 text-sm",
+  disabled = false,
+}: ThemedSelectProps): JSX.Element => {
   return (
     <select
       className={className}
@@ -190,7 +209,7 @@ function ThemedSelect({
       {children}
     </select>
   );
-}
+};
 
 type WordPackInfo = {
   language: string;
@@ -199,7 +218,11 @@ type WordPackInfo = {
   bundled: boolean;
 };
 
-function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
+type WordPackDictionariesProps = {
+  surface: SurfaceColors;
+};
+
+const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JSX.Element => {
   const { t } = useTranslation();
   const [packs, setPacks] = useState<WordPackInfo[]>([]);
   const [busyLang, setBusyLang] = useState<string | null>(null);
@@ -223,7 +246,7 @@ function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
     setPacks(list);
   };
 
-  useEffect(() => {
+  useEffect((): void => {
     void refresh().catch((error) => {
       notify.error(error instanceof Error ? error.message : String(error));
     });
@@ -315,7 +338,7 @@ function WordPackDictionaries({ surface }: { surface: SurfaceColors }) {
       </ul>
     </div>
   );
-}
+};
 
 export function SettingsPanel() {
   const {
@@ -351,15 +374,15 @@ export function SettingsPanel() {
     physicalKeyState,
   } = useAppStore();
   const { t } = useTranslation();
-  const [newProfileName, setNewProfileName] = useState("");
-  const [companionBridgeRunning, setCompanionBridgeRunning] = useState(false);
-  const [companionPairedCount, setCompanionPairedCount] = useState(0);
+  const [newProfileName, setNewProfileName] = useState<string>("");
+  const [companionBridgeRunning, setCompanionBridgeRunning] = useState<boolean>(false);
+  const [companionPairedCount, setCompanionPairedCount] = useState<number>(0);
 
-  useEffect(() => {
+  useEffect((): void => {
     void loadInputMethods();
   }, [loadInputMethods]);
 
-  useEffect(() => {
+  useEffect((): (() => void) => {
     let cancelled = false;
     const refreshCompanionAvailability = async () => {
       try {
@@ -385,7 +408,7 @@ export function SettingsPanel() {
     };
   }, []);
 
-  useEffect(() => {
+  useEffect((): void => {
     if (!settings) return;
     const monitorId = settings.accessibilityMonitorId;
     void invoke<TaskbarPosition | null>("cmd_get_taskbar_position", { monitorId }).then(
@@ -434,74 +457,6 @@ export function SettingsPanel() {
 
   const taskbarPosition = settings.taskbarPositionPreference === "top" ? "top" : "bottom";
 
-  const applyTaskbarPosition = async (position: TaskbarPosition) => {
-    const previous: TaskbarPosition =
-      settings.taskbarPositionPreference === "top" ? "top" : "bottom";
-    updateSettings({ taskbarPositionPreference: position });
-    try {
-      const result = await invoke<{
-        success: boolean;
-        applied: boolean;
-        message: string;
-        current?: TaskbarPosition | null;
-        open_taskbar_settings?: boolean;
-      }>("cmd_set_taskbar_position", {
-        position,
-        monitorId: settings.accessibilityMonitorId,
-      });
-      if (result.success) {
-        if (result.applied) {
-          notify.success(t("taskbarPositionApplied"));
-        }
-        return;
-      }
-      const actual: TaskbarPosition =
-        result.current === "top" || result.current === "bottom"
-          ? result.current
-          : previous;
-      updateSettings({ taskbarPositionPreference: actual });
-      notify.info(result.message || t("taskbarPositionUnsupported"));
-      if (result.open_taskbar_settings) {
-        void invoke("cmd_open_windows_settings", {
-          uri: "ms-settings:taskbar",
-        }).catch(() => {});
-      }
-    } catch {
-      updateSettings({ taskbarPositionPreference: previous });
-      notify.error(t("taskbarPositionFailed"));
-    }
-  };
-
-  const handleSaveProfile = async () => {
-    try {
-      await saveActiveProfile();
-      notify.success(t("profileSaved"));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : String(error));
-    }
-  };
-
-  const handleDeleteProfile = async () => {
-    if (!activeProfileFile) return;
-    if (!window.confirm(t("deleteProfileConfirm"))) return;
-    try {
-      await deleteProfileFile(activeProfileFile);
-      notify.success(t("profileDeleted"));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : String(error));
-    }
-  };
-
-  const handleWipeProfile = async () => {
-    if (!window.confirm(t("wipeProfileConfirm"))) return;
-    try {
-      await wipeActiveProfile();
-      notify.success(t("profileWiped"));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : String(error));
-    }
-  };
-
   return (
     <div
       className="flex h-full w-full flex-col overflow-hidden"
@@ -542,7 +497,7 @@ export function SettingsPanel() {
                 type="button"
                 className="rounded-lg px-3 py-1.5 text-sm"
                 style={{ backgroundColor: headerBg, color: headerText }}
-                onClick={() => void handleSaveProfile()}
+                onClick={() => void handleSaveProfile(saveActiveProfile, t)}
               >
                 {t("saveProfile")}
               </button>
@@ -550,7 +505,9 @@ export function SettingsPanel() {
                 type="button"
                 className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700"
                 style={{ backgroundColor: surface.insetBg }}
-                onClick={() => void handleDeleteProfile()}
+                onClick={() =>
+                  void handleDeleteProfile(activeProfileFile, deleteProfileFile, t)
+                }
                 disabled={!activeProfileFile}
               >
                 {t("deleteProfile")}
@@ -643,7 +600,15 @@ export function SettingsPanel() {
               {t("taskbarPosition")}
               <ThemedSelect
                 value={taskbarPosition}
-                onChange={(v) => void applyTaskbarPosition(v as TaskbarPosition)}
+                onChange={(v) =>
+                  void applyTaskbarPosition(
+                    v as TaskbarPosition,
+                    settings.taskbarPositionPreference,
+                    settings.accessibilityMonitorId,
+                    updateSettings,
+                    t,
+                  )
+                }
                 surface={surface}
               >
                 <option value="bottom">{t("taskbarPositionBottom")}</option>
@@ -1050,24 +1015,39 @@ export function SettingsPanel() {
                 <option value="latched">{t("fnKeyModeLatched")}</option>
               </ThemedSelect>
             </label>
-            <label className="mt-3 block text-sm" style={{ color: surface.panelText }}>
-              {t("groqApiKeyLabel")}
-              <input
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                className="mt-1 w-full rounded border px-2 py-1.5 text-sm outline-none"
-                style={{
-                  backgroundColor: surface.panelButtonBg,
-                  borderColor: surface.panelBorder,
-                  color: surface.panelText,
-                }}
-                value={settings.groqApiKey ?? ""}
-                onChange={(e) => void updateSettings({ groqApiKey: e.target.value })}
-                placeholder="gsk_…"
-              />
-              <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
-            </label>
+            <div className="mt-3">
+              <label
+                className="block text-sm"
+                htmlFor="settings-groq-api-key"
+                style={{ color: surface.panelText }}
+              >
+                {t("groqApiKeyLabel")}
+                <input
+                  id="settings-groq-api-key"
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="mt-1 w-full rounded border px-2 py-1.5 text-sm outline-none"
+                  style={{
+                    backgroundColor: surface.panelButtonBg,
+                    borderColor: surface.panelBorder,
+                    color: surface.panelText,
+                  }}
+                  value={settings.groqApiKey ?? ""}
+                  onChange={(e) => void updateSettings({ groqApiKey: e.target.value })}
+                  placeholder="gsk_…"
+                />
+                <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
+              </label>
+              <button
+                type="button"
+                className="mt-2 rounded-lg border px-3 py-2 text-sm"
+                style={secondaryButtonStyle}
+                onClick={() => openExternalLink(GROQ_API_KEYS_URL)}
+              >
+                {t("groqApiKeyLink")}
+              </button>
+            </div>
           </SettingsSection>
 
           {!isV1FeatureHidden("mouse") && (
@@ -1235,7 +1215,7 @@ export function SettingsPanel() {
               type="button"
               className="mt-3 w-full rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700"
               style={{ backgroundColor: surface.insetBg }}
-              onClick={() => void handleWipeProfile()}
+              onClick={() => void handleWipeProfile(wipeActiveProfile, t)}
             >
               {t("wipeProfile")}
             </button>

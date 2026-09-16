@@ -1,10 +1,20 @@
-import { type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 import { transparentOutlineStyle } from "../../lib/miniMode";
+import {
+  useKeyRepeat,
+  type KeyRepeatFireMeta,
+} from "../../hooks/useKeyRepeat";
 import { usePressableButton } from "../../hooks/usePressableButton";
 import type { TransparentKeyColor } from "../../lib/types";
+import { clearClickSuppress, handleClick as handleKeyButtonClick } from "./keyButtonUtils";
 
-interface KeyButtonProps {
+type KeyButtonProps = {
   label: ReactNode;
   width?: number;
   size: number;
@@ -23,8 +33,15 @@ interface KeyButtonProps {
   outlineColor?: TransparentKeyColor | string | null;
   /** Pin label to the bottom edge of the key (e.g. wide Space bar). */
   labelAlign?: "center" | "bottom";
-  onPress: () => void;
-}
+  /**
+   * When true, fire onPress on pointerdown and then on key-repeat timers
+   * instead of relying on click (which would double-fire after pointerup).
+   */
+  repeatOnHold?: boolean;
+  /** Called when a press-and-hold repeat ends (pointer up / leave / cancel). */
+  onHoldEnd?: () => void;
+  onPress: (meta?: KeyRepeatFireMeta) => void;
+};
 
 export function KeyButton({
   label,
@@ -43,26 +60,71 @@ export function KeyButton({
   transparent = false,
   outlineColor,
   labelAlign = "center",
+  repeatOnHold = false,
+  onHoldEnd,
   onPress,
 }: KeyButtonProps) {
-  const { pressedClass, pointerHandlers } = usePressableButton(active ?? false);
+  /** Suppress only the compatibility click for this pointer gesture. */
+  const suppressClickForPointerIdRef = useRef<number | null>(null);
+  const { pressedClass, pointerHandlers: pressableHandlers } = usePressableButton(
+    active ?? false,
+  );
+  const { pointerHandlers: repeatHandlers } = useKeyRepeat({
+    enabled: repeatOnHold && !disabled,
+    onFire: onPress,
+    onStop: onHoldEnd,
+  });
+
+  // Aborted holds (disable mid-hold) must not block a later keyboard click.
+  useEffect((): void => {
+    if (disabled || !repeatOnHold) {
+      suppressClickForPointerIdRef.current = null;
+    }
+  }, [disabled, repeatOnHold]);
+
+  const pointerHandlers = {
+    onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (repeatOnHold) {
+        suppressClickForPointerIdRef.current = event.pointerId;
+      }
+      pressableHandlers.onPointerDown();
+      repeatHandlers.onPointerDown?.(event);
+    },
+    onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      pressableHandlers.onPointerUp();
+      repeatHandlers.onPointerUp?.(event);
+      // Keep suppress until the compatibility click for this pointer arrives.
+      void event;
+    },
+    onPointerLeave: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      pressableHandlers.onPointerLeave();
+      repeatHandlers.onPointerLeave?.(event);
+      clearClickSuppress(suppressClickForPointerIdRef);
+    },
+    onPointerCancel: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      pressableHandlers.onPointerLeave();
+      repeatHandlers.onPointerCancel?.(event);
+      clearClickSuppress(suppressClickForPointerIdRef);
+    },
+  };
+
   const inGrid = gridColumn !== undefined && gridRow !== undefined;
   const alignBottom = labelAlign === "bottom";
 
   const sharedStyle = transparent
     ? {
-        ...transparentOutlineStyle({
-          active,
-          outlineColor,
-          color: textColor,
-        }),
-        fontSize,
-      }
-    : {
-        fontSize,
+      ...transparentOutlineStyle({
+        active,
+        outlineColor,
         color: textColor,
-        backgroundColor: bgColor,
-      };
+      }),
+      fontSize,
+    }
+    : {
+      fontSize,
+      color: textColor,
+      backgroundColor: bgColor,
+    };
 
   const buttonClass = transparent
     ? `ak-action-btn inline-flex ${alignBottom ? "items-end pb-1" : "items-center"} justify-center rounded-lg font-semibold transition active:scale-95 ${pressedClass}`
@@ -75,16 +137,16 @@ export function KeyButton({
       style={
         inGrid
           ? {
-              ...sharedStyle,
-              gridColumn,
-              gridRow,
-              minWidth: 0,
-              minHeight: 0,
-              alignSelf: "stretch",
-              justifySelf: "stretch",
-            }
+            ...sharedStyle,
+            gridColumn,
+            gridRow,
+            minWidth: 0,
+            minHeight: 0,
+            alignSelf: "stretch",
+            justifySelf: "stretch",
+          }
           : stretch
-          ? {
+            ? {
               ...sharedStyle,
               flex: `${width} 1 0`,
               minWidth: 0,
@@ -92,7 +154,7 @@ export function KeyButton({
               marginRight: spacing,
               marginBottom: spacing,
             }
-          : {
+            : {
               ...sharedStyle,
               width: size * width + spacing * (width - 1),
               height: size,
@@ -102,7 +164,15 @@ export function KeyButton({
       }
       disabled={disabled}
       aria-label={ariaLabel}
-      onClick={onPress}
+      onClick={(event) =>
+        handleKeyButtonClick(
+          event,
+          repeatOnHold,
+          suppressClickForPointerIdRef,
+          onPress,
+          onHoldEnd,
+        )
+      }
       onContextMenu={(e) => e.preventDefault()}
       {...pointerHandlers}
     >

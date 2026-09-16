@@ -7,6 +7,8 @@ export const es: Record<keyof typeof en, string> = {
 
   expand: "Expandir",
 
+  resizeWindowHeight: "Cambiar altura de la ventana",
+
   minimizeSection: "Minimizar",
 
   dockSection: "Anclar sección",
@@ -407,7 +409,9 @@ export const es: Record<keyof typeof en, string> = {
   groqApiKeyLabel: "Clave API Groq (dictado en la nube)",
 
   groqApiKeyHint:
-    "Necesaria para idiomas que Windows no admite (p. ej. griego). Clave gratuita en console.groq.com. También puedes definir la variable de entorno GROQ_API_KEY.",
+    "Necesaria para idiomas que Windows no admite (p. ej. griego). También puedes definir la variable de entorno GROQ_API_KEY.",
+
+  groqApiKeyLink: "Obtener clave API Groq gratuita",
 
   mute: "Silenciar",
 

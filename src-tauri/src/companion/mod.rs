@@ -60,10 +60,6 @@ impl CompanionBridge {
         &self.session
     }
 
-    pub fn preview_outbound(&self) -> Arc<PreviewOutbound> {
-        self.preview.clone()
-    }
-
     pub fn ui_state(&self) -> CompanionUiState {
         CompanionUiState {
             running: self.is_running(),

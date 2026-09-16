@@ -6,6 +6,8 @@ export const en = {
 
   expand: "Expand",
 
+  resizeWindowHeight: "Resize window height",
+
   minimizeSection: "Minimize",
 
   dockSection: "Dock section",
@@ -423,7 +425,9 @@ export const en = {
   groqApiKeyLabel: "Groq API key (cloud dictation)",
 
   groqApiKeyHint:
-    "Needed for languages Windows doesn’t support (e.g. Greek). Get a free key at console.groq.com. You can also set the GROQ_API_KEY environment variable.",
+    "Needed for languages Windows doesn’t support (e.g. Greek). You can also set the GROQ_API_KEY environment variable.",
+
+  groqApiKeyLink: "Get a free Groq API key",
 
   mute: "Mute",
 

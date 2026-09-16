@@ -43,6 +43,7 @@ import {
   clampWindowHeightRatio,
   computeContentHeightRatioFromSettings,
 } from "../lib/sectionLayouts";
+import { shouldApplyLiveWindowHeightRatio } from "../lib/windowHeightDrag";
 import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
 import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled, isInputPreviewActiveForMode } from "../lib/miniMode";
 import {
@@ -492,7 +493,9 @@ function heightRatioFromSettings(
   if (settings.windowHeightRatio == null) {
     return contentRatio;
   }
-  return Math.max(contentRatio, clampWindowHeightRatio(settings.windowHeightRatio));
+  // Explicit grip override wins — do not floor to contentRatio or shrink
+  // snaps back to full when all sections are visible.
+  return clampWindowHeightRatio(settings.windowHeightRatio);
 }
 
 /** Apply effective v1 chrome reads without wiping unrelated stored prefs. */
@@ -1237,10 +1240,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       ...partial,
       ...(partial.synthesizerOctaveCount !== undefined
         ? {
-            synthesizerOctaveCount: resolveSynthOctaveCount(
-              partial.synthesizerOctaveCount,
-            ),
-          }
+          synthesizerOctaveCount: resolveSynthOctaveCount(
+            partial.synthesizerOctaveCount,
+          ),
+        }
         : {}),
     };
     // Explicit undefined clears a persisted Teaching 1.0 (spread alone keeps the old value).
@@ -1547,15 +1550,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings, miniModeActive, musicTeachingEnabled } = get();
-    if (settings.collapsed || miniModeActive) return;
-    const heightRatio = Math.max(
-      computeContentHeightRatioFromSettings(
-        settings,
-        lessonSlotVisibleFromState(settings, musicTeachingEnabled),
-      ),
-      clampWindowHeightRatio(ratio),
-    );
+    const { settings, musicTeachingEnabled, miniModeActive } = get();
+    if (
+      !shouldApplyLiveWindowHeightRatio({
+        collapsed: settings.collapsed,
+        miniModeActive,
+      })
+    ) {
+      return;
+    }
+    // Grip maps cursor → ratio directly. Do not floor to contentRatio here —
+    // that locked full layouts at 1.0 and made the handle feel stuck/weird.
+    const heightRatio = clampWindowHeightRatio(ratio);
     if (
       liveHeightRatioPreview !== null &&
       Math.abs(liveHeightRatioPreview - heightRatio) < 0.002
@@ -1587,15 +1593,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
     liveHeightRatioPreview = pending;
     liveHeightRatioInFlight = true;
     try {
+      const mini = get().miniModeActive;
       await invoke("cmd_apply_window_layout", {
         monitorId: latest.accessibilityMonitorId,
         collapsed: false,
         collapsedDictation: false,
         heightRatio: pending,
-        fullWorkArea: teachingFullWorkAreaActive(
-          latest,
-          get().musicTeachingEnabled,
-        ),
+        miniMode: mini,
+        miniKeyboardVisible: mini ? get().miniModeKeyboardVisible : false,
+        miniKeyboardHeightRatio: mini ? pending : undefined,
+        fullWorkArea: teachingFullWorkAreaActive(latest, musicTeachingEnabled),
       });
     } catch {
       // Rejected ratio must not block near-equal retries.
@@ -2469,9 +2476,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       ...(active
         ? { languageLessonPlaying: false, languageListAuthoringField: "title" as const }
         : {
-            languageListAuthoringField: "title" as const,
-            languageListAuthoringHandlers: null,
-          }),
+          languageListAuthoringField: "title" as const,
+          languageListAuthoringHandlers: null,
+        }),
     });
     void get().syncWindowFocusable();
   },
