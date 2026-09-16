@@ -62,7 +62,7 @@ const LanguageTeachingBody = () => {
   );
 };
 
-function renderTeachingLessonPanel(lesson: TeachingLesson) {
+const renderTeachingLessonPanel = (lesson: TeachingLesson) => {
   switch (lesson) {
     case "music":
       return <MusicLessonPanel />;
@@ -75,9 +75,9 @@ function renderTeachingLessonPanel(lesson: TeachingLesson) {
       return _exhaustive;
     }
   }
-}
+};
 
-function InputRowPanel() {
+const InputRowPanel = () => {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const mouseSide = settings.mousePanelSide ?? "right";
@@ -104,7 +104,7 @@ function InputRowPanel() {
       />
     </div>
   );
-}
+};
 
 export function AppShell() {
   useLanguageLessonPhysicalKeyboard();
