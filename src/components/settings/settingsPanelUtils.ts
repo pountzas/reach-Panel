@@ -11,23 +11,23 @@ type TaskbarPositionResult = {
   open_taskbar_settings?: boolean;
 };
 
-export async function handleSaveProfile(
+export const handleSaveProfile = async (
   saveActiveProfile: () => Promise<void>,
   t: (key: TranslationKey) => string,
-): Promise<void> {
+): Promise<void> => {
   try {
     await saveActiveProfile();
     notify.success(t("profileSaved"));
   } catch (error) {
     notify.error(error instanceof Error ? error.message : String(error));
   }
-}
+};
 
-export async function handleDeleteProfile(
+export const handleDeleteProfile = async (
   activeProfileFile: string | null | undefined,
   deleteProfileFile: (filename: string) => Promise<void>,
   t: (key: TranslationKey) => string,
-): Promise<void> {
+): Promise<void> => {
   if (!activeProfileFile) return;
   if (!window.confirm(t("deleteProfileConfirm"))) return;
   try {
@@ -36,12 +36,12 @@ export async function handleDeleteProfile(
   } catch (error) {
     notify.error(error instanceof Error ? error.message : String(error));
   }
-}
+};
 
-export async function handleWipeProfile(
+export const handleWipeProfile = async (
   wipeActiveProfile: () => Promise<void>,
   t: (key: TranslationKey) => string,
-): Promise<void> {
+): Promise<void> => {
   if (!window.confirm(t("wipeProfileConfirm"))) return;
   try {
     await wipeActiveProfile();
@@ -49,15 +49,15 @@ export async function handleWipeProfile(
   } catch (error) {
     notify.error(error instanceof Error ? error.message : String(error));
   }
-}
+};
 
-export async function applyTaskbarPosition(
+export const applyTaskbarPosition = async (
   position: TaskbarPosition,
   currentPreference: TaskbarPosition | string | null | undefined,
   monitorId: number | null | undefined,
   updateSettings: (patch: { taskbarPositionPreference: TaskbarPosition }) => void,
   t: (key: TranslationKey) => string,
-): Promise<void> {
+): Promise<void> => {
   const previous: TaskbarPosition = currentPreference === "top" ? "top" : "bottom";
   updateSettings({ taskbarPositionPreference: position });
   try {
@@ -86,4 +86,4 @@ export async function applyTaskbarPosition(
     updateSettings({ taskbarPositionPreference: previous });
     notify.error(t("taskbarPositionFailed"));
   }
-}
+};
