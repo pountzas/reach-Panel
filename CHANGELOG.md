@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.14.0 (2026-09-16)
+
+## What's Changed
+* fix: Greek Caps, height grips, Groq link, About icons, Backspace repeat by @pountzas in https://github.com/pountzas/reach-Panel/pull/159
+* fix: PR #159 review findings (backspace gate, a11y, caps, rust warnings) by @pountzas in https://github.com/pountzas/reach-Panel/pull/161
+* fix: Greek Caps, height grips, Groq link, About icons, Backspace repeat by @pountzas in https://github.com/pountzas/reach-Panel/pull/160
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.13.2...v0.14.0
+
 ## 0.13.2 (2026-09-11)
 
 ## What's Changed
