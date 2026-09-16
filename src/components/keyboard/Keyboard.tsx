@@ -16,10 +16,7 @@ import {
   resolveOnscreenLayout,
 } from "../../lib/keyboardLayouts";
 import { greekComposeEnabled } from "../../lib/keyboardCharacterInput";
-import {
-  greekTranslateFallback,
-  type LayoutKeyTranslation,
-} from "../../lib/layoutKeyTranslation";
+import type { LayoutKeyTranslation } from "../../lib/layoutKeyTranslation";
 import {
   createSerialCoalesceGate,
   type SerialCoalesceGate,
@@ -36,7 +33,12 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
 import { isTransparentUiActive, transparentKeyPalette } from "../../lib/miniMode";
 import type { OnscreenLayout } from "../../lib/types";
-import { clearModifiersAfterKey } from "./keyboardUtils";
+import {
+  clearModifiersAfterKey,
+  greekTranslateOptions,
+  inject,
+  openLanguagePicker,
+} from "./keyboardUtils";
 
 export function Keyboard() {
   const settings = useAppStore((s) => s.settings);
@@ -183,11 +185,6 @@ export function Keyboard() {
     dictateAriaLabel = `${dictateAriaLabel}. ${t("dictationGroqRemainingToday")} ${groqRemainingPercent}%`;
   }
 
-  const openLanguagePicker = async () => {
-    await loadInputMethods();
-    setLanguagePickerOpen(!languagePickerOpen);
-  };
-
   const translateLayoutKey = async (physicalKey: string): Promise<LayoutKeyTranslation> =>
     invoke<LayoutKeyTranslation>("cmd_translate_layout_key", {
       physicalKey,
@@ -195,18 +192,6 @@ export function Keyboard() {
       capsLock: physicalKeyState.capsLock,
       hkl: physicalKeyState.systemHkl || null,
     });
-
-  const greekTranslateOptions = (keyDef: KeyDef) => ({
-    physicalKey: keyDef.physicalKey,
-    shift: shiftActive,
-    fallbackOutput: greekTranslateFallback(
-      keyDef,
-      physicalKeyState.capsLock,
-      shiftActive,
-      fnActive,
-      typingLocale,
-    ),
-  });
 
   const handleKey = async (
     keyDef: KeyDef,
@@ -225,7 +210,11 @@ export function Keyboard() {
     }
 
     if (key === "langswitch") {
-      await openLanguagePicker();
+      await openLanguagePicker(
+        loadInputMethods,
+        languagePickerOpen,
+        setLanguagePickerOpen,
+      );
       await pollError();
       return;
     }
@@ -282,7 +271,13 @@ export function Keyboard() {
       const usedFnLang = fnActive && isFnMappedKey(keyDef.key);
       if (greekKeyboardActive && keyDef.physicalKey) {
         const translation = await translateLayoutKey(keyDef.physicalKey);
-        const translateOptions = greekTranslateOptions(keyDef);
+        const translateOptions = greekTranslateOptions(
+          keyDef,
+          physicalKeyState.capsLock,
+          shiftActive,
+          fnActive,
+          typingLocale,
+        );
         if (languageListAuthoringActive) {
           authoringHandlers!.layoutTranslation(translation, translateOptions);
         } else {
@@ -343,7 +338,16 @@ export function Keyboard() {
       const usedFnFw = fnActive && isFnMappedKey(keyDef.key);
       if (greekFreeWriteActive && keyDef.physicalKey) {
         const translation = await translateLayoutKey(keyDef.physicalKey);
-        applyFreeWriteLayoutTranslation(translation, greekTranslateOptions(keyDef));
+        applyFreeWriteLayoutTranslation(
+          translation,
+          greekTranslateOptions(
+            keyDef,
+            physicalKeyState.capsLock,
+            shiftActive,
+            fnActive,
+            typingLocale,
+          ),
+        );
         clearModifiersAfterKey(
           settings.fnKeyMode,
           activeModifiers,
@@ -437,7 +441,16 @@ export function Keyboard() {
     const usedFn = fnActive && isFnMappedKey(keyDef.key);
     if (greekKeyboardActive && keyDef.physicalKey) {
       const translation = await translateLayoutKey(keyDef.physicalKey);
-      const inject = applyTypedLayoutTranslation(translation, greekTranslateOptions(keyDef));
+      const inject = applyTypedLayoutTranslation(
+        translation,
+        greekTranslateOptions(
+          keyDef,
+          physicalKeyState.capsLock,
+          shiftActive,
+          fnActive,
+          typingLocale,
+        ),
+      );
       if (inject) {
         await invoke("cmd_press_key", {
           request: {
@@ -596,12 +609,11 @@ export function Keyboard() {
                   }
                   onPress={(meta) => {
                     if (isBackspace) {
-                      const inject = () =>
-                        handleKey(k, { deferSuggestions: true });
+                      const runInject = inject(handleKey, k);
                       if (meta?.repeat) {
-                        backspaceInjectGate.coalesce(inject);
+                        backspaceInjectGate.coalesce(runInject);
                       } else {
-                        backspaceInjectGate.enqueue(inject);
+                        backspaceInjectGate.enqueue(runInject);
                       }
                       return;
                     }

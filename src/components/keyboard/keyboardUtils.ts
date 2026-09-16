@@ -1,3 +1,5 @@
+import type { KeyDef } from "../../lib/keyboardLayouts";
+import { greekTranslateFallback } from "../../lib/layoutKeyTranslation";
 import type { FnKeyMode } from "../../lib/types";
 
 export function clearModifiersAfterKey(
@@ -12,4 +14,43 @@ export function clearModifiersAfterKey(
     return;
   }
   if (activeModifiers.length || usedFn) clearSticky();
+}
+
+export function greekTranslateOptions(
+  keyDef: KeyDef,
+  capsLock: boolean,
+  shiftActive: boolean,
+  fnActive: boolean,
+  typingLocale: string,
+) {
+  return {
+    physicalKey: keyDef.physicalKey,
+    shift: shiftActive,
+    fallbackOutput: greekTranslateFallback(
+      keyDef,
+      capsLock,
+      shiftActive,
+      fnActive,
+      typingLocale,
+    ),
+  };
+}
+
+export function inject(
+  handleKey: (
+    keyDef: KeyDef,
+    options?: { deferSuggestions?: boolean },
+  ) => void | Promise<void>,
+  keyDef: KeyDef,
+): () => void | Promise<void> {
+  return () => handleKey(keyDef, { deferSuggestions: true });
+}
+
+export async function openLanguagePicker(
+  loadInputMethods: () => Promise<void>,
+  languagePickerOpen: boolean,
+  setLanguagePickerOpen: (open: boolean) => void,
+): Promise<void> {
+  await loadInputMethods();
+  setLanguagePickerOpen(!languagePickerOpen);
 }
