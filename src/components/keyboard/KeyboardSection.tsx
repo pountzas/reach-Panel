@@ -23,6 +23,7 @@ import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, 
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
   isSynthesizerUiActive,
+  isTeachingSessionActive,
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
 
@@ -53,9 +54,14 @@ export function KeyboardSection() {
       teachingLesson,
     ) && !miniModeActive;
   const compact = settings.inputAreaCompact;
+  const teachingSessionActive = isTeachingSessionActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
   const showInputPreview =
     !showSynth &&
     !compact &&
+    !teachingSessionActive &&
     !companionSessionLive &&
     hasInputTarget &&
     isInputPreviewActiveForMode(settings, miniModeActive);
@@ -65,7 +71,11 @@ export function KeyboardSection() {
     settings,
   });
   const showSuggestions =
-    !showSynth && settings.suggestionsVisible && !compact && !languageLessonActive;
+    !showSynth &&
+    settings.suggestionsVisible &&
+    !compact &&
+    !teachingSessionActive &&
+    !languageLessonActive;
   const hasSuggestionChips = showSuggestions && suggestionCount > 0;
   const transparentUi = isTransparentUiActive(settings, miniModeActive);
   const showTransparentToggle = miniModeActive && !showSynth && !compact;
