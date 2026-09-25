@@ -1,7 +1,7 @@
 # Teaching mode: hide preview / suggestions — Design Spec
 
 **Date:** 2026-09-25  
-**Status:** Draft (awaiting review)  
+**Status:** Approved for implementation  
 **Issue:** https://github.com/pountzas/reach-Panel/issues/167  
 **Scope:** While a Teaching session is active, hide the live input preview strip and suggestions row for language and math (keyboard layout), without changing Maximize / compact or saved profiles
 
