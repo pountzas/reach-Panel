@@ -19,6 +19,8 @@ export const de: Record<keyof typeof en, string> = {
 
   close: "Schließen",
 
+  cancel: "Abbrechen",
+
   add: "Hinzufügen",
 
   appNotInstalled: "{app} ist nicht installiert.",

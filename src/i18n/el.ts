@@ -22,6 +22,8 @@ export const el: Record<keyof typeof en, string> = {
 
   close: "Κλείσιμο",
 
+  cancel: "Ακύρωση",
+
   add: "Προσθήκη",
 
   appNotInstalled: "Το {app} δεν είναι εγκατεστημένο.",

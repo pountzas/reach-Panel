@@ -18,6 +18,8 @@ export const en = {
 
   close: "Close",
 
+  cancel: "Cancel",
+
   add: "Add",
 
   appNotInstalled: "{app} is not installed.",
