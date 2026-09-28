@@ -19,6 +19,8 @@ export const fr: Record<keyof typeof en, string> = {
 
   close: "Fermer",
 
+  cancel: "Annuler",
+
   add: "Ajouter",
 
   appNotInstalled: "{app} n’est pas installé.",
