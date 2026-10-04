@@ -1,15 +1,15 @@
 {
-  "version": "0.14.0",
+  "version": "0.15.0",
   "notes": "",
-  "pub_date": "2026-09-16T23:16:39.390Z",
+  "pub_date": "2026-10-04T21:58:36.316Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.14.0/ReachPanel_0.14.0_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0hKaGUyaE8rWXR4b0xNVjBpSGpNYXc0S2QzZEdiWncvUkZmTG00Rm5xc1BlZElGOCtUKzVqS3RiM2pqNjBiZ2FKbldCOW9DRUE0YlZxYVc3OW56OHdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5NjAwNTQ4CWZpbGU6UmVhY2hQYW5lbF8wLjE0LjBfeDY0LXNldHVwLmV4ZQplYnpZWWtrayt3OWNCd05KWGJqVTRlWVpqU1JhSDVtNENvdjVlWFY0cWtqWHBkam8ydS9qejdHVUwvQWxYb21KWTdubThiYmsxTVE1QUpGaXY3VlpCdz09Cg=="
+      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.15.0/ReachPanel_0.15.0_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0U0YnNIU1BBNnd3V2YwWS9Kay9hR1Vjb2lmclptYVhkbnhodGFDUmZQVkppUkc0Mk93cGplTzVyL3JiOHBJWmNpaWhpYVViVDdGaXhYTUw2dDQ0dFEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxMTUxMDI3CWZpbGU6UmVhY2hQYW5lbF8wLjE1LjBfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuMTUuMApMVmJHMmd4VlQ0QkNNTUNndjg1ZHQ2UGVrbU5CVWduSEdBUkdxYzloWTJpamRnMm02dmhpdDJIUHltaVo4WXpTODRVTG80NlhPOUZERFZ4d2VHWVZDdz09Cg=="
     },
     "windows-x86_64-nsis": {
-      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.14.0/ReachPanel_0.14.0_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0hKaGUyaE8rWXR4b0xNVjBpSGpNYXc0S2QzZEdiWncvUkZmTG00Rm5xc1BlZElGOCtUKzVqS3RiM2pqNjBiZ2FKbldCOW9DRUE0YlZxYVc3OW56OHdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5NjAwNTQ4CWZpbGU6UmVhY2hQYW5lbF8wLjE0LjBfeDY0LXNldHVwLmV4ZQplYnpZWWtrayt3OWNCd05KWGJqVTRlWVpqU1JhSDVtNENvdjVlWFY0cWtqWHBkam8ydS9qejdHVUwvQWxYb21KWTdubThiYmsxTVE1QUpGaXY3VlpCdz09Cg=="
+      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.15.0/ReachPanel_0.15.0_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0U0YnNIU1BBNnd3V2YwWS9Kay9hR1Vjb2lmclptYVhkbnhodGFDUmZQVkppUkc0Mk93cGplTzVyL3JiOHBJWmNpaWhpYVViVDdGaXhYTUw2dDQ0dFEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxMTUxMDI3CWZpbGU6UmVhY2hQYW5lbF8wLjE1LjBfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuMTUuMApMVmJHMmd4VlQ0QkNNTUNndjg1ZHQ2UGVrbU5CVWduSEdBUkdxYzloWTJpamRnMm02dmhpdDJIUHltaVo4WXpTODRVTG80NlhPOUZERFZ4d2VHWVZDdz09Cg=="
     }
   }
 }
