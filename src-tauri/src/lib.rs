@@ -1254,6 +1254,13 @@ pub fn run() {
                 let _ = window.set_shadow(false);
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
+                if let Ok(hwnd) = window.hwnd() {
+                    if let Err(e) =
+                        input::input_preview::exclude_window_from_capture(hwnd.0 as isize)
+                    {
+                        eprintln!("Failed to exclude main window from capture: {e}");
+                    }
+                }
                 focus_target::init(app.handle().clone());
                 input::input_preview::init(app.handle().clone());
             }

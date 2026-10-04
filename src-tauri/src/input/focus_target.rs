@@ -688,11 +688,14 @@ fn reevaluate_input_focus() {
 }
 
 fn publish_input_target_bounds(focused: bool) {
-    let next = if focused {
+    let live = if focused {
         query_focused_input_bounds()
     } else {
         None
     };
+    let sticky = TARGET_BOUNDS.lock().ok().and_then(|g| *g);
+    // Keep last strip while a typing HWND remains (even if UIA focus briefly leaves).
+    let next = resolve_bounds_with_sticky(live, sticky, has_input_target());
     let changed = if let Ok(mut guard) = TARGET_BOUNDS.lock() {
         let changed = *guard != next;
         if changed {
@@ -707,8 +710,44 @@ fn publish_input_target_bounds(focused: bool) {
     }
 }
 
+/// Prefer a fresh UIA strip.
+///
+/// `allow_sticky`: reuse the last good strip only when geometry is still trustworthy
+/// (e.g. ReachPanel owns foreground but the external typing HWND remains). During
+/// window drag/scroll UIA misses, sticky screen coords are stale — callers should
+/// hold the last JPEG instead of BitBlt'ing the wrong place.
+pub(crate) fn resolve_bounds_with_sticky(
+    live: Option<ScreenRect>,
+    sticky: Option<ScreenRect>,
+    allow_sticky: bool,
+) -> Option<ScreenRect> {
+    if let Some(live) = live {
+        return Some(live);
+    }
+    if allow_sticky {
+        sticky
+    } else {
+        None
+    }
+}
+
+fn foreground_is_ours() -> bool {
+    unsafe { is_our_window(GetForegroundWindow()) }
+}
+
 pub fn get_input_target_bounds() -> Option<ScreenRect> {
-    query_focused_input_bounds()
+    let live = query_focused_input_bounds();
+    if let Some(live) = live {
+        if let Ok(mut guard) = TARGET_BOUNDS.lock() {
+            *guard = Some(live);
+        }
+        return Some(live);
+    }
+    // ReachPanel foreground: field geometry usually unchanged; sticky + WDA capture
+    // still shows the underlying input. Otherwise return None → KeepLastFrame.
+    let allow_sticky = has_input_target() && foreground_is_ours();
+    let sticky = TARGET_BOUNDS.lock().ok().and_then(|g| *g);
+    resolve_bounds_with_sticky(None, sticky, allow_sticky)
 }
 
 fn query_focused_input_bounds() -> Option<ScreenRect> {
@@ -1155,9 +1194,10 @@ where
 mod tests {
     use super::{
         classify_aria_role, is_editable_class, is_last_real_text_focus_live, line_strip_bounds,
-        satellite_matches_remembered_owner, should_retain_text_focus, uia_control_is_text_input,
-        uia_signals_are_autocomplete_satellite, AriaRoleKind, ScreenRect, UiaTextInputSignals,
-        LAST_REAL_TEXT_FOCUS_TTL, LINE_STRIP_HEIGHT, LINE_STRIP_WIDTH,
+        resolve_bounds_with_sticky, satellite_matches_remembered_owner, should_retain_text_focus,
+        uia_control_is_text_input, uia_signals_are_autocomplete_satellite, AriaRoleKind,
+        ScreenRect, UiaTextInputSignals, LAST_REAL_TEXT_FOCUS_TTL, LINE_STRIP_HEIGHT,
+        LINE_STRIP_WIDTH,
     };
     use std::time::{Duration, Instant};
 
@@ -1265,6 +1305,21 @@ mod tests {
     #[test]
     fn line_strip_neither_uia_nor_caret_returns_none() {
         assert_eq!(line_strip_bounds(None, None), None);
+    }
+
+    #[test]
+    fn sticky_bounds_only_when_allowed() {
+        let sticky = rect(40, 50, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT);
+        assert_eq!(
+            resolve_bounds_with_sticky(None, Some(sticky), true),
+            Some(sticky)
+        );
+        assert_eq!(resolve_bounds_with_sticky(None, Some(sticky), false), None);
+        let live = rect(80, 90, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT);
+        assert_eq!(
+            resolve_bounds_with_sticky(Some(live), Some(sticky), false),
+            Some(live)
+        );
     }
 
     fn signals(
