@@ -20,9 +20,9 @@ use windows::Win32::UI::Accessibility::{
     CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
     IUIAutomationTextPattern2, IUIAutomationTextRange, IUIAutomationValuePattern, SetWinEventHook,
     TextPatternRangeEndpoint_End, TextPatternRangeEndpoint_Start, TextUnit_Character,
-    UIA_ComboBoxControlTypeId, UIA_DocumentControlTypeId, UIA_EditControlTypeId,
-    UIA_ListControlTypeId, UIA_ListItemControlTypeId, UIA_TextPattern2Id, UIA_TextPatternId,
-    UIA_ValuePatternId, HWINEVENTHOOK, UIA_CONTROLTYPE_ID,
+    UIA_ComboBoxControlTypeId, UIA_CustomControlTypeId, UIA_DocumentControlTypeId,
+    UIA_EditControlTypeId, UIA_GroupControlTypeId, UIA_ListControlTypeId, UIA_ListItemControlTypeId,
+    UIA_TextPattern2Id, UIA_TextPatternId, UIA_ValuePatternId, HWINEVENTHOOK, UIA_CONTROLTYPE_ID,
 };
 use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -77,6 +77,8 @@ pub struct UiaTextInputSignals {
     /// Chromium reports a page-level Document even when no text field is focused.
     pub is_chromium_document: bool,
     pub aria_role: AriaRoleKind,
+    /// True when TextPattern or TextPattern2 is available (contenteditable hosts).
+    pub has_text_pattern: bool,
 }
 
 /// Maps an ARIA role string from UIA (`CurrentAriaRole`) to a classifier bucket.
@@ -98,6 +100,26 @@ pub fn classify_aria_role(role: &str) -> AriaRoleKind {
 
 /// Pure classifier for UIA control signals (unit-tested without live UIA).
 pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
+    let ty = UIA_CONTROLTYPE_ID(signals.control_type);
+
+    // Chromium contenteditable roots (YouTube comments, etc.) are exposed as
+    // Group with aria role "group" plus TextPattern — not Edit/textbox.
+    // Detect them before the NotText landmark reject.
+    if signals.has_text_pattern && ty == UIA_GroupControlTypeId {
+        return true;
+    }
+    // Some hosts use Custom + TextPattern for the same pattern; still reject
+    // hard landmarks (main/button/…) that happen to expose TextPattern.
+    if signals.has_text_pattern
+        && ty == UIA_CustomControlTypeId
+        && !matches!(
+            signals.aria_role,
+            AriaRoleKind::NotText | AriaRoleKind::AutocompletePopup
+        )
+    {
+        return true;
+    }
+
     match signals.aria_role {
         AriaRoleKind::NotText | AriaRoleKind::AutocompletePopup => return false,
         AriaRoleKind::TextInput => return true,
@@ -105,7 +127,6 @@ pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
         AriaRoleKind::Unspecified => {}
     }
 
-    let ty = UIA_CONTROLTYPE_ID(signals.control_type);
     if ty == UIA_EditControlTypeId {
         return true;
     }
@@ -514,6 +535,17 @@ fn uia_element_value_writable(element: &IUIAutomationElement) -> bool {
     }
 }
 
+fn uia_element_has_text_pattern(element: &IUIAutomationElement) -> bool {
+    unsafe {
+        element
+            .GetCurrentPatternAs::<IUIAutomationTextPattern2>(UIA_TextPattern2Id)
+            .is_ok()
+            || element
+                .GetCurrentPatternAs::<IUIAutomationTextPattern>(UIA_TextPatternId)
+                .is_ok()
+    }
+}
+
 fn remember_hwnd_as_target(hwnd: HWND) {
     if !is_valid_typing_target(hwnd) {
         return;
@@ -554,6 +586,7 @@ fn uia_focused_is_text_input() -> Option<bool> {
             value_writable: uia_element_value_writable(&element),
             is_chromium_document: is_chromium_class(&native_class),
             aria_role: uia_element_aria_role(&element),
+            has_text_pattern: uia_element_has_text_pattern(&element),
         };
         let is_text = uia_control_is_text_input(signals);
         if is_text {
@@ -1240,11 +1273,22 @@ mod tests {
         is_chromium_document: bool,
         aria_role: AriaRoleKind,
     ) -> UiaTextInputSignals {
+        signals_with_text_pattern(control_type, value_writable, is_chromium_document, aria_role, false)
+    }
+
+    fn signals_with_text_pattern(
+        control_type: i32,
+        value_writable: bool,
+        is_chromium_document: bool,
+        aria_role: AriaRoleKind,
+        has_text_pattern: bool,
+    ) -> UiaTextInputSignals {
         UiaTextInputSignals {
             control_type,
             value_writable,
             is_chromium_document,
             aria_role,
+            has_text_pattern,
         }
     }
 
@@ -1302,6 +1346,27 @@ mod tests {
             true,
             false,
             AriaRoleKind::TextInput,
+        )));
+    }
+
+    #[test]
+    fn uia_youtube_comment_contenteditable_group_is_text_input() {
+        // Chromium exposes contenteditable roots as Group + aria role "group"
+        // with TextPattern (YouTube #contenteditable-root "Add a comment...").
+        // role=group is NotText for landmarks, so TextPattern must tip it over.
+        assert!(uia_control_is_text_input(signals_with_text_pattern(
+            50026, // UIA_GroupControlTypeId
+            false,
+            true,
+            AriaRoleKind::NotText,
+            true,
+        )));
+        // A plain Group landmark without TextPattern stays rejected.
+        assert!(!uia_control_is_text_input(signals(
+            50026,
+            false,
+            true,
+            AriaRoleKind::NotText,
         )));
     }
 
