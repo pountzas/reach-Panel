@@ -5,6 +5,25 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.15.0 (2026-10-04)
+
+## What's Changed
+* fix: wait for Backspace inject gate before suggestions by @pountzas in https://github.com/pountzas/reach-Panel/pull/163
+* Teaching mode: hide preview/suggestions during session by @pountzas in https://github.com/pountzas/reach-Panel/pull/170
+* Free write: themed centered modal for Clear all confirmation by @pountzas in https://github.com/pountzas/reach-Panel/pull/173
+* fix: hide Teaching height grip and pad Mini Mode toolbar by @pountzas in https://github.com/pountzas/reach-Panel/pull/180
+* feat: remove on-screen layout override; follow Windows in Settings by @pountzas in https://github.com/pountzas/reach-Panel/pull/179
+* chore(deps): bump actions/setup-node from 4 to 7 by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/72
+* chore(deps): bump softprops/action-gh-release from 2 to 3 by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/138
+* chore(deps): bump expo/expo-github-action from 8 to 9 by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/139
+* chore(deps): bump the npm-minor-and-patch group across 1 directory with 14 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/171
+* chore(deps): bump the cargo-minor-and-patch group across 1 directory with 6 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/172
+* feat: launch ReachPanel at Windows sign-in (#174) by @pountzas in https://github.com/pountzas/reach-Panel/pull/182
+* dev → main: CI check after Dependabot bumps by @pountzas in https://github.com/pountzas/reach-Panel/pull/181
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.14.0...v0.15.0
+
 ## 0.14.0 (2026-09-16)
 
 ## What's Changed
