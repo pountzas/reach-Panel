@@ -274,6 +274,12 @@ export const en = {
 
   appLanguageHint: "Menus, phrases, and speech",
 
+  launchAtWindowsSignIn: "Start ReachPanel when Windows starts",
+
+  launchAtWindowsSignInHint: "Turn off to remove ReachPanel from Windows startup",
+
+  launchAtWindowsSignInError: "Could not update Windows startup",
+
   typingLanguage: "Typing language",
 
   typingLanguageHint: "Windows keyboard language used for typing",

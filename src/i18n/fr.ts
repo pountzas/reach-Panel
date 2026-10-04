@@ -260,6 +260,10 @@ export const fr: Record<keyof typeof en, string> = {
 
   appLanguageHint: "Menus, phrases et parole",
 
+  launchAtWindowsSignIn: "Démarrer ReachPanel à la connexion Windows",
+  launchAtWindowsSignInHint: "Désactiver retire ReachPanel du démarrage Windows",
+  launchAtWindowsSignInError: "Impossible de mettre à jour le démarrage Windows",
+
   typingLanguage: "Langue de saisie",
 
   typingLanguageHint: "Langue du clavier Windows pour la saisie",
