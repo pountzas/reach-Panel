@@ -266,9 +266,7 @@ export const it: Record<keyof typeof en, string> = {
 
   onscreenLayout: "Layout sullo schermo",
 
-  onscreenLayoutHint: "Disposizione dei tasti sulla tastiera virtuale",
-
-  onscreenLayoutAuto: "Auto (segui Windows)",
+  onscreenLayoutHint: "Corrisponde al layout tastiera Windows attivo",
 
   languageEnglish: "Inglese",
 

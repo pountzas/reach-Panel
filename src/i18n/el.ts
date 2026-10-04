@@ -269,9 +269,7 @@ export const el: Record<keyof typeof en, string> = {
 
   onscreenLayout: "Διάταξη οθόνης",
 
-  onscreenLayoutHint: "Διάταξη πλήκτρων στο εικονικό πληκτρολόγιο",
-
-  onscreenLayoutAuto: "Αυτόματο (ακολουθεί Windows)",
+  onscreenLayoutHint: "Ακολουθεί την ενεργή διάταξη πληκτρολογίου των Windows",
 
   languageEnglish: "English",
 

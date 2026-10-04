@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Flag } from "svg-flags";
-import type { InputMethod, OnscreenLayoutOption } from "../../lib/keyboardLayouts";
+import type { InputMethod } from "../../lib/keyboardLayouts";
 import {
   flagCodeForLanguage,
   languageDisplayCode,
-  ONSCREEN_LAYOUT_OPTIONS,
 } from "../../lib/keyboardLayouts";
 import { computeLanguagePickerPosition } from "../../lib/languagePickerPosition";
 
@@ -13,34 +12,26 @@ interface LanguagePickerProps {
   anchorRef: RefObject<HTMLElement | null>;
   methods: InputMethod[];
   activeHkl: number;
-  onscreenLayout: OnscreenLayoutOption;
   onSelectLanguage: (method: InputMethod) => void;
-  onSelectLayout: (layout: OnscreenLayoutOption) => void;
   onClose: () => void;
   fontSize: number;
   textColor: string;
   bgColor: string;
   mutedColor: string;
-  layoutSectionLabel: string;
   languageSectionLabel: string;
-  autoLayoutLabel: string;
 }
 
 export function LanguagePicker({
   anchorRef,
   methods,
   activeHkl,
-  onscreenLayout,
   onSelectLanguage,
-  onSelectLayout,
   onClose,
   fontSize,
   textColor,
   bgColor,
   mutedColor,
-  layoutSectionLabel,
   languageSectionLabel,
-  autoLayoutLabel,
 }: LanguagePickerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
@@ -68,7 +59,7 @@ export function LanguagePicker({
 
   useLayoutEffect(() => {
     reposition();
-  }, [reposition, methods.length, onscreenLayout]);
+  }, [reposition, methods.length]);
 
   useEffect(() => {
     window.addEventListener("resize", reposition);
@@ -116,7 +107,7 @@ export function LanguagePicker({
         fontSize: Math.max(12, fontSize - 2),
       }}
       role="dialog"
-      aria-label="Keyboard language and layout"
+      aria-label="Keyboard language"
     >
       <div
         className="px-3 py-1.5 text-[0.75em] font-semibold uppercase tracking-wide"
@@ -163,30 +154,6 @@ export function LanguagePicker({
           );
         })
       )}
-
-      <div
-        className="mt-1 border-t px-3 py-1.5 text-[0.75em] font-semibold uppercase tracking-wide"
-        style={{ borderColor: mutedColor, color: mutedColor }}
-      >
-        {layoutSectionLabel}
-      </div>
-      {ONSCREEN_LAYOUT_OPTIONS.map((layout) => {
-        const selected = onscreenLayout === layout;
-        const label = layout === "auto" ? autoLayoutLabel : layout;
-        return (
-          <button
-            key={layout}
-            type="button"
-            role="option"
-            aria-selected={selected}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left hover:brightness-95"
-            style={itemStyle(selected)}
-            onClick={() => onSelectLayout(layout)}
-          >
-            <span className="min-w-0 flex-1 truncate">{label}</span>
-          </button>
-        );
-      })}
     </div>
   );
 

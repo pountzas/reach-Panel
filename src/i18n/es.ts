@@ -266,9 +266,7 @@ export const es: Record<keyof typeof en, string> = {
 
   onscreenLayout: "Diseño en pantalla",
 
-  onscreenLayoutHint: "Disposición de teclas del teclado virtual",
-
-  onscreenLayoutAuto: "Auto (seguir Windows)",
+  onscreenLayoutHint: "Coincide con el diseño de teclado activo de Windows",
 
   languageEnglish: "English",
 

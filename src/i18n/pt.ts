@@ -266,9 +266,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   onscreenLayout: "Disposição no ecrã",
 
-  onscreenLayoutHint: "Disposição das teclas no teclado virtual",
-
-  onscreenLayoutAuto: "Auto (seguir Windows)",
+  onscreenLayoutHint: "Corresponde à disposição de teclado ativa do Windows",
 
   languageEnglish: "English",
 

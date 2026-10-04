@@ -266,9 +266,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   onscreenLayout: "Disposition à l’écran",
 
-  onscreenLayoutHint: "Disposition des touches du clavier virtuel",
-
-  onscreenLayoutAuto: "Auto (suivre Windows)",
+  onscreenLayoutHint: "Correspond à la disposition clavier Windows active",
 
   languageEnglish: "Anglais",
 

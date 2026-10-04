@@ -280,9 +280,7 @@ export const en = {
 
   onscreenLayout: "On-screen layout",
 
-  onscreenLayoutHint: "Key arrangement shown on the virtual keyboard",
-
-  onscreenLayoutAuto: "Auto (follow Windows)",
+  onscreenLayoutHint: "Matches the active Windows keyboard layout",
 
   languageEnglish: "English",
 

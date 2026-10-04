@@ -402,36 +402,29 @@ export const GREEK_ROWS: KeyDef[][] = [
   ],
 ];
 
-export const ONSCREEN_LAYOUT_OPTIONS = [
-  "auto",
+/** Named on-screen arrangements derived from Windows (no user override). */
+export const ONSCREEN_LAYOUTS = [
   "QWERTY",
   "QWERTZ",
   "AZERTY",
   "Greek",
 ] as const;
 
-export type OnscreenLayoutOption = (typeof ONSCREEN_LAYOUT_OPTIONS)[number];
+export type OnscreenLayoutName = (typeof ONSCREEN_LAYOUTS)[number];
 
-/** Resolve which OSK layout to paint (`auto` follows Windows). */
+/** Resolve which OSK layout to paint from the active Windows layout / language. */
 export function resolveOnscreenLayout(
-  preference: string | undefined,
   windowsLayout: string,
   language: string,
-): Exclude<OnscreenLayoutOption, "auto"> {
-  if (
-    preference &&
-    preference !== "auto" &&
-    (ONSCREEN_LAYOUT_OPTIONS as readonly string[]).includes(preference)
-  ) {
-    return preference as Exclude<OnscreenLayoutOption, "auto">;
-  }
+): OnscreenLayoutName {
   if (windowsLayout === "QWERTZ" || windowsLayout === "AZERTY" || windowsLayout === "Greek") {
     return windowsLayout;
   }
   if (windowsLayout === "QWERTY") return "QWERTY";
-  if (language === "el") return "Greek";
-  if (language === "de") return "QWERTZ";
-  if (language === "fr") return "AZERTY";
+  const primary = language.toLowerCase().split("-")[0] ?? "";
+  if (primary === "el") return "Greek";
+  if (primary === "de") return "QWERTZ";
+  if (primary === "fr") return "AZERTY";
   return "QWERTY";
 }
 
@@ -483,7 +476,7 @@ export function getLayoutRows(
   language: string,
   layoutLabels?: LayoutKeyLabel[],
 ): KeyDef[][] {
-  // Live Windows glyphs only when following the active system layout (auto mode).
+  // Prefer live Windows glyphs from ToUnicodeEx / layout map when available.
   if (layoutLabels && layoutLabels.length > 0) {
     return applyLayoutKeyLabels(QWERTY_ROWS, layoutLabels);
   }
