@@ -29,6 +29,7 @@ import {
   type CompanionSessionEventPayload,
   type CompanionUiState,
 } from "./lib/companionSession";
+import { reconcileAutostartOnLoad } from "./lib/autostart";
 import {
   isMusicLessonSlotVisible,
   isTeachingFullWorkArea,
@@ -94,6 +95,9 @@ function MainApp() {
         await invoke("cmd_set_always_on_top", { enabled: true });
         await invoke("cmd_set_window_focusable", { focusable: false });
         void checkForUpdates();
+        void reconcileAutostartOnLoad().catch((error) => {
+          console.warn("autostart reconcile failed", error);
+        });
         await refreshSttCapability();
       } catch (error) {
         if (!cancelled) {
