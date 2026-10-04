@@ -260,6 +260,10 @@ export const de: Record<keyof typeof en, string> = {
 
   appLanguageHint: "Menüs, Phrasen und Sprache",
 
+  launchAtWindowsSignIn: "ReachPanel beim Windows-Anmelden starten",
+  launchAtWindowsSignInHint: "Deaktivieren entfernt ReachPanel aus dem Windows-Autostart",
+  launchAtWindowsSignInError: "Windows-Autostart konnte nicht aktualisiert werden",
+
   typingLanguage: "Eingabesprache",
 
   typingLanguageHint: "Windows-Tastatursprache für die Eingabe",

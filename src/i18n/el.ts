@@ -263,6 +263,10 @@ export const el: Record<keyof typeof en, string> = {
 
   appLanguageHint: "Μενού, φράσεις και ομιλία",
 
+  launchAtWindowsSignIn: "Εκκίνηση του ReachPanel με την είσοδο στα Windows",
+  launchAtWindowsSignInHint: "Απενεργοποιήστε για αφαίρεση από την εκκίνηση των Windows",
+  launchAtWindowsSignInError: "Δεν ήταν δυνατή η ενημέρωση της εκκίνησης των Windows",
+
   typingLanguage: "Γλώσσα πληκτρολογίου",
 
   typingLanguageHint: "Γλώσσα πληκτρολογίου Windows για πληκτρολόγηση",

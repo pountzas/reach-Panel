@@ -19,6 +19,11 @@ import {
 } from "../../lib/colorProfiles";
 import type { FnKeyMode, TaskbarPosition, TransparentKeyColor } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
+import {
+  getCachedAutostartEnabled,
+  reconcileAutostartOnLoad,
+  setAutostartEnabled,
+} from "../../lib/autostart";
 import { notify } from "../../lib/notify";
 import { resolveOnscreenLayout } from "../../lib/keyboardLayouts";
 import { SettingsSection } from "./SettingsSection";
@@ -378,10 +383,28 @@ export function SettingsPanel() {
   const [newProfileName, setNewProfileName] = useState<string>("");
   const [companionBridgeRunning, setCompanionBridgeRunning] = useState<boolean>(false);
   const [companionPairedCount, setCompanionPairedCount] = useState<number>(0);
+  const [launchAtSignIn, setLaunchAtSignIn] = useState<boolean>(() =>
+    getCachedAutostartEnabled(),
+  );
+  const [launchAtSignInBusy, setLaunchAtSignInBusy] = useState(false);
 
   useEffect((): void => {
     void loadInputMethods();
   }, [loadInputMethods]);
+
+  useEffect((): (() => void) => {
+    let cancelled = false;
+    void reconcileAutostartOnLoad()
+      .then((on) => {
+        if (!cancelled) setLaunchAtSignIn(on);
+      })
+      .catch(() => {
+        /* boot path already logs; keep cached UI */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect((): (() => void) => {
     let cancelled = false;
@@ -1069,6 +1092,31 @@ export function SettingsPanel() {
           )}
 
           <SettingsSection title={t("settingsGeneral")} surface={surface}>
+            <div className="mb-3">
+              <ToggleRow
+                label={t("launchAtWindowsSignIn")}
+                checked={launchAtSignIn}
+                disabled={launchAtSignInBusy}
+                onChange={(checked) => {
+                  setLaunchAtSignInBusy(true);
+                  setLaunchAtSignIn(checked);
+                  void setAutostartEnabled(checked)
+                    .then((on) => setLaunchAtSignIn(on))
+                    .catch(() => {
+                      setLaunchAtSignIn(getCachedAutostartEnabled());
+                      notify.error(t("launchAtWindowsSignInError"));
+                    })
+                    .finally(() => setLaunchAtSignInBusy(false));
+                }}
+                surface={surface}
+              />
+              <span
+                className="mt-1 block px-3 text-xs"
+                style={{ color: surface.panelMutedText }}
+              >
+                {t("launchAtWindowsSignInHint")}
+              </span>
+            </div>
             <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
               {t("appLanguage")}
               <ThemedSelect
