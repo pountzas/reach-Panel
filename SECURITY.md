@@ -19,13 +19,13 @@ Patched versions require `glib` ≥ 0.20, but the unmaintained GTK3 bindings use
 
 We track Tauri releases for a proper fix and dismiss this alert as an accepted upstream risk until then.
 
-### `image-size` (GHSA-w3rx-r6r6-pgpr / GHSA-5p2g-fcmc-qvqq)
+### `braces` (GHSA-vfj7-8cjw-p6xm) and `node-forge` (GHSA-86w9-cpqp-85rv)
 
-Dependabot may report high-severity alerts for `image-size` in `companion/package-lock.json`.
+Dependabot may report high-severity alerts for these packages in `companion/package-lock.json`.
 
-This package is a **transitive Metro/Expo bundler dependency**. No patched version is recorded for these advisories. npm `latest` is still `2.0.2`, and this repo's lockfile resolves `1.2.1`. `npm audit fix --force` would also try to install Expo SDK 53, which is a breaking change from this project’s SDK 57.
+Both are **transitive Expo/Metro tooling dependencies**. No patched npm release is published yet (`braces` latest is still `3.0.3`; `node-forge` latest is still `1.4.0`). `npm audit fix --force` would try to install Expo SDK 44, which is a breaking downgrade from this project’s SDK 57.
 
-There is no safe in-repo version bump until `image-size` publishes a patched release. The DoS requires feeding a crafted image buffer to Metro’s image-size parser (dev/bundler path), not the Windows desktop runtime.
+There is no safe in-repo version bump until the maintainers publish patched releases (or Expo pins them). Impact is limited to the companion bundler/dev path, not the Windows desktop runtime.
 
 ## Reporting a vulnerability
 
