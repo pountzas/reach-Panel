@@ -59,6 +59,49 @@ describe("KeyButton repeatOnHold", () => {
     expect(onPress).toHaveBeenCalledWith({ repeat: false });
   });
 
+  it("still fires onPress for a detail-0 click after a touch pointer sequence", () => {
+    const onPress = vi.fn();
+    const onHoldEnd = vi.fn();
+    const { getByRole } = render(
+      <KeyButton {...keyProps} onPress={onPress} onHoldEnd={onHoldEnd} />,
+    );
+    const button = getByRole("button", { name: "Backspace" });
+
+    fireEvent.pointerDown(button, {
+      pointerId: 7,
+      pointerType: "touch",
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+    });
+    fireEvent.pointerUp(button, {
+      pointerId: 7,
+      pointerType: "touch",
+      isPrimary: true,
+      button: 0,
+      buttons: 0,
+    });
+    fireEvent.pointerLeave(button, {
+      pointerId: 7,
+      pointerType: "touch",
+      isPrimary: true,
+      buttons: 0,
+    });
+    // detail === 0 is keyboard/programmatic; must still fire after the touch path.
+    fireEvent.click(button, {
+      pointerId: 1,
+      pointerType: "mouse",
+      detail: 0,
+      button: 0,
+    });
+
+    expect(onPress).toHaveBeenCalledTimes(2);
+    expect(onPress).toHaveBeenNthCalledWith(1, { repeat: false });
+    expect(onPress).toHaveBeenNthCalledWith(2, { repeat: false });
+    // Hold-end from the touch lift, plus hold-end from the detail-0 click path.
+    expect(onHoldEnd).toHaveBeenCalledTimes(2);
+  });
+
   it("still fires onPress for a keyboard activation", () => {
     const onPress = vi.fn();
     const onHoldEnd = vi.fn();
