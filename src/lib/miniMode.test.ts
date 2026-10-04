@@ -5,6 +5,7 @@ import {
   isMirroredSetup,
   isMiniModeEligible,
   isTransparentUiActive,
+  miniModeToolbarClassName,
   monitorsOverlap,
   nextTransparentKeyColor,
   resolveMiniModeEnabled,
@@ -179,5 +180,17 @@ describe("miniMode", () => {
         true,
       ),
     ).toBe(false);
+  });
+
+  it("mini toolbar padding insets the height grip from the left like the main header", () => {
+    const className = miniModeToolbarClassName(false);
+    expect(className.split(/\s+/)).toEqual(
+      expect.arrayContaining(["pl-3", "pr-1", "pt-1", "pb-0"]),
+    );
+    expect(className.split(/\s+/)).not.toContain("gap-1");
+  });
+
+  it("keeps suggestion-chip gap when chips are present", () => {
+    expect(miniModeToolbarClassName(true).split(/\s+/)).toContain("gap-1");
   });
 });
