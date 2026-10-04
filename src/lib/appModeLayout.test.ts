@@ -9,6 +9,7 @@ import {
   isSynthesizerUiActive,
   isTeachingSessionActive,
   lessonCloseAppMode,
+  shouldShowHeaderHeightGrip,
   teachingLessonTitleKey,
   needsKeyboardSectionModeMigration,
   restoreModeAfterCompanion,
@@ -104,6 +105,16 @@ describe("isTeachingSessionActive", () => {
     expect(isTeachingSessionActive(true, "synthesizer")).toBe(true);
     expect(isTeachingSessionActive(false, "synthesizer")).toBe(false);
     expect(isTeachingSessionActive(true, "keyboard")).toBe(false);
+  });
+});
+
+describe("shouldShowHeaderHeightGrip", () => {
+  it("hides the main header height grip while Teaching UI is active", () => {
+    expect(shouldShowHeaderHeightGrip(true)).toBe(false);
+  });
+
+  it("shows the main header height grip when Teaching UI is inactive", () => {
+    expect(shouldShowHeaderHeightGrip(false)).toBe(true);
   });
 });
 

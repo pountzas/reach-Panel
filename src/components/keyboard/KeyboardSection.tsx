@@ -19,10 +19,18 @@ import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
 import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
 import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
-import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, transparentOutlineStyle, isInputPreviewActiveForMode } from "../../lib/miniMode";
+import {
+  isTransparentUiActive,
+  nextTransparentKeyColor,
+  transparentKeyPalette,
+  transparentOutlineStyle,
+  isInputPreviewActiveForMode,
+  miniModeToolbarClassName,
+} from "../../lib/miniMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
   isSynthesizerUiActive,
+  isTeachingSessionActive,
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
 
@@ -53,9 +61,14 @@ export function KeyboardSection() {
       teachingLesson,
     ) && !miniModeActive;
   const compact = settings.inputAreaCompact;
+  const teachingSessionActive = isTeachingSessionActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
   const showInputPreview =
     !showSynth &&
     !compact &&
+    !teachingSessionActive &&
     !companionSessionLive &&
     hasInputTarget &&
     isInputPreviewActiveForMode(settings, miniModeActive);
@@ -65,7 +78,11 @@ export function KeyboardSection() {
     settings,
   });
   const showSuggestions =
-    !showSynth && settings.suggestionsVisible && !compact && !languageLessonActive;
+    !showSynth &&
+    settings.suggestionsVisible &&
+    !compact &&
+    !teachingSessionActive &&
+    !languageLessonActive;
   const hasSuggestionChips = showSuggestions && suggestionCount > 0;
   const transparentUi = isTransparentUiActive(settings, miniModeActive);
   const showTransparentToggle = miniModeActive && !showSynth && !compact;
@@ -270,7 +287,7 @@ export function KeyboardSection() {
       {showToolbar &&
         (showMiniModeToolbar ? (
           <div
-            className={`relative z-20 flex w-full shrink-0 flex-col overflow-visible pr-1 pt-1 pb-0 ${hasSuggestionChips ? "gap-1" : ""}`}
+            className={miniModeToolbarClassName(hasSuggestionChips)}
           >
             <div className="flex w-full items-center gap-2">
               <button

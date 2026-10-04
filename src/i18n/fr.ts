@@ -19,6 +19,8 @@ export const fr: Record<keyof typeof en, string> = {
 
   close: "Fermer",
 
+  cancel: "Annuler",
+
   add: "Ajouter",
 
   appNotInstalled: "{app} n’est pas installé.",
@@ -258,15 +260,17 @@ export const fr: Record<keyof typeof en, string> = {
 
   appLanguageHint: "Menus, phrases et parole",
 
+  launchAtWindowsSignIn: "Démarrer ReachPanel à la connexion Windows",
+  launchAtWindowsSignInHint: "Désactiver retire ReachPanel du démarrage Windows",
+  launchAtWindowsSignInError: "Impossible de mettre à jour le démarrage Windows",
+
   typingLanguage: "Langue de saisie",
 
   typingLanguageHint: "Langue du clavier Windows pour la saisie",
 
   onscreenLayout: "Disposition à l’écran",
 
-  onscreenLayoutHint: "Disposition des touches du clavier virtuel",
-
-  onscreenLayoutAuto: "Auto (suivre Windows)",
+  onscreenLayoutHint: "Correspond à la disposition clavier Windows active",
 
   languageEnglish: "Anglais",
 

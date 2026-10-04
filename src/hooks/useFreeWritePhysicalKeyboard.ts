@@ -112,7 +112,6 @@ export const useFreeWritePhysicalKeyboard = (): void => {
       const greek = greekComposeEnabled({
         typingLanguage: state.settings.typingLanguage,
         keyboardLayout: state.keyboardLayout,
-        onscreenLayout: state.settings.onscreenLayout,
         languageLessonActive: false,
       });
       const physicalKey = physicalKeyFromKeyboardCode(event.code);

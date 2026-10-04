@@ -22,6 +22,16 @@ describe("greekComposeEnabled", () => {
       }),
     ).toBe(true);
   });
+
+  it("does not enable from a deprecated on-screen layout override alone", () => {
+    expect(
+      greekComposeEnabled({
+        typingLanguage: "en",
+        keyboardLayout: "QWERTY",
+        onscreenLayout: "Greek",
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("processCharacterInput", () => {

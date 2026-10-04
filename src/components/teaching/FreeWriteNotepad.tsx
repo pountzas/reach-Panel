@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import { clampFreeWriteZoom } from "../../lib/teaching";
 import { useAppStore } from "../../stores/appStore";
@@ -23,6 +24,7 @@ export function FreeWriteNotepad() {
   const wrap = settings.freeWriteNotepadWrap !== false;
   const lineNumbers = settings.freeWriteNotepadLineNumbers !== false;
   const surface = getSurfaceColors(settings.appBgColor);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
@@ -40,11 +42,6 @@ export function FreeWriteNotepad() {
     body.addEventListener("scroll", sync);
     return () => body.removeEventListener("scroll", sync);
   }, [lineNumbers]);
-
-  const onClear = () => {
-    if (!window.confirm(t("freeWriteClearConfirm"))) return;
-    clearFreeWriteNotepad();
-  };
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
@@ -93,7 +90,7 @@ export function FreeWriteNotepad() {
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteClearAll")}
-          onClick={onClear}
+          onClick={() => setClearConfirmOpen(true)}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
@@ -143,6 +140,19 @@ export function FreeWriteNotepad() {
           onFocus={() => setFreeWriteFocus("notepad")}
         />
       </div>
+
+      <ConfirmDialog
+        open={clearConfirmOpen}
+        message={t("freeWriteClearConfirm")}
+        confirmLabel={t("freeWriteClearAll")}
+        cancelLabel={t("cancel")}
+        onConfirm={() => {
+          clearFreeWriteNotepad();
+          setClearConfirmOpen(false);
+        }}
+        onCancel={() => setClearConfirmOpen(false)}
+        surface={surface}
+      />
     </div>
   );
 }

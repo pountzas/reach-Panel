@@ -32,7 +32,6 @@ import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
 import { isTransparentUiActive, transparentKeyPalette } from "../../lib/miniMode";
-import type { OnscreenLayout } from "../../lib/types";
 import {
   clearModifiersAfterKey,
   greekTranslateOptions,
@@ -62,7 +61,6 @@ export function Keyboard() {
   const setLanguagePickerOpen = useAppStore((s) => s.setLanguagePickerOpen);
   const selectTypingInputMethod = useAppStore((s) => s.selectTypingInputMethod);
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
-  const updateSettings = useAppStore((s) => s.updateSettings);
   const dictationState = useAppStore((s) => s.dictationState);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
   const stopDictation = useAppStore((s) => s.stopDictation);
@@ -96,16 +94,14 @@ export function Keyboard() {
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const fnActive = isFnActive(stickyModifiers);
   const activeModifiers = stickyModifiers.filter((m) => m !== "capslock" && m !== "fn");
-  const followWindowsLayout = (settings.onscreenLayout ?? "auto") === "auto";
   const effectiveLayout = resolveOnscreenLayout(
-    settings.onscreenLayout,
     keyboardLayout,
     settings.typingLanguage,
   );
   const baseRows = getLayoutRows(
     effectiveLayout,
     settings.typingLanguage,
-    followWindowsLayout ? layoutKeyLabels : undefined,
+    layoutKeyLabels,
   );
   const rows = useMemo<KeyDef[][]>(() => {
     if (settings.dictationVisible) return baseRows;
@@ -139,14 +135,12 @@ export function Keyboard() {
   const greekKeyboardActive = greekComposeEnabled({
     typingLanguage: settings.typingLanguage,
     keyboardLayout,
-    onscreenLayout: settings.onscreenLayout,
     languageLessonActive: isLanguageLessonCaptureActive(languageLessonMode),
     lessonLanguage: settings.languageLessonLanguage,
   });
   const greekFreeWriteActive = greekComposeEnabled({
     typingLanguage: settings.typingLanguage,
     keyboardLayout,
-    onscreenLayout: settings.onscreenLayout,
     languageLessonActive: freeWriteCaptureActive,
   });
   const transparent = isTransparentUiActive(settings, miniModeActive);
@@ -605,7 +599,13 @@ export function Keyboard() {
                   active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
                   repeatOnHold={isBackspace}
                   onHoldEnd={
-                    isBackspace ? () => void loadSuggestions() : undefined
+                    isBackspace
+                      ? () => {
+                        void backspaceInjectGate
+                          .whenIdle()
+                          .then(() => loadSuggestions());
+                      }
+                      : undefined
                   }
                   onPress={(meta) => {
                     if (isBackspace) {
@@ -640,13 +640,8 @@ export function Keyboard() {
                     anchorRef={langKeyAnchorRef}
                     methods={inputMethods}
                     activeHkl={physicalKeyState.systemHkl}
-                    onscreenLayout={(settings.onscreenLayout ?? "auto") as OnscreenLayout}
                     onSelectLanguage={(method) => {
                       void selectTypingInputMethod(method);
-                    }}
-                    onSelectLayout={(layout) => {
-                      void updateSettings({ onscreenLayout: layout });
-                      setLanguagePickerOpen(false);
                     }}
                     onClose={() => setLanguagePickerOpen(false)}
                     fontSize={fontSize}
@@ -654,8 +649,6 @@ export function Keyboard() {
                     bgColor={settings.keyboardKeyColor ?? "#ffffff"}
                     mutedColor="#94a3b8"
                     languageSectionLabel={t("typingLanguage")}
-                    layoutSectionLabel={t("onscreenLayout")}
-                    autoLayoutLabel={t("onscreenLayoutAuto")}
                   />
                 ) : null}
                 <div className="flex h-full w-full">

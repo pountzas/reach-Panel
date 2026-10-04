@@ -14,6 +14,7 @@ export type CharacterInputResult = {
 export type GreekComposeContext = {
   typingLanguage?: string;
   keyboardLayout?: string;
+  /** @deprecated Ignored; kept so persisted callers do not enable Greek by override. */
   onscreenLayout?: string;
   languageLessonActive?: boolean;
   lessonLanguage?: LessonLanguage;
@@ -24,8 +25,6 @@ export function greekComposeEnabled(ctx: GreekComposeContext): boolean {
   const primary = ctx.typingLanguage?.toLowerCase().split("-")[0] ?? "";
   if (primary === "el") return true;
   if (ctx.keyboardLayout?.toLowerCase() === "greek") return true;
-  if (ctx.onscreenLayout === "Greek") return true;
-  if (ctx.onscreenLayout === "auto" && primary === "el") return true;
   if (ctx.languageLessonActive && ctx.lessonLanguage === "el") return true;
   return false;
 }

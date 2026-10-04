@@ -118,6 +118,11 @@ export function isTeachingSessionActive(
   return musicTeachingEnabled && keyboardSectionMode === "synthesizer";
 }
 
+/** Main header window-height grip; hidden while Teaching manages vertical layout. */
+export function shouldShowHeaderHeightGrip(teachingUiActive: boolean): boolean {
+  return !teachingUiActive;
+}
+
 export function isSynthesizerUiActive(
   musicTeachingEnabled: boolean,
   keyboardSectionMode: string,

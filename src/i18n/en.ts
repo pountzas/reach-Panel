@@ -18,6 +18,8 @@ export const en = {
 
   close: "Close",
 
+  cancel: "Cancel",
+
   add: "Add",
 
   appNotInstalled: "{app} is not installed.",
@@ -272,15 +274,19 @@ export const en = {
 
   appLanguageHint: "Menus, phrases, and speech",
 
+  launchAtWindowsSignIn: "Start ReachPanel when Windows starts",
+
+  launchAtWindowsSignInHint: "Turn off to remove ReachPanel from Windows startup",
+
+  launchAtWindowsSignInError: "Could not update Windows startup",
+
   typingLanguage: "Typing language",
 
   typingLanguageHint: "Windows keyboard language used for typing",
 
   onscreenLayout: "On-screen layout",
 
-  onscreenLayoutHint: "Key arrangement shown on the virtual keyboard",
-
-  onscreenLayoutAuto: "Auto (follow Windows)",
+  onscreenLayoutHint: "Matches the active Windows keyboard layout",
 
   languageEnglish: "English",
 

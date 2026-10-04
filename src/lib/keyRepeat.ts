@@ -11,6 +11,8 @@ export type SerialCoalesceGate = {
   enqueue: (fn: () => void | Promise<void>) => void;
   /** Coalesce while busy — keep only the latest pending repeat tick. */
   coalesce: (fn: () => void | Promise<void>) => void;
+  /** Resolves after work already queued or coalesced at call time finishes. */
+  whenIdle: () => Promise<void>;
 };
 
 export const createSerialCoalesceGate = (): SerialCoalesceGate => {
@@ -52,6 +54,9 @@ export const createSerialCoalesceGate = (): SerialCoalesceGate => {
         return;
       }
       chain = chain.then(() => run(fn));
+    },
+    whenIdle() {
+      return chain.then(() => undefined);
     },
   };
 };

@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # eas-cli@latest (oclif autocomplete) requires Node >= 22
           node-version: 22
@@ -57,7 +57,7 @@ jobs:
             exit 1
           fi
 
-      - uses: expo/expo-github-action@v8
+      - uses: expo/expo-github-action@v9
         if: steps.bump.outputs.should_release == 'true'
         with:
           eas-version: latest
@@ -163,7 +163,7 @@ jobs:
 
       - name: Create GitHub pre-release
         if: steps.bump.outputs.should_release == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: companion-v${{ steps.bump.outputs.new_version }}
           name: ReachPanel Companion v${{ steps.bump.outputs.new_version }}

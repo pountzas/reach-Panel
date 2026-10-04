@@ -17,10 +17,15 @@ import {
   type ColorProfileId,
   type SurfaceColors,
 } from "../../lib/colorProfiles";
-import type { FnKeyMode, OnscreenLayout, TaskbarPosition, TransparentKeyColor } from "../../lib/types";
+import type { FnKeyMode, TaskbarPosition, TransparentKeyColor } from "../../lib/types";
 import type { TranslationKey } from "../../i18n";
+import {
+  getCachedAutostartEnabled,
+  reconcileAutostartOnLoad,
+  setAutostartEnabled,
+} from "../../lib/autostart";
 import { notify } from "../../lib/notify";
-import { ONSCREEN_LAYOUT_OPTIONS } from "../../lib/keyboardLayouts";
+import { resolveOnscreenLayout } from "../../lib/keyboardLayouts";
 import { SettingsSection } from "./SettingsSection";
 import { CompanionSection } from "./CompanionSection";
 import { AboutSection } from "./AboutSection";
@@ -372,15 +377,34 @@ export function SettingsPanel() {
     loadInputMethods,
     selectTypingInputMethod,
     physicalKeyState,
+    keyboardLayout,
   } = useAppStore();
   const { t } = useTranslation();
   const [newProfileName, setNewProfileName] = useState<string>("");
   const [companionBridgeRunning, setCompanionBridgeRunning] = useState<boolean>(false);
   const [companionPairedCount, setCompanionPairedCount] = useState<number>(0);
+  const [launchAtSignIn, setLaunchAtSignIn] = useState<boolean>(() =>
+    getCachedAutostartEnabled(),
+  );
+  const [launchAtSignInBusy, setLaunchAtSignInBusy] = useState(false);
 
   useEffect((): void => {
     void loadInputMethods();
   }, [loadInputMethods]);
+
+  useEffect((): (() => void) => {
+    let cancelled = false;
+    void reconcileAutostartOnLoad()
+      .then((on) => {
+        if (!cancelled) setLaunchAtSignIn(on);
+      })
+      .catch(() => {
+        /* boot path already logs; keep cached UI */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect((): (() => void) => {
     let cancelled = false;
@@ -1068,6 +1092,31 @@ export function SettingsPanel() {
           )}
 
           <SettingsSection title={t("settingsGeneral")} surface={surface}>
+            <div className="mb-3">
+              <ToggleRow
+                label={t("launchAtWindowsSignIn")}
+                checked={launchAtSignIn}
+                disabled={launchAtSignInBusy}
+                onChange={(checked) => {
+                  setLaunchAtSignInBusy(true);
+                  setLaunchAtSignIn(checked);
+                  void setAutostartEnabled(checked)
+                    .then((on) => setLaunchAtSignIn(on))
+                    .catch(() => {
+                      setLaunchAtSignIn(getCachedAutostartEnabled());
+                      notify.error(t("launchAtWindowsSignInError"));
+                    })
+                    .finally(() => setLaunchAtSignInBusy(false));
+                }}
+                surface={surface}
+              />
+              <span
+                className="mt-1 block px-3 text-xs"
+                style={{ color: surface.panelMutedText }}
+              >
+                {t("launchAtWindowsSignInHint")}
+              </span>
+            </div>
             <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
               {t("appLanguage")}
               <ThemedSelect
@@ -1113,25 +1162,22 @@ export function SettingsPanel() {
                 {t("typingLanguageHint")}
               </span>
             </label>
-            <label className="block text-sm" style={{ color: surface.panelText }}>
-              {t("onscreenLayout")}
-              <ThemedSelect
-                value={settings.onscreenLayout ?? "auto"}
-                onChange={(v) =>
-                  void updateSettings({ onscreenLayout: v as OnscreenLayout })
-                }
-                surface={surface}
+            <div className="block text-sm" style={{ color: surface.panelText }}>
+              <span className="block">{t("onscreenLayout")}</span>
+              <span
+                className="mt-1 block rounded border px-3 py-2 text-sm"
+                style={{
+                  backgroundColor: surface.insetBg,
+                  borderColor: surface.insetBorder,
+                  color: surface.panelText,
+                }}
               >
-                {ONSCREEN_LAYOUT_OPTIONS.map((layout) => (
-                  <option key={layout} value={layout}>
-                    {layout === "auto" ? t("onscreenLayoutAuto") : layout}
-                  </option>
-                ))}
-              </ThemedSelect>
+                {resolveOnscreenLayout(keyboardLayout, settings.typingLanguage)}
+              </span>
               <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
                 {t("onscreenLayoutHint")}
               </span>
-            </label>
+            </div>
           </SettingsSection>
 
           <SettingsSection

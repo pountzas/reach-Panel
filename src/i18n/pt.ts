@@ -19,6 +19,8 @@ export const pt: Record<keyof typeof en, string> = {
 
   close: "Fechar",
 
+  cancel: "Cancelar",
+
   add: "Adicionar",
 
   appNotInstalled: "{app} não está instalado.",
@@ -258,15 +260,17 @@ export const pt: Record<keyof typeof en, string> = {
 
   appLanguageHint: "Menus, frases e voz",
 
+  launchAtWindowsSignIn: "Iniciar o ReachPanel no início de sessão do Windows",
+  launchAtWindowsSignInHint: "Desativar remove o ReachPanel do arranque do Windows",
+  launchAtWindowsSignInError: "Não foi possível atualizar o arranque do Windows",
+
   typingLanguage: "Idioma de escrita",
 
   typingLanguageHint: "Idioma do teclado Windows para escrever",
 
   onscreenLayout: "Disposição no ecrã",
 
-  onscreenLayoutHint: "Disposição das teclas no teclado virtual",
-
-  onscreenLayoutAuto: "Auto (seguir Windows)",
+  onscreenLayoutHint: "Corresponde à disposição de teclado ativa do Windows",
 
   languageEnglish: "English",
 

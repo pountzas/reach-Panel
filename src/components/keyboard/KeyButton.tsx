@@ -1,6 +1,4 @@
 import {
-  useEffect,
-  useRef,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
@@ -12,7 +10,7 @@ import {
 } from "../../hooks/useKeyRepeat";
 import { usePressableButton } from "../../hooks/usePressableButton";
 import type { TransparentKeyColor } from "../../lib/types";
-import { clearClickSuppress, handleClick as handleKeyButtonClick } from "./keyButtonUtils";
+import { handleClick as handleKeyButtonClick } from "./keyButtonUtils";
 
 type KeyButtonProps = {
   label: ReactNode;
@@ -64,8 +62,6 @@ export function KeyButton({
   onHoldEnd,
   onPress,
 }: KeyButtonProps) {
-  /** Suppress only the compatibility click for this pointer gesture. */
-  const suppressClickForPointerIdRef = useRef<number | null>(null);
   const { pressedClass, pointerHandlers: pressableHandlers } = usePressableButton(
     active ?? false,
   );
@@ -75,36 +71,22 @@ export function KeyButton({
     onStop: onHoldEnd,
   });
 
-  // Aborted holds (disable mid-hold) must not block a later keyboard click.
-  useEffect((): void => {
-    if (disabled || !repeatOnHold) {
-      suppressClickForPointerIdRef.current = null;
-    }
-  }, [disabled, repeatOnHold]);
-
   const pointerHandlers = {
     onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
-      if (repeatOnHold) {
-        suppressClickForPointerIdRef.current = event.pointerId;
-      }
       pressableHandlers.onPointerDown();
       repeatHandlers.onPointerDown?.(event);
     },
     onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
       pressableHandlers.onPointerUp();
       repeatHandlers.onPointerUp?.(event);
-      // Keep suppress until the compatibility click for this pointer arrives.
-      void event;
     },
     onPointerLeave: (event: ReactPointerEvent<HTMLButtonElement>) => {
       pressableHandlers.onPointerLeave();
       repeatHandlers.onPointerLeave?.(event);
-      clearClickSuppress(suppressClickForPointerIdRef);
     },
     onPointerCancel: (event: ReactPointerEvent<HTMLButtonElement>) => {
       pressableHandlers.onPointerLeave();
       repeatHandlers.onPointerCancel?.(event);
-      clearClickSuppress(suppressClickForPointerIdRef);
     },
   };
 
@@ -165,13 +147,7 @@ export function KeyButton({
       disabled={disabled}
       aria-label={ariaLabel}
       onClick={(event) =>
-        handleKeyButtonClick(
-          event,
-          repeatOnHold,
-          suppressClickForPointerIdRef,
-          onPress,
-          onHoldEnd,
-        )
+        handleKeyButtonClick(event, repeatOnHold, onPress, onHoldEnd)
       }
       onContextMenu={(e) => e.preventDefault()}
       {...pointerHandlers}
