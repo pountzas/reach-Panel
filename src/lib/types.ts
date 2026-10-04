@@ -11,8 +11,6 @@ export type MousePanelMode = "mouse" | "numpad";
 export type MousePanelSide = "left" | "right";
 export type FnKeyMode = "one-shot" | "latched";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
-/** On-screen key arrangement; `auto` follows the active Windows keyboard layout. */
-export type OnscreenLayout = "auto" | "QWERTY" | "QWERTZ" | "AZERTY" | "Greek";
 /** Outline/label palette for transparent mini-mode keyboard. */
 export type TransparentKeyColor = "white" | "dark-gray" | "silver";
 
@@ -31,8 +29,6 @@ export interface AppSettings {
   opacity: number;
   uiLanguage: string;
   typingLanguage: string;
-  /** Preferred on-screen key layout (independent of Windows typing language when not auto). */
-  onscreenLayout?: OnscreenLayout;
   mouseVisible: boolean;
   mousePanelMode: MousePanelMode;
   mousePanelSide: MousePanelSide;
@@ -218,7 +214,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   opacity: 0.95,
   uiLanguage: "en",
   typingLanguage: "en",
-  onscreenLayout: "auto",
   mouseVisible: true,
   mousePanelMode: "mouse",
   mousePanelSide: "right",

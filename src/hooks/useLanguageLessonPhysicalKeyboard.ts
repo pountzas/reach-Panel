@@ -37,7 +37,6 @@ const greekLessonComposeContext = (
   return {
     typingLanguage: state.settings.typingLanguage,
     keyboardLayout: state.keyboardLayout,
-    onscreenLayout: state.settings.onscreenLayout,
     languageLessonActive: true as const,
     lessonLanguage: pack?.lessonLanguage ?? state.settings.languageLessonLanguage,
   };

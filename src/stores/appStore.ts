@@ -192,7 +192,6 @@ function greekComposeContextFromState(state: {
   return {
     typingLanguage: state.settings.typingLanguage,
     keyboardLayout: state.keyboardLayout,
-    onscreenLayout: state.settings.onscreenLayout,
     languageLessonActive: isLanguageLessonCaptureActive({
       musicTeachingEnabled: state.musicTeachingEnabled,
       teachingLesson: state.teachingLesson,
@@ -796,12 +795,18 @@ interface AppStore {
 
 function parseSettings(json: string): AppSettings {
   try {
-    const { theme, mouseSide, language: legacyLanguage, ...parsed } = JSON.parse(
-      json,
-    ) as Partial<AppSettings> & {
+    const {
+      theme,
+      mouseSide,
+      language: legacyLanguage,
+      onscreenLayout: _legacyOnscreenLayout,
+      ...parsed
+    } = JSON.parse(json) as Partial<AppSettings> & {
       theme?: unknown;
       mouseSide?: "left" | "right" | "floating";
       language?: string;
+      /** Removed: on-screen layout always follows Windows. */
+      onscreenLayout?: string;
     };
     const colorProfile = resolveColorProfile({ ...parsed, theme });
     const mousePanelSide =
@@ -2579,7 +2584,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const greek = greekComposeEnabled({
       typingLanguage: state.settings.typingLanguage,
       keyboardLayout: state.keyboardLayout,
-      onscreenLayout: state.settings.onscreenLayout,
       languageLessonActive: true,
       lessonLanguage:
         state.settings.typingLanguage === "el" ? "el" : state.settings.languageLessonLanguage,
@@ -2610,7 +2614,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const greek = greekComposeEnabled({
       typingLanguage: state.settings.typingLanguage,
       keyboardLayout: state.keyboardLayout,
-      onscreenLayout: state.settings.onscreenLayout,
       languageLessonActive: true,
       lessonLanguage:
         state.settings.typingLanguage === "el" ? "el" : state.settings.languageLessonLanguage,

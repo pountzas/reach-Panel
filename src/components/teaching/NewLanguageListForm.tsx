@@ -57,7 +57,6 @@ export function NewLanguageListForm({
   const greekContext = {
     typingLanguage: settings.typingLanguage,
     keyboardLayout,
-    onscreenLayout: settings.onscreenLayout,
     languageLessonActive: true as const,
     lessonLanguage,
   };
@@ -146,7 +145,6 @@ export function NewLanguageListForm({
   }, [
     applyToField,
     greekContext.keyboardLayout,
-    greekContext.onscreenLayout,
     greekContext.typingLanguage,
     lessonLanguage,
     registerLanguageListAuthoringHandlers,
