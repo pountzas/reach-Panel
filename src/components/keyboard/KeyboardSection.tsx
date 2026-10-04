@@ -19,7 +19,14 @@ import { Keyboard } from "./Keyboard";
 import { Synthesizer } from "./Synthesizer";
 import { getSongById, songPianoRangeFit } from "../../lib/music/songs";
 import { resolveSynthOctaveCount, resolveSynthStartOctave, isWidePianoOctaveCount } from "../../lib/music/octaveCount";
-import { isTransparentUiActive, nextTransparentKeyColor, transparentKeyPalette, transparentOutlineStyle, isInputPreviewActiveForMode } from "../../lib/miniMode";
+import {
+  isTransparentUiActive,
+  nextTransparentKeyColor,
+  transparentKeyPalette,
+  transparentOutlineStyle,
+  isInputPreviewActiveForMode,
+  miniModeToolbarClassName,
+} from "../../lib/miniMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
   isSynthesizerUiActive,
@@ -280,7 +287,7 @@ export function KeyboardSection() {
       {showToolbar &&
         (showMiniModeToolbar ? (
           <div
-            className={`relative z-20 flex w-full shrink-0 flex-col overflow-visible pr-1 pt-1 pb-0 ${hasSuggestionChips ? "gap-1" : ""}`}
+            className={miniModeToolbarClassName(hasSuggestionChips)}
           >
             <div className="flex w-full items-center gap-2">
               <button

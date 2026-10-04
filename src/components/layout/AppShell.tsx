@@ -31,7 +31,10 @@ import { CollapsedFab } from "./CollapsedFab";
 import { MiniModeShell } from "./MiniModeShell";
 import { appHeaderHeightPx } from "../../lib/sectionLayouts";
 import { resolveMiniModeEnabled } from "../../lib/miniMode";
-import { isTeachingSessionActive } from "../../lib/appModeLayout";
+import {
+  isTeachingSessionActive,
+  shouldShowHeaderHeightGrip,
+} from "../../lib/appModeLayout";
 import {
   effectiveLargeHeaders,
   effectiveMouseVisible,
@@ -198,15 +201,17 @@ export function AppShell() {
           }}
         >
           <div className="flex items-center justify-start">
-            <button
-              type="button"
-              aria-label="Resize window height"
-              className="flex h-8 w-8 cursor-ns-resize items-center justify-center rounded bg-white/10 hover:bg-white/20"
-              style={{ touchAction: "none" }}
-              {...heightDrag}
-            >
-              <HeightGripIcon className={iconClass} />
-            </button>
+            {shouldShowHeaderHeightGrip(teachingUiActive) ? (
+              <button
+                type="button"
+                aria-label="Resize window height"
+                className="flex h-8 w-8 cursor-ns-resize items-center justify-center rounded bg-white/10 hover:bg-white/20"
+                style={{ touchAction: "none" }}
+                {...heightDrag}
+              >
+                <HeightGripIcon className={iconClass} />
+              </button>
+            ) : null}
           </div>
           <span
             className={`justify-self-center font-semibold ${largeHeaders ? "text-lg" : ""}`}

@@ -12,6 +12,21 @@ export const FAB_HOVER_SLACK = 6;
 /** Default mini-mode keyboard height as fraction of full monitor height. Keep in sync with Rust. */
 export const MINI_KEYBOARD_HEIGHT_RATIO = 0.42;
 
+/**
+ * Mini Mode keyboard toolbar chrome. `pl-3` matches AppShell header `px-3`
+ * so the height grip is not flush to the window edge.
+ */
+export function miniModeToolbarClassName(hasSuggestionChips: boolean): string {
+  const gap = hasSuggestionChips ? "gap-1" : "";
+  return [
+    "relative z-20 flex w-full shrink-0 flex-col overflow-visible",
+    "pl-3 pr-1 pt-1 pb-0",
+    gap,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 /** Fraction of the smaller monitor area that must overlap to count as mirrored. */
 export const MIRROR_OVERLAP_RATIO = 0.9;
 
