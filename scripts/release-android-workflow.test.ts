@@ -23,11 +23,10 @@ describe("release-android.yml downloads landing contract", () => {
   it("fails loudly on blob upload or merge (no continue-on-error)", () => {
     const blobRelated = yaml
       .split(/\n(?= {2}- )/)
-      .filter(
-        (step) =>
-          /upload-apk-to-blob|merge-downloads-latest|BLOB_READ_WRITE_TOKEN|Deploy install site/i.test(
-            step,
-          ),
+      .filter((step) =>
+        /upload-apk-to-blob|merge-downloads-latest|BLOB_READ_WRITE_TOKEN|Deploy install site/i.test(
+          step,
+        ),
       );
 
     expect(blobRelated.length).toBeGreaterThan(0);
@@ -38,6 +37,10 @@ describe("release-android.yml downloads landing contract", () => {
 
   it("uses Node 22 so eas-cli@latest can install", () => {
     expect(yaml).toMatch(/node-version:\s*22\b/);
+  });
+
+  it("serializes downloads/latest.json writes with Windows via concurrency group", () => {
+    expect(yaml).toMatch(/group:\s*downloads-latest-blob/);
   });
 
   it("deploys install site without sed inject of INSTALL_APK placeholder", () => {

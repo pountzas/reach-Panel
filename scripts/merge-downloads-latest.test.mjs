@@ -3,13 +3,51 @@ import test from 'node:test';
 
 import {
   DOWNLOADS_LATEST_PUBLIC_URL,
+  MERGE_MAX_ATTEMPTS,
   loadDownloadsManifest,
   mergeDownloadsManifest,
+  mergeRetryDelayMs,
   mergeWriteFollowUp,
   mergeWriteNeedsRetry,
   restoreRememberedPlatform,
   resolveMergeInput,
 } from './merge-downloads-latest-lib.mjs';
+
+test('mergeRetryDelayMs grows exponentially with a floor and cap', () => {
+  assert.equal(mergeRetryDelayMs(0), 500);
+  assert.equal(mergeRetryDelayMs(1), 1000);
+  assert.equal(mergeRetryDelayMs(2), 2000);
+  assert.equal(mergeRetryDelayMs(3), 4000);
+  assert.equal(mergeRetryDelayMs(8), 8000);
+});
+
+test('MERGE_MAX_ATTEMPTS is high enough for Blob race retries', () => {
+  assert.ok(MERGE_MAX_ATTEMPTS >= 12);
+});
+
+test('loadDownloadsManifest can skip public URL fallback for post-write verify', async () => {
+  let fetchCalled = false;
+  const get = async () => null;
+  const fetchImpl = async () => {
+    fetchCalled = true;
+    return {
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          android: { version: '0.3.0', apkUrl: 'https://example.com/apk' },
+        }),
+    };
+  };
+  const manifest = await loadDownloadsManifest(
+    get,
+    'downloads/latest.json',
+    'tok',
+    fetchImpl,
+    { allowPublicFallback: false },
+  );
+  assert.deepEqual(manifest, {});
+  assert.equal(fetchCalled, false);
+});
 
 test('loadDownloadsManifest returns {} on 404', async () => {
   const notFound = Object.assign(new Error('Not Found'), { status: 404 });

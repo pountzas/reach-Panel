@@ -34,4 +34,8 @@ describe("release.yml Windows Blob downloads upload", () => {
     expect(yaml).toMatch(/node-version:\s*22\b/);
     expect(yaml).not.toMatch(/node-version:\s*20\b/);
   });
+
+  it("serializes downloads/latest.json writes with Android via concurrency group", () => {
+    expect(yaml).toMatch(/group:\s*downloads-latest-blob/);
+  });
 });

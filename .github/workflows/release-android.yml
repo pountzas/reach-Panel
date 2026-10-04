@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'companion/**'
-      - 'docs/install/**'
-      - '.github/workflows/release-android.yml'
-      - '.github/workflows/deploy-install-site.yml'
+      - "companion/**"
+      - "docs/install/**"
+      - ".github/workflows/release-android.yml"
+      - ".github/workflows/deploy-install-site.yml"
 
 concurrency:
   group: release-android-${{ github.ref }}
@@ -17,6 +17,10 @@ jobs:
   release:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
+    # Serialize with Windows release when both write downloads/latest.json.
+    concurrency:
+      group: downloads-latest-blob
+      cancel-in-progress: false
     permissions:
       contents: write
 

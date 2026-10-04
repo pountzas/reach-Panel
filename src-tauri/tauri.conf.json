@@ -7,7 +7,10 @@
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist"
+    "frontendDist": "../dist",
+    "windows": {
+      "staticVCRuntime": true
+    }
   },
   "app": {
     "windows": [
@@ -41,14 +44,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "nsis",
-      "msi"
-    ],
+    "targets": ["nsis", "msi"],
     "createUpdaterArtifacts": false,
-    "resources": [
-      "resources/wordpacks/en.json"
-    ],
+    "resources": ["resources/wordpacks/en.json"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

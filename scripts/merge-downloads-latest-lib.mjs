@@ -2,67 +2,97 @@
  * Shared helpers for scripts/merge-downloads-latest.mjs
  */
 
-export const DOWNLOADS_LATEST_PATHNAME = 'downloads/latest.json';
+export const DOWNLOADS_LATEST_PATHNAME = "downloads/latest.json";
 
 export const DOWNLOADS_LATEST_PUBLIC_URL =
-  'https://2zhnilo5gijgvtoh.public.blob.vercel-storage.com/downloads/latest.json';
+  "https://2zhnilo5gijgvtoh.public.blob.vercel-storage.com/downloads/latest.json";
+
+/** Retry budget for Blob put + verify races. */
+export const MERGE_MAX_ATTEMPTS = 12;
+
+const MERGE_RETRY_BASE_MS = 500;
+const MERGE_RETRY_CAP_MS = 8000;
+
+/**
+ * Exponential backoff delay before the next merge attempt.
+ * @param {number} attempt zero-based attempt index that just finished
+ */
+export function mergeRetryDelayMs(attempt) {
+  const n = Math.max(0, Number(attempt) || 0);
+  return Math.min(MERGE_RETRY_CAP_MS, MERGE_RETRY_BASE_MS * 2 ** n);
+}
 
 function isNotFoundError(err) {
-  if (!err || typeof err !== 'object') {
+  if (!err || typeof err !== "object") {
     return false;
   }
   if (err.status === 404 || err.statusCode === 404) {
     return true;
   }
-  if (err.name === 'BlobNotFoundError') {
+  if (err.name === "BlobNotFoundError") {
     return true;
   }
   const code = err.code;
-  return code === 'not_found' || code === 'BLOB_NOT_FOUND';
+  return code === "not_found" || code === "BLOB_NOT_FOUND";
 }
 
 async function streamToString(stream) {
   const chunks = [];
   for await (const chunk of stream) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
   }
-  return Buffer.concat(chunks).toString('utf8');
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 async function readTextFromGetResult(result, fetchImpl) {
-  if (typeof result === 'string') {
+  if (typeof result === "string") {
     return result;
   }
   if (result?.stream) {
     return streamToString(result.stream);
   }
-  if (typeof result?.text === 'function') {
+  if (typeof result?.text === "function") {
     return result.text();
   }
   const url =
-    typeof result?.downloadUrl === 'string'
+    typeof result?.downloadUrl === "string"
       ? result.downloadUrl
-      : typeof result?.url === 'string'
+      : typeof result?.url === "string"
         ? result.url
         : null;
   if (url && fetchImpl) {
-    const response = await fetchImpl(url, { cache: 'no-store' });
+    const response = await fetchImpl(url, { cache: "no-store" });
     if (response.ok) {
       return response.text();
     }
   }
-  return '';
+  return "";
 }
 
 /**
  * Load downloads/latest.json via an injectable get() (from @vercel/blob).
  * Missing / 404 → {}. Empty or unreadable get() results can fall back to the
  * public URL when fetchImpl is provided. Other errors propagate.
+ *
+ * @param {{ allowPublicFallback?: boolean }} [options]
+ *   Post-write verification should pass `{ allowPublicFallback: false }` so a
+ *   stale CDN copy cannot look like a lost race.
  */
-export async function loadDownloadsManifest(getFn, pathname, token, fetchImpl) {
+export async function loadDownloadsManifest(
+  getFn,
+  pathname,
+  token,
+  fetchImpl,
+  options = {},
+) {
+  const allowPublicFallback = options.allowPublicFallback !== false;
   let result;
   try {
-    result = await getFn(pathname, { access: 'public', token, useCache: false });
+    result = await getFn(pathname, {
+      access: "public",
+      token,
+      useCache: false,
+    });
   } catch (err) {
     if (!isNotFoundError(err)) {
       throw err;
@@ -70,12 +100,16 @@ export async function loadDownloadsManifest(getFn, pathname, token, fetchImpl) {
     result = null;
   }
 
-  let text = result == null ? '' : await readTextFromGetResult(result, fetchImpl);
+  let text =
+    result == null ? "" : await readTextFromGetResult(result, fetchImpl);
 
-  if ((!text || !text.trim()) && fetchImpl) {
-    const response = await fetchImpl(`${DOWNLOADS_LATEST_PUBLIC_URL}?t=${Date.now()}`, {
-      cache: 'no-store',
-    });
+  if ((!text || !text.trim()) && fetchImpl && allowPublicFallback) {
+    const response = await fetchImpl(
+      `${DOWNLOADS_LATEST_PUBLIC_URL}?t=${Date.now()}`,
+      {
+        cache: "no-store",
+      },
+    );
     if (response.ok) {
       text = await response.text();
     }
@@ -89,7 +123,7 @@ export async function loadDownloadsManifest(getFn, pathname, token, fetchImpl) {
 }
 
 export function otherPlatform(platform) {
-  return platform === 'windows' ? 'android' : 'windows';
+  return platform === "windows" ? "android" : "windows";
 }
 
 /**
@@ -122,14 +156,19 @@ export function hasManifestContent(manifest) {
  * @param {object} section
  * @param {() => Date} [now]
  */
-export function mergeDownloadsManifest(current, platform, section, now = () => new Date()) {
-  if (platform !== 'windows' && platform !== 'android') {
+export function mergeDownloadsManifest(
+  current,
+  platform,
+  section,
+  now = () => new Date(),
+) {
+  if (platform !== "windows" && platform !== "android") {
     throw new Error(`Invalid platform: ${platform}`);
   }
 
   const next = { ...current };
 
-  if (platform === 'windows') {
+  if (platform === "windows") {
     next.windows = {
       version: section.version,
       exeUrl: section.exeUrl,
@@ -155,7 +194,9 @@ export function mergeDownloadsManifest(current, platform, section, now = () => n
  * @param {'windows'|'android'} platform
  */
 export function mergeWriteNeedsRetry(current, next, written, platform) {
-  if (JSON.stringify(written?.[platform]) !== JSON.stringify(next?.[platform])) {
+  if (
+    JSON.stringify(written?.[platform]) !== JSON.stringify(next?.[platform])
+  ) {
     return true;
   }
   const other = otherPlatform(platform);
@@ -167,14 +208,20 @@ export function mergeWriteNeedsRetry(current, next, written, platform) {
  * Empty reads retry until the last attempt, then count as inconclusive success.
  * @returns {'done' | 'retry' | 'inconclusive' | 'conflict'}
  */
-export function mergeWriteFollowUp(current, next, written, platform, isLastAttempt) {
+export function mergeWriteFollowUp(
+  current,
+  next,
+  written,
+  platform,
+  isLastAttempt,
+) {
   if (!hasManifestContent(written)) {
-    return isLastAttempt ? 'inconclusive' : 'retry';
+    return isLastAttempt ? "inconclusive" : "retry";
   }
   if (!mergeWriteNeedsRetry(current, next, written, platform)) {
-    return 'done';
+    return "done";
   }
-  return isLastAttempt ? 'conflict' : 'retry';
+  return isLastAttempt ? "conflict" : "retry";
 }
 
 function readFlag(argv, name) {
@@ -191,28 +238,30 @@ function readFlag(argv, name) {
  * @param {NodeJS.ProcessEnv | Record<string, string | undefined>} env
  */
 export function resolveMergeInput(argv, env) {
-  const platform = readFlag(argv, '--platform') || env.PLATFORM;
-  const version = readFlag(argv, '--version') || env.VERSION;
+  const platform = readFlag(argv, "--platform") || env.PLATFORM;
+  const version = readFlag(argv, "--version") || env.VERSION;
 
-  if (platform !== 'windows' && platform !== 'android') {
-    throw new Error(`Invalid platform: ${platform ?? '(missing)'}`);
+  if (platform !== "windows" && platform !== "android") {
+    throw new Error(`Invalid platform: ${platform ?? "(missing)"}`);
   }
   if (!version) {
-    throw new Error('VERSION / --version is required');
+    throw new Error("VERSION / --version is required");
   }
 
-  if (platform === 'windows') {
-    const exeUrl = readFlag(argv, '--exe-url') || env.EXE_URL;
-    const msiUrl = readFlag(argv, '--msi-url') || env.MSI_URL;
+  if (platform === "windows") {
+    const exeUrl = readFlag(argv, "--exe-url") || env.EXE_URL;
+    const msiUrl = readFlag(argv, "--msi-url") || env.MSI_URL;
     if (!exeUrl || !msiUrl) {
-      throw new Error('Windows merge requires --exe-url / EXE_URL and --msi-url / MSI_URL');
+      throw new Error(
+        "Windows merge requires --exe-url / EXE_URL and --msi-url / MSI_URL",
+      );
     }
     return { platform, version, exeUrl, msiUrl };
   }
 
-  const apkUrl = readFlag(argv, '--apk-url') || env.APK_URL;
+  const apkUrl = readFlag(argv, "--apk-url") || env.APK_URL;
   if (!apkUrl) {
-    throw new Error('Android merge requires --apk-url / APK_URL');
+    throw new Error("Android merge requires --apk-url / APK_URL");
   }
   return { platform, version, apkUrl };
 }
