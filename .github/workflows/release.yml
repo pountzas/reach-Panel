@@ -42,6 +42,11 @@ jobs:
     needs: [release-please, validate-release-secrets]
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: windows-latest
+    # Serialize with Android release when both write downloads/latest.json.
+    concurrency:
+      group: downloads-latest-blob
+      queue: max
+      cancel-in-progress: false
 
     steps:
       - name: Checkout
