@@ -11,6 +11,7 @@ on:
 
 concurrency:
   group: release-android-${{ github.ref }}
+  queue: max
   cancel-in-progress: false
 
 jobs:
@@ -20,6 +21,7 @@ jobs:
     # Serialize with Windows release when both write downloads/latest.json.
     concurrency:
       group: downloads-latest-blob
+      queue: max
       cancel-in-progress: false
     permissions:
       contents: write

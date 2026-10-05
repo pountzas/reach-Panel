@@ -45,6 +45,7 @@ jobs:
     # Serialize with Android release when both write downloads/latest.json.
     concurrency:
       group: downloads-latest-blob
+      queue: max
       cancel-in-progress: false
 
     steps:

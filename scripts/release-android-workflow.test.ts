@@ -41,6 +41,10 @@ describe("release-android.yml downloads landing contract", () => {
 
   it("serializes downloads/latest.json writes with Windows via concurrency group", () => {
     expect(yaml).toMatch(/group:\s*downloads-latest-blob/);
+    // Workflow-level + job-level groups both queue instead of dropping pending runs.
+    const queueMaxMatches = yaml.match(/queue:\s*max/g) ?? [];
+    expect(queueMaxMatches.length).toBeGreaterThanOrEqual(2);
+    expect(yaml).toMatch(/cancel-in-progress:\s*false/);
   });
 
   it("deploys install site without sed inject of INSTALL_APK placeholder", () => {

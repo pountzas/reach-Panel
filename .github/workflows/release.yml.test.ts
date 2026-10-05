@@ -37,5 +37,7 @@ describe("release.yml Windows Blob downloads upload", () => {
 
   it("serializes downloads/latest.json writes with Android via concurrency group", () => {
     expect(yaml).toMatch(/group:\s*downloads-latest-blob/);
+    expect(yaml).toMatch(/queue:\s*max/);
+    expect(yaml).toMatch(/cancel-in-progress:\s*false/);
   });
 });

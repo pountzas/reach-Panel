@@ -21,8 +21,9 @@ use windows::Win32::UI::Accessibility::{
     IUIAutomationTextPattern2, IUIAutomationTextRange, IUIAutomationValuePattern, SetWinEventHook,
     TextPatternRangeEndpoint_End, TextPatternRangeEndpoint_Start, TextUnit_Character,
     UIA_ComboBoxControlTypeId, UIA_CustomControlTypeId, UIA_DocumentControlTypeId,
-    UIA_EditControlTypeId, UIA_GroupControlTypeId, UIA_ListControlTypeId, UIA_ListItemControlTypeId,
-    UIA_TextPattern2Id, UIA_TextPatternId, UIA_ValuePatternId, HWINEVENTHOOK, UIA_CONTROLTYPE_ID,
+    UIA_EditControlTypeId, UIA_GroupControlTypeId, UIA_IsReadOnlyAttributeId,
+    UIA_ListControlTypeId, UIA_ListItemControlTypeId, UIA_TextPattern2Id, UIA_TextPatternId,
+    UIA_ValuePatternId, HWINEVENTHOOK, UIA_CONTROLTYPE_ID,
 };
 use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -43,7 +44,7 @@ struct LastRealTextFocus {
 }
 
 static TARGET_HWND: Mutex<Option<usize>> = Mutex::new(None);
-static TARGET_BOUNDS: Mutex<Option<ScreenRect>> = Mutex::new(None);
+static TARGET_BOUNDS: Mutex<Option<StickyTargetBounds>> = Mutex::new(None);
 static HOOK_ONCE: Once = Once::new();
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 static LAST_INPUT_FOCUSED: Mutex<Option<bool>> = Mutex::new(None);
@@ -79,6 +80,15 @@ pub struct UiaTextInputSignals {
     pub aria_role: AriaRoleKind,
     /// True when TextPattern or TextPattern2 is available (contenteditable hosts).
     pub has_text_pattern: bool,
+    /// TextPattern document range is editable (`IsReadOnly` is false / unavailable).
+    /// Independent of ValuePattern — Chromium contenteditable Groups often lack ValuePattern.
+    pub text_pattern_editable: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct StickyTargetBounds {
+    hwnd: usize,
+    rect: ScreenRect,
 }
 
 /// Maps an ARIA role string from UIA (`CurrentAriaRole`) to a classifier bucket.
@@ -104,8 +114,11 @@ pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
 
     // Chromium contenteditable roots (YouTube comments, etc.) are exposed as
     // Group with aria role "group" plus TextPattern — not Edit/textbox.
-    // Detect them before the NotText landmark reject.
-    if signals.has_text_pattern && ty == UIA_GroupControlTypeId {
+    // Require TextPattern editability (not ValuePattern) before the NotText reject.
+    if signals.has_text_pattern
+        && signals.text_pattern_editable
+        && ty == UIA_GroupControlTypeId
+    {
         return true;
     }
     // Some hosts use Custom + TextPattern for the same pattern; still reject
@@ -546,12 +559,88 @@ fn uia_element_has_text_pattern(element: &IUIAutomationElement) -> bool {
     }
 }
 
+/// True when TextPattern's document range is not read-only.
+///
+/// Falls open when the attribute is Mixed/unavailable so Chromium contenteditable
+/// Groups that lack ValuePattern still count as editable.
+fn uia_element_text_pattern_editable(element: &IUIAutomationElement) -> bool {
+    unsafe {
+        let range = if let Ok(pattern2) =
+            element.GetCurrentPatternAs::<IUIAutomationTextPattern2>(UIA_TextPattern2Id)
+        {
+            pattern2.DocumentRange().ok()
+        } else if let Ok(pattern) =
+            element.GetCurrentPatternAs::<IUIAutomationTextPattern>(UIA_TextPatternId)
+        {
+            pattern.DocumentRange().ok()
+        } else {
+            None
+        };
+        let Some(range) = range else {
+            return false;
+        };
+        match range.GetAttributeValue(UIA_IsReadOnlyAttributeId) {
+            Ok(value) => match bool::try_from(&value) {
+                Ok(readonly) => !readonly,
+                Err(_) => true,
+            },
+            Err(_) => true,
+        }
+    }
+}
+
+fn set_target_hwnd(hwnd_key: usize) {
+    let changed = if let Ok(mut target) = TARGET_HWND.lock() {
+        let changed = *target != Some(hwnd_key);
+        *target = Some(hwnd_key);
+        changed
+    } else {
+        false
+    };
+    if changed {
+        if let Ok(mut bounds) = TARGET_BOUNDS.lock() {
+            *bounds = None;
+        }
+    }
+}
+
 fn remember_hwnd_as_target(hwnd: HWND) {
     if !is_valid_typing_target(hwnd) {
         return;
     }
-    if let Ok(mut target) = TARGET_HWND.lock() {
-        *target = Some(hwnd_to_usize(hwnd));
+    set_target_hwnd(hwnd_to_usize(hwnd));
+}
+
+/// Reuse cached strip geometry only when it belongs to the same target HWND.
+pub(crate) fn sticky_rect_for_target(
+    cached_hwnd: Option<usize>,
+    cached_rect: Option<ScreenRect>,
+    current_hwnd: Option<usize>,
+) -> Option<ScreenRect> {
+    match (cached_hwnd, cached_rect, current_hwnd) {
+        (Some(cached), Some(rect), Some(current)) if cached == current => Some(rect),
+        _ => None,
+    }
+}
+
+fn sticky_bounds_for_hwnd(hwnd_key: usize) -> Option<ScreenRect> {
+    let cached = TARGET_BOUNDS.lock().ok().and_then(|g| *g)?;
+    sticky_rect_for_target(Some(cached.hwnd), Some(cached.rect), Some(hwnd_key))
+}
+
+fn store_target_bounds(rect: ScreenRect) {
+    let hwnd_key = TARGET_HWND.lock().ok().and_then(|g| *g);
+    let Some(hwnd_key) = hwnd_key else {
+        if let Ok(mut bounds) = TARGET_BOUNDS.lock() {
+            *bounds = None;
+        }
+        return;
+    };
+    if let Ok(mut bounds) = TARGET_BOUNDS.lock() {
+        *bounds = Some(StickyTargetBounds {
+            hwnd: hwnd_key,
+            rect,
+        });
     }
 }
 
@@ -581,12 +670,15 @@ fn uia_focused_is_text_input() -> Option<bool> {
         }
         let control_type = unsafe { element.CurrentControlType().ok()?.0 };
         let native_class = uia_element_native_class(&element);
+        let has_text_pattern = uia_element_has_text_pattern(&element);
         let signals = UiaTextInputSignals {
             control_type,
             value_writable: uia_element_value_writable(&element),
             is_chromium_document: is_chromium_class(&native_class),
             aria_role: uia_element_aria_role(&element),
-            has_text_pattern: uia_element_has_text_pattern(&element),
+            has_text_pattern,
+            text_pattern_editable: has_text_pattern
+                && uia_element_text_pattern_editable(&element),
         };
         let is_text = uia_control_is_text_input(signals);
         if is_text {
@@ -693,18 +785,18 @@ fn publish_input_target_bounds(focused: bool) {
     } else {
         None
     };
-    let sticky = TARGET_BOUNDS.lock().ok().and_then(|g| *g);
-    // Keep last strip while a typing HWND remains (even if UIA focus briefly leaves).
-    let next = resolve_bounds_with_sticky(live, sticky, has_input_target());
-    let changed = if let Ok(mut guard) = TARGET_BOUNDS.lock() {
-        let changed = *guard != next;
-        if changed {
-            *guard = next;
-        }
-        changed
-    } else {
-        false
-    };
+    let hwnd_key = TARGET_HWND.lock().ok().and_then(|g| *g);
+    let sticky = hwnd_key.and_then(sticky_bounds_for_hwnd);
+    // Keep last strip while the same typing HWND remains (even if UIA focus briefly leaves).
+    let allow_sticky = hwnd_key.is_some() && has_input_target();
+    let next = resolve_bounds_with_sticky(live, sticky, allow_sticky);
+    let prev = sticky;
+    let changed = prev != next;
+    if let Some(rect) = next {
+        store_target_bounds(rect);
+    } else if let Ok(mut guard) = TARGET_BOUNDS.lock() {
+        *guard = None;
+    }
     if changed {
         super::input_preview::notify_bounds_changed();
     }
@@ -738,15 +830,15 @@ fn foreground_is_ours() -> bool {
 pub fn get_input_target_bounds() -> Option<ScreenRect> {
     let live = query_focused_input_bounds();
     if let Some(live) = live {
-        if let Ok(mut guard) = TARGET_BOUNDS.lock() {
-            *guard = Some(live);
-        }
+        store_target_bounds(live);
         return Some(live);
     }
     // ReachPanel foreground: field geometry usually unchanged; sticky + WDA capture
     // still shows the underlying input. Otherwise return None → KeepLastFrame.
+    // Sticky reuse requires the cached identity to match the current target HWND.
+    let hwnd_key = TARGET_HWND.lock().ok().and_then(|g| *g)?;
     let allow_sticky = has_input_target() && foreground_is_ours();
-    let sticky = TARGET_BOUNDS.lock().ok().and_then(|g| *g);
+    let sticky = sticky_bounds_for_hwnd(hwnd_key);
     resolve_bounds_with_sticky(None, sticky, allow_sticky)
 }
 
@@ -1045,9 +1137,7 @@ unsafe extern "system" fn foreground_hook(
         return;
     }
     if is_valid_typing_target(hwnd) {
-        if let Ok(mut target) = TARGET_HWND.lock() {
-            *target = Some(hwnd_to_usize(hwnd));
-        }
+        set_target_hwnd(hwnd_to_usize(hwnd));
     }
     schedule_reevaluate_input_focus();
 }
@@ -1080,13 +1170,9 @@ unsafe extern "system" fn object_focus_hook(
         current
     };
     if is_valid_typing_target(root) {
-        if let Ok(mut target) = TARGET_HWND.lock() {
-            *target = Some(hwnd_to_usize(root));
-        }
+        set_target_hwnd(hwnd_to_usize(root));
     } else if is_valid_typing_target(hwnd) {
-        if let Ok(mut target) = TARGET_HWND.lock() {
-            *target = Some(hwnd_to_usize(hwnd));
-        }
+        set_target_hwnd(hwnd_to_usize(hwnd));
     }
     schedule_reevaluate_input_focus();
 }
@@ -1122,9 +1208,7 @@ pub fn remember_current_if_external() {
         if !is_valid_typing_target(fg) {
             return;
         }
-        if let Ok(mut target) = TARGET_HWND.lock() {
-            *target = Some(hwnd_to_usize(fg));
-        }
+        set_target_hwnd(hwnd_to_usize(fg));
     }
 }
 
@@ -1195,6 +1279,7 @@ mod tests {
     use super::{
         classify_aria_role, is_editable_class, is_last_real_text_focus_live, line_strip_bounds,
         resolve_bounds_with_sticky, satellite_matches_remembered_owner, should_retain_text_focus,
+        sticky_rect_for_target,
         uia_control_is_text_input, uia_signals_are_autocomplete_satellite, AriaRoleKind,
         ScreenRect, UiaTextInputSignals, LAST_REAL_TEXT_FOCUS_TTL, LINE_STRIP_HEIGHT,
         LINE_STRIP_WIDTH,
@@ -1338,12 +1423,31 @@ mod tests {
         aria_role: AriaRoleKind,
         has_text_pattern: bool,
     ) -> UiaTextInputSignals {
+        signals_with_text_editability(
+            control_type,
+            value_writable,
+            is_chromium_document,
+            aria_role,
+            has_text_pattern,
+            has_text_pattern,
+        )
+    }
+
+    fn signals_with_text_editability(
+        control_type: i32,
+        value_writable: bool,
+        is_chromium_document: bool,
+        aria_role: AriaRoleKind,
+        has_text_pattern: bool,
+        text_pattern_editable: bool,
+    ) -> UiaTextInputSignals {
         UiaTextInputSignals {
             control_type,
             value_writable,
             is_chromium_document,
             aria_role,
             has_text_pattern,
+            text_pattern_editable,
         }
     }
 
@@ -1408,13 +1512,24 @@ mod tests {
     fn uia_youtube_comment_contenteditable_group_is_text_input() {
         // Chromium exposes contenteditable roots as Group + aria role "group"
         // with TextPattern (YouTube #contenteditable-root "Add a comment...").
-        // role=group is NotText for landmarks, so TextPattern must tip it over.
-        assert!(uia_control_is_text_input(signals_with_text_pattern(
+        // role=group is NotText for landmarks, so editable TextPattern must tip it over
+        // even when ValuePattern / value_writable is false.
+        assert!(uia_control_is_text_input(signals_with_text_editability(
             50026, // UIA_GroupControlTypeId
             false,
             true,
             AriaRoleKind::NotText,
             true,
+            true,
+        )));
+        // Read-only TextPattern Groups stay rejected.
+        assert!(!uia_control_is_text_input(signals_with_text_editability(
+            50026,
+            false,
+            true,
+            AriaRoleKind::NotText,
+            true,
+            false,
         )));
         // A plain Group landmark without TextPattern stays rejected.
         assert!(!uia_control_is_text_input(signals(
@@ -1423,6 +1538,26 @@ mod tests {
             true,
             AriaRoleKind::NotText,
         )));
+    }
+
+    #[test]
+    fn sticky_bounds_identity_rejects_mismatched_hwnd() {
+        let rect_a = rect(10, 20, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT);
+        let rect_b = rect(30, 40, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT);
+        assert_eq!(
+            sticky_rect_for_target(Some(1), Some(rect_a), Some(1)),
+            Some(rect_a)
+        );
+        assert_eq!(sticky_rect_for_target(Some(2), Some(rect_b), Some(1)), None);
+        assert_eq!(sticky_rect_for_target(Some(1), Some(rect_a), None), None);
+        assert_eq!(
+            resolve_bounds_with_sticky(
+                None,
+                sticky_rect_for_target(Some(2), Some(rect_b), Some(1)),
+                true
+            ),
+            None
+        );
     }
 
     #[test]
