@@ -13,8 +13,8 @@ use tauri::{AppHandle, Emitter, Manager};
 use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::Graphics::Gdi::{
     BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDC, GetDIBits,
-    ReleaseDC, SelectObject, SetWindowOrgEx, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS,
-    HBITMAP, HDC, HGDIOBJ, SRCCOPY,
+    ReleaseDC, SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, HGDIOBJ,
+    SRCCOPY,
 };
 use windows::Win32::Storage::Xps::{PrintWindow, PRINT_WINDOW_FLAGS};
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -354,91 +354,11 @@ fn scale_to_max(width: i32, height: i32, max_w: i32, max_h: i32) -> (i32, i32) {
     )
 }
 
-/// Reusable GDI objects for strip PrintWindow capture (preview worker thread).
-struct StripCaptureGdi {
-    screen_dc: HDC,
-    mem_dc: HDC,
-    bitmap: HBITMAP,
-    bitmap_w: i32,
-    bitmap_h: i32,
-}
-
-impl Drop for StripCaptureGdi {
-    fn drop(&mut self) {
-        unsafe {
-            if !self.bitmap.is_invalid() {
-                let _ = DeleteObject(HGDIOBJ(self.bitmap.0 as _));
-            }
-            if !self.mem_dc.is_invalid() {
-                let _ = DeleteDC(self.mem_dc);
-            }
-            if !self.screen_dc.is_invalid() {
-                let _ = ReleaseDC(None, self.screen_dc);
-            }
-        }
-    }
-}
-
-thread_local! {
-    static STRIP_CAPTURE_GDI: std::cell::RefCell<Option<StripCaptureGdi>> =
-        const { std::cell::RefCell::new(None) };
-}
-
-fn with_strip_capture_gdi<T>(
-    width: i32,
-    height: i32,
-    f: impl FnOnce(HDC, HBITMAP) -> Result<T, String>,
-) -> Result<T, String> {
-    STRIP_CAPTURE_GDI.with(|cell| {
-        let mut slot = cell.borrow_mut();
-        let needs_new = match slot.as_ref() {
-            Some(gdi) => {
-                gdi.bitmap_w < width
-                    || gdi.bitmap_h < height
-                    || gdi.screen_dc.is_invalid()
-                    || gdi.mem_dc.is_invalid()
-                    || gdi.bitmap.is_invalid()
-            }
-            None => true,
-        };
-        if needs_new {
-            *slot = None;
-            let gdi = unsafe {
-                let screen_dc = GetDC(None);
-                if screen_dc.is_invalid() {
-                    return Err("GetDC failed".into());
-                }
-                let mem_dc = CreateCompatibleDC(screen_dc);
-                if mem_dc.is_invalid() {
-                    let _ = ReleaseDC(None, screen_dc);
-                    return Err("CreateCompatibleDC failed".into());
-                }
-                let bitmap = CreateCompatibleBitmap(screen_dc, width, height);
-                if bitmap.is_invalid() {
-                    let _ = DeleteDC(mem_dc);
-                    let _ = ReleaseDC(None, screen_dc);
-                    return Err("CreateCompatibleBitmap failed".into());
-                }
-                StripCaptureGdi {
-                    screen_dc,
-                    mem_dc,
-                    bitmap,
-                    bitmap_w: width,
-                    bitmap_h: height,
-                }
-            };
-            *slot = Some(gdi);
-        }
-        let gdi = slot.as_ref().expect("strip capture gdi");
-        f(gdi.mem_dc, gdi.bitmap)
-    })
-}
-
 /// Capture `screen_rect` from `hwnd`'s own pixels via PrintWindow (no desktop compositing).
 ///
-/// Allocates/reads only the strip-sized region (window origin offset), reusing GDI
-/// resources across frames on the preview worker thread. PrintWindow runs every call
-/// so content updates even when bounds are unchanged.
+/// PrintWindow always paints the full window into the DC from its top-left; a strip-sized
+/// bitmap + SetWindowOrgEx does not shift that paint, so we PrintWindow into a full-window
+/// buffer then crop. GDI objects are created and released per frame (no long-lived GetDC).
 fn capture_window_region_bgra(hwnd: HWND, screen_rect: &CaptureRect) -> Result<Vec<u8>, String> {
     unsafe {
         let mut window_rect = RECT::default();
@@ -454,47 +374,64 @@ fn capture_window_region_bgra(hwnd: HWND, screen_rect: &CaptureRect) -> Result<V
         )
         .ok_or_else(|| "capture rect does not intersect target window".to_string())?;
 
-        let strip_w = local.width;
-        let strip_h = local.height;
-        let cropped = with_strip_capture_gdi(strip_w, strip_h, |mem_dc, bitmap| {
-            let old = SelectObject(mem_dc, HGDIOBJ(bitmap.0 as _));
-            // Map window-local (local.left, local.top) onto bitmap (0, 0).
-            let mut prev_org = windows::Win32::Foundation::POINT::default();
-            let _ = SetWindowOrgEx(mem_dc, local.left, local.top, Some(&mut prev_org));
-            let printed = PrintWindow(hwnd, mem_dc, PRINT_FULL_CONTENT).as_bool();
-            let _ = SetWindowOrgEx(mem_dc, prev_org.x, prev_org.y, None);
+        let screen_dc = GetDC(None);
+        if screen_dc.is_invalid() {
+            return Err("GetDC failed".into());
+        }
+        let mem_dc = CreateCompatibleDC(screen_dc);
+        if mem_dc.is_invalid() {
+            let _ = ReleaseDC(None, screen_dc);
+            return Err("CreateCompatibleDC failed".into());
+        }
+        let bitmap = CreateCompatibleBitmap(screen_dc, win_w, win_h);
+        if bitmap.is_invalid() {
+            let _ = DeleteDC(mem_dc);
+            let _ = ReleaseDC(None, screen_dc);
+            return Err("CreateCompatibleBitmap failed".into());
+        }
 
-            let mut bmi = BITMAPINFO {
-                bmiHeader: BITMAPINFOHEADER {
-                    biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
-                    biWidth: strip_w,
-                    biHeight: -strip_h,
-                    biPlanes: 1,
-                    biBitCount: 32,
-                    biCompression: BI_RGB.0 as u32,
-                    ..Default::default()
-                },
-                bmiColors: [Default::default()],
-            };
+        let old = SelectObject(mem_dc, HGDIOBJ(bitmap.0 as _));
+        let printed = PrintWindow(hwnd, mem_dc, PRINT_FULL_CONTENT).as_bool();
+        SelectObject(mem_dc, old);
 
-            let stride = (strip_w * 4) as usize;
-            let mut pixels = vec![0u8; stride * strip_h as usize];
-            let lines = GetDIBits(
-                mem_dc,
-                bitmap,
-                0,
-                strip_h as u32,
-                Some(pixels.as_mut_ptr() as *mut _),
-                &mut bmi,
-                DIB_RGB_COLORS,
-            );
-            SelectObject(mem_dc, old);
+        let mut bmi = BITMAPINFO {
+            bmiHeader: BITMAPINFOHEADER {
+                biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                biWidth: win_w,
+                biHeight: -win_h,
+                biPlanes: 1,
+                biBitCount: 32,
+                biCompression: BI_RGB.0 as u32,
+                ..Default::default()
+            },
+            bmiColors: [Default::default()],
+        };
 
-            if !printed || lines == 0 {
-                return Err("PrintWindow/GetDIBits failed".into());
-            }
-            Ok(pixels)
-        })?;
+        let stride = (win_w * 4) as usize;
+        let mut pixels = vec![0u8; stride * win_h as usize];
+        let lines = GetDIBits(
+            mem_dc,
+            bitmap,
+            0,
+            win_h as u32,
+            Some(pixels.as_mut_ptr() as *mut _),
+            &mut bmi,
+            DIB_RGB_COLORS,
+        );
+
+        let _ = DeleteObject(HGDIOBJ(bitmap.0 as _));
+        let _ = DeleteDC(mem_dc);
+        let _ = ReleaseDC(None, screen_dc);
+
+        if !printed || lines == 0 {
+            return Err("PrintWindow/GetDIBits failed".into());
+        }
+
+        // If the strip size matches the original screen rect, crop as-is.
+        // When clipped to the window edge, pad/crop to the requested screen size so
+        // callers keep a stable (src_w, src_h) buffer.
+        let cropped = crop_bgra(&pixels, win_w, win_h, local)
+            .ok_or_else(|| "crop after PrintWindow failed".to_string())?;
 
         if local.width == screen_rect.width && local.height == screen_rect.height {
             return Ok(cropped);
