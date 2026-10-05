@@ -23,8 +23,8 @@
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-autostart": "^2.7.0",
     "@tauri-apps/plugin-opener": "^2",
-    "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-updater": "^2.12.0",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-updater": "^2.13.1",
     "@tonejs/midi": "^2.0.28",
     "jszip": "^3.10.2",
     "pdfjs-dist": "^6.3.289",
@@ -48,7 +48,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^29.1.1",
     "typescript": "~6.0.3",
-    "vite": "^8.3.0",
+    "vite": "^8.3.2",
     "vitest": "^4.1.11"
   }
 }
