@@ -5,6 +5,17 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.15.1 (2026-10-05)
+
+## What's Changed
+* fix(deps): Dependabot security updates (companion npm) by @pountzas in https://github.com/pountzas/reach-Panel/pull/186
+* fix: Mini Mode focus for YouTube contenteditable comments by @pountzas in https://github.com/pountzas/reach-Panel/pull/187
+* fix: stabilize live preview tracking and avoid ReachPanel occlusion by @pountzas in https://github.com/pountzas/reach-Panel/pull/188
+* fix: promote Mini Mode YouTube focus, live preview stability, and security patches by @pountzas in https://github.com/pountzas/reach-Panel/pull/189
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.15.0...v0.15.1
+
 ## 0.15.0 (2026-10-04)
 
 ## What's Changed
