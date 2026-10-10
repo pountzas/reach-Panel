@@ -122,6 +122,8 @@ fn preview_loop() {
         if !PREVIEW_ENABLED.load(Ordering::Acquire) && !companion_live {
             continue;
         }
+        // Gate on editable focus (same signal as Focus mode auto-show, #200).
+        // Applies to the companion tablet too: no text field focused → cleared.
         match next_preview_action(
             has_input_target() && is_input_focused(),
             get_input_target_bounds(),

@@ -3002,6 +3002,18 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   }
 });
 
+// Startup hydration: input-focus-changed only fires on change, so read the current value once.
+void invoke<boolean>("cmd_get_input_focused")
+  .then((focused) => {
+    useAppStore.setState({
+      externalInputFocused: focused,
+      ...(focused ? {} : { inputPreviewFrame: null }),
+    });
+  })
+  .catch(() => {
+    /* keep false */
+  });
+
 export async function getMacroSteps(macroId: string): Promise<MacroStep[]> {
   return invoke<MacroStep[]>("cmd_get_macro_steps", { macroId });
 }
