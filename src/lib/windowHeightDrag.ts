@@ -4,13 +4,13 @@ import type { MonitorInfo } from "./types";
 
 /**
  * Gate for applyWindowHeightRatioLive.
- * Collapsed FAB is the only skip; mini mode grips must still preview height.
+ * Collapsed FAB is the only skip; focus mode grips must still preview height.
  */
 export function shouldApplyLiveWindowHeightRatio(input: {
   collapsed: boolean;
-  miniModeActive: boolean;
+  focusModeActive: boolean;
 }): boolean {
-  void input.miniModeActive;
+  void input.focusModeActive;
   return !input.collapsed;
 }
 
@@ -31,13 +31,13 @@ export function resolveWindowHeightDragRegion(
   opts: {
     fullWorkArea: boolean;
     multiMonitor: boolean;
-    miniMode: boolean;
+    focusMode: boolean;
   },
 ): WindowHeightDragRegion {
   const scale = resolveMonitorScaleFactor(monitor);
-  // Match Rust compute_window_layout: mini / full_work_area / 2+ monitors → full
+  // Match Rust compute_window_layout: focus / full_work_area / 2+ monitors → full
   // work area; single non-teaching → bottom half.
-  const useFull = opts.miniMode || opts.fullWorkArea || opts.multiMonitor;
+  const useFull = opts.focusMode || opts.fullWorkArea || opts.multiMonitor;
   const regionY = useFull ? monitor.y : monitor.y + Math.floor(monitor.height / 2);
   const regionH = useFull ? monitor.height : Math.floor(monitor.height / 2);
   return {

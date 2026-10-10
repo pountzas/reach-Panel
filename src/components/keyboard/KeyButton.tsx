@@ -3,7 +3,7 @@ import {
   type ReactNode,
 } from "react";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
-import { transparentOutlineStyle } from "../../lib/miniMode";
+import { transparentOutlineStyle } from "../../lib/focusMode";
 import {
   useKeyRepeat,
   type KeyRepeatFireMeta,
@@ -26,7 +26,7 @@ type KeyButtonProps = {
   stretch?: boolean;
   gridColumn?: string;
   gridRow?: string;
-  /** Mini-mode transparent outlined key styling. */
+  /** Focus-mode transparent outlined key styling. */
   transparent?: boolean;
   outlineColor?: TransparentKeyColor | string | null;
   /** Pin label to the bottom edge of the key (e.g. wide Space bar). */

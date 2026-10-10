@@ -14,9 +14,9 @@ describe("mapCompanionSessionPhase", () => {
   });
 
   it("maps idle to restore HostAppMode", () => {
-    expect(mapCompanionSessionPhase("idle", "mini")).toEqual({
+    expect(mapCompanionSessionPhase("idle", "focus")).toEqual({
       live: false,
-      restore: "mini",
+      restore: "focus",
     });
     expect(mapCompanionSessionPhase("idle", "teaching")).toEqual({
       live: false,

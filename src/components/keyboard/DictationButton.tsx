@@ -4,7 +4,7 @@ import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { DictationVisualizer } from "./DictationVisualizer";
-import { transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
+import { transparentKeyPalette, transparentOutlineStyle } from "../../lib/focusMode";
 
 export function DictationButton({ transparentUi = false }: { transparentUi?: boolean }) {
   const {

@@ -11,7 +11,7 @@ export type MousePanelMode = "mouse" | "numpad";
 export type MousePanelSide = "left" | "right";
 export type FnKeyMode = "one-shot" | "latched";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
-/** Outline/label palette for transparent mini-mode keyboard. */
+/** Outline/label palette for transparent focus-mode keyboard. */
 export type TransparentKeyColor = "white" | "dark-gray" | "silver";
 
 export type PointerInputKind = "touch" | "mouse";
@@ -57,8 +57,8 @@ export interface AppSettings {
   dictationVisible: boolean;
   /** Live thumbnail of the focused external input field above the keyboard (Normal mode). */
   inputPreviewVisible?: boolean;
-  /** Live input preview while Mini Mode keyboard is shown. */
-  inputPreviewMiniModeVisible?: boolean;
+  /** Live input preview while Focus mode keyboard is shown. */
+  inputPreviewFocusModeVisible?: boolean;
   /** Preferred Windows taskbar edge; applied when changed in Settings. */
   taskbarPositionPreference?: TaskbarPosition;
   /** Free Groq API key for cloud dictation when Windows speech packs are unavailable (e.g. Greek). */
@@ -93,9 +93,9 @@ export interface AppSettings {
    * Combined with visibility-based content ratio via Math.max.
    */
   windowHeightRatio?: number;
-  /** true = Mini, false / null = Normal (null migrates to false on load) */
-  miniModeOverride?: boolean | null;
-  miniModeTransparent?: boolean;
+  /** true = Focus, false / null = Normal (null migrates to false on load) */
+  focusModeOverride?: boolean | null;
+  focusModeTransparent?: boolean;
   /** Outline/label color when transparent keyboard is active. */
   transparentKeyColor?: TransparentKeyColor;
   touchLayout?: LayoutSnapshot;
@@ -227,7 +227,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   suggestionsVisible: false,
   dictationVisible: true,
   inputPreviewVisible: true,
-  inputPreviewMiniModeVisible: true,
+  inputPreviewFocusModeVisible: true,
   taskbarPositionPreference: "bottom",
   groqApiKey: "",
   emergencyVisible: false,
@@ -247,7 +247,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mouseBottomRowVisible: true,
   largeHeaders: false,
   transparentKeyColor: "white",
-  miniModeOverride: false,
+  focusModeOverride: false,
   languageLessonLanguage: "el",
   languageLessonAgeBand: "primary",
   languageLessonLeftRatio: 0.4,

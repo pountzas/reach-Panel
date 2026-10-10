@@ -9,14 +9,14 @@ export const COLLAPSED_FAB_PAD = 10;
 /** Extra px for hover scale headroom (~5% of 56px). */
 export const FAB_HOVER_SLACK = 6;
 
-/** Default mini-mode keyboard height as fraction of full monitor height. Keep in sync with Rust. */
-export const MINI_KEYBOARD_HEIGHT_RATIO = 0.42;
+/** Default focus-mode keyboard height as fraction of full monitor height. Keep in sync with Rust. */
+export const FOCUS_KEYBOARD_HEIGHT_RATIO = 0.42;
 
 /**
- * Mini Mode keyboard toolbar chrome. `pl-3` matches AppShell header `px-3`
+ * Focus mode keyboard toolbar chrome. `pl-3` matches AppShell header `px-3`
  * so the height grip is not flush to the window edge.
  */
-export function miniModeToolbarClassName(hasSuggestionChips: boolean): string {
+export function focusModeToolbarClassName(hasSuggestionChips: boolean): string {
   const gap = hasSuggestionChips ? "gap-1" : "";
   return [
     "relative z-20 flex w-full shrink-0 flex-col overflow-visible",
@@ -103,39 +103,39 @@ export function isMirroredSetup(monitors: MonitorInfo[]): boolean {
   return false;
 }
 
-/** Mini mode is eligible on a single display or a mirrored multi-display setup. */
-export function isMiniModeEligible(monitors: MonitorInfo[]): boolean {
+/** Focus mode is eligible on a single display or a mirrored multi-display setup. */
+export function isFocusModeEligible(monitors: MonitorInfo[]): boolean {
   if (monitors.length === 0) return false;
   return monitors.length === 1 || isMirroredSetup(monitors);
 }
 
 /**
- * Resolve whether mini mode should be active.
- * - Teaching active → never Mini (typing-only product surface)
- * - `miniModeOverride: true` → Mini
- * - `miniModeOverride: false` / `null` / `undefined` → Normal (Auto dropped)
+ * Resolve whether focus mode should be active.
+ * - Teaching active → never Focus (typing-only product surface)
+ * - `focusModeOverride: true` → Focus
+ * - `focusModeOverride: false` / `null` / `undefined` → Normal (Auto dropped)
  */
-export function resolveMiniModeEnabled(
+export function resolveFocusModeEnabled(
   settings: AppSettings,
   _monitors: MonitorInfo[],
   teachingActive = false,
 ): boolean {
   if (teachingActive) return false;
-  return settings.miniModeOverride === true;
+  return settings.focusModeOverride === true;
 }
 
-/** True when mini mode is active and the transparent keyboard setting is on. */
+/** True when focus mode is active and the transparent keyboard setting is on. */
 export function isTransparentUiActive(
   settings: AppSettings,
-  miniModeActive: boolean,
+  focusModeActive: boolean,
 ): boolean {
-  return Boolean(miniModeActive && settings.miniModeTransparent);
+  return Boolean(focusModeActive && settings.focusModeTransparent);
 }
 
-/** Whether the live input preview should show (and capture). Ignores mini mode. */
+/** Whether the live input preview should show (and capture). Ignores focus mode. */
 export function isInputPreviewActiveForMode(
   settings: AppSettings,
-  _miniModeActive: boolean,
+  _focusModeActive: boolean,
 ): boolean {
   return settings.inputPreviewVisible !== false;
 }
@@ -181,7 +181,7 @@ export function nextTransparentKeyColor(
   return next ?? "white";
 }
 
-/** High-contrast outlined control style for transparent mini mode. */
+/** High-contrast outlined control style for transparent focus mode. */
 export function transparentOutlineStyle(
   options: {
     active?: boolean;

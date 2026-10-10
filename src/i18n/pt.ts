@@ -31,11 +31,11 @@ export const pt: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Ecrã de acessibilidade",
 
-  miniMode: "Modo",
+  modesSection: "Modo",
 
   modeNormal: "Normal",
 
-  modeMini: "Mini",
+  modeFocus: "Foco",
 
   modeTeaching: "Ensino",
 
@@ -136,26 +136,26 @@ export const pt: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "Eliminar “{title}”?",
 
   modeTabletsHint:
-    "Normal e Mini são teclado. Ensino abre lições; Música mostra o sintetizador. Companheiro fica indisponível até a bridge estar ativa ou um tablet emparelhado; fica selecionado enquanto um tablet estiver ligado.",
+    "Normal e Foco são teclado. Ensino abre lições; Música mostra o sintetizador. Companheiro fica indisponível até a bridge estar ativa ou um tablet emparelhado; fica selecionado enquanto um tablet estiver ligado.",
 
-  miniModeAutoDescription:
+  focusModeAutoDescription:
     "Num ecrã único ou configuração em espelho, o teclado aparece automaticamente quando toca num campo de entrada.",
 
-  miniModeOverrideLabel: "Modo Mini",
+  focusModeOverrideLabel: "Modo Foco",
 
-  miniModeOverrideAuto: "Automático",
+  focusModeOverrideAuto: "Automático",
 
-  miniModeOverrideOn: "Ativado",
+  focusModeOverrideOn: "Ativado",
 
-  miniModeOverrideOff: "Desativado",
+  focusModeOverrideOff: "Desativado",
 
-  miniModeTransparent: "Teclado transparente",
+  focusModeTransparent: "Teclado transparente",
 
   inputPreviewLabel: "Campo de destino",
 
   inputPreviewWaiting: "A aguardar pré-visualização…",
 
-  miniModeTransparentDescription:
+  focusModeTransparentDescription:
     "Mostrar teclas apenas com contornos para ver as aplicações por detrás.",
 
   transparentKeyColor: "Cor das teclas transparentes",
@@ -166,7 +166,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Prata",
 
-  miniModeCollapse: "Voltar ao Modo Mini",
+  focusModeCollapse: "Voltar ao modo Foco",
 
   largeHeaders: "Cabeçalhos grandes para redimensionar mais facilmente",
 
@@ -236,7 +236,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   showInputPreview: "Pré-visualização ao vivo do campo",
 
-  showInputPreviewMiniMode: "Pré-visualização ao vivo do campo (Modo Mini)",
+  showInputPreviewFocusMode: "Pré-visualização ao vivo do campo (modo Foco)",
 
   taskbarPosition: "Posição da barra de tarefas",
 

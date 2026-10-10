@@ -31,11 +31,11 @@ export const es: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Pantalla de accesibilidad",
 
-  miniMode: "Modo",
+  modesSection: "Modo",
 
   modeNormal: "Normal",
 
-  modeMini: "Mini",
+  modeFocus: "Enfoque",
 
   modeTeaching: "Enseñanza",
 
@@ -136,26 +136,26 @@ export const es: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "¿Eliminar «{title}»?",
 
   modeTabletsHint:
-    "Normal y Mini son teclado. Enseñanza abre lecciones; Música muestra el sintetizador. Compañero no está disponible hasta que el puente esté activo o haya una tableta emparejada; se selecciona mientras hay una tableta conectada.",
+    "Normal y Enfoque son teclado. Enseñanza abre lecciones; Música muestra el sintetizador. Compañero no está disponible hasta que el puente esté activo o haya una tableta emparejada; se selecciona mientras hay una tableta conectada.",
 
-  miniModeAutoDescription:
+  focusModeAutoDescription:
     "En una sola pantalla o configuración reflejada, el teclado aparece automáticamente al tocar un campo de entrada.",
 
-  miniModeOverrideLabel: "Modo Mini",
+  focusModeOverrideLabel: "Modo enfoque",
 
-  miniModeOverrideAuto: "Automático",
+  focusModeOverrideAuto: "Automático",
 
-  miniModeOverrideOn: "Activado",
+  focusModeOverrideOn: "Activado",
 
-  miniModeOverrideOff: "Desactivado",
+  focusModeOverrideOff: "Desactivado",
 
-  miniModeTransparent: "Teclado transparente",
+  focusModeTransparent: "Teclado transparente",
 
   inputPreviewLabel: "Campo de destino",
 
   inputPreviewWaiting: "Esperando vista previa…",
 
-  miniModeTransparentDescription:
+  focusModeTransparentDescription:
     "Mostrar teclas solo con contornos para ver las aplicaciones detrás.",
 
   transparentKeyColor: "Color de teclas transparentes",
@@ -166,7 +166,7 @@ export const es: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Plateado",
 
-  miniModeCollapse: "Volver al Modo Mini",
+  focusModeCollapse: "Volver al modo enfoque",
 
   largeHeaders: "Encabezados grandes para redimensionar más fácilmente",
 
@@ -236,7 +236,7 @@ export const es: Record<keyof typeof en, string> = {
 
   showInputPreview: "Vista previa en vivo del campo",
 
-  showInputPreviewMiniMode: "Vista previa en vivo del campo (Modo Mini)",
+  showInputPreviewFocusMode: "Vista previa en vivo del campo (modo enfoque)",
 
   taskbarPosition: "Posición de la barra de tareas",
 

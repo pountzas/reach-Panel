@@ -7,13 +7,13 @@ import {
   COLLAPSED_FAB_SIZE,
   collapsedFabContentMinSize,
   type CollapsedFabCount,
-} from "../../lib/miniMode";
+} from "../../lib/focusMode";
 
 export interface CollapsedFabProps {
-  /** Show Settings (gear) above Expand (Mini Mode). */
+  /** Show Settings (gear) above Expand (Focus mode). */
   showSettings?: boolean;
   onSettings?: () => void;
-  /** When set, Expand uses this instead of toggleCollapsed (Mini Mode manual expand). */
+  /** When set, Expand uses this instead of toggleCollapsed (Focus mode manual expand). */
   onExpand?: () => void;
 }
 

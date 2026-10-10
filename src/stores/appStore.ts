@@ -45,7 +45,8 @@ import {
 } from "../lib/sectionLayouts";
 import { shouldApplyLiveWindowHeightRatio } from "../lib/windowHeightDrag";
 import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
-import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled, isInputPreviewActiveForMode } from "../lib/miniMode";
+import { FOCUS_KEYBOARD_HEIGHT_RATIO, resolveFocusModeEnabled, isInputPreviewActiveForMode } from "../lib/focusMode";
+import { migrateLegacyFocusModeSettingsKeys } from "../lib/focusModeSettingsMigration";
 import {
   mapCompanionSessionPhase,
   shouldIgnoreCompanionIdle,
@@ -78,7 +79,7 @@ import {
   restoreModeAfterCompanion,
   settingsForPersist,
   shouldDelegateAppModeToMain,
-  shouldSyncNonMiniWindowLayout,
+  shouldSyncNonFocusWindowLayout,
   teachingSessionKeyboardMode,
   APP_MODE_REQUEST_EVENT,
   TEACHING_LESSON_REQUEST_EVENT,
@@ -276,7 +277,7 @@ let liveHeightRatioPending: number | null = null;
 let liveHeightRatioInFlight = false;
 
 /** When a mini layout sync is requested during animation, retry after it finishes. */
-let pendingMiniLayoutSync: boolean | null = null;
+let pendingFocusLayoutSync: boolean | null = null;
 
 /** Coalesce rapid touch↔mouse pointerdowns before switching layout profiles. */
 const POINTER_INPUT_KIND_DEBOUNCE_MS = 50;
@@ -284,21 +285,21 @@ let pendingPointerInputKind: PointerInputKind | null = null;
 let pointerInputKindDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * Animate mini-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
- * Always ends aligned with the latest `miniModeKeyboardVisible` (no squashed keyboard in FAB).
+ * Animate focus-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
+ * Always ends aligned with the latest `focusModeKeyboardVisible` (no squashed keyboard in FAB).
  */
-async function syncMiniModeWindowLayout(preferAnimate = true) {
+async function syncFocusModeWindowLayout(preferAnimate = true) {
   const state = useAppStore.getState();
-  if (!state.miniModeActive) {
-    pendingMiniLayoutSync = null;
+  if (!state.focusModeActive) {
+    pendingFocusLayoutSync = null;
     return;
   }
   if (state.isAnimatingWindow) {
-    pendingMiniLayoutSync = preferAnimate;
+    pendingFocusLayoutSync = preferAnimate;
     return;
   }
 
-  const visibleAtStart = state.miniModeKeyboardVisible;
+  const visibleAtStart = state.focusModeKeyboardVisible;
   useAppStore.setState({ isAnimatingWindow: true });
   try {
     const { settings } = useAppStore.getState();
@@ -311,9 +312,9 @@ async function syncMiniModeWindowLayout(preferAnimate = true) {
         settings,
         useAppStore.getState().musicTeachingEnabled,
       ),
-      miniMode: true,
-      miniKeyboardVisible: visibleAtStart,
-      miniKeyboardHeightRatio: MINI_KEYBOARD_HEIGHT_RATIO,
+      focusMode: true,
+      focusKeyboardVisible: visibleAtStart,
+      focusKeyboardHeightRatio: FOCUS_KEYBOARD_HEIGHT_RATIO,
       fullWorkArea: false,
     };
     if (preferAnimate) {
@@ -324,15 +325,15 @@ async function syncMiniModeWindowLayout(preferAnimate = true) {
   } finally {
     useAppStore.setState({ isAnimatingWindow: false });
     const latest = useAppStore.getState();
-    const queued = pendingMiniLayoutSync;
-    pendingMiniLayoutSync = null;
+    const queued = pendingFocusLayoutSync;
+    pendingFocusLayoutSync = null;
     // Visibility changed mid-animation, or another sync was requested while busy.
     if (
-      latest.miniModeActive &&
-      (queued !== null || latest.miniModeKeyboardVisible !== visibleAtStart)
+      latest.focusModeActive &&
+      (queued !== null || latest.focusModeKeyboardVisible !== visibleAtStart)
     ) {
       const nextAnimate = queued ?? preferAnimate;
-      void syncMiniModeWindowLayout(nextAnimate);
+      void syncFocusModeWindowLayout(nextAnimate);
     }
   }
 }
@@ -357,14 +358,14 @@ async function waitForWindowAnimationIdle(
 async function ensureUpdatePromptVisible(get: () => AppStore) {
   await waitForWindowAnimationIdle(get);
   const state = get();
-  if (state.miniModeActive) {
-    if (!state.miniModeKeyboardVisible) {
-      await state.expandMiniModeKeyboard();
+  if (state.focusModeActive) {
+    if (!state.focusModeKeyboardVisible) {
+      await state.expandFocusModeKeyboard();
       // Animation may have started after we checked; retry once if expand no-op'd.
-      if (!get().miniModeKeyboardVisible) {
+      if (!get().focusModeKeyboardVisible) {
         await waitForWindowAnimationIdle(get);
-        if (!get().miniModeKeyboardVisible) {
-          await get().expandMiniModeKeyboard();
+        if (!get().focusModeKeyboardVisible) {
+          await get().expandFocusModeKeyboard();
         }
       }
     }
@@ -382,54 +383,54 @@ async function ensureUpdatePromptVisible(get: () => AppStore) {
 }
 
 /**
- * Keep miniModeActive / mouseVisible in sync with settings + monitors.
+ * Keep focusModeActive / mouseVisible in sync with settings + monitors.
  * Enter: hide mouse panel (session restore on exit). Leave: restore layout.
  */
-async function refreshMiniModeState(options?: { animate?: boolean }) {
+async function refreshFocusModeState(options?: { animate?: boolean }) {
   const state = useAppStore.getState();
-  const { settings, monitors, miniModeActive: wasActive } = state;
+  const { settings, monitors, focusModeActive: wasActive } = state;
   const teachingActive =
     state.musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
   const enabled =
     monitors.length > 0 &&
-    resolveMiniModeEnabled(settings, monitors, teachingActive);
+    resolveFocusModeEnabled(settings, monitors, teachingActive);
   const animate = options?.animate !== false;
 
   if (enabled && !wasActive) {
     const mouseBefore = settings.mouseVisible;
     useAppStore.setState({
-      miniModeActive: true,
-      miniModeKeyboardVisible: false,
-      miniModeManualExpand: false,
-      miniModeSuppressAutoShow: false,
-      mouseVisibleBeforeMiniMode: mouseBefore,
+      focusModeActive: true,
+      focusModeKeyboardVisible: false,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: false,
+      mouseVisibleBeforeFocusMode: mouseBefore,
       settings: mouseBefore ? { ...settings, mouseVisible: false } : settings,
     });
-    await syncMiniModeWindowLayout(animate);
+    await syncFocusModeWindowLayout(animate);
   } else if (!enabled && wasActive) {
-    const restore = state.mouseVisibleBeforeMiniMode;
+    const restore = state.mouseVisibleBeforeFocusMode;
     const nextSettings =
       restore !== null ? { ...settings, mouseVisible: restore } : settings;
     useAppStore.setState({
-      miniModeActive: false,
-      miniModeKeyboardVisible: false,
-      miniModeManualExpand: false,
-      miniModeSuppressAutoShow: false,
-      mouseVisibleBeforeMiniMode: null,
+      focusModeActive: false,
+      focusModeKeyboardVisible: false,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: false,
+      mouseVisibleBeforeFocusMode: null,
       settings: nextSettings,
     });
     await syncWindowLayoutFromSettings(nextSettings, animate, useAppStore.getState().musicTeachingEnabled);
   } else if (enabled) {
     // Still active: enforce mouse panel hidden and keep window layout in sync.
     if (settings.mouseVisible) {
-      if (state.mouseVisibleBeforeMiniMode === null) {
-        useAppStore.setState({ mouseVisibleBeforeMiniMode: true });
+      if (state.mouseVisibleBeforeFocusMode === null) {
+        useAppStore.setState({ mouseVisibleBeforeFocusMode: true });
       }
       useAppStore.setState({
         settings: { ...settings, mouseVisible: false },
       });
     }
-    await syncMiniModeWindowLayout(animate);
+    await syncFocusModeWindowLayout(animate);
   }
 
   await syncInputPreviewEnabled(useAppStore.getState);
@@ -513,9 +514,9 @@ function windowLayoutInvokeArgs(
     collapsed?: boolean;
     collapsedDictation?: boolean;
     collapsedSettings?: boolean;
-    miniMode?: boolean;
-    miniKeyboardVisible?: boolean;
-    miniKeyboardHeightRatio?: number;
+    focusMode?: boolean;
+    focusKeyboardVisible?: boolean;
+    focusKeyboardHeightRatio?: number;
     heightRatio?: number;
   },
 ) {
@@ -527,9 +528,9 @@ function windowLayoutInvokeArgs(
     collapsedSettings: extras?.collapsedSettings,
     heightRatio:
       extras?.heightRatio ?? heightRatioFromSettings(settings, musicTeachingEnabled),
-    miniMode: extras?.miniMode,
-    miniKeyboardVisible: extras?.miniKeyboardVisible,
-    miniKeyboardHeightRatio: extras?.miniKeyboardHeightRatio,
+    focusMode: extras?.focusMode,
+    focusKeyboardVisible: extras?.focusKeyboardVisible,
+    focusKeyboardHeightRatio: extras?.focusKeyboardHeightRatio,
     fullWorkArea,
   };
 }
@@ -602,7 +603,7 @@ interface AppStore {
   /** Session-only: which lesson fills the teaching slot. */
   teachingLesson: TeachingLesson;
   /** Session-only: typing mode to restore when leaving Teaching. */
-  modeBeforeTeaching: "normal" | "mini" | null;
+  modeBeforeTeaching: "normal" | "focus" | null;
   /** Session-only: height ratio captured before Teaching (incl. unset). */
   windowHeightRatioBeforeTeaching: WindowHeightRatioBeforeTeaching;
   /** Session-only: companion tablet mode is selected while a live session exists. */
@@ -619,8 +620,8 @@ interface AppStore {
   companionBridgeArmed: boolean;
   /** Session-only: restore mouse after leaving 5-octave (wide) piano mode. */
   mouseVisibleBeforeWidePiano: boolean | null;
-  /** Session-only: restore mouse after leaving Mini Mode. */
-  mouseVisibleBeforeMiniMode: boolean | null;
+  /** Session-only: restore mouse after leaving Focus mode. */
+  mouseVisibleBeforeFocusMode: boolean | null;
   /** Persisted imported songs (app data library). */
   importedSongs: ImportedMusicSong[];
   /** Persisted caregiver-created spelling lists. */
@@ -644,17 +645,17 @@ interface AppStore {
   teachingPdfLibrary: TeachingPdfEntry[];
   /** Session-only: active Free write PDF id. */
   freeWriteActivePdfId: string | null;
-  /** Mini Mode shell active (single/mirror or override). */
-  miniModeActive: boolean;
-  /** Whether the mini-mode keyboard is popped (vs collapsed FAB). */
-  miniModeKeyboardVisible: boolean;
+  /** Focus mode shell active (single/mirror or override). */
+  focusModeActive: boolean;
+  /** Whether the focus-mode keyboard is popped (vs collapsed FAB). */
+  focusModeKeyboardVisible: boolean;
   /**
    * True after Expand until external input loses focus.
-   * Expand does not exit Mini Mode.
+   * Expand does not exit Focus mode.
    */
-  miniModeManualExpand: boolean;
+  focusModeManualExpand: boolean;
   /** After manual collapse, skip auto-show until external focus is lost once. */
-  miniModeSuppressAutoShow: boolean;
+  focusModeSuppressAutoShow: boolean;
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
@@ -719,15 +720,15 @@ interface AppStore {
   syncWindowFocusable: () => Promise<void>;
   loadKeyboardLayout: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
-  /** Recompute mini mode from settings/monitors and sync window layout. */
-  refreshMiniModeState: (options?: { animate?: boolean }) => Promise<void>;
-  /** Expand FAB: reopen keyboard until external focus is lost (stay in Mini Mode). */
-  expandMiniModeKeyboard: () => Promise<void>;
-  /** Collapse keyboard back to the mini-mode FAB stack. */
-  collapseMiniModeKeyboard: () => Promise<void>;
+  /** Recompute focus mode from settings/monitors and sync window layout. */
+  refreshFocusModeState: (options?: { animate?: boolean }) => Promise<void>;
+  /** Expand FAB: reopen keyboard until external focus is lost (stay in Focus mode). */
+  expandFocusModeKeyboard: () => Promise<void>;
+  /** Collapse keyboard back to the focus-mode FAB stack. */
+  collapseFocusModeKeyboard: () => Promise<void>;
   enableMusicTeaching: () => Promise<void>;
   disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
-  /** Select Normal / Mini / Teaching / Companion tablet mode. */
+  /** Select Normal / Focus / Teaching / Companion tablet mode. */
   setAppMode: (
     mode: AppModeTablet,
     options?: { skipCompanionBridgeStop?: boolean },
@@ -795,13 +796,15 @@ interface AppStore {
 
 function parseSettings(json: string): AppSettings {
   try {
+    const rawParsed = JSON.parse(json) as Record<string, unknown>;
+    const migrated = migrateLegacyFocusModeSettingsKeys(rawParsed);
     const {
       theme,
       mouseSide,
       language: legacyLanguage,
       onscreenLayout: _legacyOnscreenLayout,
       ...parsed
-    } = JSON.parse(json) as Partial<AppSettings> & {
+    } = migrated as Partial<AppSettings> & {
       theme?: unknown;
       mouseSide?: "left" | "right" | "floating";
       language?: string;
@@ -828,16 +831,16 @@ function parseSettings(json: string): AppSettings {
       suggestionsVisible: parsed.suggestionsVisible ?? true,
       dictationVisible: parsed.dictationVisible ?? true,
       inputPreviewVisible: parsed.inputPreviewVisible ?? true,
-      inputPreviewMiniModeVisible: parsed.inputPreviewMiniModeVisible ?? true,
+      inputPreviewFocusModeVisible: parsed.inputPreviewFocusModeVisible ?? true,
       emergencyVisible: parsed.emergencyVisible ?? true,
       keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,
     };
-    // Mini Auto dropped: null / missing override → Normal (false).
-    const miniModeOverride =
-      parsed.miniModeOverride === true
+    // Focus Auto dropped: null / missing override → Normal (false).
+    const focusModeOverride =
+      parsed.focusModeOverride === true
         ? true
         : false;
-    // Teaching is session-only; never hydrate synthesizer under Normal/Mini.
+    // Teaching is session-only; never hydrate synthesizer under Normal/Focus.
     const keyboardSectionMode = coercePersistedKeyboardSectionMode(
       parsed.keyboardSectionMode,
       false,
@@ -852,7 +855,7 @@ function parseSettings(json: string): AppSettings {
       uiLanguage,
       colorProfile,
       mousePanelSide,
-      miniModeOverride,
+      focusModeOverride,
       keyboardSectionMode,
       taskbarPositionPreference,
       sectionStack: resolveSectionStack(parsed.sectionStack, parsed.sectionLayouts),
@@ -943,9 +946,9 @@ async function syncInputPreviewEnabled(get: () => AppStore): Promise<void> {
   if (WebviewWindow.getCurrent().label !== "main") {
     return;
   }
-  const { settings, miniModeActive } = get();
+  const { settings, focusModeActive } = get();
   await invoke("cmd_set_input_preview_enabled", {
-    enabled: isInputPreviewActiveForMode(settings, miniModeActive),
+    enabled: isInputPreviewActiveForMode(settings, focusModeActive),
   });
 }
 
@@ -958,21 +961,26 @@ async function loadProfileData(
     "cmd_get_profiles",
   );
   const active = profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ?? profiles[0];
-  let migratedMiniAuto = false;
+  let migratedFocusAuto = false;
   let migratedKeyboardSectionMode = false;
   if (active) {
     try {
       const raw = JSON.parse(active.settings_json) as {
+        focusModeOverride?: unknown;
         miniModeOverride?: unknown;
         keyboardSectionMode?: unknown;
       };
-      migratedMiniAuto = raw.miniModeOverride == null;
+      const override =
+        raw.focusModeOverride !== undefined
+          ? raw.focusModeOverride
+          : raw.miniModeOverride;
+      migratedFocusAuto = override == null;
       migratedKeyboardSectionMode = needsKeyboardSectionModeMigration(
         raw.keyboardSectionMode,
         get().musicTeachingEnabled,
       );
     } catch {
-      migratedMiniAuto = false;
+      migratedFocusAuto = false;
       migratedKeyboardSectionMode = false;
     }
   }
@@ -994,13 +1002,13 @@ async function loadProfileData(
   await get().loadQuickActions();
   await get().loadPhrases();
   await get().loadMacros();
-  if (migratedMiniAuto || migratedKeyboardSectionMode) {
+  if (migratedFocusAuto || migratedKeyboardSectionMode) {
     const epoch = get().settingsEpoch;
     await persistSettingsIfCurrent(get, epoch, get().settings);
   }
   if (isMainWindow) {
-    await refreshMiniModeState({ animate: options?.animateLayout === true });
-    if (!get().miniModeActive) {
+    await refreshFocusModeState({ animate: options?.animateLayout === true });
+    if (!get().focusModeActive) {
       await syncWindowLayoutFromSettings(
         get().settings,
         options?.animateLayout === true,
@@ -1101,7 +1109,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   inputPreviewFrame: null,
   companionBridgeArmed: false,
   mouseVisibleBeforeWidePiano: null,
-  mouseVisibleBeforeMiniMode: null,
+  mouseVisibleBeforeFocusMode: null,
   importedSongs: [],
   customLanguagePacks: [],
   languagePackId: null,
@@ -1116,10 +1124,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   freeWriteFocus: "notepad",
   teachingPdfLibrary: [],
   freeWriteActivePdfId: null,
-  miniModeActive: false,
-  miniModeKeyboardVisible: false,
-  miniModeManualExpand: false,
-  miniModeSuppressAutoShow: false,
+  focusModeActive: false,
+  focusModeKeyboardVisible: false,
+  focusModeManualExpand: false,
+  focusModeSuppressAutoShow: false,
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -1299,10 +1307,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     }
 
-    // Mini Mode: keep mouse panel hidden (OS cursor stays visible).
-    if (get().miniModeActive && next.mouseVisible) {
-      if (get().mouseVisibleBeforeMiniMode === null) {
-        set({ mouseVisibleBeforeMiniMode: settings.mouseVisible });
+    // Focus mode: keep mouse panel hidden (OS cursor stays visible).
+    if (get().focusModeActive && next.mouseVisible) {
+      if (get().mouseVisibleBeforeFocusMode === null) {
+        set({ mouseVisibleBeforeFocusMode: settings.mouseVisible });
       }
       next = { ...next, mouseVisible: false };
     }
@@ -1328,10 +1336,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         next = { ...next, phrasesVisible: before };
       }
       // Restore saved typing mode + height when Teaching exits via keyboardSectionMode.
-      if (modeBefore === "mini") {
-        next = { ...next, miniModeOverride: true };
+      if (modeBefore === "focus") {
+        next = { ...next, focusModeOverride: true };
       } else if (modeBefore === "normal") {
-        next = { ...next, miniModeOverride: false };
+        next = { ...next, focusModeOverride: false };
       }
       if (heightBefore !== null) {
         const restored = heightRatioAfterLeavingTeaching(heightBefore);
@@ -1437,7 +1445,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
     if (
       partial.inputPreviewVisible !== undefined ||
-      partial.inputPreviewMiniModeVisible !== undefined
+      partial.inputPreviewFocusModeVisible !== undefined
     ) {
       await syncInputPreviewEnabled(get);
     }
@@ -1447,14 +1455,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
         partial.phrasesVisible !== undefined ||
         partial.quickActionsVisible !== undefined;
       // Transparent is CSS-only; do not trigger mini layout refresh/animation.
-      const miniModeSettingChanged = partial.miniModeOverride !== undefined;
-      if (miniModeSettingChanged || partial.accessibilityMonitorId !== undefined) {
-        await refreshMiniModeState({ animate: true });
+      const focusModeSettingChanged = partial.focusModeOverride !== undefined;
+      if (focusModeSettingChanged || partial.accessibilityMonitorId !== undefined) {
+        await refreshFocusModeState({ animate: true });
         // Monitor moves (and Teaching→Normal height/section patches) must still
-        // re-apply non-mini layout when refresh is a no-op with Mini already off.
+        // re-apply non-focus layout when refresh is a no-op with Focus already off.
         if (
-          shouldSyncNonMiniWindowLayout({
-            miniModeActive: get().miniModeActive,
+          shouldSyncNonFocusWindowLayout({
+            focusModeActive: get().focusModeActive,
             accessibilityMonitorIdInPatch:
               partial.accessibilityMonitorId !== undefined,
             windowHeightRatioInPatch: Object.prototype.hasOwnProperty.call(
@@ -1471,7 +1479,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             get().musicTeachingEnabled,
           );
         }
-      } else if (get().miniModeActive) {
+      } else if (get().focusModeActive) {
         if (
           partial.collapsed !== undefined ||
           Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio") ||
@@ -1480,7 +1488,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           if (Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")) {
             liveHeightRatioPreview = null;
           }
-          await syncMiniModeWindowLayout(true);
+          await syncFocusModeWindowLayout(true);
         }
       } else if (
         partial.accessibilityMonitorId !== undefined ||
@@ -1521,8 +1529,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await persistSettingsIfCurrent(get, epoch, next);
     }
     if (WebviewWindow.getCurrent().label === "main") {
-      if (get().miniModeActive) {
-        void syncMiniModeWindowLayout(true);
+      if (get().focusModeActive) {
+        void syncFocusModeWindowLayout(true);
       } else {
         void syncWindowLayoutFromSettings(next, true, get().musicTeachingEnabled);
       }
@@ -1555,11 +1563,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings, musicTeachingEnabled, miniModeActive } = get();
+    const { settings, musicTeachingEnabled, focusModeActive } = get();
     if (
       !shouldApplyLiveWindowHeightRatio({
         collapsed: settings.collapsed,
-        miniModeActive,
+        focusModeActive,
       })
     ) {
       return;
@@ -1598,15 +1606,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     liveHeightRatioPreview = pending;
     liveHeightRatioInFlight = true;
     try {
-      const mini = get().miniModeActive;
+      const focus = get().focusModeActive;
       await invoke("cmd_apply_window_layout", {
         monitorId: latest.accessibilityMonitorId,
         collapsed: false,
         collapsedDictation: false,
         heightRatio: pending,
-        miniMode: mini,
-        miniKeyboardVisible: mini ? get().miniModeKeyboardVisible : false,
-        miniKeyboardHeightRatio: mini ? pending : undefined,
+        focusMode: focus,
+        focusKeyboardVisible: focus ? get().focusModeKeyboardVisible : false,
+        focusKeyboardHeightRatio: focus ? pending : undefined,
         fullWorkArea: teachingFullWorkAreaActive(latest, musicTeachingEnabled),
       });
     } catch {
@@ -1646,7 +1654,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const monitors = await invoke<MonitorInfo[]>("cmd_list_monitors");
     set({ monitors });
     if (WebviewWindow.getCurrent().label === "main" && get().profileHydrated) {
-      await refreshMiniModeState({ animate: false });
+      await refreshFocusModeState({ animate: false });
     }
   },
 
@@ -2153,7 +2161,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         resolveSelectedAppMode({
           companionModeActive: current.companionModeActive,
           teachingActive,
-          miniModeOverride: current.settings.miniModeOverride ?? undefined,
+          focusModeOverride: current.settings.focusModeOverride ?? undefined,
         }),
       );
       set({
@@ -2184,7 +2192,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const selected = resolveSelectedAppMode({
       companionModeActive: current.companionModeActive,
       teachingActive,
-      miniModeOverride: current.settings.miniModeOverride ?? undefined,
+      focusModeOverride: current.settings.focusModeOverride ?? undefined,
     });
     const host: HostAppMode =
       selected === "companion"
@@ -2216,11 +2224,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
             settings: {
               ...current,
               keyboardSectionMode: "synthesizer",
-              miniModeOverride: false,
+              focusModeOverride: false,
             },
           });
           break;
-        case "mini":
+        case "focus":
           set({
             companionModeActive: false,
             companionSessionLive: false,
@@ -2235,7 +2243,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             settings: {
               ...current,
               keyboardSectionMode: "keyboard",
-              miniModeOverride: true,
+              focusModeOverride: true,
             },
           });
           break;
@@ -2254,7 +2262,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             settings: {
               ...current,
               keyboardSectionMode: "keyboard",
-              miniModeOverride: false,
+              focusModeOverride: false,
             },
           });
           break;
@@ -2300,7 +2308,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
       case "normal": {
         set({ companionModeActive: false });
-        // Clear teaching first so leavingSynthesizer does not restore Mini.
+        // Clear teaching first so leavingSynthesizer does not restore Focus.
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
           : settings.windowHeightRatio;
@@ -2317,16 +2325,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
           });
         }
         await get().updateSettings({
-          miniModeOverride: false,
+          focusModeOverride: false,
           keyboardSectionMode: "keyboard",
           ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
-        // Explicit Normal must re-apply non-mini layout even if refresh was a no-op.
+        // Explicit Normal must re-apply non-focus layout even if refresh was a no-op.
         await syncWindowLayoutFromSettings(get().settings, true, false);
         await emitTeachingSession(get);
         return;
       }
-      case "mini": {
+      case "focus": {
         set({ companionModeActive: false });
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
@@ -2344,7 +2352,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           });
         }
         await get().updateSettings({
-          miniModeOverride: true,
+          focusModeOverride: true,
           keyboardSectionMode: "keyboard",
           ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
@@ -2356,8 +2364,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (inTeaching) {
           return;
         }
-        const previousMode: "normal" | "mini" =
-          settings.miniModeOverride === true ? "mini" : "normal";
+        const previousMode: "normal" | "focus" =
+          settings.focusModeOverride === true ? "focus" : "normal";
         set({
           modeBeforeTeaching: previousMode,
           windowHeightRatioBeforeTeaching: captureWindowHeightRatioBeforeTeaching(
@@ -2375,7 +2383,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           "phrases",
         );
         await get().updateSettings({
-          miniModeOverride: false,
+          focusModeOverride: false,
           keyboardSectionMode: "synthesizer",
           sectionStack,
         });
@@ -2906,46 +2914,46 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     } finally {
       set({ isAnimatingWindow: false });
-      const queued = pendingMiniLayoutSync;
-      pendingMiniLayoutSync = null;
-      if (queued !== null && get().miniModeActive) {
-        void syncMiniModeWindowLayout(queued);
+      const queued = pendingFocusLayoutSync;
+      pendingFocusLayoutSync = null;
+      if (queued !== null && get().focusModeActive) {
+        void syncFocusModeWindowLayout(queued);
       }
     }
   },
 
-  refreshMiniModeState: async (options) => {
-    await refreshMiniModeState(options);
+  refreshFocusModeState: async (options) => {
+    await refreshFocusModeState(options);
   },
 
-  expandMiniModeKeyboard: async () => {
-    if (!get().miniModeActive || get().isAnimatingWindow) {
+  expandFocusModeKeyboard: async () => {
+    if (!get().focusModeActive || get().isAnimatingWindow) {
       return;
     }
-    if (get().miniModeKeyboardVisible && get().miniModeManualExpand) {
+    if (get().focusModeKeyboardVisible && get().focusModeManualExpand) {
       return;
     }
     set({
-      miniModeKeyboardVisible: true,
-      miniModeManualExpand: true,
-      miniModeSuppressAutoShow: false,
+      focusModeKeyboardVisible: true,
+      focusModeManualExpand: true,
+      focusModeSuppressAutoShow: false,
     });
-    await syncMiniModeWindowLayout(true);
+    await syncFocusModeWindowLayout(true);
   },
 
-  collapseMiniModeKeyboard: async () => {
-    if (!get().miniModeActive || get().isAnimatingWindow) {
+  collapseFocusModeKeyboard: async () => {
+    if (!get().focusModeActive || get().isAnimatingWindow) {
       return;
     }
-    if (!get().miniModeKeyboardVisible) {
+    if (!get().focusModeKeyboardVisible) {
       return;
     }
     set({
-      miniModeKeyboardVisible: false,
-      miniModeManualExpand: false,
-      miniModeSuppressAutoShow: true,
+      focusModeKeyboardVisible: false,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: true,
     });
-    await syncMiniModeWindowLayout(true);
+    await syncFocusModeWindowLayout(true);
   },
 }));
 
@@ -2958,32 +2966,32 @@ void listen("input-preview-cleared", () => {
 });
 
 /**
- * Mini Mode: show keyboard on external editable focus; hide when focus is lost.
- * Manual Expand keeps the keyboard until focus is lost (does not exit Mini Mode).
+ * Focus mode: show keyboard on external editable focus; hide when focus is lost.
+ * Manual Expand keeps the keyboard until focus is lost (does not exit Focus mode).
  */
 void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   const state = useAppStore.getState();
-  if (!state.miniModeActive) return;
+  if (!state.focusModeActive) return;
   const focused = event.payload.focused;
   if (focused) {
-    if (!state.miniModeKeyboardVisible && !state.miniModeSuppressAutoShow) {
-      useAppStore.setState({ miniModeKeyboardVisible: true });
-      void syncMiniModeWindowLayout(true);
+    if (!state.focusModeKeyboardVisible && !state.focusModeSuppressAutoShow) {
+      useAppStore.setState({ focusModeKeyboardVisible: true });
+      void syncFocusModeWindowLayout(true);
     }
     return;
   }
   // Focus lost → hide keyboard and clear manual expand / collapse suppression.
   if (
-    state.miniModeKeyboardVisible ||
-    state.miniModeManualExpand ||
-    state.miniModeSuppressAutoShow
+    state.focusModeKeyboardVisible ||
+    state.focusModeManualExpand ||
+    state.focusModeSuppressAutoShow
   ) {
     useAppStore.setState({
-      miniModeKeyboardVisible: false,
-      miniModeManualExpand: false,
-      miniModeSuppressAutoShow: false,
+      focusModeKeyboardVisible: false,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: false,
     });
-    void syncMiniModeWindowLayout(true);
+    void syncFocusModeWindowLayout(true);
   }
 });
 

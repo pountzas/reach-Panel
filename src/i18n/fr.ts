@@ -31,11 +31,11 @@ export const fr: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Écran d’accessibilité",
 
-  miniMode: "Mode",
+  modesSection: "Mode",
 
   modeNormal: "Normal",
 
-  modeMini: "Mini",
+  modeFocus: "Focus",
 
   modeTeaching: "Enseignement",
 
@@ -136,26 +136,26 @@ export const fr: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "Supprimer « {title} » ?",
 
   modeTabletsHint:
-    "Normal et Mini sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon reste indisponible tant que le pont n’est pas démarré ou qu’aucune tablette n’est appariée ; sélectionné quand une tablette est connectée.",
+    "Normal et Focus sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon reste indisponible tant que le pont n’est pas démarré ou qu’aucune tablette n’est appariée ; sélectionné quand une tablette est connectée.",
 
-  miniModeAutoDescription:
+  focusModeAutoDescription:
     "Sur un seul écran ou une configuration en miroir, le clavier apparaît automatiquement lorsque vous touchez un champ de saisie.",
 
-  miniModeOverrideLabel: "Mode Mini",
+  focusModeOverrideLabel: "Mode Focus",
 
-  miniModeOverrideAuto: "Automatique",
+  focusModeOverrideAuto: "Automatique",
 
-  miniModeOverrideOn: "Activé",
+  focusModeOverrideOn: "Activé",
 
-  miniModeOverrideOff: "Désactivé",
+  focusModeOverrideOff: "Désactivé",
 
-  miniModeTransparent: "Clavier transparent",
+  focusModeTransparent: "Clavier transparent",
 
   inputPreviewLabel: "Champ cible",
 
   inputPreviewWaiting: "Aperçu en attente…",
 
-  miniModeTransparentDescription:
+  focusModeTransparentDescription:
     "Afficher les touches avec des contours uniquement pour voir les applications en arrière-plan.",
 
   transparentKeyColor: "Couleur des touches transparentes",
@@ -166,7 +166,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Argent",
 
-  miniModeCollapse: "Retour au Mode Mini",
+  focusModeCollapse: "Retour au mode Focus",
 
   largeHeaders: "En-têtes larges pour un redimensionnement plus facile",
 
@@ -236,7 +236,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   showInputPreview: "Aperçu en direct du champ",
 
-  showInputPreviewMiniMode: "Aperçu en direct du champ (Mode Mini)",
+  showInputPreviewFocusMode: "Aperçu en direct du champ (mode Focus)",
 
   taskbarPosition: "Position de la barre des tâches",
 
