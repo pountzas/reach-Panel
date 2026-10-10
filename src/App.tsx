@@ -172,6 +172,7 @@ function MainApp() {
       listen<{ message: string }>("stt-error", (event) => {
         setDictationState("idle");
         setLastError(event.payload.message);
+        void invoke("cmd_stop_dictation").catch(() => {});
         void refreshSttCapability();
       }),
     );

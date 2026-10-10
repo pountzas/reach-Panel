@@ -50,6 +50,20 @@ fn ensure_winrt() -> Result<()> {
     Ok(())
 }
 
+/// Silence / pause timeouts and user cancel are normal ends, not errors.
+fn is_quiet_end(status: SpeechRecognitionResultStatus) -> bool {
+    status == SpeechRecognitionResultStatus::TimeoutExceeded
+        || status == SpeechRecognitionResultStatus::PauseLimitExceeded
+        || status == SpeechRecognitionResultStatus::UserCanceled
+}
+
+pub fn is_active() -> bool {
+    runtime()
+        .lock()
+        .map(|g| g.session.is_some() || g.starting)
+        .unwrap_or(false)
+}
+
 pub fn is_language_supported(language: &str) -> bool {
     if ensure_winrt().is_err() {
         return false;
@@ -143,12 +157,24 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     let app_for_completed = app.clone();
     let completed_token = session.Completed(&TypedEventHandler::new(
         move |_sender, args: &Option<SpeechContinuousRecognitionCompletedEventArgs>| {
-            if let Ok(mut guard) = runtime().lock() {
-                guard.session = None;
+            let ended = runtime().lock().ok().and_then(|mut g| g.session.take());
+            super::clear_active_backend(super::ActiveBackend::WinRt);
+
+            if let Some(active) = ended {
+                // Close outside this callback to avoid deadlocking WinRT.
+                std::thread::spawn(move || {
+                    let _ = ensure_winrt();
+                    if let Ok(s) = active.recognizer.ContinuousRecognitionSession() {
+                        let _ = s.RemoveResultGenerated(active.result_token);
+                        let _ = s.RemoveCompleted(active.completed_token);
+                    }
+                    let _ = active.recognizer.Close();
+                });
             }
+
             if let Some(args) = args {
                 if let Ok(status) = args.Status() {
-                    if status != SpeechRecognitionResultStatus::Success {
+                    if status != SpeechRecognitionResultStatus::Success && !is_quiet_end(status) {
                         emit_error(
                             &app_for_completed,
                             format!("Dictation ended with status: {status:?}"),
@@ -258,5 +284,31 @@ pub fn get_status() -> SttStatus {
             online: false,
             can_dictate: false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quiet_end_includes_timeout_pause_and_cancel() {
+        assert!(is_quiet_end(SpeechRecognitionResultStatus::TimeoutExceeded));
+        assert!(is_quiet_end(
+            SpeechRecognitionResultStatus::PauseLimitExceeded
+        ));
+        assert!(is_quiet_end(SpeechRecognitionResultStatus::UserCanceled));
+    }
+
+    #[test]
+    fn quiet_end_excludes_success_and_real_failures() {
+        assert!(!is_quiet_end(SpeechRecognitionResultStatus::Success));
+        assert!(!is_quiet_end(SpeechRecognitionResultStatus::NetworkFailure));
+        assert!(!is_quiet_end(
+            SpeechRecognitionResultStatus::MicrophoneUnavailable
+        ));
+        assert!(!is_quiet_end(
+            SpeechRecognitionResultStatus::AudioQualityFailure
+        ));
     }
 }
