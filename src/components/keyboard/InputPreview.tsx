@@ -7,6 +7,7 @@ const PREVIEW_HEIGHT_PX = 48;
 
 export function InputPreview() {
   const inputPreviewFrame = useAppStore((s) => s.inputPreviewFrame);
+  const focused = useAppStore((s) => s.externalInputFocused);
   const settings = useAppStore((s) => s.settings);
   const focusModeActive = useAppStore((s) => s.focusModeActive);
   const { t } = useTranslation();
@@ -24,33 +25,35 @@ export function InputPreview() {
 
   return (
     <div
-      className="flex pb-1 w-full max-w-[min(100%,25rem)] shrink-0 justify-center"
+      className="flex pb-1 w-full max-w-[min(100%,20rem)] shrink-0 justify-center"
       aria-live="polite"
     >
       <div
-        className="flex w-full items-center justify-center overflow-hidden rounded-md border"
+        className="flex items-center justify-center overflow-hidden rounded-md border"
         style={{
           ...frameStyle,
-          maxWidth: PREVIEW_MAX_WIDTH,
+          width: PREVIEW_MAX_WIDTH,
+          maxWidth: "100%",
           height: PREVIEW_HEIGHT_PX,
         }}
-        aria-label={t("inputPreviewLabel")}
+        aria-disabled={!focused}
+        aria-label={focused ? t("inputPreviewLabel") : t("inputPreviewNoInput")}
       >
-        {inputPreviewFrame ? (
+        {focused && inputPreviewFrame ? (
           <img
             src={inputPreviewFrame}
             alt={t("inputPreviewLabel")}
             className="block h-full w-full object-contain object-center"
             draggable={false}
           />
-        ) : (
+        ) : focused && !inputPreviewFrame ? (
           <span
             className={`px-3 text-xs ${transparent ? "" : "text-slate-400"}`}
             style={transparent ? { color: transparentPalette.text, opacity: 0.85 } : undefined}
           >
             {t("inputPreviewWaiting")}
           </span>
-        )}
+        ) : null}
       </div>
     </div>
   );

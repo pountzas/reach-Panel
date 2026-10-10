@@ -154,6 +154,7 @@ export const de: Record<keyof typeof en, string> = {
   inputPreviewLabel: "Zieleingabe",
 
   inputPreviewWaiting: "Vorschau wird geladen…",
+  inputPreviewNoInput: "Kein Textfeld ausgewählt",
 
   focusModeTransparentDescription:
     "Tasten nur mit Umrissen anzeigen, damit Apps darunter sichtbar bleiben.",

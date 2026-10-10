@@ -152,6 +152,11 @@ fn cmd_set_input_preview_enabled(enabled: bool) {
 }
 
 #[tauri::command]
+fn cmd_get_input_focused() -> bool {
+    focus_target::is_input_focused()
+}
+
+#[tauri::command]
 fn cmd_set_system_language(
     language: String,
     klid: Option<String>,
@@ -1275,6 +1280,7 @@ pub fn run() {
             cmd_get_keyboard_layout,
             cmd_get_keyboard_state,
             cmd_set_input_preview_enabled,
+            cmd_get_input_focused,
             cmd_set_system_language,
             cmd_get_input_methods,
             cmd_set_input_method,

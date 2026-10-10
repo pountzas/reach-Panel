@@ -49,7 +49,6 @@ export function KeyboardSection() {
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const musicSongId = useAppStore((s) => s.musicSongId);
   const importedSongs = useAppStore((s) => s.importedSongs);
-  const hasInputTarget = useAppStore((s) => s.physicalKeyState.hasInputTarget);
   const companionSessionLive = useAppStore((s) => s.companionSessionLive);
   const suggestionCount = useAppStore((s) => s.suggestions.length);
   const { t } = useTranslation();
@@ -70,7 +69,6 @@ export function KeyboardSection() {
     !compact &&
     !teachingSessionActive &&
     !companionSessionLive &&
-    hasInputTarget &&
     isInputPreviewActiveForMode(settings, focusModeActive);
   const languageLessonActive = isLanguageLessonActive({
     musicTeachingEnabled,

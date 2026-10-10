@@ -157,6 +157,7 @@ export const el: Record<keyof typeof en, string> = {
   inputPreviewLabel: "Πεδίο προορισμού",
 
   inputPreviewWaiting: "Αναμονή προεπισκόπησης…",
+  inputPreviewNoInput: "Δεν έχει επιλεγεί πεδίο κειμένου",
 
   focusModeTransparentDescription:
     "Εμφάνιση πλήκτρων μόνο με περίγραμμα ώστε να φαίνονται οι εφαρμογές από πίσω.",
