@@ -154,6 +154,7 @@ export const es: Record<keyof typeof en, string> = {
   inputPreviewLabel: "Campo de destino",
 
   inputPreviewWaiting: "Esperando vista previa…",
+  inputPreviewNoInput: "Ningún campo de texto seleccionado",
 
   focusModeTransparentDescription:
     "Mostrar teclas solo con contornos para ver las aplicaciones detrás.",

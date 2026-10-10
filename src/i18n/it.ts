@@ -154,6 +154,7 @@ export const it: Record<keyof typeof en, string> = {
   inputPreviewLabel: "Campo di destinazione",
 
   inputPreviewWaiting: "In attesa dell'anteprima…",
+  inputPreviewNoInput: "Nessun campo di testo selezionato",
 
   focusModeTransparentDescription:
     "Mostra i tasti solo con contorno per vedere le app sottostanti.",

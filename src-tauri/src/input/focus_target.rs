@@ -773,6 +773,15 @@ fn publish_input_focus(focused: bool) {
     }
 }
 
+/// Current editable-focus signal (same value last sent as `input-focus-changed`).
+pub fn is_input_focused() -> bool {
+    LAST_INPUT_FOCUSED
+        .lock()
+        .ok()
+        .and_then(|g| *g)
+        .unwrap_or(false)
+}
+
 fn reevaluate_input_focus() {
     let focused = is_editable_input_focused();
     publish_input_focus(focused);

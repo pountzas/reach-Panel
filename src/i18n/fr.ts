@@ -154,6 +154,7 @@ export const fr: Record<keyof typeof en, string> = {
   inputPreviewLabel: "Champ cible",
 
   inputPreviewWaiting: "Aperçu en attente…",
+  inputPreviewNoInput: "Aucun champ de texte sélectionné",
 
   focusModeTransparentDescription:
     "Afficher les touches avec des contours uniquement pour voir les applications en arrière-plan.",

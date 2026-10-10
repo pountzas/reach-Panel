@@ -169,6 +169,8 @@ export const en = {
 
   inputPreviewWaiting: "Waiting for preview…",
 
+  inputPreviewNoInput: "No text field selected",
+
   focusModeTransparentDescription:
     "Show keys with outlines only so you can see through to your apps.",
 

@@ -616,6 +616,8 @@ interface AppStore {
   companionSessionLive: boolean;
   /** Live JPEG data URL of the focused external input, or null when idle. */
   inputPreviewFrame: string | null;
+  /** Editable-focus signal from Rust (input-focus-changed). Same logic as Mini Mode auto-show. */
+  externalInputFocused: boolean;
   /** Session-only: bridge listener is up (armed). Cleared only by caregiver leave/Stop. */
   companionBridgeArmed: boolean;
   /** Session-only: restore mouse after leaving 5-octave (wide) piano mode. */
@@ -1107,6 +1109,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   modeBeforeCompanion: null,
   companionSessionLive: false,
   inputPreviewFrame: null,
+  externalInputFocused: false,
   companionBridgeArmed: false,
   mouseVisibleBeforeWidePiano: null,
   mouseVisibleBeforeFocusMode: null,
@@ -2970,6 +2973,10 @@ void listen("input-preview-cleared", () => {
  * Manual Expand keeps the keyboard until focus is lost (does not exit Focus mode).
  */
 void listen<{ focused: boolean }>("input-focus-changed", (event) => {
+  useAppStore.setState({
+    externalInputFocused: event.payload.focused,
+    ...(event.payload.focused ? {} : { inputPreviewFrame: null }),
+  });
   const state = useAppStore.getState();
   if (!state.focusModeActive) return;
   const focused = event.payload.focused;

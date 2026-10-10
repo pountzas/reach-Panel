@@ -23,7 +23,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 
 use super::focus_target::{
-    get_effective_input_hwnd, get_input_target_bounds, has_input_target, ScreenRect,
+    get_effective_input_hwnd, get_input_target_bounds, has_input_target, is_input_focused,
+    ScreenRect,
 };
 
 /// `PW_RENDERFULLCONTENT` — needed for Chromium/DWM-composited windows.
@@ -121,7 +122,10 @@ fn preview_loop() {
         if !PREVIEW_ENABLED.load(Ordering::Acquire) && !companion_live {
             continue;
         }
-        match next_preview_action(has_input_target(), get_input_target_bounds()) {
+        match next_preview_action(
+            has_input_target() && is_input_focused(),
+            get_input_target_bounds(),
+        ) {
             PreviewFrameAction::Clear => {
                 route_cleared(companion_live);
             }
@@ -604,6 +608,11 @@ mod tests {
     #[test]
     fn preview_clears_only_when_target_is_gone() {
         assert_eq!(next_preview_action(false, None), PreviewFrameAction::Clear);
+    }
+
+    #[test]
+    fn preview_clears_when_not_focused_even_if_bounds_exist() {
+        // Gate passes false (no editable focus) → clear; do not capture stale bounds.
         assert_eq!(
             next_preview_action(
                 false,

@@ -68,6 +68,14 @@ function MainApp() {
         if (cancelled) return;
         await useAppStore.getState().refreshFocusModeState({ animate: false });
         if (cancelled) return;
+        try {
+          useAppStore.setState({
+            externalInputFocused: await invoke<boolean>("cmd_get_input_focused"),
+          });
+        } catch {
+          /* keep false */
+        }
+        if (cancelled) return;
         if (!useAppStore.getState().focusModeActive) {
           const { settings, musicTeachingEnabled } = useAppStore.getState();
           const lessonSlotVisible = isMusicLessonSlotVisible({
