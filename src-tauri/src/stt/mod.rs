@@ -46,6 +46,24 @@ fn router() -> &'static Mutex<RouterState> {
     ROUTER.get_or_init(|| Mutex::new(RouterState { active: None }))
 }
 
+/// Called by a backend when its session ended on its own (timeout / error).
+fn clear_active_backend(backend: ActiveBackend) {
+    if let Ok(mut guard) = router().lock() {
+        if guard.active == Some(backend) {
+            guard.active = None;
+        }
+    }
+}
+
+/// True when the router thinks a backend is running but that backend is idle.
+fn router_is_stale(active: Option<ActiveBackend>, winrt_active: bool, groq_active: bool) -> bool {
+    match active {
+        Some(ActiveBackend::WinRt) => !winrt_active,
+        Some(ActiveBackend::Groq) => !groq_active,
+        None => false,
+    }
+}
+
 fn engine_name(engine: SttEngine) -> &'static str {
     match engine {
         SttEngine::WinRt => "winrt",
@@ -61,9 +79,19 @@ pub fn start_dictation(
     app: AppHandle,
 ) -> anyhow::Result<()> {
     {
-        let guard = router()
+        let mut guard = router()
             .lock()
             .map_err(|_| anyhow::anyhow!("Dictation router lock poisoned"))?;
+        // Heal a stuck router flag only — language → engine selection is below.
+        // Probe the backend the router already claims, not both.
+        let (winrt_active, groq_active) = match guard.active {
+            Some(ActiveBackend::WinRt) => (winrt::is_active(), false),
+            Some(ActiveBackend::Groq) => (false, groq::is_active()),
+            None => (false, false),
+        };
+        if router_is_stale(guard.active, winrt_active, groq_active) {
+            guard.active = None;
+        }
         if guard.active.is_some() {
             anyhow::bail!("Dictation is already active");
         }
@@ -165,5 +193,35 @@ pub fn get_status(language: Option<&str>, groq_api_key: Option<&str>) -> SttStat
         winrt_supported,
         online,
         can_dictate: can_dictate(online, winrt_supported, groq_configured, prefer_cloud),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn router_is_stale_when_winrt_claimed_but_idle() {
+        assert!(router_is_stale(Some(ActiveBackend::WinRt), false, false));
+    }
+
+    #[test]
+    fn router_not_stale_when_winrt_actually_active() {
+        assert!(!router_is_stale(Some(ActiveBackend::WinRt), true, false));
+    }
+
+    #[test]
+    fn router_is_stale_when_groq_claimed_but_idle() {
+        assert!(router_is_stale(Some(ActiveBackend::Groq), false, false));
+    }
+
+    #[test]
+    fn router_not_stale_when_groq_actually_active() {
+        assert!(!router_is_stale(Some(ActiveBackend::Groq), false, true));
+    }
+
+    #[test]
+    fn router_not_stale_when_idle() {
+        assert!(!router_is_stale(None, false, false));
     }
 }
