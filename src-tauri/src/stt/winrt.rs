@@ -25,6 +25,8 @@ struct DictationRuntime {
     session: Option<ActiveSession>,
     app_handle: Option<AppHandle>,
     starting: bool,
+    stopping: bool,
+    generation: u64,
 }
 
 impl Default for DictationRuntime {
@@ -33,6 +35,8 @@ impl Default for DictationRuntime {
             session: None,
             app_handle: None,
             starting: false,
+            stopping: false,
+            generation: 0,
         }
     }
 }
@@ -57,10 +61,20 @@ fn is_quiet_end(status: SpeechRecognitionResultStatus) -> bool {
         || status == SpeechRecognitionResultStatus::UserCanceled
 }
 
+/// Session present, start in flight, or StopAsync still running all block a new start.
+fn runtime_is_busy(has_session: bool, starting: bool, stopping: bool) -> bool {
+    has_session || starting || stopping
+}
+
+/// Completed handlers must ignore events from a previous recognizer session.
+fn is_current_session(current: u64, event: u64) -> bool {
+    current == event
+}
+
 pub fn is_active() -> bool {
     runtime()
         .lock()
-        .map(|g| g.session.is_some() || g.starting)
+        .map(|g| runtime_is_busy(g.session.is_some(), g.starting, g.stopping))
         .unwrap_or(false)
 }
 
@@ -103,21 +117,33 @@ impl Drop for StartingFlagGuard {
     }
 }
 
+struct StoppingFlagGuard;
+
+impl Drop for StoppingFlagGuard {
+    fn drop(&mut self) {
+        if let Ok(mut guard) = runtime().lock() {
+            guard.stopping = false;
+        }
+    }
+}
+
 pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     ensure_winrt()?;
 
     let tag = winrt_language_tag(language);
     require_language_supported(tag)?;
 
-    {
+    let my_gen = {
         let mut guard = runtime()
             .lock()
             .map_err(|_| anyhow!("Dictation runtime lock poisoned"))?;
-        if guard.session.is_some() || guard.starting {
+        if runtime_is_busy(guard.session.is_some(), guard.starting, guard.stopping) {
             return Err(anyhow!("Dictation is already active"));
         }
         guard.starting = true;
-    }
+        guard.generation = guard.generation.wrapping_add(1);
+        guard.generation
+    };
     let _starting_guard = StartingFlagGuard;
 
     // Build recognizer and await WinRT ops without holding the global mutex.
@@ -157,10 +183,13 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     let app_for_completed = app.clone();
     let completed_token = session.Completed(&TypedEventHandler::new(
         move |_sender, args: &Option<SpeechContinuousRecognitionCompletedEventArgs>| {
-            let ended = runtime().lock().ok().and_then(|mut g| g.session.take());
-            super::clear_active_backend(super::ActiveBackend::WinRt);
-
+            let ended = match runtime().lock() {
+                Ok(mut g) if is_current_session(g.generation, my_gen) => g.session.take(),
+                Ok(_) => return Ok(()),
+                Err(_) => None,
+            };
             if let Some(active) = ended {
+                super::clear_active_backend(super::ActiveBackend::WinRt);
                 // Close outside this callback to avoid deadlocking WinRT.
                 std::thread::spawn(move || {
                     let _ = ensure_winrt();
@@ -228,9 +257,11 @@ pub fn stop_dictation() -> Result<()> {
             Some(active) => active,
             None => return Ok(()),
         };
+        guard.stopping = true;
         let app = guard.app_handle.clone();
         (active, app)
     };
+    let _stopping_guard = StoppingFlagGuard;
 
     // Await StopAsync without holding the global mutex.
     let session = active.recognizer.ContinuousRecognitionSession()?;
@@ -310,5 +341,20 @@ mod tests {
         assert!(!is_quiet_end(
             SpeechRecognitionResultStatus::AudioQualityFailure
         ));
+    }
+
+    #[test]
+    fn runtime_busy_while_stopping() {
+        assert!(runtime_is_busy(false, false, true));
+        assert!(runtime_is_busy(true, false, false));
+        assert!(runtime_is_busy(false, true, false));
+        assert!(!runtime_is_busy(false, false, false));
+    }
+
+    #[test]
+    fn completed_ignores_older_session_generation() {
+        assert!(is_current_session(5, 5));
+        assert!(!is_current_session(6, 5));
+        assert!(!is_current_session(0, 1));
     }
 }
