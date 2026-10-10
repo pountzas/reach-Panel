@@ -5,8 +5,7 @@ import {
   TransparentKeyboardIcon,
 } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
-import { SuggestionsBar } from "../common/SuggestionsBar";
-import { InputPreview } from "./InputPreview";
+import { PreviewSuggestionsRow } from "./PreviewSuggestionsRow";
 import { SynthVolumeControl } from "./SynthVolumeControl";
 import { PianoRangeControl } from "./PianoRangeControl";
 import {
@@ -34,9 +33,8 @@ import {
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
 
-/** Reserved height for suggestion chips so appearing tags do not shrink keys. */
-const SUGGESTION_ROW_MIN_CLASS = "min-h-8";
 const INPUT_PREVIEW_STRIP_HEIGHT_PX = 48;
+const SUGGESTION_CHIP_HEIGHT_PX = 32;
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
@@ -115,18 +113,11 @@ export function KeyboardSection() {
     octaveCount,
   );
 
-  const auxCenterMinHeightPx =
-    (showInputPreview ? INPUT_PREVIEW_STRIP_HEIGHT_PX : 0) +
-    (hasSuggestionChips ? 32 : 0) +
-    (showInputPreview && hasSuggestionChips ? 8 : 0);
-
-  const suggestionsRow = hasSuggestionChips ? (
-    <div
-      className={`flex w-full items-center justify-center ${SUGGESTION_ROW_MIN_CLASS}`}
-    >
-      <SuggestionsBar />
-    </div>
-  ) : null;
+  const auxCenterMinHeightPx = showInputPreview
+    ? INPUT_PREVIEW_STRIP_HEIGHT_PX
+    : hasSuggestionChips
+      ? SUGGESTION_CHIP_HEIGHT_PX
+      : 0;
 
   const endControls =
     showSynthToolbar || showTransparentToggle || showFocusModeCollapse ? (
@@ -305,13 +296,21 @@ export function KeyboardSection() {
                 <HeightGripIcon className="h-4 w-4" />
               </button>
               <div
-                className={`flex min-w-0 flex-1 items-center justify-center px-1 ${showInputPreview ? "min-h-[48px]" : ""}`}
+                className={`flex min-w-0 flex-1 items-center justify-center px-1 ${
+                  showInputPreview
+                    ? "min-h-[48px]"
+                    : hasSuggestionChips
+                      ? "min-h-8"
+                      : ""
+                }`}
               >
-                {showInputPreview ? <InputPreview /> : null}
+                <PreviewSuggestionsRow
+                  showPreview={showInputPreview}
+                  showSuggestions={hasSuggestionChips}
+                />
               </div>
               {endControls}
             </div>
-            {suggestionsRow}
           </div>
         ) : (
           <div
@@ -319,15 +318,17 @@ export function KeyboardSection() {
           >
             <div aria-hidden className="min-w-0" />
             <div
-            className="flex min-w-0 flex-col items-center justify-end gap-1 overflow-hidden px-1"
+              className="flex min-w-0 items-center justify-center overflow-hidden px-1"
               style={
                 auxCenterMinHeightPx > 0
                   ? { minHeight: auxCenterMinHeightPx }
                   : undefined
               }
             >
-              {showInputPreview ? <InputPreview /> : null}
-              {suggestionsRow}
+              <PreviewSuggestionsRow
+                showPreview={showInputPreview}
+                showSuggestions={hasSuggestionChips}
+              />
             </div>
             {endControls}
           </div>

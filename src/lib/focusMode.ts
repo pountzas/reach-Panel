@@ -16,15 +16,11 @@ export const FOCUS_KEYBOARD_HEIGHT_RATIO = 0.42;
  * Focus mode keyboard toolbar chrome. `pl-3` matches AppShell header `px-3`
  * so the height grip is not flush to the window edge.
  */
-export function focusModeToolbarClassName(hasSuggestionChips: boolean): string {
-  const gap = hasSuggestionChips ? "gap-1" : "";
+export function focusModeToolbarClassName(_hasSuggestionChips: boolean): string {
   return [
     "relative z-20 flex w-full shrink-0 flex-col overflow-visible",
     "pl-3 pr-1 pt-1 pb-0",
-    gap,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  ].join(" ");
 }
 
 /** Fraction of the smaller monitor area that must overlap to count as mirrored. */
