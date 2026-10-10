@@ -66,9 +66,9 @@ function MainApp() {
         await loadCustomLanguagePacks();
         await loadMonitors();
         if (cancelled) return;
-        await useAppStore.getState().refreshMiniModeState({ animate: false });
+        await useAppStore.getState().refreshFocusModeState({ animate: false });
         if (cancelled) return;
-        if (!useAppStore.getState().miniModeActive) {
+        if (!useAppStore.getState().focusModeActive) {
           const { settings, musicTeachingEnabled } = useAppStore.getState();
           const lessonSlotVisible = isMusicLessonSlotVisible({
             musicTeachingEnabled,

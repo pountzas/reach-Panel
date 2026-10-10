@@ -3,15 +3,15 @@ import { DEFAULT_SETTINGS, type MonitorInfo } from "./types";
 import {
   isInputPreviewActiveForMode,
   isMirroredSetup,
-  isMiniModeEligible,
+  isFocusModeEligible,
   isTransparentUiActive,
-  miniModeToolbarClassName,
+  focusModeToolbarClassName,
   monitorsOverlap,
   nextTransparentKeyColor,
-  resolveMiniModeEnabled,
+  resolveFocusModeEnabled,
   transparentKeyPalette,
   transparentOutlineStyle,
-} from "./miniMode";
+} from "./focusMode";
 
 const a: MonitorInfo = {
   id: 0,
@@ -33,7 +33,7 @@ const b: MonitorInfo = {
   is_primary: false,
 };
 
-describe("miniMode", () => {
+describe("focusMode", () => {
   it("detects mirrored monitors by overlapping work areas", () => {
     expect(isMirroredSetup([a, b])).toBe(true);
     expect(monitorsOverlap(a, b)).toBe(true);
@@ -46,52 +46,52 @@ describe("miniMode", () => {
   });
 
   it("empty monitor list is not eligible", () => {
-    expect(isMiniModeEligible([])).toBe(false);
+    expect(isFocusModeEligible([])).toBe(false);
     expect(
-      resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: null }, []),
+      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: null }, []),
     ).toBe(false);
   });
 
   it("null override stays Normal even on single monitor (Auto dropped)", () => {
     expect(
-      resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: null }, [a]),
+      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: null }, [a]),
     ).toBe(false);
     expect(
-      resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: undefined }, [a]),
+      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: undefined }, [a]),
     ).toBe(false);
-    expect(isMiniModeEligible([a])).toBe(true);
+    expect(isFocusModeEligible([a])).toBe(true);
   });
 
   it("dual monitor default off unless override", () => {
     const monitors = [a, { ...b, x: 1920 }];
     expect(
-      resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: null }, monitors),
+      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: null }, monitors),
     ).toBe(false);
     expect(
-      resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: true }, monitors),
+      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: true }, monitors),
     ).toBe(true);
   });
 
-  it("force off disables mini mode even on single monitor", () => {
+  it("force off disables focus mode even on single monitor", () => {
     expect(
-      resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: false }, [a]),
+      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: false }, [a]),
     ).toBe(false);
   });
 
-  it("Mini override + teachingActive true → false", () => {
+  it("Focus override + teachingActive true → false", () => {
     expect(
-      resolveMiniModeEnabled(
-        { ...DEFAULT_SETTINGS, miniModeOverride: true },
+      resolveFocusModeEnabled(
+        { ...DEFAULT_SETTINGS, focusModeOverride: true },
         [a],
         true,
       ),
     ).toBe(false);
   });
 
-  it("Mini override + teachingActive false → true", () => {
+  it("Focus override + teachingActive false → true", () => {
     expect(
-      resolveMiniModeEnabled(
-        { ...DEFAULT_SETTINGS, miniModeOverride: true },
+      resolveFocusModeEnabled(
+        { ...DEFAULT_SETTINGS, focusModeOverride: true },
         [a],
         false,
       ),
@@ -99,28 +99,28 @@ describe("miniMode", () => {
   });
 
   it("null override stays Normal on mirrored dual setup (Auto dropped)", () => {
-    expect(isMiniModeEligible([a, b])).toBe(true);
+    expect(isFocusModeEligible([a, b])).toBe(true);
     expect(
-      resolveMiniModeEnabled({ ...DEFAULT_SETTINGS, miniModeOverride: null }, [a, b]),
+      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: null }, [a, b]),
     ).toBe(false);
   });
 
-  it("transparent UI only when mini mode active and setting on", () => {
+  it("transparent UI only when focus mode active and setting on", () => {
     expect(
       isTransparentUiActive(
-        { ...DEFAULT_SETTINGS, miniModeTransparent: true },
+        { ...DEFAULT_SETTINGS, focusModeTransparent: true },
         false,
       ),
     ).toBe(false);
     expect(
       isTransparentUiActive(
-        { ...DEFAULT_SETTINGS, miniModeTransparent: false },
+        { ...DEFAULT_SETTINGS, focusModeTransparent: false },
         true,
       ),
     ).toBe(false);
     expect(
       isTransparentUiActive(
-        { ...DEFAULT_SETTINGS, miniModeTransparent: true },
+        { ...DEFAULT_SETTINGS, focusModeTransparent: true },
         true,
       ),
     ).toBe(true);
@@ -169,13 +169,13 @@ describe("miniMode", () => {
     ).toBe(true);
   });
 
-  it("input preview stays off in mini even if mini-mode flag is on", () => {
+  it("input preview stays off in mini even if focus-mode flag is on", () => {
     expect(
       isInputPreviewActiveForMode(
         {
           ...DEFAULT_SETTINGS,
           inputPreviewVisible: false,
-          inputPreviewMiniModeVisible: true,
+          inputPreviewFocusModeVisible: true,
         },
         true,
       ),
@@ -183,7 +183,7 @@ describe("miniMode", () => {
   });
 
   it("mini toolbar padding insets the height grip from the left like the main header", () => {
-    const className = miniModeToolbarClassName(false);
+    const className = focusModeToolbarClassName(false);
     expect(className.split(/\s+/)).toEqual(
       expect.arrayContaining(["pl-3", "pr-1", "pt-1", "pb-0"]),
     );
@@ -191,6 +191,6 @@ describe("miniMode", () => {
   });
 
   it("keeps suggestion-chip gap when chips are present", () => {
-    expect(miniModeToolbarClassName(true).split(/\s+/)).toContain("gap-1");
+    expect(focusModeToolbarClassName(true).split(/\s+/)).toContain("gap-1");
   });
 });

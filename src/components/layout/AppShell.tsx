@@ -28,9 +28,9 @@ import {
 } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { CollapsedFab } from "./CollapsedFab";
-import { MiniModeShell } from "./MiniModeShell";
+import { FocusModeShell } from "./FocusModeShell";
 import { appHeaderHeightPx } from "../../lib/sectionLayouts";
-import { resolveMiniModeEnabled } from "../../lib/miniMode";
+import { resolveFocusModeEnabled } from "../../lib/focusMode";
 import {
   isTeachingSessionActive,
   shouldShowHeaderHeightGrip,
@@ -138,8 +138,8 @@ export function AppShell() {
   const quickActionsVisible = effectiveQuickActionsVisible(settings.quickActionsVisible);
   const phrasesSlotVisible = sectionVisibility.phrases;
 
-  // Mini Mode: keyboard+suggestions or collapsed FAB — not the full app chrome.
-  // Teaching wins: never host Teaching inside MiniModeShell.
+  // Focus mode: keyboard+suggestions or collapsed FAB — not the full app chrome.
+  // Teaching wins: never host Teaching inside FocusModeShell.
   const teachingUiActive = isTeachingSessionActive(
     musicTeachingEnabled,
     settings.keyboardSectionMode,
@@ -147,9 +147,9 @@ export function AppShell() {
   if (
     !teachingUiActive &&
     monitors.length > 0 &&
-    resolveMiniModeEnabled(settings, monitors, teachingUiActive)
+    resolveFocusModeEnabled(settings, monitors, teachingUiActive)
   ) {
-    return <MiniModeShell />;
+    return <FocusModeShell />;
   }
 
   if (settings.collapsed) {

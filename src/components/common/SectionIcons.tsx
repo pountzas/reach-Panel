@@ -666,7 +666,7 @@ export function HeightGripIcon({ className = iconClass }: IconProps) {
   );
 }
 
-/** Outlined keys / see-through keyboard (transparent mini mode). */
+/** Outlined keys / see-through keyboard (transparent focus mode). */
 export function TransparentKeyboardIcon({ className = iconClass }: IconProps) {
   return (
     <svg

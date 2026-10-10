@@ -342,9 +342,9 @@ async fn apply_window_layout(
     collapsed_dictation: bool,
     collapsed_settings: bool,
     height_ratio: f32,
-    mini_mode: bool,
-    mini_keyboard_visible: bool,
-    mini_keyboard_height_ratio: f32,
+    focus_mode: bool,
+    focus_keyboard_visible: bool,
+    focus_keyboard_height_ratio: f32,
     full_work_area: bool,
 ) -> Result<(), String> {
     let monitors = list_monitors();
@@ -356,9 +356,9 @@ async fn apply_window_layout(
         collapsed_dictation,
         collapsed_settings,
         height_ratio,
-        mini_mode,
-        mini_keyboard_visible,
-        mini_keyboard_height_ratio,
+        focus_mode,
+        focus_keyboard_visible,
+        focus_keyboard_height_ratio,
         dpi_scale,
         full_work_area,
     )?;
@@ -395,9 +395,9 @@ async fn animate_window_layout(
     collapsed_dictation: bool,
     collapsed_settings: bool,
     height_ratio: f32,
-    mini_mode: bool,
-    mini_keyboard_visible: bool,
-    mini_keyboard_height_ratio: f32,
+    focus_mode: bool,
+    focus_keyboard_visible: bool,
+    focus_keyboard_height_ratio: f32,
     full_work_area: bool,
 ) -> Result<(), String> {
     let window = app
@@ -412,16 +412,16 @@ async fn animate_window_layout(
         collapsed_dictation,
         collapsed_settings,
         height_ratio,
-        mini_mode,
-        mini_keyboard_visible,
-        mini_keyboard_height_ratio,
+        focus_mode,
+        focus_keyboard_visible,
+        focus_keyboard_height_ratio,
         dpi_scale,
         full_work_area,
     )?;
     let from = get_current_window_layout(&window)?;
 
-    let animation_ms = if mini_mode {
-        window::MINI_MODE_ANIMATION_MS
+    let animation_ms = if focus_mode {
+        window::FOCUS_MODE_ANIMATION_MS
     } else {
         window::COLLAPSE_ANIMATION_MS
     };
@@ -448,9 +448,9 @@ async fn cmd_apply_window_layout(
     collapsed_dictation: bool,
     height_ratio: f32,
     collapsed_settings: Option<bool>,
-    mini_mode: Option<bool>,
-    mini_keyboard_visible: Option<bool>,
-    mini_keyboard_height_ratio: Option<f32>,
+    focus_mode: Option<bool>,
+    focus_keyboard_visible: Option<bool>,
+    focus_keyboard_height_ratio: Option<f32>,
     full_work_area: Option<bool>,
 ) -> Result<(), String> {
     apply_window_layout(
@@ -460,9 +460,9 @@ async fn cmd_apply_window_layout(
         collapsed_dictation,
         collapsed_settings.unwrap_or(false),
         height_ratio,
-        mini_mode.unwrap_or(false),
-        mini_keyboard_visible.unwrap_or(false),
-        mini_keyboard_height_ratio.unwrap_or(window::MINI_KEYBOARD_HEIGHT_RATIO),
+        focus_mode.unwrap_or(false),
+        focus_keyboard_visible.unwrap_or(false),
+        focus_keyboard_height_ratio.unwrap_or(window::FOCUS_KEYBOARD_HEIGHT_RATIO),
         full_work_area.unwrap_or(false),
     )
     .await
@@ -476,9 +476,9 @@ async fn cmd_animate_window_layout(
     collapsed_dictation: bool,
     height_ratio: f32,
     collapsed_settings: Option<bool>,
-    mini_mode: Option<bool>,
-    mini_keyboard_visible: Option<bool>,
-    mini_keyboard_height_ratio: Option<f32>,
+    focus_mode: Option<bool>,
+    focus_keyboard_visible: Option<bool>,
+    focus_keyboard_height_ratio: Option<f32>,
     full_work_area: Option<bool>,
 ) -> Result<(), String> {
     animate_window_layout(
@@ -488,9 +488,9 @@ async fn cmd_animate_window_layout(
         collapsed_dictation,
         collapsed_settings.unwrap_or(false),
         height_ratio,
-        mini_mode.unwrap_or(false),
-        mini_keyboard_visible.unwrap_or(false),
-        mini_keyboard_height_ratio.unwrap_or(window::MINI_KEYBOARD_HEIGHT_RATIO),
+        focus_mode.unwrap_or(false),
+        focus_keyboard_visible.unwrap_or(false),
+        focus_keyboard_height_ratio.unwrap_or(window::FOCUS_KEYBOARD_HEIGHT_RATIO),
         full_work_area.unwrap_or(false),
     )
     .await
@@ -511,7 +511,7 @@ async fn cmd_move_window_to_monitor(
         height_ratio,
         false,
         false,
-        window::MINI_KEYBOARD_HEIGHT_RATIO,
+        window::FOCUS_KEYBOARD_HEIGHT_RATIO,
         false,
     )
     .await
@@ -553,7 +553,7 @@ async fn cmd_set_collapsed(
         height_ratio,
         false,
         false,
-        window::MINI_KEYBOARD_HEIGHT_RATIO,
+        window::FOCUS_KEYBOARD_HEIGHT_RATIO,
         false,
     )
     .await

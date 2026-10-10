@@ -32,7 +32,7 @@ import { AboutSection } from "./AboutSection";
 import { CloseIcon, TeachingLessonIcon } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { ToolWindowHeader } from "../common/ToolWindowHeader";
-import { TRANSPARENT_KEY_COLORS } from "../../lib/miniMode";
+import { TRANSPARENT_KEY_COLORS } from "../../lib/focusMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
   isTeachingSessionActive,
@@ -357,7 +357,7 @@ export function SettingsPanel() {
     saveActiveProfile,
     pickBackgroundImage,
     monitors,
-    miniModeActive,
+    focusModeActive,
     companionModeActive,
     companionBridgeArmed,
     companionSessionLive,
@@ -453,8 +453,8 @@ export function SettingsPanel() {
   const selectedMode = resolveSelectedAppMode({
     companionModeActive,
     teachingActive,
-    miniModeOverride:
-      settings.miniModeOverride === true ? true : undefined,
+    focusModeOverride:
+      settings.focusModeOverride === true ? true : undefined,
   });
   const companionTabletEnabled = isCompanionTabletEnabled({
     bridgeRunning: companionBridgeRunning,
@@ -462,7 +462,7 @@ export function SettingsPanel() {
     companionBridgeArmed,
     companionSessionLive,
   });
-  const showMiniTransparentControls = selectedMode === "mini";
+  const showFocusTransparentControls = selectedMode === "focus";
 
   const activeTypingValue = String(
     inputMethods.find((m) => m.hkl === physicalKeyState.systemHkl)?.hkl ??
@@ -641,7 +641,7 @@ export function SettingsPanel() {
             </label>
           </SettingsSection>
 
-          <SettingsSection title={t("miniMode")} surface={surface}>
+          <SettingsSection title={t("modesSection")} surface={surface}>
             <p
               className="mb-3 px-1 text-xs"
               style={{ color: surface.panelMutedText }}
@@ -652,7 +652,7 @@ export function SettingsPanel() {
               {(
                 [
                   { id: "normal" as const, label: t("modeNormal") },
-                  { id: "mini" as const, label: t("modeMini") },
+                  { id: "focus" as const, label: t("modeFocus") },
                   { id: "teaching" as const, label: t("modeTeaching") },
                   { id: "companion" as const, label: t("modeCompanion") },
                 ] as const
@@ -782,14 +782,14 @@ export function SettingsPanel() {
                 />
               </div>
             )}
-            {showMiniTransparentControls && (
+            {showFocusTransparentControls && (
               <div className="mt-3">
                 <ToggleRow
-                  label={t("miniModeTransparent")}
-                  checked={Boolean(settings.miniModeTransparent)}
-                  disabled={!miniModeActive}
+                  label={t("focusModeTransparent")}
+                  checked={Boolean(settings.focusModeTransparent)}
+                  disabled={!focusModeActive}
                   onChange={(checked) =>
-                    updateSettings({ miniModeTransparent: checked })
+                    updateSettings({ focusModeTransparent: checked })
                   }
                   surface={surface}
                 />
@@ -797,20 +797,20 @@ export function SettingsPanel() {
                   className="mt-1 px-1 text-xs"
                   style={{ color: surface.panelMutedText }}
                 >
-                  {t("miniModeTransparentDescription")}
+                  {t("focusModeTransparentDescription")}
                 </p>
-                {Boolean(settings.miniModeTransparent) && (
+                {Boolean(settings.focusModeTransparent) && (
                   <label
                     className="mt-2 block text-sm"
                     style={{
                       color: surface.panelText,
-                      opacity: miniModeActive ? 1 : 0.5,
+                      opacity: focusModeActive ? 1 : 0.5,
                     }}
                   >
                     {t("transparentKeyColor")}
                     <ThemedSelect
                       value={settings.transparentKeyColor ?? "white"}
-                      disabled={!miniModeActive}
+                      disabled={!focusModeActive}
                       onChange={(value) =>
                         updateSettings({
                           transparentKeyColor: value as TransparentKeyColor,

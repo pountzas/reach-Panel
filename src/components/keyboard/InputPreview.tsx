@@ -1,6 +1,6 @@
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
-import { isTransparentUiActive, transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
+import { isTransparentUiActive, transparentKeyPalette, transparentOutlineStyle } from "../../lib/focusMode";
 
 const PREVIEW_MAX_WIDTH = 320;
 const PREVIEW_HEIGHT_PX = 48;
@@ -8,9 +8,9 @@ const PREVIEW_HEIGHT_PX = 48;
 export function InputPreview() {
   const inputPreviewFrame = useAppStore((s) => s.inputPreviewFrame);
   const settings = useAppStore((s) => s.settings);
-  const miniModeActive = useAppStore((s) => s.miniModeActive);
+  const focusModeActive = useAppStore((s) => s.focusModeActive);
   const { t } = useTranslation();
-  const transparent = isTransparentUiActive(settings, miniModeActive);
+  const transparent = isTransparentUiActive(settings, focusModeActive);
   const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
   const frameStyle = transparent
     ? transparentOutlineStyle({

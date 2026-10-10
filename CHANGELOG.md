@@ -5,6 +5,13 @@ All notable changes to this project are documented here. Release binaries are pu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **Mini Mode** is now called **Focus** (mode tablet) / **Focus mode** in settings and related UI copy across all locales.
+- Internal identifiers renamed to Focus (`focusMode*`, app mode `"focus"`, Rust `focus_mode`); persisted `miniMode*` settings keys migrate on load.
+
 ## 0.15.1 (2026-10-05)
 
 ## What's Changed

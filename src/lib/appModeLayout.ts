@@ -32,7 +32,7 @@ export function heightRatioAfterLeavingTeaching(
 
 /**
  * Teaching's synthesizer mode is session-only. Persisted profiles must not keep
- * `keyboardSectionMode: "synthesizer"` under Normal/Mini tablets.
+ * `keyboardSectionMode: "synthesizer"` under Normal/Focus tablets.
  */
 export function coercePersistedKeyboardSectionMode(
   mode: unknown,
@@ -83,12 +83,12 @@ export const TEACHING_SESSION_EVENT = "teaching-session";
 export const TEACHING_SESSION_REQUEST_EVENT = "teaching-session-request";
 
 export type AppModeRequest = {
-  mode: "normal" | "mini" | "teaching" | "companion";
+  mode: "normal" | "focus" | "teaching" | "companion";
   /** Idle restore already left companion; do not stop the bridge again. */
   skipCompanionBridgeStop?: boolean;
 };
-export type AppModeTablet = "normal" | "mini" | "teaching" | "companion";
-export type HostAppMode = "normal" | "mini" | "teaching";
+export type AppModeTablet = "normal" | "focus" | "teaching" | "companion";
+export type HostAppMode = "normal" | "focus" | "teaching";
 export type CompanionSessionPhase = "idle" | "active" | "reconnecting";
 export type TeachingLessonRequest = { lesson: "music" | "math" | "language" };
 export type TeachingSessionPayload = {
@@ -152,19 +152,19 @@ export function teachingLessonTitleKey(
 }
 
 export function lessonCloseAppMode(
-  modeBeforeTeaching: "normal" | "mini" | null | undefined,
-): "normal" | "mini" {
+  modeBeforeTeaching: "normal" | "focus" | null | undefined,
+): "normal" | "focus" {
   return modeBeforeTeaching ?? "normal";
 }
 
 export function resolveSelectedAppMode(input: {
   companionModeActive: boolean;
   teachingActive: boolean;
-  miniModeOverride: boolean | undefined;
+  focusModeOverride: boolean | undefined;
 }): AppModeTablet {
   if (input.companionModeActive) return "companion";
   if (input.teachingActive) return "teaching";
-  if (input.miniModeOverride === true) return "mini";
+  if (input.focusModeOverride === true) return "focus";
   return "normal";
 }
 
@@ -175,7 +175,7 @@ export function captureModeBeforeCompanion(
     case "companion":
       return null;
     case "normal":
-    case "mini":
+    case "focus":
     case "teaching":
       return selected;
     default: {
@@ -192,16 +192,16 @@ export function restoreModeAfterCompanion(
 }
 
 /**
- * After `updateSettings`, whether non-mini Normal/Teaching must re-apply
+ * After `updateSettings`, whether non-focus Normal/Teaching must re-apply
  * window layout (monitor move, height, or section change).
  */
-export function shouldSyncNonMiniWindowLayout(input: {
-  miniModeActive: boolean;
+export function shouldSyncNonFocusWindowLayout(input: {
+  focusModeActive: boolean;
   accessibilityMonitorIdInPatch: boolean;
   windowHeightRatioInPatch: boolean;
   keyboardSectionModeInPatch: boolean;
 }): boolean {
-  if (input.miniModeActive) return false;
+  if (input.focusModeActive) return false;
   return (
     input.accessibilityMonitorIdInPatch ||
     input.windowHeightRatioInPatch ||

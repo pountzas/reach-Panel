@@ -31,7 +31,7 @@ import { useContainerSize } from "../../hooks/useContainerSize";
 import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
-import { isTransparentUiActive, transparentKeyPalette } from "../../lib/miniMode";
+import { isTransparentUiActive, transparentKeyPalette } from "../../lib/focusMode";
 import {
   clearModifiersAfterKey,
   greekTranslateOptions,
@@ -41,7 +41,7 @@ import {
 
 export function Keyboard() {
   const settings = useAppStore((s) => s.settings);
-  const miniModeActive = useAppStore((s) => s.miniModeActive);
+  const focusModeActive = useAppStore((s) => s.focusModeActive);
   const keyboardLayout = useAppStore((s) => s.keyboardLayout);
   const stickyModifiers = useAppStore((s) => s.stickyModifiers);
   const physicalKeyState = useAppStore((s) => s.physicalKeyState);
@@ -143,7 +143,7 @@ export function Keyboard() {
     keyboardLayout,
     languageLessonActive: freeWriteCaptureActive,
   });
-  const transparent = isTransparentUiActive(settings, miniModeActive);
+  const transparent = isTransparentUiActive(settings, focusModeActive);
   const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
   const keyTextColor = transparent
     ? transparentPalette.text
@@ -516,7 +516,7 @@ export function Keyboard() {
   return (
     <div
       ref={ref}
-      className={`relative flex h-full w-full flex-col rounded-xl px-2 pb-2 ${miniModeActive ? "pt-0" : "pt-2"}`}
+      className={`relative flex h-full w-full flex-col rounded-xl px-2 pb-2 ${focusModeActive ? "pt-0" : "pt-2"}`}
       style={{
         backgroundColor: transparent
           ? "transparent"

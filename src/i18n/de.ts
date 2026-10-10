@@ -31,11 +31,11 @@ export const de: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Barrierefreiheitsbildschirm",
 
-  miniMode: "Modus",
+  modesSection: "Modus",
 
   modeNormal: "Normal",
 
-  modeMini: "Mini",
+  modeFocus: "Fokus",
 
   modeTeaching: "Unterricht",
 
@@ -136,26 +136,26 @@ export const de: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "„{title}“ löschen?",
 
   modeTabletsHint:
-    "Normal und Mini sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer. Begleiter ist erst verfügbar, wenn die Brücke läuft oder ein Tablet gekoppelt ist; ausgewählt während ein Tablet verbunden ist.",
+    "Normal und Fokus sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer. Begleiter ist erst verfügbar, wenn die Brücke läuft oder ein Tablet gekoppelt ist; ausgewählt während ein Tablet verbunden ist.",
 
-  miniModeAutoDescription:
+  focusModeAutoDescription:
     "Auf einem einzelnen Display oder bei gespiegelter Einrichtung erscheint die Tastatur automatisch, wenn Sie ein Eingabefeld antippen.",
 
-  miniModeOverrideLabel: "Mini-Modus",
+  focusModeOverrideLabel: "Fokusmodus",
 
-  miniModeOverrideAuto: "Automatisch",
+  focusModeOverrideAuto: "Automatisch",
 
-  miniModeOverrideOn: "Ein",
+  focusModeOverrideOn: "Ein",
 
-  miniModeOverrideOff: "Aus",
+  focusModeOverrideOff: "Aus",
 
-  miniModeTransparent: "Transparente Tastatur",
+  focusModeTransparent: "Transparente Tastatur",
 
   inputPreviewLabel: "Zieleingabe",
 
   inputPreviewWaiting: "Vorschau wird geladen…",
 
-  miniModeTransparentDescription:
+  focusModeTransparentDescription:
     "Tasten nur mit Umrissen anzeigen, damit Apps darunter sichtbar bleiben.",
 
   transparentKeyColor: "Farbe der transparenten Tasten",
@@ -166,7 +166,7 @@ export const de: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Silber",
 
-  miniModeCollapse: "Zurück zum Mini-Modus",
+  focusModeCollapse: "Zurück zum Fokusmodus",
 
   largeHeaders: "Große Header für einfacheres Ändern der Größe",
 
@@ -236,7 +236,7 @@ export const de: Record<keyof typeof en, string> = {
 
   showInputPreview: "Live-Eingabevorschau",
 
-  showInputPreviewMiniMode: "Live-Eingabevorschau (Mini-Modus)",
+  showInputPreviewFocusMode: "Live-Eingabevorschau (Fokusmodus)",
 
   taskbarPosition: "Taskleistenposition",
 
