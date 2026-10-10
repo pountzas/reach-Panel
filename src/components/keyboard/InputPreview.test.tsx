@@ -8,7 +8,7 @@ const storeState = {
     ...DEFAULT_SETTINGS,
     uiLanguage: "en" as const,
   },
-  miniModeActive: false,
+  focusModeActive: false,
   inputPreviewFrame: "data:image/jpeg;base64,abc" as string | null,
   externalInputFocused: false,
 };
@@ -25,7 +25,7 @@ describe("InputPreview blank placeholder", () => {
       ...DEFAULT_SETTINGS,
       uiLanguage: "en",
     };
-    storeState.miniModeActive = false;
+    storeState.focusModeActive = false;
     storeState.inputPreviewFrame = "data:image/jpeg;base64,abc";
     storeState.externalInputFocused = false;
   });

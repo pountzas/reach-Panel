@@ -616,7 +616,7 @@ interface AppStore {
   companionSessionLive: boolean;
   /** Live JPEG data URL of the focused external input, or null when idle. */
   inputPreviewFrame: string | null;
-  /** Editable-focus signal from Rust (input-focus-changed). Same logic as Mini Mode auto-show. */
+  /** Editable-focus signal from Rust (input-focus-changed). Same logic as Focus mode auto-show. */
   externalInputFocused: boolean;
   /** Session-only: bridge listener is up (armed). Cleared only by caregiver leave/Stop. */
   companionBridgeArmed: boolean;
