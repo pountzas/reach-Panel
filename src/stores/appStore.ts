@@ -292,6 +292,9 @@ let liveHeightRatioInFlight = false;
 /** When a mini layout sync is requested during animation, retry after it finishes. */
 let pendingFocusLayoutSync: boolean | null = null;
 
+/** In-flight mode-menu window expand; closeModeMenu waits for it so the restore always lands last. */
+let modeMenuExpandPending: Promise<void> | null = null;
+
 /** Coalesce rapid touch↔mouse pointerdowns before switching layout profiles. */
 const POINTER_INPUT_KIND_DEBOUNCE_MS = 50;
 let pendingPointerInputKind: PointerInputKind | null = null;
@@ -3005,10 +3008,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
     set({ modeMenuOpen: true });
-    await invoke("cmd_expand_window_for_mode_menu", {
+    const pending = invoke<void>("cmd_expand_window_for_mode_menu", {
       menuWidth: MODE_MENU_WIDTH,
       menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+    }).catch((error: unknown) => {
+      console.error("cmd_expand_window_for_mode_menu failed", error);
+      set({ modeMenuOpen: false });
     });
+    modeMenuExpandPending = pending;
+    try {
+      await pending;
+    } finally {
+      if (modeMenuExpandPending === pending) modeMenuExpandPending = null;
+    }
   },
 
   closeModeMenu: async () => {
@@ -3016,6 +3028,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
     set({ modeMenuOpen: false });
+    // Let an in-flight expand finish first so the collapsed restore always lands last.
+    if (modeMenuExpandPending) await modeMenuExpandPending;
     if (get().focusModeActive) {
       await syncFocusModeWindowLayout(false);
     } else {
@@ -3163,6 +3177,7 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
     state.focusModeSuppressAutoShow
   ) {
     useAppStore.setState({
+      modeMenuOpen: false,
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
       focusModeSuppressAutoShow: false,

@@ -156,7 +156,7 @@ export function ModeMenu({ onShowKeyboard }: ModeMenuProps) {
       </button>
       <div
         role="separator"
-        className="mx-2 my-0.5 h-px shrink-0 opacity-40"
+        className="mx-2 h-px shrink-0 opacity-40"
         style={{ backgroundColor: textColor }}
       />
       {APP_MODE_OPTIONS.map((m) => {

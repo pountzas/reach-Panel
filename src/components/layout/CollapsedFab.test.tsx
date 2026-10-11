@@ -90,14 +90,10 @@ describe("CollapsedFab mode menu", () => {
     storeState.isAnimatingWindow = false;
   });
 
-  it("tapping R expands the window and shows the mode menu", async () => {
+  it("tapping R opens the mode menu", async () => {
     const { rerender } = render(<CollapsedFab />);
     fireEvent.click(screen.getByRole("button", { name: "Choose mode" }));
     expect(openModeMenu).toHaveBeenCalledTimes(1);
-    expect(invoke).toHaveBeenCalledWith("cmd_expand_window_for_mode_menu", {
-      menuWidth: MODE_MENU_WIDTH,
-      menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
-    });
     rerender(<CollapsedFab />);
     const menu = screen.getByRole("menu", { name: "Modes" });
     expect(menu).toBeTruthy();
@@ -137,10 +133,20 @@ describe("CollapsedFab mode menu", () => {
     await waitFor(() => {
       expect(closeModeMenu).toHaveBeenCalled();
       expect(setAppMode).toHaveBeenCalledWith("normal");
+      expect(toggleCollapsed).toHaveBeenCalledTimes(1);
     });
     storeState.modeMenuOpen = false;
     rerender(<CollapsedFab />);
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("picking the current mode only closes the menu", async () => {
+    storeState.modeMenuOpen = true;
+    render(<CollapsedFab />);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Focus" }));
+    await waitFor(() => expect(closeModeMenu).toHaveBeenCalled());
+    expect(setAppMode).not.toHaveBeenCalled();
+    expect(toggleCollapsed).not.toHaveBeenCalled();
   });
 
   it("Show keyboard calls the onExpand prop", async () => {
