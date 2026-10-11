@@ -45,7 +45,13 @@ import {
 } from "../lib/sectionLayouts";
 import { shouldApplyLiveWindowHeightRatio } from "../lib/windowHeightDrag";
 import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
-import { FOCUS_KEYBOARD_HEIGHT_RATIO, resolveFocusModeEnabled, isInputPreviewActiveForMode } from "../lib/focusMode";
+import {
+  FOCUS_KEYBOARD_HEIGHT_RATIO,
+  MODE_MENU_WIDTH,
+  isInputPreviewActiveForMode,
+  modeMenuHeight,
+  resolveFocusModeEnabled,
+} from "../lib/focusMode";
 import { migrateLegacyFocusModeSettingsKeys } from "../lib/focusModeSettingsMigration";
 import {
   shouldClearSuggestions,
@@ -77,6 +83,7 @@ import {
   captureWindowHeightRatioBeforeTeaching,
   coercePersistedKeyboardSectionMode,
   heightRatioAfterLeavingTeaching,
+  APP_MODE_OPTIONS,
   hydrateKeyboardSectionMode,
   needsKeyboardSectionModeMigration,
   resolveSelectedAppMode,
@@ -284,6 +291,9 @@ let liveHeightRatioInFlight = false;
 
 /** When a mini layout sync is requested during animation, retry after it finishes. */
 let pendingFocusLayoutSync: boolean | null = null;
+
+/** In-flight mode-menu window expand; closeModeMenu waits for it so the restore always lands last. */
+let modeMenuExpandPending: Promise<void> | null = null;
 
 /** Coalesce rapid touch↔mouse pointerdowns before switching layout profiles. */
 const POINTER_INPUT_KIND_DEBOUNCE_MS = 50;
@@ -664,6 +674,10 @@ interface AppStore {
   focusModeManualExpand: boolean;
   /** After manual collapse, skip auto-show until external focus is lost once. */
   focusModeSuppressAutoShow: boolean;
+  /** Collapsed FAB mode menu is open (window grown for the menu). */
+  modeMenuOpen: boolean;
+  openModeMenu: () => Promise<void>;
+  closeModeMenu: () => Promise<void>;
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
@@ -1139,6 +1153,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   focusModeKeyboardVisible: false,
   focusModeManualExpand: false,
   focusModeSuppressAutoShow: false,
+  modeMenuOpen: false,
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -2988,10 +3003,49 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
+  openModeMenu: async () => {
+    if (get().isAnimatingWindow || get().modeMenuOpen) {
+      return;
+    }
+    set({ modeMenuOpen: true });
+    const pending = invoke<void>("cmd_expand_window_for_mode_menu", {
+      menuWidth: MODE_MENU_WIDTH,
+      menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+    }).catch((error: unknown) => {
+      console.error("cmd_expand_window_for_mode_menu failed", error);
+      set({ modeMenuOpen: false });
+    });
+    modeMenuExpandPending = pending;
+    try {
+      await pending;
+    } finally {
+      if (modeMenuExpandPending === pending) modeMenuExpandPending = null;
+    }
+  },
+
+  closeModeMenu: async () => {
+    if (!get().modeMenuOpen) {
+      return;
+    }
+    set({ modeMenuOpen: false });
+    // Let an in-flight expand finish first so the collapsed restore always lands last.
+    if (modeMenuExpandPending) await modeMenuExpandPending;
+    if (get().focusModeActive) {
+      await syncFocusModeWindowLayout(false);
+    } else {
+      await syncWindowLayoutFromSettings(
+        get().settings,
+        false,
+        get().musicTeachingEnabled,
+      );
+    }
+  },
+
   toggleCollapsed: async () => {
     if (get().isAnimatingWindow) {
       return;
     }
+    set({ modeMenuOpen: false });
     const epoch = get().settingsEpoch;
     const { settings } = get();
     const collapsed = !settings.collapsed;
@@ -3054,6 +3108,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
     set({
+      modeMenuOpen: false,
       focusModeKeyboardVisible: true,
       focusModeManualExpand: true,
       focusModeSuppressAutoShow: false,
@@ -3098,10 +3153,20 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   if (!state.focusModeActive) return;
   const focused = event.payload.focused;
   if (focused) {
-    if (state.settings.micMode === true) return;
+    if (state.modeMenuOpen) {
+      useAppStore.setState({ modeMenuOpen: false });
+    }
+    if (state.settings.micMode === true) {
+      if (state.modeMenuOpen) {
+        void syncFocusModeWindowLayout(false);
+      }
+      return;
+    }
     if (!state.focusModeKeyboardVisible && !state.focusModeSuppressAutoShow) {
       useAppStore.setState({ focusModeKeyboardVisible: true });
       void syncFocusModeWindowLayout(true);
+    } else if (state.modeMenuOpen) {
+      void syncFocusModeWindowLayout(false);
     }
     return;
   }
@@ -3112,6 +3177,7 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
     state.focusModeSuppressAutoShow
   ) {
     useAppStore.setState({
+      modeMenuOpen: false,
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
       focusModeSuppressAutoShow: false,

@@ -572,6 +572,24 @@ async fn cmd_set_collapsed(
 }
 
 #[tauri::command]
+async fn cmd_expand_window_for_mode_menu(
+    app: tauri::AppHandle,
+    menu_width: u32,
+    menu_height: u32,
+) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    let current = get_current_window_layout(&window)?;
+    let dpi_scale = main_window_dpi_scale(&app);
+    set_window_layout(
+        &app,
+        window::mode_menu_layout(current, menu_width, menu_height, dpi_scale),
+    )
+    .await
+}
+
+#[tauri::command]
 fn cmd_get_profiles(state: State<AppState>) -> Result<Vec<Profile>, String> {
     state.db.get_profiles().map_err(|e| e.to_string())
 }
@@ -1311,6 +1329,7 @@ pub fn run() {
             cmd_exclude_window_from_capture,
             cmd_set_window_focusable,
             cmd_set_collapsed,
+            cmd_expand_window_for_mode_menu,
             cmd_get_profiles,
             cmd_list_profile_files,
             cmd_get_active_profile_file,

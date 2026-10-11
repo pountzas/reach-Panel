@@ -90,8 +90,8 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 ### Modes
 
 - **Normal** — full typing keyboard and predictive suggestions
-- **Focus** — focus-driven keyboard (shows when a text field is focused); collapses to a branded FAB when idle; optional transparent outlined keys (white / dark gray / silver)
-- **Mic** — Focus layout that stays collapsed; mic FAB above Settings arms when a text field is focused (no keyboard auto-show); **R** still expands the keyboard manually; shared recording overlay while dictating
+- **Focus** — focus-driven keyboard (shows when a text field is focused); collapses to a branded FAB when idle; optional transparent outlined keys (white / dark gray / silver). Collapsed **R** opens a mode menu (Show keyboard + modes) without opening Settings
+- **Mic** — Focus layout that stays collapsed; mic FAB above Settings arms when a text field is focused (no keyboard auto-show); **R** opens the same mode menu (Show keyboard restores the keyboard); shared recording overlay while dictating
 - **Teaching** — fullscreen work area; switch Language / Music / Math from the lesson section header. Music: piano/synth (2–5 octaves), partiture, built-in songs and file import, resizable lesson split. Language: Spelling (Play to spell from built-in or custom lists, optional Greek tone checking) and Free write (notepad + PDF library/viewer); Math is a placeholder for now
 
 ### Keyboard

@@ -46,6 +46,12 @@ export const el: Record<keyof typeof en, string> = {
 
   modeCompanion: "Συνοδός",
 
+  modeMenuOpen: "Επιλογή λειτουργίας",
+
+  modeMenuTitle: "Λειτουργίες",
+
+  modeMenuShowKeyboard: "Εμφάνιση πληκτρολογίου",
+
   modeCompanionUnavailable:
     "Μη διαθέσιμο μέχρι να ξεκινήσει η γέφυρα companion ή να συνδεθεί tablet (Ρυθμίσεις → Συνοδός).",
 

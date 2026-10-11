@@ -43,6 +43,12 @@ export const de: Record<keyof typeof en, string> = {
 
   modeCompanion: "Begleiter",
 
+  modeMenuOpen: "Modus wählen",
+
+  modeMenuTitle: "Modi",
+
+  modeMenuShowKeyboard: "Tastatur anzeigen",
+
   modeCompanionUnavailable:
     "Nicht verfügbar, bis die Companion-Brücke gestartet oder ein Tablet gekoppelt ist (Einstellungen → Begleiter).",
 
