@@ -45,9 +45,13 @@ export function DictationOverlay() {
   }, []);
 
   useEffect(() => {
+    if (state === "idle") {
+      setEntered(false);
+      return;
+    }
     const id = window.requestAnimationFrame(() => setEntered(true));
     return () => window.cancelAnimationFrame(id);
-  }, []);
+  }, [state]);
 
   const active = state !== "idle";
 

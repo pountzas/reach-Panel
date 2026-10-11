@@ -30,7 +30,7 @@ export function bottomCenterOnMonitor(
   const h = Math.max(1, Math.min(height, Math.floor(mh)));
   return {
     x: Math.round(mx + (mw - w) / 2),
-    y: Math.round(my + mh - h - marginBottom),
+    y: Math.round(Math.max(my, my + mh - h - marginBottom)),
     width: w,
     height: h,
   };
@@ -44,12 +44,7 @@ async function getMonitors(): Promise<MonitorInfo[]> {
   }
 }
 
-async function resolvePlacement(): Promise<{
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-} | null> {
+async function resolvePlacement(): Promise<OverlayPlacement | null> {
   const monitors = await getMonitors();
   const monitor = await resolveMainWindowMonitor(monitors);
   if (!monitor) return null;
@@ -62,29 +57,23 @@ async function resolvePlacement(): Promise<{
   );
 }
 
+type OverlayPlacement = { x: number; y: number; width: number; height: number };
+
 async function applyOverlayPlacement(
   webview: WebviewWindow,
-  placement: { x: number; y: number; width: number; height: number },
+  placement: OverlayPlacement,
 ): Promise<void> {
   await webview.setSize(new LogicalSize(placement.width, placement.height));
   await webview.setPosition(new LogicalPosition(placement.x, placement.y));
 }
 
-export async function showDictationOverlay(): Promise<void> {
-  const placement = await resolvePlacement();
-  const existing = await WebviewWindow.getByLabel(DICTATION_OVERLAY_LABEL);
-  if (existing) {
-    if (placement) {
-      try {
-        await applyOverlayPlacement(existing, placement);
-      } catch (error) {
-        console.error("Failed to reposition dictation overlay", error);
-      }
-    }
-    await existing.show();
-    return;
-  }
+/** Desired visibility, updated synchronously so late async work can bail out. */
+let overlayWanted = false;
+let overlayCreation: Promise<WebviewWindow> | null = null;
 
+async function createOverlay(
+  placement: OverlayPlacement | null,
+): Promise<WebviewWindow> {
   const webview = new WebviewWindow(DICTATION_OVERLAY_LABEL, {
     url: "/",
     width: placement?.width ?? DICTATION_OVERLAY_SIZE.width,
@@ -98,7 +87,7 @@ export async function showDictationOverlay(): Promise<void> {
     skipTaskbar: true,
     resizable: false,
     shadow: false,
-    visible: true,
+    visible: false, // shown by showDictationOverlay only if still wanted
   });
 
   await new Promise<void>((resolve, reject) => {
@@ -127,9 +116,40 @@ export async function showDictationOverlay(): Promise<void> {
   } catch (error) {
     console.error("Failed to exclude dictation overlay from capture", error);
   }
+
+  return webview;
+}
+
+export async function showDictationOverlay(): Promise<void> {
+  overlayWanted = true;
+  try {
+    const placement = await resolvePlacement();
+    let webview = await WebviewWindow.getByLabel(DICTATION_OVERLAY_LABEL);
+    if (!webview) {
+      overlayCreation ??= createOverlay(placement).finally(() => {
+        overlayCreation = null;
+      });
+      webview = await overlayCreation;
+    } else if (placement) {
+      try {
+        await applyOverlayPlacement(webview, placement);
+      } catch (error) {
+        console.error("Failed to reposition dictation overlay", error);
+      }
+    }
+    // Dictation may have ended while we were awaiting.
+    if (overlayWanted) await webview.show();
+  } catch (error) {
+    console.error("Failed to show dictation overlay", error);
+  }
 }
 
 export async function hideDictationOverlay(): Promise<void> {
-  const existing = await WebviewWindow.getByLabel(DICTATION_OVERLAY_LABEL);
-  await existing?.hide();
+  overlayWanted = false;
+  try {
+    const existing = await WebviewWindow.getByLabel(DICTATION_OVERLAY_LABEL);
+    await existing?.hide();
+  } catch (error) {
+    console.error("Failed to hide dictation overlay", error);
+  }
 }

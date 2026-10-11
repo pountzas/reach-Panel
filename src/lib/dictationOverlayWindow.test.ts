@@ -62,10 +62,10 @@ describe("bottomCenterOnMonitor", () => {
     });
   });
 
-  it("clamps window size to fit a small logical work area", () => {
+  it("places correctly at 200% DPI on a small monitor", () => {
     const m = monitor({ id: 0, width: 1280, height: 800, is_primary: true });
     const placed = bottomCenterOnMonitor(m, 300, 76, 24, 2);
-    // logical 640×400 — window must shrink to fit
+    // logical 640×400
     expect(placed.width).toBe(300);
     expect(placed.height).toBe(76);
     expect(placed.x).toBe(Math.round((640 - 300) / 2));
@@ -78,7 +78,7 @@ describe("bottomCenterOnMonitor", () => {
     expect(placed.width).toBe(400);
     expect(placed.height).toBe(200);
     expect(placed.x).toBe(0);
-    // Same formula as centerOnMonitor sizing; margin can push y slightly above the work area top.
-    expect(placed.y).toBe(200 - 200 - 24);
+    // Margin never pushes the overlay above the monitor's top edge.
+    expect(placed.y).toBe(0);
   });
 });
