@@ -121,6 +121,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 ### Voice dictation (Windows)
 
 - Dictate key on the keyboard (right of Right Ctrl)
+- While listening, a shared recording overlay appears at the bottom-center of the screen (separate always-on-top window; does not steal focus from the target app)
 - Uses the **typing language**, not the UI language
 - **English and Western European languages (DE, FR, IT, ES, PT):** Windows Speech Recognition (WinRT) when the speech language pack is installed and online speech is allowed
 - **Greek and other languages without a Windows speech pack:** [Groq](https://groq.com) cloud Whisper (`whisper-large-v3-turbo`) over the internet
