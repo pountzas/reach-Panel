@@ -190,7 +190,7 @@ describe("focusMode", () => {
     expect(className.split(/\s+/)).not.toContain("gap-1");
   });
 
-  it("keeps suggestion-chip gap when chips are present", () => {
-    expect(focusModeToolbarClassName(true).split(/\s+/)).toContain("gap-1");
+  it("does not add a second-row gap when suggestion chips are present", () => {
+    expect(focusModeToolbarClassName(true).split(/\s+/)).not.toContain("gap-1");
   });
 });

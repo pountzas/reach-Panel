@@ -5,8 +5,13 @@ import { isTransparentUiActive, transparentKeyPalette, transparentOutlineStyle }
 const SUGGESTION_CHIP_BG = "#dbeafe";
 const SUGGESTION_CHIP_TEXT = "#1e3a8a";
 
-export function SuggestionsBar() {
-  const suggestions = useAppStore((s) => s.suggestions);
+export function SuggestionsBar({
+  suggestions: suggestionsProp,
+}: {
+  suggestions?: string[];
+} = {}) {
+  const storeSuggestions = useAppStore((s) => s.suggestions);
+  const suggestions = suggestionsProp ?? storeSuggestions;
   const settings = useAppStore((s) => s.settings);
   const focusModeActive = useAppStore((s) => s.focusModeActive);
   const applySuggestion = useAppStore((s) => s.applySuggestion);
