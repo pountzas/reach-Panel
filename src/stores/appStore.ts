@@ -1737,7 +1737,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       ...(clear ? { suggestions: [] as string[] } : {}),
     });
     return result.inject || null;
-    
   },
   applyTypedLayoutTranslation: (translation, options) => {
     const state = get();
