@@ -48,6 +48,10 @@ import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack"
 import { FOCUS_KEYBOARD_HEIGHT_RATIO, resolveFocusModeEnabled, isInputPreviewActiveForMode } from "../lib/focusMode";
 import { migrateLegacyFocusModeSettingsKeys } from "../lib/focusModeSettingsMigration";
 import {
+  shouldClearSuggestions,
+  suggestionWordPrefix,
+} from "../lib/suggestionPrefix";
+import {
   mapCompanionSessionPhase,
   shouldIgnoreCompanionIdle,
   shouldStopCompanionBridgeOnHostMode,
@@ -267,6 +271,8 @@ async function stopCompanionBridge(): Promise<void> {
 
 /** Block OS→UI language sync while a typing-language switch is in flight. */
 let typingLanguageSwitchInFlight = false;
+/** Drops stale cmd_get_suggestions results after space/enter/delete clears the prefix. */
+let suggestionsRequestId = 0;
 
 /** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
 let liveHeightRatioPreview: number | null = null;
@@ -1689,8 +1695,29 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ macros });
   },
 
-  setTypedBuffer: (text) => set({ typedBuffer: text, ...clearGreekPendingAccent() }),
-  appendTyped: (ch) => set((s) => ({ typedBuffer: s.typedBuffer + ch })),
+  setTypedBuffer: (text) => {
+    const clear = shouldClearSuggestions(text);
+    if (clear) {
+      suggestionsRequestId += 1;
+    }
+    set({
+      typedBuffer: text,
+      ...clearGreekPendingAccent(),
+      ...(clear ? { suggestions: [] as string[] } : {}),
+    });
+  },
+  appendTyped: (ch) =>
+    set((s) => {
+      const typedBuffer = s.typedBuffer + ch;
+      const clear = shouldClearSuggestions(typedBuffer);
+      if (clear) {
+        suggestionsRequestId += 1;
+      }
+      return {
+        typedBuffer,
+        ...(clear ? { suggestions: [] as string[] } : {}),
+      };
+    }),
   typeCharacter: (output, options) => {
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
@@ -1700,11 +1727,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       output,
       { physicalKey: options?.physicalKey, greekCompose: greek },
     );
+    const clear = shouldClearSuggestions(result.buffer);
+    if (clear) {
+      suggestionsRequestId += 1;
+    }
     set({
       typedBuffer: result.buffer,
       greekPendingAccent: result.pendingAccent,
+      ...(clear ? { suggestions: [] as string[] } : {}),
     });
     return result.inject || null;
+    
   },
   applyTypedLayoutTranslation: (translation, options) => {
     const state = get();
@@ -1752,7 +1785,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (s.greekPendingAccent) {
         return clearGreekPendingAccent();
       }
-      return { typedBuffer: s.typedBuffer.slice(0, -1) };
+      const typedBuffer = s.typedBuffer.slice(0, -1);
+      const clear = shouldClearSuggestions(typedBuffer);
+      if (clear) {
+        suggestionsRequestId += 1;
+      }
+      return {
+        typedBuffer,
+        ...(clear ? { suggestions: [] as string[] } : {}),
+      };
     }),
 
   toggleSticky: (modifier) =>
@@ -1887,20 +1928,29 @@ export const useAppStore = create<AppStore>((set, get) => ({
   loadSuggestions: async () => {
     const { settings, typedBuffer } = get();
     if (!settings.suggestionsVisible || !settings.predictionEnabled) {
+      suggestionsRequestId += 1;
       set({ suggestions: [] });
       return;
     }
-    const words = typedBuffer.split(/\s+/);
-    const prefix = words[words.length - 1] ?? "";
-    if (prefix.length < 2) {
+    const prefix = suggestionWordPrefix(typedBuffer);
+    if (shouldClearSuggestions(typedBuffer)) {
+      suggestionsRequestId += 1;
       set({ suggestions: [] });
       return;
     }
+    const requestId = ++suggestionsRequestId;
     const results = await invoke<{ word: string }[]>("cmd_get_suggestions", {
       profileId: INTERNAL_PROFILE_ID,
       prefix,
       language: settings.typingLanguage || "en",
     });
+    if (requestId !== suggestionsRequestId) {
+      return;
+    }
+    if (shouldClearSuggestions(get().typedBuffer)) {
+      set({ suggestions: [] });
+      return;
+    }
     set({ suggestions: results.map((r) => r.word) });
   },
 
