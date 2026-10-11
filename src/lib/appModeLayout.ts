@@ -1,3 +1,4 @@
+import type { TranslationKey } from "../i18n";
 import type { AppSettings, KeyboardSectionMode } from "./types";
 
 /** Captured before Teaching; `"unset"` means the ratio was previously undefined. */
@@ -96,6 +97,15 @@ export type TeachingSessionPayload = {
   teachingLesson: "music" | "math" | "language";
   keyboardSectionMode: KeyboardSectionMode;
 };
+
+/** Shared mode tablet list for Settings and the collapsed FAB mode menu. */
+export const APP_MODE_OPTIONS = [
+  { id: "normal", labelKey: "modeNormal" },
+  { id: "focus", labelKey: "modeFocus" },
+  { id: "mic", labelKey: "modeMic" },
+  { id: "teaching", labelKey: "modeTeaching" },
+  { id: "companion", labelKey: "modeCompanion" },
+] as const satisfies readonly { id: AppModeTablet; labelKey: TranslationKey }[];
 
 /** True when a loaded profile still has synthesizer while Teaching is not active. */
 export function needsKeyboardSectionModeMigration(

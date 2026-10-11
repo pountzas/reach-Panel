@@ -118,6 +118,25 @@ pub fn compute_collapsed_dimensions(count: CollapsedFabCount, dpi_scale: f32) ->
     (width, height)
 }
 
+/// Grow a collapsed FAB window left/up so a mode menu fits; bottom-right corner stays fixed.
+pub fn mode_menu_layout(
+    current: WindowLayout,
+    menu_w: u32,
+    menu_h: u32,
+    dpi_scale: f32,
+) -> WindowLayout {
+    let add_w = scale_collapsed_px(menu_w, dpi_scale);
+    let min_h = scale_collapsed_px(menu_h, dpi_scale);
+    let width = current.width + add_w;
+    let height = current.height.max(min_h);
+    WindowLayout {
+        x: current.x + current.width as i32 - width as i32,
+        y: current.y + current.height as i32 - height as i32,
+        width,
+        height,
+    }
+}
+
 fn collapsed_fab_count(
     collapsed_dictation: bool,
     collapsed_settings: bool,
@@ -296,6 +315,48 @@ mod tests {
         ];
         let id = monitor_for_rect(&monitors, 2000, 100, 400, 300);
         assert_eq!(id, 1);
+    }
+
+    #[test]
+    fn mode_menu_layout_keeps_bottom_right_fixed() {
+        let current = WindowLayout {
+            x: 100,
+            y: 200,
+            width: 88,
+            height: 156,
+        };
+        let next = mode_menu_layout(current, 220, 300, 1.0);
+        assert_eq!(next.x + next.width as i32, current.x + current.width as i32);
+        assert_eq!(
+            next.y + next.height as i32,
+            current.y + current.height as i32
+        );
+    }
+
+    #[test]
+    fn mode_menu_layout_grows_width_with_dpi() {
+        let current = WindowLayout {
+            x: 100,
+            y: 200,
+            width: 88,
+            height: 156,
+        };
+        let at_1 = mode_menu_layout(current, 220, 100, 1.0);
+        let at_15 = mode_menu_layout(current, 220, 100, 1.5);
+        assert_eq!(at_1.width, current.width + 220);
+        assert_eq!(at_15.width, current.width + ((220.0_f32 * 1.5).ceil() as u32));
+    }
+
+    #[test]
+    fn mode_menu_layout_height_never_shrinks() {
+        let current = WindowLayout {
+            x: 100,
+            y: 200,
+            width: 88,
+            height: 200,
+        };
+        let next = mode_menu_layout(current, 220, 100, 1.0);
+        assert_eq!(next.height, 200);
     }
 
     #[test]

@@ -1,0 +1,176 @@
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { DEFAULT_SETTINGS } from "../../lib/types";
+import { MODE_MENU_WIDTH, modeMenuHeight } from "../../lib/focusMode";
+import { APP_MODE_OPTIONS } from "../../lib/appModeLayout";
+
+const invoke = vi.fn(async (..._args: unknown[]) => undefined);
+const setAppMode = vi.fn(async () => undefined);
+const closeModeMenu = vi.fn(async () => {
+  storeState.modeMenuOpen = false;
+});
+const openModeMenu = vi.fn(async () => {
+  storeState.modeMenuOpen = true;
+  await invoke("cmd_expand_window_for_mode_menu", {
+    menuWidth: MODE_MENU_WIDTH,
+    menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+  });
+});
+const toggleCollapsed = vi.fn(async () => undefined);
+const toggleDictation = vi.fn(async () => undefined);
+
+const storeState = {
+  settings: {
+    ...DEFAULT_SETTINGS,
+    uiLanguage: "en",
+    focusModeOverride: true,
+    micMode: false,
+    collapsed: true,
+    headerBgColor: "#1e293b",
+    headerTextColor: "#ffffff",
+  },
+  companionModeActive: false,
+  musicTeachingEnabled: false,
+  isAnimatingWindow: false,
+  dictationState: "idle" as const,
+  sttCapability: null,
+  externalInputFocused: false,
+  modeMenuOpen: false,
+  openModeMenu,
+  closeModeMenu,
+  setAppMode,
+  toggleCollapsed,
+  toggleDictation,
+};
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke,
+}));
+
+vi.mock("../../stores/appStore", () => {
+  const useAppStore = (selector: (s: typeof storeState) => unknown) =>
+    selector(storeState);
+  useAppStore.getState = () => storeState;
+  return { useAppStore };
+});
+
+vi.mock("../../hooks/useCompanionTabletEnabled", () => ({
+  useCompanionTabletEnabled: () => companionEnabled,
+}));
+
+let companionEnabled = false;
+
+import { CollapsedFab } from "./CollapsedFab";
+
+describe("CollapsedFab mode menu", () => {
+  beforeEach(() => {
+    invoke.mockReset();
+    invoke.mockResolvedValue(undefined);
+    setAppMode.mockReset();
+    setAppMode.mockResolvedValue(undefined);
+    closeModeMenu.mockClear();
+    openModeMenu.mockClear();
+    toggleCollapsed.mockReset();
+    toggleDictation.mockReset();
+    companionEnabled = false;
+    storeState.modeMenuOpen = false;
+    storeState.settings = {
+      ...DEFAULT_SETTINGS,
+      uiLanguage: "en",
+      focusModeOverride: true,
+      micMode: false,
+      collapsed: true,
+      headerBgColor: "#1e293b",
+      headerTextColor: "#ffffff",
+      keyboardSectionMode: "keyboard",
+    };
+    storeState.companionModeActive = false;
+    storeState.musicTeachingEnabled = false;
+    storeState.isAnimatingWindow = false;
+  });
+
+  it("tapping R expands the window and shows the mode menu", async () => {
+    const { rerender } = render(<CollapsedFab />);
+    fireEvent.click(screen.getByRole("button", { name: "Choose mode" }));
+    expect(openModeMenu).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledWith("cmd_expand_window_for_mode_menu", {
+      menuWidth: MODE_MENU_WIDTH,
+      menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+    });
+    rerender(<CollapsedFab />);
+    const menu = screen.getByRole("menu", { name: "Modes" });
+    expect(menu).toBeTruthy();
+    expect(
+      screen.getByRole("menuitem", { name: "Show keyboard" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("menuitemradio", { name: "Normal" })).toBeTruthy();
+    expect(screen.getByRole("menuitemradio", { name: "Focus" })).toBeTruthy();
+    expect(screen.getByRole("menuitemradio", { name: "Mic" })).toBeTruthy();
+    expect(
+      screen.getByRole("menuitemradio", { name: "Teaching" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("menuitemradio", { name: "Companion" }),
+    ).toBeTruthy();
+  });
+
+  it("marks the current mode with aria-checked", () => {
+    storeState.modeMenuOpen = true;
+    render(<CollapsedFab />);
+    expect(
+      screen.getByRole("menuitemradio", { name: "Focus" }).getAttribute(
+        "aria-checked",
+      ),
+    ).toBe("true");
+    expect(
+      screen.getByRole("menuitemradio", { name: "Normal" }).getAttribute(
+        "aria-checked",
+      ),
+    ).toBe("false");
+  });
+
+  it("picking a different mode calls setAppMode and closes the menu", async () => {
+    storeState.modeMenuOpen = true;
+    const { rerender } = render(<CollapsedFab />);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Normal" }));
+    await waitFor(() => {
+      expect(closeModeMenu).toHaveBeenCalled();
+      expect(setAppMode).toHaveBeenCalledWith("normal");
+    });
+    storeState.modeMenuOpen = false;
+    rerender(<CollapsedFab />);
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("Show keyboard calls the onExpand prop", async () => {
+    storeState.modeMenuOpen = true;
+    const onExpand = vi.fn();
+    render(<CollapsedFab onExpand={onExpand} />);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Show keyboard" }));
+    await waitFor(() => {
+      expect(closeModeMenu).toHaveBeenCalled();
+      expect(onExpand).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("Escape closes the menu", () => {
+    storeState.modeMenuOpen = true;
+    const { rerender } = render(<CollapsedFab />);
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+    expect(closeModeMenu).toHaveBeenCalled();
+    storeState.modeMenuOpen = false;
+    rerender(<CollapsedFab />);
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("Companion is disabled when unavailable", () => {
+    companionEnabled = false;
+    storeState.modeMenuOpen = true;
+    render(<CollapsedFab />);
+    expect(
+      (screen.getByRole("menuitemradio", { name: "Companion" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+});

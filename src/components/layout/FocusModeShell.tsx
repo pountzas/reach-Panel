@@ -4,8 +4,9 @@ import { CollapsedFab } from "./CollapsedFab";
 
 /**
  * Focus mode UI: full-width keyboard + suggestions when visible,
- * or a collapsed FAB stack (Mic (Mic mode) → Settings → Expand) when hidden.
- * Expand reopens the keyboard until external input loses focus; collapse returns to the FAB stack.
+ * or a collapsed FAB stack (Mic (Mic mode) → Settings → R) when hidden.
+ * R opens the mode menu; "Show keyboard" reopens the keyboard until external
+ * input loses focus; collapse returns to the FAB stack.
  */
 export function FocusModeShell() {
   const focusModeKeyboardVisible = useAppStore((s) => s.focusModeKeyboardVisible);

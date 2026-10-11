@@ -45,7 +45,13 @@ import {
 } from "../lib/sectionLayouts";
 import { shouldApplyLiveWindowHeightRatio } from "../lib/windowHeightDrag";
 import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
-import { FOCUS_KEYBOARD_HEIGHT_RATIO, resolveFocusModeEnabled, isInputPreviewActiveForMode } from "../lib/focusMode";
+import {
+  FOCUS_KEYBOARD_HEIGHT_RATIO,
+  MODE_MENU_WIDTH,
+  isInputPreviewActiveForMode,
+  modeMenuHeight,
+  resolveFocusModeEnabled,
+} from "../lib/focusMode";
 import { migrateLegacyFocusModeSettingsKeys } from "../lib/focusModeSettingsMigration";
 import {
   shouldClearSuggestions,
@@ -77,6 +83,7 @@ import {
   captureWindowHeightRatioBeforeTeaching,
   coercePersistedKeyboardSectionMode,
   heightRatioAfterLeavingTeaching,
+  APP_MODE_OPTIONS,
   hydrateKeyboardSectionMode,
   needsKeyboardSectionModeMigration,
   resolveSelectedAppMode,
@@ -664,6 +671,10 @@ interface AppStore {
   focusModeManualExpand: boolean;
   /** After manual collapse, skip auto-show until external focus is lost once. */
   focusModeSuppressAutoShow: boolean;
+  /** Collapsed FAB mode menu is open (window grown for the menu). */
+  modeMenuOpen: boolean;
+  openModeMenu: () => Promise<void>;
+  closeModeMenu: () => Promise<void>;
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
@@ -1139,6 +1150,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   focusModeKeyboardVisible: false,
   focusModeManualExpand: false,
   focusModeSuppressAutoShow: false,
+  modeMenuOpen: false,
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -2988,10 +3000,38 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
+  openModeMenu: async () => {
+    if (get().isAnimatingWindow || get().modeMenuOpen) {
+      return;
+    }
+    set({ modeMenuOpen: true });
+    await invoke("cmd_expand_window_for_mode_menu", {
+      menuWidth: MODE_MENU_WIDTH,
+      menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+    });
+  },
+
+  closeModeMenu: async () => {
+    if (!get().modeMenuOpen) {
+      return;
+    }
+    set({ modeMenuOpen: false });
+    if (get().focusModeActive) {
+      await syncFocusModeWindowLayout(false);
+    } else {
+      await syncWindowLayoutFromSettings(
+        get().settings,
+        false,
+        get().musicTeachingEnabled,
+      );
+    }
+  },
+
   toggleCollapsed: async () => {
     if (get().isAnimatingWindow) {
       return;
     }
+    set({ modeMenuOpen: false });
     const epoch = get().settingsEpoch;
     const { settings } = get();
     const collapsed = !settings.collapsed;
@@ -3054,6 +3094,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
     set({
+      modeMenuOpen: false,
       focusModeKeyboardVisible: true,
       focusModeManualExpand: true,
       focusModeSuppressAutoShow: false,
@@ -3098,10 +3139,20 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   if (!state.focusModeActive) return;
   const focused = event.payload.focused;
   if (focused) {
-    if (state.settings.micMode === true) return;
+    if (state.modeMenuOpen) {
+      useAppStore.setState({ modeMenuOpen: false });
+    }
+    if (state.settings.micMode === true) {
+      if (state.modeMenuOpen) {
+        void syncFocusModeWindowLayout(false);
+      }
+      return;
+    }
     if (!state.focusModeKeyboardVisible && !state.focusModeSuppressAutoShow) {
       useAppStore.setState({ focusModeKeyboardVisible: true });
       void syncFocusModeWindowLayout(true);
+    } else if (state.modeMenuOpen) {
+      void syncFocusModeWindowLayout(false);
     }
     return;
   }

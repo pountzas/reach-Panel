@@ -8,6 +8,15 @@ export const COLLAPSED_FAB_GAP = 12;
 export const COLLAPSED_FAB_PAD = 10;
 /** Extra px for hover scale headroom (~5% of 56px). */
 export const FAB_HOVER_SLACK = 6;
+/** Collapsed FAB mode menu panel width (logical px; Rust scales by DPI). */
+export const MODE_MENU_WIDTH = 220;
+export const MODE_MENU_ITEM_HEIGHT = 48;
+export const MODE_MENU_PAD = 8;
+
+/** Height for Show keyboard + mode rows + divider + vertical padding. */
+export function modeMenuHeight(itemCount: number): number {
+  return itemCount * MODE_MENU_ITEM_HEIGHT + 2 * MODE_MENU_PAD + 1;
+}
 /** Mic FAB icon when armed (text field focused + can dictate). sky-300 on default header. */
 export const MIC_FAB_ARMED_ICON_COLOR = "#7dd3fc";
 

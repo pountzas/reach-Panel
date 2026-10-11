@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "./types";
 import {
+  APP_MODE_OPTIONS,
   captureModeBeforeCompanion,
   captureWindowHeightRatioBeforeTeaching,
   coercePersistedKeyboardSectionMode,
@@ -19,7 +20,26 @@ import {
   shouldDelegateAppModeToMain,
   shouldSyncNonFocusWindowLayout,
   teachingSessionKeyboardMode,
+  type AppModeTablet,
 } from "./appModeLayout";
+
+describe("APP_MODE_OPTIONS", () => {
+  it("has unique ids that cover every AppModeTablet value", () => {
+    const ids = APP_MODE_OPTIONS.map((m) => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const allModes: AppModeTablet[] = [
+      "normal",
+      "focus",
+      "mic",
+      "teaching",
+      "companion",
+    ];
+    for (const mode of allModes) {
+      expect(ids).toContain(mode);
+    }
+    expect(ids).toHaveLength(allModes.length);
+  });
+});
 
 describe("heightRatioAfterLeavingTeaching", () => {
   it("returns undefined for unset / null / Teaching 1.0", () => {

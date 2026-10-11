@@ -6,7 +6,6 @@ import {
   type ReactNode,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -43,14 +42,12 @@ import { ToolWindowHeader } from "../common/ToolWindowHeader";
 import { TRANSPARENT_KEY_COLORS } from "../../lib/focusMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
+  APP_MODE_OPTIONS,
   isTeachingSessionActive,
   resolveSelectedAppMode,
   type AppModeTablet,
 } from "../../lib/appModeLayout";
-import {
-  isCompanionTabletEnabled,
-  type CompanionUiState,
-} from "../../lib/companionSession";
+import { useCompanionTabletEnabled } from "../../hooks/useCompanionTabletEnabled";
 import { GROQ_API_KEYS_URL, openExternalLink } from "../../lib/appInfo";
 import { defaultLanguagePackId } from "../../lib/language";
 import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
@@ -391,8 +388,6 @@ export function SettingsPanel() {
     monitors,
     focusModeActive,
     companionModeActive,
-    companionBridgeArmed,
-    companionSessionLive,
     musicTeachingEnabled,
     teachingLesson,
     setAppMode,
@@ -412,9 +407,8 @@ export function SettingsPanel() {
     keyboardLayout,
   } = useAppStore();
   const { t } = useTranslation();
+  const companionTabletEnabled = useCompanionTabletEnabled();
   const [newProfileName, setNewProfileName] = useState<string>("");
-  const [companionBridgeRunning, setCompanionBridgeRunning] = useState<boolean>(false);
-  const [companionPairedCount, setCompanionPairedCount] = useState<number>(0);
   const [launchAtSignIn, setLaunchAtSignIn] = useState<boolean>(() =>
     getCachedAutostartEnabled(),
   );
@@ -435,32 +429,6 @@ export function SettingsPanel() {
       });
     return () => {
       cancelled = true;
-    };
-  }, []);
-
-  useEffect((): (() => void) => {
-    let cancelled = false;
-    const refreshCompanionAvailability = async () => {
-      try {
-        const status = await invoke<CompanionUiState>("cmd_companion_status");
-        if (cancelled) return;
-        setCompanionBridgeRunning(status.running);
-        setCompanionPairedCount(status.pairedDeviceCount);
-      } catch {
-        if (!cancelled) {
-          setCompanionBridgeRunning(false);
-          setCompanionPairedCount(0);
-        }
-      }
-    };
-    void refreshCompanionAvailability();
-    const unlisten = listen<CompanionUiState>("companion-state", (event) => {
-      setCompanionBridgeRunning(event.payload.running);
-      setCompanionPairedCount(event.payload.pairedDeviceCount);
-    });
-    return () => {
-      cancelled = true;
-      void unlisten.then((fn) => fn());
     };
   }, []);
 
@@ -488,12 +456,6 @@ export function SettingsPanel() {
     focusModeOverride:
       settings.focusModeOverride === true ? true : undefined,
     micMode: settings.micMode === true,
-  });
-  const companionTabletEnabled = isCompanionTabletEnabled({
-    bridgeRunning: companionBridgeRunning,
-    pairedDeviceCount: companionPairedCount,
-    companionBridgeArmed,
-    companionSessionLive,
   });
   const showFocusTransparentControls =
     selectedMode === "focus" || selectedMode === "mic";
@@ -683,15 +645,8 @@ export function SettingsPanel() {
               {t("modeTabletsHint")}
             </p>
             <div className="grid grid-cols-5 gap-2">
-              {(
-                [
-                  { id: "normal" as const, label: t("modeNormal") },
-                  { id: "focus" as const, label: t("modeFocus") },
-                  { id: "mic" as const, label: t("modeMic") },
-                  { id: "teaching" as const, label: t("modeTeaching") },
-                  { id: "companion" as const, label: t("modeCompanion") },
-                ] as const
-              ).map((mode) => {
+              {APP_MODE_OPTIONS.map((m) => {
+                const mode = { id: m.id, label: t(m.labelKey) };
                 const companionDisabled =
                   mode.id === "companion" && !companionTabletEnabled;
                 const pressed =

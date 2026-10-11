@@ -43,6 +43,12 @@ export const es: Record<keyof typeof en, string> = {
 
   modeCompanion: "Compañero",
 
+  modeMenuOpen: "Elegir modo",
+
+  modeMenuTitle: "Modos",
+
+  modeMenuShowKeyboard: "Mostrar teclado",
+
   modeCompanionUnavailable:
     "No disponible hasta que inicies el puente companion o emparejes una tablet (Ajustes → Compañero).",
 
