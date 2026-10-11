@@ -67,7 +67,7 @@ describe("PreviewSuggestionsRow", () => {
 
   it("keeps last chips visible while the suggestions slot is hiding", () => {
     storeState.suggestions = ["alpha", "beta"];
-    const { rerender } = render(
+    const { container, rerender } = render(
       <PreviewSuggestionsRow showPreview={true} showSuggestions={true} />,
     );
     expect(screen.getByRole("button", { name: "alpha" })).toBeTruthy();
@@ -82,5 +82,17 @@ describe("PreviewSuggestionsRow", () => {
     expect(
       screen.getByRole("button", { name: "beta", hidden: true }),
     ).toBeTruthy();
+    expect(
+      container.querySelector("[data-slot='suggestions']")!.hasAttribute("inert"),
+    ).toBe(true);
+  });
+
+  it("marks the preview slot inert when hidden", () => {
+    const { container } = render(
+      <PreviewSuggestionsRow showPreview={false} showSuggestions={false} />,
+    );
+    expect(
+      container.querySelector("[data-slot='preview']")!.hasAttribute("inert"),
+    ).toBe(true);
   });
 });

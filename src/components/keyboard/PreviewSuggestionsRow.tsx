@@ -28,7 +28,8 @@ export function PreviewSuggestionsRow({
       <div
         data-slot="preview"
         aria-hidden={!showPreview}
-        className={`${SLOT_ANIM} shrink-0 ${
+        inert={!showPreview}
+        className={`${SLOT_ANIM} min-w-0 shrink ${
           showPreview
             ? "max-w-[320px] opacity-100 translate-x-0"
             : "pointer-events-none max-w-0 opacity-0 -translate-x-2"
@@ -40,6 +41,7 @@ export function PreviewSuggestionsRow({
       <div
         data-slot="suggestions"
         aria-hidden={!showSuggestions}
+        inert={!showSuggestions}
         className={`${SLOT_ANIM} min-w-0 ${
           showSuggestions
             ? "max-w-[min(60vw,40rem)] opacity-100 translate-x-0"
