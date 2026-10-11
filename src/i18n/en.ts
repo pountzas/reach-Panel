@@ -36,6 +36,8 @@ export const en = {
 
   modeFocus: "Focus",
 
+  modeMic: "Mic",
+
   modeTeaching: "Teaching",
 
   modeCompanion: "Companion",
@@ -399,6 +401,8 @@ export const en = {
   dictationStart: "Start dictation",
 
   dictationStop: "Stop dictation",
+
+  micModeSelectInput: "Select a text field to dictate",
 
   dictationListening: "Listening…",
 

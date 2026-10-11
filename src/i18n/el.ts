@@ -40,6 +40,8 @@ export const el: Record<keyof typeof en, string> = {
 
   modeFocus: "Εστίαση",
 
+  modeMic: "Μικρόφωνο",
+
   modeTeaching: "Διδασκαλία",
 
   modeCompanion: "Συνοδός",
@@ -385,6 +387,8 @@ export const el: Record<keyof typeof en, string> = {
   dictationStart: "Έναρξη υπαγόρευσης",
 
   dictationStop: "Διακοπή υπαγόρευσης",
+
+  micModeSelectInput: "Επιλέξτε ένα πεδίο κειμένου για υπαγόρευση",
 
   dictationListening: "Ακούει…",
 

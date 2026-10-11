@@ -22,7 +22,7 @@ In the app, **Settings → About** and **Settings → Companion** also open this
 
 The companion turns an Android tablet into a control surface (keyboard, trackpad, numpad, dictation, suggestions). The Windows host still injects keystrokes and mouse events into the focused app. Teaching / Music stay on Windows only.
 
-Pairing stays in **Settings → Companion** (Start bridge / QR). The Companion mode tablet stays unavailable until the bridge is running or a tablet is paired. When a tablet connects, Companion becomes the selected mode and the host minimizes. Disconnect restores the previous mode and unminimizes but keeps the bridge running (reconnect without tapping Companion again). Tapping Normal, Focus, or Teaching — or **Stop** — stops the bridge.
+Pairing stays in **Settings → Companion** (Start bridge / QR). The Companion mode tablet stays unavailable until the bridge is running or a tablet is paired. When a tablet connects, Companion becomes the selected mode and the host minimizes. Disconnect restores the previous mode and unminimizes but keeps the bridge running (reconnect without tapping Companion again). Tapping Normal, Focus, Mic, or Teaching — or **Stop** — stops the bridge.
 
 ### 1. Install ReachPanel on Windows
 

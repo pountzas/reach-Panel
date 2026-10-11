@@ -29,7 +29,15 @@ import { resolveOnscreenLayout } from "../../lib/keyboardLayouts";
 import { SettingsSection } from "./SettingsSection";
 import { CompanionSection } from "./CompanionSection";
 import { AboutSection } from "./AboutSection";
-import { CloseIcon, TeachingLessonIcon } from "../common/SectionIcons";
+import {
+  CloseIcon,
+  FocusIcon,
+  KeyboardIcon,
+  LanguageLessonIcon,
+  MicrophoneIcon,
+  TabletIcon,
+  TeachingLessonIcon,
+} from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { ToolWindowHeader } from "../common/ToolWindowHeader";
 import { TRANSPARENT_KEY_COLORS } from "../../lib/focusMode";
@@ -75,6 +83,7 @@ const fieldStyle = (surface: SurfaceColors): CSSProperties => ({
 type ModeTabletButtonProps = {
   id: AppModeTablet;
   label: string;
+  icon: ReactNode;
   pressed: boolean;
   disabled: boolean;
   title?: string;
@@ -85,6 +94,7 @@ type ModeTabletButtonProps = {
 const ModeTabletButton = ({
   id,
   label,
+  icon,
   pressed,
   disabled,
   title,
@@ -97,8 +107,8 @@ const ModeTabletButton = ({
       disabled={disabled}
       aria-disabled={disabled}
       aria-pressed={pressed}
-      title={title}
-      className="rounded-lg border px-2 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+      title={title ?? label}
+      className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border px-1 py-1.5 text-[11px] font-semibold leading-tight transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       style={{
         backgroundColor: pressed ? surface.insetBg : surface.panelButtonBg,
         borderColor: pressed ? surface.panelText : surface.panelBorder,
@@ -112,10 +122,32 @@ const ModeTabletButton = ({
         onSelect(id);
       }}
     >
-      {label}
+      <span className="flex h-6 w-6 items-center justify-center [&>svg]:h-6 [&>svg]:w-6">
+        {icon}
+      </span>
+      <span className="max-w-full truncate">{label}</span>
     </button>
   );
 };
+
+function modeTabletIcon(id: AppModeTablet): ReactNode {
+  switch (id) {
+    case "normal":
+      return <KeyboardIcon />;
+    case "focus":
+      return <FocusIcon />;
+    case "mic":
+      return <MicrophoneIcon />;
+    case "teaching":
+      return <LanguageLessonIcon />;
+    case "companion":
+      return <TabletIcon />;
+    default: {
+      const _exhaustive: never = id;
+      return _exhaustive;
+    }
+  }
+}
 
 type ColorFieldProps = {
   label: string;
@@ -455,6 +487,7 @@ export function SettingsPanel() {
     teachingActive,
     focusModeOverride:
       settings.focusModeOverride === true ? true : undefined,
+    micMode: settings.micMode === true,
   });
   const companionTabletEnabled = isCompanionTabletEnabled({
     bridgeRunning: companionBridgeRunning,
@@ -462,7 +495,8 @@ export function SettingsPanel() {
     companionBridgeArmed,
     companionSessionLive,
   });
-  const showFocusTransparentControls = selectedMode === "focus";
+  const showFocusTransparentControls =
+    selectedMode === "focus" || selectedMode === "mic";
 
   const activeTypingValue = String(
     inputMethods.find((m) => m.hkl === physicalKeyState.systemHkl)?.hkl ??
@@ -648,11 +682,12 @@ export function SettingsPanel() {
             >
               {t("modeTabletsHint")}
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {(
                 [
                   { id: "normal" as const, label: t("modeNormal") },
                   { id: "focus" as const, label: t("modeFocus") },
+                  { id: "mic" as const, label: t("modeMic") },
                   { id: "teaching" as const, label: t("modeTeaching") },
                   { id: "companion" as const, label: t("modeCompanion") },
                 ] as const
@@ -667,6 +702,7 @@ export function SettingsPanel() {
                     key={mode.id}
                     id={mode.id}
                     label={mode.label}
+                    icon={modeTabletIcon(mode.id)}
                     pressed={pressed}
                     disabled={companionDisabled}
                     title={

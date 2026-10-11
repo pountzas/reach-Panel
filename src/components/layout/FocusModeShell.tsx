@@ -4,7 +4,7 @@ import { CollapsedFab } from "./CollapsedFab";
 
 /**
  * Focus mode UI: full-width keyboard + suggestions when visible,
- * or a 3-button collapsed FAB (Settings → Dictate → Expand) when hidden.
+ * or a collapsed FAB stack (Mic (Mic mode) → Settings → Expand) when hidden.
  * Expand reopens the keyboard until external input loses focus; collapse returns to the FAB stack.
  */
 export function FocusModeShell() {
@@ -17,6 +17,7 @@ export function FocusModeShell() {
     return (
       <CollapsedFab
         showSettings
+        showDictation={settings.micMode === true}
         onSettings={() => void setShowSettings(true)}
         onExpand={() => void expandFocusModeKeyboard()}
       />
