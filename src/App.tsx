@@ -9,6 +9,12 @@ import { HeadTrackingWizard } from "./components/head-tracking/HeadTrackingWizar
 import { AppToaster } from "./components/common/AppToaster";
 import { UpdatePrompt } from "./components/common/UpdatePrompt";
 import { computeContentHeightRatioFromSettings } from "./lib/sectionLayouts";
+import { DictationOverlay } from "./components/keyboard/DictationOverlay";
+import {
+  hideDictationOverlay,
+  showDictationOverlay,
+  DICTATION_OVERLAY_LABEL,
+} from "./lib/dictationOverlayWindow";
 import {
   isToolWindowLabel,
   PROFILE_UPDATED_EVENT,
@@ -258,6 +264,18 @@ function MainApp() {
     setLastError,
   ]);
 
+  useEffect(() => {
+    const unsubscribe = useAppStore.subscribe((s, prev) => {
+      if (s.dictationState === prev.dictationState) return;
+      if (s.dictationState === "idle") void hideDictationOverlay();
+      else if (prev.dictationState === "idle") void showDictationOverlay();
+    });
+    return () => {
+      unsubscribe();
+      void hideDictationOverlay();
+    };
+  }, []);
+
   const pendingUpdate = useAppStore((s) => s.pendingUpdate);
   const setPendingUpdate = useAppStore((s) => s.setPendingUpdate);
 
@@ -341,6 +359,9 @@ function ToolApp({ label }: { label: ToolWindowLabel }) {
 
 function App() {
   const label = WebviewWindow.getCurrent().label;
+  if (label === DICTATION_OVERLAY_LABEL) {
+    return <DictationOverlay />;
+  }
   if (isToolWindowLabel(label)) {
     return <ToolApp label={label} />;
   }
