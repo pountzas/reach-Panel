@@ -129,6 +129,7 @@ describe("teachingLessonTitleKey", () => {
 describe("lessonCloseAppMode", () => {
   it("restores the tablet captured before Teaching", () => {
     expect(lessonCloseAppMode("focus")).toBe("focus");
+    expect(lessonCloseAppMode("mic")).toBe("mic");
     expect(lessonCloseAppMode("normal")).toBe("normal");
   });
 
@@ -184,32 +185,46 @@ describe("teachingSessionKeyboardMode", () => {
 });
 
 describe("resolveSelectedAppMode", () => {
-  it("prefers companion over teaching and mini", () => {
+  it("prefers companion over teaching and focus", () => {
     expect(
       resolveSelectedAppMode({
         companionModeActive: true,
         teachingActive: true,
         focusModeOverride: true,
+        micMode: true,
       }),
     ).toBe("companion");
   });
 
-  it("prefers teaching over mini when companion is off", () => {
+  it("prefers teaching over focus/mic when companion is off", () => {
     expect(
       resolveSelectedAppMode({
         companionModeActive: false,
         teachingActive: true,
         focusModeOverride: true,
+        micMode: true,
       }),
     ).toBe("teaching");
   });
 
-  it("selects mini when only mini override is set", () => {
+  it("selects mic when focus override and micMode are set", () => {
     expect(
       resolveSelectedAppMode({
         companionModeActive: false,
         teachingActive: false,
         focusModeOverride: true,
+        micMode: true,
+      }),
+    ).toBe("mic");
+  });
+
+  it("selects focus when only focus override is set", () => {
+    expect(
+      resolveSelectedAppMode({
+        companionModeActive: false,
+        teachingActive: false,
+        focusModeOverride: true,
+        micMode: false,
       }),
     ).toBe("focus");
   });
@@ -220,6 +235,7 @@ describe("resolveSelectedAppMode", () => {
         companionModeActive: false,
         teachingActive: false,
         focusModeOverride: false,
+        micMode: false,
       }),
     ).toBe("normal");
     expect(
@@ -227,15 +243,17 @@ describe("resolveSelectedAppMode", () => {
         companionModeActive: false,
         teachingActive: false,
         focusModeOverride: undefined,
+        micMode: undefined,
       }),
     ).toBe("normal");
   });
 });
 
 describe("captureModeBeforeCompanion", () => {
-  it("captures normal, mini, and teaching host modes", () => {
+  it("captures normal, focus, mic, and teaching host modes", () => {
     expect(captureModeBeforeCompanion("normal")).toBe("normal");
     expect(captureModeBeforeCompanion("focus")).toBe("focus");
+    expect(captureModeBeforeCompanion("mic")).toBe("mic");
     expect(captureModeBeforeCompanion("teaching")).toBe("teaching");
   });
 
@@ -247,6 +265,7 @@ describe("captureModeBeforeCompanion", () => {
 describe("restoreModeAfterCompanion", () => {
   it("restores the captured host mode", () => {
     expect(restoreModeAfterCompanion("focus")).toBe("focus");
+    expect(restoreModeAfterCompanion("mic")).toBe("mic");
     expect(restoreModeAfterCompanion("teaching")).toBe("teaching");
     expect(restoreModeAfterCompanion("normal")).toBe("normal");
   });

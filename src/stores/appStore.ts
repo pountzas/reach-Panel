@@ -312,7 +312,7 @@ async function syncFocusModeWindowLayout(preferAnimate = true) {
     const args = {
       monitorId: settings.accessibilityMonitorId,
       collapsed: !visibleAtStart,
-      collapsedDictation: false,
+      collapsedDictation: settings.micMode === true,
       collapsedSettings: true,
       heightRatio: heightRatioFromSettings(
         settings,
@@ -609,7 +609,7 @@ interface AppStore {
   /** Session-only: which lesson fills the teaching slot. */
   teachingLesson: TeachingLesson;
   /** Session-only: typing mode to restore when leaving Teaching. */
-  modeBeforeTeaching: "normal" | "focus" | null;
+  modeBeforeTeaching: "normal" | "focus" | "mic" | null;
   /** Session-only: height ratio captured before Teaching (incl. unset). */
   windowHeightRatioBeforeTeaching: WindowHeightRatioBeforeTeaching;
   /** Session-only: companion tablet mode is selected while a live session exists. */
@@ -848,6 +848,7 @@ function parseSettings(json: string): AppSettings {
       parsed.focusModeOverride === true
         ? true
         : false;
+    const micMode = focusModeOverride && parsed.micMode === true;
     // Teaching is session-only; never hydrate synthesizer under Normal/Focus.
     const keyboardSectionMode = coercePersistedKeyboardSectionMode(
       parsed.keyboardSectionMode,
@@ -864,6 +865,7 @@ function parseSettings(json: string): AppSettings {
       colorProfile,
       mousePanelSide,
       focusModeOverride,
+      micMode,
       keyboardSectionMode,
       taskbarPositionPreference,
       sectionStack: resolveSectionStack(parsed.sectionStack, parsed.sectionLayouts),
@@ -1345,10 +1347,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
         next = { ...next, phrasesVisible: before };
       }
       // Restore saved typing mode + height when Teaching exits via keyboardSectionMode.
-      if (modeBefore === "focus") {
-        next = { ...next, focusModeOverride: true };
+      if (modeBefore === "mic") {
+        next = { ...next, focusModeOverride: true, micMode: true };
+      } else if (modeBefore === "focus") {
+        next = { ...next, focusModeOverride: true, micMode: false };
       } else if (modeBefore === "normal") {
-        next = { ...next, focusModeOverride: false };
+        next = { ...next, focusModeOverride: false, micMode: false };
       }
       if (heightBefore !== null) {
         const restored = heightRatioAfterLeavingTeaching(heightBefore);
@@ -1464,7 +1468,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         partial.phrasesVisible !== undefined ||
         partial.quickActionsVisible !== undefined;
       // Transparent is CSS-only; do not trigger mini layout refresh/animation.
-      const focusModeSettingChanged = partial.focusModeOverride !== undefined;
+      const focusModeSettingChanged =
+        partial.focusModeOverride !== undefined ||
+        partial.micMode !== undefined;
       if (focusModeSettingChanged || partial.accessibilityMonitorId !== undefined) {
         await refreshFocusModeState({ animate: true });
         // Monitor moves (and Teaching→Normal height/section patches) must still
@@ -2214,6 +2220,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           companionModeActive: current.companionModeActive,
           teachingActive,
           focusModeOverride: current.settings.focusModeOverride ?? undefined,
+          micMode: current.settings.micMode === true,
         }),
       );
       set({
@@ -2245,6 +2252,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       companionModeActive: current.companionModeActive,
       teachingActive,
       focusModeOverride: current.settings.focusModeOverride ?? undefined,
+      micMode: current.settings.micMode === true,
     });
     const host: HostAppMode =
       selected === "companion"
@@ -2277,6 +2285,27 @@ export const useAppStore = create<AppStore>((set, get) => ({
               ...current,
               keyboardSectionMode: "synthesizer",
               focusModeOverride: false,
+              micMode: false,
+            },
+          });
+          break;
+        case "mic":
+          set({
+            companionModeActive: false,
+            companionSessionLive: false,
+            companionBridgeArmed: skipCompanionBridgeStop
+              ? get().companionBridgeArmed
+              : false,
+            modeBeforeCompanion: null,
+            musicTeachingEnabled: false,
+            musicNoteIndex: 0,
+            musicPlaybackActive: false,
+            ...emptyLanguageLessonState(),
+            settings: {
+              ...current,
+              keyboardSectionMode: "keyboard",
+              focusModeOverride: true,
+              micMode: true,
             },
           });
           break;
@@ -2296,6 +2325,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
               ...current,
               keyboardSectionMode: "keyboard",
               focusModeOverride: true,
+              micMode: false,
             },
           });
           break;
@@ -2315,6 +2345,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
               ...current,
               keyboardSectionMode: "keyboard",
               focusModeOverride: false,
+              micMode: false,
             },
           });
           break;
@@ -2378,11 +2409,42 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
         await get().updateSettings({
           focusModeOverride: false,
+          micMode: false,
           keyboardSectionMode: "keyboard",
           ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
         // Explicit Normal must re-apply non-focus layout even if refresh was a no-op.
         await syncWindowLayoutFromSettings(get().settings, true, false);
+        await emitTeachingSession(get);
+        return;
+      }
+      case "mic": {
+        set({
+          companionModeActive: false,
+          focusModeKeyboardVisible: false,
+          focusModeManualExpand: false,
+        });
+        const heightRestore = inTeaching
+          ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
+          : undefined;
+        if (inTeaching) {
+          liveHeightRatioPreview = null;
+          set({
+            musicTeachingEnabled: false,
+            musicNoteIndex: 0,
+            musicPlaybackActive: false,
+            phrasesVisibleBeforeTeaching: null,
+            modeBeforeTeaching: null,
+            windowHeightRatioBeforeTeaching: null,
+            ...emptyLanguageLessonState(),
+          });
+        }
+        await get().updateSettings({
+          focusModeOverride: true,
+          micMode: true,
+          keyboardSectionMode: "keyboard",
+          ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
+        });
         await emitTeachingSession(get);
         return;
       }
@@ -2405,6 +2467,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
         await get().updateSettings({
           focusModeOverride: true,
+          micMode: false,
           keyboardSectionMode: "keyboard",
           ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
@@ -2416,8 +2479,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (inTeaching) {
           return;
         }
-        const previousMode: "normal" | "focus" =
-          settings.focusModeOverride === true ? "focus" : "normal";
+        const previousMode: "normal" | "focus" | "mic" =
+          settings.focusModeOverride === true
+            ? settings.micMode === true
+              ? "mic"
+              : "focus"
+            : "normal";
         set({
           modeBeforeTeaching: previousMode,
           windowHeightRatioBeforeTeaching: captureWindowHeightRatioBeforeTeaching(
@@ -2436,6 +2503,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         );
         await get().updateSettings({
           focusModeOverride: false,
+          micMode: false,
           keyboardSectionMode: "synthesizer",
           sectionStack,
         });
@@ -3030,6 +3098,7 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   if (!state.focusModeActive) return;
   const focused = event.payload.focused;
   if (focused) {
+    if (state.settings.micMode === true) return;
     if (!state.focusModeKeyboardVisible && !state.focusModeSuppressAutoShow) {
       useAppStore.setState({ focusModeKeyboardVisible: true });
       void syncFocusModeWindowLayout(true);

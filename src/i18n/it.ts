@@ -37,6 +37,8 @@ export const it: Record<keyof typeof en, string> = {
 
   modeFocus: "Focus",
 
+  modeMic: "Microfono",
+
   modeTeaching: "Insegnamento",
 
   modeCompanion: "Compagno",
@@ -382,6 +384,8 @@ export const it: Record<keyof typeof en, string> = {
   dictationStart: "Avvia dettatura",
 
   dictationStop: "Interrompi dettatura",
+
+  micModeSelectInput: "Seleziona un campo di testo per dettare",
 
   dictationListening: "In ascolto…",
 

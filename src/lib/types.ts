@@ -95,6 +95,8 @@ export interface AppSettings {
   windowHeightRatio?: number;
   /** true = Focus, false / null = Normal (null migrates to false on load) */
   focusModeOverride?: boolean | null;
+  /** Mic mode: Focus internals + mic FAB, no keyboard auto-show. */
+  micMode?: boolean;
   focusModeTransparent?: boolean;
   /** Outline/label color when transparent keyboard is active. */
   transparentKeyColor?: TransparentKeyColor;
@@ -248,6 +250,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   largeHeaders: false,
   transparentKeyColor: "white",
   focusModeOverride: false,
+  micMode: false,
   languageLessonLanguage: "el",
   languageLessonAgeBand: "primary",
   languageLessonLeftRatio: 0.4,
