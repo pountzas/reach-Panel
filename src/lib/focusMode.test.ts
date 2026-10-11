@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS, type MonitorInfo } from "./types";
 import {
   isInputPreviewActiveForMode,
+  isMicFabEnabled,
   isMirroredSetup,
   isFocusModeEligible,
   isTransparentUiActive,
@@ -192,5 +193,55 @@ describe("focusMode", () => {
 
   it("does not add a second-row gap when suggestion chips are present", () => {
     expect(focusModeToolbarClassName(true).split(/\s+/)).not.toContain("gap-1");
+  });
+
+  it("keeps the mic FAB enabled while listening even without focus or canDictate", () => {
+    expect(
+      isMicFabEnabled({
+        dictationState: "listening",
+        canDictate: false,
+        externalInputFocused: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps the mic FAB enabled while processing", () => {
+    expect(
+      isMicFabEnabled({
+        dictationState: "processing",
+        canDictate: false,
+        externalInputFocused: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("enables the mic FAB when idle with focus and canDictate", () => {
+    expect(
+      isMicFabEnabled({
+        dictationState: "idle",
+        canDictate: true,
+        externalInputFocused: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("disables the mic FAB when idle without a focused text field", () => {
+    expect(
+      isMicFabEnabled({
+        dictationState: "idle",
+        canDictate: true,
+        externalInputFocused: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("disables the mic FAB when idle with focus but without canDictate", () => {
+    expect(
+      isMicFabEnabled({
+        dictationState: "idle",
+        canDictate: false,
+        externalInputFocused: true,
+      }),
+    ).toBe(false);
   });
 });

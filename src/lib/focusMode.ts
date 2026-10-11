@@ -8,6 +8,20 @@ export const COLLAPSED_FAB_GAP = 12;
 export const COLLAPSED_FAB_PAD = 10;
 /** Extra px for hover scale headroom (~5% of 56px). */
 export const FAB_HOVER_SLACK = 6;
+/** Mic FAB icon when armed (text field focused + can dictate). sky-300 on default header. */
+export const MIC_FAB_ARMED_ICON_COLOR = "#7dd3fc";
+
+/** Mic mode FAB: never disabled while listening/processing so Stop stays reachable. */
+export function isMicFabEnabled(input: {
+  dictationState: string;
+  canDictate: boolean;
+  externalInputFocused: boolean;
+}): boolean {
+  const listening =
+    input.dictationState === "listening" ||
+    input.dictationState === "processing";
+  return listening || (input.canDictate && input.externalInputFocused);
+}
 
 /** Default focus-mode keyboard height as fraction of full monitor height. Keep in sync with Rust. */
 export const FOCUS_KEYBOARD_HEIGHT_RATIO = 0.42;

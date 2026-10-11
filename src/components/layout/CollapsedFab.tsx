@@ -5,7 +5,9 @@ import {
   COLLAPSED_FAB_GAP,
   COLLAPSED_FAB_PAD,
   COLLAPSED_FAB_SIZE,
+  MIC_FAB_ARMED_ICON_COLOR,
   collapsedFabContentMinSize,
+  isMicFabEnabled,
   type CollapsedFabCount,
 } from "../../lib/focusMode";
 
@@ -41,9 +43,12 @@ export function CollapsedFab({
 
   const listening =
     dictationState === "listening" || dictationState === "processing";
-  const micEnabled =
-    listening ||
-    ((sttCapability?.canDictate ?? false) && externalInputFocused);
+  const canDictate = sttCapability?.canDictate ?? false;
+  const micEnabled = isMicFabEnabled({
+    dictationState,
+    canDictate,
+    externalInputFocused,
+  });
 
   const fabCount = ((): CollapsedFabCount => {
     const n = (showSettings ? 1 : 0) + (showDictation ? 1 : 0) + 1;
@@ -60,11 +65,19 @@ export function CollapsedFab({
     void toggleCollapsed();
   };
 
-  const micAriaLabel = listening
-    ? t("dictationStop")
-    : micEnabled
-      ? t("dictationStart")
-      : t("micModeSelectInput");
+  let micAriaLabel: string;
+  if (listening) {
+    micAriaLabel = t("dictationStop");
+  } else if (micEnabled) {
+    micAriaLabel = t("dictationStart");
+  } else if (!canDictate) {
+    micAriaLabel =
+      sttCapability?.online && !sttCapability.winrtSupported
+        ? t("dictationUnavailableUnsupported")
+        : t("dictationUnavailableOffline");
+  } else {
+    micAriaLabel = t("micModeSelectInput");
+  }
 
   return (
     <div
@@ -89,7 +102,7 @@ export function CollapsedFab({
             color: listening
               ? "#ffffff"
               : micEnabled
-                ? "#501fffff"
+                ? MIC_FAB_ARMED_ICON_COLOR
                 : textColor,
           }}
           disabled={!micEnabled}

@@ -309,7 +309,7 @@ async function syncFocusModeWindowLayout(preferAnimate = true) {
   useAppStore.setState({ isAnimatingWindow: true });
   try {
     const { settings } = useAppStore.getState();
-      const args = {
+    const args = {
       monitorId: settings.accessibilityMonitorId,
       collapsed: !visibleAtStart,
       collapsedDictation: settings.micMode === true,
@@ -978,7 +978,6 @@ async function loadProfileData(
       const raw = JSON.parse(active.settings_json) as {
         focusModeOverride?: unknown;
         miniModeOverride?: unknown;
-        micMode?: unknown;
         keyboardSectionMode?: unknown;
       };
       const override =
