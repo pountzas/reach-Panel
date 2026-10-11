@@ -170,8 +170,10 @@ pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
     }
     if ty == UIA_DocumentControlTypeId {
         // Word / native editors: Document is the typing surface.
-        // Chromium page Document is often writable even for role=main landmarks.
-        return !signals.is_chromium_document;
+        // Chromium page Documents are usually not — except designMode /
+        // contenteditable iframe editors (TinyMCE, CKEditor 4) with editable TextPattern.
+        return !signals.is_chromium_document
+            || (signals.has_text_pattern && signals.text_pattern_editable);
     }
     if ty == UIA_ComboBoxControlTypeId {
         return combo_box_accepts_text(signals);
@@ -509,10 +511,14 @@ fn is_chromium_class(class: &str) -> bool {
 /// Chromium host detection for classifier signals.
 ///
 /// In-page nodes (e.g. Base UI `<button role="combobox">`) often have
-/// `NativeWindowHandle == 0`, so the element's own class is empty. Fall back to
-/// the foreground window class (`Chrome_*` for Chrome/Edge/Electron/WebView2).
-pub fn host_is_chromium(native_class: &str, foreground_class: &str) -> bool {
-    is_chromium_class(native_class) || is_chromium_class(foreground_class)
+/// `NativeWindowHandle == 0`, so the element's own class is empty. UIA
+/// `FrameworkId` is `"Chrome"` for every Chromium node (Chrome/Edge/Electron/
+/// WebView2, including WebView2 hosted in non-Chromium top-level windows).
+/// Fall back to the element HWND class, then the foreground window class.
+pub fn host_is_chromium(framework_id: &str, native_class: &str, foreground_class: &str) -> bool {
+    framework_id.eq_ignore_ascii_case("chrome")
+        || is_chromium_class(native_class)
+        || is_chromium_class(foreground_class)
 }
 
 fn ensure_com_for_uia() {
@@ -554,6 +560,15 @@ fn uia_element_native_class(element: &IUIAutomationElement) -> String {
         } else {
             window_class_name(hwnd)
         }
+    }
+}
+
+fn uia_element_framework_id(element: &IUIAutomationElement) -> String {
+    unsafe {
+        element
+            .CurrentFrameworkId()
+            .map(|b| b.to_string())
+            .unwrap_or_default()
     }
 }
 
@@ -703,14 +718,20 @@ fn uia_focused_is_text_input() -> Option<bool> {
             return Some(false);
         }
         let control_type = unsafe { element.CurrentControlType().ok()?.0 };
+        let framework_id = uia_element_framework_id(&element);
         let native_class = uia_element_native_class(&element);
         let foreground_class = unsafe { window_class_name(GetForegroundWindow()) };
         let has_text_pattern = uia_element_has_text_pattern(&element);
         let signals = UiaTextInputSignals {
             control_type,
             value_writable: uia_element_value_writable(&element),
-            // Prefer element HWND; in-page Chromium nodes often lack one.
-            is_chromium_document: host_is_chromium(&native_class, &foreground_class),
+            // FrameworkId catches WebView2 in non-Chrome top-level hosts;
+            // HWND / FG class cover cases where FrameworkId is empty.
+            is_chromium_document: host_is_chromium(
+                &framework_id,
+                &native_class,
+                &foreground_class,
+            ),
             aria_role: uia_element_aria_role(&element),
             has_text_pattern,
             text_pattern_editable: has_text_pattern
@@ -1820,12 +1841,48 @@ mod tests {
     }
 
     #[test]
-    fn host_is_chromium_uses_foreground_when_element_hwnd_missing() {
-        assert!(host_is_chromium("", "Chrome_WidgetWin_1"));
-        assert!(host_is_chromium("", "Chrome_RenderWidgetHostHWND"));
-        assert!(host_is_chromium("Chrome_RenderWidgetHostHWND", "Notepad"));
-        assert!(!host_is_chromium("", "Notepad"));
-        assert!(!host_is_chromium("", ""));
+    fn host_is_chromium_uses_framework_id_and_class_fallbacks() {
+        // WebView2 in a WPF/WinForms host: FrameworkId is Chrome, FG is not.
+        assert!(host_is_chromium("Chrome", "", "HwndWrapper[MyApp;;1]"));
+        assert!(host_is_chromium("chrome", "", ""));
+        // Class fallbacks when FrameworkId is empty.
+        assert!(host_is_chromium("", "", "Chrome_WidgetWin_1"));
+        assert!(host_is_chromium("", "", "Chrome_RenderWidgetHostHWND"));
+        assert!(host_is_chromium("", "Chrome_RenderWidgetHostHWND", "Notepad"));
+        assert!(!host_is_chromium("", "", "Notepad"));
+        assert!(!host_is_chromium("", "", ""));
+        assert!(!host_is_chromium("Win32", "", "Notepad"));
+    }
+
+    #[test]
+    fn uia_chromium_document_requires_editable_text_pattern() {
+        // Plain Chromium page / iframe Document: not text.
+        assert!(!uia_control_is_text_input(signals_with_text_editability(
+            50030, // UIA_DocumentControlTypeId
+            true,
+            true,
+            AriaRoleKind::Unspecified,
+            true,
+            false,
+        )));
+        // designMode / contenteditable iframe editor (TinyMCE, CKEditor 4): text.
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50030,
+            false,
+            true,
+            AriaRoleKind::Unspecified,
+            true,
+            true,
+        )));
+        // Native Document (Word): still text.
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50030,
+            false,
+            false,
+            AriaRoleKind::Unspecified,
+            false,
+            false,
+        )));
     }
 
     #[test]
