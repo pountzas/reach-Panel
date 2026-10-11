@@ -10,6 +10,8 @@ import {
 export const DICTATION_OVERLAY_LABEL = "dictation-overlay";
 export const DICTATION_OVERLAY_SIZE = { width: 300, height: 76 } as const;
 
+type OverlayPlacement = { x: number; y: number; width: number; height: number };
+
 /**
  * Win32 monitor rects are physical pixels; Tauri WebviewWindow x/y/size are
  * logical. Place at bottom-center with a margin above the bottom edge.
@@ -20,7 +22,7 @@ export function bottomCenterOnMonitor(
   height: number,
   marginBottom = 24,
   scaleFactor = resolveMonitorScaleFactor(monitor),
-): { x: number; y: number; width: number; height: number } {
+): OverlayPlacement {
   const scale = scaleFactor > 0 ? scaleFactor : 1;
   const mx = monitor.x / scale;
   const my = monitor.y / scale;
@@ -56,8 +58,6 @@ async function resolvePlacement(): Promise<OverlayPlacement | null> {
     resolveMonitorScaleFactor(monitor),
   );
 }
-
-type OverlayPlacement = { x: number; y: number; width: number; height: number };
 
 async function applyOverlayPlacement(
   webview: WebviewWindow,
