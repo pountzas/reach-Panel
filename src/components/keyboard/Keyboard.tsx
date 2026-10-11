@@ -25,7 +25,6 @@ import { KeyButton } from "./KeyButton";
 import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
 import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
-import { DictationVisualizer } from "./DictationVisualizer";
 import { MicrophoneIcon } from "../common/SectionIcons";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
@@ -153,7 +152,6 @@ export function Keyboard() {
   const canDictate = sttCapability?.canDictate ?? false;
   // Never disable while a session is active — stop must always be clickable.
   const dictateDisabled = !listening && !canDictate;
-  const captureAudio = sttCapability?.engine !== "groq";
   const groqRemainingPercent = useGroqDailyQuota(sttCapability?.engine);
 
   useEffect((): void => {
@@ -524,11 +522,6 @@ export function Keyboard() {
         opacity: transparent ? 1 : settings.opacity,
       }}
     >
-      {listening ? (
-        <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2">
-          <DictationVisualizer active={listening} captureAudio={captureAudio} />
-        </div>
-      ) : null}
       {rows.map((row, ri) => (
         <div key={ri} className="flex w-full">
           {row.map((k, ci) => {

@@ -523,6 +523,13 @@ async fn cmd_move_window_to_monitor(
 }
 
 #[tauri::command]
+fn cmd_exclude_window_from_capture(app: tauri::AppHandle, label: String) -> Result<(), String> {
+    let window = app.get_webview_window(&label).ok_or("window not found")?;
+    let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+    input::input_preview::exclude_window_from_capture(hwnd.0 as isize)
+}
+
+#[tauri::command]
 async fn cmd_set_always_on_top(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
         window.set_always_on_top(enabled).map_err(|e| e.to_string())?;
@@ -1301,6 +1308,7 @@ pub fn run() {
             cmd_animate_window_layout,
             cmd_move_window_to_monitor,
             cmd_set_always_on_top,
+            cmd_exclude_window_from_capture,
             cmd_set_window_focusable,
             cmd_set_collapsed,
             cmd_get_profiles,
