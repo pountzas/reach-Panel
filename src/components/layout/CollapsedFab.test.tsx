@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { DEFAULT_SETTINGS } from "../../lib/types";
 import { MODE_MENU_WIDTH, modeMenuHeight } from "../../lib/focusMode";
 import { APP_MODE_OPTIONS } from "../../lib/appModeLayout";
+
+const motionMocks = vi.hoisted(() => ({
+  prefersReducedMotion: vi.fn(() => true),
+}));
 
 const invoke = vi.fn(async (..._args: unknown[]) => undefined);
 const setAppMode = vi.fn(async () => undefined);
@@ -59,8 +64,14 @@ vi.mock("../../hooks/useCompanionTabletEnabled", () => ({
   useCompanionTabletEnabled: () => companionEnabled,
 }));
 
+vi.mock("../../lib/motion", () => ({
+  MOTION: { fast: 120, base: 200, slow: 300 },
+  prefersReducedMotion: motionMocks.prefersReducedMotion,
+}));
+
 let companionEnabled = false;
 
+import { MOTION } from "../../lib/motion";
 import { CollapsedFab } from "./CollapsedFab";
 
 describe("CollapsedFab mode menu", () => {
@@ -88,6 +99,13 @@ describe("CollapsedFab mode menu", () => {
     storeState.companionModeActive = false;
     storeState.musicTeachingEnabled = false;
     storeState.isAnimatingWindow = false;
+    storeState.sttCapability = null;
+    storeState.externalInputFocused = false;
+    motionMocks.prefersReducedMotion.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("tapping R opens the mode menu", async () => {
@@ -178,5 +196,43 @@ describe("CollapsedFab mode menu", () => {
       (screen.getByRole("menuitemradio", { name: "Companion" }) as HTMLButtonElement)
         .disabled,
     ).toBe(true);
+  });
+
+  it("keeps the mode menu mounted through the exit animation", async () => {
+    motionMocks.prefersReducedMotion.mockReturnValue(false);
+    vi.useFakeTimers();
+    storeState.modeMenuOpen = true;
+    const { rerender } = render(<CollapsedFab />);
+    expect(screen.getByRole("menu", { name: "Modes" })).toBeTruthy();
+
+    storeState.modeMenuOpen = false;
+    rerender(<CollapsedFab />);
+    expect(screen.getByRole("menu", { name: "Modes" })).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(MOTION.fast - 1);
+    });
+    expect(screen.getByRole("menu", { name: "Modes" })).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("staggers FAB appear Mic then Settings then R at 40ms", () => {
+    motionMocks.prefersReducedMotion.mockReturnValue(false);
+    render(<CollapsedFab showDictation showSettings />);
+    const [mic, settingsBtn, expand] = screen.getAllByRole("button");
+    const ease = `${MOTION.fast}ms var(--rp-ease-out)`;
+    expect(mic.style.transition).toBe(
+      `opacity ${ease} 0ms, transform ${ease} 0ms`,
+    );
+    expect(settingsBtn.style.transition).toBe(
+      `opacity ${ease} 40ms, transform ${ease} 40ms`,
+    );
+    expect(expand.style.transition).toBe(
+      `opacity ${ease} 80ms, transform ${ease} 80ms`,
+    );
   });
 });

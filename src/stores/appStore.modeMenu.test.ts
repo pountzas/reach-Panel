@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "../lib/types";
 import { MODE_MENU_WIDTH, modeMenuHeight } from "../lib/focusMode";
 import { APP_MODE_OPTIONS } from "../lib/appModeLayout";
@@ -6,6 +7,10 @@ import { APP_MODE_OPTIONS } from "../lib/appModeLayout";
 const mockState = vi.hoisted(() => ({
   calls: [] as string[],
   resolveExpand: null as (() => void) | null,
+}));
+
+const motionMocks = vi.hoisted(() => ({
+  prefersReducedMotion: vi.fn(() => false),
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -39,13 +44,20 @@ vi.mock("@tauri-apps/plugin-updater", () => ({
   check: vi.fn(),
 }));
 
+vi.mock("../lib/motion", () => ({
+  MOTION: { fast: 120, base: 200, slow: 300 },
+  prefersReducedMotion: motionMocks.prefersReducedMotion,
+}));
+
 import { invoke } from "@tauri-apps/api/core";
+import { MOTION } from "../lib/motion";
 import { useAppStore } from "./appStore";
 
 describe("mode menu store actions", () => {
   beforeEach(() => {
     mockState.calls.length = 0;
     mockState.resolveExpand = null;
+    motionMocks.prefersReducedMotion.mockReturnValue(false);
     vi.mocked(invoke).mockClear();
     useAppStore.setState({
       settings: { ...DEFAULT_SETTINGS, collapsed: true },
@@ -54,6 +66,10 @@ describe("mode menu store actions", () => {
       isAnimatingWindow: false,
       modeMenuOpen: false,
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("openModeMenu invokes expand with the shared menu size", async () => {
@@ -83,6 +99,33 @@ describe("mode menu store actions", () => {
     await close;
 
     expect(mockState.calls).toContain("expand:done");
+    expect(mockState.calls).toContain("cmd_apply_window_layout");
+  });
+
+  it("closeModeMenu waits MOTION.fast before restoring layout when motion is allowed", async () => {
+    vi.useFakeTimers();
+    const open = useAppStore.getState().openModeMenu();
+    mockState.resolveExpand?.();
+    await open;
+
+    const close = useAppStore.getState().closeModeMenu();
+    expect(mockState.calls.includes("cmd_apply_window_layout")).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(MOTION.fast - 1);
+    expect(mockState.calls.includes("cmd_apply_window_layout")).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await close;
+    expect(mockState.calls).toContain("cmd_apply_window_layout");
+  });
+
+  it("closeModeMenu restores layout immediately when prefersReducedMotion", async () => {
+    motionMocks.prefersReducedMotion.mockReturnValue(true);
+    const open = useAppStore.getState().openModeMenu();
+    mockState.resolveExpand?.();
+    await open;
+
+    await useAppStore.getState().closeModeMenu();
     expect(mockState.calls).toContain("cmd_apply_window_layout");
   });
 

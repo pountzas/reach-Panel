@@ -3082,6 +3082,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ modeMenuOpen: false });
     // Let an in-flight expand finish first so the collapsed restore always lands last.
     if (modeMenuExpandPending) await modeMenuExpandPending;
+    if (!prefersReducedMotion()) {
+      await new Promise<void>((r) => {
+        setTimeout(r, MOTION.fast);
+      });
+    }
     if (get().focusModeActive) {
       await syncFocusModeWindowLayout(false);
     } else {
