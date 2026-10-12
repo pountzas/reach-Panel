@@ -4,22 +4,36 @@ import { DEFAULT_SETTINGS } from "../lib/types";
 
 const mockState = vi.hoisted(() => ({
   calls: [] as string[],
+  applyArgs: [] as Array<Record<string, unknown>>,
   applyGate: null as Promise<void> | null,
+  inputFocusHandler: null as
+    | ((event: { payload: { focused: boolean } }) => void)
+    | null,
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn((cmd: string) => {
+  invoke: vi.fn((cmd: string, args?: Record<string, unknown>) => {
     mockState.calls.push(cmd);
-    if (cmd === "cmd_get_input_focused") return Promise.resolve(false);
-    if (cmd === "cmd_apply_window_layout" && mockState.applyGate) {
-      return mockState.applyGate;
+    if (cmd === "cmd_apply_window_layout") {
+      mockState.applyArgs.push(args ?? {});
+      if (mockState.applyGate) {
+        return mockState.applyGate;
+      }
     }
+    if (cmd === "cmd_get_input_focused") return Promise.resolve(false);
     return Promise.resolve(undefined);
   }),
 }));
 
 vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(() => Promise.resolve(() => {})),
+  listen: vi.fn((event: string, handler: (event: unknown) => void) => {
+    if (event === "input-focus-changed") {
+      mockState.inputFocusHandler = handler as (event: {
+        payload: { focused: boolean };
+      }) => void;
+    }
+    return Promise.resolve(() => {});
+  }),
   emit: vi.fn(() => Promise.resolve()),
 }));
 
@@ -39,6 +53,7 @@ import { notifyFocusContentAnimDone, useAppStore } from "./appStore";
 describe("focus mode window layout", () => {
   beforeEach(() => {
     mockState.calls.length = 0;
+    mockState.applyArgs.length = 0;
     mockState.applyGate = null;
     vi.mocked(invoke).mockClear();
     useAppStore.setState({
@@ -169,5 +184,49 @@ describe("focus mode window layout", () => {
     expect(mockState.calls).toContain("cmd_apply_window_layout");
     expect(mockState.calls).not.toContain("cmd_animate_window_layout");
     vi.unstubAllGlobals();
+  });
+
+  it("does not apply a stale collapsed layout when focus returns during collapse exit", async () => {
+    await vi.waitFor(() => {
+      expect(mockState.inputFocusHandler).toBeTruthy();
+    });
+    useAppStore.setState({
+      focusModeKeyboardVisible: true,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: false,
+    });
+    // Focus-lost collapse (continueHeld) — not collapseFocusModeKeyboard (suppress).
+    mockState.inputFocusHandler!({ payload: { focused: false } });
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().focusContentAnim).toBe("exit");
+    });
+    expect(mockState.applyArgs).toHaveLength(0);
+
+    mockState.inputFocusHandler!({ payload: { focused: true } });
+    expect(useAppStore.getState().focusModeKeyboardVisible).toBe(true);
+
+    notifyFocusContentAnimDone();
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().isAnimatingWindow).toBe(false);
+    });
+    // Enter may still be waiting after the queued expand sync starts.
+    if (useAppStore.getState().focusContentAnim === "enter") {
+      notifyFocusContentAnimDone();
+    }
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().isAnimatingWindow).toBe(false);
+      expect(useAppStore.getState().focusContentAnim).toBe("idle");
+    });
+
+    expect(
+      mockState.applyArgs.some(
+        (a) => a.collapsed === true && a.focusKeyboardVisible === false,
+      ),
+    ).toBe(false);
+    expect(mockState.applyArgs.at(-1)).toMatchObject({
+      collapsed: false,
+      focusKeyboardVisible: true,
+    });
+    expect(useAppStore.getState().focusModeKeyboardVisible).toBe(true);
   });
 });

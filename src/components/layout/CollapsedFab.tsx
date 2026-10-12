@@ -25,12 +25,13 @@ const FAB_STAGGER_MS = 40;
 function fabAppearStyle(index: number, stackEntered: boolean): CSSProperties {
   const reduce = prefersReducedMotion();
   const delay = index * FAB_STAGGER_MS;
+  const appear = `${MOTION.fast}ms var(--rp-ease-out) ${delay}ms`;
   return {
     opacity: stackEntered ? 1 : 0,
     transform: stackEntered ? "scale(1)" : "scale(0.92)",
     transition: reduce
       ? undefined
-      : `opacity ${MOTION.fast}ms var(--rp-ease-out) ${delay}ms, transform ${MOTION.fast}ms var(--rp-ease-out) ${delay}ms`,
+      : `opacity ${appear}, transform ${appear}, background-color 200ms ease, color 200ms ease`,
   };
 }
 

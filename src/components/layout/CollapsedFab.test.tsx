@@ -233,14 +233,15 @@ describe("CollapsedFab mode menu", () => {
     render(<CollapsedFab showDictation showSettings />);
     const [mic, settingsBtn, expand] = screen.getAllByRole("button");
     const ease = `${MOTION.fast}ms var(--rp-ease-out)`;
+    const colorFade = "background-color 200ms ease, color 200ms ease";
     expect(mic.style.transition).toBe(
-      `opacity ${ease} 0ms, transform ${ease} 0ms`,
+      `opacity ${ease} 0ms, transform ${ease} 0ms, ${colorFade}`,
     );
     expect(settingsBtn.style.transition).toBe(
-      `opacity ${ease} 40ms, transform ${ease} 40ms`,
+      `opacity ${ease} 40ms, transform ${ease} 40ms, ${colorFade}`,
     );
     expect(expand.style.transition).toBe(
-      `opacity ${ease} 80ms, transform ${ease} 80ms`,
+      `opacity ${ease} 80ms, transform ${ease} 80ms, ${colorFade}`,
     );
   });
 });

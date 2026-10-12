@@ -447,8 +447,6 @@ async fn animate_window_layout(
         ))
         .await;
     }
-    // Exact final bounds (guards float clamp / last sleep overshoot).
-    set_window_layout(app, target).await?;
     Ok(())
 }
 

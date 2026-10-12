@@ -1,4 +1,3 @@
-import { startTransition } from "react";
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
@@ -296,9 +295,8 @@ function commitSuggestionList(
   set: (partial: { suggestions: string[] }) => void,
   suggestions: string[],
 ) {
-  startTransition(() => {
-    set({ suggestions });
-  });
+  // Plain set — Zustand/useSyncExternalStore ignores startTransition.
+  set({ suggestions });
 }
 
 /** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
@@ -311,6 +309,8 @@ let liveHeightRatioInFlight = false;
 
 /** When a mini layout sync is requested during animation, retry after it finishes. */
 let pendingFocusLayoutSync: boolean | null = null;
+/** True while syncFocusModeWindowLayout is running; later calls queue via pendingFocusLayoutSync. */
+let focusLayoutSyncInFlight = false;
 
 let focusContentAnimWaiter: {
   resolve: () => void;
@@ -368,13 +368,16 @@ async function syncFocusModeWindowLayout(
     pendingFocusLayoutSync = null;
     return;
   }
-  if (state.isAnimatingWindow && !options?.continueHeld) {
+  // continueHeld bypasses isAnimatingWindow so callers can set it same-turn as
+  // visibility; in-flight still serializes so parallel syncs cannot squash layout.
+  if (focusLayoutSyncInFlight || (state.isAnimatingWindow && !options?.continueHeld)) {
     pendingFocusLayoutSync = preferAnimate;
     return;
   }
 
   const visibleAtStart = state.focusModeKeyboardVisible;
   const animateContent = preferAnimate && !prefersReducedMotion();
+  focusLayoutSyncInFlight = true;
   if (!state.isAnimatingWindow) {
     useAppStore.setState({ isAnimatingWindow: true });
   }
@@ -399,6 +402,9 @@ async function syncFocusModeWindowLayout(
       // FAB must paint hidden before bounds grow, or the last FAB frame stretches
       // across the keyboard strip (top-left blink).
       await afterNextPaint();
+      if (useAppStore.getState().focusModeKeyboardVisible !== visibleAtStart) {
+        return; // finally re-syncs to the latest visibility
+      }
       await invoke("cmd_apply_window_layout", args);
       if (animateContent) {
         const wait = beginFocusContentAnimWait();
@@ -426,13 +432,20 @@ async function syncFocusModeWindowLayout(
         useAppStore.setState({ focusContentAnim: "idle" });
       }
       // Keyboard must paint gone before bounds shrink into the FAB corner.
+      if (useAppStore.getState().focusModeKeyboardVisible !== visibleAtStart) {
+        return; // finally re-syncs to the latest visibility
+      }
       await afterNextPaint();
+      if (useAppStore.getState().focusModeKeyboardVisible !== visibleAtStart) {
+        return; // finally re-syncs to the latest visibility
+      }
       await invoke("cmd_apply_window_layout", args);
     }
     if (useAppStore.getState().dictationState !== "idle") {
       void showDictationOverlay();
     }
   } finally {
+    focusLayoutSyncInFlight = false;
     useAppStore.setState({ isAnimatingWindow: false, focusContentAnim: "idle" });
     const latest = useAppStore.getState();
     const queued = pendingFocusLayoutSync;
