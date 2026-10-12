@@ -60,8 +60,8 @@ Tablet tabs while connected: keyboard, trackpad, numpad, dictation, profile, USB
 | Dictation | Dictate key beside Right Ctrl; WinRT for EN/DE/FR/IT/ES/PT; Groq for Greek and unsupported packs |
 | Multi-monitor | List displays; position app on accessibility screen |
 | Profiles | Named saved profiles with separate settings |
-| Mini Mode | Compact keyboard; collapse to FAB; optional transparent outlined keys; Teaching never hosts Mini |
-| Teaching | Full work area; Music lesson + synth; Language/Math placeholders; leave Teaching restores prior Normal/Mini size |
+| Focus mode | Focus-driven keyboard; collapse to FAB; optional transparent outlined keys; Teaching never hosts Focus |
+| Teaching | Full work area; Music lesson + synth; Language/Math placeholders; leave Teaching restores prior Normal/Focus size |
 | Companion | Pair Android tablet via Settings QR or USB tether; tablet keyboard/trackpad/numpad/dictation/suggestions; host-only SendInput |
 | Updates | In-app update check surfaces failures and can install from Releases |
 

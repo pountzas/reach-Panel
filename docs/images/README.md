@@ -6,7 +6,7 @@ These images appear in the root [README.md](../../README.md).
 |------|---------|
 | `companion-apk-qr.png` | QR for the public downloads page (Windows + Android) |
 | `keyboard.png` | Normal mode: typing keyboard + suggestions |
-| `modes.png` | Mini (compact / FAB) or Teaching (Music lesson + piano) |
+| `modes.png` | Focus (FAB / focus-driven keyboard) or Teaching (Music lesson + piano) |
 | `settings.png` | Settings with Companion QR / bridge controls |
 
 ## Regenerating from a release build

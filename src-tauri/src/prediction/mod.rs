@@ -86,7 +86,9 @@ pub fn install_word_pack(app: &AppHandle, db: &Database, language: &str) -> Resu
 pub fn uninstall_word_pack(db: &Database, language: &str) -> Result<()> {
     validate_language(language)?;
     if language == "en" {
-        return Err(anyhow!("English dictionary is required and cannot be removed"));
+        return Err(anyhow!(
+            "English dictionary is required and cannot be removed"
+        ));
     }
     db.uninstall_word_pack(language)?;
     Ok(())
@@ -154,8 +156,8 @@ fn download_pack(app: &AppHandle, language: &str) -> Result<WordPackFile> {
 }
 
 fn read_pack_file(path: &Path) -> Result<WordPackFile> {
-    let body = fs::read_to_string(path)
-        .map_err(|e| anyhow!("Failed to read {}: {e}", path.display()))?;
+    let body =
+        fs::read_to_string(path).map_err(|e| anyhow!("Failed to read {}: {e}", path.display()))?;
     serde_json::from_str(&body).map_err(|e| anyhow!("Invalid word pack {}: {e}", path.display()))
 }
 

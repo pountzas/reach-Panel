@@ -20,30 +20,30 @@ const monitor = (partial: Partial<MonitorInfo> & Pick<MonitorInfo, "height">): M
 });
 
 describe("shouldApplyLiveWindowHeightRatio", () => {
-  it("allows live height preview when mini mode is active and not collapsed", () => {
+  it("allows live height preview when focus mode is active and not collapsed", () => {
     expect(
       shouldApplyLiveWindowHeightRatio({
         collapsed: false,
-        miniModeActive: true,
+        focusModeActive: true,
       }),
     ).toBe(true);
   });
 
-  it("skips live height preview when collapsed even outside mini mode", () => {
+  it("skips live height preview when collapsed even outside focus mode", () => {
     expect(
       shouldApplyLiveWindowHeightRatio({
         collapsed: true,
-        miniModeActive: false,
+        focusModeActive: false,
       }),
     ).toBe(false);
   });
 });
 
 describe("resolveWindowHeightDragRegion", () => {
-  it("uses the full work area for mini mode (logical px)", () => {
+  it("uses the full work area for focus mode (logical px)", () => {
     const region = resolveWindowHeightDragRegion(
       monitor({ height: 1000, scale_factor: 1 }),
-      { fullWorkArea: false, multiMonitor: false, miniMode: true },
+      { fullWorkArea: false, multiMonitor: false, focusMode: true },
     );
     expect(region).toEqual({ bottom: 1000, height: 1000 });
   });
@@ -51,7 +51,7 @@ describe("resolveWindowHeightDragRegion", () => {
   it("uses the bottom half on a single non-teaching monitor", () => {
     const region = resolveWindowHeightDragRegion(
       monitor({ height: 1000, scale_factor: 1 }),
-      { fullWorkArea: false, multiMonitor: false, miniMode: false },
+      { fullWorkArea: false, multiMonitor: false, focusMode: false },
     );
     expect(region).toEqual({ bottom: 1000, height: 500 });
   });
@@ -59,7 +59,7 @@ describe("resolveWindowHeightDragRegion", () => {
   it("converts physical monitor rects to logical coords via scale_factor", () => {
     const region = resolveWindowHeightDragRegion(
       monitor({ y: 0, height: 1500, scale_factor: 1.5 }),
-      { fullWorkArea: true, multiMonitor: false, miniMode: false },
+      { fullWorkArea: true, multiMonitor: false, focusMode: false },
     );
     expect(region.bottom).toBeCloseTo(1000, 10);
     expect(region.height).toBeCloseTo(1000, 10);

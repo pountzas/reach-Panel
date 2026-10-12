@@ -103,7 +103,7 @@ fn default_settings_json(ui_language: &str) -> serde_json::Value {
         "suggestionsVisible": false,
         "dictationVisible": true,
         "inputPreviewVisible": true,
-        "inputPreviewMiniModeVisible": true,
+        "inputPreviewFocusModeVisible": true,
         "taskbarPositionPreference": "bottom",
         "emergencyVisible": false,
         "accessibilityMonitorId": 0,
@@ -272,8 +272,10 @@ impl Database {
     }
 
     /// Default phrase packs for non-English UI locales (same 6-intent matrix as English).
-    fn locale_seed_phrases() -> &'static [(&'static str, &'static [(&'static str, &'static str, bool, bool)])]
-    {
+    fn locale_seed_phrases() -> &'static [(
+        &'static str,
+        &'static [(&'static str, &'static str, bool, bool)],
+    )] {
         &[
             (
                 "el",
@@ -542,18 +544,12 @@ impl Database {
         Ok(())
     }
 
-    pub fn ensure_internal_profile(
-        &self,
-        id: &str,
-        name: &str,
-        ui_language: &str,
-    ) -> Result<()> {
+    pub fn ensure_internal_profile(&self, id: &str, name: &str, ui_language: &str) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
-        let exists: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM profiles WHERE id = ?1",
-            [id],
-            |r| r.get(0),
-        )?;
+        let exists: i64 =
+            conn.query_row("SELECT COUNT(*) FROM profiles WHERE id = ?1", [id], |r| {
+                r.get(0)
+            })?;
         if exists == 0 {
             let now = Utc::now().to_rfc3339();
             let settings = default_settings_json(ui_language);
@@ -596,16 +592,31 @@ impl Database {
             .filter_map(Result::ok)
             .collect();
         for macro_id in macro_ids {
-            conn.execute("DELETE FROM macro_steps WHERE macro_id = ?1", params![macro_id])?;
+            conn.execute(
+                "DELETE FROM macro_steps WHERE macro_id = ?1",
+                params![macro_id],
+            )?;
         }
-        conn.execute("DELETE FROM quick_actions WHERE profile_id = ?1", params![profile_id])?;
-        conn.execute("DELETE FROM phrases WHERE profile_id = ?1", params![profile_id])?;
+        conn.execute(
+            "DELETE FROM quick_actions WHERE profile_id = ?1",
+            params![profile_id],
+        )?;
+        conn.execute(
+            "DELETE FROM phrases WHERE profile_id = ?1",
+            params![profile_id],
+        )?;
         conn.execute(
             "DELETE FROM phrase_categories WHERE profile_id = ?1",
             params![profile_id],
         )?;
-        conn.execute("DELETE FROM macros WHERE profile_id = ?1", params![profile_id])?;
-        conn.execute("DELETE FROM predictions WHERE profile_id = ?1", params![profile_id])?;
+        conn.execute(
+            "DELETE FROM macros WHERE profile_id = ?1",
+            params![profile_id],
+        )?;
+        conn.execute(
+            "DELETE FROM predictions WHERE profile_id = ?1",
+            params![profile_id],
+        )?;
         conn.execute(
             "DELETE FROM head_tracking_profiles WHERE profile_id = ?1",
             params![profile_id],
@@ -695,7 +706,9 @@ impl Database {
 
     pub fn get_profiles(&self) -> Result<Vec<Profile>> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
-        let mut stmt = conn.prepare("SELECT id, name, settings_json, created_at FROM profiles ORDER BY created_at")?;
+        let mut stmt = conn.prepare(
+            "SELECT id, name, settings_json, created_at FROM profiles ORDER BY created_at",
+        )?;
         let rows = stmt.query_map([], |row| {
             Ok(Profile {
                 id: row.get(0)?,
@@ -811,7 +824,8 @@ impl Database {
 
     pub fn get_macros(&self, profile_id: &str) -> Result<Vec<MacroDef>> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
-        let mut stmt = conn.prepare("SELECT id, profile_id, name FROM macros WHERE profile_id = ?1")?;
+        let mut stmt =
+            conn.prepare("SELECT id, profile_id, name FROM macros WHERE profile_id = ?1")?;
         let rows = stmt.query_map([profile_id], |row| {
             Ok(MacroDef {
                 id: row.get(0)?,
@@ -845,7 +859,10 @@ impl Database {
             "INSERT OR REPLACE INTO macros (id, profile_id, name) VALUES (?1,?2,?3)",
             params![macro_def.id, macro_def.profile_id, macro_def.name],
         )?;
-        conn.execute("DELETE FROM macro_steps WHERE macro_id = ?1", params![macro_def.id])?;
+        conn.execute(
+            "DELETE FROM macro_steps WHERE macro_id = ?1",
+            params![macro_def.id],
+        )?;
         for step in steps {
             conn.execute(
                 "INSERT INTO macro_steps (id, macro_id, step_order, action_type, payload_json) VALUES (?1,?2,?3,?4,?5)",
@@ -862,10 +879,17 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_predictions(&self, profile_id: &str, prefix: &str, language: &str, limit: i32) -> Result<Vec<PredictionEntry>> {
+    pub fn get_predictions(
+        &self,
+        profile_id: &str,
+        prefix: &str,
+        language: &str,
+        limit: i32,
+    ) -> Result<Vec<PredictionEntry>> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
         let pattern = format!("{}%", prefix.to_lowercase());
-        let mut pack_freq: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+        let mut pack_freq: std::collections::HashMap<String, i64> =
+            std::collections::HashMap::new();
         let mut profile_usage: std::collections::HashMap<String, i64> =
             std::collections::HashMap::new();
 
@@ -927,9 +951,8 @@ impl Database {
 
     pub fn list_installed_packs(&self) -> Result<Vec<(String, i32)>> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
-        let mut stmt = conn.prepare(
-            "SELECT language, version FROM installed_packs ORDER BY language",
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT language, version FROM installed_packs ORDER BY language")?;
         let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
@@ -952,11 +975,13 @@ impl Database {
     ) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
         let tx = conn.unchecked_transaction()?;
-        tx.execute("DELETE FROM pack_words WHERE language = ?1", params![language])?;
+        tx.execute(
+            "DELETE FROM pack_words WHERE language = ?1",
+            params![language],
+        )?;
         {
-            let mut stmt = tx.prepare(
-                "INSERT INTO pack_words (language, word, frequency) VALUES (?1,?2,?3)",
-            )?;
+            let mut stmt =
+                tx.prepare("INSERT INTO pack_words (language, word, frequency) VALUES (?1,?2,?3)")?;
             for (word, freq) in words {
                 stmt.execute(params![language, word, freq])?;
             }
@@ -973,7 +998,10 @@ impl Database {
     pub fn uninstall_word_pack(&self, language: &str) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| anyhow!("DB lock poisoned"))?;
         let tx = conn.unchecked_transaction()?;
-        tx.execute("DELETE FROM pack_words WHERE language = ?1", params![language])?;
+        tx.execute(
+            "DELETE FROM pack_words WHERE language = ?1",
+            params![language],
+        )?;
         tx.execute(
             "DELETE FROM installed_packs WHERE language = ?1",
             params![language],
@@ -1012,7 +1040,8 @@ impl Database {
                 "acceleration": 1.5,
                 "smoothing": 0.3,
                 "calibrated": false
-            }).to_string()),
+            })
+            .to_string()),
         }
     }
 
@@ -1039,12 +1068,7 @@ mod tests {
             let conn = db.conn.lock().expect("lock");
             conn.execute(
                 "INSERT INTO profiles (id, name, settings_json, created_at) VALUES (?1,?2,?3,?4)",
-                params![
-                    "orphan",
-                    "Orphan",
-                    "{}",
-                    "2020-01-01T00:00:00Z"
-                ],
+                params!["orphan", "Orphan", "{}", "2020-01-01T00:00:00Z"],
             )
             .expect("insert orphan profile");
         }

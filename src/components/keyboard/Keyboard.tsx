@@ -25,13 +25,12 @@ import { KeyButton } from "./KeyButton";
 import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
 import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
-import { DictationVisualizer } from "./DictationVisualizer";
 import { MicrophoneIcon } from "../common/SectionIcons";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
-import { isTransparentUiActive, transparentKeyPalette } from "../../lib/miniMode";
+import { isTransparentUiActive, transparentKeyPalette } from "../../lib/focusMode";
 import {
   clearModifiersAfterKey,
   greekTranslateOptions,
@@ -41,7 +40,7 @@ import {
 
 export function Keyboard() {
   const settings = useAppStore((s) => s.settings);
-  const miniModeActive = useAppStore((s) => s.miniModeActive);
+  const focusModeActive = useAppStore((s) => s.focusModeActive);
   const keyboardLayout = useAppStore((s) => s.keyboardLayout);
   const stickyModifiers = useAppStore((s) => s.stickyModifiers);
   const physicalKeyState = useAppStore((s) => s.physicalKeyState);
@@ -143,7 +142,7 @@ export function Keyboard() {
     keyboardLayout,
     languageLessonActive: freeWriteCaptureActive,
   });
-  const transparent = isTransparentUiActive(settings, miniModeActive);
+  const transparent = isTransparentUiActive(settings, focusModeActive);
   const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
   const keyTextColor = transparent
     ? transparentPalette.text
@@ -153,7 +152,6 @@ export function Keyboard() {
   const canDictate = sttCapability?.canDictate ?? false;
   // Never disable while a session is active — stop must always be clickable.
   const dictateDisabled = !listening && !canDictate;
-  const captureAudio = sttCapability?.engine !== "groq";
   const groqRemainingPercent = useGroqDailyQuota(sttCapability?.engine);
 
   useEffect((): void => {
@@ -516,7 +514,7 @@ export function Keyboard() {
   return (
     <div
       ref={ref}
-      className={`relative flex h-full w-full flex-col rounded-xl px-2 pb-2 ${miniModeActive ? "pt-0" : "pt-2"}`}
+      className={`relative flex h-full w-full flex-col rounded-xl px-2 pb-2 ${focusModeActive ? "pt-0" : "pt-2"}`}
       style={{
         backgroundColor: transparent
           ? "transparent"
@@ -524,11 +522,6 @@ export function Keyboard() {
         opacity: transparent ? 1 : settings.opacity,
       }}
     >
-      {listening ? (
-        <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2">
-          <DictationVisualizer active={listening} captureAudio={captureAudio} />
-        </div>
-      ) : null}
       {rows.map((row, ri) => (
         <div key={ri} className="flex w-full">
           {row.map((k, ci) => {

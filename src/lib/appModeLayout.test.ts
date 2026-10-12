@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "./types";
 import {
+  APP_MODE_OPTIONS,
   captureModeBeforeCompanion,
   captureWindowHeightRatioBeforeTeaching,
   coercePersistedKeyboardSectionMode,
@@ -17,9 +18,28 @@ import {
   resolveSelectedAppMode,
   settingsForPersist,
   shouldDelegateAppModeToMain,
-  shouldSyncNonMiniWindowLayout,
+  shouldSyncNonFocusWindowLayout,
   teachingSessionKeyboardMode,
+  type AppModeTablet,
 } from "./appModeLayout";
+
+describe("APP_MODE_OPTIONS", () => {
+  it("has unique ids that cover every AppModeTablet value", () => {
+    const ids = APP_MODE_OPTIONS.map((m) => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const allModes: AppModeTablet[] = [
+      "normal",
+      "focus",
+      "mic",
+      "teaching",
+      "companion",
+    ];
+    for (const mode of allModes) {
+      expect(ids).toContain(mode);
+    }
+    expect(ids).toHaveLength(allModes.length);
+  });
+});
 
 describe("heightRatioAfterLeavingTeaching", () => {
   it("returns undefined for unset / null / Teaching 1.0", () => {
@@ -128,7 +148,8 @@ describe("teachingLessonTitleKey", () => {
 
 describe("lessonCloseAppMode", () => {
   it("restores the tablet captured before Teaching", () => {
-    expect(lessonCloseAppMode("mini")).toBe("mini");
+    expect(lessonCloseAppMode("focus")).toBe("focus");
+    expect(lessonCloseAppMode("mic")).toBe("mic");
     expect(lessonCloseAppMode("normal")).toBe("normal");
   });
 
@@ -184,34 +205,48 @@ describe("teachingSessionKeyboardMode", () => {
 });
 
 describe("resolveSelectedAppMode", () => {
-  it("prefers companion over teaching and mini", () => {
+  it("prefers companion over teaching and focus", () => {
     expect(
       resolveSelectedAppMode({
         companionModeActive: true,
         teachingActive: true,
-        miniModeOverride: true,
+        focusModeOverride: true,
+        micMode: true,
       }),
     ).toBe("companion");
   });
 
-  it("prefers teaching over mini when companion is off", () => {
+  it("prefers teaching over focus/mic when companion is off", () => {
     expect(
       resolveSelectedAppMode({
         companionModeActive: false,
         teachingActive: true,
-        miniModeOverride: true,
+        focusModeOverride: true,
+        micMode: true,
       }),
     ).toBe("teaching");
   });
 
-  it("selects mini when only mini override is set", () => {
+  it("selects mic when focus override and micMode are set", () => {
     expect(
       resolveSelectedAppMode({
         companionModeActive: false,
         teachingActive: false,
-        miniModeOverride: true,
+        focusModeOverride: true,
+        micMode: true,
       }),
-    ).toBe("mini");
+    ).toBe("mic");
+  });
+
+  it("selects focus when only focus override is set", () => {
+    expect(
+      resolveSelectedAppMode({
+        companionModeActive: false,
+        teachingActive: false,
+        focusModeOverride: true,
+        micMode: false,
+      }),
+    ).toBe("focus");
   });
 
   it('falls back to "normal" when no overrides are active', () => {
@@ -219,23 +254,26 @@ describe("resolveSelectedAppMode", () => {
       resolveSelectedAppMode({
         companionModeActive: false,
         teachingActive: false,
-        miniModeOverride: false,
+        focusModeOverride: false,
+        micMode: false,
       }),
     ).toBe("normal");
     expect(
       resolveSelectedAppMode({
         companionModeActive: false,
         teachingActive: false,
-        miniModeOverride: undefined,
+        focusModeOverride: undefined,
+        micMode: undefined,
       }),
     ).toBe("normal");
   });
 });
 
 describe("captureModeBeforeCompanion", () => {
-  it("captures normal, mini, and teaching host modes", () => {
+  it("captures normal, focus, mic, and teaching host modes", () => {
     expect(captureModeBeforeCompanion("normal")).toBe("normal");
-    expect(captureModeBeforeCompanion("mini")).toBe("mini");
+    expect(captureModeBeforeCompanion("focus")).toBe("focus");
+    expect(captureModeBeforeCompanion("mic")).toBe("mic");
     expect(captureModeBeforeCompanion("teaching")).toBe("teaching");
   });
 
@@ -246,7 +284,8 @@ describe("captureModeBeforeCompanion", () => {
 
 describe("restoreModeAfterCompanion", () => {
   it("restores the captured host mode", () => {
-    expect(restoreModeAfterCompanion("mini")).toBe("mini");
+    expect(restoreModeAfterCompanion("focus")).toBe("focus");
+    expect(restoreModeAfterCompanion("mic")).toBe("mic");
     expect(restoreModeAfterCompanion("teaching")).toBe("teaching");
     expect(restoreModeAfterCompanion("normal")).toBe("normal");
   });
@@ -257,11 +296,11 @@ describe("restoreModeAfterCompanion", () => {
   });
 });
 
-describe("shouldSyncNonMiniWindowLayout", () => {
+describe("shouldSyncNonFocusWindowLayout", () => {
   it("syncs non-mini when only accessibilityMonitorId changes", () => {
     expect(
-      shouldSyncNonMiniWindowLayout({
-        miniModeActive: false,
+      shouldSyncNonFocusWindowLayout({
+        focusModeActive: false,
         accessibilityMonitorIdInPatch: true,
         windowHeightRatioInPatch: false,
         keyboardSectionModeInPatch: false,
@@ -269,10 +308,10 @@ describe("shouldSyncNonMiniWindowLayout", () => {
     ).toBe(true);
   });
 
-  it("does not sync non-mini layout while Mini is active", () => {
+  it("does not sync non-focus layout while Focus is active", () => {
     expect(
-      shouldSyncNonMiniWindowLayout({
-        miniModeActive: true,
+      shouldSyncNonFocusWindowLayout({
+        focusModeActive: true,
         accessibilityMonitorIdInPatch: true,
         windowHeightRatioInPatch: false,
         keyboardSectionModeInPatch: false,
@@ -280,18 +319,18 @@ describe("shouldSyncNonMiniWindowLayout", () => {
     ).toBe(false);
   });
 
-  it("syncs for height or section changes when not Mini", () => {
+  it("syncs for height or section changes when not Focus", () => {
     expect(
-      shouldSyncNonMiniWindowLayout({
-        miniModeActive: false,
+      shouldSyncNonFocusWindowLayout({
+        focusModeActive: false,
         accessibilityMonitorIdInPatch: false,
         windowHeightRatioInPatch: true,
         keyboardSectionModeInPatch: false,
       }),
     ).toBe(true);
     expect(
-      shouldSyncNonMiniWindowLayout({
-        miniModeActive: false,
+      shouldSyncNonFocusWindowLayout({
+        focusModeActive: false,
         accessibilityMonitorIdInPatch: false,
         windowHeightRatioInPatch: false,
         keyboardSectionModeInPatch: true,

@@ -1,3 +1,4 @@
+import type { TranslationKey } from "../i18n";
 import type { AppSettings, KeyboardSectionMode } from "./types";
 
 /** Captured before Teaching; `"unset"` means the ratio was previously undefined. */
@@ -32,7 +33,7 @@ export function heightRatioAfterLeavingTeaching(
 
 /**
  * Teaching's synthesizer mode is session-only. Persisted profiles must not keep
- * `keyboardSectionMode: "synthesizer"` under Normal/Mini tablets.
+ * `keyboardSectionMode: "synthesizer"` under Normal/Focus tablets.
  */
 export function coercePersistedKeyboardSectionMode(
   mode: unknown,
@@ -83,12 +84,12 @@ export const TEACHING_SESSION_EVENT = "teaching-session";
 export const TEACHING_SESSION_REQUEST_EVENT = "teaching-session-request";
 
 export type AppModeRequest = {
-  mode: "normal" | "mini" | "teaching" | "companion";
+  mode: "normal" | "focus" | "mic" | "teaching" | "companion";
   /** Idle restore already left companion; do not stop the bridge again. */
   skipCompanionBridgeStop?: boolean;
 };
-export type AppModeTablet = "normal" | "mini" | "teaching" | "companion";
-export type HostAppMode = "normal" | "mini" | "teaching";
+export type AppModeTablet = "normal" | "focus" | "mic" | "teaching" | "companion";
+export type HostAppMode = "normal" | "focus" | "mic" | "teaching";
 export type CompanionSessionPhase = "idle" | "active" | "reconnecting";
 export type TeachingLessonRequest = { lesson: "music" | "math" | "language" };
 export type TeachingSessionPayload = {
@@ -96,6 +97,15 @@ export type TeachingSessionPayload = {
   teachingLesson: "music" | "math" | "language";
   keyboardSectionMode: KeyboardSectionMode;
 };
+
+/** Shared mode tablet list for Settings and the collapsed FAB mode menu. */
+export const APP_MODE_OPTIONS = [
+  { id: "normal", labelKey: "modeNormal" },
+  { id: "focus", labelKey: "modeFocus" },
+  { id: "mic", labelKey: "modeMic" },
+  { id: "teaching", labelKey: "modeTeaching" },
+  { id: "companion", labelKey: "modeCompanion" },
+] as const satisfies readonly { id: AppModeTablet; labelKey: TranslationKey }[];
 
 /** True when a loaded profile still has synthesizer while Teaching is not active. */
 export function needsKeyboardSectionModeMigration(
@@ -152,19 +162,21 @@ export function teachingLessonTitleKey(
 }
 
 export function lessonCloseAppMode(
-  modeBeforeTeaching: "normal" | "mini" | null | undefined,
-): "normal" | "mini" {
+  modeBeforeTeaching: "normal" | "focus" | "mic" | null | undefined,
+): "normal" | "focus" | "mic" {
   return modeBeforeTeaching ?? "normal";
 }
 
 export function resolveSelectedAppMode(input: {
   companionModeActive: boolean;
   teachingActive: boolean;
-  miniModeOverride: boolean | undefined;
+  focusModeOverride: boolean | undefined;
+  micMode: boolean | undefined;
 }): AppModeTablet {
   if (input.companionModeActive) return "companion";
   if (input.teachingActive) return "teaching";
-  if (input.miniModeOverride === true) return "mini";
+  if (input.focusModeOverride === true && input.micMode === true) return "mic";
+  if (input.focusModeOverride === true) return "focus";
   return "normal";
 }
 
@@ -175,7 +187,8 @@ export function captureModeBeforeCompanion(
     case "companion":
       return null;
     case "normal":
-    case "mini":
+    case "focus":
+    case "mic":
     case "teaching":
       return selected;
     default: {
@@ -192,16 +205,16 @@ export function restoreModeAfterCompanion(
 }
 
 /**
- * After `updateSettings`, whether non-mini Normal/Teaching must re-apply
+ * After `updateSettings`, whether non-focus Normal/Teaching must re-apply
  * window layout (monitor move, height, or section change).
  */
-export function shouldSyncNonMiniWindowLayout(input: {
-  miniModeActive: boolean;
+export function shouldSyncNonFocusWindowLayout(input: {
+  focusModeActive: boolean;
   accessibilityMonitorIdInPatch: boolean;
   windowHeightRatioInPatch: boolean;
   keyboardSectionModeInPatch: boolean;
 }): boolean {
-  if (input.miniModeActive) return false;
+  if (input.focusModeActive) return false;
   return (
     input.accessibilityMonitorIdInPatch ||
     input.windowHeightRatioInPatch ||

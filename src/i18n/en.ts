@@ -30,15 +30,23 @@ export const en = {
 
   accessibilityScreen: "Accessibility Screen",
 
-  miniMode: "Mode",
+  modesSection: "Mode",
 
   modeNormal: "Normal",
 
-  modeMini: "Mini",
+  modeFocus: "Focus",
+
+  modeMic: "Mic",
 
   modeTeaching: "Teaching",
 
   modeCompanion: "Companion",
+
+  modeMenuOpen: "Choose mode",
+
+  modeMenuTitle: "Modes",
+
+  modeMenuShowKeyboard: "Show keyboard",
 
   modeCompanionUnavailable:
     "Unavailable until you start the companion bridge or pair a tablet (Settings → Companion).",
@@ -150,26 +158,28 @@ export const en = {
   confirmDeleteLanguagePack: "Delete “{title}”?",
 
   modeTabletsHint:
-    "Normal and Mini are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion stays unavailable until the bridge is started or a tablet is paired; it becomes the selected mode while a tablet is connected.",
+    "Normal and Focus are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion stays unavailable until the bridge is started or a tablet is paired; it becomes the selected mode while a tablet is connected.",
 
-  miniModeAutoDescription:
+  focusModeAutoDescription:
     "On a single display or mirrored setup, the keyboard appears automatically when you tap an input field.",
 
-  miniModeOverrideLabel: "Mini Mode",
+  focusModeOverrideLabel: "Focus mode",
 
-  miniModeOverrideAuto: "Auto",
+  focusModeOverrideAuto: "Auto",
 
-  miniModeOverrideOn: "On",
+  focusModeOverrideOn: "On",
 
-  miniModeOverrideOff: "Off",
+  focusModeOverrideOff: "Off",
 
-  miniModeTransparent: "Transparent keyboard",
+  focusModeTransparent: "Transparent keyboard",
 
   inputPreviewLabel: "Target input",
 
   inputPreviewWaiting: "Waiting for preview…",
 
-  miniModeTransparentDescription:
+  inputPreviewNoInput: "No text field selected",
+
+  focusModeTransparentDescription:
     "Show keys with outlines only so you can see through to your apps.",
 
   transparentKeyColor: "Transparent key color",
@@ -180,7 +190,7 @@ export const en = {
 
   transparentKeyColorSilver: "Silver",
 
-  miniModeCollapse: "Back to Mini Mode",
+  focusModeCollapse: "Back to Focus mode",
 
   largeHeaders: "Large headers for easier resize",
 
@@ -250,7 +260,7 @@ export const en = {
 
   showInputPreview: "Live input preview",
 
-  showInputPreviewMiniMode: "Live input preview (Mini Mode)",
+  showInputPreviewFocusMode: "Live input preview (Focus mode)",
 
   taskbarPosition: "Taskbar position",
 
@@ -397,6 +407,8 @@ export const en = {
   dictationStart: "Start dictation",
 
   dictationStop: "Stop dictation",
+
+  micModeSelectInput: "Select a text field to dictate",
 
   dictationListening: "Listening…",
 

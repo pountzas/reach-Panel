@@ -31,15 +31,23 @@ export const it: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Schermo di accessibilità",
 
-  miniMode: "Modalità",
+  modesSection: "Modalità",
 
   modeNormal: "Normale",
 
-  modeMini: "Mini",
+  modeFocus: "Focus",
+
+  modeMic: "Microfono",
 
   modeTeaching: "Insegnamento",
 
   modeCompanion: "Compagno",
+
+  modeMenuOpen: "Scegli modalità",
+
+  modeMenuTitle: "Modalità",
+
+  modeMenuShowKeyboard: "Mostra tastiera",
 
   modeCompanionUnavailable:
     "Non disponibile finché non avvii il bridge companion o associ un tablet (Impostazioni → Compagno).",
@@ -136,26 +144,27 @@ export const it: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "Eliminare “{title}”?",
 
   modeTabletsHint:
-    "Normale e Mini sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno resta non disponibile finché il bridge non è avviato o un tablet non è associato; selezionato mentre un tablet è connesso.",
+    "Normale e Focus sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno resta non disponibile finché il bridge non è avviato o un tablet non è associato; selezionato mentre un tablet è connesso.",
 
-  miniModeAutoDescription:
+  focusModeAutoDescription:
     "Su un singolo display o in configurazione speculare, la tastiera appare automaticamente quando tocchi un campo di input.",
 
-  miniModeOverrideLabel: "Modalità Mini",
+  focusModeOverrideLabel: "Modalità Focus",
 
-  miniModeOverrideAuto: "Automatica",
+  focusModeOverrideAuto: "Automatica",
 
-  miniModeOverrideOn: "Attiva",
+  focusModeOverrideOn: "Attiva",
 
-  miniModeOverrideOff: "Disattiva",
+  focusModeOverrideOff: "Disattiva",
 
-  miniModeTransparent: "Tastiera trasparente",
+  focusModeTransparent: "Tastiera trasparente",
 
   inputPreviewLabel: "Campo di destinazione",
 
   inputPreviewWaiting: "In attesa dell'anteprima…",
+  inputPreviewNoInput: "Nessun campo di testo selezionato",
 
-  miniModeTransparentDescription:
+  focusModeTransparentDescription:
     "Mostra i tasti solo con contorno per vedere le app sottostanti.",
 
   transparentKeyColor: "Colore tasti trasparenti",
@@ -166,7 +175,7 @@ export const it: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Argento",
 
-  miniModeCollapse: "Torna alla Modalità Mini",
+  focusModeCollapse: "Torna alla modalità Focus",
 
   largeHeaders: "Intestazioni grandi per ridimensionare più facilmente",
 
@@ -236,7 +245,7 @@ export const it: Record<keyof typeof en, string> = {
 
   showInputPreview: "Anteprima live del campo",
 
-  showInputPreviewMiniMode: "Anteprima live del campo (Modalità Mini)",
+  showInputPreviewFocusMode: "Anteprima live del campo (modalità Focus)",
 
   taskbarPosition: "Posizione barra delle applicazioni",
 
@@ -381,6 +390,8 @@ export const it: Record<keyof typeof en, string> = {
   dictationStart: "Avvia dettatura",
 
   dictationStop: "Interrompi dettatura",
+
+  micModeSelectInput: "Seleziona un campo di testo per dettare",
 
   dictationListening: "In ascolto…",
 

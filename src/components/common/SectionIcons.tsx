@@ -144,6 +144,44 @@ export function MicrophoneIcon({ className = iconClass }: IconProps) {
   );
 }
 
+/** Crosshair / focus target for Focus mode. */
+export function FocusIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+    </svg>
+  );
+}
+
+/** Simple tablet device for Companion mode. */
+export function TabletIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="5" y="2" width="14" height="20" rx="2" />
+      <path d="M12 18h.01" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
 export function VolumeIcon({ className = iconClass }: IconProps) {
   return (
     <svg
@@ -666,7 +704,7 @@ export function HeightGripIcon({ className = iconClass }: IconProps) {
   );
 }
 
-/** Outlined keys / see-through keyboard (transparent mini mode). */
+/** Outlined keys / see-through keyboard (transparent focus mode). */
 export function TransparentKeyboardIcon({ className = iconClass }: IconProps) {
   return (
     <svg

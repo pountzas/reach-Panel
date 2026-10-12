@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { monitorsOverlap } from "./miniMode";
+import { monitorsOverlap } from "./focusMode";
 import type { MonitorInfo } from "./types";
 import { isV1ToolWindowHidden } from "./v1HiddenFeatures";
 

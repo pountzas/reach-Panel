@@ -30,7 +30,7 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
   const settings = useAppStore((s) => s.settings);
   const monitors = useAppStore((s) => s.monitors);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
-  const miniModeActive = useAppStore((s) => s.miniModeActive);
+  const focusModeActive = useAppStore((s) => s.focusModeActive);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const applyWindowHeightRatioLive = useAppStore((s) => s.applyWindowHeightRatioLive);
 
@@ -67,7 +67,7 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
     const region = resolveWindowHeightDragRegion(monitor, {
       fullWorkArea,
       multiMonitor: monitors.length >= 2,
-      miniMode: miniModeActive,
+      focusMode: focusModeActive,
     });
     const startRatio = nextWindowHeightRatioFromScreenY(event.screenY, region);
     windowResizeRef.current = {

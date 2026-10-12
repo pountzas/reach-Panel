@@ -19,9 +19,9 @@ use windows::Win32::Graphics::Gdi::{
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect, LoadCursorW,
     MoveWindow, PeekMessageW, RegisterClassW, SetLayeredWindowAttributes, ShowWindow,
-    TranslateMessage, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, IDC_ARROW, MSG, PM_REMOVE, SW_HIDE,
-    SW_SHOWNOACTIVATE, WM_DESTROY, WM_PAINT, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
-    WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_POPUP, LWA_COLORKEY,
+    TranslateMessage, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, IDC_ARROW, LWA_COLORKEY, MSG,
+    PM_REMOVE, SW_HIDE, SW_SHOWNOACTIVATE, WM_DESTROY, WM_PAINT, WNDCLASSW, WS_EX_LAYERED,
+    WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_POPUP,
 };
 
 const RING_SIZE: i32 = 72;
@@ -31,7 +31,10 @@ const COLOR_KEY: COLORREF = COLORREF(0x00FF00FF);
 const HIDE_AFTER: Duration = Duration::from_millis(900);
 
 enum Cmd {
-    Move { x: i32, y: i32 },
+    Move {
+        x: i32,
+        y: i32,
+    },
     SetSticky(bool),
     #[allow(dead_code)]
     Shutdown,

@@ -25,6 +25,8 @@ struct DictationRuntime {
     session: Option<ActiveSession>,
     app_handle: Option<AppHandle>,
     starting: bool,
+    stopping: bool,
+    generation: u64,
 }
 
 impl Default for DictationRuntime {
@@ -33,6 +35,8 @@ impl Default for DictationRuntime {
             session: None,
             app_handle: None,
             starting: false,
+            stopping: false,
+            generation: 0,
         }
     }
 }
@@ -48,6 +52,30 @@ fn ensure_winrt() -> Result<()> {
         RoInitialize(RO_INIT_MULTITHREADED).ok();
     }
     Ok(())
+}
+
+/// Silence / pause timeouts and user cancel are normal ends, not errors.
+fn is_quiet_end(status: SpeechRecognitionResultStatus) -> bool {
+    status == SpeechRecognitionResultStatus::TimeoutExceeded
+        || status == SpeechRecognitionResultStatus::PauseLimitExceeded
+        || status == SpeechRecognitionResultStatus::UserCanceled
+}
+
+/// Session present, start in flight, or StopAsync still running all block a new start.
+fn runtime_is_busy(has_session: bool, starting: bool, stopping: bool) -> bool {
+    has_session || starting || stopping
+}
+
+/// Completed handlers must ignore events from a previous recognizer session.
+fn is_current_session(current: u64, event: u64) -> bool {
+    current == event
+}
+
+pub fn is_active() -> bool {
+    runtime()
+        .lock()
+        .map(|g| runtime_is_busy(g.session.is_some(), g.starting, g.stopping))
+        .unwrap_or(false)
 }
 
 pub fn is_language_supported(language: &str) -> bool {
@@ -89,21 +117,33 @@ impl Drop for StartingFlagGuard {
     }
 }
 
+struct StoppingFlagGuard;
+
+impl Drop for StoppingFlagGuard {
+    fn drop(&mut self) {
+        if let Ok(mut guard) = runtime().lock() {
+            guard.stopping = false;
+        }
+    }
+}
+
 pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     ensure_winrt()?;
 
     let tag = winrt_language_tag(language);
     require_language_supported(tag)?;
 
-    {
+    let my_gen = {
         let mut guard = runtime()
             .lock()
             .map_err(|_| anyhow!("Dictation runtime lock poisoned"))?;
-        if guard.session.is_some() || guard.starting {
+        if runtime_is_busy(guard.session.is_some(), guard.starting, guard.stopping) {
             return Err(anyhow!("Dictation is already active"));
         }
         guard.starting = true;
-    }
+        guard.generation = guard.generation.wrapping_add(1);
+        guard.generation
+    };
     let _starting_guard = StartingFlagGuard;
 
     // Build recognizer and await WinRT ops without holding the global mutex.
@@ -143,12 +183,34 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     let app_for_completed = app.clone();
     let completed_token = session.Completed(&TypedEventHandler::new(
         move |_sender, args: &Option<SpeechContinuousRecognitionCompletedEventArgs>| {
-            if let Ok(mut guard) = runtime().lock() {
-                guard.session = None;
+            let ended = match runtime().lock() {
+                Ok(mut g) if is_current_session(g.generation, my_gen) => g.session.take(),
+                Ok(_) => return Ok(()),
+                Err(_) => None,
+            };
+            if let Some(active) = ended {
+                // Close outside this callback to avoid deadlocking WinRT.
+                std::thread::spawn(move || {
+                    let _ = ensure_winrt();
+                    if let Ok(s) = active.recognizer.ContinuousRecognitionSession() {
+                        let _ = s.RemoveResultGenerated(active.result_token);
+                        let _ = s.RemoveCompleted(active.completed_token);
+                    }
+                    let _ = active.recognizer.Close();
+                });
             }
+
+            let still_current = runtime()
+                .lock()
+                .ok()
+                .is_some_and(|g| is_current_session(g.generation, my_gen));
+            if !still_current {
+                return Ok(());
+            }
+            super::clear_active_backend(super::ActiveBackend::WinRt);
             if let Some(args) = args {
                 if let Ok(status) = args.Status() {
-                    if status != SpeechRecognitionResultStatus::Success {
+                    if status != SpeechRecognitionResultStatus::Success && !is_quiet_end(status) {
                         emit_error(
                             &app_for_completed,
                             format!("Dictation ended with status: {status:?}"),
@@ -202,9 +264,11 @@ pub fn stop_dictation() -> Result<()> {
             Some(active) => active,
             None => return Ok(()),
         };
+        guard.stopping = true;
         let app = guard.app_handle.clone();
         (active, app)
     };
+    let _stopping_guard = StoppingFlagGuard;
 
     // Await StopAsync without holding the global mutex.
     let session = active.recognizer.ContinuousRecognitionSession()?;
@@ -258,5 +322,46 @@ pub fn get_status() -> SttStatus {
             online: false,
             can_dictate: false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quiet_end_includes_timeout_pause_and_cancel() {
+        assert!(is_quiet_end(SpeechRecognitionResultStatus::TimeoutExceeded));
+        assert!(is_quiet_end(
+            SpeechRecognitionResultStatus::PauseLimitExceeded
+        ));
+        assert!(is_quiet_end(SpeechRecognitionResultStatus::UserCanceled));
+    }
+
+    #[test]
+    fn quiet_end_excludes_success_and_real_failures() {
+        assert!(!is_quiet_end(SpeechRecognitionResultStatus::Success));
+        assert!(!is_quiet_end(SpeechRecognitionResultStatus::NetworkFailure));
+        assert!(!is_quiet_end(
+            SpeechRecognitionResultStatus::MicrophoneUnavailable
+        ));
+        assert!(!is_quiet_end(
+            SpeechRecognitionResultStatus::AudioQualityFailure
+        ));
+    }
+
+    #[test]
+    fn runtime_busy_while_stopping() {
+        assert!(runtime_is_busy(false, false, true));
+        assert!(runtime_is_busy(true, false, false));
+        assert!(runtime_is_busy(false, true, false));
+        assert!(!runtime_is_busy(false, false, false));
+    }
+
+    #[test]
+    fn completed_ignores_older_session_generation() {
+        assert!(is_current_session(5, 5));
+        assert!(!is_current_session(6, 5));
+        assert!(!is_current_session(0, 1));
     }
 }

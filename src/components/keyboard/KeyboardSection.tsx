@@ -5,8 +5,7 @@ import {
   TransparentKeyboardIcon,
 } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
-import { SuggestionsBar } from "../common/SuggestionsBar";
-import { InputPreview } from "./InputPreview";
+import { PreviewSuggestionsRow } from "./PreviewSuggestionsRow";
 import { SynthVolumeControl } from "./SynthVolumeControl";
 import { PianoRangeControl } from "./PianoRangeControl";
 import {
@@ -25,8 +24,8 @@ import {
   transparentKeyPalette,
   transparentOutlineStyle,
   isInputPreviewActiveForMode,
-  miniModeToolbarClassName,
-} from "../../lib/miniMode";
+  focusModeToolbarClassName,
+} from "../../lib/focusMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
   isSynthesizerUiActive,
@@ -34,22 +33,20 @@ import {
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
 
-/** Reserved height for suggestion chips so appearing tags do not shrink keys. */
-const SUGGESTION_ROW_MIN_CLASS = "min-h-8";
 const INPUT_PREVIEW_STRIP_HEIGHT_PX = 48;
+const SUGGESTION_CHIP_HEIGHT_PX = 32;
 
 export function KeyboardSection() {
   const settings = useAppStore((s) => s.settings);
-  const miniModeActive = useAppStore((s) => s.miniModeActive);
-  const miniModeKeyboardVisible = useAppStore((s) => s.miniModeKeyboardVisible);
-  const collapseMiniModeKeyboard = useAppStore((s) => s.collapseMiniModeKeyboard);
+  const focusModeActive = useAppStore((s) => s.focusModeActive);
+  const focusModeKeyboardVisible = useAppStore((s) => s.focusModeKeyboardVisible);
+  const collapseFocusModeKeyboard = useAppStore((s) => s.collapseFocusModeKeyboard);
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const musicSongId = useAppStore((s) => s.musicSongId);
   const importedSongs = useAppStore((s) => s.importedSongs);
-  const hasInputTarget = useAppStore((s) => s.physicalKeyState.hasInputTarget);
   const companionSessionLive = useAppStore((s) => s.companionSessionLive);
   const suggestionCount = useAppStore((s) => s.suggestions.length);
   const { t } = useTranslation();
@@ -59,7 +56,7 @@ export function KeyboardSection() {
       musicTeachingEnabled,
       settings.keyboardSectionMode,
       teachingLesson,
-    ) && !miniModeActive;
+    ) && !focusModeActive;
   const compact = settings.inputAreaCompact;
   const teachingSessionActive = isTeachingSessionActive(
     musicTeachingEnabled,
@@ -70,8 +67,7 @@ export function KeyboardSection() {
     !compact &&
     !teachingSessionActive &&
     !companionSessionLive &&
-    hasInputTarget &&
-    isInputPreviewActiveForMode(settings, miniModeActive);
+    isInputPreviewActiveForMode(settings, focusModeActive);
   const languageLessonActive = isLanguageLessonActive({
     musicTeachingEnabled,
     teachingLesson,
@@ -84,10 +80,10 @@ export function KeyboardSection() {
     !teachingSessionActive &&
     !languageLessonActive;
   const hasSuggestionChips = showSuggestions && suggestionCount > 0;
-  const transparentUi = isTransparentUiActive(settings, miniModeActive);
-  const showTransparentToggle = miniModeActive && !showSynth && !compact;
-  const showMiniModeCollapse =
-    miniModeActive && miniModeKeyboardVisible && !showSynth && !compact;
+  const transparentUi = isTransparentUiActive(settings, focusModeActive);
+  const showTransparentToggle = focusModeActive && !showSynth && !compact;
+  const showFocusModeCollapse =
+    focusModeActive && focusModeKeyboardVisible && !showSynth && !compact;
   const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
   const transparentToolbarStyle = transparentUi
     ? transparentOutlineStyle({
@@ -95,7 +91,7 @@ export function KeyboardSection() {
         outlineColor: settings.transparentKeyColor,
       })
     : undefined;
-  const showMiniModeToolbar = miniModeActive && !showSynth && !compact;
+  const showFocusModeToolbar = focusModeActive && !showSynth && !compact;
   const showTransparentColorButton = transparentUi && showTransparentToggle;
   const showSynthToolbar = showSynth && !compact;
   const showToolbar =
@@ -103,7 +99,7 @@ export function KeyboardSection() {
     showInputPreview ||
     hasSuggestionChips ||
     showTransparentToggle ||
-    showMiniModeCollapse;
+    showFocusModeCollapse;
   const song = musicTeachingEnabled
     ? getSongById(musicSongId, importedSongs)
     : null;
@@ -117,25 +113,18 @@ export function KeyboardSection() {
     octaveCount,
   );
 
-  const auxCenterMinHeightPx =
-    (showInputPreview ? INPUT_PREVIEW_STRIP_HEIGHT_PX : 0) +
-    (hasSuggestionChips ? 32 : 0) +
-    (showInputPreview && hasSuggestionChips ? 8 : 0);
-
-  const suggestionsRow = hasSuggestionChips ? (
-    <div
-      className={`flex w-full items-center justify-center ${SUGGESTION_ROW_MIN_CLASS}`}
-    >
-      <SuggestionsBar />
-    </div>
-  ) : null;
+  const auxCenterMinHeightPx = showInputPreview
+    ? INPUT_PREVIEW_STRIP_HEIGHT_PX
+    : hasSuggestionChips
+      ? SUGGESTION_CHIP_HEIGHT_PX
+      : 0;
 
   const endControls =
-    showSynthToolbar || showTransparentToggle || showMiniModeCollapse ? (
+    showSynthToolbar || showTransparentToggle || showFocusModeCollapse ? (
       <div
         className={`flex ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} shrink-0 items-center justify-end gap-2 pr-2`}
       >
-              {showMiniModeCollapse && (
+              {showFocusModeCollapse && (
                 <ModeToggleGroup
                   transparentUi={transparentUi}
                   transparentBorderColor={transparentPalette.border}
@@ -143,14 +132,14 @@ export function KeyboardSection() {
                   <ModeToggleButton
                     active={false}
                     position="only"
-                    label={t("miniModeCollapse")}
+                    label={t("focusModeCollapse")}
                     tooltipPlacement="below"
                     disabled={isAnimatingWindow}
                     style={transparentToolbarStyle}
                     activeClassName={
                       transparentUi ? "bg-transparent" : undefined
                     }
-                    onClick={() => void collapseMiniModeKeyboard()}
+                    onClick={() => void collapseFocusModeKeyboard()}
                   >
                     <CollapseIcon className="h-4 w-4" />
                   </ModeToggleButton>
@@ -199,15 +188,15 @@ export function KeyboardSection() {
                   transparentBorderColor={transparentPalette.border}
                 >
                   <ModeToggleButton
-                    active={Boolean(settings.miniModeTransparent)}
+                    active={Boolean(settings.focusModeTransparent)}
                     position="only"
-                    label={t("miniModeTransparent")}
+                    label={t("focusModeTransparent")}
                     tooltipPlacement="below"
                     tooltipAlign="end"
                     style={
                       transparentUi
                         ? transparentOutlineStyle({
-                            active: Boolean(settings.miniModeTransparent),
+                            active: Boolean(settings.focusModeTransparent),
                             color: transparentPalette.text,
                             outlineColor: settings.transparentKeyColor,
                           })
@@ -218,7 +207,7 @@ export function KeyboardSection() {
                     }
                     onClick={() =>
                       updateSettings({
-                        miniModeTransparent: !settings.miniModeTransparent,
+                        focusModeTransparent: !settings.focusModeTransparent,
                       })
                     }
                   >
@@ -285,9 +274,9 @@ export function KeyboardSection() {
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
       {showToolbar &&
-        (showMiniModeToolbar ? (
+        (showFocusModeToolbar ? (
           <div
-            className={miniModeToolbarClassName(hasSuggestionChips)}
+            className={focusModeToolbarClassName(hasSuggestionChips)}
           >
             <div className="flex w-full items-center gap-2">
               <button
@@ -307,13 +296,21 @@ export function KeyboardSection() {
                 <HeightGripIcon className="h-4 w-4" />
               </button>
               <div
-                className={`flex min-w-0 flex-1 items-center justify-center px-1 ${showInputPreview ? "min-h-[48px]" : ""}`}
+                className={`flex min-w-0 flex-1 items-center justify-center px-1 ${
+                  showInputPreview
+                    ? "min-h-[48px]"
+                    : hasSuggestionChips
+                      ? "min-h-8"
+                      : ""
+                }`}
               >
-                {showInputPreview ? <InputPreview /> : null}
+                <PreviewSuggestionsRow
+                  showPreview={showInputPreview}
+                  showSuggestions={hasSuggestionChips}
+                />
               </div>
               {endControls}
             </div>
-            {suggestionsRow}
           </div>
         ) : (
           <div
@@ -321,15 +318,17 @@ export function KeyboardSection() {
           >
             <div aria-hidden className="min-w-0" />
             <div
-            className="flex min-w-0 flex-col items-center justify-end gap-1 overflow-hidden px-1"
+              className="flex min-w-0 items-center justify-center overflow-hidden px-1"
               style={
                 auxCenterMinHeightPx > 0
                   ? { minHeight: auxCenterMinHeightPx }
                   : undefined
               }
             >
-              {showInputPreview ? <InputPreview /> : null}
-              {suggestionsRow}
+              <PreviewSuggestionsRow
+                showPreview={showInputPreview}
+                showSuggestions={hasSuggestionChips}
+              />
             </div>
             {endControls}
           </div>

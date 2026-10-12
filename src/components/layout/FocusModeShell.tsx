@@ -3,22 +3,24 @@ import { useAppStore } from "../../stores/appStore";
 import { CollapsedFab } from "./CollapsedFab";
 
 /**
- * Mini Mode UI: full-width keyboard + suggestions when visible,
- * or a 3-button collapsed FAB (Settings → Dictate → Expand) when hidden.
- * Expand reopens the keyboard until external input loses focus; collapse returns to the FAB stack.
+ * Focus mode UI: full-width keyboard + suggestions when visible,
+ * or a collapsed FAB stack (Mic (Mic mode) → Settings → R) when hidden.
+ * R opens the mode menu; "Show keyboard" reopens the keyboard until external
+ * input loses focus; collapse returns to the FAB stack.
  */
-export function MiniModeShell() {
-  const miniModeKeyboardVisible = useAppStore((s) => s.miniModeKeyboardVisible);
+export function FocusModeShell() {
+  const focusModeKeyboardVisible = useAppStore((s) => s.focusModeKeyboardVisible);
   const settings = useAppStore((s) => s.settings);
   const setShowSettings = useAppStore((s) => s.setShowSettings);
-  const expandMiniModeKeyboard = useAppStore((s) => s.expandMiniModeKeyboard);
+  const expandFocusModeKeyboard = useAppStore((s) => s.expandFocusModeKeyboard);
 
-  if (!miniModeKeyboardVisible) {
+  if (!focusModeKeyboardVisible) {
     return (
       <CollapsedFab
         showSettings
+        showDictation={settings.micMode === true}
         onSettings={() => void setShowSettings(true)}
-        onExpand={() => void expandMiniModeKeyboard()}
+        onExpand={() => void expandFocusModeKeyboard()}
       />
     );
   }
@@ -30,7 +32,7 @@ export function MiniModeShell() {
         width: "100vw",
         height: "100vh",
         backgroundColor:
-          settings.miniModeTransparent
+          settings.focusModeTransparent
             ? "transparent"
             : (settings.appBgColor ?? "#f1f5f9"),
       }}

@@ -22,7 +22,7 @@ In the app, **Settings → About** and **Settings → Companion** also open this
 
 The companion turns an Android tablet into a control surface (keyboard, trackpad, numpad, dictation, suggestions). The Windows host still injects keystrokes and mouse events into the focused app. Teaching / Music stay on Windows only.
 
-Pairing stays in **Settings → Companion** (Start bridge / QR). The Companion mode tablet stays unavailable until the bridge is running or a tablet is paired. When a tablet connects, Companion becomes the selected mode and the host minimizes. Disconnect restores the previous mode and unminimizes but keeps the bridge running (reconnect without tapping Companion again). Tapping Normal, Mini, or Teaching — or **Stop** — stops the bridge.
+Pairing stays in **Settings → Companion** (Start bridge / QR). The Companion mode tablet stays unavailable until the bridge is running or a tablet is paired. When a tablet connects, Companion becomes the selected mode and the host minimizes. Disconnect restores the previous mode and unminimizes but keeps the bridge running (reconnect without tapping Companion again). Tapping Normal, Focus, Mic, or Teaching — or **Stop** — stops the bridge.
 
 ### 1. Install ReachPanel on Windows
 
@@ -80,7 +80,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 
 | Main layout          | Modes / Teaching | Settings / Companion |
 | -------------------- | ---------------- | -------------------- |
-| Main keyboard layout | Mini or Teaching | Settings + companion QR |
+| Main keyboard layout | Focus or Teaching | Settings + companion QR |
 
 
 *Replace with captures from your release build when ready — see [docs/images/README.md](docs/images/README.md).*
@@ -90,7 +90,8 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 ### Modes
 
 - **Normal** — full typing keyboard and predictive suggestions
-- **Mini** — compact keyboard; collapses to a branded FAB when idle; optional transparent outlined keys (white / dark gray / silver)
+- **Focus** — focus-driven keyboard (shows when a text field is focused); collapses to a branded FAB when idle; optional transparent outlined keys (white / dark gray / silver). Collapsed **R** opens a mode menu (Show keyboard + modes) without opening Settings
+- **Mic** — Focus layout that stays collapsed; mic FAB above Settings arms when a text field is focused (no keyboard auto-show); **R** opens the same mode menu (Show keyboard restores the keyboard); shared recording overlay while dictating
 - **Teaching** — fullscreen work area; switch Language / Music / Math from the lesson section header. Music: piano/synth (2–5 octaves), partiture, built-in songs and file import, resizable lesson split. Language: Spelling (Play to spell from built-in or custom lists, optional Greek tone checking) and Free write (notepad + PDF library/viewer); Math is a placeholder for now
 
 ### Keyboard
@@ -121,6 +122,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 ### Voice dictation (Windows)
 
 - Dictate key on the keyboard (right of Right Ctrl)
+- While listening, a shared recording overlay appears at the bottom-center of the screen (separate always-on-top window; does not steal focus from the target app)
 - Uses the **typing language**, not the UI language
 - **English and Western European languages (DE, FR, IT, ES, PT):** Windows Speech Recognition (WinRT) when the speech language pack is installed and online speech is allowed
 - **Greek and other languages without a Windows speech pack:** [Groq](https://groq.com) cloud Whisper (`whisper-large-v3-turbo`) over the internet

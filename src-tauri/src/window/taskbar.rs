@@ -13,9 +13,7 @@ use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::Graphics::Gdi::{
     GetMonitorInfoW, MonitorFromRect, MONITORINFO, MONITOR_DEFAULTTONEAREST,
 };
-use windows::Win32::UI::Shell::{
-    SHAppBarMessage, ABM_GETSTATE, ABS_AUTOHIDE, APPBARDATA,
-};
+use windows::Win32::UI::Shell::{SHAppBarMessage, ABM_GETSTATE, ABS_AUTOHIDE, APPBARDATA};
 use windows::Win32::UI::WindowsAndMessaging::{
     FindWindowExW, FindWindowW, GetWindowRect, SetWindowPos, HWND_TOP, SWP_NOACTIVATE,
     SWP_NOZORDER, SWP_SHOWWINDOW,
@@ -110,9 +108,7 @@ pub fn lift_for_bottom_taskbars(
     let mut best = layout;
     for tb in taskbars {
         let lifted = lift_for_bottom_taskbar_overlap(layout, *tb, monitor_top);
-        if lifted.y < best.y
-            || (lifted.y == best.y && lifted.height < best.height)
-        {
+        if lifted.y < best.y || (lifted.y == best.y && lifted.height < best.height) {
             best = lifted;
         }
     }
@@ -247,10 +243,18 @@ fn tray_fingerprint() -> u64 {
     let mut hash = autohide;
     for (i, r) in collect_tray_rects().into_iter().enumerate() {
         let i = i as u64;
-        hash ^= (r.left as u64).wrapping_mul(0x9E3779B97F4A7C15).wrapping_add(i);
-        hash ^= (r.top as u64).wrapping_mul(0xC2B2AE3D27D4EB4F).wrapping_add(i << 8);
-        hash ^= (r.right as u64).wrapping_mul(0x165667B19E3779F9).wrapping_add(i << 16);
-        hash ^= (r.bottom as u64).wrapping_mul(0x85EBCA77C2B2AE63).wrapping_add(i << 24);
+        hash ^= (r.left as u64)
+            .wrapping_mul(0x9E3779B97F4A7C15)
+            .wrapping_add(i);
+        hash ^= (r.top as u64)
+            .wrapping_mul(0xC2B2AE3D27D4EB4F)
+            .wrapping_add(i << 8);
+        hash ^= (r.right as u64)
+            .wrapping_mul(0x165667B19E3779F9)
+            .wrapping_add(i << 16);
+        hash ^= (r.bottom as u64)
+            .wrapping_mul(0x85EBCA77C2B2AE63)
+            .wrapping_add(i << 24);
     }
     hash
 }

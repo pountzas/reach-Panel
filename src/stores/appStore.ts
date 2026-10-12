@@ -29,7 +29,11 @@ import {
   resolveSynthOctaveCount,
   resolveSynthStartOctave,
 } from "../lib/music/octaveCount";
-import { BUILT_IN_SONGS, getSongById, songPianoRangeFit } from "../lib/music/songs";
+import {
+  BUILT_IN_SONGS,
+  getSongById,
+  songPianoRangeFit,
+} from "../lib/music/songs";
 import type { ImportedMusicSong } from "../lib/music/importTypes";
 import {
   parseMusicFilePayload,
@@ -44,13 +48,28 @@ import {
   computeContentHeightRatioFromSettings,
 } from "../lib/sectionLayouts";
 import { shouldApplyLiveWindowHeightRatio } from "../lib/windowHeightDrag";
-import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
-import { MINI_KEYBOARD_HEIGHT_RATIO, resolveMiniModeEnabled, isInputPreviewActiveForMode } from "../lib/miniMode";
+import {
+  resolveSectionStack,
+  ensureSectionExpanded,
+} from "../lib/sectionStack";
+import {
+  FOCUS_KEYBOARD_HEIGHT_RATIO,
+  MODE_MENU_WIDTH,
+  isInputPreviewActiveForMode,
+  modeMenuHeight,
+  resolveFocusModeEnabled,
+} from "../lib/focusMode";
+import { migrateLegacyFocusModeSettingsKeys } from "../lib/focusModeSettingsMigration";
+import {
+  shouldClearSuggestions,
+  suggestionWordPrefix,
+} from "../lib/suggestionPrefix";
 import {
   mapCompanionSessionPhase,
   shouldIgnoreCompanionIdle,
   shouldStopCompanionBridgeOnHostMode,
 } from "../lib/companionSession";
+import { showDictationOverlay } from "../lib/dictationOverlayWindow";
 import {
   closeToolWindow,
   openToolWindow,
@@ -72,13 +91,14 @@ import {
   captureWindowHeightRatioBeforeTeaching,
   coercePersistedKeyboardSectionMode,
   heightRatioAfterLeavingTeaching,
+  APP_MODE_OPTIONS,
   hydrateKeyboardSectionMode,
   needsKeyboardSectionModeMigration,
   resolveSelectedAppMode,
   restoreModeAfterCompanion,
   settingsForPersist,
   shouldDelegateAppModeToMain,
-  shouldSyncNonMiniWindowLayout,
+  shouldSyncNonFocusWindowLayout,
   teachingSessionKeyboardMode,
   APP_MODE_REQUEST_EVENT,
   TEACHING_LESSON_REQUEST_EVENT,
@@ -116,9 +136,7 @@ import {
   type LanguageSubjectTab,
   type TeachingPdfEntry,
 } from "../lib/teaching";
-import {
-  type GreekPendingAccent,
-} from "../lib/language/greekCompose";
+import { type GreekPendingAccent } from "../lib/language/greekCompose";
 import {
   greekComposeEnabled,
   processCharacterInput,
@@ -188,7 +206,10 @@ function greekComposeContextFromState(state: {
   languageListAuthoringActive?: boolean;
   languageSubjectTab?: LanguageSubjectTab;
 }): GreekComposeContext {
-  const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
+  const pack = getLanguagePackById(
+    state.languagePackId,
+    state.customLanguagePacks,
+  );
   return {
     typingLanguage: state.settings.typingLanguage,
     keyboardLayout: state.keyboardLayout,
@@ -266,6 +287,8 @@ async function stopCompanionBridge(): Promise<void> {
 
 /** Block OS→UI language sync while a typing-language switch is in flight. */
 let typingLanguageSwitchInFlight = false;
+/** Drops stale cmd_get_suggestions results after space/enter/delete clears the prefix. */
+let suggestionsRequestId = 0;
 
 /** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
 let liveHeightRatioPreview: number | null = null;
@@ -276,7 +299,10 @@ let liveHeightRatioPending: number | null = null;
 let liveHeightRatioInFlight = false;
 
 /** When a mini layout sync is requested during animation, retry after it finishes. */
-let pendingMiniLayoutSync: boolean | null = null;
+let pendingFocusLayoutSync: boolean | null = null;
+
+/** In-flight mode-menu window expand; closeModeMenu waits for it so the restore always lands last. */
+let modeMenuExpandPending: Promise<void> | null = null;
 
 /** Coalesce rapid touch↔mouse pointerdowns before switching layout profiles. */
 const POINTER_INPUT_KIND_DEBOUNCE_MS = 50;
@@ -284,36 +310,36 @@ let pendingPointerInputKind: PointerInputKind | null = null;
 let pointerInputKindDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * Animate mini-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
- * Always ends aligned with the latest `miniModeKeyboardVisible` (no squashed keyboard in FAB).
+ * Animate focus-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
+ * Always ends aligned with the latest `focusModeKeyboardVisible` (no squashed keyboard in FAB).
  */
-async function syncMiniModeWindowLayout(preferAnimate = true) {
+async function syncFocusModeWindowLayout(preferAnimate = true) {
   const state = useAppStore.getState();
-  if (!state.miniModeActive) {
-    pendingMiniLayoutSync = null;
+  if (!state.focusModeActive) {
+    pendingFocusLayoutSync = null;
     return;
   }
   if (state.isAnimatingWindow) {
-    pendingMiniLayoutSync = preferAnimate;
+    pendingFocusLayoutSync = preferAnimate;
     return;
   }
 
-  const visibleAtStart = state.miniModeKeyboardVisible;
+  const visibleAtStart = state.focusModeKeyboardVisible;
   useAppStore.setState({ isAnimatingWindow: true });
   try {
     const { settings } = useAppStore.getState();
     const args = {
       monitorId: settings.accessibilityMonitorId,
       collapsed: !visibleAtStart,
-      collapsedDictation: false,
+      collapsedDictation: settings.micMode === true,
       collapsedSettings: true,
       heightRatio: heightRatioFromSettings(
         settings,
         useAppStore.getState().musicTeachingEnabled,
       ),
-      miniMode: true,
-      miniKeyboardVisible: visibleAtStart,
-      miniKeyboardHeightRatio: MINI_KEYBOARD_HEIGHT_RATIO,
+      focusMode: true,
+      focusKeyboardVisible: visibleAtStart,
+      focusKeyboardHeightRatio: FOCUS_KEYBOARD_HEIGHT_RATIO,
       fullWorkArea: false,
     };
     if (preferAnimate) {
@@ -321,18 +347,21 @@ async function syncMiniModeWindowLayout(preferAnimate = true) {
     } else {
       await invoke("cmd_apply_window_layout", args);
     }
+    if (useAppStore.getState().dictationState !== "idle") {
+      void showDictationOverlay();
+    }
   } finally {
     useAppStore.setState({ isAnimatingWindow: false });
     const latest = useAppStore.getState();
-    const queued = pendingMiniLayoutSync;
-    pendingMiniLayoutSync = null;
+    const queued = pendingFocusLayoutSync;
+    pendingFocusLayoutSync = null;
     // Visibility changed mid-animation, or another sync was requested while busy.
     if (
-      latest.miniModeActive &&
-      (queued !== null || latest.miniModeKeyboardVisible !== visibleAtStart)
+      latest.focusModeActive &&
+      (queued !== null || latest.focusModeKeyboardVisible !== visibleAtStart)
     ) {
       const nextAnimate = queued ?? preferAnimate;
-      void syncMiniModeWindowLayout(nextAnimate);
+      void syncFocusModeWindowLayout(nextAnimate);
     }
   }
 }
@@ -357,14 +386,14 @@ async function waitForWindowAnimationIdle(
 async function ensureUpdatePromptVisible(get: () => AppStore) {
   await waitForWindowAnimationIdle(get);
   const state = get();
-  if (state.miniModeActive) {
-    if (!state.miniModeKeyboardVisible) {
-      await state.expandMiniModeKeyboard();
+  if (state.focusModeActive) {
+    if (!state.focusModeKeyboardVisible) {
+      await state.expandFocusModeKeyboard();
       // Animation may have started after we checked; retry once if expand no-op'd.
-      if (!get().miniModeKeyboardVisible) {
+      if (!get().focusModeKeyboardVisible) {
         await waitForWindowAnimationIdle(get);
-        if (!get().miniModeKeyboardVisible) {
-          await get().expandMiniModeKeyboard();
+        if (!get().focusModeKeyboardVisible) {
+          await get().expandFocusModeKeyboard();
         }
       }
     }
@@ -382,63 +411,70 @@ async function ensureUpdatePromptVisible(get: () => AppStore) {
 }
 
 /**
- * Keep miniModeActive / mouseVisible in sync with settings + monitors.
+ * Keep focusModeActive / mouseVisible in sync with settings + monitors.
  * Enter: hide mouse panel (session restore on exit). Leave: restore layout.
  */
-async function refreshMiniModeState(options?: { animate?: boolean }) {
+async function refreshFocusModeState(options?: { animate?: boolean }) {
   const state = useAppStore.getState();
-  const { settings, monitors, miniModeActive: wasActive } = state;
+  const { settings, monitors, focusModeActive: wasActive } = state;
   const teachingActive =
-    state.musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
+    state.musicTeachingEnabled &&
+    settings.keyboardSectionMode === "synthesizer";
   const enabled =
     monitors.length > 0 &&
-    resolveMiniModeEnabled(settings, monitors, teachingActive);
+    resolveFocusModeEnabled(settings, monitors, teachingActive);
   const animate = options?.animate !== false;
 
   if (enabled && !wasActive) {
     const mouseBefore = settings.mouseVisible;
     useAppStore.setState({
-      miniModeActive: true,
-      miniModeKeyboardVisible: false,
-      miniModeManualExpand: false,
-      miniModeSuppressAutoShow: false,
-      mouseVisibleBeforeMiniMode: mouseBefore,
+      focusModeActive: true,
+      focusModeKeyboardVisible: false,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: false,
+      mouseVisibleBeforeFocusMode: mouseBefore,
       settings: mouseBefore ? { ...settings, mouseVisible: false } : settings,
     });
-    await syncMiniModeWindowLayout(animate);
+    await syncFocusModeWindowLayout(animate);
   } else if (!enabled && wasActive) {
-    const restore = state.mouseVisibleBeforeMiniMode;
+    const restore = state.mouseVisibleBeforeFocusMode;
     const nextSettings =
       restore !== null ? { ...settings, mouseVisible: restore } : settings;
     useAppStore.setState({
-      miniModeActive: false,
-      miniModeKeyboardVisible: false,
-      miniModeManualExpand: false,
-      miniModeSuppressAutoShow: false,
-      mouseVisibleBeforeMiniMode: null,
+      focusModeActive: false,
+      focusModeKeyboardVisible: false,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: false,
+      mouseVisibleBeforeFocusMode: null,
       settings: nextSettings,
     });
-    await syncWindowLayoutFromSettings(nextSettings, animate, useAppStore.getState().musicTeachingEnabled);
+    await syncWindowLayoutFromSettings(
+      nextSettings,
+      animate,
+      useAppStore.getState().musicTeachingEnabled,
+    );
   } else if (enabled) {
     // Still active: enforce mouse panel hidden and keep window layout in sync.
     if (settings.mouseVisible) {
-      if (state.mouseVisibleBeforeMiniMode === null) {
-        useAppStore.setState({ mouseVisibleBeforeMiniMode: true });
+      if (state.mouseVisibleBeforeFocusMode === null) {
+        useAppStore.setState({ mouseVisibleBeforeFocusMode: true });
       }
       useAppStore.setState({
         settings: { ...settings, mouseVisible: false },
       });
     }
-    await syncMiniModeWindowLayout(animate);
+    await syncFocusModeWindowLayout(animate);
   }
 
   await syncInputPreviewEnabled(useAppStore.getState);
 }
 
-const LANGUAGE_CHANGE_FALLBACK =
-  "Could not switch keyboard language.";
+const LANGUAGE_CHANGE_FALLBACK = "Could not switch keyboard language.";
 
-function physicalKeyStateEqual(a: PhysicalKeyState, b: PhysicalKeyState): boolean {
+function physicalKeyStateEqual(
+  a: PhysicalKeyState,
+  b: PhysicalKeyState,
+): boolean {
   return (
     a.capsLock === b.capsLock &&
     a.shift === b.shift &&
@@ -513,23 +549,27 @@ function windowLayoutInvokeArgs(
     collapsed?: boolean;
     collapsedDictation?: boolean;
     collapsedSettings?: boolean;
-    miniMode?: boolean;
-    miniKeyboardVisible?: boolean;
-    miniKeyboardHeightRatio?: number;
+    focusMode?: boolean;
+    focusKeyboardVisible?: boolean;
+    focusKeyboardHeightRatio?: number;
     heightRatio?: number;
   },
 ) {
-  const fullWorkArea = teachingFullWorkAreaActive(settings, musicTeachingEnabled);
+  const fullWorkArea = teachingFullWorkAreaActive(
+    settings,
+    musicTeachingEnabled,
+  );
   return {
     monitorId: settings.accessibilityMonitorId,
     collapsed: extras?.collapsed ?? settings.collapsed,
     collapsedDictation: extras?.collapsedDictation ?? false,
     collapsedSettings: extras?.collapsedSettings,
     heightRatio:
-      extras?.heightRatio ?? heightRatioFromSettings(settings, musicTeachingEnabled),
-    miniMode: extras?.miniMode,
-    miniKeyboardVisible: extras?.miniKeyboardVisible,
-    miniKeyboardHeightRatio: extras?.miniKeyboardHeightRatio,
+      extras?.heightRatio ??
+      heightRatioFromSettings(settings, musicTeachingEnabled),
+    focusMode: extras?.focusMode,
+    focusKeyboardVisible: extras?.focusKeyboardVisible,
+    focusKeyboardHeightRatio: extras?.focusKeyboardHeightRatio,
     fullWorkArea,
   };
 }
@@ -602,7 +642,7 @@ interface AppStore {
   /** Session-only: which lesson fills the teaching slot. */
   teachingLesson: TeachingLesson;
   /** Session-only: typing mode to restore when leaving Teaching. */
-  modeBeforeTeaching: "normal" | "mini" | null;
+  modeBeforeTeaching: "normal" | "focus" | "mic" | null;
   /** Session-only: height ratio captured before Teaching (incl. unset). */
   windowHeightRatioBeforeTeaching: WindowHeightRatioBeforeTeaching;
   /** Session-only: companion tablet mode is selected while a live session exists. */
@@ -615,12 +655,14 @@ interface AppStore {
   companionSessionLive: boolean;
   /** Live JPEG data URL of the focused external input, or null when idle. */
   inputPreviewFrame: string | null;
+  /** Editable-focus signal from Rust (input-focus-changed). Same logic as Focus mode auto-show. */
+  externalInputFocused: boolean;
   /** Session-only: bridge listener is up (armed). Cleared only by caregiver leave/Stop. */
   companionBridgeArmed: boolean;
   /** Session-only: restore mouse after leaving 5-octave (wide) piano mode. */
   mouseVisibleBeforeWidePiano: boolean | null;
-  /** Session-only: restore mouse after leaving Mini Mode. */
-  mouseVisibleBeforeMiniMode: boolean | null;
+  /** Session-only: restore mouse after leaving Focus mode. */
+  mouseVisibleBeforeFocusMode: boolean | null;
   /** Persisted imported songs (app data library). */
   importedSongs: ImportedMusicSong[];
   /** Persisted caregiver-created spelling lists. */
@@ -644,17 +686,21 @@ interface AppStore {
   teachingPdfLibrary: TeachingPdfEntry[];
   /** Session-only: active Free write PDF id. */
   freeWriteActivePdfId: string | null;
-  /** Mini Mode shell active (single/mirror or override). */
-  miniModeActive: boolean;
-  /** Whether the mini-mode keyboard is popped (vs collapsed FAB). */
-  miniModeKeyboardVisible: boolean;
+  /** Focus mode shell active (single/mirror or override). */
+  focusModeActive: boolean;
+  /** Whether the focus-mode keyboard is popped (vs collapsed FAB). */
+  focusModeKeyboardVisible: boolean;
   /**
    * True after Expand until external input loses focus.
-   * Expand does not exit Mini Mode.
+   * Expand does not exit Focus mode.
    */
-  miniModeManualExpand: boolean;
+  focusModeManualExpand: boolean;
   /** After manual collapse, skip auto-show until external focus is lost once. */
-  miniModeSuppressAutoShow: boolean;
+  focusModeSuppressAutoShow: boolean;
+  /** Collapsed FAB mode menu is open (window grown for the menu). */
+  modeMenuOpen: boolean;
+  openModeMenu: () => Promise<void>;
+  closeModeMenu: () => Promise<void>;
   loadProfileFiles: () => Promise<void>;
   setProfileFile: (filename: string) => Promise<void>;
   createProfileFile: (filename: string, name: string) => Promise<void>;
@@ -688,11 +734,19 @@ interface AppStore {
   ) => string | null;
   applyTypedLayoutTranslation: (
     translation: LayoutKeyTranslation,
-    options?: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
+    options?: {
+      physicalKey?: string;
+      shift?: boolean;
+      fallbackOutput?: string;
+    },
   ) => string | null;
   applyLanguageLayoutTranslation: (
     translation: LayoutKeyTranslation,
-    options?: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
+    options?: {
+      physicalKey?: string;
+      shift?: boolean;
+      fallbackOutput?: string;
+    },
   ) => void;
   backspaceTyped: () => void;
   toggleSticky: (modifier: string) => void;
@@ -719,15 +773,15 @@ interface AppStore {
   syncWindowFocusable: () => Promise<void>;
   loadKeyboardLayout: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
-  /** Recompute mini mode from settings/monitors and sync window layout. */
-  refreshMiniModeState: (options?: { animate?: boolean }) => Promise<void>;
-  /** Expand FAB: reopen keyboard until external focus is lost (stay in Mini Mode). */
-  expandMiniModeKeyboard: () => Promise<void>;
-  /** Collapse keyboard back to the mini-mode FAB stack. */
-  collapseMiniModeKeyboard: () => Promise<void>;
+  /** Recompute focus mode from settings/monitors and sync window layout. */
+  refreshFocusModeState: (options?: { animate?: boolean }) => Promise<void>;
+  /** Expand FAB: reopen keyboard until external focus is lost (stay in Focus mode). */
+  expandFocusModeKeyboard: () => Promise<void>;
+  /** Collapse keyboard back to the focus-mode FAB stack. */
+  collapseFocusModeKeyboard: () => Promise<void>;
   enableMusicTeaching: () => Promise<void>;
   disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
-  /** Select Normal / Mini / Teaching / Companion tablet mode. */
+  /** Select Normal / Focus / Teaching / Companion tablet mode. */
   setAppMode: (
     mode: AppModeTablet,
     options?: { skipCompanionBridgeStop?: boolean },
@@ -773,7 +827,11 @@ interface AppStore {
   freeWriteNotepadBackspace: () => void;
   applyFreeWriteLayoutTranslation: (
     translation: LayoutKeyTranslation,
-    options?: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
+    options?: {
+      physicalKey?: string;
+      shift?: boolean;
+      fallbackOutput?: string;
+    },
   ) => void;
   setFreeWriteNotepadText: (text: string) => void;
   clearFreeWriteNotepad: () => void;
@@ -795,13 +853,15 @@ interface AppStore {
 
 function parseSettings(json: string): AppSettings {
   try {
+    const rawParsed = JSON.parse(json) as Record<string, unknown>;
+    const migrated = migrateLegacyFocusModeSettingsKeys(rawParsed);
     const {
       theme,
       mouseSide,
       language: legacyLanguage,
       onscreenLayout: _legacyOnscreenLayout,
       ...parsed
-    } = JSON.parse(json) as Partial<AppSettings> & {
+    } = migrated as Partial<AppSettings> & {
       theme?: unknown;
       mouseSide?: "left" | "right" | "floating";
       language?: string;
@@ -813,31 +873,30 @@ function parseSettings(json: string): AppSettings {
       parsed.mousePanelSide ??
       (mouseSide === "left" ? "left" : DEFAULT_SETTINGS.mousePanelSide);
     const typingLanguage =
-      parsed.typingLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.typingLanguage;
-    const uiLanguage = parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
+      parsed.typingLanguage ??
+      legacyLanguage ??
+      DEFAULT_SETTINGS.typingLanguage;
+    const uiLanguage =
+      parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
     // Older profile files may omit keys that previously defaulted to "on".
     // Keep that behavior for existing installs; new profiles write explicit values.
     // suggestionsVisible and predictionEnabled are toggled together in Settings.
     const legacyFill: Partial<AppSettings> = {
       predictionEnabled:
-        parsed.predictionEnabled ??
-        parsed.suggestionsVisible ??
-        true,
+        parsed.predictionEnabled ?? parsed.suggestionsVisible ?? true,
       quickActionsVisible: parsed.quickActionsVisible ?? true,
       phrasesVisible: parsed.phrasesVisible ?? true,
       suggestionsVisible: parsed.suggestionsVisible ?? true,
       dictationVisible: parsed.dictationVisible ?? true,
       inputPreviewVisible: parsed.inputPreviewVisible ?? true,
-      inputPreviewMiniModeVisible: parsed.inputPreviewMiniModeVisible ?? true,
+      inputPreviewFocusModeVisible: parsed.inputPreviewFocusModeVisible ?? true,
       emergencyVisible: parsed.emergencyVisible ?? true,
       keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,
     };
-    // Mini Auto dropped: null / missing override → Normal (false).
-    const miniModeOverride =
-      parsed.miniModeOverride === true
-        ? true
-        : false;
-    // Teaching is session-only; never hydrate synthesizer under Normal/Mini.
+    // Focus Auto dropped: null / missing override → Normal (false).
+    const focusModeOverride = parsed.focusModeOverride === true ? true : false;
+    const micMode = focusModeOverride && parsed.micMode === true;
+    // Teaching is session-only; never hydrate synthesizer under Normal/Focus.
     const keyboardSectionMode = coercePersistedKeyboardSectionMode(
       parsed.keyboardSectionMode,
       false,
@@ -852,11 +911,17 @@ function parseSettings(json: string): AppSettings {
       uiLanguage,
       colorProfile,
       mousePanelSide,
-      miniModeOverride,
+      focusModeOverride,
+      micMode,
       keyboardSectionMode,
       taskbarPositionPreference,
-      sectionStack: resolveSectionStack(parsed.sectionStack, parsed.sectionLayouts),
-      synthesizerOctaveCount: resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
+      sectionStack: resolveSectionStack(
+        parsed.sectionStack,
+        parsed.sectionLayouts,
+      ),
+      synthesizerOctaveCount: resolveSynthOctaveCount(
+        parsed.synthesizerOctaveCount,
+      ),
       synthesizerStartOctave: resolveSynthStartOctave(
         parsed.synthesizerStartOctave,
         resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
@@ -879,7 +944,8 @@ function buildDefaultSettings(
   return {
     ...DEFAULT_SETTINGS,
     uiLanguage,
-    accessibilityMonitorId: primary?.id ?? DEFAULT_SETTINGS.accessibilityMonitorId,
+    accessibilityMonitorId:
+      primary?.id ?? DEFAULT_SETTINGS.accessibilityMonitorId,
   };
 }
 
@@ -943,9 +1009,9 @@ async function syncInputPreviewEnabled(get: () => AppStore): Promise<void> {
   if (WebviewWindow.getCurrent().label !== "main") {
     return;
   }
-  const { settings, miniModeActive } = get();
+  const { settings, focusModeActive } = get();
   await invoke("cmd_set_input_preview_enabled", {
-    enabled: isInputPreviewActiveForMode(settings, miniModeActive),
+    enabled: isInputPreviewActiveForMode(settings, focusModeActive),
   });
 }
 
@@ -954,29 +1020,36 @@ async function loadProfileData(
   get: () => AppStore,
   options?: { animateLayout?: boolean },
 ) {
-  const profiles = await invoke<{ id: string; settings_json: string }[]>(
-    "cmd_get_profiles",
-  );
-  const active = profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ?? profiles[0];
-  let migratedMiniAuto = false;
+  const profiles =
+    await invoke<{ id: string; settings_json: string }[]>("cmd_get_profiles");
+  const active =
+    profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ?? profiles[0];
+  let migratedFocusAuto = false;
   let migratedKeyboardSectionMode = false;
   if (active) {
     try {
       const raw = JSON.parse(active.settings_json) as {
+        focusModeOverride?: unknown;
         miniModeOverride?: unknown;
         keyboardSectionMode?: unknown;
       };
-      migratedMiniAuto = raw.miniModeOverride == null;
+      const override =
+        raw.focusModeOverride !== undefined
+          ? raw.focusModeOverride
+          : raw.miniModeOverride;
+      migratedFocusAuto = override == null;
       migratedKeyboardSectionMode = needsKeyboardSectionModeMigration(
         raw.keyboardSectionMode,
         get().musicTeachingEnabled,
       );
     } catch {
-      migratedMiniAuto = false;
+      migratedFocusAuto = false;
       migratedKeyboardSectionMode = false;
     }
   }
-  const parsed = active ? parseSettings(active.settings_json) : DEFAULT_SETTINGS;
+  const parsed = active
+    ? parseSettings(active.settings_json)
+    : DEFAULT_SETTINGS;
   const settings = withV1EffectiveChrome({
     ...parsed,
     keyboardSectionMode: hydrateKeyboardSectionMode(
@@ -987,20 +1060,22 @@ async function loadProfileData(
   set({ settings, settingsEpoch: get().settingsEpoch + 1 });
   const isMainWindow = WebviewWindow.getCurrent().label === "main";
   if (isMainWindow) {
-    await invoke("cmd_set_system_language", { language: settings.typingLanguage });
+    await invoke("cmd_set_system_language", {
+      language: settings.typingLanguage,
+    });
     await get().pollKeyboardState();
     await syncInputPreviewEnabled(get);
   }
   await get().loadQuickActions();
   await get().loadPhrases();
   await get().loadMacros();
-  if (migratedMiniAuto || migratedKeyboardSectionMode) {
+  if (migratedFocusAuto || migratedKeyboardSectionMode) {
     const epoch = get().settingsEpoch;
     await persistSettingsIfCurrent(get, epoch, get().settings);
   }
   if (isMainWindow) {
-    await refreshMiniModeState({ animate: options?.animateLayout === true });
-    if (!get().miniModeActive) {
+    await refreshFocusModeState({ animate: options?.animateLayout === true });
+    if (!get().focusModeActive) {
       await syncWindowLayoutFromSettings(
         get().settings,
         options?.animateLayout === true,
@@ -1034,7 +1109,9 @@ async function emitTeachingSession(get: () => AppStore): Promise<void> {
   await emit(TEACHING_SESSION_EVENT, {
     musicTeachingEnabled: state.musicTeachingEnabled,
     teachingLesson: state.teachingLesson,
-    keyboardSectionMode: teachingSessionKeyboardMode(state.musicTeachingEnabled),
+    keyboardSectionMode: teachingSessionKeyboardMode(
+      state.musicTeachingEnabled,
+    ),
   } satisfies TeachingSessionPayload);
 }
 
@@ -1045,7 +1122,10 @@ async function emitTeachingSession(get: () => AppStore): Promise<void> {
  * Returns null when there is no case-insensitive prefix match (caller should
  * delete + retype), or the full word when prefix is empty.
  */
-function suggestionSuffixAfterPrefix(word: string, prefix: string): string | null {
+function suggestionSuffixAfterPrefix(
+  word: string,
+  prefix: string,
+): string | null {
   if (prefix.length === 0) return word;
   const target = prefix.toLowerCase();
   let i = 0;
@@ -1099,9 +1179,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   modeBeforeCompanion: null,
   companionSessionLive: false,
   inputPreviewFrame: null,
+  externalInputFocused: false,
   companionBridgeArmed: false,
   mouseVisibleBeforeWidePiano: null,
-  mouseVisibleBeforeMiniMode: null,
+  mouseVisibleBeforeFocusMode: null,
   importedSongs: [],
   customLanguagePacks: [],
   languagePackId: null,
@@ -1116,10 +1197,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   freeWriteFocus: "notepad",
   teachingPdfLibrary: [],
   freeWriteActivePdfId: null,
-  miniModeActive: false,
-  miniModeKeyboardVisible: false,
-  miniModeManualExpand: false,
-  miniModeSuppressAutoShow: false,
+  focusModeActive: false,
+  focusModeKeyboardVisible: false,
+  focusModeManualExpand: false,
+  focusModeSuppressAutoShow: false,
+  modeMenuOpen: false,
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
@@ -1202,7 +1284,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   deleteProfileFile: async (filename) => {
-    const nextActive = await invoke<string>("cmd_delete_profile_file", { filename });
+    const nextActive = await invoke<string>("cmd_delete_profile_file", {
+      filename,
+    });
     set({
       typedBuffer: "",
       ...clearGreekPendingAccent(),
@@ -1238,17 +1322,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
       partial.typingLanguage !== undefined &&
       partial.typingLanguage !== settings.typingLanguage;
     const uiLanguageChanged =
-      partial.uiLanguage !== undefined && partial.uiLanguage !== settings.uiLanguage;
+      partial.uiLanguage !== undefined &&
+      partial.uiLanguage !== settings.uiLanguage;
     const previousTypingLanguage = settings.typingLanguage;
     let next = {
       ...settings,
       ...partial,
       ...(partial.synthesizerOctaveCount !== undefined
         ? {
-          synthesizerOctaveCount: resolveSynthOctaveCount(
-            partial.synthesizerOctaveCount,
-          ),
-        }
+            synthesizerOctaveCount: resolveSynthOctaveCount(
+              partial.synthesizerOctaveCount,
+            ),
+          }
         : {}),
     };
     // Explicit undefined clears a persisted Teaching 1.0 (spread alone keeps the old value).
@@ -1261,8 +1346,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       shouldStripFullscreenLayouts = true;
     } else if (
       Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio") &&
-      (partial.windowHeightRatio == null ||
-        partial.windowHeightRatio < 0.999)
+      (partial.windowHeightRatio == null || partial.windowHeightRatio < 0.999)
     ) {
       // Leaving Teaching with a restored non-fullscreen ratio must still drop
       // stale 1.0 from the inactive pointer-kind snapshot.
@@ -1299,10 +1383,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     }
 
-    // Mini Mode: keep mouse panel hidden (OS cursor stays visible).
-    if (get().miniModeActive && next.mouseVisible) {
-      if (get().mouseVisibleBeforeMiniMode === null) {
-        set({ mouseVisibleBeforeMiniMode: settings.mouseVisible });
+    // Focus mode: keep mouse panel hidden (OS cursor stays visible).
+    if (get().focusModeActive && next.mouseVisible) {
+      if (get().mouseVisibleBeforeFocusMode === null) {
+        set({ mouseVisibleBeforeFocusMode: settings.mouseVisible });
       }
       next = { ...next, mouseVisible: false };
     }
@@ -1328,10 +1412,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
         next = { ...next, phrasesVisible: before };
       }
       // Restore saved typing mode + height when Teaching exits via keyboardSectionMode.
-      if (modeBefore === "mini") {
-        next = { ...next, miniModeOverride: true };
+      if (modeBefore === "mic") {
+        next = { ...next, focusModeOverride: true, micMode: true };
+      } else if (modeBefore === "focus") {
+        next = { ...next, focusModeOverride: true, micMode: false };
       } else if (modeBefore === "normal") {
-        next = { ...next, miniModeOverride: false };
+        next = { ...next, focusModeOverride: false, micMode: false };
       }
       if (heightBefore !== null) {
         const restored = heightRatioAfterLeavingTeaching(heightBefore);
@@ -1376,7 +1462,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (!result.success) {
           if (get().settingsEpoch === epoch) {
             set({
-              settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+              settings: {
+                ...get().settings,
+                typingLanguage: previousTypingLanguage,
+              },
             });
           }
           const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
@@ -1389,7 +1478,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       } catch (error) {
         if (get().settingsEpoch === epoch) {
           set({
-            settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+            settings: {
+              ...get().settings,
+              typingLanguage: previousTypingLanguage,
+            },
           });
         }
         const message =
@@ -1406,7 +1498,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (get().settingsEpoch !== epoch) {
       return;
     }
-    const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+    const persisted = await persistSettingsIfCurrent(
+      get,
+      epoch,
+      get().settings,
+    );
     if (!persisted) {
       return;
     }
@@ -1437,7 +1533,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
     if (
       partial.inputPreviewVisible !== undefined ||
-      partial.inputPreviewMiniModeVisible !== undefined
+      partial.inputPreviewFocusModeVisible !== undefined
     ) {
       await syncInputPreviewEnabled(get);
     }
@@ -1447,14 +1543,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
         partial.phrasesVisible !== undefined ||
         partial.quickActionsVisible !== undefined;
       // Transparent is CSS-only; do not trigger mini layout refresh/animation.
-      const miniModeSettingChanged = partial.miniModeOverride !== undefined;
-      if (miniModeSettingChanged || partial.accessibilityMonitorId !== undefined) {
-        await refreshMiniModeState({ animate: true });
+      const focusModeSettingChanged =
+        partial.focusModeOverride !== undefined ||
+        partial.micMode !== undefined;
+      if (
+        focusModeSettingChanged ||
+        partial.accessibilityMonitorId !== undefined
+      ) {
+        await refreshFocusModeState({ animate: true });
         // Monitor moves (and Teaching→Normal height/section patches) must still
-        // re-apply non-mini layout when refresh is a no-op with Mini already off.
+        // re-apply non-focus layout when refresh is a no-op with Focus already off.
         if (
-          shouldSyncNonMiniWindowLayout({
-            miniModeActive: get().miniModeActive,
+          shouldSyncNonFocusWindowLayout({
+            focusModeActive: get().focusModeActive,
             accessibilityMonitorIdInPatch:
               partial.accessibilityMonitorId !== undefined,
             windowHeightRatioInPatch: Object.prototype.hasOwnProperty.call(
@@ -1471,39 +1572,55 @@ export const useAppStore = create<AppStore>((set, get) => ({
             get().musicTeachingEnabled,
           );
         }
-      } else if (get().miniModeActive) {
+      } else if (get().focusModeActive) {
         if (
           partial.collapsed !== undefined ||
           Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio") ||
           visibilityChanged
         ) {
-          if (Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")) {
+          if (
+            Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")
+          ) {
             liveHeightRatioPreview = null;
           }
-          await syncMiniModeWindowLayout(true);
+          await syncFocusModeWindowLayout(true);
         }
       } else if (
         partial.accessibilityMonitorId !== undefined ||
         partial.collapsed !== undefined ||
         Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")
       ) {
-        if (Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")) {
+        if (
+          Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")
+        ) {
           liveHeightRatioPreview = null;
         }
         await invoke("cmd_apply_window_layout", {
           monitorId: current.accessibilityMonitorId,
           collapsed: current.collapsed,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(current, get().musicTeachingEnabled),
-          fullWorkArea: teachingFullWorkAreaActive(current, get().musicTeachingEnabled),
+          heightRatio: heightRatioFromSettings(
+            current,
+            get().musicTeachingEnabled,
+          ),
+          fullWorkArea: teachingFullWorkAreaActive(
+            current,
+            get().musicTeachingEnabled,
+          ),
         });
       } else if (visibilityChanged && !current.collapsed) {
         await invoke("cmd_animate_window_layout", {
           monitorId: current.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(current, get().musicTeachingEnabled),
-          fullWorkArea: teachingFullWorkAreaActive(current, get().musicTeachingEnabled),
+          heightRatio: heightRatioFromSettings(
+            current,
+            get().musicTeachingEnabled,
+          ),
+          fullWorkArea: teachingFullWorkAreaActive(
+            current,
+            get().musicTeachingEnabled,
+          ),
         });
       }
     }
@@ -1521,10 +1638,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await persistSettingsIfCurrent(get, epoch, next);
     }
     if (WebviewWindow.getCurrent().label === "main") {
-      if (get().miniModeActive) {
-        void syncMiniModeWindowLayout(true);
+      if (get().focusModeActive) {
+        void syncFocusModeWindowLayout(true);
       } else {
-        void syncWindowLayoutFromSettings(next, true, get().musicTeachingEnabled);
+        void syncWindowLayoutFromSettings(
+          next,
+          true,
+          get().musicTeachingEnabled,
+        );
       }
     }
   },
@@ -1555,11 +1676,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings, musicTeachingEnabled, miniModeActive } = get();
+    const { settings, musicTeachingEnabled, focusModeActive } = get();
     if (
       !shouldApplyLiveWindowHeightRatio({
         collapsed: settings.collapsed,
-        miniModeActive,
+        focusModeActive,
       })
     ) {
       return;
@@ -1598,15 +1719,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     liveHeightRatioPreview = pending;
     liveHeightRatioInFlight = true;
     try {
-      const mini = get().miniModeActive;
+      const focus = get().focusModeActive;
       await invoke("cmd_apply_window_layout", {
         monitorId: latest.accessibilityMonitorId,
         collapsed: false,
         collapsedDictation: false,
         heightRatio: pending,
-        miniMode: mini,
-        miniKeyboardVisible: mini ? get().miniModeKeyboardVisible : false,
-        miniKeyboardHeightRatio: mini ? pending : undefined,
+        focusMode: focus,
+        focusKeyboardVisible: focus ? get().focusModeKeyboardVisible : false,
+        focusKeyboardHeightRatio: focus ? pending : undefined,
         fullWorkArea: teachingFullWorkAreaActive(latest, musicTeachingEnabled),
       });
     } catch {
@@ -1646,7 +1767,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const monitors = await invoke<MonitorInfo[]>("cmd_list_monitors");
     set({ monitors });
     if (WebviewWindow.getCurrent().label === "main" && get().profileHydrated) {
-      await refreshMiniModeState({ animate: false });
+      await refreshFocusModeState({ animate: false });
     }
   },
 
@@ -1678,8 +1799,29 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ macros });
   },
 
-  setTypedBuffer: (text) => set({ typedBuffer: text, ...clearGreekPendingAccent() }),
-  appendTyped: (ch) => set((s) => ({ typedBuffer: s.typedBuffer + ch })),
+  setTypedBuffer: (text) => {
+    const clear = shouldClearSuggestions(text);
+    if (clear) {
+      suggestionsRequestId += 1;
+    }
+    set({
+      typedBuffer: text,
+      ...clearGreekPendingAccent(),
+      ...(clear ? { suggestions: [] as string[] } : {}),
+    });
+  },
+  appendTyped: (ch) =>
+    set((s) => {
+      const typedBuffer = s.typedBuffer + ch;
+      const clear = shouldClearSuggestions(typedBuffer);
+      if (clear) {
+        suggestionsRequestId += 1;
+      }
+      return {
+        typedBuffer,
+        ...(clear ? { suggestions: [] as string[] } : {}),
+      };
+    }),
   typeCharacter: (output, options) => {
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
@@ -1689,9 +1831,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
       output,
       { physicalKey: options?.physicalKey, greekCompose: greek },
     );
+    const clear = shouldClearSuggestions(result.buffer);
+    if (clear) {
+      suggestionsRequestId += 1;
+    }
     set({
       typedBuffer: result.buffer,
       greekPendingAccent: result.pendingAccent,
+      ...(clear ? { suggestions: [] as string[] } : {}),
     });
     return result.inject || null;
   },
@@ -1716,7 +1863,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     return result.inject || null;
   },
   applyLanguageLayoutTranslation: (translation, options) => {
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get()))) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get())))
+      return;
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
     const result = applyGreekLayoutTranslation(
@@ -1741,7 +1889,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (s.greekPendingAccent) {
         return clearGreekPendingAccent();
       }
-      return { typedBuffer: s.typedBuffer.slice(0, -1) };
+      const typedBuffer = s.typedBuffer.slice(0, -1);
+      const clear = shouldClearSuggestions(typedBuffer);
+      if (clear) {
+        suggestionsRequestId += 1;
+      }
+      return {
+        typedBuffer,
+        ...(clear ? { suggestions: [] as string[] } : {}),
+      };
     }),
 
   toggleSticky: (modifier) =>
@@ -1791,7 +1947,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     if (!typingLanguageUnchanged) {
-      const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+      const persisted = await persistSettingsIfCurrent(
+        get,
+        epoch,
+        get().settings,
+      );
       if (!persisted) {
         return;
       }
@@ -1831,7 +1991,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
         },
         keyboardLayout: method.layoutName,
       });
-      const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+      const persisted = await persistSettingsIfCurrent(
+        get,
+        epoch,
+        get().settings,
+      );
       if (!persisted) {
         return;
       }
@@ -1876,20 +2040,29 @@ export const useAppStore = create<AppStore>((set, get) => ({
   loadSuggestions: async () => {
     const { settings, typedBuffer } = get();
     if (!settings.suggestionsVisible || !settings.predictionEnabled) {
+      suggestionsRequestId += 1;
       set({ suggestions: [] });
       return;
     }
-    const words = typedBuffer.split(/\s+/);
-    const prefix = words[words.length - 1] ?? "";
-    if (prefix.length < 2) {
+    const prefix = suggestionWordPrefix(typedBuffer);
+    if (shouldClearSuggestions(typedBuffer)) {
+      suggestionsRequestId += 1;
       set({ suggestions: [] });
       return;
     }
+    const requestId = ++suggestionsRequestId;
     const results = await invoke<{ word: string }[]>("cmd_get_suggestions", {
       profileId: INTERNAL_PROFILE_ID,
       prefix,
       language: settings.typingLanguage || "en",
     });
+    if (requestId !== suggestionsRequestId) {
+      return;
+    }
+    if (shouldClearSuggestions(get().typedBuffer)) {
+      set({ suggestions: [] });
+      return;
+    }
     set({ suggestions: results.map((r) => r.word) });
   },
 
@@ -2009,8 +2182,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await invoke("cmd_stop_dictation");
     } catch (error) {
       set({
-        lastError:
-          error instanceof Error ? error.message : String(error),
+        lastError: error instanceof Error ? error.message : String(error),
       });
     }
   },
@@ -2042,8 +2214,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } catch (error) {
       set({ dictationState: "idle" });
       set({
-        lastError:
-          error instanceof Error ? error.message : String(error),
+        lastError: error instanceof Error ? error.message : String(error),
       });
       await get().refreshSttCapability();
     }
@@ -2080,7 +2251,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   enableMusicTeaching: async () => {
-    const { settings, musicTeachingEnabled, musicSongId, importedSongs, teachingLesson, languagePackId } = get();
+    const {
+      settings,
+      musicTeachingEnabled,
+      musicSongId,
+      importedSongs,
+      teachingLesson,
+      languagePackId,
+    } = get();
     if (musicTeachingEnabled) return;
     set({
       musicTeachingEnabled: true,
@@ -2088,7 +2266,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
       musicNoteIndex: 0,
       musicSongId: musicSongId ?? "twinkle",
       ...(teachingLesson === "language"
-        ? initLanguageLessonState(settings, languagePackId, get().customLanguagePacks)
+        ? initLanguageLessonState(
+            settings,
+            languagePackId,
+            get().customLanguagePacks,
+          )
         : emptyLanguageLessonState()),
     });
     // Lesson slot does not depend on phrasesVisible — do not force it on.
@@ -2109,7 +2291,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const prev = get().teachingLesson;
     const nextState =
       lesson === "language" && get().musicTeachingEnabled
-        ? initLanguageLessonState(get().settings, get().languagePackId, get().customLanguagePacks)
+        ? initLanguageLessonState(
+            get().settings,
+            get().languagePackId,
+            get().customLanguagePacks,
+          )
         : prev === "language"
           ? emptyLanguageLessonState()
           : {};
@@ -2153,7 +2339,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         resolveSelectedAppMode({
           companionModeActive: current.companionModeActive,
           teachingActive,
-          miniModeOverride: current.settings.miniModeOverride ?? undefined,
+          focusModeOverride: current.settings.focusModeOverride ?? undefined,
+          micMode: current.settings.micMode === true,
         }),
       );
       set({
@@ -2184,7 +2371,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const selected = resolveSelectedAppMode({
       companionModeActive: current.companionModeActive,
       teachingActive,
-      miniModeOverride: current.settings.miniModeOverride ?? undefined,
+      focusModeOverride: current.settings.focusModeOverride ?? undefined,
+      micMode: current.settings.micMode === true,
     });
     const host: HostAppMode =
       selected === "companion"
@@ -2216,11 +2404,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
             settings: {
               ...current,
               keyboardSectionMode: "synthesizer",
-              miniModeOverride: false,
+              focusModeOverride: false,
+              micMode: false,
             },
           });
           break;
-        case "mini":
+        case "mic":
           set({
             companionModeActive: false,
             companionSessionLive: false,
@@ -2235,7 +2424,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
             settings: {
               ...current,
               keyboardSectionMode: "keyboard",
-              miniModeOverride: true,
+              focusModeOverride: true,
+              micMode: true,
+            },
+          });
+          break;
+        case "focus":
+          set({
+            companionModeActive: false,
+            companionSessionLive: false,
+            companionBridgeArmed: skipCompanionBridgeStop
+              ? get().companionBridgeArmed
+              : false,
+            modeBeforeCompanion: null,
+            musicTeachingEnabled: false,
+            musicNoteIndex: 0,
+            musicPlaybackActive: false,
+            ...emptyLanguageLessonState(),
+            settings: {
+              ...current,
+              keyboardSectionMode: "keyboard",
+              focusModeOverride: true,
+              micMode: false,
             },
           });
           break;
@@ -2254,7 +2464,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
             settings: {
               ...current,
               keyboardSectionMode: "keyboard",
-              miniModeOverride: false,
+              focusModeOverride: false,
+              micMode: false,
             },
           });
           break;
@@ -2272,7 +2483,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     if (mode !== "companion" && !skipCompanionBridgeStop) {
       const { companionBridgeArmed, companionModeActive } = get();
-      if (shouldStopCompanionBridgeOnHostMode(companionBridgeArmed, companionModeActive)) {
+      if (
+        shouldStopCompanionBridgeOnHostMode(
+          companionBridgeArmed,
+          companionModeActive,
+        )
+      ) {
         set({
           companionBridgeArmed: false,
           companionModeActive: false,
@@ -2300,9 +2516,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
       case "normal": {
         set({ companionModeActive: false });
-        // Clear teaching first so leavingSynthesizer does not restore Mini.
+        // Clear teaching first so leavingSynthesizer does not restore Focus.
         const heightRestore = inTeaching
-          ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
+          ? heightRatioAfterLeavingTeaching(
+              state.windowHeightRatioBeforeTeaching,
+            )
           : settings.windowHeightRatio;
         if (inTeaching) {
           liveHeightRatioPreview = null;
@@ -2317,19 +2535,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
           });
         }
         await get().updateSettings({
-          miniModeOverride: false,
+          focusModeOverride: false,
+          micMode: false,
           keyboardSectionMode: "keyboard",
           ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
-        // Explicit Normal must re-apply non-mini layout even if refresh was a no-op.
+        // Explicit Normal must re-apply non-focus layout even if refresh was a no-op.
         await syncWindowLayoutFromSettings(get().settings, true, false);
         await emitTeachingSession(get);
         return;
       }
-      case "mini": {
-        set({ companionModeActive: false });
+      case "mic": {
+        set({
+          companionModeActive: false,
+          focusModeKeyboardVisible: false,
+          focusModeManualExpand: false,
+        });
         const heightRestore = inTeaching
-          ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
+          ? heightRatioAfterLeavingTeaching(
+              state.windowHeightRatioBeforeTeaching,
+            )
           : undefined;
         if (inTeaching) {
           liveHeightRatioPreview = null;
@@ -2344,7 +2569,36 @@ export const useAppStore = create<AppStore>((set, get) => ({
           });
         }
         await get().updateSettings({
-          miniModeOverride: true,
+          focusModeOverride: true,
+          micMode: true,
+          keyboardSectionMode: "keyboard",
+          ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
+        });
+        await emitTeachingSession(get);
+        return;
+      }
+      case "focus": {
+        set({ companionModeActive: false });
+        const heightRestore = inTeaching
+          ? heightRatioAfterLeavingTeaching(
+              state.windowHeightRatioBeforeTeaching,
+            )
+          : undefined;
+        if (inTeaching) {
+          liveHeightRatioPreview = null;
+          set({
+            musicTeachingEnabled: false,
+            musicNoteIndex: 0,
+            musicPlaybackActive: false,
+            phrasesVisibleBeforeTeaching: null,
+            modeBeforeTeaching: null,
+            windowHeightRatioBeforeTeaching: null,
+            ...emptyLanguageLessonState(),
+          });
+        }
+        await get().updateSettings({
+          focusModeOverride: true,
+          micMode: false,
           keyboardSectionMode: "keyboard",
           ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
@@ -2356,13 +2610,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (inTeaching) {
           return;
         }
-        const previousMode: "normal" | "mini" =
-          settings.miniModeOverride === true ? "mini" : "normal";
+        const previousMode: "normal" | "focus" | "mic" =
+          settings.focusModeOverride === true
+            ? settings.micMode === true
+              ? "mic"
+              : "focus"
+            : "normal";
         set({
           modeBeforeTeaching: previousMode,
-          windowHeightRatioBeforeTeaching: captureWindowHeightRatioBeforeTeaching(
-            settings.windowHeightRatio,
-          ),
+          windowHeightRatioBeforeTeaching:
+            captureWindowHeightRatioBeforeTeaching(settings.windowHeightRatio),
           teachingLesson: "language",
         });
         // Flags on before synthesizer patch so first layout sync sees Teaching.
@@ -2375,7 +2632,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
           "phrases",
         );
         await get().updateSettings({
-          miniModeOverride: false,
+          focusModeOverride: false,
+          micMode: false,
           keyboardSectionMode: "synthesizer",
           sectionStack,
         });
@@ -2390,7 +2648,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   disableMusicTeaching: async (options) => {
-    if (!get().musicTeachingEnabled && get().phrasesVisibleBeforeTeaching === null) {
+    if (
+      !get().musicTeachingEnabled &&
+      get().phrasesVisibleBeforeTeaching === null
+    ) {
       if (options?.hidePhrases) {
         await get().updateSettings({ phrasesVisible: false });
       }
@@ -2457,7 +2718,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   startLanguageLessonPlayback: () => {
     const state = get();
     if (!isLanguageLessonActive(languageLessonModeFromState(state))) return;
-    const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
+    const pack = getLanguagePackById(
+      state.languagePackId,
+      state.customLanguagePacks,
+    );
     if (!pack || pack.tasks.length === 0) return;
     set({
       languageLessonPlaying: true,
@@ -2479,11 +2743,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({
       languageListAuthoringActive: active,
       ...(active
-        ? { languageLessonPlaying: false, languageListAuthoringField: "title" as const }
+        ? {
+            languageLessonPlaying: false,
+            languageListAuthoringField: "title" as const,
+          }
         : {
-          languageListAuthoringField: "title" as const,
-          languageListAuthoringHandlers: null,
-        }),
+            languageListAuthoringField: "title" as const,
+            languageListAuthoringHandlers: null,
+          }),
     });
     void get().syncWindowFocusable();
   },
@@ -2497,7 +2764,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   languageKeyInput: (ch, options) => {
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get()))) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get())))
+      return;
 
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
@@ -2515,7 +2783,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   languageBackspace: () => {
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get()))) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get())))
+      return;
     set((state) => {
       if (state.greekPendingAccent) {
         return {
@@ -2532,8 +2801,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   checkLanguageAnswer: () => {
     const state = get();
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(state))) return;
-    const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(state)))
+      return;
+    const pack = getLanguagePackById(
+      state.languagePackId,
+      state.customLanguagePacks,
+    );
     if (!pack) return;
     const expected = currentSpellAnswer(pack, state.languageTaskIndex);
     if (!expected) return;
@@ -2586,7 +2859,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       keyboardLayout: state.keyboardLayout,
       languageLessonActive: true,
       lessonLanguage:
-        state.settings.typingLanguage === "el" ? "el" : state.settings.languageLessonLanguage,
+        state.settings.typingLanguage === "el"
+          ? "el"
+          : state.settings.languageLessonLanguage,
     });
     const text = state.settings.freeWriteNotepadText ?? "";
     const result = processCharacterInput(text, state.greekPendingAccent, ch, {
@@ -2616,7 +2891,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       keyboardLayout: state.keyboardLayout,
       languageLessonActive: true,
       lessonLanguage:
-        state.settings.typingLanguage === "el" ? "el" : state.settings.languageLessonLanguage,
+        state.settings.typingLanguage === "el"
+          ? "el"
+          : state.settings.languageLessonLanguage,
     });
     const text = state.settings.freeWriteNotepadText ?? "";
     const result = applyGreekLayoutTranslation(
@@ -2643,7 +2920,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   setFreeWriteNotepadZoom: (zoom) => {
-    void get().updateSettings({ freeWriteNotepadZoom: clampFreeWriteZoom(zoom) });
+    void get().updateSettings({
+      freeWriteNotepadZoom: clampFreeWriteZoom(zoom),
+    });
   },
 
   setFreeWriteNotepadWrap: (wrap) => {
@@ -2656,9 +2935,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   loadTeachingPdfLibrary: async () => {
     try {
-      const entries = await invoke<TeachingPdfEntry[]>("cmd_list_teaching_pdfs");
+      const entries = await invoke<TeachingPdfEntry[]>(
+        "cmd_list_teaching_pdfs",
+      );
       const teachingPdfLibrary = Array.isArray(entries)
-        ? entries.filter((e) => e && typeof e.id === "string" && typeof e.path === "string")
+        ? entries.filter(
+            (e) => e && typeof e.id === "string" && typeof e.path === "string",
+          )
         : [];
       const lastId = get().settings.freeWriteLastPdfId ?? null;
       const freeWriteActivePdfId =
@@ -2683,7 +2966,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         path,
         lastOpenedAt: new Date().toISOString(),
       };
-      const teachingPdfLibrary = upsertTeachingPdfEntry(get().teachingPdfLibrary, entry);
+      const teachingPdfLibrary = upsertTeachingPdfEntry(
+        get().teachingPdfLibrary,
+        entry,
+      );
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
       set({ teachingPdfLibrary, freeWriteActivePdfId: entry.id });
       await get().updateSettings({ freeWriteLastPdfId: entry.id });
@@ -2701,7 +2987,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         ...entry,
         lastOpenedAt: new Date().toISOString(),
       };
-      const teachingPdfLibrary = upsertTeachingPdfEntry(get().teachingPdfLibrary, updated);
+      const teachingPdfLibrary = upsertTeachingPdfEntry(
+        get().teachingPdfLibrary,
+        updated,
+      );
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
       set({ teachingPdfLibrary, freeWriteActivePdfId: id });
       await get().updateSettings({ freeWriteLastPdfId: id });
@@ -2713,7 +3002,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   removeTeachingPdf: async (id) => {
     try {
-      const teachingPdfLibrary = removeTeachingPdfEntry(get().teachingPdfLibrary, id);
+      const teachingPdfLibrary = removeTeachingPdfEntry(
+        get().teachingPdfLibrary,
+        id,
+      );
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
       const freeWriteActivePdfId =
         get().freeWriteActivePdfId === id ? null : get().freeWriteActivePdfId;
@@ -2728,8 +3020,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   reportMusicKeyPlayed: (keyId) => {
-    const { musicTeachingEnabled, musicPlaybackActive, musicSongId, musicNoteIndex, importedSongs } =
-      get();
+    const {
+      musicTeachingEnabled,
+      musicPlaybackActive,
+      musicSongId,
+      musicNoteIndex,
+      importedSongs,
+    } = get();
     if (!musicTeachingEnabled || musicPlaybackActive) return;
     const song = getSongById(musicSongId, importedSongs);
     if (!song) return;
@@ -2762,7 +3059,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   loadImportedSongs: async () => {
     try {
-      const songs = await invoke<ImportedMusicSong[]>("cmd_list_imported_songs");
+      const songs = await invoke<ImportedMusicSong[]>(
+        "cmd_list_imported_songs",
+      );
       set({
         importedSongs: Array.isArray(songs)
           ? songs.filter((song) => song && typeof song.id === "string")
@@ -2776,7 +3075,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   loadCustomLanguagePacks: async () => {
     try {
-      const packs = await invoke<LanguagePack[]>("cmd_list_custom_language_packs");
+      const packs = await invoke<LanguagePack[]>(
+        "cmd_list_custom_language_packs",
+      );
       set({
         customLanguagePacks: Array.isArray(packs)
           ? packs.filter((pack) => pack && typeof pack.id === "string")
@@ -2808,7 +3109,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await get().loadCustomLanguagePacks();
       if (get().languagePackId === id) {
         const { settings } = get();
-        const band = settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND;
+        const band =
+          settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND;
         const language = settings.languageLessonLanguage ?? "el";
         get().setLanguagePackId(defaultLanguagePackId(band, language));
       }
@@ -2822,7 +3124,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     try {
       const path = await invoke<string | null>("cmd_pick_music_song_file");
       if (!path) return;
-      const payload = await invoke<MusicFilePayload>("cmd_read_music_file", { path });
+      const payload = await invoke<MusicFilePayload>("cmd_read_music_file", {
+        path,
+      });
       const songs = await parseMusicFilePayload(payload);
       for (const song of songs) {
         await invoke("cmd_upsert_imported_song", { song });
@@ -2860,10 +3164,49 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
+  openModeMenu: async () => {
+    if (get().isAnimatingWindow || get().modeMenuOpen) {
+      return;
+    }
+    set({ modeMenuOpen: true });
+    const pending = invoke<void>("cmd_expand_window_for_mode_menu", {
+      menuWidth: MODE_MENU_WIDTH,
+      menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+    }).catch((error: unknown) => {
+      console.error("cmd_expand_window_for_mode_menu failed", error);
+      set({ modeMenuOpen: false });
+    });
+    modeMenuExpandPending = pending;
+    try {
+      await pending;
+    } finally {
+      if (modeMenuExpandPending === pending) modeMenuExpandPending = null;
+    }
+  },
+
+  closeModeMenu: async () => {
+    if (!get().modeMenuOpen) {
+      return;
+    }
+    set({ modeMenuOpen: false });
+    // Let an in-flight expand finish first so the collapsed restore always lands last.
+    if (modeMenuExpandPending) await modeMenuExpandPending;
+    if (get().focusModeActive) {
+      await syncFocusModeWindowLayout(false);
+    } else {
+      await syncWindowLayoutFromSettings(
+        get().settings,
+        false,
+        get().musicTeachingEnabled,
+      );
+    }
+  },
+
   toggleCollapsed: async () => {
     if (get().isAnimatingWindow) {
       return;
     }
+    set({ modeMenuOpen: false });
     const epoch = get().settingsEpoch;
     const { settings } = get();
     const collapsed = !settings.collapsed;
@@ -2884,15 +3227,24 @@ export const useAppStore = create<AppStore>((set, get) => ({
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(next, get().musicTeachingEnabled),
-          fullWorkArea: teachingFullWorkAreaActive(next, get().musicTeachingEnabled),
+          heightRatio: heightRatioFromSettings(
+            next,
+            get().musicTeachingEnabled,
+          ),
+          fullWorkArea: teachingFullWorkAreaActive(
+            next,
+            get().musicTeachingEnabled,
+          ),
         });
       } else {
         await invoke("cmd_animate_window_layout", {
           monitorId: settings.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(settings, get().musicTeachingEnabled),
+          heightRatio: heightRatioFromSettings(
+            settings,
+            get().musicTeachingEnabled,
+          ),
           fullWorkArea: teachingFullWorkAreaActive(
             settings,
             get().musicTeachingEnabled,
@@ -2906,46 +3258,47 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     } finally {
       set({ isAnimatingWindow: false });
-      const queued = pendingMiniLayoutSync;
-      pendingMiniLayoutSync = null;
-      if (queued !== null && get().miniModeActive) {
-        void syncMiniModeWindowLayout(queued);
+      const queued = pendingFocusLayoutSync;
+      pendingFocusLayoutSync = null;
+      if (queued !== null && get().focusModeActive) {
+        void syncFocusModeWindowLayout(queued);
       }
     }
   },
 
-  refreshMiniModeState: async (options) => {
-    await refreshMiniModeState(options);
+  refreshFocusModeState: async (options) => {
+    await refreshFocusModeState(options);
   },
 
-  expandMiniModeKeyboard: async () => {
-    if (!get().miniModeActive || get().isAnimatingWindow) {
+  expandFocusModeKeyboard: async () => {
+    if (!get().focusModeActive || get().isAnimatingWindow) {
       return;
     }
-    if (get().miniModeKeyboardVisible && get().miniModeManualExpand) {
+    if (get().focusModeKeyboardVisible && get().focusModeManualExpand) {
       return;
     }
     set({
-      miniModeKeyboardVisible: true,
-      miniModeManualExpand: true,
-      miniModeSuppressAutoShow: false,
+      modeMenuOpen: false,
+      focusModeKeyboardVisible: true,
+      focusModeManualExpand: true,
+      focusModeSuppressAutoShow: false,
     });
-    await syncMiniModeWindowLayout(true);
+    await syncFocusModeWindowLayout(true);
   },
 
-  collapseMiniModeKeyboard: async () => {
-    if (!get().miniModeActive || get().isAnimatingWindow) {
+  collapseFocusModeKeyboard: async () => {
+    if (!get().focusModeActive || get().isAnimatingWindow) {
       return;
     }
-    if (!get().miniModeKeyboardVisible) {
+    if (!get().focusModeKeyboardVisible) {
       return;
     }
     set({
-      miniModeKeyboardVisible: false,
-      miniModeManualExpand: false,
-      miniModeSuppressAutoShow: true,
+      focusModeKeyboardVisible: false,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: true,
     });
-    await syncMiniModeWindowLayout(true);
+    await syncFocusModeWindowLayout(true);
   },
 }));
 
@@ -2958,34 +3311,63 @@ void listen("input-preview-cleared", () => {
 });
 
 /**
- * Mini Mode: show keyboard on external editable focus; hide when focus is lost.
- * Manual Expand keeps the keyboard until focus is lost (does not exit Mini Mode).
+ * Focus mode: show keyboard on external editable focus; hide when focus is lost.
+ * Manual Expand keeps the keyboard until focus is lost (does not exit Focus mode).
  */
 void listen<{ focused: boolean }>("input-focus-changed", (event) => {
+  useAppStore.setState({
+    externalInputFocused: event.payload.focused,
+    ...(event.payload.focused ? {} : { inputPreviewFrame: null }),
+  });
   const state = useAppStore.getState();
-  if (!state.miniModeActive) return;
+  if (!state.focusModeActive) return;
   const focused = event.payload.focused;
   if (focused) {
-    if (!state.miniModeKeyboardVisible && !state.miniModeSuppressAutoShow) {
-      useAppStore.setState({ miniModeKeyboardVisible: true });
-      void syncMiniModeWindowLayout(true);
+    if (state.modeMenuOpen) {
+      useAppStore.setState({ modeMenuOpen: false });
+    }
+    if (state.settings.micMode === true) {
+      if (state.modeMenuOpen) {
+        void syncFocusModeWindowLayout(false);
+      }
+      return;
+    }
+    if (!state.focusModeKeyboardVisible && !state.focusModeSuppressAutoShow) {
+      useAppStore.setState({ focusModeKeyboardVisible: true });
+      void syncFocusModeWindowLayout(true);
+    } else if (state.modeMenuOpen) {
+      void syncFocusModeWindowLayout(false);
     }
     return;
   }
   // Focus lost → hide keyboard and clear manual expand / collapse suppression.
   if (
-    state.miniModeKeyboardVisible ||
-    state.miniModeManualExpand ||
-    state.miniModeSuppressAutoShow
+    state.focusModeKeyboardVisible ||
+    state.focusModeManualExpand ||
+    state.focusModeSuppressAutoShow ||
+    state.modeMenuOpen
   ) {
     useAppStore.setState({
-      miniModeKeyboardVisible: false,
-      miniModeManualExpand: false,
-      miniModeSuppressAutoShow: false,
+      modeMenuOpen: false,
+      focusModeKeyboardVisible: false,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: false,
     });
-    void syncMiniModeWindowLayout(true);
+    void syncFocusModeWindowLayout(true);
   }
 });
+
+// Startup hydration: input-focus-changed only fires on change, so read the current value once.
+void invoke<boolean>("cmd_get_input_focused")
+  .then((focused) => {
+    useAppStore.setState({
+      externalInputFocused: focused,
+      ...(focused ? {} : { inputPreviewFrame: null }),
+    });
+  })
+  .catch(() => {
+    /* keep false */
+  });
 
 export async function getMacroSteps(macroId: string): Promise<MacroStep[]> {
   return invoke<MacroStep[]>("cmd_get_macro_steps", { macroId });

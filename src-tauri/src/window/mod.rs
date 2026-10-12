@@ -71,11 +71,11 @@ pub struct WindowLayout {
 const COLLAPSED_SIZE: u32 = 56;
 const COLLAPSED_MARGIN: u32 = 16;
 /// Transparent padding around FABs so shadow + hover scale are not clipped.
-/// Keep in sync with COLLAPSED_FAB_PAD in src/lib/miniMode.ts / CollapsedFab.tsx.
+/// Keep in sync with COLLAPSED_FAB_PAD in src/lib/focusMode.ts / CollapsedFab.tsx.
 const COLLAPSED_PAD: u32 = 10;
 /// Gap between stacked collapsed FABs (expand + dictation + settings).
 const COLLAPSED_FAB_GAP: u32 = 12;
-/// Extra px for hover scale headroom (~5% of 56px). Keep in sync with FAB_HOVER_SLACK in miniMode.ts.
+/// Extra px for hover scale headroom (~5% of 56px). Keep in sync with FAB_HOVER_SLACK in focusMode.ts.
 pub const FAB_HOVER_SLACK: u32 = 6;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -118,10 +118,26 @@ pub fn compute_collapsed_dimensions(count: CollapsedFabCount, dpi_scale: f32) ->
     (width, height)
 }
 
-fn collapsed_fab_count(
-    collapsed_dictation: bool,
-    collapsed_settings: bool,
-) -> CollapsedFabCount {
+/// Grow a collapsed FAB window left/up so a mode menu fits; bottom-right corner stays fixed.
+pub fn mode_menu_layout(
+    current: WindowLayout,
+    menu_w: u32,
+    menu_h: u32,
+    dpi_scale: f32,
+) -> WindowLayout {
+    let add_w = scale_collapsed_px(menu_w, dpi_scale);
+    let min_h = scale_collapsed_px(menu_h, dpi_scale);
+    let width = current.width + add_w;
+    let height = current.height.max(min_h);
+    WindowLayout {
+        x: current.x + current.width as i32 - width as i32,
+        y: current.y + current.height as i32 - height as i32,
+        width,
+        height,
+    }
+}
+
+fn collapsed_fab_count(collapsed_dictation: bool, collapsed_settings: bool) -> CollapsedFabCount {
     match (collapsed_settings, collapsed_dictation) {
         (true, true) => CollapsedFabCount::Three,
         (true, false) | (false, true) => CollapsedFabCount::Two,
@@ -130,11 +146,11 @@ fn collapsed_fab_count(
 }
 
 pub const COLLAPSE_ANIMATION_MS: u64 = 400;
-/// Slide show/hide duration for mini-mode keyboard.
-pub const MINI_MODE_ANIMATION_MS: u64 = 300;
+/// Slide show/hide duration for focus-mode keyboard.
+pub const FOCUS_MODE_ANIMATION_MS: u64 = 300;
 pub const COLLAPSE_ANIMATION_FRAME_MS: u64 = 60;
-/// Default height as a fraction of full monitor height for mini-mode keyboard.
-pub const MINI_KEYBOARD_HEIGHT_RATIO: f32 = 0.42;
+/// Default height as a fraction of full monitor height for focus-mode keyboard.
+pub const FOCUS_KEYBOARD_HEIGHT_RATIO: f32 = 0.42;
 
 fn ease_out_cubic(t: f32) -> f32 {
     1.0 - (1.0 - t).powi(3)
@@ -165,9 +181,9 @@ pub fn compute_window_layout(
     collapsed_dictation: bool,
     collapsed_settings: bool,
     height_ratio: f32,
-    mini_mode: bool,
-    mini_keyboard_visible: bool,
-    mini_keyboard_height_ratio: f32,
+    focus_mode: bool,
+    focus_keyboard_visible: bool,
+    focus_keyboard_height_ratio: f32,
     dpi_scale: f32,
     full_work_area: bool,
 ) -> Result<WindowLayout, String> {
@@ -178,13 +194,13 @@ pub fn compute_window_layout(
         .or_else(|| monitors.iter().find(|m| m.is_primary))
         .ok_or_else(|| "No monitor found".to_string())?;
 
-    // Mini mode always uses the full monitor work area (not single-monitor bottom half).
-    if mini_mode {
-        if mini_keyboard_visible {
-            let ratio = if mini_keyboard_height_ratio > 0.0 {
-                mini_keyboard_height_ratio.clamp(0.05, 1.0)
+    // Focus mode always uses the full monitor work area (not single-monitor bottom half).
+    if focus_mode {
+        if focus_keyboard_visible {
+            let ratio = if focus_keyboard_height_ratio > 0.0 {
+                focus_keyboard_height_ratio.clamp(0.05, 1.0)
             } else {
-                MINI_KEYBOARD_HEIGHT_RATIO
+                FOCUS_KEYBOARD_HEIGHT_RATIO
             };
             let height = ((monitor.height as f32) * ratio).round().max(1.0) as u32;
             return Ok(WindowLayout {
@@ -299,11 +315,62 @@ mod tests {
     }
 
     #[test]
+    fn mode_menu_layout_keeps_bottom_right_fixed() {
+        let current = WindowLayout {
+            x: 100,
+            y: 200,
+            width: 88,
+            height: 156,
+        };
+        let next = mode_menu_layout(current, 220, 300, 1.0);
+        assert_eq!(next.x + next.width as i32, current.x + current.width as i32);
+        assert_eq!(
+            next.y + next.height as i32,
+            current.y + current.height as i32
+        );
+    }
+
+    #[test]
+    fn mode_menu_layout_grows_width_with_dpi() {
+        let current = WindowLayout {
+            x: 100,
+            y: 200,
+            width: 88,
+            height: 156,
+        };
+        let at_1 = mode_menu_layout(current, 220, 100, 1.0);
+        let at_15 = mode_menu_layout(current, 220, 100, 1.5);
+        assert_eq!(at_1.width, current.width + 220);
+        assert_eq!(
+            at_15.width,
+            current.width + ((220.0_f32 * 1.5).ceil() as u32)
+        );
+    }
+
+    #[test]
+    fn mode_menu_layout_height_never_shrinks() {
+        let current = WindowLayout {
+            x: 100,
+            y: 200,
+            width: 88,
+            height: 200,
+        };
+        let next = mode_menu_layout(current, 220, 100, 1.0);
+        assert_eq!(next.height, 200);
+    }
+
+    #[test]
     fn collapsed_window_includes_hover_and_dpi_slack() {
         let (w1, h1) = compute_collapsed_dimensions(CollapsedFabCount::Two, 1.0);
         let (w15, h15) = compute_collapsed_dimensions(CollapsedFabCount::Two, 1.5);
-        assert!(w15 > w1, "1.5x DPI width should exceed 1.0x ({w15} vs {w1})");
-        assert!(h15 > h1, "1.5x DPI height should exceed 1.0x ({h15} vs {h1})");
+        assert!(
+            w15 > w1,
+            "1.5x DPI width should exceed 1.0x ({w15} vs {w1})"
+        );
+        assert!(
+            h15 > h1,
+            "1.5x DPI height should exceed 1.0x ({h15} vs {h1})"
+        );
         assert!(w15 >= 76);
         assert!(h15 >= 76);
     }
@@ -332,12 +399,20 @@ mod tests {
     fn collapsed_single_monitor_bottom_right() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
-            &monitors, 0, true, false, false, 0.5, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            &monitors,
+            0,
+            true,
+            false,
+            false,
+            0.5,
+            false,
+            false,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
+            1.0,
             false,
         )
         .unwrap();
-        let (expected_w, expected_h) =
-            compute_collapsed_dimensions(CollapsedFabCount::One, 1.0);
+        let (expected_w, expected_h) = compute_collapsed_dimensions(CollapsedFabCount::One, 1.0);
 
         assert_eq!(layout.width, expected_w);
         assert_eq!(layout.height, expected_h);
@@ -349,12 +424,20 @@ mod tests {
     fn collapsed_with_dictation_is_taller() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
-            &monitors, 0, true, true, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            &monitors,
+            0,
+            true,
+            true,
+            false,
+            1.0,
+            false,
+            false,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
+            1.0,
             false,
         )
         .unwrap();
-        let (expected_w, expected_h) =
-            compute_collapsed_dimensions(CollapsedFabCount::Two, 1.0);
+        let (expected_w, expected_h) = compute_collapsed_dimensions(CollapsedFabCount::Two, 1.0);
 
         assert_eq!(layout.width, expected_w);
         assert_eq!(layout.height, expected_h);
@@ -369,12 +452,20 @@ mod tests {
             sample_monitor(1, 1920, 0, 1920, 1080),
         ];
         let layout = compute_window_layout(
-            &monitors, 1, true, false, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            &monitors,
+            1,
+            true,
+            false,
+            false,
+            1.0,
+            false,
+            false,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
+            1.0,
             false,
         )
         .unwrap();
-        let (expected_w, expected_h) =
-            compute_collapsed_dimensions(CollapsedFabCount::One, 1.0);
+        let (expected_w, expected_h) = compute_collapsed_dimensions(CollapsedFabCount::One, 1.0);
 
         assert_eq!(layout.width, expected_w);
         assert_eq!(layout.height, expected_h);
@@ -386,7 +477,16 @@ mod tests {
     fn expanded_full_ratio_fills_single_monitor_region() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
-            &monitors, 0, false, false, false, 1.0, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            &monitors,
+            0,
+            false,
+            false,
+            false,
+            1.0,
+            false,
+            false,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
+            1.0,
             false,
         )
         .unwrap();
@@ -409,7 +509,7 @@ mod tests {
             1.0,
             false,
             false,
-            MINI_KEYBOARD_HEIGHT_RATIO,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
             1.0,
             true,
         )
@@ -425,7 +525,16 @@ mod tests {
     fn expanded_partial_ratio_bottom_aligned_single_monitor() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
-            &monitors, 0, false, false, false, 0.5, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            &monitors,
+            0,
+            false,
+            false,
+            false,
+            0.5,
+            false,
+            false,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
+            1.0,
             false,
         )
         .unwrap();
@@ -445,7 +554,16 @@ mod tests {
             sample_monitor(1, 1920, 0, 1920, 1080),
         ];
         let layout = compute_window_layout(
-            &monitors, 1, false, false, false, 0.61, false, false, MINI_KEYBOARD_HEIGHT_RATIO, 1.0,
+            &monitors,
+            1,
+            false,
+            false,
+            false,
+            0.61,
+            false,
+            false,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
+            1.0,
             false,
         )
         .unwrap();
@@ -458,7 +576,7 @@ mod tests {
     }
 
     #[test]
-    fn mini_mode_visible_full_width_bottom_on_1920x1080() {
+    fn focus_mode_visible_full_width_bottom_on_1920x1080() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
             &monitors,
@@ -469,13 +587,13 @@ mod tests {
             0.5,
             true,
             true,
-            MINI_KEYBOARD_HEIGHT_RATIO,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
             1.0,
             false,
         )
         .unwrap();
 
-        let expected_h = ((1080.0_f32) * MINI_KEYBOARD_HEIGHT_RATIO).round() as u32;
+        let expected_h = ((1080.0_f32) * FOCUS_KEYBOARD_HEIGHT_RATIO).round() as u32;
         assert_eq!(layout.x, 0);
         assert_eq!(layout.width, 1920);
         assert_eq!(layout.height, expected_h);
@@ -485,7 +603,7 @@ mod tests {
     }
 
     #[test]
-    fn mini_mode_hidden_three_fab_bottom_right_of_full_monitor() {
+    fn focus_mode_hidden_three_fab_bottom_right_of_full_monitor() {
         let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
         let layout = compute_window_layout(
             &monitors,
@@ -496,20 +614,22 @@ mod tests {
             0.5,
             true,
             false,
-            MINI_KEYBOARD_HEIGHT_RATIO,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
             1.0,
             false,
         )
         .unwrap();
 
-        let (expected_w, expected_h) =
-            compute_collapsed_dimensions(CollapsedFabCount::Three, 1.0);
+        let (expected_w, expected_h) = compute_collapsed_dimensions(CollapsedFabCount::Three, 1.0);
         assert_eq!(layout.width, expected_w);
         assert_eq!(layout.height, expected_h);
         assert_eq!(layout.x, 1920 - expected_w as i32 - COLLAPSED_MARGIN as i32);
         // Bottom-right of FULL monitor (y near 1080), not bottom-half region (~540+).
         assert_eq!(layout.y, 1080 - expected_h as i32 - COLLAPSED_MARGIN as i32);
-        assert!(layout.y > 540, "FAB must sit on full monitor, not bottom half");
+        assert!(
+            layout.y > 540,
+            "FAB must sit on full monitor, not bottom half"
+        );
     }
 }
 

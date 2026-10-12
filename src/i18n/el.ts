@@ -34,15 +34,23 @@ export const el: Record<keyof typeof en, string> = {
 
   accessibilityScreen: "Οθόνη προσβασιμότητας",
 
-  miniMode: "Λειτουργία",
+  modesSection: "Λειτουργία",
 
   modeNormal: "Κανονική",
 
-  modeMini: "Mini",
+  modeFocus: "Εστίαση",
+
+  modeMic: "Μικρόφωνο",
 
   modeTeaching: "Διδασκαλία",
 
   modeCompanion: "Συνοδός",
+
+  modeMenuOpen: "Επιλογή λειτουργίας",
+
+  modeMenuTitle: "Λειτουργίες",
+
+  modeMenuShowKeyboard: "Εμφάνιση πληκτρολογίου",
 
   modeCompanionUnavailable:
     "Μη διαθέσιμο μέχρι να ξεκινήσει η γέφυρα companion ή να συνδεθεί tablet (Ρυθμίσεις → Συνοδός).",
@@ -139,26 +147,27 @@ export const el: Record<keyof typeof en, string> = {
   confirmDeleteLanguagePack: "Διαγραφή «{title}»;",
 
   modeTabletsHint:
-    "Κανονική και Mini είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή. Ο Συνοδός είναι μη διαθέσιμος μέχρι να ξεκινήσει η γέφυρα ή να συνδεθεί tablet· επιλέγεται όσο είναι συνδεδεμένο.",
+    "Κανονική και Εστίαση είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή. Ο Συνοδός είναι μη διαθέσιμος μέχρι να ξεκινήσει η γέφυρα ή να συνδεθεί tablet· επιλέγεται όσο είναι συνδεδεμένο.",
 
-  miniModeAutoDescription:
+  focusModeAutoDescription:
     "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
 
-  miniModeOverrideLabel: "Λειτουργία Mini",
+  focusModeOverrideLabel: "Λειτουργία εστίασης",
 
-  miniModeOverrideAuto: "Αυτόματο",
+  focusModeOverrideAuto: "Αυτόματο",
 
-  miniModeOverrideOn: "Ενεργό",
+  focusModeOverrideOn: "Ενεργό",
 
-  miniModeOverrideOff: "Ανενεργό",
+  focusModeOverrideOff: "Ανενεργό",
 
-  miniModeTransparent: "Διαφανές πληκτρολόγιο",
+  focusModeTransparent: "Διαφανές πληκτρολόγιο",
 
   inputPreviewLabel: "Πεδίο προορισμού",
 
   inputPreviewWaiting: "Αναμονή προεπισκόπησης…",
+  inputPreviewNoInput: "Δεν έχει επιλεγεί πεδίο κειμένου",
 
-  miniModeTransparentDescription:
+  focusModeTransparentDescription:
     "Εμφάνιση πλήκτρων μόνο με περίγραμμα ώστε να φαίνονται οι εφαρμογές από πίσω.",
 
   transparentKeyColor: "Χρώμα διαφανών πλήκτρων",
@@ -169,7 +178,7 @@ export const el: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Ασημί",
 
-  miniModeCollapse: "Επιστροφή στη λειτουργία Mini",
+  focusModeCollapse: "Επιστροφή στη λειτουργία εστίασης",
 
   largeHeaders: "Μεγάλα headers για εύκολη αλλαγή μεγέθους",
 
@@ -239,7 +248,7 @@ export const el: Record<keyof typeof en, string> = {
 
   showInputPreview: "Ζωντανή προεπισκόπηση εισόδου",
 
-  showInputPreviewMiniMode: "Ζωντανή προεπισκόπηση εισόδου (Mini Mode)",
+  showInputPreviewFocusMode: "Ζωντανή προεπισκόπηση εισόδου (λειτουργία εστίασης)",
 
   taskbarPosition: "Θέση γραμμής εργασιών",
 
@@ -384,6 +393,8 @@ export const el: Record<keyof typeof en, string> = {
   dictationStart: "Έναρξη υπαγόρευσης",
 
   dictationStop: "Διακοπή υπαγόρευσης",
+
+  micModeSelectInput: "Επιλέξτε ένα πεδίο κειμένου για υπαγόρευση",
 
   dictationListening: "Ακούει…",
 

@@ -7,25 +7,26 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 use windows::Win32::Foundation::{BOOL, HWND, POINT, RECT};
+use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::System::Com::{
     CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, SAFEARRAY,
 };
-use windows::Win32::System::Threading::{
-    AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId,
-};
 use windows::Win32::System::Ole::{
     SafeArrayAccessData, SafeArrayDestroy, SafeArrayGetUBound, SafeArrayUnaccessData,
+};
+use windows::Win32::System::Threading::{
+    AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId,
 };
 use windows::Win32::UI::Accessibility::{
     CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
     IUIAutomationTextPattern2, IUIAutomationTextRange, IUIAutomationValuePattern, SetWinEventHook,
     TextPatternRangeEndpoint_End, TextPatternRangeEndpoint_Start, TextUnit_Character,
-    UIA_ComboBoxControlTypeId, UIA_CustomControlTypeId, UIA_DocumentControlTypeId,
-    UIA_EditControlTypeId, UIA_GroupControlTypeId, UIA_IsReadOnlyAttributeId,
-    UIA_ListControlTypeId, UIA_ListItemControlTypeId, UIA_TextPattern2Id, UIA_TextPatternId,
-    UIA_ValuePatternId, HWINEVENTHOOK, UIA_CONTROLTYPE_ID,
+    UIA_ButtonControlTypeId, UIA_ComboBoxControlTypeId, UIA_CustomControlTypeId,
+    UIA_DocumentControlTypeId, UIA_EditControlTypeId, UIA_GroupControlTypeId,
+    UIA_IsReadOnlyAttributeId, UIA_ListControlTypeId, UIA_ListItemControlTypeId,
+    UIA_SpinnerControlTypeId, UIA_TextPattern2Id, UIA_TextPatternId, UIA_ValuePatternId,
+    HWINEVENTHOOK, UIA_CONTROLTYPE_ID,
 };
-use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, GetCaretPos, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo, GetParent,
     GetWindowLongW, GetWindowRect, GetWindowThreadProcessId, IsWindow, IsWindowVisible,
@@ -95,7 +96,8 @@ struct StickyTargetBounds {
 pub fn classify_aria_role(role: &str) -> AriaRoleKind {
     match role.trim().to_ascii_lowercase().as_str() {
         "" => AriaRoleKind::Unspecified,
-        "textbox" | "searchbox" => AriaRoleKind::TextInput,
+        // spinbutton: HTML <input type="number"> / ARIA spinbutton (UIA Spinner).
+        "textbox" | "searchbox" | "spinbutton" => AriaRoleKind::TextInput,
         "combobox" => AriaRoleKind::ComboBox,
         "option" | "listbox" | "listitem" => AriaRoleKind::AutocompletePopup,
         "main" | "navigation" | "banner" | "complementary" | "contentinfo" | "region"
@@ -108,6 +110,21 @@ pub fn classify_aria_role(role: &str) -> AriaRoleKind {
     }
 }
 
+/// Comboboxes accept typing only when they expose an editable TextPattern
+/// (editable combobox `<input>`). Chromium reports select-only comboboxes
+/// (`<select>`, `role=combobox` div/button) with a writable ValuePattern, so
+/// ValuePattern alone is only trusted for non-Chromium hosts — and never for
+/// Button triggers (Base UI / Radix / shadcn Select), which are select-only.
+pub fn combo_box_accepts_text(signals: UiaTextInputSignals) -> bool {
+    if signals.has_text_pattern && signals.text_pattern_editable {
+        return true;
+    }
+    if UIA_CONTROLTYPE_ID(signals.control_type) == UIA_ButtonControlTypeId {
+        return false;
+    }
+    signals.value_writable && !signals.is_chromium_document
+}
+
 /// Pure classifier for UIA control signals (unit-tested without live UIA).
 pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
     let ty = UIA_CONTROLTYPE_ID(signals.control_type);
@@ -115,15 +132,14 @@ pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
     // Chromium contenteditable roots (YouTube comments, etc.) are exposed as
     // Group with aria role "group" plus TextPattern — not Edit/textbox.
     // Require TextPattern editability (not ValuePattern) before the NotText reject.
-    if signals.has_text_pattern
-        && signals.text_pattern_editable
-        && ty == UIA_GroupControlTypeId
-    {
+    if signals.has_text_pattern && signals.text_pattern_editable && ty == UIA_GroupControlTypeId {
         return true;
     }
     // Some hosts use Custom + TextPattern for the same pattern; still reject
     // hard landmarks (main/button/…) that happen to expose TextPattern.
+    // Match the Group rule: require editability so read-only Custom text is rejected.
     if signals.has_text_pattern
+        && signals.text_pattern_editable
         && ty == UIA_CustomControlTypeId
         && !matches!(
             signals.aria_role,
@@ -136,20 +152,28 @@ pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
     match signals.aria_role {
         AriaRoleKind::NotText | AriaRoleKind::AutocompletePopup => return false,
         AriaRoleKind::TextInput => return true,
-        AriaRoleKind::ComboBox => return signals.value_writable,
+        AriaRoleKind::ComboBox => return combo_box_accepts_text(signals),
         AriaRoleKind::Unspecified => {}
     }
 
     if ty == UIA_EditControlTypeId {
         return true;
     }
+    // HTML <input type="number"> is Spinner (not Edit). Accept when writable or
+    // when TextPattern says the field is editable.
+    if ty == UIA_SpinnerControlTypeId {
+        return signals.value_writable
+            || (signals.has_text_pattern && signals.text_pattern_editable);
+    }
     if ty == UIA_DocumentControlTypeId {
         // Word / native editors: Document is the typing surface.
-        // Chromium page Document is often writable even for role=main landmarks.
-        return !signals.is_chromium_document;
+        // Chromium page Documents are usually not — except designMode /
+        // contenteditable iframe editors (TinyMCE, CKEditor 4) with editable TextPattern.
+        return !signals.is_chromium_document
+            || (signals.has_text_pattern && signals.text_pattern_editable);
     }
     if ty == UIA_ComboBoxControlTypeId {
-        return signals.value_writable;
+        return combo_box_accepts_text(signals);
     }
     false
 }
@@ -481,6 +505,19 @@ fn is_chromium_class(class: &str) -> bool {
     class.to_ascii_lowercase().starts_with("chrome_")
 }
 
+/// Chromium host detection for classifier signals.
+///
+/// In-page nodes (e.g. Base UI `<button role="combobox">`) often have
+/// `NativeWindowHandle == 0`, so the element's own class is empty. UIA
+/// `FrameworkId` is `"Chrome"` for every Chromium node (Chrome/Edge/Electron/
+/// WebView2, including WebView2 hosted in non-Chromium top-level windows).
+/// Fall back to the element HWND class, then the foreground window class.
+pub fn host_is_chromium(framework_id: &str, native_class: &str, foreground_class: &str) -> bool {
+    framework_id.eq_ignore_ascii_case("chrome")
+        || is_chromium_class(native_class)
+        || is_chromium_class(foreground_class)
+}
+
 fn ensure_com_for_uia() {
     // Per-thread: CoInitializeEx is required on each thread that uses COM/UIA.
     // S_FALSE / RPC_E_CHANGED_MODE are fine if already initialized.
@@ -520,6 +557,15 @@ fn uia_element_native_class(element: &IUIAutomationElement) -> String {
         } else {
             window_class_name(hwnd)
         }
+    }
+}
+
+fn uia_element_framework_id(element: &IUIAutomationElement) -> String {
+    unsafe {
+        element
+            .CurrentFrameworkId()
+            .map(|b| b.to_string())
+            .unwrap_or_default()
     }
 }
 
@@ -669,16 +715,19 @@ fn uia_focused_is_text_input() -> Option<bool> {
             return Some(false);
         }
         let control_type = unsafe { element.CurrentControlType().ok()?.0 };
+        let framework_id = uia_element_framework_id(&element);
         let native_class = uia_element_native_class(&element);
+        let foreground_class = unsafe { window_class_name(GetForegroundWindow()) };
         let has_text_pattern = uia_element_has_text_pattern(&element);
         let signals = UiaTextInputSignals {
             control_type,
             value_writable: uia_element_value_writable(&element),
-            is_chromium_document: is_chromium_class(&native_class),
+            // FrameworkId catches WebView2 in non-Chrome top-level hosts;
+            // HWND / FG class cover cases where FrameworkId is empty.
+            is_chromium_document: host_is_chromium(&framework_id, &native_class, &foreground_class),
             aria_role: uia_element_aria_role(&element),
             has_text_pattern,
-            text_pattern_editable: has_text_pattern
-                && uia_element_text_pattern_editable(&element),
+            text_pattern_editable: has_text_pattern && uia_element_text_pattern_editable(&element),
         };
         let is_text = uia_control_is_text_input(signals);
         if is_text {
@@ -773,6 +822,15 @@ fn publish_input_focus(focused: bool) {
     }
 }
 
+/// Current editable-focus signal (same value last sent as `input-focus-changed`).
+pub fn is_input_focused() -> bool {
+    LAST_INPUT_FOCUSED
+        .lock()
+        .ok()
+        .and_then(|g| *g)
+        .unwrap_or(false)
+}
+
 fn reevaluate_input_focus() {
     let focused = is_editable_input_focused();
     publish_input_focus(focused);
@@ -849,9 +907,8 @@ fn query_focused_input_bounds() -> Option<ScreenRect> {
             return None;
         }
         let uia = uia_element_bounds(&element);
-        let win32 = win32_caret_point().filter(|&(x, y)| {
-            uia.map(|b| point_in_rect(b, x, y)).unwrap_or(false)
-        });
+        let win32 = win32_caret_point()
+            .filter(|&(x, y)| uia.map(|b| point_in_rect(b, x, y)).unwrap_or(false));
         let caret = win32.or_else(|| uia_caret_point(&element));
         if uia.is_some() || caret.is_some() {
             line_strip_bounds(uia, caret)
@@ -988,11 +1045,8 @@ fn text_range_caret_point(range: &IUIAutomationTextRange) -> Option<(i32, i32)> 
             .MoveEndpointByUnit(TextPatternRangeEndpoint_End, TextUnit_Character, 1)
             .unwrap_or(0);
         if moved == 0 {
-            let _ = probe.MoveEndpointByUnit(
-                TextPatternRangeEndpoint_Start,
-                TextUnit_Character,
-                -1,
-            );
+            let _ =
+                probe.MoveEndpointByUnit(TextPatternRangeEndpoint_Start, TextUnit_Character, -1);
         }
         bounding_rect_center(&probe)
     }
@@ -1015,7 +1069,8 @@ fn first_rect_center(psa: *mut SAFEARRAY) -> Option<(i32, i32)> {
         let result = if accessed && !data.is_null() {
             match SafeArrayGetUBound(psa, 1) {
                 Ok(ubound) if ubound >= 3 => {
-                    let vals = std::slice::from_raw_parts(data as *const f64, (ubound + 1) as usize);
+                    let vals =
+                        std::slice::from_raw_parts(data as *const f64, (ubound + 1) as usize);
                     let left = vals[0];
                     let top = vals[1];
                     let width = vals[2];
@@ -1277,9 +1332,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::{
-        classify_aria_role, is_editable_class, is_last_real_text_focus_live, line_strip_bounds,
-        resolve_bounds_with_sticky, satellite_matches_remembered_owner, should_retain_text_focus,
-        sticky_rect_for_target,
+        classify_aria_role, combo_box_accepts_text, host_is_chromium, is_editable_class,
+        is_last_real_text_focus_live, line_strip_bounds, resolve_bounds_with_sticky,
+        satellite_matches_remembered_owner, should_retain_text_focus, sticky_rect_for_target,
         uia_control_is_text_input, uia_signals_are_autocomplete_satellite, AriaRoleKind,
         ScreenRect, UiaTextInputSignals, LAST_REAL_TEXT_FOCUS_TTL, LINE_STRIP_HEIGHT,
         LINE_STRIP_WIDTH,
@@ -1383,7 +1438,12 @@ mod tests {
         let strip = line_strip_bounds(None, Some(caret)).expect("strip");
         assert_eq!(
             strip,
-            rect(caret.0 - 160, caret.1 - 24, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT)
+            rect(
+                caret.0 - 160,
+                caret.1 - 24,
+                LINE_STRIP_WIDTH,
+                LINE_STRIP_HEIGHT
+            )
         );
     }
 
@@ -1413,7 +1473,13 @@ mod tests {
         is_chromium_document: bool,
         aria_role: AriaRoleKind,
     ) -> UiaTextInputSignals {
-        signals_with_text_pattern(control_type, value_writable, is_chromium_document, aria_role, false)
+        signals_with_text_pattern(
+            control_type,
+            value_writable,
+            is_chromium_document,
+            aria_role,
+            false,
+        )
     }
 
     fn signals_with_text_pattern(
@@ -1457,6 +1523,7 @@ mod tests {
         assert_eq!(classify_aria_role("tablist"), AriaRoleKind::NotText);
         assert_eq!(classify_aria_role("textbox"), AriaRoleKind::TextInput);
         assert_eq!(classify_aria_role("searchbox"), AriaRoleKind::TextInput);
+        assert_eq!(classify_aria_role("spinbutton"), AriaRoleKind::TextInput);
         assert_eq!(classify_aria_role("combobox"), AriaRoleKind::ComboBox);
         assert_eq!(classify_aria_role(""), AriaRoleKind::Unspecified);
         assert_eq!(classify_aria_role("TextBox"), AriaRoleKind::TextInput);
@@ -1723,5 +1790,221 @@ mod tests {
         assert!(satellite_matches_remembered_owner(0, 100, Some((42, 100))));
         assert!(!satellite_matches_remembered_owner(7, 99, Some((42, 100))));
         assert!(!satellite_matches_remembered_owner(42, 100, None));
+    }
+
+    #[test]
+    fn uia_chromium_select_combobox_is_not_text_input() {
+        // Chromium <select>: ComboBox + writable ValuePattern, no TextPattern.
+        assert!(!uia_control_is_text_input(signals_with_text_editability(
+            50003, // UIA_ComboBoxControlTypeId
+            true,
+            true,
+            AriaRoleKind::ComboBox,
+            false,
+            false,
+        )));
+    }
+
+    #[test]
+    fn uia_chromium_select_only_aria_combobox_on_button_is_not_text_input() {
+        assert!(!uia_control_is_text_input(signals_with_text_editability(
+            50000, // UIA_ButtonControlTypeId
+            true,
+            true,
+            AriaRoleKind::ComboBox,
+            false,
+            false,
+        )));
+    }
+
+    #[test]
+    fn uia_base_ui_button_combobox_rejected_even_when_chromium_flag_missing() {
+        // In-page Chromium nodes often have NativeWindowHandle=0, so the host
+        // flag can be wrong unless FG class is consulted. Button+combobox
+        // triggers (Base UI / shadcn Select) must still never count as text.
+        assert!(!uia_control_is_text_input(signals_with_text_editability(
+            50000, // UIA_ButtonControlTypeId
+            true,
+            false, // mis-detected non-Chromium
+            AriaRoleKind::ComboBox,
+            false,
+            false,
+        )));
+        assert!(!combo_box_accepts_text(signals_with_text_editability(
+            50000,
+            true,
+            false,
+            AriaRoleKind::ComboBox,
+            false,
+            false,
+        )));
+    }
+
+    #[test]
+    fn host_is_chromium_uses_framework_id_and_class_fallbacks() {
+        // WebView2 in a WPF/WinForms host: FrameworkId is Chrome, FG is not.
+        assert!(host_is_chromium("Chrome", "", "HwndWrapper[MyApp;;1]"));
+        assert!(host_is_chromium("chrome", "", ""));
+        // Class fallbacks when FrameworkId is empty.
+        assert!(host_is_chromium("", "", "Chrome_WidgetWin_1"));
+        assert!(host_is_chromium("", "", "Chrome_RenderWidgetHostHWND"));
+        assert!(host_is_chromium(
+            "",
+            "Chrome_RenderWidgetHostHWND",
+            "Notepad"
+        ));
+        assert!(!host_is_chromium("", "", "Notepad"));
+        assert!(!host_is_chromium("", "", ""));
+        assert!(!host_is_chromium("Win32", "", "Notepad"));
+    }
+
+    #[test]
+    fn uia_chromium_document_requires_editable_text_pattern() {
+        // Plain Chromium page / iframe Document: not text.
+        assert!(!uia_control_is_text_input(signals_with_text_editability(
+            50030, // UIA_DocumentControlTypeId
+            true,
+            true,
+            AriaRoleKind::Unspecified,
+            true,
+            false,
+        )));
+        // designMode / contenteditable iframe editor (TinyMCE, CKEditor 4): text.
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50030,
+            false,
+            true,
+            AriaRoleKind::Unspecified,
+            true,
+            true,
+        )));
+        // Native Document (Word): still text.
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50030,
+            false,
+            false,
+            AriaRoleKind::Unspecified,
+            false,
+            false,
+        )));
+    }
+
+    #[test]
+    fn uia_chromium_number_input_spinbutton_is_text_input() {
+        // HTML <input type="number"> → AriaRole spinbutton, UIA Spinner.
+        assert_eq!(classify_aria_role("spinbutton"), AriaRoleKind::TextInput);
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50016, // UIA_SpinnerControlTypeId
+            true,
+            true,
+            AriaRoleKind::TextInput,
+            true,
+            true,
+        )));
+        // Even when AriaRole is missing, Spinner + writable ValuePattern is a number field.
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50016,
+            true,
+            true,
+            AriaRoleKind::Unspecified,
+            false,
+            false,
+        )));
+    }
+
+    #[test]
+    fn uia_chromium_editable_combobox_with_text_pattern_is_text_input() {
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50003, // UIA_ComboBoxControlTypeId
+            true,
+            true,
+            AriaRoleKind::ComboBox,
+            true,
+            true,
+        )));
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50004, // UIA_EditControlTypeId
+            true,
+            true,
+            AriaRoleKind::ComboBox,
+            true,
+            true,
+        )));
+    }
+
+    #[test]
+    fn uia_native_writable_combobox_is_text_input_without_text_pattern() {
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50003,
+            true,
+            false,
+            AriaRoleKind::Unspecified,
+            false,
+            false,
+        )));
+        assert!(!uia_control_is_text_input(signals_with_text_editability(
+            50003,
+            false,
+            false,
+            AriaRoleKind::Unspecified,
+            false,
+            false,
+        )));
+    }
+
+    #[test]
+    fn uia_custom_text_pattern_requires_editability() {
+        assert!(!uia_control_is_text_input(signals_with_text_editability(
+            50025, // UIA_CustomControlTypeId
+            false,
+            true,
+            AriaRoleKind::Unspecified,
+            true,
+            false,
+        )));
+        assert!(uia_control_is_text_input(signals_with_text_editability(
+            50025,
+            false,
+            true,
+            AriaRoleKind::Unspecified,
+            true,
+            true,
+        )));
+    }
+
+    #[test]
+    fn combo_box_accepts_text_requires_editable_text_pattern_on_chromium() {
+        assert!(!combo_box_accepts_text(signals_with_text_editability(
+            50003,
+            true,
+            true,
+            AriaRoleKind::ComboBox,
+            false,
+            false,
+        )));
+        assert!(combo_box_accepts_text(signals_with_text_editability(
+            50003,
+            true,
+            true,
+            AriaRoleKind::ComboBox,
+            true,
+            true,
+        )));
+        assert!(combo_box_accepts_text(signals_with_text_editability(
+            50003,
+            true,
+            false,
+            AriaRoleKind::Unspecified,
+            false,
+            false,
+        )));
+        assert!(!combo_box_accepts_text(signals_with_text_editability(
+            50003,
+            false,
+            false,
+            AriaRoleKind::Unspecified,
+            false,
+            false,
+        )));
     }
 }

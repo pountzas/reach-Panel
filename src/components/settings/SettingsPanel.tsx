@@ -6,7 +6,6 @@ import {
   type ReactNode,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -29,20 +28,26 @@ import { resolveOnscreenLayout } from "../../lib/keyboardLayouts";
 import { SettingsSection } from "./SettingsSection";
 import { CompanionSection } from "./CompanionSection";
 import { AboutSection } from "./AboutSection";
-import { CloseIcon, TeachingLessonIcon } from "../common/SectionIcons";
+import {
+  CloseIcon,
+  FocusIcon,
+  KeyboardIcon,
+  LanguageLessonIcon,
+  MicrophoneIcon,
+  TabletIcon,
+  TeachingLessonIcon,
+} from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { ToolWindowHeader } from "../common/ToolWindowHeader";
-import { TRANSPARENT_KEY_COLORS } from "../../lib/miniMode";
+import { TRANSPARENT_KEY_COLORS } from "../../lib/focusMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
 import {
+  APP_MODE_OPTIONS,
   isTeachingSessionActive,
   resolveSelectedAppMode,
   type AppModeTablet,
 } from "../../lib/appModeLayout";
-import {
-  isCompanionTabletEnabled,
-  type CompanionUiState,
-} from "../../lib/companionSession";
+import { useCompanionTabletEnabled } from "../../hooks/useCompanionTabletEnabled";
 import { GROQ_API_KEYS_URL, openExternalLink } from "../../lib/appInfo";
 import { defaultLanguagePackId } from "../../lib/language";
 import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
@@ -75,6 +80,7 @@ const fieldStyle = (surface: SurfaceColors): CSSProperties => ({
 type ModeTabletButtonProps = {
   id: AppModeTablet;
   label: string;
+  icon: ReactNode;
   pressed: boolean;
   disabled: boolean;
   title?: string;
@@ -85,6 +91,7 @@ type ModeTabletButtonProps = {
 const ModeTabletButton = ({
   id,
   label,
+  icon,
   pressed,
   disabled,
   title,
@@ -97,8 +104,8 @@ const ModeTabletButton = ({
       disabled={disabled}
       aria-disabled={disabled}
       aria-pressed={pressed}
-      title={title}
-      className="rounded-lg border px-2 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+      title={title ?? label}
+      className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border px-1 py-1.5 text-[11px] font-semibold leading-tight transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       style={{
         backgroundColor: pressed ? surface.insetBg : surface.panelButtonBg,
         borderColor: pressed ? surface.panelText : surface.panelBorder,
@@ -112,10 +119,32 @@ const ModeTabletButton = ({
         onSelect(id);
       }}
     >
-      {label}
+      <span className="flex h-6 w-6 items-center justify-center [&>svg]:h-6 [&>svg]:w-6">
+        {icon}
+      </span>
+      <span className="max-w-full truncate">{label}</span>
     </button>
   );
 };
+
+function modeTabletIcon(id: AppModeTablet): ReactNode {
+  switch (id) {
+    case "normal":
+      return <KeyboardIcon />;
+    case "focus":
+      return <FocusIcon />;
+    case "mic":
+      return <MicrophoneIcon />;
+    case "teaching":
+      return <LanguageLessonIcon />;
+    case "companion":
+      return <TabletIcon />;
+    default: {
+      const _exhaustive: never = id;
+      return _exhaustive;
+    }
+  }
+}
 
 type ColorFieldProps = {
   label: string;
@@ -357,10 +386,8 @@ export function SettingsPanel() {
     saveActiveProfile,
     pickBackgroundImage,
     monitors,
-    miniModeActive,
+    focusModeActive,
     companionModeActive,
-    companionBridgeArmed,
-    companionSessionLive,
     musicTeachingEnabled,
     teachingLesson,
     setAppMode,
@@ -380,9 +407,8 @@ export function SettingsPanel() {
     keyboardLayout,
   } = useAppStore();
   const { t } = useTranslation();
+  const companionTabletEnabled = useCompanionTabletEnabled();
   const [newProfileName, setNewProfileName] = useState<string>("");
-  const [companionBridgeRunning, setCompanionBridgeRunning] = useState<boolean>(false);
-  const [companionPairedCount, setCompanionPairedCount] = useState<number>(0);
   const [launchAtSignIn, setLaunchAtSignIn] = useState<boolean>(() =>
     getCachedAutostartEnabled(),
   );
@@ -403,32 +429,6 @@ export function SettingsPanel() {
       });
     return () => {
       cancelled = true;
-    };
-  }, []);
-
-  useEffect((): (() => void) => {
-    let cancelled = false;
-    const refreshCompanionAvailability = async () => {
-      try {
-        const status = await invoke<CompanionUiState>("cmd_companion_status");
-        if (cancelled) return;
-        setCompanionBridgeRunning(status.running);
-        setCompanionPairedCount(status.pairedDeviceCount);
-      } catch {
-        if (!cancelled) {
-          setCompanionBridgeRunning(false);
-          setCompanionPairedCount(0);
-        }
-      }
-    };
-    void refreshCompanionAvailability();
-    const unlisten = listen<CompanionUiState>("companion-state", (event) => {
-      setCompanionBridgeRunning(event.payload.running);
-      setCompanionPairedCount(event.payload.pairedDeviceCount);
-    });
-    return () => {
-      cancelled = true;
-      void unlisten.then((fn) => fn());
     };
   }, []);
 
@@ -453,16 +453,12 @@ export function SettingsPanel() {
   const selectedMode = resolveSelectedAppMode({
     companionModeActive,
     teachingActive,
-    miniModeOverride:
-      settings.miniModeOverride === true ? true : undefined,
+    focusModeOverride:
+      settings.focusModeOverride === true ? true : undefined,
+    micMode: settings.micMode === true,
   });
-  const companionTabletEnabled = isCompanionTabletEnabled({
-    bridgeRunning: companionBridgeRunning,
-    pairedDeviceCount: companionPairedCount,
-    companionBridgeArmed,
-    companionSessionLive,
-  });
-  const showMiniTransparentControls = selectedMode === "mini";
+  const showFocusTransparentControls =
+    selectedMode === "focus" || selectedMode === "mic";
 
   const activeTypingValue = String(
     inputMethods.find((m) => m.hkl === physicalKeyState.systemHkl)?.hkl ??
@@ -641,22 +637,16 @@ export function SettingsPanel() {
             </label>
           </SettingsSection>
 
-          <SettingsSection title={t("miniMode")} surface={surface}>
+          <SettingsSection title={t("modesSection")} surface={surface}>
             <p
               className="mb-3 px-1 text-xs"
               style={{ color: surface.panelMutedText }}
             >
               {t("modeTabletsHint")}
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  { id: "normal" as const, label: t("modeNormal") },
-                  { id: "mini" as const, label: t("modeMini") },
-                  { id: "teaching" as const, label: t("modeTeaching") },
-                  { id: "companion" as const, label: t("modeCompanion") },
-                ] as const
-              ).map((mode) => {
+            <div className="grid grid-cols-5 gap-2">
+              {APP_MODE_OPTIONS.map((m) => {
+                const mode = { id: m.id, label: t(m.labelKey) };
                 const companionDisabled =
                   mode.id === "companion" && !companionTabletEnabled;
                 const pressed =
@@ -667,6 +657,7 @@ export function SettingsPanel() {
                     key={mode.id}
                     id={mode.id}
                     label={mode.label}
+                    icon={modeTabletIcon(mode.id)}
                     pressed={pressed}
                     disabled={companionDisabled}
                     title={
@@ -782,14 +773,14 @@ export function SettingsPanel() {
                 />
               </div>
             )}
-            {showMiniTransparentControls && (
+            {showFocusTransparentControls && (
               <div className="mt-3">
                 <ToggleRow
-                  label={t("miniModeTransparent")}
-                  checked={Boolean(settings.miniModeTransparent)}
-                  disabled={!miniModeActive}
+                  label={t("focusModeTransparent")}
+                  checked={Boolean(settings.focusModeTransparent)}
+                  disabled={!focusModeActive}
                   onChange={(checked) =>
-                    updateSettings({ miniModeTransparent: checked })
+                    updateSettings({ focusModeTransparent: checked })
                   }
                   surface={surface}
                 />
@@ -797,20 +788,20 @@ export function SettingsPanel() {
                   className="mt-1 px-1 text-xs"
                   style={{ color: surface.panelMutedText }}
                 >
-                  {t("miniModeTransparentDescription")}
+                  {t("focusModeTransparentDescription")}
                 </p>
-                {Boolean(settings.miniModeTransparent) && (
+                {Boolean(settings.focusModeTransparent) && (
                   <label
                     className="mt-2 block text-sm"
                     style={{
                       color: surface.panelText,
-                      opacity: miniModeActive ? 1 : 0.5,
+                      opacity: focusModeActive ? 1 : 0.5,
                     }}
                   >
                     {t("transparentKeyColor")}
                     <ThemedSelect
                       value={settings.transparentKeyColor ?? "white"}
-                      disabled={!miniModeActive}
+                      disabled={!focusModeActive}
                       onChange={(value) =>
                         updateSettings({
                           transparentKeyColor: value as TransparentKeyColor,

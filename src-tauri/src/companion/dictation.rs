@@ -37,10 +37,7 @@ static SESSION: Mutex<Session> = Mutex::new(Session {
 });
 
 pub fn is_active() -> bool {
-    SESSION
-        .lock()
-        .map(|g| g.active)
-        .unwrap_or(false)
+    SESSION.lock().map(|g| g.active).unwrap_or(false)
 }
 
 pub fn abort() {
@@ -49,7 +46,11 @@ pub fn abort() {
     }
 }
 
-pub fn start(language: &str, sample_rate: Option<u32>, db: &Database) -> Result<serde_json::Value, String> {
+pub fn start(
+    language: &str,
+    sample_rate: Option<u32>,
+    db: &Database,
+) -> Result<serde_json::Value, String> {
     let key = resolve_host_groq_key(db)?;
     let _ = key; // validated now; used on flush
     let mut guard = SESSION.lock().map_err(|_| "dictation lock")?;
@@ -74,17 +75,18 @@ pub fn start(language: &str, sample_rate: Option<u32>, db: &Database) -> Result<
     }))
 }
 
-pub fn push_chunk(payload: &serde_json::Value, app: &AppHandle, db: &Database) -> Result<Vec<serde_json::Value>, String> {
+pub fn push_chunk(
+    payload: &serde_json::Value,
+    app: &AppHandle,
+    db: &Database,
+) -> Result<Vec<serde_json::Value>, String> {
     let mut events = Vec::new();
     let mut guard = SESSION.lock().map_err(|_| "dictation lock")?;
     if !guard.active {
         return Err("Dictation not started".to_string());
     }
 
-    let data_b64 = payload
-        .get("data")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    let data_b64 = payload.get("data").and_then(|v| v.as_str()).unwrap_or("");
     if data_b64.is_empty() {
         return Ok(events);
     }
@@ -223,11 +225,7 @@ fn transcribe_pcm(
             result
         }
         Err(err) => {
-            emit_groq_quota_optional(
-                app,
-                err.quota.remaining_requests,
-                err.quota.limit_requests,
-            );
+            emit_groq_quota_optional(app, err.quota.remaining_requests, err.quota.limit_requests);
             return Err(err.to_string());
         }
     };
@@ -252,30 +250,25 @@ fn transcribe_encoded(
     language: &str,
 ) -> Result<Option<String>, String> {
     let key = resolve_host_groq_key(db)?;
-    let result = match groq::transcribe_file_bytes(
-        &key,
-        &enc.data,
-        &enc.filename,
-        &enc.mime,
-        language,
-    ) {
-        Ok(result) => {
-            emit_groq_quota_optional(
-                app,
-                result.quota.remaining_requests,
-                result.quota.limit_requests,
-            );
-            result
-        }
-        Err(err) => {
-            emit_groq_quota_optional(
-                app,
-                err.quota.remaining_requests,
-                err.quota.limit_requests,
-            );
-            return Err(err.to_string());
-        }
-    };
+    let result =
+        match groq::transcribe_file_bytes(&key, &enc.data, &enc.filename, &enc.mime, language) {
+            Ok(result) => {
+                emit_groq_quota_optional(
+                    app,
+                    result.quota.remaining_requests,
+                    result.quota.limit_requests,
+                );
+                result
+            }
+            Err(err) => {
+                emit_groq_quota_optional(
+                    app,
+                    err.quota.remaining_requests,
+                    err.quota.limit_requests,
+                );
+                return Err(err.to_string());
+            }
+        };
     if result.text.trim().is_empty() {
         return Ok(None);
     }

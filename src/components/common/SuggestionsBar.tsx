@@ -1,16 +1,21 @@
 import { useAppStore } from "../../stores/appStore";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
-import { isTransparentUiActive, transparentKeyPalette, transparentOutlineStyle } from "../../lib/miniMode";
+import { isTransparentUiActive, transparentKeyPalette, transparentOutlineStyle } from "../../lib/focusMode";
 
 const SUGGESTION_CHIP_BG = "#dbeafe";
 const SUGGESTION_CHIP_TEXT = "#1e3a8a";
 
-export function SuggestionsBar() {
-  const suggestions = useAppStore((s) => s.suggestions);
+export function SuggestionsBar({
+  suggestions: suggestionsProp,
+}: {
+  suggestions?: string[];
+} = {}) {
+  const storeSuggestions = useAppStore((s) => s.suggestions);
+  const suggestions = suggestionsProp ?? storeSuggestions;
   const settings = useAppStore((s) => s.settings);
-  const miniModeActive = useAppStore((s) => s.miniModeActive);
+  const focusModeActive = useAppStore((s) => s.focusModeActive);
   const applySuggestion = useAppStore((s) => s.applySuggestion);
-  const transparent = isTransparentUiActive(settings, miniModeActive);
+  const transparent = isTransparentUiActive(settings, focusModeActive);
   const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
   const transparentChipStyle = transparent
     ? transparentOutlineStyle({
