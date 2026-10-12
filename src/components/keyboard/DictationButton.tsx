@@ -7,13 +7,11 @@ import { DictationVisualizer } from "./DictationVisualizer";
 import { transparentKeyPalette, transparentOutlineStyle } from "../../lib/focusMode";
 
 export function DictationButton({ transparentUi = false }: { transparentUi?: boolean }) {
-  const {
-    dictationState,
-    toggleDictation,
-    sttCapability,
-    refreshSttCapability,
-    settings,
-  } = useAppStore();
+  const dictationState = useAppStore((s) => s.dictationState);
+  const toggleDictation = useAppStore((s) => s.toggleDictation);
+  const sttCapability = useAppStore((s) => s.sttCapability);
+  const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
+  const settings = useAppStore((s) => s.settings);
   const { t } = useTranslation();
   const listening = dictationState === "listening" || dictationState === "processing";
   const canDictate = sttCapability?.canDictate ?? false;

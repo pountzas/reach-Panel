@@ -7,6 +7,7 @@ import {
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
+import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import {
@@ -405,7 +406,39 @@ export function SettingsPanel() {
     selectTypingInputMethod,
     physicalKeyState,
     keyboardLayout,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      settings: s.settings,
+      updateSettings: s.updateSettings,
+      profileFiles: s.profileFiles,
+      activeProfileFile: s.activeProfileFile,
+      setProfileFile: s.setProfileFile,
+      createProfileFile: s.createProfileFile,
+      deleteProfileFile: s.deleteProfileFile,
+      saveActiveProfile: s.saveActiveProfile,
+      pickBackgroundImage: s.pickBackgroundImage,
+      monitors: s.monitors,
+      focusModeActive: s.focusModeActive,
+      companionModeActive: s.companionModeActive,
+      musicTeachingEnabled: s.musicTeachingEnabled,
+      teachingLesson: s.teachingLesson,
+      setAppMode: s.setAppMode,
+      setTeachingLesson: s.setTeachingLesson,
+      setLanguagePackId: s.setLanguagePackId,
+      setShowSettings: s.setShowSettings,
+      setShowMacroBuilder: s.setShowMacroBuilder,
+      setShowHeadTrackingWizard: s.setShowHeadTrackingWizard,
+      resetSettingsToDefaults: s.resetSettingsToDefaults,
+      wipeActiveProfile: s.wipeActiveProfile,
+      checkForUpdates: s.checkForUpdates,
+      updateCheckStatus: s.updateCheckStatus,
+      inputMethods: s.inputMethods,
+      loadInputMethods: s.loadInputMethods,
+      selectTypingInputMethod: s.selectTypingInputMethod,
+      physicalKeyState: s.physicalKeyState,
+      keyboardLayout: s.keyboardLayout,
+    })),
+  );
   const { t } = useTranslation();
   const companionTabletEnabled = useCompanionTabletEnabled();
   const [newProfileName, setNewProfileName] = useState<string>("");

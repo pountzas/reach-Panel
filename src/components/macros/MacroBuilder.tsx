@@ -9,13 +9,11 @@ import { useTranslation } from "../../hooks/useTranslation";
 
 export function MacroBuilder() {
   const { t } = useTranslation();
-  const {
-    macros,
-    settings,
-    loadMacros,
-    saveActiveProfile,
-    setShowMacroBuilder,
-  } = useAppStore();
+  const macros = useAppStore((s) => s.macros);
+  const settings = useAppStore((s) => s.settings);
+  const loadMacros = useAppStore((s) => s.loadMacros);
+  const saveActiveProfile = useAppStore((s) => s.saveActiveProfile);
+  const setShowMacroBuilder = useAppStore((s) => s.setShowMacroBuilder);
   const [name, setName] = useState("Open YouTube");
   const [steps, setSteps] = useState<MacroStep[]>([]);
   const [exportJson, setExportJson] = useState("");
