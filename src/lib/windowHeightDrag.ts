@@ -4,13 +4,18 @@ import type { MonitorInfo } from "./types";
 
 /**
  * Gate for applyWindowHeightRatioLive.
- * Collapsed FAB is the only skip; focus mode grips must still preview height.
+ * Skip the true FAB (collapsed, or focus with keyboard hidden). Focus keeps
+ * `settings.collapsed === true` while the keyboard is open — grips must still
+ * preview height in that state.
  */
 export function shouldApplyLiveWindowHeightRatio(input: {
   collapsed: boolean;
   focusModeActive: boolean;
+  focusModeKeyboardVisible: boolean;
 }): boolean {
-  void input.focusModeActive;
+  if (input.focusModeActive && input.focusModeKeyboardVisible) {
+    return true;
+  }
   return !input.collapsed;
 }
 

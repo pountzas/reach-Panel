@@ -20,13 +20,24 @@ const monitor = (partial: Partial<MonitorInfo> & Pick<MonitorInfo, "height">): M
 });
 
 describe("shouldApplyLiveWindowHeightRatio", () => {
-  it("allows live height preview when focus mode is active and not collapsed", () => {
+  it("allows live height when focus keyboard is open even if settings.collapsed", () => {
     expect(
       shouldApplyLiveWindowHeightRatio({
-        collapsed: false,
+        collapsed: true,
         focusModeActive: true,
+        focusModeKeyboardVisible: true,
       }),
     ).toBe(true);
+  });
+
+  it("skips live height for focus FAB (keyboard hidden, collapsed)", () => {
+    expect(
+      shouldApplyLiveWindowHeightRatio({
+        collapsed: true,
+        focusModeActive: true,
+        focusModeKeyboardVisible: false,
+      }),
+    ).toBe(false);
   });
 
   it("skips live height preview when collapsed even outside focus mode", () => {
@@ -34,8 +45,19 @@ describe("shouldApplyLiveWindowHeightRatio", () => {
       shouldApplyLiveWindowHeightRatio({
         collapsed: true,
         focusModeActive: false,
+        focusModeKeyboardVisible: false,
       }),
     ).toBe(false);
+  });
+
+  it("allows live height in normal expanded mode", () => {
+    expect(
+      shouldApplyLiveWindowHeightRatio({
+        collapsed: false,
+        focusModeActive: false,
+        focusModeKeyboardVisible: false,
+      }),
+    ).toBe(true);
   });
 });
 

@@ -1763,11 +1763,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings, musicTeachingEnabled, focusModeActive } = get();
+    const { settings, musicTeachingEnabled, focusModeActive, focusModeKeyboardVisible } =
+      get();
     if (
       !shouldApplyLiveWindowHeightRatio({
         collapsed: settings.collapsed,
         focusModeActive,
+        focusModeKeyboardVisible,
       })
     ) {
       return;
@@ -1801,19 +1803,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
 
-    const latest = get().settings;
-    if (latest.collapsed) return;
+    const latestState = get();
+    const latest = latestState.settings;
+    if (
+      !shouldApplyLiveWindowHeightRatio({
+        collapsed: latest.collapsed,
+        focusModeActive: latestState.focusModeActive,
+        focusModeKeyboardVisible: latestState.focusModeKeyboardVisible,
+      })
+    ) {
+      return;
+    }
     liveHeightRatioPreview = pending;
     liveHeightRatioInFlight = true;
     try {
-      const focus = get().focusModeActive;
+      const focus = latestState.focusModeActive;
       await invoke("cmd_apply_window_layout", {
         monitorId: latest.accessibilityMonitorId,
         collapsed: false,
         collapsedDictation: false,
         heightRatio: pending,
         focusMode: focus,
-        focusKeyboardVisible: focus ? get().focusModeKeyboardVisible : false,
+        focusKeyboardVisible: focus ? latestState.focusModeKeyboardVisible : false,
         focusKeyboardHeightRatio: focus ? pending : undefined,
         fullWorkArea: teachingFullWorkAreaActive(latest, musicTeachingEnabled),
       });
