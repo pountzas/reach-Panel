@@ -24,6 +24,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Text-field detection: number inputs (spinbutton) count as text, select-only comboboxes (Chromium `<select>`, Base UI/shadcn Select buttons) and read-only custom text no longer do, and contenteditable iframe editors (TinyMCE, CKEditor 4) are detected.
 - Dictation no longer gets stuck as "already active" after a WinRT silence timeout; timeouts and pauses no longer show an error.
 
+## 0.16.0 (2026-10-12)
+
+## What's Changed
+* fix: dictation silence timeout no longer sticks the mic by @pountzas in https://github.com/pountzas/reach-Panel/pull/214
+* Rename Mini Mode to Focus mode (#177) by @pountzas in https://github.com/pountzas/reach-Panel/pull/215
+* feat: blank live preview until editable focus by @pountzas in https://github.com/pountzas/reach-Panel/pull/216
+* fix: keep WinRT dictation from restarting while StopAsync is in flight by @pountzas in https://github.com/pountzas/reach-Panel/pull/217
+* fix: Focus mode keyboard ignores select-only dropdowns (#197) by @pountzas in https://github.com/pountzas/reach-Panel/pull/218
+* feat: show shared dictation overlay at screen bottom-center by @pountzas in https://github.com/pountzas/reach-Panel/pull/219
+* Suggestions beside live preview with centered pair animation (#201) by @pountzas in https://github.com/pountzas/reach-Panel/pull/220
+* feat: add Mic mode with collapsed FAB and no keyboard auto-show by @pountzas in https://github.com/pountzas/reach-Panel/pull/221
+* feat: open mode menu from collapsed R button (#205) by @pountzas in https://github.com/pountzas/reach-Panel/pull/222
+* Dev by @pountzas in https://github.com/pountzas/reach-Panel/pull/223
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.15.1...v0.16.0
+
 ## 0.15.1 (2026-10-05)
 
 ## What's Changed
