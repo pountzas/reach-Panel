@@ -82,7 +82,6 @@ import {
 } from "../lib/toolWindows";
 import {
   effectiveLargeHeaders,
-  isMusicLessonSlotVisible,
   isTeachingFullWorkArea,
   isV1ToolWindowHidden,
 } from "../lib/v1HiddenFeatures";
@@ -583,16 +582,6 @@ function physicalKeyStateEqual(
     a.pressedVks.length === b.pressedVks.length &&
     a.pressedVks.every((vk, i) => vk === b.pressedVks[i])
   );
-}
-
-function lessonSlotVisibleFromState(
-  settings: AppSettings,
-  musicTeachingEnabled: boolean,
-): boolean {
-  return isMusicLessonSlotVisible({
-    musicTeachingEnabled,
-    keyboardSectionMode: settings.keyboardSectionMode,
-  });
 }
 
 function teachingFullWorkAreaActive(
