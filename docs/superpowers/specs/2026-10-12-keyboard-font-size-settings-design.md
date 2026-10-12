@@ -40,9 +40,10 @@
 | Persistence | Existing `keyboardFontSize` (px) |
 | Default | 18 |
 | Min | 14 (≈80% of 18) |
-| Max | `max(14, keyHeight - 4)` |
-| Effective render size | `clamp(stored \|\| 18, 14, max)` |
-| Slider thumb | `min(stored, max)` so it never exceeds the track |
+| Slider max (Settings) | Fixed **29** (≈160% of 18); Settings runs in a separate webview and cannot read live key height |
+| Render max | `min(29, max(14, keyHeight - 4))` via `maxKeyboardFontSize` |
+| Effective render size | `min(clampKeyboardFontSize(stored), maxKeyboardFontSize(keyHeight))` |
+| Slider thumb | `clampKeyboardFontSize(stored)` (14–29) |
 | Keyboard + numpad | Share the setting |
 | Synthesizer | Fixed sizes; stop reading `keyboardFontSize` |
 | Companion | Unchanged |
@@ -51,21 +52,23 @@
 
 ## 5. Architecture
 
-### Helper (`src/lib/keyboardFontSize.ts` or extend `keyMetrics.ts`)
+### Helper (`src/lib/keyboardFontSize.ts`)
 
 Pure functions, unit-tested:
 
 - `KEYBOARD_FONT_SIZE_DEFAULT = 18`
 - `KEYBOARD_FONT_SIZE_MIN = 14`
+- `KEYBOARD_FONT_SIZE_MAX = 29`
 - `KEYBOARD_FONT_SIZE_PADDING_PX = 4`
-- `maxKeyboardFontSize(keyHeight: number): number`
-- `effectiveKeyboardFontSize(stored: number | undefined, keyHeight: number): number`
+- `clampKeyboardFontSize(stored)` — Settings slider range
+- `maxKeyboardFontSize(keyHeight)` — height clamp capped at 29
+- `effectiveKeyboardFontSize(stored, keyHeight)` — render path
 
 ### Keyboard
 
 - Keep computing `keyHeight` via `computeKeyMetrics`.
 - Pass `effectiveKeyboardFontSize(settings.keyboardFontSize, keyHeight)` into `KeyButton` / `SpecialKeyLabel` / language labels.
-- When `keyHeight` changes, write it to a **session-only** store field (not profile JSON) for the Settings slider max.
+- Do **not** publish key height into the Zustand store for Settings (separate Tauri webview / JS context).
 
 ### NumKeypad
 
@@ -77,14 +80,15 @@ Pure functions, unit-tested:
 
 ### SpecialKeyLabel / layouts
 
-- Set `backspace`, `enter`, `shift` to `layout: "row"` in `SPECIAL_KEY_LABELS`.
-- Row layout: symbol ≈ `fontSize`, word slightly smaller; keep Space’s existing sizing unless it overflows at max — then align Space to the same row formula.
+- Keep `backspace` / `enter` / `shift` as `layout: "stack"` at the default size so existing users see no layout change.
+- Switch those keys to row (icon + word) when `fontSize > KEYBOARD_FONT_SIZE_DEFAULT`; Space stays `layout: "row"` with its original symbol/word sizing.
+- Row layouts use `overflow-hidden` / `truncate` / `whitespace-nowrap` so wide labels do not spill.
 
 ### Settings UI
 
 - Appearance section: range input after the pattern of opacity, labeled via i18n (`keyboardFontSize`), value shown as **px** next to the label.
-- `min={14}`, `max={maxKeyboardFontSize(keyHeight)}`, `step={1}`, `onChange` → `updateSettings({ keyboardFontSize: Number(...) })`.
-- Slider max uses the **main keyboard** `keyHeight` (not numpad). Publish that height from the keyboard layout path into app store (e.g. `keyboardKeyHeightPx` session field updated when metrics recompute) so Settings can read it without importing Keyboard. Do not hard-code 160%.
+- `min={14}`, `max={29}`, `step={1}`, `value={clampKeyboardFontSize(...)}`, `onChange` → `updateSettings({ keyboardFontSize: Number(...) })`.
+- Fixed slider range (issue #228 80%–160%); keyboard/numpad still height-clamp at render.
 
 ### Settings section order
 
@@ -134,7 +138,7 @@ Window / mode resize (shorter keys)
 
 | Criterion | How met |
 | --- | --- |
-| Settings slider small → extra large with value shown | Min 14 → max `keyHeight-4`, value as px |
+| Settings slider small → extra large with value shown | Min 14 → max 29 (≈80%–160%), value as px |
 | Default = current size | 18px default |
 | Persists | Existing `keyboardFontSize` profile field |
 | No overflow Normal / Mini / Focus at common resolutions | Max tied to key height + row special labels |

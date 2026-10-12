@@ -4,7 +4,7 @@
 
 **Goal:** Add a Settings slider for keyboard/numpad label font size (height-clamped), row layout for Backspace/Enter/Shift, decouple synth, put Modes first in Settings.
 
-**Architecture:** Pure clamp helpers + session `keyboardKeyHeightPx` for slider max; existing `keyboardFontSize` persists; Keyboard/NumKeypad use effective size; Synthesizer uses fixed px.
+**Architecture:** Pure clamp helpers with fixed Settings range 14–29; Keyboard/NumKeypad use `effectiveKeyboardFontSize` (also height-capped); Synthesizer uses fixed 18px. No cross-webview keyHeight store (Settings is a separate Tauri webview).
 
 **Tech Stack:** React 19, Zustand, Vitest, Tauri Windows app.
 
@@ -45,17 +45,16 @@
 
 ---
 
-### Task 3: Session key height + Keyboard/NumKeypad/Synth consumers
+### Task 3: Keyboard/NumKeypad/Synth consumers
 
 **Files:**
-- Modify: `src/stores/appStore.ts` (session `keyboardKeyHeightPx` + setter)
 - Modify: `src/components/keyboard/Keyboard.tsx`
 - Modify: `src/components/mouse/NumKeypad.tsx`
 - Modify: `src/components/keyboard/Synthesizer.tsx`
 
-- [x] **Step 1:** Publish keyHeight from Keyboard; use effective font size
+- [x] **Step 1:** Keyboard uses `effectiveKeyboardFontSize` (no store keyHeight)
 - [x] **Step 2:** NumKeypad uses helper with local metrics
-- [x] **Step 3:** Synth fixed constants (no settings.keyboardFontSize)
+- [x] **Step 3:** Synth fixed 18 / `18*0.55` (no settings.keyboardFontSize)
 
 ---
 
