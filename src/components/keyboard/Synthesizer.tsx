@@ -543,7 +543,7 @@ export function Synthesizer() {
         className={`relative min-w-0 flex-1 rounded-b-lg border font-semibold shadow-sm transition-transform ${isPressed || isWrong ? "key-pressed" : ""} ${ringClass}`}
         style={{
           height: whiteKeyHeight,
-          fontSize: 14,
+          fontSize: 18,
           color: settings.keyTextColor ?? "#475569",
           backgroundColor,
         }}

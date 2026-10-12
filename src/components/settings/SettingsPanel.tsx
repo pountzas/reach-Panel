@@ -54,10 +54,9 @@ import { defaultLanguagePackId } from "../../lib/language";
 import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
 import {
-  KEYBOARD_FONT_SIZE_DEFAULT,
+  KEYBOARD_FONT_SIZE_MAX,
   KEYBOARD_FONT_SIZE_MIN,
-  effectiveKeyboardFontSize,
-  maxKeyboardFontSize,
+  clampKeyboardFontSize,
 } from "../../lib/keyboardFontSize";
 import {
   applyTaskbarPosition,
@@ -412,7 +411,6 @@ export function SettingsPanel() {
     selectTypingInputMethod,
     physicalKeyState,
     keyboardLayout,
-    keyboardKeyHeightPx,
   } = useAppStore(
     useShallow((s) => ({
       settings: s.settings,
@@ -444,7 +442,6 @@ export function SettingsPanel() {
       selectTypingInputMethod: s.selectTypingInputMethod,
       physicalKeyState: s.physicalKeyState,
       keyboardLayout: s.keyboardLayout,
-      keyboardKeyHeightPx: s.keyboardKeyHeightPx,
     })),
   );
   const { t } = useTranslation();
@@ -510,11 +507,8 @@ export function SettingsPanel() {
   const surface = getSurfaceColors(settings.appBgColor);
   const headerBg = settings.headerBgColor ?? "#1e293b";
   const headerText = settings.headerTextColor ?? "#ffffff";
-  const keyboardFontSizeMax = maxKeyboardFontSize(keyboardKeyHeightPx);
-  const keyboardFontSizePx = effectiveKeyboardFontSize(
-    settings.keyboardFontSize ?? KEYBOARD_FONT_SIZE_DEFAULT,
-    keyboardKeyHeightPx,
-  );
+  const keyboardFontSizeMax = KEYBOARD_FONT_SIZE_MAX;
+  const keyboardFontSizePx = clampKeyboardFontSize(settings.keyboardFontSize);
   const secondaryButtonStyle: CSSProperties = {
     backgroundColor: surface.panelButtonBg,
     borderColor: surface.panelBorder,

@@ -83,7 +83,6 @@ export function Keyboard() {
   const applyFreeWriteLayoutTranslation = useAppStore((s) => s.applyFreeWriteLayoutTranslation);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
-  const setKeyboardKeyHeightPx = useAppStore((s) => s.setKeyboardKeyHeightPx);
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const langKeyAnchorRef = useRef<HTMLDivElement>(null);
@@ -113,10 +112,6 @@ export function Keyboard() {
     settings.keyboardFontSize,
     keyHeight,
   );
-
-  useEffect(() => {
-    setKeyboardKeyHeightPx(keyHeight);
-  }, [keyHeight, setKeyboardKeyHeightPx]);
   const typingLocale = settings.typingLanguage || "en";
   const languageLessonMode = {
     musicTeachingEnabled,

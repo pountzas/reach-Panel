@@ -98,7 +98,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 
 - System-wide keyboard injection with sticky modifiers
 - Colors, opacity, and panel-driven key sizing
-- **Keyboard font size** — **Settings → Appearance** slider (default unchanged); scales keyboard and numpad labels up to nearly full key height; not synced to the tablet companion
+- **Keyboard font size** — **Settings → Appearance** slider, 14–29 px (≈80%–160% of the 18 px default; default unchanged); scales keyboard and numpad labels, clamped to fit the key height; not synced to the tablet companion
 - Fn key on the bottom row maps number keys 1–0 and `-` `=` to F1–F12
 - Language switch key with country flag icons (follows installed Windows keyboards)
 - On-screen layout override (auto / QWERTY / QWERTZ / AZERTY / Greek)
