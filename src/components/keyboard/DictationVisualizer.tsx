@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
+import { prefersReducedMotion } from "../../lib/motion";
 
 const BAR_COUNT = 28;
 const GRAPH_WIDTH = 112;
@@ -12,14 +13,23 @@ interface DictationVisualizerProps {
   captureAudio?: boolean;
 }
 
+function paintBars(bars: (HTMLSpanElement | null)[], levels: number[]): void {
+  for (let i = 0; i < BAR_COUNT; i++) {
+    const level = levels[i] ?? 0.08;
+    const el = bars[i];
+    if (!el) continue;
+    const scale = (MIN_BAR + level * (MAX_BAR - MIN_BAR)) / MAX_BAR;
+    el.style.transform = `scaleY(${scale})`;
+    el.style.opacity = String(0.55 + level * 0.45);
+  }
+}
+
 /** Cursor-chat-style mic waveform: centered vertical bars driven by live audio. */
 export function DictationVisualizer({
   active,
   captureAudio = true,
 }: DictationVisualizerProps) {
-  const [levels, setLevels] = useState<number[]>(() =>
-    Array.from({ length: BAR_COUNT }, () => 0.08),
-  );
+  const barsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const rafRef = useRef<number | null>(null);
   const audioRef = useRef<{
     context: AudioContext;
@@ -40,7 +50,18 @@ export function DictationVisualizer({
         audioRef.current = null;
       }
       smoothRef.current = Array.from({ length: BAR_COUNT }, () => 0.08);
-      setLevels(smoothRef.current.slice());
+      return;
+    }
+
+    if (prefersReducedMotion()) {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      paintBars(
+        barsRef.current,
+        Array.from({ length: BAR_COUNT }, () => 0.15),
+      );
       return;
     }
 
@@ -55,7 +76,7 @@ export function DictationVisualizer({
           return prev + (shimmer - prev) * 0.25;
         });
         smoothRef.current = next;
-        setLevels(next.slice());
+        paintBars(barsRef.current, next);
         rafRef.current = requestAnimationFrame(tick);
       };
       rafRef.current = requestAnimationFrame(tick);
@@ -131,12 +152,15 @@ export function DictationVisualizer({
             return prev + (desired - prev) * 0.35;
           });
           smoothRef.current = next;
-          setLevels(next.slice());
+          paintBars(barsRef.current, next);
           rafRef.current = requestAnimationFrame(tick);
         };
         rafRef.current = requestAnimationFrame(tick);
       } catch {
-        setLevels(Array.from({ length: BAR_COUNT }, () => 0.12));
+        paintBars(
+          barsRef.current,
+          Array.from({ length: BAR_COUNT }, () => 0.12),
+        );
       }
     };
 
@@ -166,21 +190,25 @@ export function DictationVisualizer({
       style={{ width: GRAPH_WIDTH }}
       aria-hidden
     >
-      <div className="flex h-full w-full items-center justify-center gap-[2px]">
-        {levels.map((level, index) => {
-          const height = MIN_BAR + level * (MAX_BAR - MIN_BAR);
-          return (
-            <span
-              key={index}
-              className="w-[2.5px] rounded-full bg-red-400"
-              style={{
-                height,
-                opacity: 0.55 + level * 0.45,
-                transition: "height 60ms linear, opacity 60ms linear",
-              }}
-            />
-          );
-        })}
+      <div
+        className="flex h-full w-full items-center justify-center gap-[2px]"
+        style={{ willChange: "transform" }}
+      >
+        {Array.from({ length: BAR_COUNT }, (_, index) => (
+          <span
+            key={index}
+            ref={(el) => {
+              barsRef.current[index] = el;
+            }}
+            className="w-[2.5px] rounded-full bg-red-400"
+            style={{
+              height: MAX_BAR,
+              transformOrigin: "center",
+              transform: "scaleY(0.08)",
+              opacity: 0.55,
+            }}
+          />
+        ))}
       </div>
     </div>
   );
