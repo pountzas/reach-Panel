@@ -1,4 +1,4 @@
-import { useRef, ViewTransition } from "react";
+import { useDeferredValue, useRef, ViewTransition } from "react";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { useAppStore } from "../../stores/appStore";
 import { InputPreview } from "./InputPreview";
@@ -12,6 +12,8 @@ export function PreviewSuggestionsRow({
   showPreview: boolean;
   showSuggestions: boolean;
 }) {
+  const deferredPreview = useDeferredValue(showPreview);
+  const deferredSuggestions = useDeferredValue(showSuggestions);
   const suggestions = useAppStore((s) => s.suggestions);
   const lastSuggestionsRef = useRef<string[]>([]);
   if (suggestions.length > 0) {
@@ -25,14 +27,14 @@ export function PreviewSuggestionsRow({
       <ViewTransition default="rp-vt-fade-slide">
         <div
           data-slot="preview"
-          aria-hidden={!showPreview}
-          inert={!showPreview}
+          aria-hidden={!deferredPreview}
+          inert={!deferredPreview}
           className={`min-w-0 shrink ${
-            showPreview
+            deferredPreview
               ? "w-[320px] opacity-100"
               : "pointer-events-none w-0 overflow-hidden opacity-0"
           }`}
-          style={showPreview ? { width: PREVIEW_WIDTH } : { width: 0 }}
+          style={deferredPreview ? { width: PREVIEW_WIDTH } : { width: 0 }}
         >
           <InputPreview />
         </div>
@@ -40,13 +42,13 @@ export function PreviewSuggestionsRow({
       <ViewTransition default="rp-vt-fade-slide">
         <div
           data-slot="suggestions"
-          aria-hidden={!showSuggestions}
-          inert={!showSuggestions}
+          aria-hidden={!deferredSuggestions}
+          inert={!deferredSuggestions}
           className={`min-w-0 ${
-            showSuggestions
+            deferredSuggestions
               ? "opacity-100"
               : "pointer-events-none w-0 overflow-hidden opacity-0"
-          } ${showPreview && showSuggestions ? "ml-2" : "ml-0"}`}
+          } ${deferredPreview && deferredSuggestions ? "ml-2" : "ml-0"}`}
         >
           <SuggestionsBar suggestions={displaySuggestions} />
         </div>

@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { DEFAULT_SETTINGS } from "../../lib/types";
+
+const rowSource = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "PreviewSuggestionsRow.tsx"),
+  "utf8",
+);
 
 const storeState = {
   settings: {
@@ -22,8 +30,45 @@ vi.mock("../../stores/appStore", () => ({
 
 import { PreviewSuggestionsRow } from "./PreviewSuggestionsRow";
 
+function stubViewTransitionDom() {
+  const css = (
+    typeof CSS === "object" && CSS !== null ? CSS : {}
+  ) as typeof CSS & { escape?: (value: string) => string };
+  if (typeof css.escape !== "function") {
+    Object.defineProperty(globalThis, "CSS", {
+      configurable: true,
+      value: {
+        ...css,
+        escape(value: string) {
+          return value.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
+        },
+      },
+    });
+  }
+  if (typeof document.startViewTransition !== "function") {
+    document.startViewTransition = ((callback) => {
+      const run =
+        typeof callback === "function"
+          ? callback
+          : callback && typeof callback === "object"
+            ? callback.update
+            : undefined;
+      const update = Promise.resolve(run?.());
+      return {
+        ready: Promise.resolve(),
+        update,
+        finished: update.then(() => undefined),
+        updateCallbackDone: update.then(() => undefined),
+        types: new Set<string>(),
+        skipTransition() {},
+      };
+    }) as typeof document.startViewTransition;
+  }
+}
+
 describe("PreviewSuggestionsRow", () => {
   beforeEach(() => {
+    stubViewTransitionDom();
     storeState.suggestions = [];
     storeState.externalInputFocused = false;
     storeState.inputPreviewFrame = null;
@@ -68,7 +113,7 @@ describe("PreviewSuggestionsRow", () => {
     expect(container.querySelector("[data-slot='suggestions']")).toBeTruthy();
   });
 
-  it("keeps last chips visible while the suggestions slot is hiding", () => {
+  it("keeps last chips visible while the suggestions slot is hiding", async () => {
     storeState.suggestions = ["alpha", "beta"];
     const { container, rerender } = render(
       <PreviewSuggestionsRow showPreview={true} showSuggestions={true} />,
@@ -85,9 +130,13 @@ describe("PreviewSuggestionsRow", () => {
     expect(
       screen.getByRole("button", { name: "beta", hidden: true }),
     ).toBeTruthy();
-    expect(
-      container.querySelector("[data-slot='suggestions']")!.hasAttribute("inert"),
-    ).toBe(true);
+    await waitFor(() => {
+      expect(
+        container
+          .querySelector("[data-slot='suggestions']")!
+          .hasAttribute("inert"),
+      ).toBe(true);
+    });
   });
 
   it("marks hidden preview slot inert and aria-hidden", () => {
@@ -97,5 +146,12 @@ describe("PreviewSuggestionsRow", () => {
     const previewSlot = container.querySelector("[data-slot='preview']");
     expect(previewSlot?.getAttribute("aria-hidden")).toBe("true");
     expect(previewSlot!.hasAttribute("inert")).toBe(true);
+  });
+
+  it("defers slot visibility so ViewTransition can animate Zustand updates", () => {
+    expect(rowSource).toMatch(/useDeferredValue\(\s*showPreview\s*\)/);
+    expect(rowSource).toMatch(/useDeferredValue\(\s*showSuggestions\s*\)/);
+    expect(rowSource).toMatch(/inert=\{!deferredPreview\}/);
+    expect(rowSource).toMatch(/inert=\{!deferredSuggestions\}/);
   });
 });
