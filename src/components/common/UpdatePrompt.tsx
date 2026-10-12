@@ -218,9 +218,9 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
               style={{ backgroundColor: surface.insetBg }}
             >
               <div
-                className="h-full rounded-full transition-all duration-200"
+                className="h-full w-full origin-left rounded-full transition-transform duration-200"
                 style={{
-                  width: `${progressPercent}%`,
+                  transform: `scaleX(${Math.min(1, Math.max(0, progressPercent / 100))})`,
                   backgroundColor: headerBg,
                 }}
               />

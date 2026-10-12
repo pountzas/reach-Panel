@@ -1,10 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useDeferredValue, useEffect, useRef, ViewTransition } from "react";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { useAppStore } from "../../stores/appStore";
 import { InputPreview } from "./InputPreview";
-
-const SLOT_ANIM =
-  "overflow-hidden transition-[max-width,opacity,transform,margin] duration-300 ease-out motion-reduce:transition-none";
 
 const PREVIEW_WIDTH = 320;
 
@@ -15,6 +12,8 @@ export function PreviewSuggestionsRow({
   showPreview: boolean;
   showSuggestions: boolean;
 }) {
+  const deferredPreview = useDeferredValue(showPreview);
+  const deferredSuggestions = useDeferredValue(showSuggestions);
   const suggestions = useAppStore((s) => s.suggestions);
   const lastSuggestionsRef = useRef<string[]>([]);
   useEffect(() => {
@@ -27,29 +26,35 @@ export function PreviewSuggestionsRow({
 
   return (
     <div className="flex w-full min-w-0 items-center justify-center">
-      <div
-        data-slot="preview"
-        aria-hidden={!showPreview}
-        inert={!showPreview}
-        className={`${SLOT_ANIM} min-w-0 shrink ${
-          showPreview
-            ? "max-w-[320px] opacity-100 translate-x-0"
-            : "pointer-events-none max-w-0 opacity-0 -translate-x-2"
-        }`}
-        style={{ width: PREVIEW_WIDTH }}>
-        <InputPreview />
-      </div>
-      <div
-        data-slot="suggestions"
-        aria-hidden={!showSuggestions}
-        inert={!showSuggestions}
-        className={`${SLOT_ANIM} min-w-0 ${
-          showSuggestions
-            ? "max-w-[min(60vw,40rem)] opacity-100 translate-x-0"
-            : "pointer-events-none max-w-0 opacity-0 translate-x-2"
-        } ${showPreview && showSuggestions ? "ml-2" : "ml-0"}`}>
-        <SuggestionsBar suggestions={displaySuggestions} />
-      </div>
+      <ViewTransition default="rp-vt-fade-slide">
+        <div
+          data-slot="preview"
+          aria-hidden={!deferredPreview}
+          inert={!deferredPreview}
+          className={`min-w-0 shrink ${
+            deferredPreview
+              ? "w-[320px] opacity-100"
+              : "pointer-events-none w-0 overflow-hidden opacity-0"
+          }`}
+          style={deferredPreview ? { width: PREVIEW_WIDTH } : { width: 0 }}
+        >
+          <InputPreview />
+        </div>
+      </ViewTransition>
+      <ViewTransition default="rp-vt-fade-slide">
+        <div
+          data-slot="suggestions"
+          aria-hidden={!deferredSuggestions}
+          inert={!deferredSuggestions}
+          className={`min-w-0 ${
+            deferredSuggestions
+              ? "opacity-100"
+              : "pointer-events-none w-0 overflow-hidden opacity-0"
+          } ${deferredPreview && deferredSuggestions ? "ml-2" : "ml-0"}`}
+        >
+          <SuggestionsBar suggestions={displaySuggestions} />
+        </div>
+      </ViewTransition>
     </div>
   );
 }

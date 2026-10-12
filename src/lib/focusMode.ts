@@ -6,6 +6,8 @@ import type { AppSettings, MonitorInfo, TransparentKeyColor } from "./types";
 export const COLLAPSED_FAB_SIZE = 56;
 export const COLLAPSED_FAB_GAP = 12;
 export const COLLAPSED_FAB_PAD = 10;
+/** Gap from monitor edge to collapsed FAB window — keep in sync with Rust COLLAPSED_MARGIN. */
+export const COLLAPSED_WINDOW_MARGIN = 16;
 /** Extra px for hover scale headroom (~5% of 56px). */
 export const FAB_HOVER_SLACK = 6;
 /** Collapsed FAB mode menu panel width (logical px; Rust scales by DPI). */

@@ -41,6 +41,7 @@ import {
 } from "../lib/music/parseMusicFile";
 import { isImportedMusicSong } from "../lib/music/parseJsonSong";
 import { resolveColorProfile } from "../lib/colorProfiles";
+import { afterNextPaint, MOTION, prefersReducedMotion } from "../lib/motion";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import {
@@ -290,6 +291,14 @@ let typingLanguageSwitchInFlight = false;
 /** Drops stale cmd_get_suggestions results after space/enter/delete clears the prefix. */
 let suggestionsRequestId = 0;
 
+function commitSuggestionList(
+  set: (partial: { suggestions: string[] }) => void,
+  suggestions: string[],
+) {
+  // Plain set — Zustand/useSyncExternalStore ignores startTransition.
+  set({ suggestions });
+}
+
 /** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
 let liveHeightRatioPreview: number | null = null;
 
@@ -300,6 +309,35 @@ let liveHeightRatioInFlight = false;
 
 /** When a mini layout sync is requested during animation, retry after it finishes. */
 let pendingFocusLayoutSync: boolean | null = null;
+/** True while syncFocusModeWindowLayout is running; later calls queue via pendingFocusLayoutSync. */
+let focusLayoutSyncInFlight = false;
+
+let focusContentAnimWaiter: {
+  resolve: () => void;
+  promise: Promise<void>;
+} | null = null;
+
+function beginFocusContentAnimWait(): Promise<void> {
+  let resolve!: () => void;
+  const promise = new Promise<void>((r) => {
+    resolve = r;
+  });
+  focusContentAnimWaiter = { resolve, promise };
+  return promise;
+}
+
+function peekOrBeginFocusContentAnimWait(): Promise<void> {
+  if (focusContentAnimWaiter) {
+    return focusContentAnimWaiter.promise;
+  }
+  return beginFocusContentAnimWait();
+}
+
+export function notifyFocusContentAnimDone(): void {
+  const w = focusContentAnimWaiter;
+  focusContentAnimWaiter = null;
+  w?.resolve();
+}
 
 /** In-flight mode-menu window expand; closeModeMenu waits for it so the restore always lands last. */
 let modeMenuExpandPending: Promise<void> | null = null;
@@ -309,23 +347,40 @@ const POINTER_INPUT_KIND_DEBOUNCE_MS = 50;
 let pendingPointerInputKind: PointerInputKind | null = null;
 let pointerInputKindDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+type SyncFocusLayoutOptions = {
+  /**
+   * Caller already set `isAnimatingWindow` (same React turn as visibility) so the
+   * shell does not paint a gap frame. Skip the re-entrancy early-return.
+   */
+  continueHeld?: boolean;
+};
+
 /**
- * Animate focus-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
+ * Show: resize once, then start content enter and wait for CSS. Hide: wait for exit, then resize.
  * Always ends aligned with the latest `focusModeKeyboardVisible` (no squashed keyboard in FAB).
  */
-async function syncFocusModeWindowLayout(preferAnimate = true) {
+async function syncFocusModeWindowLayout(
+  preferAnimate = true,
+  options?: SyncFocusLayoutOptions,
+) {
   const state = useAppStore.getState();
   if (!state.focusModeActive) {
     pendingFocusLayoutSync = null;
     return;
   }
-  if (state.isAnimatingWindow) {
+  // continueHeld bypasses isAnimatingWindow so callers can set it same-turn as
+  // visibility; in-flight still serializes so parallel syncs cannot squash layout.
+  if (focusLayoutSyncInFlight || (state.isAnimatingWindow && !options?.continueHeld)) {
     pendingFocusLayoutSync = preferAnimate;
     return;
   }
 
   const visibleAtStart = state.focusModeKeyboardVisible;
-  useAppStore.setState({ isAnimatingWindow: true });
+  const animateContent = preferAnimate && !prefersReducedMotion();
+  focusLayoutSyncInFlight = true;
+  if (!state.isAnimatingWindow) {
+    useAppStore.setState({ isAnimatingWindow: true });
+  }
   try {
     const { settings } = useAppStore.getState();
     const args = {
@@ -342,20 +397,59 @@ async function syncFocusModeWindowLayout(preferAnimate = true) {
       focusKeyboardHeightRatio: FOCUS_KEYBOARD_HEIGHT_RATIO,
       fullWorkArea: false,
     };
-    if (preferAnimate) {
-      await invoke("cmd_animate_window_layout", args);
+
+    if (visibleAtStart) {
+      // FAB must paint hidden before bounds grow, or the last FAB frame stretches
+      // across the keyboard strip (top-left blink).
+      await afterNextPaint();
+      if (useAppStore.getState().focusModeKeyboardVisible !== visibleAtStart) {
+        return; // finally re-syncs to the latest visibility
+      }
+      await invoke("cmd_apply_window_layout", args);
+      if (animateContent) {
+        const wait = beginFocusContentAnimWait();
+        useAppStore.setState({ focusContentAnim: "enter" });
+        await Promise.race([
+          wait,
+          new Promise<void>((r) =>
+            window.setTimeout(r, MOTION.focusKeyboard + 80),
+          ),
+        ]);
+        useAppStore.setState({ focusContentAnim: "idle" });
+      }
     } else {
+      if (animateContent) {
+        const wait = peekOrBeginFocusContentAnimWait();
+        if (useAppStore.getState().focusContentAnim !== "exit") {
+          useAppStore.setState({ focusContentAnim: "exit" });
+        }
+        await Promise.race([
+          wait,
+          new Promise<void>((r) =>
+            window.setTimeout(r, MOTION.focusKeyboard + 80),
+          ),
+        ]);
+        useAppStore.setState({ focusContentAnim: "idle" });
+      }
+      // Keyboard must paint gone before bounds shrink into the FAB corner.
+      if (useAppStore.getState().focusModeKeyboardVisible !== visibleAtStart) {
+        return; // finally re-syncs to the latest visibility
+      }
+      await afterNextPaint();
+      if (useAppStore.getState().focusModeKeyboardVisible !== visibleAtStart) {
+        return; // finally re-syncs to the latest visibility
+      }
       await invoke("cmd_apply_window_layout", args);
     }
     if (useAppStore.getState().dictationState !== "idle") {
       void showDictationOverlay();
     }
   } finally {
-    useAppStore.setState({ isAnimatingWindow: false });
+    focusLayoutSyncInFlight = false;
+    useAppStore.setState({ isAnimatingWindow: false, focusContentAnim: "idle" });
     const latest = useAppStore.getState();
     const queued = pendingFocusLayoutSync;
     pendingFocusLayoutSync = null;
-    // Visibility changed mid-animation, or another sync was requested while busy.
     if (
       latest.focusModeActive &&
       (queued !== null || latest.focusModeKeyboardVisible !== visibleAtStart)
@@ -581,7 +675,7 @@ async function syncWindowLayoutFromSettings(
 ) {
   const args = windowLayoutInvokeArgs(settings, musicTeachingEnabled);
   // Animate height like phrases/QA toggles; apply for collapsed / cold load.
-  if (preferAnimate && !settings.collapsed) {
+  if (preferAnimate && !settings.collapsed && !prefersReducedMotion()) {
     await invoke("cmd_animate_window_layout", args);
   } else {
     await invoke("cmd_apply_window_layout", args);
@@ -690,6 +784,8 @@ interface AppStore {
   focusModeActive: boolean;
   /** Whether the focus-mode keyboard is popped (vs collapsed FAB). */
   focusModeKeyboardVisible: boolean;
+  /** CSS keyboard/FAB content transition: idle, sliding in, or sliding out. */
+  focusContentAnim: "idle" | "enter" | "exit";
   /**
    * True after Expand until external input loses focus.
    * Expand does not exit Focus mode.
@@ -1199,6 +1295,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   freeWriteActivePdfId: null,
   focusModeActive: false,
   focusModeKeyboardVisible: false,
+  focusContentAnim: "idle" as "idle" | "enter" | "exit",
   focusModeManualExpand: false,
   focusModeSuppressAutoShow: false,
   modeMenuOpen: false,
@@ -1514,14 +1611,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
       void invoke("cmd_reset_layout_compose_state", {
         hkl: get().physicalKeyState.systemHkl || null,
       });
-      set({ typedBuffer: "", suggestions: [], ...clearGreekPendingAccent() });
+      set({ typedBuffer: "", ...clearGreekPendingAccent() });
+      commitSuggestionList(set, []);
       await get().refreshSttCapability();
     }
     if (partial.groqApiKey !== undefined) {
       await get().refreshSttCapability();
     }
     if (uiLanguageChanged) {
-      set({ typedBuffer: "", suggestions: [], ...clearGreekPendingAccent() });
+      set({ typedBuffer: "", ...clearGreekPendingAccent() });
+      commitSuggestionList(set, []);
       await get().loadPhrases();
       await get().loadSuggestions();
     }
@@ -1609,7 +1708,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           ),
         });
       } else if (visibilityChanged && !current.collapsed) {
-        await invoke("cmd_animate_window_layout", {
+        const args = {
           monitorId: current.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
@@ -1621,7 +1720,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
             current,
             get().musicTeachingEnabled,
           ),
-        });
+        };
+        await invoke(
+          prefersReducedMotion()
+            ? "cmd_apply_window_layout"
+            : "cmd_animate_window_layout",
+          args,
+        );
       }
     }
   },
@@ -1807,21 +1912,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({
       typedBuffer: text,
       ...clearGreekPendingAccent(),
-      ...(clear ? { suggestions: [] as string[] } : {}),
     });
+    if (clear) {
+      commitSuggestionList(set, []);
+    }
   },
-  appendTyped: (ch) =>
-    set((s) => {
-      const typedBuffer = s.typedBuffer + ch;
-      const clear = shouldClearSuggestions(typedBuffer);
-      if (clear) {
-        suggestionsRequestId += 1;
-      }
-      return {
-        typedBuffer,
-        ...(clear ? { suggestions: [] as string[] } : {}),
-      };
-    }),
+  appendTyped: (ch) => {
+    const typedBuffer = get().typedBuffer + ch;
+    const clear = shouldClearSuggestions(typedBuffer);
+    if (clear) {
+      suggestionsRequestId += 1;
+    }
+    set({ typedBuffer });
+    if (clear) {
+      commitSuggestionList(set, []);
+    }
+  },
   typeCharacter: (output, options) => {
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
@@ -1838,8 +1944,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({
       typedBuffer: result.buffer,
       greekPendingAccent: result.pendingAccent,
-      ...(clear ? { suggestions: [] as string[] } : {}),
     });
+    if (clear) {
+      commitSuggestionList(set, []);
+    }
     return result.inject || null;
   },
   applyTypedLayoutTranslation: (translation, options) => {
@@ -1884,21 +1992,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
       languageAnswerIncorrect: false,
     });
   },
-  backspaceTyped: () =>
-    set((s) => {
-      if (s.greekPendingAccent) {
-        return clearGreekPendingAccent();
-      }
-      const typedBuffer = s.typedBuffer.slice(0, -1);
-      const clear = shouldClearSuggestions(typedBuffer);
-      if (clear) {
-        suggestionsRequestId += 1;
-      }
-      return {
-        typedBuffer,
-        ...(clear ? { suggestions: [] as string[] } : {}),
-      };
-    }),
+  backspaceTyped: () => {
+    const state = get();
+    if (state.greekPendingAccent) {
+      set(clearGreekPendingAccent());
+      return;
+    }
+    const typedBuffer = state.typedBuffer.slice(0, -1);
+    const clear = shouldClearSuggestions(typedBuffer);
+    if (clear) {
+      suggestionsRequestId += 1;
+    }
+    set({ typedBuffer });
+    if (clear) {
+      commitSuggestionList(set, []);
+    }
+  },
 
   toggleSticky: (modifier) =>
     set((s) => ({
@@ -1955,7 +2064,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (!persisted) {
         return;
       }
-      set({ typedBuffer: "", suggestions: [], ...clearGreekPendingAccent() });
+      set({ typedBuffer: "", ...clearGreekPendingAccent() });
+      commitSuggestionList(set, []);
     }
   },
 
@@ -2004,7 +2114,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       });
       if (previousTypingLanguage !== method.langTag) {
         await get().stopDictation();
-        set({ typedBuffer: "", suggestions: [], ...clearGreekPendingAccent() });
+        set({ typedBuffer: "", ...clearGreekPendingAccent() });
+        commitSuggestionList(set, []);
         await get().refreshSttCapability();
       }
       await get().refreshLayoutKeyLabels(method.hkl);
@@ -2041,13 +2152,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const { settings, typedBuffer } = get();
     if (!settings.suggestionsVisible || !settings.predictionEnabled) {
       suggestionsRequestId += 1;
-      set({ suggestions: [] });
+      commitSuggestionList(set, []);
       return;
     }
     const prefix = suggestionWordPrefix(typedBuffer);
     if (shouldClearSuggestions(typedBuffer)) {
       suggestionsRequestId += 1;
-      set({ suggestions: [] });
+      commitSuggestionList(set, []);
       return;
     }
     const requestId = ++suggestionsRequestId;
@@ -2060,10 +2171,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
     if (shouldClearSuggestions(get().typedBuffer)) {
-      set({ suggestions: [] });
+      commitSuggestionList(set, []);
       return;
     }
-    set({ suggestions: results.map((r) => r.word) });
+    commitSuggestionList(
+      set,
+      results.map((r) => r.word),
+    );
   },
 
   applySuggestion: async (word) => {
@@ -3191,6 +3305,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ modeMenuOpen: false });
     // Let an in-flight expand finish first so the collapsed restore always lands last.
     if (modeMenuExpandPending) await modeMenuExpandPending;
+    if (!prefersReducedMotion()) {
+      await new Promise<void>((r) => {
+        setTimeout(r, MOTION.fast);
+      });
+    }
+    if (get().modeMenuOpen) {
+      return;
+    }
     if (get().focusModeActive) {
       await syncFocusModeWindowLayout(false);
     } else {
@@ -3223,7 +3345,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (!persisted) {
           return;
         }
-        await invoke("cmd_animate_window_layout", {
+        const collapseArgs = {
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
           collapsedDictation: false,
@@ -3235,9 +3357,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
             next,
             get().musicTeachingEnabled,
           ),
-        });
+        };
+        await invoke(
+          prefersReducedMotion()
+            ? "cmd_apply_window_layout"
+            : "cmd_animate_window_layout",
+          collapseArgs,
+        );
       } else {
-        await invoke("cmd_animate_window_layout", {
+        const expandArgs = {
           monitorId: settings.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
@@ -3249,7 +3377,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
             settings,
             get().musicTeachingEnabled,
           ),
-        });
+        };
+        await invoke(
+          prefersReducedMotion()
+            ? "cmd_apply_window_layout"
+            : "cmd_animate_window_layout",
+          expandArgs,
+        );
         if (get().settingsEpoch !== epoch) {
           return;
         }
@@ -3277,13 +3411,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (get().focusModeKeyboardVisible && get().focusModeManualExpand) {
       return;
     }
+    // Same turn as visible=true so the shell never paints FAB unmount / keyboard flash.
     set({
       modeMenuOpen: false,
       focusModeKeyboardVisible: true,
       focusModeManualExpand: true,
       focusModeSuppressAutoShow: false,
+      isAnimatingWindow: true,
     });
-    await syncFocusModeWindowLayout(true);
+    await syncFocusModeWindowLayout(true, { continueHeld: true });
   },
 
   collapseFocusModeKeyboard: async () => {
@@ -3293,12 +3429,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!get().focusModeKeyboardVisible) {
       return;
     }
+    const animateContent = !prefersReducedMotion();
+    if (animateContent) {
+      beginFocusContentAnimWait();
+    }
+    // Same turn: hide + exit + animating so FAB does not flash on the full strip.
     set({
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
       focusModeSuppressAutoShow: true,
+      isAnimatingWindow: true,
+      focusContentAnim: animateContent ? "exit" : "idle",
     });
-    await syncFocusModeWindowLayout(true);
+    await syncFocusModeWindowLayout(true, { continueHeld: true });
   },
 }));
 
@@ -3333,8 +3476,11 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
       return;
     }
     if (!state.focusModeKeyboardVisible && !state.focusModeSuppressAutoShow) {
-      useAppStore.setState({ focusModeKeyboardVisible: true });
-      void syncFocusModeWindowLayout(true);
+      useAppStore.setState({
+        focusModeKeyboardVisible: true,
+        isAnimatingWindow: true,
+      });
+      void syncFocusModeWindowLayout(true, { continueHeld: true });
     } else if (state.modeMenuOpen) {
       void syncFocusModeWindowLayout(false);
     }
@@ -3347,13 +3493,20 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
     state.focusModeSuppressAutoShow ||
     state.modeMenuOpen
   ) {
+    const animateContent =
+      state.focusModeKeyboardVisible && !prefersReducedMotion();
+    if (animateContent) {
+      beginFocusContentAnimWait();
+    }
     useAppStore.setState({
       modeMenuOpen: false,
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
       focusModeSuppressAutoShow: false,
+      isAnimatingWindow: true,
+      focusContentAnim: animateContent ? "exit" : "idle",
     });
-    void syncFocusModeWindowLayout(true);
+    void syncFocusModeWindowLayout(true, { continueHeld: true });
   }
 });
 

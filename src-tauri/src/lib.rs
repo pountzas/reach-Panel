@@ -428,17 +428,24 @@ async fn animate_window_layout(
     } else {
         window::COLLAPSE_ANIMATION_MS
     };
-    let steps = animation_ms / window::COLLAPSE_ANIMATION_FRAME_MS;
-    for step in 0..=steps {
-        let progress = step as f32 / steps as f32;
+    let duration = std::time::Duration::from_millis(animation_ms);
+    let started = std::time::Instant::now();
+    loop {
+        let elapsed = started.elapsed();
+        let progress = if duration.is_zero() {
+            1.0
+        } else {
+            (elapsed.as_secs_f32() / duration.as_secs_f32()).clamp(0.0, 1.0)
+        };
         let layout = window::interpolate_layout(from, target, progress);
         set_window_layout(app, layout).await?;
-        if step < steps {
-            tokio::time::sleep(std::time::Duration::from_millis(
-                window::COLLAPSE_ANIMATION_FRAME_MS,
-            ))
-            .await;
+        if progress >= 1.0 {
+            break;
         }
+        tokio::time::sleep(std::time::Duration::from_millis(
+            window::WINDOW_ANIMATION_FRAME_MS,
+        ))
+        .await;
     }
     Ok(())
 }

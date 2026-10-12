@@ -89,7 +89,9 @@ function InstalledAppRow({
 }
 
 export function QuickActionEditor({ surface }: { surface: SurfaceColors }) {
-  const { quickActions, loadQuickActions, saveActiveProfile } = useAppStore();
+  const quickActions = useAppStore((s) => s.quickActions);
+  const loadQuickActions = useAppStore((s) => s.loadQuickActions);
+  const saveActiveProfile = useAppStore((s) => s.saveActiveProfile);
   const { t } = useTranslation();
   const [label, setLabel] = useState("");
   const [target, setTarget] = useState("");
