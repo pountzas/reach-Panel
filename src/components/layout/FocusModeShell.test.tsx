@@ -49,11 +49,14 @@ describe("FocusModeShell", () => {
     };
   });
 
-  it("keeps FAB mounted and keyboard off-screen while show is applying (enter starts after apply)", () => {
+  it("keeps FAB mounted but hidden while show is applying", () => {
     storeState.focusModeKeyboardVisible = true;
     storeState.focusContentAnim = "idle";
     storeState.isAnimatingWindow = true;
-    render(<FocusModeShell />);
+    const { container } = render(<FocusModeShell />);
+    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    expect(fabLayer.classList.contains("hidden")).toBe(true);
+    expect(fabLayer.getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByTestId("collapsed-fab")).toBeTruthy();
     const layer = document.getElementById("focus-keyboard-layer");
     expect(layer).toBeTruthy();
@@ -61,23 +64,47 @@ describe("FocusModeShell", () => {
     expect(layer!.className.split(/\s+/)).not.toContain("translate-y-0");
   });
 
-  it("keeps FAB and keyboard layers mounted while the keyboard is entering", () => {
+  it("keeps FAB mounted but hidden while the keyboard is entering", () => {
     storeState.focusModeKeyboardVisible = true;
     storeState.focusContentAnim = "enter";
-    render(<FocusModeShell />);
-    expect(screen.getByTestId("collapsed-fab")).toBeTruthy();
+    storeState.isAnimatingWindow = true;
+    const { container } = render(<FocusModeShell />);
+    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    expect(fabLayer.classList.contains("hidden")).toBe(true);
     expect(document.getElementById("focus-keyboard-layer")).toBeTruthy();
     expect(screen.getByTestId("keyboard-section")).toBeTruthy();
   });
 
-  it("keeps both layers mounted while the keyboard is exiting, with the keyboard off-screen", () => {
+  it("keeps FAB mounted but hidden while the keyboard is exiting", () => {
     storeState.focusModeKeyboardVisible = false;
     storeState.focusContentAnim = "exit";
-    render(<FocusModeShell />);
-    expect(screen.getByTestId("collapsed-fab")).toBeTruthy();
+    storeState.isAnimatingWindow = true;
+    const { container } = render(<FocusModeShell />);
+    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    expect(fabLayer.classList.contains("hidden")).toBe(true);
     const layer = document.getElementById("focus-keyboard-layer");
     expect(layer).toBeTruthy();
     expect(layer!.className.split(/\s+/)).toContain("translate-y-full");
+  });
+
+  it("keeps FAB hidden after exit until the window finishes shrinking", () => {
+    storeState.focusModeKeyboardVisible = false;
+    storeState.focusContentAnim = "idle";
+    storeState.isAnimatingWindow = true;
+    const { container } = render(<FocusModeShell />);
+    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    expect(fabLayer.classList.contains("hidden")).toBe(true);
+  });
+
+  it("shows FAB only when the collapsed window is idle", () => {
+    storeState.focusModeKeyboardVisible = false;
+    storeState.focusContentAnim = "idle";
+    storeState.isAnimatingWindow = false;
+    const { container } = render(<FocusModeShell />);
+    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    expect(fabLayer.classList.contains("hidden")).toBe(false);
+    expect(fabLayer.classList.contains("absolute")).toBe(true);
+    expect(screen.getByTestId("collapsed-fab")).toBeTruthy();
   });
 
   it("does not notify on a nested child's transform transitionend", () => {
@@ -106,7 +133,7 @@ describe("FocusModeShell", () => {
     fireEvent.transitionEnd(layer!, { propertyName: "opacity" });
     fireEvent.transitionEnd(layer!, { propertyName: "transform" });
     fireEvent.transitionEnd(layer!, { propertyName: "transform" });
-    vi.advanceTimersByTime(MOTION.slow + 50);
+    vi.advanceTimersByTime(MOTION.focusKeyboard + 80);
     expect(notifyFocusContentAnimDone).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });

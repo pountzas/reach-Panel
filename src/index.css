@@ -7,6 +7,9 @@
   --rp-dur-base: 200ms;
   --rp-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --rp-dur-slow: 300ms;
+  /* Focus keyboard sheet: longer + symmetric ease for up/down. */
+  --rp-dur-focus-keyboard: 250ms;
+  --rp-ease-focus-keyboard: cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 
 html,
@@ -241,6 +244,7 @@ button {
     --rp-dur-fast: 1ms;
     --rp-dur-base: 1ms;
     --rp-dur-slow: 1ms;
+    --rp-dur-focus-keyboard: 1ms;
   }
 
   .music-note-chip-active {

@@ -42,6 +42,11 @@ export interface CollapsedFabProps {
   onSettings?: () => void;
   /** When set, Expand uses this instead of toggleCollapsed (Focus mode manual expand). */
   onExpand?: () => void;
+  /**
+   * When false, size to content instead of filling the parent (used while the
+   * Focus window is full-strip but the FAB must stay at the collapsed corner).
+   */
+  fillWindow?: boolean;
 }
 
 export function CollapsedFab({
@@ -49,6 +54,7 @@ export function CollapsedFab({
   showDictation = false,
   onSettings,
   onExpand,
+  fillWindow = true,
 }: CollapsedFabProps) {
   const settings = useAppStore((s) => s.settings);
   const toggleCollapsed = useAppStore((s) => s.toggleCollapsed);
@@ -151,7 +157,11 @@ export function CollapsedFab({
 
   return (
     <div
-      className="flex h-full w-full flex-row items-end justify-end overflow-visible"
+      className={
+        fillWindow
+          ? "flex h-full w-full flex-row items-end justify-end overflow-visible"
+          : "flex flex-row items-end justify-end overflow-visible"
+      }
       style={{ background: "transparent" }}
       onClick={handleRootClick}
       onKeyDown={handleRootKeyDown}

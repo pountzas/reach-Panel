@@ -38,7 +38,7 @@ import {
 } from "../lib/music/parseMusicFile";
 import { isImportedMusicSong } from "../lib/music/parseJsonSong";
 import { resolveColorProfile } from "../lib/colorProfiles";
-import { MOTION, prefersReducedMotion } from "../lib/motion";
+import { afterNextPaint, MOTION, prefersReducedMotion } from "../lib/motion";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import {
@@ -317,6 +317,13 @@ function beginFocusContentAnimWait(): Promise<void> {
   return promise;
 }
 
+function peekOrBeginFocusContentAnimWait(): Promise<void> {
+  if (focusContentAnimWaiter) {
+    return focusContentAnimWaiter.promise;
+  }
+  return beginFocusContentAnimWait();
+}
+
 export function notifyFocusContentAnimDone(): void {
   const w = focusContentAnimWaiter;
   focusContentAnimWaiter = null;
@@ -331,24 +338,37 @@ const POINTER_INPUT_KIND_DEBOUNCE_MS = 50;
 let pendingPointerInputKind: PointerInputKind | null = null;
 let pointerInputKindDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+type SyncFocusLayoutOptions = {
+  /**
+   * Caller already set `isAnimatingWindow` (same React turn as visibility) so the
+   * shell does not paint a gap frame. Skip the re-entrancy early-return.
+   */
+  continueHeld?: boolean;
+};
+
 /**
  * Show: resize once, then start content enter and wait for CSS. Hide: wait for exit, then resize.
  * Always ends aligned with the latest `focusModeKeyboardVisible` (no squashed keyboard in FAB).
  */
-async function syncFocusModeWindowLayout(preferAnimate = true) {
+async function syncFocusModeWindowLayout(
+  preferAnimate = true,
+  options?: SyncFocusLayoutOptions,
+) {
   const state = useAppStore.getState();
   if (!state.focusModeActive) {
     pendingFocusLayoutSync = null;
     return;
   }
-  if (state.isAnimatingWindow) {
+  if (state.isAnimatingWindow && !options?.continueHeld) {
     pendingFocusLayoutSync = preferAnimate;
     return;
   }
 
   const visibleAtStart = state.focusModeKeyboardVisible;
   const animateContent = preferAnimate && !prefersReducedMotion();
-  useAppStore.setState({ isAnimatingWindow: true });
+  if (!state.isAnimatingWindow) {
+    useAppStore.setState({ isAnimatingWindow: true });
+  }
   try {
     const { settings } = useAppStore.getState();
     const args = {
@@ -367,26 +387,37 @@ async function syncFocusModeWindowLayout(preferAnimate = true) {
     };
 
     if (visibleAtStart) {
+      // FAB must paint hidden before bounds grow, or the last FAB frame stretches
+      // across the keyboard strip (top-left blink).
+      await afterNextPaint();
       await invoke("cmd_apply_window_layout", args);
       if (animateContent) {
         const wait = beginFocusContentAnimWait();
         useAppStore.setState({ focusContentAnim: "enter" });
         await Promise.race([
           wait,
-          new Promise<void>((r) => window.setTimeout(r, MOTION.slow + 50)),
+          new Promise<void>((r) =>
+            window.setTimeout(r, MOTION.focusKeyboard + 80),
+          ),
         ]);
         useAppStore.setState({ focusContentAnim: "idle" });
       }
     } else {
       if (animateContent) {
-        const wait = beginFocusContentAnimWait();
-        useAppStore.setState({ focusContentAnim: "exit" });
+        const wait = peekOrBeginFocusContentAnimWait();
+        if (useAppStore.getState().focusContentAnim !== "exit") {
+          useAppStore.setState({ focusContentAnim: "exit" });
+        }
         await Promise.race([
           wait,
-          new Promise<void>((r) => window.setTimeout(r, MOTION.slow + 50)),
+          new Promise<void>((r) =>
+            window.setTimeout(r, MOTION.focusKeyboard + 80),
+          ),
         ]);
         useAppStore.setState({ focusContentAnim: "idle" });
       }
+      // Keyboard must paint gone before bounds shrink into the FAB corner.
+      await afterNextPaint();
       await invoke("cmd_apply_window_layout", args);
     }
   } finally {
@@ -3197,13 +3228,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (get().focusModeKeyboardVisible && get().focusModeManualExpand) {
       return;
     }
+    // Same turn as visible=true so the shell never paints FAB unmount / keyboard flash.
     set({
       modeMenuOpen: false,
       focusModeKeyboardVisible: true,
       focusModeManualExpand: true,
       focusModeSuppressAutoShow: false,
+      isAnimatingWindow: true,
     });
-    await syncFocusModeWindowLayout(true);
+    await syncFocusModeWindowLayout(true, { continueHeld: true });
   },
 
   collapseFocusModeKeyboard: async () => {
@@ -3213,12 +3246,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!get().focusModeKeyboardVisible) {
       return;
     }
+    const animateContent = !prefersReducedMotion();
+    if (animateContent) {
+      beginFocusContentAnimWait();
+    }
+    // Same turn: hide + exit + animating so FAB does not flash on the full strip.
     set({
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
       focusModeSuppressAutoShow: true,
+      isAnimatingWindow: true,
+      focusContentAnim: animateContent ? "exit" : "idle",
     });
-    await syncFocusModeWindowLayout(true);
+    await syncFocusModeWindowLayout(true, { continueHeld: true });
   },
 }));
 
@@ -3253,8 +3293,11 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
       return;
     }
     if (!state.focusModeKeyboardVisible && !state.focusModeSuppressAutoShow) {
-      useAppStore.setState({ focusModeKeyboardVisible: true });
-      void syncFocusModeWindowLayout(true);
+      useAppStore.setState({
+        focusModeKeyboardVisible: true,
+        isAnimatingWindow: true,
+      });
+      void syncFocusModeWindowLayout(true, { continueHeld: true });
     } else if (state.modeMenuOpen) {
       void syncFocusModeWindowLayout(false);
     }
@@ -3266,13 +3309,20 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
     state.focusModeManualExpand ||
     state.focusModeSuppressAutoShow
   ) {
+    const animateContent =
+      state.focusModeKeyboardVisible && !prefersReducedMotion();
+    if (animateContent) {
+      beginFocusContentAnimWait();
+    }
     useAppStore.setState({
       modeMenuOpen: false,
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
       focusModeSuppressAutoShow: false,
+      isAnimatingWindow: true,
+      focusContentAnim: animateContent ? "exit" : "idle",
     });
-    void syncFocusModeWindowLayout(true);
+    void syncFocusModeWindowLayout(true, { continueHeld: true });
   }
 });
 

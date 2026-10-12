@@ -66,6 +66,28 @@ describe("focus mode window layout", () => {
     await expand;
   });
 
+  it("marks isAnimatingWindow in the same turn as showing the keyboard", async () => {
+    let releaseApply!: () => void;
+    mockState.applyGate = new Promise<void>((resolve) => {
+      releaseApply = resolve;
+    });
+    const expand = useAppStore.getState().expandFocusModeKeyboard();
+    expect(useAppStore.getState().focusModeKeyboardVisible).toBe(true);
+    expect(useAppStore.getState().isAnimatingWindow).toBe(true);
+    expect(useAppStore.getState().focusContentAnim).toBe("idle");
+    // Paint flush runs before apply so FAB is not stretched on resize.
+    expect(mockState.calls).not.toContain("cmd_apply_window_layout");
+    await vi.waitFor(() => {
+      expect(mockState.calls).toContain("cmd_apply_window_layout");
+    });
+    releaseApply();
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().focusContentAnim).toBe("enter");
+    });
+    notifyFocusContentAnimDone();
+    await expand;
+  });
+
   it("sets content enter after applying window layout on expand", async () => {
     let releaseApply!: () => void;
     mockState.applyGate = new Promise<void>((resolve) => {
@@ -85,6 +107,19 @@ describe("focus mode window layout", () => {
     notifyFocusContentAnimDone();
     await expand;
     expect(useAppStore.getState().focusContentAnim).toBe("idle");
+  });
+
+  it("sets exit and isAnimatingWindow in the same turn as hiding the keyboard", async () => {
+    useAppStore.setState({
+      focusModeKeyboardVisible: true,
+      focusModeManualExpand: true,
+    });
+    const collapse = useAppStore.getState().collapseFocusModeKeyboard();
+    expect(useAppStore.getState().focusModeKeyboardVisible).toBe(false);
+    expect(useAppStore.getState().isAnimatingWindow).toBe(true);
+    expect(useAppStore.getState().focusContentAnim).toBe("exit");
+    notifyFocusContentAnimDone();
+    await collapse;
   });
 
   it("waits for content enter, then returns to idle when notified", async () => {

@@ -9,7 +9,8 @@ import { MOTION } from "../../lib/motion";
  * or a collapsed FAB stack (Mic (Mic mode) → Settings → R) when hidden.
  * R opens the mode menu; "Show keyboard" reopens the keyboard until external
  * input loses focus; collapse returns to the FAB stack.
- * Keyboard/FAB crossfade is CSS; the native window is resized once by the store.
+ * Keyboard slide is CSS; FAB stays mounted and is shown only on the settled
+ * collapsed window. The native window is resized once by the store (after paint).
  */
 export function FocusModeShell() {
   const focusModeKeyboardVisible = useAppStore((s) => s.focusModeKeyboardVisible);
@@ -23,8 +24,12 @@ export function FocusModeShell() {
     isAnimatingWindow && focusModeKeyboardVisible && focusContentAnim === "idle";
   const showKeyboardLayer =
     focusModeKeyboardVisible || focusContentAnim === "exit";
-  const showFabLayer =
-    !focusModeKeyboardVisible || focusContentAnim === "enter" || showApplying;
+  // Keep CollapsedFab mounted (display:none when idle) so expand/collapse does
+  // not remount-stagger. Only interactive when the collapsed window is settled.
+  const fabInteractive =
+    !focusModeKeyboardVisible &&
+    focusContentAnim !== "exit" &&
+    !isAnimatingWindow;
 
   const [keyboardSlideIn, setKeyboardSlideIn] = useState(
     focusModeKeyboardVisible && focusContentAnim === "idle" && !isAnimatingWindow,
@@ -33,8 +38,15 @@ export function FocusModeShell() {
   useEffect(() => {
     if (focusContentAnim === "enter") {
       setKeyboardSlideIn(false);
-      const raf = requestAnimationFrame(() => setKeyboardSlideIn(true));
-      return () => cancelAnimationFrame(raf);
+      // Double rAF so the off-screen frame paints before the slide-up.
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setKeyboardSlideIn(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        if (raf2) cancelAnimationFrame(raf2);
+      };
     }
     if (focusContentAnim === "exit") {
       setKeyboardSlideIn(false);
@@ -62,7 +74,10 @@ export function FocusModeShell() {
       finish();
     };
     root?.addEventListener("transitionend", onEnd);
-    const fallback = window.setTimeout(finish, MOTION.slow + 50);
+    const fallback = window.setTimeout(
+      finish,
+      MOTION.focusKeyboard + 80,
+    );
     return () => {
       root?.removeEventListener("transitionend", onEnd);
       window.clearTimeout(fallback);
@@ -73,34 +88,29 @@ export function FocusModeShell() {
     ? "transparent"
     : (settings.appBgColor ?? "#f1f5f9");
 
-  const layerTransition =
-    "transition-[transform,opacity] [transition-duration:var(--rp-dur-slow)] [transition-timing-function:var(--rp-ease-out)] motion-reduce:transition-none";
+  const keyboardTransition =
+    "transition-transform [transition-duration:var(--rp-dur-focus-keyboard)] [transition-timing-function:var(--rp-ease-focus-keyboard)] motion-reduce:transition-none";
 
   return (
     <div className="relative h-full w-full" style={{ background: "transparent" }}>
-      {showFabLayer && (
-        <div
-          className={`absolute inset-0 ${layerTransition} ${
-            focusModeKeyboardVisible && keyboardSlideIn
-              ? "pointer-events-none opacity-0"
-              : "opacity-100"
-          }`}
-        >
-          <CollapsedFab
-            showSettings
-            showDictation={settings.micMode === true}
-            onSettings={() => void setShowSettings(true)}
-            onExpand={() => void expandFocusModeKeyboard()}
-          />
-        </div>
-      )}
+      <div
+        data-fab-layer
+        className={fabInteractive ? "absolute inset-0" : "hidden"}
+        aria-hidden={!fabInteractive}
+      >
+        <CollapsedFab
+          fillWindow
+          showSettings
+          showDictation={settings.micMode === true}
+          onSettings={() => void setShowSettings(true)}
+          onExpand={() => void expandFocusModeKeyboard()}
+        />
+      </div>
       {showKeyboardLayer && (
         <div
           id="focus-keyboard-layer"
-          className={`absolute inset-0 flex flex-col ${layerTransition} ${
-            keyboardSlideIn
-              ? "translate-y-0 opacity-100"
-              : "translate-y-full opacity-0"
+          className={`absolute inset-0 flex flex-col ${keyboardTransition} ${
+            keyboardSlideIn ? "translate-y-0" : "translate-y-full"
           } ${focusModeKeyboardVisible && keyboardSlideIn ? "" : "pointer-events-none"}`}
           style={{
             width: "100vw",
