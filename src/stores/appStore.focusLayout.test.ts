@@ -81,6 +81,27 @@ describe("focus mode window layout", () => {
     await expand;
   });
 
+  it("uses the shared saved windowHeightRatio for focus keyboard height (no fixed snap)", async () => {
+    useAppStore.setState({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        micMode: false,
+        windowHeightRatio: 0.7,
+      },
+    });
+    const expand = useAppStore.getState().expandFocusModeKeyboard();
+    await vi.waitFor(() => {
+      expect(mockState.applyArgs.length).toBeGreaterThan(0);
+    });
+    const args = mockState.applyArgs[mockState.applyArgs.length - 1];
+    expect(args.focusMode).toBe(true);
+    expect(args.focusKeyboardVisible).toBe(true);
+    expect(args.focusKeyboardHeightRatio).toBe(0.7);
+    expect(args.heightRatio).toBe(0.7);
+    notifyFocusContentAnimDone();
+    await expand;
+  });
+
   it("marks isAnimatingWindow in the same turn as showing the keyboard", async () => {
     let releaseApply!: () => void;
     mockState.applyGate = new Promise<void>((resolve) => {

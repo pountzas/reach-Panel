@@ -46,7 +46,7 @@ import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import {
   clampWindowHeightRatio,
-  computeContentHeightRatioFromSettings,
+  resolveWindowHeightRatio,
 } from "../lib/sectionLayouts";
 import { shouldApplyLiveWindowHeightRatio } from "../lib/windowHeightDrag";
 import {
@@ -54,7 +54,6 @@ import {
   ensureSectionExpanded,
 } from "../lib/sectionStack";
 import {
-  FOCUS_KEYBOARD_HEIGHT_RATIO,
   MODE_MENU_WIDTH,
   isInputPreviewActiveForMode,
   modeMenuHeight,
@@ -83,7 +82,6 @@ import {
 } from "../lib/toolWindows";
 import {
   effectiveLargeHeaders,
-  isMusicLessonSlotVisible,
   isTeachingFullWorkArea,
   isV1ToolWindowHidden,
 } from "../lib/v1HiddenFeatures";
@@ -383,18 +381,19 @@ async function syncFocusModeWindowLayout(
   }
   try {
     const { settings } = useAppStore.getState();
+    const sharedHeightRatio = heightRatioFromSettings(
+      settings,
+      useAppStore.getState().musicTeachingEnabled,
+    );
     const args = {
       monitorId: settings.accessibilityMonitorId,
       collapsed: !visibleAtStart,
       collapsedDictation: settings.micMode === true,
       collapsedSettings: true,
-      heightRatio: heightRatioFromSettings(
-        settings,
-        useAppStore.getState().musicTeachingEnabled,
-      ),
+      heightRatio: sharedHeightRatio,
       focusMode: true,
       focusKeyboardVisible: visibleAtStart,
-      focusKeyboardHeightRatio: FOCUS_KEYBOARD_HEIGHT_RATIO,
+      focusKeyboardHeightRatio: sharedHeightRatio,
       fullWorkArea: false,
     };
 
@@ -585,16 +584,6 @@ function physicalKeyStateEqual(
   );
 }
 
-function lessonSlotVisibleFromState(
-  settings: AppSettings,
-  musicTeachingEnabled: boolean,
-): boolean {
-  return isMusicLessonSlotVisible({
-    musicTeachingEnabled,
-    keyboardSectionMode: settings.keyboardSectionMode,
-  });
-}
-
 function teachingFullWorkAreaActive(
   settings: AppSettings,
   musicTeachingEnabled: boolean,
@@ -612,19 +601,12 @@ function heightRatioFromSettings(
   settings: AppSettings,
   musicTeachingEnabled = false,
 ): number {
-  if (teachingFullWorkAreaActive(settings, musicTeachingEnabled)) {
-    return 1.0;
-  }
-  const contentRatio = computeContentHeightRatioFromSettings(
-    settings,
-    lessonSlotVisibleFromState(settings, musicTeachingEnabled),
-  );
-  if (settings.windowHeightRatio == null) {
-    return contentRatio;
-  }
-  // Explicit grip override wins — do not floor to contentRatio or shrink
-  // snaps back to full when all sections are visible.
-  return clampWindowHeightRatio(settings.windowHeightRatio);
+  return resolveWindowHeightRatio(settings.windowHeightRatio, {
+    teachingFullWorkArea: teachingFullWorkAreaActive(
+      settings,
+      musicTeachingEnabled,
+    ),
+  });
 }
 
 /** Apply effective v1 chrome reads without wiping unrelated stored prefs. */
@@ -1781,11 +1763,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings, musicTeachingEnabled, focusModeActive } = get();
+    const { settings, musicTeachingEnabled, focusModeActive, focusModeKeyboardVisible } =
+      get();
     if (
       !shouldApplyLiveWindowHeightRatio({
         collapsed: settings.collapsed,
         focusModeActive,
+        focusModeKeyboardVisible,
       })
     ) {
       return;
@@ -1819,19 +1803,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
 
-    const latest = get().settings;
-    if (latest.collapsed) return;
+    const latestState = get();
+    const latest = latestState.settings;
+    if (
+      !shouldApplyLiveWindowHeightRatio({
+        collapsed: latest.collapsed,
+        focusModeActive: latestState.focusModeActive,
+        focusModeKeyboardVisible: latestState.focusModeKeyboardVisible,
+      })
+    ) {
+      return;
+    }
     liveHeightRatioPreview = pending;
     liveHeightRatioInFlight = true;
     try {
-      const focus = get().focusModeActive;
+      const focus = latestState.focusModeActive;
       await invoke("cmd_apply_window_layout", {
         monitorId: latest.accessibilityMonitorId,
         collapsed: false,
         collapsedDictation: false,
         heightRatio: pending,
         focusMode: focus,
-        focusKeyboardVisible: focus ? get().focusModeKeyboardVisible : false,
+        focusKeyboardVisible: focus ? latestState.focusModeKeyboardVisible : false,
         focusKeyboardHeightRatio: focus ? pending : undefined,
         fullWorkArea: teachingFullWorkAreaActive(latest, musicTeachingEnabled),
       });

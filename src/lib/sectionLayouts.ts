@@ -1,18 +1,12 @@
-import { resolveDockedSectionVisibility } from "./sectionRegistry";
-
 export const SECTION_HEADER_HEIGHT_PX = 28;
 export const SECTION_HEADER_HEIGHT_LARGE_PX = 56;
 export const APP_HEADER_HEIGHT_PX = 48;
 export const APP_HEADER_HEIGHT_LARGE_PX = 96;
-/** Clamp for optional user-dragged OS window height ratio (min = 35% of region). */
-export const WINDOW_HEIGHT_RATIO_MIN = 0.35;
+/** Clamp for user-dragged OS window height ratio (min = 25% of region). */
+export const WINDOW_HEIGHT_RATIO_MIN = 0.25;
 export const WINDOW_HEIGHT_RATIO_MAX = 1;
-
-const GAP_PCT = 1;
-const QUICK_ACTIONS_HEIGHT_RATIO = 0.1;
-const PHRASES_HEIGHT_RATIO = 0.38;
-const GAP_HEIGHT_RATIO = GAP_PCT / 100;
-const MIN_CONTENT_HEIGHT_RATIO = WINDOW_HEIGHT_RATIO_MIN;
+/** Shared Normal/Focus default when the user has not set a grip height yet. */
+export const DEFAULT_WINDOW_HEIGHT_RATIO = 0.42;
 
 export function sectionHeaderHeightPx(largeHeaders: boolean): number {
   return largeHeaders ? SECTION_HEADER_HEIGHT_LARGE_PX : SECTION_HEADER_HEIGHT_PX;
@@ -27,44 +21,19 @@ export function clampWindowHeightRatio(ratio: number): number {
 }
 
 /**
- * Fraction of the full keyboard region height needed for the currently
- * visible sections. All visible → 1.0; hiding phrases/QA shrinks the window.
+ * Normal/Focus OS window height as a fraction of the layout region.
+ * User grip (`windowHeightRatio`) wins; otherwise the shared default.
+ * Teaching full-work-area always returns 1.
  */
-export function computeContentHeightRatio(visible: {
-  quickActions: boolean;
-  phrases: boolean;
-}): number {
-  if (visible.quickActions && visible.phrases) {
+export function resolveWindowHeightRatio(
+  windowHeightRatio: number | null | undefined,
+  opts?: { teachingFullWorkArea?: boolean },
+): number {
+  if (opts?.teachingFullWorkArea) {
     return 1;
   }
-
-  let ratio = 1;
-  if (!visible.phrases) {
-    ratio -= PHRASES_HEIGHT_RATIO + GAP_HEIGHT_RATIO;
+  if (windowHeightRatio == null) {
+    return DEFAULT_WINDOW_HEIGHT_RATIO;
   }
-  if (!visible.quickActions) {
-    ratio -= QUICK_ACTIONS_HEIGHT_RATIO + GAP_HEIGHT_RATIO;
-  }
-
-  return Math.max(MIN_CONTENT_HEIGHT_RATIO, Math.min(1, ratio));
-}
-
-/**
- * Content height after v1 chrome gates.
- * QA off and phrases on only when the music lesson slot is visible.
- */
-export function computeContentHeightRatioFromSettings(
-  settings: {
-    quickActionsVisible: boolean;
-    phrasesVisible: boolean;
-  },
-  lessonSlotVisible = false,
-): number {
-  return computeContentHeightRatio(
-    resolveDockedSectionVisibility({
-      quickActionsVisible: settings.quickActionsVisible,
-      phrasesVisible: settings.phrasesVisible,
-      lessonSlotVisible,
-    }),
-  );
+  return clampWindowHeightRatio(windowHeightRatio);
 }

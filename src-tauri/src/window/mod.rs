@@ -151,6 +151,8 @@ pub const FOCUS_MODE_ANIMATION_MS: u64 = 300;
 pub const WINDOW_ANIMATION_FRAME_MS: u64 = 16;
 /// Default height as a fraction of full monitor height for focus-mode keyboard.
 pub const FOCUS_KEYBOARD_HEIGHT_RATIO: f32 = 0.42;
+/// Min OS window height ratio (keep in sync with TS `WINDOW_HEIGHT_RATIO_MIN`).
+pub const WINDOW_HEIGHT_RATIO_MIN: f32 = 0.25;
 
 fn ease_out_cubic(t: f32) -> f32 {
     1.0 - (1.0 - t).powi(3)
@@ -198,7 +200,7 @@ pub fn compute_window_layout(
     if focus_mode {
         if focus_keyboard_visible {
             let ratio = if focus_keyboard_height_ratio > 0.0 {
-                focus_keyboard_height_ratio.clamp(0.05, 1.0)
+                focus_keyboard_height_ratio.clamp(WINDOW_HEIGHT_RATIO_MIN, 1.0)
             } else {
                 FOCUS_KEYBOARD_HEIGHT_RATIO
             };
@@ -248,7 +250,7 @@ pub fn compute_window_layout(
         w = collapsed_w;
         h = collapsed_h;
     } else {
-        let ratio = height_ratio.clamp(0.05, 1.0);
+        let ratio = height_ratio.clamp(WINDOW_HEIGHT_RATIO_MIN, 1.0);
         let region_y = y;
         let region_h = h;
         h = ((region_h as f32) * ratio).round().max(1.0) as u32;

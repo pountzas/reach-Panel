@@ -89,8 +89,8 @@ export interface AppSettings {
    */
   largeHeaders: boolean;
   /**
-   * Optional override for OS window height as a fraction of the monitor region.
-   * Combined with visibility-based content ratio via Math.max.
+   * User-set OS window height as a fraction of the monitor layout region
+   * (Normal and Focus share this; clamped 25%–100%). Unset uses the shared default.
    */
   windowHeightRatio?: number;
   /** true = Focus, false / null = Normal (null migrates to false on load) */

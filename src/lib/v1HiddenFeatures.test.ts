@@ -1,8 +1,4 @@
 import { describe, expect, it } from "vitest";
-import {
-  computeContentHeightRatio,
-  computeContentHeightRatioFromSettings,
-} from "./sectionLayouts";
 import { resolveDockedSectionVisibility } from "./sectionRegistry";
 import {
   V1_HIDDEN_FEATURES,
@@ -99,7 +95,7 @@ describe("v1HiddenFeatures", () => {
   });
 });
 
-describe("resolveV1SectionVisibility / content height", () => {
+describe("resolveV1SectionVisibility", () => {
   it("hides QA and phrases when lesson slot is off", () => {
     const visibility = resolveV1SectionVisibility({
       quickActionsVisible: true,
@@ -107,35 +103,21 @@ describe("resolveV1SectionVisibility / content height", () => {
       lessonSlotVisible: false,
     });
     expect(visibility).toEqual({ quickActions: false, phrases: false });
-    expect(resolveDockedSectionVisibility({
-      quickActionsVisible: true,
-      phrasesVisible: true,
-      lessonSlotVisible: false,
-    })).toEqual(visibility);
-
-    const ratio = computeContentHeightRatioFromSettings(
-      { quickActionsVisible: true, phrasesVisible: true },
-      false,
-    );
-    expect(ratio).toBe(computeContentHeightRatio({ quickActions: false, phrases: false }));
-    expect(ratio).toBeLessThan(1);
+    expect(
+      resolveDockedSectionVisibility({
+        quickActionsVisible: true,
+        phrasesVisible: true,
+        lessonSlotVisible: false,
+      }),
+    ).toEqual(visibility);
   });
 
-  it("keeps phrases height only when lesson slot is visible", () => {
+  it("keeps phrases visibility only when lesson slot is visible", () => {
     const visibility = resolveV1SectionVisibility({
       quickActionsVisible: true,
       phrasesVisible: false,
       lessonSlotVisible: true,
     });
     expect(visibility).toEqual({ quickActions: false, phrases: true });
-
-    const ratio = computeContentHeightRatioFromSettings(
-      { quickActionsVisible: true, phrasesVisible: false },
-      true,
-    );
-    expect(ratio).toBe(computeContentHeightRatio({ quickActions: false, phrases: true }));
-    expect(ratio).toBeGreaterThan(
-      computeContentHeightRatio({ quickActions: false, phrases: false }),
-    );
   });
 });
