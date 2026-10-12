@@ -4,12 +4,16 @@ import { DEFAULT_SETTINGS } from "../lib/types";
 
 const mockState = vi.hoisted(() => ({
   calls: [] as string[],
+  applyGate: null as Promise<void> | null,
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
     mockState.calls.push(cmd);
     if (cmd === "cmd_get_input_focused") return Promise.resolve(false);
+    if (cmd === "cmd_apply_window_layout" && mockState.applyGate) {
+      return mockState.applyGate;
+    }
     return Promise.resolve(undefined);
   }),
 }));
@@ -35,6 +39,7 @@ import { notifyFocusContentAnimDone, useAppStore } from "./appStore";
 describe("focus mode window layout", () => {
   beforeEach(() => {
     mockState.calls.length = 0;
+    mockState.applyGate = null;
     vi.mocked(invoke).mockClear();
     useAppStore.setState({
       settings: { ...DEFAULT_SETTINGS, micMode: false },
@@ -61,7 +66,24 @@ describe("focus mode window layout", () => {
     await expand;
   });
 
-  it("waits for content enter after apply, then returns to idle when notified", async () => {
+  it("sets content enter before applying window layout on expand", async () => {
+    let releaseApply!: () => void;
+    mockState.applyGate = new Promise<void>((resolve) => {
+      releaseApply = resolve;
+    });
+    const expand = useAppStore.getState().expandFocusModeKeyboard();
+    await vi.waitFor(() => {
+      expect(mockState.calls).toContain("cmd_apply_window_layout");
+    });
+    expect(useAppStore.getState().focusContentAnim).toBe("enter");
+    expect(useAppStore.getState().focusModeKeyboardVisible).toBe(true);
+    notifyFocusContentAnimDone();
+    releaseApply();
+    await expand;
+    expect(useAppStore.getState().focusContentAnim).toBe("idle");
+  });
+
+  it("waits for content enter, then returns to idle when notified", async () => {
     const expand = useAppStore.getState().expandFocusModeKeyboard();
     await vi.waitFor(() => {
       expect(useAppStore.getState().focusContentAnim).toBe("enter");

@@ -322,7 +322,7 @@ let pendingPointerInputKind: PointerInputKind | null = null;
 let pointerInputKindDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * Resize the Focus window once, then wait for CSS keyboard/FAB content motion.
+ * Show: start content enter, resize once, wait for CSS. Hide: wait for exit, then resize.
  * Always ends aligned with the latest `focusModeKeyboardVisible` (no squashed keyboard in FAB).
  */
 async function syncFocusModeWindowLayout(preferAnimate = true) {
@@ -357,10 +357,13 @@ async function syncFocusModeWindowLayout(preferAnimate = true) {
     };
 
     if (visibleAtStart) {
-      await invoke("cmd_apply_window_layout", args);
+      let wait: Promise<void> | null = null;
       if (animateContent) {
-        const wait = beginFocusContentAnimWait();
+        wait = beginFocusContentAnimWait();
         useAppStore.setState({ focusContentAnim: "enter" });
+      }
+      await invoke("cmd_apply_window_layout", args);
+      if (wait) {
         await Promise.race([
           wait,
           new Promise<void>((r) => window.setTimeout(r, MOTION.slow + 50)),

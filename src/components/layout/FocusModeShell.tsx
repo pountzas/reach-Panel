@@ -14,17 +14,20 @@ import { MOTION } from "../../lib/motion";
 export function FocusModeShell() {
   const focusModeKeyboardVisible = useAppStore((s) => s.focusModeKeyboardVisible);
   const focusContentAnim = useAppStore((s) => s.focusContentAnim);
+  const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
   const settings = useAppStore((s) => s.settings);
   const setShowSettings = useAppStore((s) => s.setShowSettings);
   const expandFocusModeKeyboard = useAppStore((s) => s.expandFocusModeKeyboard);
 
+  const showApplying =
+    isAnimatingWindow && focusModeKeyboardVisible && focusContentAnim === "idle";
   const showKeyboardLayer =
     focusModeKeyboardVisible || focusContentAnim === "exit";
   const showFabLayer =
-    !focusModeKeyboardVisible || focusContentAnim === "enter";
+    !focusModeKeyboardVisible || focusContentAnim === "enter" || showApplying;
 
   const [keyboardSlideIn, setKeyboardSlideIn] = useState(
-    focusModeKeyboardVisible && focusContentAnim === "idle",
+    focusModeKeyboardVisible && focusContentAnim === "idle" && !isAnimatingWindow,
   );
 
   useEffect(() => {
@@ -37,8 +40,12 @@ export function FocusModeShell() {
       setKeyboardSlideIn(false);
       return;
     }
+    if (showApplying) {
+      setKeyboardSlideIn(false);
+      return;
+    }
     setKeyboardSlideIn(focusModeKeyboardVisible);
-  }, [focusContentAnim, focusModeKeyboardVisible]);
+  }, [focusContentAnim, focusModeKeyboardVisible, showApplying]);
 
   useEffect(() => {
     if (focusContentAnim !== "enter" && focusContentAnim !== "exit") return;
@@ -48,11 +55,12 @@ export function FocusModeShell() {
       done = true;
       notifyFocusContentAnimDone();
     };
+    const root = document.getElementById("focus-keyboard-layer");
     const onEnd = (e: TransitionEvent) => {
+      if (e.target !== root) return;
       if (e.propertyName !== "transform") return;
       finish();
     };
-    const root = document.getElementById("focus-keyboard-layer");
     root?.addEventListener("transitionend", onEnd);
     const fallback = window.setTimeout(finish, MOTION.slow + 50);
     return () => {
