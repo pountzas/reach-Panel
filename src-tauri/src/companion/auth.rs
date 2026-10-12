@@ -106,7 +106,11 @@ impl AuthStore {
     }
 
     /// Consume a valid pairing token and register a new device. Returns (device_id, credential).
-    pub fn pair_device(&self, device_name: &str, pairing_token: &str) -> Result<(String, String), String> {
+    pub fn pair_device(
+        &self,
+        device_name: &str,
+        pairing_token: &str,
+    ) -> Result<(String, String), String> {
         {
             let mut pairing = self.pairing.lock().map_err(|_| "lock")?;
             let active = pairing

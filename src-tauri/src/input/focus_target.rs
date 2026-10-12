@@ -7,14 +7,15 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 use windows::Win32::Foundation::{BOOL, HWND, POINT, RECT};
+use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::System::Com::{
     CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, SAFEARRAY,
 };
-use windows::Win32::System::Threading::{
-    AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId,
-};
 use windows::Win32::System::Ole::{
     SafeArrayAccessData, SafeArrayDestroy, SafeArrayGetUBound, SafeArrayUnaccessData,
+};
+use windows::Win32::System::Threading::{
+    AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId,
 };
 use windows::Win32::UI::Accessibility::{
     CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
@@ -26,7 +27,6 @@ use windows::Win32::UI::Accessibility::{
     UIA_SpinnerControlTypeId, UIA_TextPattern2Id, UIA_TextPatternId, UIA_ValuePatternId,
     HWINEVENTHOOK, UIA_CONTROLTYPE_ID,
 };
-use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, GetCaretPos, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo, GetParent,
     GetWindowLongW, GetWindowRect, GetWindowThreadProcessId, IsWindow, IsWindowVisible,
@@ -132,10 +132,7 @@ pub fn uia_control_is_text_input(signals: UiaTextInputSignals) -> bool {
     // Chromium contenteditable roots (YouTube comments, etc.) are exposed as
     // Group with aria role "group" plus TextPattern — not Edit/textbox.
     // Require TextPattern editability (not ValuePattern) before the NotText reject.
-    if signals.has_text_pattern
-        && signals.text_pattern_editable
-        && ty == UIA_GroupControlTypeId
-    {
+    if signals.has_text_pattern && signals.text_pattern_editable && ty == UIA_GroupControlTypeId {
         return true;
     }
     // Some hosts use Custom + TextPattern for the same pattern; still reject
@@ -727,15 +724,10 @@ fn uia_focused_is_text_input() -> Option<bool> {
             value_writable: uia_element_value_writable(&element),
             // FrameworkId catches WebView2 in non-Chrome top-level hosts;
             // HWND / FG class cover cases where FrameworkId is empty.
-            is_chromium_document: host_is_chromium(
-                &framework_id,
-                &native_class,
-                &foreground_class,
-            ),
+            is_chromium_document: host_is_chromium(&framework_id, &native_class, &foreground_class),
             aria_role: uia_element_aria_role(&element),
             has_text_pattern,
-            text_pattern_editable: has_text_pattern
-                && uia_element_text_pattern_editable(&element),
+            text_pattern_editable: has_text_pattern && uia_element_text_pattern_editable(&element),
         };
         let is_text = uia_control_is_text_input(signals);
         if is_text {
@@ -915,9 +907,8 @@ fn query_focused_input_bounds() -> Option<ScreenRect> {
             return None;
         }
         let uia = uia_element_bounds(&element);
-        let win32 = win32_caret_point().filter(|&(x, y)| {
-            uia.map(|b| point_in_rect(b, x, y)).unwrap_or(false)
-        });
+        let win32 = win32_caret_point()
+            .filter(|&(x, y)| uia.map(|b| point_in_rect(b, x, y)).unwrap_or(false));
         let caret = win32.or_else(|| uia_caret_point(&element));
         if uia.is_some() || caret.is_some() {
             line_strip_bounds(uia, caret)
@@ -1054,11 +1045,8 @@ fn text_range_caret_point(range: &IUIAutomationTextRange) -> Option<(i32, i32)> 
             .MoveEndpointByUnit(TextPatternRangeEndpoint_End, TextUnit_Character, 1)
             .unwrap_or(0);
         if moved == 0 {
-            let _ = probe.MoveEndpointByUnit(
-                TextPatternRangeEndpoint_Start,
-                TextUnit_Character,
-                -1,
-            );
+            let _ =
+                probe.MoveEndpointByUnit(TextPatternRangeEndpoint_Start, TextUnit_Character, -1);
         }
         bounding_rect_center(&probe)
     }
@@ -1081,7 +1069,8 @@ fn first_rect_center(psa: *mut SAFEARRAY) -> Option<(i32, i32)> {
         let result = if accessed && !data.is_null() {
             match SafeArrayGetUBound(psa, 1) {
                 Ok(ubound) if ubound >= 3 => {
-                    let vals = std::slice::from_raw_parts(data as *const f64, (ubound + 1) as usize);
+                    let vals =
+                        std::slice::from_raw_parts(data as *const f64, (ubound + 1) as usize);
                     let left = vals[0];
                     let top = vals[1];
                     let width = vals[2];
@@ -1449,7 +1438,12 @@ mod tests {
         let strip = line_strip_bounds(None, Some(caret)).expect("strip");
         assert_eq!(
             strip,
-            rect(caret.0 - 160, caret.1 - 24, LINE_STRIP_WIDTH, LINE_STRIP_HEIGHT)
+            rect(
+                caret.0 - 160,
+                caret.1 - 24,
+                LINE_STRIP_WIDTH,
+                LINE_STRIP_HEIGHT
+            )
         );
     }
 
@@ -1479,7 +1473,13 @@ mod tests {
         is_chromium_document: bool,
         aria_role: AriaRoleKind,
     ) -> UiaTextInputSignals {
-        signals_with_text_pattern(control_type, value_writable, is_chromium_document, aria_role, false)
+        signals_with_text_pattern(
+            control_type,
+            value_writable,
+            is_chromium_document,
+            aria_role,
+            false,
+        )
     }
 
     fn signals_with_text_pattern(
@@ -1848,7 +1848,11 @@ mod tests {
         // Class fallbacks when FrameworkId is empty.
         assert!(host_is_chromium("", "", "Chrome_WidgetWin_1"));
         assert!(host_is_chromium("", "", "Chrome_RenderWidgetHostHWND"));
-        assert!(host_is_chromium("", "Chrome_RenderWidgetHostHWND", "Notepad"));
+        assert!(host_is_chromium(
+            "",
+            "Chrome_RenderWidgetHostHWND",
+            "Notepad"
+        ));
         assert!(!host_is_chromium("", "", "Notepad"));
         assert!(!host_is_chromium("", "", ""));
         assert!(!host_is_chromium("Win32", "", "Notepad"));

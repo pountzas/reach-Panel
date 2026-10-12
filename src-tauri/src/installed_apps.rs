@@ -35,11 +35,7 @@ fn list_installed_apps_windows() -> Result<Vec<InstalledApp>, String> {
             continue;
         }
         collect_lnk_files(&root, &mut |lnk| {
-            let Some(name) = lnk
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .map(str::to_string)
-            else {
+            let Some(name) = lnk.file_stem().and_then(|s| s.to_str()).map(str::to_string) else {
                 return;
             };
             if is_junk_shortcut_name(&name) {
@@ -139,19 +135,17 @@ fn is_launchable_exe(path: &str) -> bool {
         .and_then(|s| s.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
-    !file.contains("uninstall") && !file.starts_with("unins") && file != "setup" && file != "install"
+    !file.contains("uninstall")
+        && !file.starts_with("unins")
+        && file != "setup"
+        && file != "install"
 }
 
 #[cfg(windows)]
-fn resolve_shortcut_target(
-    lnk: &Path,
-    clsid: windows::core::GUID,
-) -> Result<String, String> {
+fn resolve_shortcut_target(lnk: &Path, clsid: windows::core::GUID) -> Result<String, String> {
     use std::os::windows::ffi::OsStrExt;
     use windows::core::{Interface, PCWSTR};
-    use windows::Win32::System::Com::{
-        CoCreateInstance, IPersistFile, CLSCTX_INPROC_SERVER, STGM,
-    };
+    use windows::Win32::System::Com::{CoCreateInstance, IPersistFile, CLSCTX_INPROC_SERVER, STGM};
     use windows::Win32::UI::Shell::{IShellLinkW, SLGP_RAWPATH};
 
     unsafe {

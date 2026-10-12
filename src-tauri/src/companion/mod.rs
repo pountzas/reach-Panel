@@ -235,9 +235,7 @@ fn prefer_pairing_ip(candidates: &[String]) -> Option<String> {
 
 /// Common Android USB tethering / Windows ICS host ranges.
 fn looks_like_usb_tether(ip: &str) -> bool {
-    ip.starts_with("192.168.42.")
-        || ip.starts_with("192.168.43.")
-        || ip.starts_with("192.168.137.")
+    ip.starts_with("192.168.42.") || ip.starts_with("192.168.43.") || ip.starts_with("192.168.137.")
 }
 
 // --- Tauri commands ---
@@ -265,7 +263,9 @@ pub fn cmd_companion_status(bridge: State<CompanionBridge>) -> CompanionUiState 
 }
 
 #[tauri::command]
-pub fn cmd_companion_pairing_payload(bridge: State<CompanionBridge>) -> Result<PairingPayload, String> {
+pub fn cmd_companion_pairing_payload(
+    bridge: State<CompanionBridge>,
+) -> Result<PairingPayload, String> {
     bridge.pairing_payload()
 }
 
@@ -277,7 +277,9 @@ pub fn cmd_companion_refresh_pairing(
 }
 
 #[tauri::command]
-pub fn cmd_companion_list_devices(bridge: State<CompanionBridge>) -> Result<Vec<PairedDevice>, String> {
+pub fn cmd_companion_list_devices(
+    bridge: State<CompanionBridge>,
+) -> Result<Vec<PairedDevice>, String> {
     bridge.list_devices()
 }
 

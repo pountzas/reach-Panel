@@ -6,7 +6,7 @@ use std::sync::{Mutex, OnceLock};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, GetKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
     KEYEVENTF_KEYUP, KEYEVENTF_UNICODE, VIRTUAL_KEY, VK_BACK, VK_CAPITAL, VK_CONTROL, VK_DELETE,
-    VK_DOWN, VK_END, VK_ESCAPE, VK_F1, VK_HOME, VK_LMENU, VK_LWIN, VK_LEFT, VK_NEXT, VK_PRIOR,
+    VK_DOWN, VK_END, VK_ESCAPE, VK_F1, VK_HOME, VK_LEFT, VK_LMENU, VK_LWIN, VK_NEXT, VK_PRIOR,
     VK_RETURN, VK_RIGHT, VK_SHIFT, VK_SPACE, VK_TAB, VK_UP,
 };
 
@@ -53,7 +53,11 @@ fn special_vk(key: &str) -> Option<VIRTUAL_KEY> {
 }
 
 fn send_vk(vk: VIRTUAL_KEY, key_up: bool) -> Result<()> {
-    let flags = if key_up { KEYEVENTF_KEYUP } else { Default::default() };
+    let flags = if key_up {
+        KEYEVENTF_KEYUP
+    } else {
+        Default::default()
+    };
     let input = INPUT {
         r#type: INPUT_KEYBOARD,
         Anonymous: INPUT_0 {
@@ -164,8 +168,16 @@ fn press_key_impl(request: KeyPressRequest) -> Result<()> {
             }
             if let Some(vk) = char_to_vk(ch) {
                 let needs_shift = ch.is_ascii_uppercase()
-                    || matches!(ch, '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*' | '(' | ')');
-                if needs_shift && !request.modifiers.iter().any(|m| m.eq_ignore_ascii_case("shift")) {
+                    || matches!(
+                        ch,
+                        '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*' | '(' | ')'
+                    );
+                if needs_shift
+                    && !request
+                        .modifiers
+                        .iter()
+                        .any(|m| m.eq_ignore_ascii_case("shift"))
+                {
                     send_vk(VK_SHIFT, false)?;
                     send_vk(vk, false)?;
                     send_vk(vk, true)?;
@@ -336,8 +348,8 @@ pub fn get_keyboard_state() -> KeyboardState {
         }
     }
     for vk in [
-        0x08, 0x09, 0x0D, 0x10, 0xA0, 0xA1, 0x11, 0xA2, 0xA3, 0x12, 0xA4, 0xA5, 0x14, 0x20,
-        0x5B, 0x5C, 0xBA, 0xBB, 0xBC, 0xBD, 0xBE, 0xBF, 0xC0, 0xDB, 0xDC, 0xDD, 0xDE,
+        0x08, 0x09, 0x0D, 0x10, 0xA0, 0xA1, 0x11, 0xA2, 0xA3, 0x12, 0xA4, 0xA5, 0x14, 0x20, 0x5B,
+        0x5C, 0xBA, 0xBB, 0xBC, 0xBD, 0xBE, 0xBF, 0xC0, 0xDB, 0xDC, 0xDD, 0xDE,
     ] {
         if is_async_key_down(vk) {
             pressed_vks.push(vk as u16);
@@ -639,9 +651,7 @@ pub fn set_input_method_by_hkl(hkl_value: u64) -> Result<()> {
 fn activate_hkl(hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL) -> Result<()> {
     use windows::Win32::Foundation::{LPARAM, WPARAM};
     use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
-    use windows::Win32::UI::Input::KeyboardAndMouse::{
-        ActivateKeyboardLayout, KLF_SETFORPROCESS,
-    };
+    use windows::Win32::UI::Input::KeyboardAndMouse::{ActivateKeyboardLayout, KLF_SETFORPROCESS};
     use windows::Win32::UI::WindowsAndMessaging::{
         GetForegroundWindow, GetWindowThreadProcessId, PostMessageW, SystemParametersInfoW,
         SPIF_SENDCHANGE, SPI_SETDEFAULTINPUTLANG, WM_INPUTLANGCHANGEREQUEST,
@@ -660,15 +670,14 @@ fn activate_hkl(hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL) -> Result
         ActivateKeyboardLayout(hkl, KLF_SETFORPROCESS)?;
 
         // Prefer remembered typing target; otherwise foreground (desktop/shell is fine).
-        let hwnd = super::focus_target::get_language_switch_hwnd()
-            .or_else(|| {
-                let fg = GetForegroundWindow();
-                if fg.0.is_null() {
-                    None
-                } else {
-                    Some(fg)
-                }
-            });
+        let hwnd = super::focus_target::get_language_switch_hwnd().or_else(|| {
+            let fg = GetForegroundWindow();
+            if fg.0.is_null() {
+                None
+            } else {
+                Some(fg)
+            }
+        });
 
         if let Some(hwnd) = hwnd {
             let target_thread = GetWindowThreadProcessId(hwnd, None);
@@ -782,7 +791,9 @@ fn to_unicode_for_vk(
     vk: u16,
     shift: bool,
 ) -> String {
-    use windows::Win32::UI::Input::KeyboardAndMouse::{MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC};
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC,
+    };
 
     unsafe {
         let scan = MapVirtualKeyExW(vk as u32, MAPVK_VK_TO_VSC, hkl);
@@ -892,7 +903,11 @@ fn is_greek_hkl(hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL) -> bool {
     (hkl.0 as u32) & 0xFFFF == LANG_GREEK
 }
 
-fn greek_physical_fallback(vk: u16, shift: bool, hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL) -> Option<String> {
+fn greek_physical_fallback(
+    vk: u16,
+    shift: bool,
+    hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL,
+) -> Option<String> {
     if shift || !is_greek_hkl(hkl) {
         return None;
     }
@@ -904,20 +919,15 @@ fn greek_physical_fallback(vk: u16, shift: bool, hkl: windows::Win32::UI::Input:
 }
 
 fn flush_thread_dead_state(hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL) {
-    use windows::Win32::UI::Input::KeyboardAndMouse::{MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC};
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC,
+    };
 
     unsafe {
         let scan = MapVirtualKeyExW(VK_SPACE.0 as u32, MAPVK_VK_TO_VSC, hkl);
         let state = [0u8; 256];
         let mut buf = [0u16; 8];
-        let _ = ToUnicodeEx(
-            VK_SPACE.0 as u32,
-            scan,
-            &state,
-            &mut buf,
-            0,
-            hkl,
-        );
+        let _ = ToUnicodeEx(VK_SPACE.0 as u32, scan, &state, &mut buf, 0, hkl);
     }
 }
 
@@ -934,7 +944,9 @@ fn to_unicode_ex(
     caps_lock: bool,
     hkl: windows::Win32::UI::Input::KeyboardAndMouse::HKL,
 ) -> (i32, String) {
-    use windows::Win32::UI::Input::KeyboardAndMouse::{MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC};
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC,
+    };
 
     unsafe {
         let scan = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, hkl);
@@ -991,8 +1003,7 @@ pub fn translate_layout_key_press(
 
     if let Some(dead) = pending_dead_keys().lock().unwrap().remove(&hkl_id) {
         if is_layout_dead_key_vk(dead.vk) {
-            let (replay_result, _) =
-                to_unicode_ex(dead.vk as u32, dead.shift, dead.caps_lock, hkl);
+            let (replay_result, _) = to_unicode_ex(dead.vk as u32, dead.shift, dead.caps_lock, hkl);
             let _ = replay_result;
         }
     }
@@ -1001,10 +1012,14 @@ pub fn translate_layout_key_press(
 
     if result < 0 || is_spacing_accent_text(&text) {
         if is_layout_dead_key_vk(vk) {
-            pending_dead_keys()
-                .lock()
-                .unwrap()
-                .insert(hkl_id, PendingDeadKey { vk, shift, caps_lock });
+            pending_dead_keys().lock().unwrap().insert(
+                hkl_id,
+                PendingDeadKey {
+                    vk,
+                    shift,
+                    caps_lock,
+                },
+            );
             return LayoutKeyTranslation {
                 text: String::new(),
                 dead: true,
@@ -1027,10 +1042,7 @@ pub fn translate_layout_key_press(
 
     if result > 0 && !text.is_empty() {
         pending_dead_keys().lock().unwrap().remove(&hkl_id);
-        return LayoutKeyTranslation {
-            text,
-            dead: false,
-        };
+        return LayoutKeyTranslation { text, dead: false };
     }
 
     pending_dead_keys().lock().unwrap().remove(&hkl_id);
@@ -1048,7 +1060,9 @@ pub fn translate_layout_key_press(
 
 /// Cancel a pending dead key in the current thread's keyboard layout state.
 pub fn reset_layout_compose_state(hkl_value: Option<u64>) {
-    use windows::Win32::UI::Input::KeyboardAndMouse::{MapVirtualKeyExW, ToUnicodeEx, HKL, MAPVK_VK_TO_VSC};
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        MapVirtualKeyExW, ToUnicodeEx, HKL, MAPVK_VK_TO_VSC,
+    };
 
     let hkl = match hkl_value {
         Some(v) if v != 0 => HKL(v as _),
@@ -1061,22 +1075,13 @@ pub fn reset_layout_compose_state(hkl_value: Option<u64>) {
         let scan = MapVirtualKeyExW(VK_SPACE.0 as u32, MAPVK_VK_TO_VSC, hkl);
         let state = [0u8; 256];
         let mut buf = [0u16; 8];
-        let _ = ToUnicodeEx(
-            VK_SPACE.0 as u32,
-            scan,
-            &state,
-            &mut buf,
-            0,
-            hkl,
-        );
+        let _ = ToUnicodeEx(VK_SPACE.0 as u32, scan, &state, &mut buf, 0, hkl);
     }
 }
 
 #[cfg(test)]
 mod translate_tests {
-    use super::{
-        load_layout_for_language, reset_layout_compose_state, translate_layout_key_press,
-    };
+    use super::{load_layout_for_language, reset_layout_compose_state, translate_layout_key_press};
 
     #[test]
     fn greek_tonos_then_o_produces_omicron_with_accent() {

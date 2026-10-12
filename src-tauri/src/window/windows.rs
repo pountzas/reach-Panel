@@ -1,6 +1,8 @@
 use super::{MonitorInfo, WindowLayout};
 use windows::Win32::Foundation::{BOOL, HWND, LPARAM, RECT};
-use windows::Win32::Graphics::Gdi::{EnumDisplayMonitors, GetMonitorInfoW, MONITORINFO, MONITORINFOEXW};
+use windows::Win32::Graphics::Gdi::{
+    EnumDisplayMonitors, GetMonitorInfoW, MONITORINFO, MONITORINFOEXW,
+};
 use windows::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
 use windows::Win32::UI::WindowsAndMessaging::GetWindowRect;
 
@@ -13,7 +15,8 @@ fn monitor_scale_factor(hmonitor: windows::Win32::Graphics::Gdi::HMONITOR) -> f6
     let mut dpi_x = 0u32;
     let mut dpi_y = 0u32;
     unsafe {
-        if GetDpiForMonitor(hmonitor, MDT_EFFECTIVE_DPI, &mut dpi_x, &mut dpi_y).is_ok() && dpi_x > 0
+        if GetDpiForMonitor(hmonitor, MDT_EFFECTIVE_DPI, &mut dpi_x, &mut dpi_y).is_ok()
+            && dpi_x > 0
         {
             return dpi_x as f64 / 96.0;
         }
@@ -104,11 +107,8 @@ pub fn monitor_for_rect(monitors: &[super::MonitorInfo], x: i32, y: i32, w: i32,
 pub fn get_window_bounds(hwnd: isize) -> Result<WindowLayout, String> {
     let mut rect = RECT::default();
     unsafe {
-        GetWindowRect(
-            HWND(hwnd as *mut core::ffi::c_void),
-            &mut rect,
-        )
-        .map_err(|e| e.to_string())?;
+        GetWindowRect(HWND(hwnd as *mut core::ffi::c_void), &mut rect)
+            .map_err(|e| e.to_string())?;
     }
     Ok(WindowLayout {
         x: rect.left,

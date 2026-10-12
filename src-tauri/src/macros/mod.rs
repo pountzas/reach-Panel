@@ -34,11 +34,7 @@ where
         .map_err(|e| anyhow::anyhow!("blocking task join failed: {e}"))?
 }
 
-pub async fn run_macro(
-    app: &tauri::AppHandle,
-    db: &Database,
-    macro_id: &str,
-) -> Result<()> {
+pub async fn run_macro(app: &tauri::AppHandle, db: &Database, macro_id: &str) -> Result<()> {
     let macro_def = db
         .get_macro_by_id(macro_id)?
         .ok_or_else(|| anyhow::anyhow!("Macro not found"))?;

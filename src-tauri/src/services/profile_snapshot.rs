@@ -31,8 +31,8 @@ pub fn build_profile_snapshot(
         .find(|p| p.id == profile_id)
         .ok_or_else(|| format!("Profile not found: {profile_id}"))?;
 
-    let settings = serde_json::from_str(&profile.settings_json)
-        .unwrap_or_else(|_| serde_json::json!({}));
+    let settings =
+        serde_json::from_str(&profile.settings_json).unwrap_or_else(|_| serde_json::json!({}));
 
     // Strip any accidentally stored secrets before syncing to tablet.
     let settings = sanitize_settings_for_tablet(settings);
@@ -48,7 +48,11 @@ pub fn build_profile_snapshot(
         .map_err(|e| e.to_string())?;
 
     Ok(ProfileSnapshot {
-        profile: PublicProfile { id: profile.id, name: profile.name, created_at: profile.created_at },
+        profile: PublicProfile {
+            id: profile.id,
+            name: profile.name,
+            created_at: profile.created_at,
+        },
         phrases,
         phrase_categories,
         quick_actions,
@@ -62,7 +66,12 @@ fn sanitize_settings_for_tablet(settings: serde_json::Value) -> serde_json::Valu
     if let Some(language) = settings.get("typingLanguage").and_then(|v| v.as_str()) {
         public.insert("typingLanguage".into(), language.into());
     }
-    for key in ["predictionEnabled", "phrasesVisible", "quickActionsVisible", "mouseVisible"] {
+    for key in [
+        "predictionEnabled",
+        "phrasesVisible",
+        "quickActionsVisible",
+        "mouseVisible",
+    ] {
         if let Some(value) = settings.get(key).and_then(|v| v.as_bool()) {
             public.insert(key.into(), value.into());
         }
@@ -75,16 +84,24 @@ mod audit_snapshot_regression {
 
     #[test]
     fn serialized_tablet_snapshot_contains_no_host_api_key() {
-        let root = std::env::temp_dir().join(format!("reachpanel-snapshot-audit-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!(
+            "reachpanel-snapshot-audit-{}",
+            uuid::Uuid::new_v4()
+        ));
         std::fs::create_dir_all(&root).unwrap();
         let db = Database::new(root).unwrap();
         db.ensure_internal_profile("active", "Audit", "en").unwrap();
-        db.update_profile_settings("active",
-            r#"{"uiLanguage":"en","groqApiKey":"AUDIT_SENTINEL_NOT_A_REAL_KEY"}"#).unwrap();
+        db.update_profile_settings(
+            "active",
+            r#"{"uiLanguage":"en","groqApiKey":"AUDIT_SENTINEL_NOT_A_REAL_KEY"}"#,
+        )
+        .unwrap();
         let snapshot = build_profile_snapshot(&db, "active", "en").unwrap();
         assert!(snapshot.settings.get("groqApiKey").is_none());
         let wire = serde_json::to_string(&snapshot).unwrap();
-        assert!(!wire.contains("AUDIT_SENTINEL_NOT_A_REAL_KEY"),
-            "Host API key leaked through profile.settings_json despite sanitized settings");
+        assert!(
+            !wire.contains("AUDIT_SENTINEL_NOT_A_REAL_KEY"),
+            "Host API key leaked through profile.settings_json despite sanitized settings"
+        );
     }
 }

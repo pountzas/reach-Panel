@@ -10,7 +10,45 @@ import {
 export const DICTATION_OVERLAY_LABEL = "dictation-overlay";
 export const DICTATION_OVERLAY_SIZE = { width: 300, height: 76 } as const;
 
-type OverlayPlacement = { x: number; y: number; width: number; height: number };
+/** Groq/cpal owns the mic; a second getUserMedia stream can silence capture. */
+export function overlayShouldCaptureMic(
+  engine: string | null | undefined,
+): boolean {
+  return engine === "winrt";
+}
+
+export type OverlayPlacement = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type OverlayRect = OverlayPlacement;
+
+/**
+ * Keep the dictation pill off the on-screen keyboard: sit above `windowRect`
+ * when the two overlap. Collapsed FAB stacks that do not overlap stay put.
+ */
+export function liftPlacementAboveWindow(
+  placement: OverlayPlacement,
+  windowRect: OverlayRect,
+  monitorTopLogical: number,
+  gap = 8,
+): OverlayPlacement {
+  const overlaps =
+    placement.x < windowRect.x + windowRect.width &&
+    placement.x + placement.width > windowRect.x &&
+    placement.y < windowRect.y + windowRect.height &&
+    placement.y + placement.height > windowRect.y;
+  if (!overlaps) return placement;
+  return {
+    ...placement,
+    y: Math.round(
+      Math.max(monitorTopLogical, windowRect.y - placement.height - gap),
+    ),
+  };
+}
 
 /**
  * Win32 monitor rects are physical pixels; Tauri WebviewWindow x/y/size are
@@ -50,13 +88,34 @@ async function resolvePlacement(): Promise<OverlayPlacement | null> {
   const monitors = await getMonitors();
   const monitor = await resolveMainWindowMonitor(monitors);
   if (!monitor) return null;
-  return bottomCenterOnMonitor(
+  const scale = resolveMonitorScaleFactor(monitor);
+  const placement = bottomCenterOnMonitor(
     monitor,
     DICTATION_OVERLAY_SIZE.width,
     DICTATION_OVERLAY_SIZE.height,
     24,
-    resolveMonitorScaleFactor(monitor),
+    scale,
   );
+  try {
+    const main = await WebviewWindow.getByLabel("main");
+    if (main && (await main.isVisible())) {
+      const pos = await main.outerPosition();
+      const size = await main.outerSize();
+      return liftPlacementAboveWindow(
+        placement,
+        {
+          x: pos.x / scale,
+          y: pos.y / scale,
+          width: size.width / scale,
+          height: size.height / scale,
+        },
+        monitor.y / scale,
+      );
+    }
+  } catch {
+    /* keep bottom-center */
+  }
+  return placement;
 }
 
 async function applyOverlayPlacement(
@@ -96,7 +155,9 @@ async function createOverlay(
       reject(
         event.payload instanceof Error
           ? event.payload
-          : new Error(String(event.payload ?? "Failed to create dictation overlay")),
+          : new Error(
+              String(event.payload ?? "Failed to create dictation overlay"),
+            ),
       );
     });
   });
@@ -137,8 +198,8 @@ export async function showDictationOverlay(): Promise<void> {
         console.error("Failed to reposition dictation overlay", error);
       }
     }
-    // Dictation may have ended while we were awaiting.
     if (overlayWanted) await webview.show();
+    if (!overlayWanted) await webview.hide();
   } catch (error) {
     console.error("Failed to show dictation overlay", error);
   }

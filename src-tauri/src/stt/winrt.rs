@@ -189,7 +189,6 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
                 Err(_) => None,
             };
             if let Some(active) = ended {
-                super::clear_active_backend(super::ActiveBackend::WinRt);
                 // Close outside this callback to avoid deadlocking WinRT.
                 std::thread::spawn(move || {
                     let _ = ensure_winrt();
@@ -201,6 +200,14 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
                 });
             }
 
+            let still_current = runtime()
+                .lock()
+                .ok()
+                .is_some_and(|g| is_current_session(g.generation, my_gen));
+            if !still_current {
+                return Ok(());
+            }
+            super::clear_active_backend(super::ActiveBackend::WinRt);
             if let Some(args) = args {
                 if let Ok(status) = args.Status() {
                     if status != SpeechRecognitionResultStatus::Success && !is_quiet_end(status) {

@@ -62,10 +62,7 @@ fn set_processing(active: bool) {
 }
 
 pub fn is_processing() -> bool {
-    runtime()
-        .lock()
-        .map(|g| g.processing)
-        .unwrap_or(false)
+    runtime().lock().map(|g| g.processing).unwrap_or(false)
 }
 
 /// Resolve API key from settings value, then `GROQ_API_KEY` env.
@@ -116,30 +113,19 @@ pub fn start_dictation(language: &str, api_key: &str, app: AppHandle) -> Result<
     let samples_cb = Arc::clone(&samples);
 
     let stream = match sample_format {
-        SampleFormat::F32 => build_stream::<f32, _>(
-            &device,
-            &config,
-            channels,
-            input_rate,
-            samples_cb,
-            |s| s,
-        )?,
-        SampleFormat::I16 => build_stream::<i16, _>(
-            &device,
-            &config,
-            channels,
-            input_rate,
-            samples_cb,
-            |s| s as f32 / i16::MAX as f32,
-        )?,
-        SampleFormat::U16 => build_stream::<u16, _>(
-            &device,
-            &config,
-            channels,
-            input_rate,
-            samples_cb,
-            |s| (s as f32 / u16::MAX as f32) * 2.0 - 1.0,
-        )?,
+        SampleFormat::F32 => {
+            build_stream::<f32, _>(&device, &config, channels, input_rate, samples_cb, |s| s)?
+        }
+        SampleFormat::I16 => {
+            build_stream::<i16, _>(&device, &config, channels, input_rate, samples_cb, |s| {
+                s as f32 / i16::MAX as f32
+            })?
+        }
+        SampleFormat::U16 => {
+            build_stream::<u16, _>(&device, &config, channels, input_rate, samples_cb, |s| {
+                (s as f32 / u16::MAX as f32) * 2.0 - 1.0
+            })?
+        }
         other => return Err(anyhow!("Unsupported sample format: {other:?}")),
     };
 
@@ -154,13 +140,7 @@ pub fn start_dictation(language: &str, api_key: &str, app: AppHandle) -> Result<
     let samples_worker = Arc::clone(&samples);
     let app_worker = app.clone();
     let worker = thread::spawn(move || {
-        worker_loop(
-            api_key,
-            groq_lang,
-            samples_worker,
-            stop_worker,
-            app_worker,
-        );
+        worker_loop(api_key, groq_lang, samples_worker, stop_worker, app_worker);
     });
 
     {
@@ -311,10 +291,7 @@ fn worker_loop(
                             result.quota.remaining_requests,
                             result.quota.limit_requests,
                         );
-                        eprintln!(
-                            "[stt/groq] transcript len={}",
-                            result.text.chars().count()
-                        );
+                        eprintln!("[stt/groq] transcript len={}", result.text.chars().count());
                         if !stop_flag.load(Ordering::SeqCst) {
                             handle_result(&app, &result.text);
                         }
@@ -416,7 +393,11 @@ pub fn groq_remaining_percent(remaining: u64, limit: u64) -> u32 {
     pct.clamp(0, 100) as u32
 }
 
-fn transcribe(api_key: &str, audio: &[f32], language: &str) -> Result<GroqTranscription, GroqTranscribeError> {
+fn transcribe(
+    api_key: &str,
+    audio: &[f32],
+    language: &str,
+) -> Result<GroqTranscription, GroqTranscribeError> {
     if audio.is_empty() {
         return Ok(GroqTranscription {
             text: String::new(),
@@ -539,7 +520,10 @@ fn pcm16le_to_f32(pcm: &[u8]) -> Vec<f32> {
 
 fn map_groq_http_error(code: u16, message: &str) -> anyhow::Error {
     let lower = message.to_lowercase();
-    if code == 401 || code == 403 || lower.contains("invalid api key") || lower.contains("unauthorized")
+    if code == 401
+        || code == 403
+        || lower.contains("invalid api key")
+        || lower.contains("unauthorized")
     {
         return anyhow!(
             "GROQ_KEY: Groq API key is missing or invalid. Add a free key in Settings (or set GROQ_API_KEY)."
@@ -551,7 +535,12 @@ fn map_groq_http_error(code: u16, message: &str) -> anyhow::Error {
     anyhow!("GROQ_API: {message}")
 }
 
-fn write_multipart_field(body: &mut Vec<u8>, boundary: &str, name: &str, value: &str) -> Result<()> {
+fn write_multipart_field(
+    body: &mut Vec<u8>,
+    boundary: &str,
+    name: &str,
+    value: &str,
+) -> Result<()> {
     write!(
         body,
         "--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n"
@@ -685,9 +674,7 @@ fn resample_linear(input: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        encode_wav_pcm16, groq_remaining_percent, resample_linear, resolve_api_key,
-    };
+    use super::{encode_wav_pcm16, groq_remaining_percent, resample_linear, resolve_api_key};
 
     #[test]
     fn resample_identity() {

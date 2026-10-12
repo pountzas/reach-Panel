@@ -103,9 +103,12 @@ pub fn start_dictation(
     let prefer_cloud = prefer_cloud_stt(language);
     match select_engine(online, winrt_supported, groq_configured, prefer_cloud) {
         RouteDecision::Use(SttEngine::WinRt) => {
-            winrt::start_dictation(language, app)?;
             if let Ok(mut guard) = router().lock() {
                 guard.active = Some(ActiveBackend::WinRt);
+            }
+            if let Err(e) = winrt::start_dictation(language, app) {
+                clear_active_backend(ActiveBackend::WinRt);
+                return Err(e);
             }
             Ok(())
         }
@@ -115,9 +118,12 @@ pub fn start_dictation(
                     "GROQ_KEY: Add a free Groq API key in Settings to dictate in this language."
                 )
             })?;
-            groq::start_dictation(language, &key, app)?;
             if let Ok(mut guard) = router().lock() {
                 guard.active = Some(ActiveBackend::Groq);
+            }
+            if let Err(e) = groq::start_dictation(language, &key, app) {
+                clear_active_backend(ActiveBackend::Groq);
+                return Err(e);
             }
             Ok(())
         }
@@ -223,5 +229,27 @@ mod tests {
     #[test]
     fn router_not_stale_when_idle() {
         assert!(!router_is_stale(None, false, false));
+    }
+
+    fn claim(backend: ActiveBackend) {
+        router().lock().expect("router").active = Some(backend);
+    }
+
+    fn active() -> Option<ActiveBackend> {
+        router().lock().expect("router").active
+    }
+
+    #[test]
+    fn clear_active_backend_resets_claimed_slot() {
+        claim(ActiveBackend::WinRt);
+        clear_active_backend(ActiveBackend::WinRt);
+        assert_eq!(active(), None);
+    }
+
+    #[test]
+    fn clear_active_backend_leaves_the_other_backend() {
+        claim(ActiveBackend::Groq);
+        clear_active_backend(ActiveBackend::WinRt);
+        assert_eq!(active(), Some(ActiveBackend::Groq));
     }
 }

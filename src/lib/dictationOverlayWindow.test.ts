@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   bottomCenterOnMonitor,
   DICTATION_OVERLAY_SIZE,
+  liftPlacementAboveWindow,
+  overlayShouldCaptureMic,
 } from "./dictationOverlayWindow";
 import { resolveMonitorScaleFactor } from "./toolWindows";
 import type { MonitorInfo } from "./types";
@@ -80,5 +82,50 @@ describe("bottomCenterOnMonitor", () => {
     expect(placed.x).toBe(0);
     // Margin never pushes the overlay above the monitor's top edge.
     expect(placed.y).toBe(0);
+  });
+});
+
+describe("liftPlacementAboveWindow", () => {
+  const placement = { x: 810, y: 980, width: 300, height: 76 };
+
+  it("moves the pill above the main window when they overlap", () => {
+    const lifted = liftPlacementAboveWindow(
+      placement,
+      { x: 0, y: 780, width: 1920, height: 300 },
+      0,
+    );
+    expect(lifted).toEqual({
+      x: 810,
+      y: 780 - 76 - 8,
+      width: 300,
+      height: 76,
+    });
+  });
+
+  it("keeps bottom-center when the main window is a collapsed FAB that does not overlap", () => {
+    const lifted = liftPlacementAboveWindow(
+      placement,
+      { x: 1720, y: 980, width: 180, height: 80 },
+      0,
+    );
+    expect(lifted).toEqual(placement);
+  });
+
+  it("clamps to the monitor top when lifting would go above it", () => {
+    const lifted = liftPlacementAboveWindow(
+      { x: 50, y: 20, width: 300, height: 76 },
+      { x: 0, y: 0, width: 1920, height: 200 },
+      0,
+    );
+    expect(lifted.y).toBe(0);
+  });
+});
+
+describe("overlayShouldCaptureMic", () => {
+  it("captures only when the active engine is WinRT", () => {
+    expect(overlayShouldCaptureMic("winrt")).toBe(true);
+    expect(overlayShouldCaptureMic("groq")).toBe(false);
+    expect(overlayShouldCaptureMic(undefined)).toBe(false);
+    expect(overlayShouldCaptureMic(null)).toBe(false);
   });
 });

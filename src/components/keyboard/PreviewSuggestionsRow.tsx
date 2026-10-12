@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { useAppStore } from "../../stores/appStore";
 import { InputPreview } from "./InputPreview";
@@ -17,9 +17,11 @@ export function PreviewSuggestionsRow({
 }) {
   const suggestions = useAppStore((s) => s.suggestions);
   const lastSuggestionsRef = useRef<string[]>([]);
-  if (suggestions.length > 0) {
-    lastSuggestionsRef.current = suggestions;
-  }
+  useEffect(() => {
+    if (suggestions.length > 0) {
+      lastSuggestionsRef.current = suggestions;
+    }
+  }, [suggestions]);
   const displaySuggestions =
     suggestions.length > 0 ? suggestions : lastSuggestionsRef.current;
 
@@ -34,8 +36,7 @@ export function PreviewSuggestionsRow({
             ? "max-w-[320px] opacity-100 translate-x-0"
             : "pointer-events-none max-w-0 opacity-0 -translate-x-2"
         }`}
-        style={{ width: PREVIEW_WIDTH }}
-      >
+        style={{ width: PREVIEW_WIDTH }}>
         <InputPreview />
       </div>
       <div
@@ -46,8 +47,7 @@ export function PreviewSuggestionsRow({
           showSuggestions
             ? "max-w-[min(60vw,40rem)] opacity-100 translate-x-0"
             : "pointer-events-none max-w-0 opacity-0 translate-x-2"
-        } ${showPreview && showSuggestions ? "ml-2" : "ml-0"}`}
-      >
+        } ${showPreview && showSuggestions ? "ml-2" : "ml-0"}`}>
         <SuggestionsBar suggestions={displaySuggestions} />
       </div>
     </div>

@@ -1,8 +1,8 @@
 mod companion;
 mod db;
 mod icons;
-mod installed_apps;
 mod input;
+mod installed_apps;
 mod language;
 mod macros;
 mod music;
@@ -17,30 +17,28 @@ mod window;
 #[cfg(not(target_os = "windows"))]
 compile_error!("ReachPanel is Windows-only. macOS is not supported.");
 
-use db::{
-    Database, MacroDef, MacroStep, Phrase, Profile, QuickAction,
-};
+use db::{Database, MacroDef, MacroStep, Phrase, Profile, QuickAction};
+use input::focus_target;
 use input::{
     begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position, get_input_methods,
     get_keyboard_layout, get_keyboard_state, get_layout_key_labels, mouse_click,
-    reset_layout_compose_state, translate_layout_key_press, LayoutKeyTranslation,
     mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
-    press_key, press_media_key, set_input_method_by_hkl, set_input_method_by_language,
-    set_system_language, type_text, windows_ui_language, InputMethod, KeyPressRequest,
-    KeyboardState, LayoutKeyLabel,
+    press_key, press_media_key, reset_layout_compose_state, set_input_method_by_hkl,
+    set_input_method_by_language, set_system_language, translate_layout_key_press, type_text,
+    windows_ui_language, InputMethod, KeyPressRequest, KeyboardState, LayoutKeyLabel,
+    LayoutKeyTranslation,
 };
-use input::focus_target;
 use prediction::{
     ensure_english_pack, get_installed_languages, get_suggestions, install_word_pack,
     list_word_packs, record_usage, uninstall_word_pack, WordPackInfo,
 };
+use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
+use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
-use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
-use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use window::{
     apply_taskbar_position_from_str, compute_window_layout, get_taskbar_position_for_monitor,
     list_monitors, MonitorInfo, TaskbarPosition, TaskbarPositionResult, WindowLayout,
@@ -59,7 +57,10 @@ struct CommandResult {
 }
 
 fn ok() -> CommandResult {
-    CommandResult { success: true, error: None }
+    CommandResult {
+        success: true,
+        error: None,
+    }
 }
 
 fn err(e: impl ToString) -> CommandResult {
@@ -382,10 +383,7 @@ fn get_current_window_layout(window: &tauri::WebviewWindow) -> Result<WindowLayo
     window::get_window_bounds(hwnd.0 as isize)
 }
 
-async fn set_window_layout(
-    app: &tauri::AppHandle,
-    layout: WindowLayout,
-) -> Result<(), String> {
+async fn set_window_layout(app: &tauri::AppHandle, layout: WindowLayout) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
         let hwnd = window.hwnd().map_err(|e| e.to_string())?;
         window::set_window_bounds(hwnd.0 as isize, layout)?;
@@ -532,7 +530,9 @@ fn cmd_exclude_window_from_capture(app: tauri::AppHandle, label: String) -> Resu
 #[tauri::command]
 async fn cmd_set_always_on_top(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
-        window.set_always_on_top(enabled).map_err(|e| e.to_string())?;
+        window
+            .set_always_on_top(enabled)
+            .map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -596,7 +596,10 @@ fn cmd_get_profiles(state: State<AppState>) -> Result<Vec<Profile>, String> {
 
 #[tauri::command]
 fn cmd_list_profile_files(state: State<AppState>) -> Result<Vec<ProfileFileInfo>, String> {
-    state.profiles.list_profile_files().map_err(|e| e.to_string())
+    state
+        .profiles
+        .list_profile_files()
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -669,9 +672,7 @@ fn pick_background_image(app: &tauri::AppHandle) -> Result<Option<String>, Strin
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
 
-    window
-        .set_always_on_top(false)
-        .map_err(|e| e.to_string())?;
+    window.set_always_on_top(false).map_err(|e| e.to_string())?;
     let _restore = RestoreAlwaysOnTop(app.clone());
 
     let file = rfd::FileDialog::new()
@@ -694,9 +695,7 @@ fn pick_music_song_file(app: &tauri::AppHandle) -> Result<Option<String>, String
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
 
-    window
-        .set_always_on_top(false)
-        .map_err(|e| e.to_string())?;
+    window.set_always_on_top(false).map_err(|e| e.to_string())?;
     let _restore = RestoreAlwaysOnTop(app.clone());
 
     let file = rfd::FileDialog::new()
@@ -721,9 +720,7 @@ fn pick_teaching_pdf(app: &tauri::AppHandle) -> Result<Option<String>, String> {
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
 
-    window
-        .set_always_on_top(false)
-        .map_err(|e| e.to_string())?;
+    window.set_always_on_top(false).map_err(|e| e.to_string())?;
     let _restore = RestoreAlwaysOnTop(app.clone());
 
     let file = rfd::FileDialog::new()
@@ -766,7 +763,10 @@ struct TeachingPdfPayload {
 }
 
 #[tauri::command]
-fn cmd_read_teaching_pdf(app: tauri::AppHandle, path: String) -> Result<TeachingPdfPayload, String> {
+fn cmd_read_teaching_pdf(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<TeachingPdfPayload, String> {
     let bytes = teaching_pdf::read_teaching_pdf_bytes(&app, &path)?;
     Ok(TeachingPdfPayload {
         path,
@@ -776,14 +776,13 @@ fn cmd_read_teaching_pdf(app: tauri::AppHandle, path: String) -> Result<Teaching
 
 #[tauri::command]
 fn cmd_list_teaching_pdfs(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
-    Ok(serde_json::Value::Array(teaching_pdf::list_teaching_pdfs(&app)?))
+    Ok(serde_json::Value::Array(teaching_pdf::list_teaching_pdfs(
+        &app,
+    )?))
 }
 
 #[tauri::command]
-fn cmd_save_teaching_pdfs(
-    app: tauri::AppHandle,
-    entries: serde_json::Value,
-) -> Result<(), String> {
+fn cmd_save_teaching_pdfs(app: tauri::AppHandle, entries: serde_json::Value) -> Result<(), String> {
     let list = match entries {
         serde_json::Value::Array(items) => items,
         _ => return Err("Teaching PDF library must be a JSON array".to_string()),
@@ -852,7 +851,9 @@ fn cmd_delete_imported_song(app: tauri::AppHandle, id: String) -> Result<(), Str
 
 #[tauri::command]
 fn cmd_list_custom_language_packs(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
-    Ok(serde_json::Value::Array(language::list_custom_language_packs(&app)?))
+    Ok(serde_json::Value::Array(
+        language::list_custom_language_packs(&app)?,
+    ))
 }
 
 #[tauri::command]
@@ -888,13 +889,22 @@ fn cmd_update_profile_settings(
 }
 
 #[tauri::command]
-fn cmd_get_quick_actions(profile_id: String, state: State<AppState>) -> Result<Vec<QuickAction>, String> {
-    state.db.get_quick_actions(&profile_id).map_err(|e| e.to_string())
+fn cmd_get_quick_actions(
+    profile_id: String,
+    state: State<AppState>,
+) -> Result<Vec<QuickAction>, String> {
+    state
+        .db
+        .get_quick_actions(&profile_id)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn cmd_save_quick_action(action: QuickAction, state: State<AppState>) -> Result<(), String> {
-    state.db.save_quick_action(&action).map_err(|e| e.to_string())
+    state
+        .db
+        .save_quick_action(&action)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -935,8 +945,14 @@ fn cmd_get_phrases(
 }
 
 #[tauri::command]
-fn cmd_get_phrase_categories(profile_id: String, state: State<AppState>) -> Result<Vec<db::PhraseCategory>, String> {
-    state.db.get_phrase_categories(&profile_id).map_err(|e| e.to_string())
+fn cmd_get_phrase_categories(
+    profile_id: String,
+    state: State<AppState>,
+) -> Result<Vec<db::PhraseCategory>, String> {
+    state
+        .db
+        .get_phrase_categories(&profile_id)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -1055,10 +1071,7 @@ fn cmd_get_stt_status(
     language: Option<String>,
     groq_api_key: Option<String>,
 ) -> Result<SttStatus, String> {
-    Ok(get_stt_status(
-        language.as_deref(),
-        groq_api_key.as_deref(),
-    ))
+    Ok(get_stt_status(language.as_deref(), groq_api_key.as_deref()))
 }
 
 /// Applies a Windows taskbar edge preference on the monitor where ReachPanel runs.
@@ -1115,7 +1128,12 @@ fn cmd_get_suggestions(
 }
 
 #[tauri::command]
-fn cmd_record_word(profile_id: String, word: String, language: String, state: State<AppState>) -> Result<(), String> {
+fn cmd_record_word(
+    profile_id: String,
+    word: String,
+    language: String,
+    state: State<AppState>,
+) -> Result<(), String> {
     record_usage(&state.db, &profile_id, &word, &language).map_err(|e| e.to_string())?;
     if profile_id == INTERNAL_PROFILE_ID {
         state
@@ -1166,7 +1184,10 @@ fn cmd_get_macros(profile_id: String, state: State<AppState>) -> Result<Vec<Macr
 
 #[tauri::command]
 fn cmd_get_macro_steps(macro_id: String, state: State<AppState>) -> Result<Vec<MacroStep>, String> {
-    state.db.get_macro_steps(&macro_id).map_err(|e| e.to_string())
+    state
+        .db
+        .get_macro_steps(&macro_id)
+        .map_err(|e| e.to_string())
 }
 
 #[derive(Debug, Deserialize)]
@@ -1189,7 +1210,11 @@ fn cmd_delete_macro(id: String, state: State<AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn cmd_run_macro(macro_id: String, app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+async fn cmd_run_macro(
+    macro_id: String,
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     macros::run_macro(&app, &state.db, &macro_id)
         .await
         .map_err(|e| e.to_string())
@@ -1211,12 +1236,22 @@ fn cmd_import_macro(json: String, state: State<AppState>) -> Result<MacroDef, St
 }
 
 #[tauri::command]
-fn cmd_get_head_tracking_settings(profile_id: String, state: State<AppState>) -> Result<String, String> {
-    state.db.get_head_tracking_settings(&profile_id).map_err(|e| e.to_string())
+fn cmd_get_head_tracking_settings(
+    profile_id: String,
+    state: State<AppState>,
+) -> Result<String, String> {
+    state
+        .db
+        .get_head_tracking_settings(&profile_id)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn cmd_save_head_tracking_settings(profile_id: String, settings_json: String, state: State<AppState>) -> Result<(), String> {
+fn cmd_save_head_tracking_settings(
+    profile_id: String,
+    settings_json: String,
+    state: State<AppState>,
+) -> Result<(), String> {
     state
         .db
         .save_head_tracking_settings(&profile_id, &settings_json)
