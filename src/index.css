@@ -3,6 +3,10 @@
 :root {
   font-family: "Segoe UI", system-ui, sans-serif;
   color: #1a1a2e;
+  --rp-dur-fast: 120ms;
+  --rp-dur-base: 200ms;
+  --rp-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --rp-dur-slow: 300ms;
 }
 
 html,
@@ -180,4 +184,20 @@ button {
   border: 2px solid #ffffff;
   background-color: #334155;
   box-shadow: 0 1px 2px rgb(15 23 42 / 20%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rp-dur-fast: 1ms;
+    --rp-dur-base: 1ms;
+    --rp-dur-slow: 1ms;
+  }
+
+  .music-note-chip-active {
+    animation: none;
+  }
+
+  .partiture-note-active .partiture-note-ring {
+    animation: none;
+  }
 }
