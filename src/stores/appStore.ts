@@ -37,7 +37,7 @@ import {
 } from "../lib/music/parseMusicFile";
 import { isImportedMusicSong } from "../lib/music/parseJsonSong";
 import { resolveColorProfile } from "../lib/colorProfiles";
-import { prefersReducedMotion } from "../lib/motion";
+import { MOTION, prefersReducedMotion } from "../lib/motion";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import {
@@ -293,6 +293,26 @@ let liveHeightRatioInFlight = false;
 /** When a mini layout sync is requested during animation, retry after it finishes. */
 let pendingFocusLayoutSync: boolean | null = null;
 
+let focusContentAnimWaiter: {
+  resolve: () => void;
+  promise: Promise<void>;
+} | null = null;
+
+function beginFocusContentAnimWait(): Promise<void> {
+  let resolve!: () => void;
+  const promise = new Promise<void>((r) => {
+    resolve = r;
+  });
+  focusContentAnimWaiter = { resolve, promise };
+  return promise;
+}
+
+export function notifyFocusContentAnimDone(): void {
+  const w = focusContentAnimWaiter;
+  focusContentAnimWaiter = null;
+  w?.resolve();
+}
+
 /** In-flight mode-menu window expand; closeModeMenu waits for it so the restore always lands last. */
 let modeMenuExpandPending: Promise<void> | null = null;
 
@@ -302,7 +322,7 @@ let pendingPointerInputKind: PointerInputKind | null = null;
 let pointerInputKindDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * Animate focus-mode keyboard show/hide: full-width bottom bar vs 3-FAB stack.
+ * Resize the Focus window once, then wait for CSS keyboard/FAB content motion.
  * Always ends aligned with the latest `focusModeKeyboardVisible` (no squashed keyboard in FAB).
  */
 async function syncFocusModeWindowLayout(preferAnimate = true) {
@@ -317,6 +337,7 @@ async function syncFocusModeWindowLayout(preferAnimate = true) {
   }
 
   const visibleAtStart = state.focusModeKeyboardVisible;
+  const animateContent = preferAnimate && !prefersReducedMotion();
   useAppStore.setState({ isAnimatingWindow: true });
   try {
     const { settings } = useAppStore.getState();
@@ -334,17 +355,35 @@ async function syncFocusModeWindowLayout(preferAnimate = true) {
       focusKeyboardHeightRatio: FOCUS_KEYBOARD_HEIGHT_RATIO,
       fullWorkArea: false,
     };
-    if (preferAnimate) {
-      await invoke("cmd_animate_window_layout", args);
+
+    if (visibleAtStart) {
+      await invoke("cmd_apply_window_layout", args);
+      if (animateContent) {
+        const wait = beginFocusContentAnimWait();
+        useAppStore.setState({ focusContentAnim: "enter" });
+        await Promise.race([
+          wait,
+          new Promise<void>((r) => window.setTimeout(r, MOTION.slow + 50)),
+        ]);
+        useAppStore.setState({ focusContentAnim: "idle" });
+      }
     } else {
+      if (animateContent) {
+        const wait = beginFocusContentAnimWait();
+        useAppStore.setState({ focusContentAnim: "exit" });
+        await Promise.race([
+          wait,
+          new Promise<void>((r) => window.setTimeout(r, MOTION.slow + 50)),
+        ]);
+        useAppStore.setState({ focusContentAnim: "idle" });
+      }
       await invoke("cmd_apply_window_layout", args);
     }
   } finally {
-    useAppStore.setState({ isAnimatingWindow: false });
+    useAppStore.setState({ isAnimatingWindow: false, focusContentAnim: "idle" });
     const latest = useAppStore.getState();
     const queued = pendingFocusLayoutSync;
     pendingFocusLayoutSync = null;
-    // Visibility changed mid-animation, or another sync was requested while busy.
     if (
       latest.focusModeActive &&
       (queued !== null || latest.focusModeKeyboardVisible !== visibleAtStart)
@@ -668,6 +707,8 @@ interface AppStore {
   focusModeActive: boolean;
   /** Whether the focus-mode keyboard is popped (vs collapsed FAB). */
   focusModeKeyboardVisible: boolean;
+  /** CSS keyboard/FAB content transition: idle, sliding in, or sliding out. */
+  focusContentAnim: "idle" | "enter" | "exit";
   /**
    * True after Expand until external input loses focus.
    * Expand does not exit Focus mode.
@@ -1152,6 +1193,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   freeWriteActivePdfId: null,
   focusModeActive: false,
   focusModeKeyboardVisible: false,
+  focusContentAnim: "idle" as "idle" | "enter" | "exit",
   focusModeManualExpand: false,
   focusModeSuppressAutoShow: false,
   modeMenuOpen: false,
