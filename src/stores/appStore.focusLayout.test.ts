@@ -223,7 +223,7 @@ describe("focus mode window layout", () => {
         (a) => a.collapsed === true && a.focusKeyboardVisible === false,
       ),
     ).toBe(false);
-    expect(mockState.applyArgs.at(-1)).toMatchObject({
+    expect(mockState.applyArgs[mockState.applyArgs.length - 1]).toMatchObject({
       collapsed: false,
       focusKeyboardVisible: true,
     });
