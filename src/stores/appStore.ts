@@ -37,6 +37,7 @@ import {
 } from "../lib/music/parseMusicFile";
 import { isImportedMusicSong } from "../lib/music/parseJsonSong";
 import { resolveColorProfile } from "../lib/colorProfiles";
+import { prefersReducedMotion } from "../lib/motion";
 import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import {
@@ -558,7 +559,7 @@ async function syncWindowLayoutFromSettings(
 ) {
   const args = windowLayoutInvokeArgs(settings, musicTeachingEnabled);
   // Animate height like phrases/QA toggles; apply for collapsed / cold load.
-  if (preferAnimate && !settings.collapsed) {
+  if (preferAnimate && !settings.collapsed && !prefersReducedMotion()) {
     await invoke("cmd_animate_window_layout", args);
   } else {
     await invoke("cmd_apply_window_layout", args);
@@ -1536,13 +1537,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
           fullWorkArea: teachingFullWorkAreaActive(current, get().musicTeachingEnabled),
         });
       } else if (visibilityChanged && !current.collapsed) {
-        await invoke("cmd_animate_window_layout", {
+        const args = {
           monitorId: current.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
           heightRatio: heightRatioFromSettings(current, get().musicTeachingEnabled),
           fullWorkArea: teachingFullWorkAreaActive(current, get().musicTeachingEnabled),
-        });
+        };
+        await invoke(
+          prefersReducedMotion()
+            ? "cmd_apply_window_layout"
+            : "cmd_animate_window_layout",
+          args,
+        );
       }
     }
   },
@@ -3062,15 +3069,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (!persisted) {
           return;
         }
-        await invoke("cmd_animate_window_layout", {
+        const collapseArgs = {
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
           collapsedDictation: false,
           heightRatio: heightRatioFromSettings(next, get().musicTeachingEnabled),
           fullWorkArea: teachingFullWorkAreaActive(next, get().musicTeachingEnabled),
-        });
+        };
+        await invoke(
+          prefersReducedMotion()
+            ? "cmd_apply_window_layout"
+            : "cmd_animate_window_layout",
+          collapseArgs,
+        );
       } else {
-        await invoke("cmd_animate_window_layout", {
+        const expandArgs = {
           monitorId: settings.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
@@ -3079,7 +3092,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
             settings,
             get().musicTeachingEnabled,
           ),
-        });
+        };
+        await invoke(
+          prefersReducedMotion()
+            ? "cmd_apply_window_layout"
+            : "cmd_animate_window_layout",
+          expandArgs,
+        );
         if (get().settingsEpoch !== epoch) {
           return;
         }

@@ -60,7 +60,7 @@ pub fn mark_mirror_duplicates(monitors: &mut [MonitorInfo]) {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WindowLayout {
     pub x: i32,
     pub y: i32,
@@ -149,9 +149,9 @@ fn collapsed_fab_count(
 }
 
 pub const COLLAPSE_ANIMATION_MS: u64 = 400;
-/// Slide show/hide duration for focus-mode keyboard.
 pub const FOCUS_MODE_ANIMATION_MS: u64 = 300;
-pub const COLLAPSE_ANIMATION_FRAME_MS: u64 = 60;
+/// Target sleep between SetWindowPos frames (~60 fps).
+pub const WINDOW_ANIMATION_FRAME_MS: u64 = 16;
 /// Default height as a fraction of full monitor height for focus-mode keyboard.
 pub const FOCUS_KEYBOARD_HEIGHT_RATIO: f32 = 0.42;
 
@@ -571,6 +571,23 @@ mod tests {
         // Bottom-right of FULL monitor (y near 1080), not bottom-half region (~540+).
         assert_eq!(layout.y, 1080 - expected_h as i32 - COLLAPSED_MARGIN as i32);
         assert!(layout.y > 540, "FAB must sit on full monitor, not bottom half");
+    }
+
+    #[test]
+    fn interpolate_layout_at_one_equals_target() {
+        let from = WindowLayout {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+        };
+        let to = WindowLayout {
+            x: 10,
+            y: 20,
+            width: 200,
+            height: 80,
+        };
+        assert_eq!(interpolate_layout(from, to, 1.0), to);
     }
 }
 
