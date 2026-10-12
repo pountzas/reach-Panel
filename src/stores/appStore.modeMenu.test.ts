@@ -102,6 +102,24 @@ describe("mode menu store actions", () => {
     expect(mockState.calls).toContain("cmd_apply_window_layout");
   });
 
+  it("closeModeMenu skips restore when menu reopened during exit wait", async () => {
+    vi.useFakeTimers();
+    const open = useAppStore.getState().openModeMenu();
+    mockState.resolveExpand?.();
+    await open;
+
+    const close = useAppStore.getState().closeModeMenu();
+    const reopen = useAppStore.getState().openModeMenu();
+    expect(useAppStore.getState().modeMenuOpen).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(MOTION.fast);
+    mockState.resolveExpand?.();
+    await close;
+    await reopen;
+
+    expect(mockState.calls.includes("cmd_apply_window_layout")).toBe(false);
+  });
+
   it("closeModeMenu waits MOTION.fast before restoring layout when motion is allowed", async () => {
     vi.useFakeTimers();
     const open = useAppStore.getState().openModeMenu();

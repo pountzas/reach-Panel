@@ -3087,6 +3087,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         setTimeout(r, MOTION.fast);
       });
     }
+    if (get().modeMenuOpen) {
+      return;
+    }
     if (get().focusModeActive) {
       await syncFocusModeWindowLayout(false);
     } else {
