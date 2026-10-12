@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
 import { prefersReducedMotion } from "../../lib/motion";
 
@@ -38,6 +38,22 @@ export function DictationVisualizer({
   } | null>(null);
   const smoothRef = useRef<number[]>(Array.from({ length: BAR_COUNT }, () => 0.08));
 
+  useLayoutEffect(() => {
+    if (!active) {
+      paintBars(
+        barsRef.current,
+        Array.from({ length: BAR_COUNT }, () => 0.08),
+      );
+      return;
+    }
+    if (prefersReducedMotion()) {
+      paintBars(
+        barsRef.current,
+        Array.from({ length: BAR_COUNT }, () => 0.15),
+      );
+    }
+  }, [active]);
+
   useEffect(() => {
     if (!active) {
       if (rafRef.current !== null) {
@@ -58,10 +74,6 @@ export function DictationVisualizer({
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
-      paintBars(
-        barsRef.current,
-        Array.from({ length: BAR_COUNT }, () => 0.15),
-      );
       return;
     }
 

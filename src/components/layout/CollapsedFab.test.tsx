@@ -220,6 +220,14 @@ describe("CollapsedFab mode menu", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
+  it("paints FAB stack at full opacity on first frame when motion is reduced", () => {
+    motionMocks.prefersReducedMotion.mockReturnValue(true);
+    render(<CollapsedFab />);
+    const expand = screen.getByRole("button", { name: "Choose mode" });
+    expect(expand.style.opacity).toBe("1");
+    expect(expand.style.transform).toBe("scale(1)");
+  });
+
   it("staggers FAB appear Mic then Settings then R at 40ms", () => {
     motionMocks.prefersReducedMotion.mockReturnValue(false);
     render(<CollapsedFab showDictation showSettings />);

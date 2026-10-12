@@ -6,10 +6,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { DEFAULT_SETTINGS } from "../../lib/types";
 
-const rowSource = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), "PreviewSuggestionsRow.tsx"),
-  "utf8",
-);
+const here = dirname(fileURLToPath(import.meta.url));
+const rowSource = readFileSync(join(here, "PreviewSuggestionsRow.tsx"), "utf8");
+const indexCss = readFileSync(join(here, "../../index.css"), "utf8");
 
 const storeState = {
   settings: {
@@ -153,5 +152,11 @@ describe("PreviewSuggestionsRow", () => {
     expect(rowSource).toMatch(/useDeferredValue\(\s*showSuggestions\s*\)/);
     expect(rowSource).toMatch(/inert=\{!deferredPreview\}/);
     expect(rowSource).toMatch(/inert=\{!deferredSuggestions\}/);
+  });
+
+  it("disables pointer events on the view-transition overlay so taps still hit", () => {
+    expect(indexCss).toMatch(
+      /::view-transition\s*\{[^}]*pointer-events:\s*none/,
+    );
   });
 });

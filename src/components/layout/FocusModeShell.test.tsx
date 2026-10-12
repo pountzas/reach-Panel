@@ -49,7 +49,7 @@ describe("FocusModeShell", () => {
     };
   });
 
-  it("keeps FAB mounted and keyboard off-screen while show is applying before enter", () => {
+  it("keeps FAB mounted and keyboard off-screen while show is applying (enter starts after apply)", () => {
     storeState.focusModeKeyboardVisible = true;
     storeState.focusContentAnim = "idle";
     storeState.isAnimatingWindow = true;

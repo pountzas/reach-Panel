@@ -38,7 +38,7 @@ describe("DictationVisualizer", () => {
     });
   });
 
-  it("paints a static scaleY once when reduced motion is preferred", async () => {
+  it("paints a static scaleY once when reduced motion is preferred", () => {
     motionMocks.prefersReducedMotion.mockReturnValue(true);
     const raf = vi.fn();
     vi.stubGlobal("requestAnimationFrame", raf);
@@ -47,17 +47,20 @@ describe("DictationVisualizer", () => {
       <DictationVisualizer active captureAudio={false} />,
     );
 
-    await vi.waitFor(() => {
-      const bar = container.querySelector("span") as HTMLElement | null;
-      expect(bar).toBeTruthy();
-      expect(bar?.style.height).toBe("22px");
-      expect(bar?.style.transform).toMatch(/scaleY\(0\.2/);
-    });
-
-    const bar = container.querySelector("span") as HTMLElement;
-    const first = bar.style.transform;
-    await new Promise((resolve) => setTimeout(resolve, 40));
-    expect(bar.style.transform).toBe(first);
+    const bar = container.querySelector("span") as HTMLElement | null;
+    expect(bar).toBeTruthy();
+    expect(bar?.style.height).toBe("22px");
+    expect(bar?.style.transform).toMatch(/scaleY\(0\.265/);
     expect(raf).not.toHaveBeenCalled();
+  });
+
+  it("sets will-change transform only while active and unmounts when idle", () => {
+    const { container, rerender } = render(
+      <DictationVisualizer active captureAudio={false} />,
+    );
+    const graph = container.querySelector("[aria-hidden] > div") as HTMLElement;
+    expect(graph.style.willChange).toBe("transform");
+    rerender(<DictationVisualizer active={false} captureAudio={false} />);
+    expect(container.querySelector("[aria-hidden]")).toBeNull();
   });
 });

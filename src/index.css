@@ -101,6 +101,7 @@ button {
 .music-note-chip-active {
   line-height: 1;
   transform: scale(1.55);
+  box-shadow: 0 0 0 2px rgb(245 158 11 / 0.9);
   animation: music-note-pulse 1.1s ease-in-out infinite;
 }
 
@@ -217,6 +218,10 @@ button {
   to {
     transform: translateX(0);
   }
+}
+
+::view-transition {
+  pointer-events: none;
 }
 
 ::view-transition-old(.rp-vt-fade-slide) {

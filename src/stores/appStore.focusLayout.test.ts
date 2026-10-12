@@ -66,7 +66,7 @@ describe("focus mode window layout", () => {
     await expand;
   });
 
-  it("sets content enter before applying window layout on expand", async () => {
+  it("sets content enter after applying window layout on expand", async () => {
     let releaseApply!: () => void;
     mockState.applyGate = new Promise<void>((resolve) => {
       releaseApply = resolve;
@@ -75,10 +75,14 @@ describe("focus mode window layout", () => {
     await vi.waitFor(() => {
       expect(mockState.calls).toContain("cmd_apply_window_layout");
     });
-    expect(useAppStore.getState().focusContentAnim).toBe("enter");
+    expect(useAppStore.getState().focusContentAnim).toBe("idle");
+    expect(useAppStore.getState().isAnimatingWindow).toBe(true);
     expect(useAppStore.getState().focusModeKeyboardVisible).toBe(true);
-    notifyFocusContentAnimDone();
     releaseApply();
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().focusContentAnim).toBe("enter");
+    });
+    notifyFocusContentAnimDone();
     await expand;
     expect(useAppStore.getState().focusContentAnim).toBe("idle");
   });

@@ -63,7 +63,7 @@ export function CollapsedFab({
   const { t } = useTranslation();
   const [menuMounted, setMenuMounted] = useState(false);
   const [menuEntered, setMenuEntered] = useState(false);
-  const [stackEntered, setStackEntered] = useState(false);
+  const [stackEntered, setStackEntered] = useState(() => prefersReducedMotion());
 
   useEffect(() => {
     if (prefersReducedMotion()) {
