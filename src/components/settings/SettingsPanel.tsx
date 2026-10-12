@@ -54,6 +54,11 @@ import { defaultLanguagePackId } from "../../lib/language";
 import type { LanguageAgeBand, LessonLanguage } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
 import {
+  KEYBOARD_FONT_SIZE_MAX,
+  KEYBOARD_FONT_SIZE_MIN,
+  clampKeyboardFontSize,
+} from "../../lib/keyboardFontSize";
+import {
   applyTaskbarPosition,
   handleDeleteProfile,
   handleSaveProfile,
@@ -502,6 +507,8 @@ export function SettingsPanel() {
   const surface = getSurfaceColors(settings.appBgColor);
   const headerBg = settings.headerBgColor ?? "#1e293b";
   const headerText = settings.headerTextColor ?? "#ffffff";
+  const keyboardFontSizeMax = KEYBOARD_FONT_SIZE_MAX;
+  const keyboardFontSizePx = clampKeyboardFontSize(settings.keyboardFontSize);
   const secondaryButtonStyle: CSSProperties = {
     backgroundColor: surface.panelButtonBg,
     borderColor: surface.panelBorder,
@@ -532,144 +539,6 @@ export function SettingsPanel() {
       />
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
-          <SettingsSection title={t("profile")} surface={surface}>
-            <ThemedSelect
-              value={activeProfileFile ?? ""}
-              onChange={(v) => setProfileFile(v)}
-              surface={surface}
-              className="w-full rounded border px-2 py-2 text-sm"
-            >
-              {profileFiles.map((p) => (
-                <option key={p.filename} value={p.filename}>
-                  {p.name} ({p.filename})
-                </option>
-              ))}
-            </ThemedSelect>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="rounded-lg px-3 py-1.5 text-sm"
-                style={{ backgroundColor: headerBg, color: headerText }}
-                onClick={() => void handleSaveProfile(saveActiveProfile, t)}
-              >
-                {t("saveProfile")}
-              </button>
-              <button
-                type="button"
-                className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700"
-                style={{ backgroundColor: surface.insetBg }}
-                onClick={() =>
-                  void handleDeleteProfile(activeProfileFile, deleteProfileFile, t)
-                }
-                disabled={!activeProfileFile}
-              >
-                {t("deleteProfile")}
-              </button>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <input
-                className="min-w-0 flex-1 rounded border px-2 py-1.5 text-sm"
-                style={fieldStyle(surface)}
-                placeholder={t("newProfileFileName")}
-                value={newProfileName}
-                onChange={(e) => setNewProfileName(e.target.value)}
-              />
-              <button
-                type="button"
-                className="shrink-0 rounded-lg px-3 py-1.5 text-sm"
-                style={{ backgroundColor: headerBg, color: headerText }}
-                onClick={() => {
-                  if (!newProfileName.trim()) return;
-                  void createProfileFile(newProfileName.trim(), newProfileName.trim());
-                  setNewProfileName("");
-                }}
-              >
-                {t("createProfile")}
-              </button>
-            </div>
-          </SettingsSection>
-
-          <SettingsSection title={t("accessibilityScreen")} surface={surface}>
-            <ul
-              className="max-h-48 space-y-1 overflow-y-auto rounded border p-2"
-              style={{
-                backgroundColor: surface.insetBg,
-                borderColor: surface.insetBorder,
-              }}
-            >
-              {monitors.map((m) => {
-                const label = `${m.name} (${m.width}x${m.height})${m.is_primary ? ` [${t("primary")}]` : ""}`;
-                return (
-                  <li key={m.id}>
-                    <label
-                      className="flex cursor-pointer items-start gap-2 rounded px-2 py-1.5"
-                      style={{ color: surface.panelText }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = surface.panelButtonBg;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="accessibilityMonitor"
-                        className="mt-1 shrink-0"
-                        checked={settings.accessibilityMonitorId === m.id}
-                        onChange={() => updateSettings({ accessibilityMonitorId: m.id })}
-                      />
-                      <span className="min-w-0 break-all text-sm leading-snug">{label}</span>
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
-            {!isV1FeatureHidden("largeHeaders") && (
-              <div className="mt-3">
-                <ToggleRow
-                  label={t("largeHeaders")}
-                  checked={settings.largeHeaders}
-                  onChange={(checked) => updateSettings({ largeHeaders: checked })}
-                  surface={surface}
-                />
-                <p
-                  className="mt-1 px-1 text-xs"
-                  style={{ color: surface.panelMutedText }}
-                >
-                  {t("largeHeadersHint")}
-                </p>
-              </div>
-            )}
-          </SettingsSection>
-
-          <SettingsSection title={t("taskbarPosition")} surface={surface}>
-            <p
-              className="mb-2 px-1 text-xs"
-              style={{ color: surface.panelMutedText }}
-            >
-              {t("taskbarPositionHint")}
-            </p>
-            <label className="block text-sm" style={{ color: surface.panelText }}>
-              {t("taskbarPosition")}
-              <ThemedSelect
-                value={taskbarPosition}
-                onChange={(v) =>
-                  void applyTaskbarPosition(
-                    v as TaskbarPosition,
-                    settings.taskbarPositionPreference,
-                    settings.accessibilityMonitorId,
-                    updateSettings,
-                    t,
-                  )
-                }
-                surface={surface}
-              >
-                <option value="bottom">{t("taskbarPositionBottom")}</option>
-                <option value="top">{t("taskbarPositionTop")}</option>
-              </ThemedSelect>
-            </label>
-          </SettingsSection>
-
           <SettingsSection title={t("modesSection")} surface={surface}>
             <p
               className="mb-3 px-1 text-xs"
@@ -855,6 +724,144 @@ export function SettingsPanel() {
             )}
           </SettingsSection>
 
+          <SettingsSection title={t("profile")} surface={surface}>
+            <ThemedSelect
+              value={activeProfileFile ?? ""}
+              onChange={(v) => setProfileFile(v)}
+              surface={surface}
+              className="w-full rounded border px-2 py-2 text-sm"
+            >
+              {profileFiles.map((p) => (
+                <option key={p.filename} value={p.filename}>
+                  {p.name} ({p.filename})
+                </option>
+              ))}
+            </ThemedSelect>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-sm"
+                style={{ backgroundColor: headerBg, color: headerText }}
+                onClick={() => void handleSaveProfile(saveActiveProfile, t)}
+              >
+                {t("saveProfile")}
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700"
+                style={{ backgroundColor: surface.insetBg }}
+                onClick={() =>
+                  void handleDeleteProfile(activeProfileFile, deleteProfileFile, t)
+                }
+                disabled={!activeProfileFile}
+              >
+                {t("deleteProfile")}
+              </button>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <input
+                className="min-w-0 flex-1 rounded border px-2 py-1.5 text-sm"
+                style={fieldStyle(surface)}
+                placeholder={t("newProfileFileName")}
+                value={newProfileName}
+                onChange={(e) => setNewProfileName(e.target.value)}
+              />
+              <button
+                type="button"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-sm"
+                style={{ backgroundColor: headerBg, color: headerText }}
+                onClick={() => {
+                  if (!newProfileName.trim()) return;
+                  void createProfileFile(newProfileName.trim(), newProfileName.trim());
+                  setNewProfileName("");
+                }}
+              >
+                {t("createProfile")}
+              </button>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection title={t("accessibilityScreen")} surface={surface}>
+            <ul
+              className="max-h-48 space-y-1 overflow-y-auto rounded border p-2"
+              style={{
+                backgroundColor: surface.insetBg,
+                borderColor: surface.insetBorder,
+              }}
+            >
+              {monitors.map((m) => {
+                const label = `${m.name} (${m.width}x${m.height})${m.is_primary ? ` [${t("primary")}]` : ""}`;
+                return (
+                  <li key={m.id}>
+                    <label
+                      className="flex cursor-pointer items-start gap-2 rounded px-2 py-1.5"
+                      style={{ color: surface.panelText }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = surface.panelButtonBg;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="accessibilityMonitor"
+                        className="mt-1 shrink-0"
+                        checked={settings.accessibilityMonitorId === m.id}
+                        onChange={() => updateSettings({ accessibilityMonitorId: m.id })}
+                      />
+                      <span className="min-w-0 break-all text-sm leading-snug">{label}</span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+            {!isV1FeatureHidden("largeHeaders") && (
+              <div className="mt-3">
+                <ToggleRow
+                  label={t("largeHeaders")}
+                  checked={settings.largeHeaders}
+                  onChange={(checked) => updateSettings({ largeHeaders: checked })}
+                  surface={surface}
+                />
+                <p
+                  className="mt-1 px-1 text-xs"
+                  style={{ color: surface.panelMutedText }}
+                >
+                  {t("largeHeadersHint")}
+                </p>
+              </div>
+            )}
+          </SettingsSection>
+
+          <SettingsSection title={t("taskbarPosition")} surface={surface}>
+            <p
+              className="mb-2 px-1 text-xs"
+              style={{ color: surface.panelMutedText }}
+            >
+              {t("taskbarPositionHint")}
+            </p>
+            <label className="block text-sm" style={{ color: surface.panelText }}>
+              {t("taskbarPosition")}
+              <ThemedSelect
+                value={taskbarPosition}
+                onChange={(v) =>
+                  void applyTaskbarPosition(
+                    v as TaskbarPosition,
+                    settings.taskbarPositionPreference,
+                    settings.accessibilityMonitorId,
+                    updateSettings,
+                    t,
+                  )
+                }
+                surface={surface}
+              >
+                <option value="bottom">{t("taskbarPositionBottom")}</option>
+                <option value="top">{t("taskbarPositionTop")}</option>
+              </ThemedSelect>
+            </label>
+          </SettingsSection>
+
           <SettingsSection title={t("appearance")} surface={surface}>
             <fieldset className="mb-4">
               <legend
@@ -991,6 +998,26 @@ export function SettingsPanel() {
                 step={0.05}
                 value={settings.opacity}
                 onChange={(e) => updateSettings({ opacity: Number(e.target.value) })}
+                className="mt-1 w-full"
+              />
+            </label>
+
+            <label className="mt-4 block text-sm" style={{ color: surface.panelText }}>
+              <span className="flex items-center justify-between gap-2">
+                <span>{t("keyboardFontSize")}</span>
+                <span className="tabular-nums opacity-80">{keyboardFontSizePx}px</span>
+              </span>
+              <input
+                type="range"
+                min={KEYBOARD_FONT_SIZE_MIN}
+                max={keyboardFontSizeMax}
+                step={1}
+                value={keyboardFontSizePx}
+                onChange={(e) =>
+                  void updateSettings({
+                    keyboardFontSize: Number(e.target.value),
+                  })
+                }
                 className="mt-1 w-full"
               />
             </label>

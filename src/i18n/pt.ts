@@ -264,6 +264,7 @@ export const pt: Record<keyof typeof en, string> = {
   taskbarPositionFailed: "Não foi possível alterar a posição da barra de tarefas.",
 
   opacity: "Opacidade",
+  keyboardFontSize: "Tamanho da fonte do teclado",
 
   appLanguage: "Idioma da aplicação",
 

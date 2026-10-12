@@ -264,6 +264,7 @@ export const de: Record<keyof typeof en, string> = {
   taskbarPositionFailed: "Taskleistenposition konnte nicht geändert werden.",
 
   opacity: "Deckkraft",
+  keyboardFontSize: "Tastatur-Schriftgröße",
 
   appLanguage: "App-Sprache",
 

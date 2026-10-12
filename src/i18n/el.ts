@@ -267,6 +267,7 @@ export const el: Record<keyof typeof en, string> = {
   taskbarPositionFailed: "Δεν ήταν δυνατή η αλλαγή θέσης γραμμής εργασιών.",
 
   opacity: "Διαφάνεια",
+  keyboardFontSize: "Μέγεθος γραμματοσειράς πληκτρολογίου",
 
   appLanguage: "Γλώσσα εφαρμογής",
 

@@ -30,6 +30,7 @@ import { useContainerSize } from "../../hooks/useContainerSize";
 import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
+import { effectiveKeyboardFontSize } from "../../lib/keyboardFontSize";
 import { isTransparentUiActive, transparentKeyPalette } from "../../lib/focusMode";
 import {
   clearModifiersAfterKey,
@@ -107,7 +108,10 @@ export function Keyboard() {
     return baseRows.map((row) => row.filter((k) => k.key !== "dictate"));
   }, [baseRows, settings.dictationVisible]);
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
-  const fontSize = settings.keyboardFontSize ?? 18;
+  const fontSize = effectiveKeyboardFontSize(
+    settings.keyboardFontSize,
+    keyHeight,
+  );
   const typingLocale = settings.typingLanguage || "en";
   const languageLessonMode = {
     musicTeachingEnabled,
