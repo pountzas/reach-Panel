@@ -57,11 +57,11 @@ describe("effectiveKeyboardFontSize", () => {
   });
 });
 
-describe("SPECIAL_KEY_LABELS default layouts", () => {
-  it("keeps backspace, enter, and shift stacked at default size", () => {
-    expect(SPECIAL_KEY_LABELS.backspace.layout).toBe("stack");
-    expect(SPECIAL_KEY_LABELS.enter.layout).toBe("stack");
-    expect(SPECIAL_KEY_LABELS.shift.layout).toBe("stack");
+describe("SPECIAL_KEY_LABELS row layout", () => {
+  it("uses row for backspace, enter, and shift", () => {
+    expect(SPECIAL_KEY_LABELS.backspace.layout).toBe("row");
+    expect(SPECIAL_KEY_LABELS.enter.layout).toBe("row");
+    expect(SPECIAL_KEY_LABELS.shift.layout).toBe("row");
   });
 
   it("keeps space as row with open-box symbol", () => {

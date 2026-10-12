@@ -1,4 +1,3 @@
-import { KEYBOARD_FONT_SIZE_DEFAULT } from "../../lib/keyboardFontSize";
 import { SPECIAL_KEY_LABELS } from "../../lib/keyboardLayouts";
 
 export function SpecialKeyLabel({
@@ -11,14 +10,9 @@ export function SpecialKeyLabel({
   const spec = SPECIAL_KEY_LABELS[keyName];
   if (!spec) return null;
 
-  const useRow =
-    spec.layout === "row" || fontSize > KEYBOARD_FONT_SIZE_DEFAULT;
-  const wordSize = Math.max(
-    8,
-    Math.round(fontSize * (useRow ? 0.72 : 0.52)),
-  );
+  const wordSize = Math.max(8, Math.round(fontSize * 0.72));
 
-  if (useRow) {
+  if (spec.layout === "row") {
     if (keyName === "space") {
       const spaceSymbolSize = Math.max(14, Math.round(fontSize * 1.2));
       const spaceWordSize = Math.max(11, Math.round(fontSize * 0.72));
@@ -61,7 +55,10 @@ export function SpecialKeyLabel({
       <span style={{ fontSize }} aria-hidden>
         {spec.symbol}
       </span>
-      <span className="mt-0.5 font-semibold" style={{ fontSize: wordSize }}>
+      <span
+        className="mt-0.5 font-semibold"
+        style={{ fontSize: Math.max(8, Math.round(fontSize * 0.52)) }}
+      >
         {spec.word}
       </span>
     </span>

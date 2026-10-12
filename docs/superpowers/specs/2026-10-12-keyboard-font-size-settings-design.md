@@ -80,8 +80,8 @@ Pure functions, unit-tested:
 
 ### SpecialKeyLabel / layouts
 
-- Keep `backspace` / `enter` / `shift` as `layout: "stack"` at the default size so existing users see no layout change.
-- Switch those keys to row (icon + word) when `fontSize > KEYBOARD_FONT_SIZE_DEFAULT`; Space stays `layout: "row"` with its original symbol/word sizing.
+- `backspace` / `enter` / `shift` / `space` all use `layout: "row"` (icon + word side by side) so labels can grow with the slider.
+- Space keeps its original symbol/word sizing (`1.2×` / `0.72×`, bottom-aligned).
 - Row layouts use `overflow-hidden` / `truncate` / `whitespace-nowrap` so wide labels do not spill.
 
 ### Settings UI
