@@ -183,6 +183,54 @@ button {
   box-shadow: 0 1px 2px rgb(15 23 42 / 20%);
 }
 
+@keyframes rp-vt-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes rp-vt-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rp-vt-slide-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-8px);
+  }
+}
+
+@keyframes rp-vt-slide-right {
+  from {
+    transform: translateX(8px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+::view-transition-old(.rp-vt-fade-slide) {
+  animation:
+    var(--rp-dur-slow) var(--rp-ease-out) both rp-vt-fade-out,
+    var(--rp-dur-slow) var(--rp-ease-out) both rp-vt-slide-left;
+}
+
+::view-transition-new(.rp-vt-fade-slide) {
+  animation:
+    var(--rp-dur-slow) var(--rp-ease-out) both rp-vt-fade-in,
+    var(--rp-dur-slow) var(--rp-ease-out) both rp-vt-slide-right;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --rp-dur-fast: 1ms;
@@ -196,5 +244,11 @@ button {
 
   .partiture-note-active .partiture-note-ring {
     animation: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

@@ -1,3 +1,4 @@
+import { startTransition } from "react";
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
@@ -281,6 +282,15 @@ async function stopCompanionBridge(): Promise<void> {
 let typingLanguageSwitchInFlight = false;
 /** Drops stale cmd_get_suggestions results after space/enter/delete clears the prefix. */
 let suggestionsRequestId = 0;
+
+function commitSuggestionList(
+  set: (partial: { suggestions: string[] }) => void,
+  suggestions: string[],
+) {
+  startTransition(() => {
+    set({ suggestions });
+  });
+}
 
 /** Last live-preview window height ratio (header drag); skips near-duplicate applies. */
 let liveHeightRatioPreview: number | null = null;
@@ -1500,14 +1510,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
       void invoke("cmd_reset_layout_compose_state", {
         hkl: get().physicalKeyState.systemHkl || null,
       });
-      set({ typedBuffer: "", suggestions: [], ...clearGreekPendingAccent() });
+      set({ typedBuffer: "", ...clearGreekPendingAccent() });
+      commitSuggestionList(set, []);
       await get().refreshSttCapability();
     }
     if (partial.groqApiKey !== undefined) {
       await get().refreshSttCapability();
     }
     if (uiLanguageChanged) {
-      set({ typedBuffer: "", suggestions: [], ...clearGreekPendingAccent() });
+      set({ typedBuffer: "", ...clearGreekPendingAccent() });
+      commitSuggestionList(set, []);
       await get().loadPhrases();
       await get().loadSuggestions();
     }
@@ -1776,21 +1788,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({
       typedBuffer: text,
       ...clearGreekPendingAccent(),
-      ...(clear ? { suggestions: [] as string[] } : {}),
     });
+    if (clear) {
+      commitSuggestionList(set, []);
+    }
   },
-  appendTyped: (ch) =>
-    set((s) => {
-      const typedBuffer = s.typedBuffer + ch;
-      const clear = shouldClearSuggestions(typedBuffer);
-      if (clear) {
-        suggestionsRequestId += 1;
-      }
-      return {
-        typedBuffer,
-        ...(clear ? { suggestions: [] as string[] } : {}),
-      };
-    }),
+  appendTyped: (ch) => {
+    const typedBuffer = get().typedBuffer + ch;
+    const clear = shouldClearSuggestions(typedBuffer);
+    if (clear) {
+      suggestionsRequestId += 1;
+    }
+    set({ typedBuffer });
+    if (clear) {
+      commitSuggestionList(set, []);
+    }
+  },
   typeCharacter: (output, options) => {
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
@@ -1807,8 +1820,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({
       typedBuffer: result.buffer,
       greekPendingAccent: result.pendingAccent,
-      ...(clear ? { suggestions: [] as string[] } : {}),
     });
+    if (clear) {
+      commitSuggestionList(set, []);
+    }
     return result.inject || null;
   },
   applyTypedLayoutTranslation: (translation, options) => {
@@ -1852,21 +1867,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
       languageAnswerIncorrect: false,
     });
   },
-  backspaceTyped: () =>
-    set((s) => {
-      if (s.greekPendingAccent) {
-        return clearGreekPendingAccent();
-      }
-      const typedBuffer = s.typedBuffer.slice(0, -1);
-      const clear = shouldClearSuggestions(typedBuffer);
-      if (clear) {
-        suggestionsRequestId += 1;
-      }
-      return {
-        typedBuffer,
-        ...(clear ? { suggestions: [] as string[] } : {}),
-      };
-    }),
+  backspaceTyped: () => {
+    const state = get();
+    if (state.greekPendingAccent) {
+      set(clearGreekPendingAccent());
+      return;
+    }
+    const typedBuffer = state.typedBuffer.slice(0, -1);
+    const clear = shouldClearSuggestions(typedBuffer);
+    if (clear) {
+      suggestionsRequestId += 1;
+    }
+    set({ typedBuffer });
+    if (clear) {
+      commitSuggestionList(set, []);
+    }
+  },
 
   toggleSticky: (modifier) =>
     set((s) => ({
@@ -1919,7 +1935,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (!persisted) {
         return;
       }
-      set({ typedBuffer: "", suggestions: [], ...clearGreekPendingAccent() });
+      set({ typedBuffer: "", ...clearGreekPendingAccent() });
+      commitSuggestionList(set, []);
     }
   },
 
@@ -1964,7 +1981,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       });
       if (previousTypingLanguage !== method.langTag) {
         await get().stopDictation();
-        set({ typedBuffer: "", suggestions: [], ...clearGreekPendingAccent() });
+        set({ typedBuffer: "", ...clearGreekPendingAccent() });
+        commitSuggestionList(set, []);
         await get().refreshSttCapability();
       }
       await get().refreshLayoutKeyLabels(method.hkl);
@@ -2001,13 +2019,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const { settings, typedBuffer } = get();
     if (!settings.suggestionsVisible || !settings.predictionEnabled) {
       suggestionsRequestId += 1;
-      set({ suggestions: [] });
+      commitSuggestionList(set, []);
       return;
     }
     const prefix = suggestionWordPrefix(typedBuffer);
     if (shouldClearSuggestions(typedBuffer)) {
       suggestionsRequestId += 1;
-      set({ suggestions: [] });
+      commitSuggestionList(set, []);
       return;
     }
     const requestId = ++suggestionsRequestId;
@@ -2020,10 +2038,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
     if (shouldClearSuggestions(get().typedBuffer)) {
-      set({ suggestions: [] });
+      commitSuggestionList(set, []);
       return;
     }
-    set({ suggestions: results.map((r) => r.word) });
+    commitSuggestionList(
+      set,
+      results.map((r) => r.word),
+    );
   },
 
   applySuggestion: async (word) => {

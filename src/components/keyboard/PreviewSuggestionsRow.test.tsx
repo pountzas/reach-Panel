@@ -30,13 +30,16 @@ describe("PreviewSuggestionsRow", () => {
     storeState.focusModeActive = false;
   });
 
-  it("collapses the preview slot with max-w-0 when showPreview is false", () => {
+  it("collapses the preview slot without max-width layout classes", () => {
     const { container } = render(
       <PreviewSuggestionsRow showPreview={false} showSuggestions={false} />,
     );
     const previewSlot = container.querySelector("[data-slot='preview']");
     expect(previewSlot).toBeTruthy();
-    expect(previewSlot!.className.split(/\s+/)).toContain("max-w-0");
+    const classes = previewSlot!.className.split(/\s+/);
+    expect(classes.some((c) => c.startsWith("max-w-"))).toBe(false);
+    expect(classes).toContain("w-0");
+    expect(previewSlot!.getAttribute("aria-hidden")).toBe("true");
   });
 
   it("adds ml-2 on the suggestions slot only when both are shown", () => {
@@ -87,12 +90,12 @@ describe("PreviewSuggestionsRow", () => {
     ).toBe(true);
   });
 
-  it("marks the preview slot inert when hidden", () => {
+  it("marks hidden preview slot inert and aria-hidden", () => {
     const { container } = render(
       <PreviewSuggestionsRow showPreview={false} showSuggestions={false} />,
     );
-    expect(
-      container.querySelector("[data-slot='preview']")!.hasAttribute("inert"),
-    ).toBe(true);
+    const previewSlot = container.querySelector("[data-slot='preview']");
+    expect(previewSlot?.getAttribute("aria-hidden")).toBe("true");
+    expect(previewSlot!.hasAttribute("inert")).toBe(true);
   });
 });
