@@ -279,6 +279,7 @@ export const en = {
   taskbarPositionFailed: "Could not change taskbar position.",
 
   opacity: "Opacity",
+  keyboardFontSize: "Keyboard font size",
 
   appLanguage: "App language",
 

@@ -30,6 +30,7 @@ import { useContainerSize } from "../../hooks/useContainerSize";
 import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
+import { effectiveKeyboardFontSize } from "../../lib/keyboardFontSize";
 import { isTransparentUiActive, transparentKeyPalette } from "../../lib/focusMode";
 import {
   clearModifiersAfterKey,
@@ -82,6 +83,7 @@ export function Keyboard() {
   const applyFreeWriteLayoutTranslation = useAppStore((s) => s.applyFreeWriteLayoutTranslation);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
+  const setKeyboardKeyHeightPx = useAppStore((s) => s.setKeyboardKeyHeightPx);
 
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const langKeyAnchorRef = useRef<HTMLDivElement>(null);
@@ -107,7 +109,14 @@ export function Keyboard() {
     return baseRows.map((row) => row.filter((k) => k.key !== "dictate"));
   }, [baseRows, settings.dictationVisible]);
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
-  const fontSize = settings.keyboardFontSize ?? 18;
+  const fontSize = effectiveKeyboardFontSize(
+    settings.keyboardFontSize,
+    keyHeight,
+  );
+
+  useEffect(() => {
+    setKeyboardKeyHeightPx(keyHeight);
+  }, [keyHeight, setKeyboardKeyHeightPx]);
   const typingLocale = settings.typingLanguage || "en";
   const languageLessonMode = {
     musicTeachingEnabled,

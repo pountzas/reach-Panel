@@ -543,7 +543,7 @@ export function Synthesizer() {
         className={`relative min-w-0 flex-1 rounded-b-lg border font-semibold shadow-sm transition-transform ${isPressed || isWrong ? "key-pressed" : ""} ${ringClass}`}
         style={{
           height: whiteKeyHeight,
-          fontSize: settings.keyboardFontSize ?? 14,
+          fontSize: 14,
           color: settings.keyTextColor ?? "#475569",
           backgroundColor,
         }}
@@ -582,7 +582,7 @@ export function Synthesizer() {
           transform: "translateX(-50%)",
           width: `${blackKeyWidthRatio}%`,
           height: blackKeyHeight,
-          fontSize: Math.max(10, (settings.keyboardFontSize ?? 18) * 0.55),
+          fontSize: Math.max(10, 18 * 0.55),
           color: "#f8fafc",
           backgroundColor,
         }}

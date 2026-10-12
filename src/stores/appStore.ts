@@ -795,6 +795,12 @@ interface AppStore {
   focusModeSuppressAutoShow: boolean;
   /** Collapsed FAB mode menu is open (window grown for the menu). */
   modeMenuOpen: boolean;
+  /**
+   * Session-only: last computed main-keyboard key height (px).
+   * Drives Settings “Keyboard font size” slider max; not persisted.
+   */
+  keyboardKeyHeightPx: number;
+  setKeyboardKeyHeightPx: (keyHeightPx: number) => void;
   openModeMenu: () => Promise<void>;
   closeModeMenu: () => Promise<void>;
   loadProfileFiles: () => Promise<void>;
@@ -1299,6 +1305,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
   focusModeManualExpand: false,
   focusModeSuppressAutoShow: false,
   modeMenuOpen: false,
+  keyboardKeyHeightPx: 48,
+  setKeyboardKeyHeightPx: (keyHeightPx) => {
+    if (
+      !Number.isFinite(keyHeightPx) ||
+      keyHeightPx <= 0 ||
+      get().keyboardKeyHeightPx === keyHeightPx
+    ) {
+      return;
+    }
+    set({ keyboardKeyHeightPx: Math.floor(keyHeightPx) });
+  },
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
