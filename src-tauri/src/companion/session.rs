@@ -99,10 +99,7 @@ impl SessionState {
     }
 
     pub fn audio_routing(&self) -> AudioRouting {
-        *self
-            .audio_routing
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
+        *self.audio_routing.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     /// True while companion owns mic/TTS paths (active or briefly reconnecting).

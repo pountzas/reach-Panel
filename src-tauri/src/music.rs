@@ -119,9 +119,7 @@ fn is_under_dir(path: &Path, root: &Path) -> bool {
 
 fn path_is_allowed(app: &AppHandle, canonical: &Path, original: &Path) -> Result<bool, String> {
     let music_root = music_dir(app)?;
-    let music_root = music_root
-        .canonicalize()
-        .unwrap_or(music_root);
+    let music_root = music_root.canonicalize().unwrap_or(music_root);
     if is_under_dir(canonical, &music_root) || is_under_dir(original, &music_root) {
         return Ok(true);
     }

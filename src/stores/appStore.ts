@@ -30,7 +30,11 @@ import {
   resolveSynthOctaveCount,
   resolveSynthStartOctave,
 } from "../lib/music/octaveCount";
-import { BUILT_IN_SONGS, getSongById, songPianoRangeFit } from "../lib/music/songs";
+import {
+  BUILT_IN_SONGS,
+  getSongById,
+  songPianoRangeFit,
+} from "../lib/music/songs";
 import type { ImportedMusicSong } from "../lib/music/importTypes";
 import {
   parseMusicFilePayload,
@@ -46,7 +50,10 @@ import {
   computeContentHeightRatioFromSettings,
 } from "../lib/sectionLayouts";
 import { shouldApplyLiveWindowHeightRatio } from "../lib/windowHeightDrag";
-import { resolveSectionStack, ensureSectionExpanded } from "../lib/sectionStack";
+import {
+  resolveSectionStack,
+  ensureSectionExpanded,
+} from "../lib/sectionStack";
 import {
   FOCUS_KEYBOARD_HEIGHT_RATIO,
   MODE_MENU_WIDTH,
@@ -64,6 +71,7 @@ import {
   shouldIgnoreCompanionIdle,
   shouldStopCompanionBridgeOnHostMode,
 } from "../lib/companionSession";
+import { showDictationOverlay } from "../lib/dictationOverlayWindow";
 import {
   closeToolWindow,
   openToolWindow,
@@ -130,9 +138,7 @@ import {
   type LanguageSubjectTab,
   type TeachingPdfEntry,
 } from "../lib/teaching";
-import {
-  type GreekPendingAccent,
-} from "../lib/language/greekCompose";
+import { type GreekPendingAccent } from "../lib/language/greekCompose";
 import {
   greekComposeEnabled,
   processCharacterInput,
@@ -202,7 +208,10 @@ function greekComposeContextFromState(state: {
   languageListAuthoringActive?: boolean;
   languageSubjectTab?: LanguageSubjectTab;
 }): GreekComposeContext {
-  const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
+  const pack = getLanguagePackById(
+    state.languagePackId,
+    state.customLanguagePacks,
+  );
   return {
     typingLanguage: state.settings.typingLanguage,
     keyboardLayout: state.keyboardLayout,
@@ -420,6 +429,9 @@ async function syncFocusModeWindowLayout(
       await afterNextPaint();
       await invoke("cmd_apply_window_layout", args);
     }
+    if (useAppStore.getState().dictationState !== "idle") {
+      void showDictationOverlay();
+    }
   } finally {
     useAppStore.setState({ isAnimatingWindow: false, focusContentAnim: "idle" });
     const latest = useAppStore.getState();
@@ -487,7 +499,8 @@ async function refreshFocusModeState(options?: { animate?: boolean }) {
   const state = useAppStore.getState();
   const { settings, monitors, focusModeActive: wasActive } = state;
   const teachingActive =
-    state.musicTeachingEnabled && settings.keyboardSectionMode === "synthesizer";
+    state.musicTeachingEnabled &&
+    settings.keyboardSectionMode === "synthesizer";
   const enabled =
     monitors.length > 0 &&
     resolveFocusModeEnabled(settings, monitors, teachingActive);
@@ -516,7 +529,11 @@ async function refreshFocusModeState(options?: { animate?: boolean }) {
       mouseVisibleBeforeFocusMode: null,
       settings: nextSettings,
     });
-    await syncWindowLayoutFromSettings(nextSettings, animate, useAppStore.getState().musicTeachingEnabled);
+    await syncWindowLayoutFromSettings(
+      nextSettings,
+      animate,
+      useAppStore.getState().musicTeachingEnabled,
+    );
   } else if (enabled) {
     // Still active: enforce mouse panel hidden and keep window layout in sync.
     if (settings.mouseVisible) {
@@ -533,10 +550,12 @@ async function refreshFocusModeState(options?: { animate?: boolean }) {
   await syncInputPreviewEnabled(useAppStore.getState);
 }
 
-const LANGUAGE_CHANGE_FALLBACK =
-  "Could not switch keyboard language.";
+const LANGUAGE_CHANGE_FALLBACK = "Could not switch keyboard language.";
 
-function physicalKeyStateEqual(a: PhysicalKeyState, b: PhysicalKeyState): boolean {
+function physicalKeyStateEqual(
+  a: PhysicalKeyState,
+  b: PhysicalKeyState,
+): boolean {
   return (
     a.capsLock === b.capsLock &&
     a.shift === b.shift &&
@@ -617,14 +636,18 @@ function windowLayoutInvokeArgs(
     heightRatio?: number;
   },
 ) {
-  const fullWorkArea = teachingFullWorkAreaActive(settings, musicTeachingEnabled);
+  const fullWorkArea = teachingFullWorkAreaActive(
+    settings,
+    musicTeachingEnabled,
+  );
   return {
     monitorId: settings.accessibilityMonitorId,
     collapsed: extras?.collapsed ?? settings.collapsed,
     collapsedDictation: extras?.collapsedDictation ?? false,
     collapsedSettings: extras?.collapsedSettings,
     heightRatio:
-      extras?.heightRatio ?? heightRatioFromSettings(settings, musicTeachingEnabled),
+      extras?.heightRatio ??
+      heightRatioFromSettings(settings, musicTeachingEnabled),
     focusMode: extras?.focusMode,
     focusKeyboardVisible: extras?.focusKeyboardVisible,
     focusKeyboardHeightRatio: extras?.focusKeyboardHeightRatio,
@@ -794,11 +817,19 @@ interface AppStore {
   ) => string | null;
   applyTypedLayoutTranslation: (
     translation: LayoutKeyTranslation,
-    options?: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
+    options?: {
+      physicalKey?: string;
+      shift?: boolean;
+      fallbackOutput?: string;
+    },
   ) => string | null;
   applyLanguageLayoutTranslation: (
     translation: LayoutKeyTranslation,
-    options?: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
+    options?: {
+      physicalKey?: string;
+      shift?: boolean;
+      fallbackOutput?: string;
+    },
   ) => void;
   backspaceTyped: () => void;
   toggleSticky: (modifier: string) => void;
@@ -879,7 +910,11 @@ interface AppStore {
   freeWriteNotepadBackspace: () => void;
   applyFreeWriteLayoutTranslation: (
     translation: LayoutKeyTranslation,
-    options?: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
+    options?: {
+      physicalKey?: string;
+      shift?: boolean;
+      fallbackOutput?: string;
+    },
   ) => void;
   setFreeWriteNotepadText: (text: string) => void;
   clearFreeWriteNotepad: () => void;
@@ -921,16 +956,17 @@ function parseSettings(json: string): AppSettings {
       parsed.mousePanelSide ??
       (mouseSide === "left" ? "left" : DEFAULT_SETTINGS.mousePanelSide);
     const typingLanguage =
-      parsed.typingLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.typingLanguage;
-    const uiLanguage = parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
+      parsed.typingLanguage ??
+      legacyLanguage ??
+      DEFAULT_SETTINGS.typingLanguage;
+    const uiLanguage =
+      parsed.uiLanguage ?? legacyLanguage ?? DEFAULT_SETTINGS.uiLanguage;
     // Older profile files may omit keys that previously defaulted to "on".
     // Keep that behavior for existing installs; new profiles write explicit values.
     // suggestionsVisible and predictionEnabled are toggled together in Settings.
     const legacyFill: Partial<AppSettings> = {
       predictionEnabled:
-        parsed.predictionEnabled ??
-        parsed.suggestionsVisible ??
-        true,
+        parsed.predictionEnabled ?? parsed.suggestionsVisible ?? true,
       quickActionsVisible: parsed.quickActionsVisible ?? true,
       phrasesVisible: parsed.phrasesVisible ?? true,
       suggestionsVisible: parsed.suggestionsVisible ?? true,
@@ -941,10 +977,7 @@ function parseSettings(json: string): AppSettings {
       keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,
     };
     // Focus Auto dropped: null / missing override → Normal (false).
-    const focusModeOverride =
-      parsed.focusModeOverride === true
-        ? true
-        : false;
+    const focusModeOverride = parsed.focusModeOverride === true ? true : false;
     const micMode = focusModeOverride && parsed.micMode === true;
     // Teaching is session-only; never hydrate synthesizer under Normal/Focus.
     const keyboardSectionMode = coercePersistedKeyboardSectionMode(
@@ -965,8 +998,13 @@ function parseSettings(json: string): AppSettings {
       micMode,
       keyboardSectionMode,
       taskbarPositionPreference,
-      sectionStack: resolveSectionStack(parsed.sectionStack, parsed.sectionLayouts),
-      synthesizerOctaveCount: resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
+      sectionStack: resolveSectionStack(
+        parsed.sectionStack,
+        parsed.sectionLayouts,
+      ),
+      synthesizerOctaveCount: resolveSynthOctaveCount(
+        parsed.synthesizerOctaveCount,
+      ),
       synthesizerStartOctave: resolveSynthStartOctave(
         parsed.synthesizerStartOctave,
         resolveSynthOctaveCount(parsed.synthesizerOctaveCount),
@@ -989,7 +1027,8 @@ function buildDefaultSettings(
   return {
     ...DEFAULT_SETTINGS,
     uiLanguage,
-    accessibilityMonitorId: primary?.id ?? DEFAULT_SETTINGS.accessibilityMonitorId,
+    accessibilityMonitorId:
+      primary?.id ?? DEFAULT_SETTINGS.accessibilityMonitorId,
   };
 }
 
@@ -1064,10 +1103,10 @@ async function loadProfileData(
   get: () => AppStore,
   options?: { animateLayout?: boolean },
 ) {
-  const profiles = await invoke<{ id: string; settings_json: string }[]>(
-    "cmd_get_profiles",
-  );
-  const active = profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ?? profiles[0];
+  const profiles =
+    await invoke<{ id: string; settings_json: string }[]>("cmd_get_profiles");
+  const active =
+    profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ?? profiles[0];
   let migratedFocusAuto = false;
   let migratedKeyboardSectionMode = false;
   if (active) {
@@ -1091,7 +1130,9 @@ async function loadProfileData(
       migratedKeyboardSectionMode = false;
     }
   }
-  const parsed = active ? parseSettings(active.settings_json) : DEFAULT_SETTINGS;
+  const parsed = active
+    ? parseSettings(active.settings_json)
+    : DEFAULT_SETTINGS;
   const settings = withV1EffectiveChrome({
     ...parsed,
     keyboardSectionMode: hydrateKeyboardSectionMode(
@@ -1102,7 +1143,9 @@ async function loadProfileData(
   set({ settings, settingsEpoch: get().settingsEpoch + 1 });
   const isMainWindow = WebviewWindow.getCurrent().label === "main";
   if (isMainWindow) {
-    await invoke("cmd_set_system_language", { language: settings.typingLanguage });
+    await invoke("cmd_set_system_language", {
+      language: settings.typingLanguage,
+    });
     await get().pollKeyboardState();
     await syncInputPreviewEnabled(get);
   }
@@ -1149,7 +1192,9 @@ async function emitTeachingSession(get: () => AppStore): Promise<void> {
   await emit(TEACHING_SESSION_EVENT, {
     musicTeachingEnabled: state.musicTeachingEnabled,
     teachingLesson: state.teachingLesson,
-    keyboardSectionMode: teachingSessionKeyboardMode(state.musicTeachingEnabled),
+    keyboardSectionMode: teachingSessionKeyboardMode(
+      state.musicTeachingEnabled,
+    ),
   } satisfies TeachingSessionPayload);
 }
 
@@ -1160,7 +1205,10 @@ async function emitTeachingSession(get: () => AppStore): Promise<void> {
  * Returns null when there is no case-insensitive prefix match (caller should
  * delete + retype), or the full word when prefix is empty.
  */
-function suggestionSuffixAfterPrefix(word: string, prefix: string): string | null {
+function suggestionSuffixAfterPrefix(
+  word: string,
+  prefix: string,
+): string | null {
   if (prefix.length === 0) return word;
   const target = prefix.toLowerCase();
   let i = 0;
@@ -1320,7 +1368,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   deleteProfileFile: async (filename) => {
-    const nextActive = await invoke<string>("cmd_delete_profile_file", { filename });
+    const nextActive = await invoke<string>("cmd_delete_profile_file", {
+      filename,
+    });
     set({
       typedBuffer: "",
       ...clearGreekPendingAccent(),
@@ -1356,17 +1406,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
       partial.typingLanguage !== undefined &&
       partial.typingLanguage !== settings.typingLanguage;
     const uiLanguageChanged =
-      partial.uiLanguage !== undefined && partial.uiLanguage !== settings.uiLanguage;
+      partial.uiLanguage !== undefined &&
+      partial.uiLanguage !== settings.uiLanguage;
     const previousTypingLanguage = settings.typingLanguage;
     let next = {
       ...settings,
       ...partial,
       ...(partial.synthesizerOctaveCount !== undefined
         ? {
-          synthesizerOctaveCount: resolveSynthOctaveCount(
-            partial.synthesizerOctaveCount,
-          ),
-        }
+            synthesizerOctaveCount: resolveSynthOctaveCount(
+              partial.synthesizerOctaveCount,
+            ),
+          }
         : {}),
     };
     // Explicit undefined clears a persisted Teaching 1.0 (spread alone keeps the old value).
@@ -1379,8 +1430,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       shouldStripFullscreenLayouts = true;
     } else if (
       Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio") &&
-      (partial.windowHeightRatio == null ||
-        partial.windowHeightRatio < 0.999)
+      (partial.windowHeightRatio == null || partial.windowHeightRatio < 0.999)
     ) {
       // Leaving Teaching with a restored non-fullscreen ratio must still drop
       // stale 1.0 from the inactive pointer-kind snapshot.
@@ -1496,7 +1546,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (!result.success) {
           if (get().settingsEpoch === epoch) {
             set({
-              settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+              settings: {
+                ...get().settings,
+                typingLanguage: previousTypingLanguage,
+              },
             });
           }
           const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
@@ -1509,7 +1562,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       } catch (error) {
         if (get().settingsEpoch === epoch) {
           set({
-            settings: { ...get().settings, typingLanguage: previousTypingLanguage },
+            settings: {
+              ...get().settings,
+              typingLanguage: previousTypingLanguage,
+            },
           });
         }
         const message =
@@ -1526,7 +1582,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (get().settingsEpoch !== epoch) {
       return;
     }
-    const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+    const persisted = await persistSettingsIfCurrent(
+      get,
+      epoch,
+      get().settings,
+    );
     if (!persisted) {
       return;
     }
@@ -1572,7 +1632,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const focusModeSettingChanged =
         partial.focusModeOverride !== undefined ||
         partial.micMode !== undefined;
-      if (focusModeSettingChanged || partial.accessibilityMonitorId !== undefined) {
+      if (
+        focusModeSettingChanged ||
+        partial.accessibilityMonitorId !== undefined
+      ) {
         await refreshFocusModeState({ animate: true });
         // Monitor moves (and Teaching→Normal height/section patches) must still
         // re-apply non-focus layout when refresh is a no-op with Focus already off.
@@ -1601,7 +1664,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
           Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio") ||
           visibilityChanged
         ) {
-          if (Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")) {
+          if (
+            Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")
+          ) {
             liveHeightRatioPreview = null;
           }
           await syncFocusModeWindowLayout(true);
@@ -1611,23 +1676,37 @@ export const useAppStore = create<AppStore>((set, get) => ({
         partial.collapsed !== undefined ||
         Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")
       ) {
-        if (Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")) {
+        if (
+          Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")
+        ) {
           liveHeightRatioPreview = null;
         }
         await invoke("cmd_apply_window_layout", {
           monitorId: current.accessibilityMonitorId,
           collapsed: current.collapsed,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(current, get().musicTeachingEnabled),
-          fullWorkArea: teachingFullWorkAreaActive(current, get().musicTeachingEnabled),
+          heightRatio: heightRatioFromSettings(
+            current,
+            get().musicTeachingEnabled,
+          ),
+          fullWorkArea: teachingFullWorkAreaActive(
+            current,
+            get().musicTeachingEnabled,
+          ),
         });
       } else if (visibilityChanged && !current.collapsed) {
         const args = {
           monitorId: current.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(current, get().musicTeachingEnabled),
-          fullWorkArea: teachingFullWorkAreaActive(current, get().musicTeachingEnabled),
+          heightRatio: heightRatioFromSettings(
+            current,
+            get().musicTeachingEnabled,
+          ),
+          fullWorkArea: teachingFullWorkAreaActive(
+            current,
+            get().musicTeachingEnabled,
+          ),
         };
         await invoke(
           prefersReducedMotion()
@@ -1654,7 +1733,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (get().focusModeActive) {
         void syncFocusModeWindowLayout(true);
       } else {
-        void syncWindowLayoutFromSettings(next, true, get().musicTeachingEnabled);
+        void syncWindowLayoutFromSettings(
+          next,
+          true,
+          get().musicTeachingEnabled,
+        );
       }
     }
   },
@@ -1875,7 +1958,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     return result.inject || null;
   },
   applyLanguageLayoutTranslation: (translation, options) => {
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get()))) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get())))
+      return;
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
     const result = applyGreekLayoutTranslation(
@@ -1959,7 +2043,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     if (!typingLanguageUnchanged) {
-      const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+      const persisted = await persistSettingsIfCurrent(
+        get,
+        epoch,
+        get().settings,
+      );
       if (!persisted) {
         return;
       }
@@ -2000,7 +2088,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
         },
         keyboardLayout: method.layoutName,
       });
-      const persisted = await persistSettingsIfCurrent(get, epoch, get().settings);
+      const persisted = await persistSettingsIfCurrent(
+        get,
+        epoch,
+        get().settings,
+      );
       if (!persisted) {
         return;
       }
@@ -2191,8 +2283,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await invoke("cmd_stop_dictation");
     } catch (error) {
       set({
-        lastError:
-          error instanceof Error ? error.message : String(error),
+        lastError: error instanceof Error ? error.message : String(error),
       });
     }
   },
@@ -2224,8 +2315,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } catch (error) {
       set({ dictationState: "idle" });
       set({
-        lastError:
-          error instanceof Error ? error.message : String(error),
+        lastError: error instanceof Error ? error.message : String(error),
       });
       await get().refreshSttCapability();
     }
@@ -2262,7 +2352,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   enableMusicTeaching: async () => {
-    const { settings, musicTeachingEnabled, musicSongId, importedSongs, teachingLesson, languagePackId } = get();
+    const {
+      settings,
+      musicTeachingEnabled,
+      musicSongId,
+      importedSongs,
+      teachingLesson,
+      languagePackId,
+    } = get();
     if (musicTeachingEnabled) return;
     set({
       musicTeachingEnabled: true,
@@ -2270,7 +2367,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
       musicNoteIndex: 0,
       musicSongId: musicSongId ?? "twinkle",
       ...(teachingLesson === "language"
-        ? initLanguageLessonState(settings, languagePackId, get().customLanguagePacks)
+        ? initLanguageLessonState(
+            settings,
+            languagePackId,
+            get().customLanguagePacks,
+          )
         : emptyLanguageLessonState()),
     });
     // Lesson slot does not depend on phrasesVisible — do not force it on.
@@ -2291,7 +2392,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const prev = get().teachingLesson;
     const nextState =
       lesson === "language" && get().musicTeachingEnabled
-        ? initLanguageLessonState(get().settings, get().languagePackId, get().customLanguagePacks)
+        ? initLanguageLessonState(
+            get().settings,
+            get().languagePackId,
+            get().customLanguagePacks,
+          )
         : prev === "language"
           ? emptyLanguageLessonState()
           : {};
@@ -2479,7 +2584,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     if (mode !== "companion" && !skipCompanionBridgeStop) {
       const { companionBridgeArmed, companionModeActive } = get();
-      if (shouldStopCompanionBridgeOnHostMode(companionBridgeArmed, companionModeActive)) {
+      if (
+        shouldStopCompanionBridgeOnHostMode(
+          companionBridgeArmed,
+          companionModeActive,
+        )
+      ) {
         set({
           companionBridgeArmed: false,
           companionModeActive: false,
@@ -2509,7 +2619,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         set({ companionModeActive: false });
         // Clear teaching first so leavingSynthesizer does not restore Focus.
         const heightRestore = inTeaching
-          ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
+          ? heightRatioAfterLeavingTeaching(
+              state.windowHeightRatioBeforeTeaching,
+            )
           : settings.windowHeightRatio;
         if (inTeaching) {
           liveHeightRatioPreview = null;
@@ -2541,7 +2653,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
           focusModeManualExpand: false,
         });
         const heightRestore = inTeaching
-          ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
+          ? heightRatioAfterLeavingTeaching(
+              state.windowHeightRatioBeforeTeaching,
+            )
           : undefined;
         if (inTeaching) {
           liveHeightRatioPreview = null;
@@ -2567,7 +2681,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       case "focus": {
         set({ companionModeActive: false });
         const heightRestore = inTeaching
-          ? heightRatioAfterLeavingTeaching(state.windowHeightRatioBeforeTeaching)
+          ? heightRatioAfterLeavingTeaching(
+              state.windowHeightRatioBeforeTeaching,
+            )
           : undefined;
         if (inTeaching) {
           liveHeightRatioPreview = null;
@@ -2603,9 +2719,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
             : "normal";
         set({
           modeBeforeTeaching: previousMode,
-          windowHeightRatioBeforeTeaching: captureWindowHeightRatioBeforeTeaching(
-            settings.windowHeightRatio,
-          ),
+          windowHeightRatioBeforeTeaching:
+            captureWindowHeightRatioBeforeTeaching(settings.windowHeightRatio),
           teachingLesson: "language",
         });
         // Flags on before synthesizer patch so first layout sync sees Teaching.
@@ -2634,7 +2749,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   disableMusicTeaching: async (options) => {
-    if (!get().musicTeachingEnabled && get().phrasesVisibleBeforeTeaching === null) {
+    if (
+      !get().musicTeachingEnabled &&
+      get().phrasesVisibleBeforeTeaching === null
+    ) {
       if (options?.hidePhrases) {
         await get().updateSettings({ phrasesVisible: false });
       }
@@ -2701,7 +2819,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   startLanguageLessonPlayback: () => {
     const state = get();
     if (!isLanguageLessonActive(languageLessonModeFromState(state))) return;
-    const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
+    const pack = getLanguagePackById(
+      state.languagePackId,
+      state.customLanguagePacks,
+    );
     if (!pack || pack.tasks.length === 0) return;
     set({
       languageLessonPlaying: true,
@@ -2723,11 +2844,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({
       languageListAuthoringActive: active,
       ...(active
-        ? { languageLessonPlaying: false, languageListAuthoringField: "title" as const }
+        ? {
+            languageLessonPlaying: false,
+            languageListAuthoringField: "title" as const,
+          }
         : {
-          languageListAuthoringField: "title" as const,
-          languageListAuthoringHandlers: null,
-        }),
+            languageListAuthoringField: "title" as const,
+            languageListAuthoringHandlers: null,
+          }),
     });
     void get().syncWindowFocusable();
   },
@@ -2741,7 +2865,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   languageKeyInput: (ch, options) => {
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get()))) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get())))
+      return;
 
     const state = get();
     const greek = greekComposeEnabled(greekComposeContextFromState(state));
@@ -2759,7 +2884,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   languageBackspace: () => {
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get()))) return;
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get())))
+      return;
     set((state) => {
       if (state.greekPendingAccent) {
         return {
@@ -2776,8 +2902,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   checkLanguageAnswer: () => {
     const state = get();
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(state))) return;
-    const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
+    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(state)))
+      return;
+    const pack = getLanguagePackById(
+      state.languagePackId,
+      state.customLanguagePacks,
+    );
     if (!pack) return;
     const expected = currentSpellAnswer(pack, state.languageTaskIndex);
     if (!expected) return;
@@ -2830,7 +2960,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       keyboardLayout: state.keyboardLayout,
       languageLessonActive: true,
       lessonLanguage:
-        state.settings.typingLanguage === "el" ? "el" : state.settings.languageLessonLanguage,
+        state.settings.typingLanguage === "el"
+          ? "el"
+          : state.settings.languageLessonLanguage,
     });
     const text = state.settings.freeWriteNotepadText ?? "";
     const result = processCharacterInput(text, state.greekPendingAccent, ch, {
@@ -2860,7 +2992,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       keyboardLayout: state.keyboardLayout,
       languageLessonActive: true,
       lessonLanguage:
-        state.settings.typingLanguage === "el" ? "el" : state.settings.languageLessonLanguage,
+        state.settings.typingLanguage === "el"
+          ? "el"
+          : state.settings.languageLessonLanguage,
     });
     const text = state.settings.freeWriteNotepadText ?? "";
     const result = applyGreekLayoutTranslation(
@@ -2887,7 +3021,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   setFreeWriteNotepadZoom: (zoom) => {
-    void get().updateSettings({ freeWriteNotepadZoom: clampFreeWriteZoom(zoom) });
+    void get().updateSettings({
+      freeWriteNotepadZoom: clampFreeWriteZoom(zoom),
+    });
   },
 
   setFreeWriteNotepadWrap: (wrap) => {
@@ -2900,9 +3036,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   loadTeachingPdfLibrary: async () => {
     try {
-      const entries = await invoke<TeachingPdfEntry[]>("cmd_list_teaching_pdfs");
+      const entries = await invoke<TeachingPdfEntry[]>(
+        "cmd_list_teaching_pdfs",
+      );
       const teachingPdfLibrary = Array.isArray(entries)
-        ? entries.filter((e) => e && typeof e.id === "string" && typeof e.path === "string")
+        ? entries.filter(
+            (e) => e && typeof e.id === "string" && typeof e.path === "string",
+          )
         : [];
       const lastId = get().settings.freeWriteLastPdfId ?? null;
       const freeWriteActivePdfId =
@@ -2927,7 +3067,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         path,
         lastOpenedAt: new Date().toISOString(),
       };
-      const teachingPdfLibrary = upsertTeachingPdfEntry(get().teachingPdfLibrary, entry);
+      const teachingPdfLibrary = upsertTeachingPdfEntry(
+        get().teachingPdfLibrary,
+        entry,
+      );
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
       set({ teachingPdfLibrary, freeWriteActivePdfId: entry.id });
       await get().updateSettings({ freeWriteLastPdfId: entry.id });
@@ -2945,7 +3088,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         ...entry,
         lastOpenedAt: new Date().toISOString(),
       };
-      const teachingPdfLibrary = upsertTeachingPdfEntry(get().teachingPdfLibrary, updated);
+      const teachingPdfLibrary = upsertTeachingPdfEntry(
+        get().teachingPdfLibrary,
+        updated,
+      );
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
       set({ teachingPdfLibrary, freeWriteActivePdfId: id });
       await get().updateSettings({ freeWriteLastPdfId: id });
@@ -2957,7 +3103,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   removeTeachingPdf: async (id) => {
     try {
-      const teachingPdfLibrary = removeTeachingPdfEntry(get().teachingPdfLibrary, id);
+      const teachingPdfLibrary = removeTeachingPdfEntry(
+        get().teachingPdfLibrary,
+        id,
+      );
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
       const freeWriteActivePdfId =
         get().freeWriteActivePdfId === id ? null : get().freeWriteActivePdfId;
@@ -2972,8 +3121,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   reportMusicKeyPlayed: (keyId) => {
-    const { musicTeachingEnabled, musicPlaybackActive, musicSongId, musicNoteIndex, importedSongs } =
-      get();
+    const {
+      musicTeachingEnabled,
+      musicPlaybackActive,
+      musicSongId,
+      musicNoteIndex,
+      importedSongs,
+    } = get();
     if (!musicTeachingEnabled || musicPlaybackActive) return;
     const song = getSongById(musicSongId, importedSongs);
     if (!song) return;
@@ -3006,7 +3160,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   loadImportedSongs: async () => {
     try {
-      const songs = await invoke<ImportedMusicSong[]>("cmd_list_imported_songs");
+      const songs = await invoke<ImportedMusicSong[]>(
+        "cmd_list_imported_songs",
+      );
       set({
         importedSongs: Array.isArray(songs)
           ? songs.filter((song) => song && typeof song.id === "string")
@@ -3020,7 +3176,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   loadCustomLanguagePacks: async () => {
     try {
-      const packs = await invoke<LanguagePack[]>("cmd_list_custom_language_packs");
+      const packs = await invoke<LanguagePack[]>(
+        "cmd_list_custom_language_packs",
+      );
       set({
         customLanguagePacks: Array.isArray(packs)
           ? packs.filter((pack) => pack && typeof pack.id === "string")
@@ -3052,7 +3210,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       await get().loadCustomLanguagePacks();
       if (get().languagePackId === id) {
         const { settings } = get();
-        const band = settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND;
+        const band =
+          settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND;
         const language = settings.languageLessonLanguage ?? "el";
         get().setLanguagePackId(defaultLanguagePackId(band, language));
       }
@@ -3066,7 +3225,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     try {
       const path = await invoke<string | null>("cmd_pick_music_song_file");
       if (!path) return;
-      const payload = await invoke<MusicFilePayload>("cmd_read_music_file", { path });
+      const payload = await invoke<MusicFilePayload>("cmd_read_music_file", {
+        path,
+      });
       const songs = await parseMusicFilePayload(payload);
       for (const song of songs) {
         await invoke("cmd_upsert_imported_song", { song });
@@ -3175,8 +3336,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
           monitorId: next.accessibilityMonitorId,
           collapsed: true,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(next, get().musicTeachingEnabled),
-          fullWorkArea: teachingFullWorkAreaActive(next, get().musicTeachingEnabled),
+          heightRatio: heightRatioFromSettings(
+            next,
+            get().musicTeachingEnabled,
+          ),
+          fullWorkArea: teachingFullWorkAreaActive(
+            next,
+            get().musicTeachingEnabled,
+          ),
         };
         await invoke(
           prefersReducedMotion()
@@ -3189,7 +3356,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
           monitorId: settings.accessibilityMonitorId,
           collapsed: false,
           collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(settings, get().musicTeachingEnabled),
+          heightRatio: heightRatioFromSettings(
+            settings,
+            get().musicTeachingEnabled,
+          ),
           fullWorkArea: teachingFullWorkAreaActive(
             settings,
             get().musicTeachingEnabled,
@@ -3307,7 +3477,8 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   if (
     state.focusModeKeyboardVisible ||
     state.focusModeManualExpand ||
-    state.focusModeSuppressAutoShow
+    state.focusModeSuppressAutoShow ||
+    state.modeMenuOpen
   ) {
     const animateContent =
       state.focusModeKeyboardVisible && !prefersReducedMotion();

@@ -13,10 +13,7 @@ fn is_host_shaped_url_target(trimmed: &str) -> bool {
         return false;
     }
 
-    let host_port = trimmed
-        .split(['/', '?', '#'])
-        .next()
-        .unwrap_or(trimmed);
+    let host_port = trimmed.split(['/', '?', '#']).next().unwrap_or(trimmed);
     if host_port.is_empty() {
         return false;
     }
@@ -33,10 +30,7 @@ fn is_host_shaped_url_target(trimmed: &str) -> bool {
     let labels: Vec<&str> = host.split('.').collect();
     labels.len() >= 2
         && labels.iter().all(|label| {
-            !label.is_empty()
-                && label
-                    .chars()
-                    .all(|c| c.is_ascii_alphanumeric() || c == '-')
+            !label.is_empty() && label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
         })
 }
 
@@ -114,11 +108,7 @@ pub fn validate_quick_action_app(target: &str) -> Result<String, String> {
     Err(format!("Application not found: {path}"))
 }
 
-pub fn launch_quick_action(
-    app: &AppHandle,
-    action_type: &str,
-    target: &str,
-) -> Result<(), String> {
+pub fn launch_quick_action(app: &AppHandle, action_type: &str, target: &str) -> Result<(), String> {
     match action_type {
         "url" => {
             let url = validate_quick_action_url(target)?;

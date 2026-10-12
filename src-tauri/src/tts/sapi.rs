@@ -3,8 +3,8 @@ use anyhow::{anyhow, Result};
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Media::Speech::{
-    ISpObjectToken, ISpObjectTokenCategory, ISpVoice, SPCAT_VOICES,
-    SPVOICESTATUS, SpObjectTokenCategory, SpVoice, SPF_DEFAULT, SPF_PURGEBEFORESPEAK,
+    ISpObjectToken, ISpObjectTokenCategory, ISpVoice, SpObjectTokenCategory, SpVoice, SPCAT_VOICES,
+    SPF_DEFAULT, SPF_PURGEBEFORESPEAK, SPVOICESTATUS,
 };
 use windows::Win32::System::Com::{CoInitializeEx, CLSCTX_ALL, COINIT_APARTMENTTHREADED};
 
@@ -88,9 +88,7 @@ fn pwstr_to_string(pw: windows::core::PWSTR) -> String {
         return String::new();
     }
     unsafe {
-        let len = (0..)
-            .take_while(|&i| *pw.0.add(i) != 0)
-            .count();
+        let len = (0..).take_while(|&i| *pw.0.add(i) != 0).count();
         String::from_utf16_lossy(std::slice::from_raw_parts(pw.0, len))
     }
 }

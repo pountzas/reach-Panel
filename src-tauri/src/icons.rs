@@ -183,9 +183,7 @@ fn resolve_from_app_paths_registry(exe_name: &str) -> Option<PathBuf> {
         RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY_LOCAL_MACHINE, KEY_READ, REG_SZ,
     };
 
-    let subkey = format!(
-        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\{exe_name}"
-    );
+    let subkey = format!("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\{exe_name}");
     let subkey_wide: Vec<u16> = subkey.encode_utf16().chain(std::iter::once(0)).collect();
 
     unsafe {
@@ -252,13 +250,7 @@ fn extract_file_icon_png(path: &Path) -> Result<Vec<u8>, String> {
 
     unsafe {
         let mut large = HICON::default();
-        let count = ExtractIconExW(
-            PCWSTR(wide.as_ptr()),
-            0,
-            Some(&mut large),
-            None,
-            1,
-        );
+        let count = ExtractIconExW(PCWSTR(wide.as_ptr()), 0, Some(&mut large), None, 1);
         if count == 0 || large.is_invalid() {
             return Err("ExtractIconExW failed".into());
         }

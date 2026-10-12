@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useTranslation } from "../../hooks/useTranslation";
+import { overlayShouldCaptureMic } from "../../lib/dictationOverlayWindow";
 import { StopIcon } from "../common/SectionIcons";
 import { DictationVisualizer } from "./DictationVisualizer";
 
@@ -10,7 +11,7 @@ type SttUiState = "idle" | "listening" | "processing";
 export function DictationOverlay() {
   const { t } = useTranslation();
   const [state, setState] = useState<SttUiState>("listening");
-  const [captureAudio, setCaptureAudio] = useState(true);
+  const [captureAudio, setCaptureAudio] = useState(false);
   const [entered, setEntered] = useState(false);
 
   useEffect(() => {
@@ -24,9 +25,9 @@ export function DictationOverlay() {
           language: null,
           groqApiKey: null,
         });
-        setCaptureAudio(status.engine !== "groq");
+        setCaptureAudio(overlayShouldCaptureMic(status.engine));
       } catch {
-        setCaptureAudio(true);
+        setCaptureAudio(false);
       }
     };
 

@@ -1,4 +1,4 @@
-import { useDeferredValue, useRef, ViewTransition } from "react";
+import { useDeferredValue, useEffect, useRef, ViewTransition } from "react";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { useAppStore } from "../../stores/appStore";
 import { InputPreview } from "./InputPreview";
@@ -16,9 +16,11 @@ export function PreviewSuggestionsRow({
   const deferredSuggestions = useDeferredValue(showSuggestions);
   const suggestions = useAppStore((s) => s.suggestions);
   const lastSuggestionsRef = useRef<string[]>([]);
-  if (suggestions.length > 0) {
-    lastSuggestionsRef.current = suggestions;
-  }
+  useEffect(() => {
+    if (suggestions.length > 0) {
+      lastSuggestionsRef.current = suggestions;
+    }
+  }, [suggestions]);
   const displaySuggestions =
     suggestions.length > 0 ? suggestions : lastSuggestionsRef.current;
 

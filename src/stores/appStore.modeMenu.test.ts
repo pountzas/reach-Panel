@@ -7,10 +7,13 @@ import { APP_MODE_OPTIONS } from "../lib/appModeLayout";
 const mockState = vi.hoisted(() => ({
   calls: [] as string[],
   resolveExpand: null as (() => void) | null,
+  focusHandlers: new Map<string, (event: { payload: unknown }) => void>(),
+  showDictationOverlay: vi.fn(() => Promise.resolve()),
 }));
 
 const motionMocks = vi.hoisted(() => ({
   prefersReducedMotion: vi.fn(() => false),
+  afterNextPaint: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -30,8 +33,20 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(() => Promise.resolve(() => {})),
+  listen: vi.fn(
+    (event: string, handler: (event: { payload: unknown }) => void) => {
+      mockState.focusHandlers.set(event, handler);
+      return Promise.resolve(() => {
+        mockState.focusHandlers.delete(event);
+      });
+    },
+  ),
   emit: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("../lib/dictationOverlayWindow", () => ({
+  showDictationOverlay: () => mockState.showDictationOverlay(),
+  hideDictationOverlay: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("@tauri-apps/api/webviewWindow", () => ({
@@ -47,6 +62,7 @@ vi.mock("@tauri-apps/plugin-updater", () => ({
 vi.mock("../lib/motion", () => ({
   MOTION: { fast: 120, base: 200, slow: 300 },
   prefersReducedMotion: motionMocks.prefersReducedMotion,
+  afterNextPaint: motionMocks.afterNextPaint,
 }));
 
 import { invoke } from "@tauri-apps/api/core";
@@ -158,5 +174,40 @@ describe("mode menu store actions", () => {
 
     await useAppStore.getState().openModeMenu();
     expect(useAppStore.getState().modeMenuOpen).toBe(false);
+  });
+
+  it("restores layout on focus loss when only the mode menu is open", async () => {
+    useAppStore.setState({
+      settings: { ...DEFAULT_SETTINGS, micMode: true },
+      focusModeActive: true,
+      modeMenuOpen: true,
+      focusModeKeyboardVisible: false,
+      focusModeManualExpand: false,
+      focusModeSuppressAutoShow: false,
+      isAnimatingWindow: false,
+    });
+    mockState.focusHandlers.get("input-focus-changed")?.({
+      payload: { focused: false },
+    });
+    expect(useAppStore.getState().modeMenuOpen).toBe(false);
+    await vi.waitFor(() =>
+      expect(mockState.calls).toContain("cmd_apply_window_layout"),
+    );
+  });
+
+  it("repositions the dictation overlay after a focus-mode layout sync", async () => {
+    useAppStore.setState({
+      settings: { ...DEFAULT_SETTINGS },
+      focusModeActive: true,
+      focusModeKeyboardVisible: true,
+      dictationState: "listening",
+      isAnimatingWindow: false,
+    });
+    mockState.focusHandlers.get("input-focus-changed")?.({
+      payload: { focused: false },
+    });
+    await vi.waitFor(() =>
+      expect(mockState.showDictationOverlay).toHaveBeenCalled(),
+    );
   });
 });

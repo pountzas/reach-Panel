@@ -14,8 +14,10 @@ use std::process::Command;
 use super::taskbar::{collect_tray_rects, RectI};
 use super::{list_monitors, monitor_for_rect, monitors_overlap, MonitorInfo};
 
-const STUCK_RECTS_PATH: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3";
-const MM_STUCK_RECTS_PATH: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MMStuckRects3";
+const STUCK_RECTS_PATH: &str =
+    "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3";
+const MM_STUCK_RECTS_PATH: &str =
+    "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MMStuckRects3";
 const ADVANCED_PATH: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced";
 const TASKBAR_LOCATION_VALUE: &str = "TaskbarLocation";
 const SETTINGS_VALUE: &str = "Settings";
@@ -195,7 +197,8 @@ fn build_mm_key_map(
     for key in keys.keys() {
         if let Some((left, top, right, bottom)) = parse_localdisplay_key(key) {
             for monitor in monitors {
-                if monitor.matches_rc_monitor(left, top, right, bottom) && !map.contains_key(&monitor.id)
+                if monitor.matches_rc_monitor(left, top, right, bottom)
+                    && !map.contains_key(&monitor.id)
                 {
                     map.insert(monitor.id, key.clone());
                     unassigned_keys.retain(|k| k != key);
@@ -215,8 +218,10 @@ fn build_mm_key_map(
         }
     }
 
-    let mut unassigned_monitors: Vec<&MonitorFrame> =
-        monitors.iter().filter(|m| !map.contains_key(&m.id)).collect();
+    let mut unassigned_monitors: Vec<&MonitorFrame> = monitors
+        .iter()
+        .filter(|m| !map.contains_key(&m.id))
+        .collect();
     unassigned_monitors.sort_by_key(|m| m.id);
     unassigned_keys.sort();
     for (monitor, key) in unassigned_monitors.iter().zip(unassigned_keys.iter()) {
@@ -319,7 +324,10 @@ fn read_registry_binary(hkey_path: &str, value_name: &str) -> Result<Vec<u8>, St
     };
 
     let path_wide: Vec<u16> = hkey_path.encode_utf16().chain(std::iter::once(0)).collect();
-    let value_wide: Vec<u16> = value_name.encode_utf16().chain(std::iter::once(0)).collect();
+    let value_wide: Vec<u16> = value_name
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
 
     unsafe {
         let mut hkey = Default::default();
@@ -346,7 +354,9 @@ fn read_registry_binary(hkey_path: &str, value_name: &str) -> Result<Vec<u8>, St
         );
         if size_query != ERROR_SUCCESS || size == 0 {
             let _ = RegCloseKey(hkey);
-            return Err(format!("Registry value not found: {hkey_path}\\{value_name}"));
+            return Err(format!(
+                "Registry value not found: {hkey_path}\\{value_name}"
+            ));
         }
 
         let mut data = vec![0u8; size as usize];
@@ -360,7 +370,9 @@ fn read_registry_binary(hkey_path: &str, value_name: &str) -> Result<Vec<u8>, St
         );
         let _ = RegCloseKey(hkey);
         if query != ERROR_SUCCESS {
-            return Err(format!("Failed to read registry value: {hkey_path}\\{value_name}"));
+            return Err(format!(
+                "Failed to read registry value: {hkey_path}\\{value_name}"
+            ));
         }
         data.truncate(size as usize);
         Ok(data)
@@ -375,7 +387,10 @@ fn write_registry_binary(hkey_path: &str, value_name: &str, data: &[u8]) -> Resu
     };
 
     let path_wide: Vec<u16> = hkey_path.encode_utf16().chain(std::iter::once(0)).collect();
-    let value_wide: Vec<u16> = value_name.encode_utf16().chain(std::iter::once(0)).collect();
+    let value_wide: Vec<u16> = value_name
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
 
     unsafe {
         let mut hkey = Default::default();
@@ -390,16 +405,12 @@ fn write_registry_binary(hkey_path: &str, value_name: &str, data: &[u8]) -> Resu
             return Err(format!("Registry key not writable: {hkey_path}"));
         }
 
-        let set = RegSetValueExW(
-            hkey,
-            PCWSTR(value_wide.as_ptr()),
-            0,
-            REG_BINARY,
-            Some(data),
-        );
+        let set = RegSetValueExW(hkey, PCWSTR(value_wide.as_ptr()), 0, REG_BINARY, Some(data));
         let _ = RegCloseKey(hkey);
         if set != ERROR_SUCCESS {
-            return Err(format!("Failed to write registry value: {hkey_path}\\{value_name}"));
+            return Err(format!(
+                "Failed to write registry value: {hkey_path}\\{value_name}"
+            ));
         }
         Ok(())
     }
@@ -459,8 +470,10 @@ fn read_mm_stuck_rects() -> HashMap<String, Vec<u8>> {
 
             let value_name = String::from_utf16_lossy(&name_buf[..name_len as usize]);
             if data_type_raw == REG_BINARY.0 && data_size as usize > POSITION_BYTE_INDEX {
-                let mut query_name: Vec<u16> =
-                    value_name.encode_utf16().chain(std::iter::once(0)).collect();
+                let mut query_name: Vec<u16> = value_name
+                    .encode_utf16()
+                    .chain(std::iter::once(0))
+                    .collect();
                 let mut data = vec![0u8; data_size as usize];
                 let mut query_type = REG_BINARY;
                 let mut query_size = data_size;
@@ -496,7 +509,11 @@ fn backup_registry_for_targets(touched_mm_keys: &[String]) -> RegistryBackup {
     let mm_stuck_rects = read_mm_stuck_rects();
     let filtered = touched_mm_keys
         .iter()
-        .filter_map(|key| mm_stuck_rects.get(key).map(|data| (key.clone(), data.clone())))
+        .filter_map(|key| {
+            mm_stuck_rects
+                .get(key)
+                .map(|data| (key.clone(), data.clone()))
+        })
         .collect();
     RegistryBackup {
         stuck_rects_settings: read_registry_binary(STUCK_RECTS_PATH, SETTINGS_VALUE).ok(),
@@ -594,7 +611,10 @@ fn read_taskbar_location_dword() -> Option<u32> {
         RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY_CURRENT_USER, KEY_READ, REG_DWORD,
     };
 
-    let path_wide: Vec<u16> = ADVANCED_PATH.encode_utf16().chain(std::iter::once(0)).collect();
+    let path_wide: Vec<u16> = ADVANCED_PATH
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
     let value_wide: Vec<u16> = TASKBAR_LOCATION_VALUE
         .encode_utf16()
         .chain(std::iter::once(0))
@@ -639,7 +659,10 @@ fn write_taskbar_location_dword_raw(value: u32) -> Result<(), String> {
         RegCloseKey, RegOpenKeyExW, RegSetValueExW, HKEY_CURRENT_USER, KEY_SET_VALUE, REG_DWORD,
     };
 
-    let path_wide: Vec<u16> = ADVANCED_PATH.encode_utf16().chain(std::iter::once(0)).collect();
+    let path_wide: Vec<u16> = ADVANCED_PATH
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
     let value_wide: Vec<u16> = TASKBAR_LOCATION_VALUE
         .encode_utf16()
         .chain(std::iter::once(0))
@@ -682,7 +705,10 @@ fn delete_taskbar_location_dword() -> Result<(), String> {
         RegCloseKey, RegDeleteValueW, RegOpenKeyExW, HKEY_CURRENT_USER, KEY_SET_VALUE,
     };
 
-    let path_wide: Vec<u16> = ADVANCED_PATH.encode_utf16().chain(std::iter::once(0)).collect();
+    let path_wide: Vec<u16> = ADVANCED_PATH
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
     let value_wide: Vec<u16> = TASKBAR_LOCATION_VALUE
         .encode_utf16()
         .chain(std::iter::once(0))
@@ -1062,7 +1088,10 @@ mod tests {
 
     #[test]
     fn parse_position_strings() {
-        assert_eq!(TaskbarPosition::parse("bottom"), Some(TaskbarPosition::Bottom));
+        assert_eq!(
+            TaskbarPosition::parse("bottom"),
+            Some(TaskbarPosition::Bottom)
+        );
         assert_eq!(TaskbarPosition::parse("TOP"), Some(TaskbarPosition::Top));
         assert_eq!(TaskbarPosition::parse("left"), None);
         assert_eq!(TaskbarPosition::parse("right"), None);
@@ -1093,10 +1122,7 @@ mod tests {
     #[test]
     fn build_mm_key_map_matches_localdisplay_monitor() {
         let mut keys = HashMap::new();
-        keys.insert(
-            "LOCALDISPLAY(-3840,0,-1920,1080)".to_string(),
-            vec![0; 20],
-        );
+        keys.insert("LOCALDISPLAY(-3840,0,-1920,1080)".to_string(), vec![0; 20]);
         keys.insert("Default_Monitor#1".to_string(), vec![0; 20]);
         let monitors = vec![
             MonitorFrame {

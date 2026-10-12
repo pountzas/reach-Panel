@@ -65,11 +65,8 @@ pub fn exclude_window_from_capture(hwnd: isize) -> Result<(), String> {
         return Err("invalid hwnd".into());
     }
     unsafe {
-        SetWindowDisplayAffinity(
-            HWND(hwnd as *mut core::ffi::c_void),
-            WDA_EXCLUDEFROMCAPTURE,
-        )
-        .map_err(|e| e.to_string())
+        SetWindowDisplayAffinity(HWND(hwnd as *mut core::ffi::c_void), WDA_EXCLUDEFROMCAPTURE)
+            .map_err(|e| e.to_string())
     }
 }
 
@@ -134,29 +131,27 @@ fn preview_loop() {
             PreviewFrameAction::KeepLastFrame => {
                 // Transient UIA/bounds miss while the target HWND remains — do not flicker.
             }
-            PreviewFrameAction::Capture(bounds) => {
-                match capture_region_jpeg(&bounds) {
-                    Ok((jpeg, width, height)) => {
-                        let b64 = STANDARD.encode(jpeg);
-                        let data_url = format!("data:image/jpeg;base64,{b64}");
-                        if companion_live {
-                            push_frame_to_companion(data_url, width, height);
-                        } else if let Some(app) = APP_HANDLE.get() {
-                            let _ = app.emit(
-                                "input-preview-frame",
-                                InputPreviewFramePayload {
-                                    data_url,
-                                    width,
-                                    height,
-                                },
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("input preview capture failed: {e}");
+            PreviewFrameAction::Capture(bounds) => match capture_region_jpeg(&bounds) {
+                Ok((jpeg, width, height)) => {
+                    let b64 = STANDARD.encode(jpeg);
+                    let data_url = format!("data:image/jpeg;base64,{b64}");
+                    if companion_live {
+                        push_frame_to_companion(data_url, width, height);
+                    } else if let Some(app) = APP_HANDLE.get() {
+                        let _ = app.emit(
+                            "input-preview-frame",
+                            InputPreviewFramePayload {
+                                data_url,
+                                width,
+                                height,
+                            },
+                        );
                     }
                 }
-            }
+                Err(e) => {
+                    eprintln!("input preview capture failed: {e}");
+                }
+            },
         }
     }
 }
@@ -292,12 +287,7 @@ fn window_local_capture_rect(
 }
 
 /// Crop a BGRA8 buffer (`src_w`×`src_h`) to `crop` (window-local).
-fn crop_bgra(
-    src: &[u8],
-    src_w: i32,
-    src_h: i32,
-    crop: CaptureRect,
-) -> Option<Vec<u8>> {
+fn crop_bgra(src: &[u8], src_w: i32, src_h: i32, crop: CaptureRect) -> Option<Vec<u8>> {
     if src_w <= 0 || src_h <= 0 || crop.width <= 0 || crop.height <= 0 {
         return None;
     }
@@ -308,14 +298,15 @@ fn crop_bgra(
     {
         return None;
     }
-    let expected = (src_w as usize).saturating_mul(src_h as usize).saturating_mul(4);
+    let expected = (src_w as usize)
+        .saturating_mul(src_h as usize)
+        .saturating_mul(4);
     if src.len() < expected {
         return None;
     }
     let mut out = vec![0u8; (crop.width as usize).saturating_mul(crop.height as usize) * 4];
     for row in 0..crop.height as usize {
-        let src_off =
-            ((crop.top as usize + row) * src_w as usize + crop.left as usize) * 4;
+        let src_off = ((crop.top as usize + row) * src_w as usize + crop.left as usize) * 4;
         let dst_off = row * crop.width as usize * 4;
         let len = crop.width as usize * 4;
         out[dst_off..dst_off + len].copy_from_slice(&src[src_off..src_off + len]);
@@ -331,8 +322,14 @@ fn padded_clamped_rect(bounds: &ScreenRect) -> CaptureRect {
 
     let mut left = bounds.left.saturating_sub(PADDING);
     let mut top = bounds.top.saturating_sub(PADDING);
-    let mut right = bounds.left.saturating_add(bounds.width).saturating_add(PADDING);
-    let mut bottom = bounds.top.saturating_add(bounds.height).saturating_add(PADDING);
+    let mut right = bounds
+        .left
+        .saturating_add(bounds.width)
+        .saturating_add(PADDING);
+    let mut bottom = bounds
+        .top
+        .saturating_add(bounds.height)
+        .saturating_add(PADDING);
 
     left = left.max(vx);
     top = top.max(vy);
@@ -444,18 +441,15 @@ fn capture_window_region_bgra(hwnd: HWND, screen_rect: &CaptureRect) -> Result<V
         }
 
         // Letterbox clipped local crop into the full requested strip size.
-        let mut out =
-            vec![0u8; (screen_rect.width as usize) * (screen_rect.height as usize) * 4];
+        let mut out = vec![0u8; (screen_rect.width as usize) * (screen_rect.height as usize) * 4];
         let dst_x = (local.left - (screen_rect.left - window_rect.left)).max(0) as usize;
         let dst_y = (local.top - (screen_rect.top - window_rect.top)).max(0) as usize;
         for row in 0..local.height as usize {
             let src_off = row * local.width as usize * 4;
-            let dst_off =
-                ((dst_y + row) * screen_rect.width as usize + dst_x) * 4;
+            let dst_off = ((dst_y + row) * screen_rect.width as usize + dst_x) * 4;
             let len = local.width as usize * 4;
             if dst_off + len <= out.len() && src_off + len <= cropped.len() {
-                out[dst_off..dst_off + len]
-                    .copy_from_slice(&cropped[src_off..src_off + len]);
+                out[dst_off..dst_off + len].copy_from_slice(&cropped[src_off..src_off + len]);
             }
         }
         Ok(out)

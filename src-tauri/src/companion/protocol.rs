@@ -16,7 +16,11 @@ pub struct Envelope {
 }
 
 impl Envelope {
-    pub fn reply(id: Option<String>, msg_type: impl Into<String>, payload: serde_json::Value) -> Self {
+    pub fn reply(
+        id: Option<String>,
+        msg_type: impl Into<String>,
+        payload: serde_json::Value,
+    ) -> Self {
         Self {
             v: PROTOCOL_VERSION,
             id,
