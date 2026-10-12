@@ -46,7 +46,7 @@ import { notify } from "../lib/notify";
 import { isStickySpeechError } from "../lib/speechPrivacy";
 import {
   clampWindowHeightRatio,
-  computeContentHeightRatioFromSettings,
+  resolveWindowHeightRatio,
 } from "../lib/sectionLayouts";
 import { shouldApplyLiveWindowHeightRatio } from "../lib/windowHeightDrag";
 import {
@@ -54,7 +54,6 @@ import {
   ensureSectionExpanded,
 } from "../lib/sectionStack";
 import {
-  FOCUS_KEYBOARD_HEIGHT_RATIO,
   MODE_MENU_WIDTH,
   isInputPreviewActiveForMode,
   modeMenuHeight,
@@ -383,18 +382,19 @@ async function syncFocusModeWindowLayout(
   }
   try {
     const { settings } = useAppStore.getState();
+    const sharedHeightRatio = heightRatioFromSettings(
+      settings,
+      useAppStore.getState().musicTeachingEnabled,
+    );
     const args = {
       monitorId: settings.accessibilityMonitorId,
       collapsed: !visibleAtStart,
       collapsedDictation: settings.micMode === true,
       collapsedSettings: true,
-      heightRatio: heightRatioFromSettings(
-        settings,
-        useAppStore.getState().musicTeachingEnabled,
-      ),
+      heightRatio: sharedHeightRatio,
       focusMode: true,
       focusKeyboardVisible: visibleAtStart,
-      focusKeyboardHeightRatio: FOCUS_KEYBOARD_HEIGHT_RATIO,
+      focusKeyboardHeightRatio: sharedHeightRatio,
       fullWorkArea: false,
     };
 
@@ -612,19 +612,12 @@ function heightRatioFromSettings(
   settings: AppSettings,
   musicTeachingEnabled = false,
 ): number {
-  if (teachingFullWorkAreaActive(settings, musicTeachingEnabled)) {
-    return 1.0;
-  }
-  const contentRatio = computeContentHeightRatioFromSettings(
-    settings,
-    lessonSlotVisibleFromState(settings, musicTeachingEnabled),
-  );
-  if (settings.windowHeightRatio == null) {
-    return contentRatio;
-  }
-  // Explicit grip override wins — do not floor to contentRatio or shrink
-  // snaps back to full when all sections are visible.
-  return clampWindowHeightRatio(settings.windowHeightRatio);
+  return resolveWindowHeightRatio(settings.windowHeightRatio, {
+    teachingFullWorkArea: teachingFullWorkAreaActive(
+      settings,
+      musicTeachingEnabled,
+    ),
+  });
 }
 
 /** Apply effective v1 chrome reads without wiping unrelated stored prefs. */

@@ -76,9 +76,9 @@ describe("nextWindowHeightRatioFromScreenY", () => {
 
   it("clamps when the pointer is above or below the allowed band", () => {
     expect(nextWindowHeightRatioFromScreenY(0, region)).toBe(WINDOW_HEIGHT_RATIO_MAX);
-    // Below 35% of the region → min ratio
+    // Below 25% of the region → min ratio
     expect(nextWindowHeightRatioFromScreenY(950, region)).toBe(WINDOW_HEIGHT_RATIO_MIN);
-    expect(WINDOW_HEIGHT_RATIO_MIN).toBe(0.35);
+    expect(WINDOW_HEIGHT_RATIO_MIN).toBe(0.25);
   });
 
   it("allows shrinking to 35% of the region", () => {

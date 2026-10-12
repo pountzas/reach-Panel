@@ -34,8 +34,12 @@ export function isMicFabEnabled(input: {
   return listening || (input.canDictate && input.externalInputFocused);
 }
 
-/** Default focus-mode keyboard height as fraction of full monitor height. Keep in sync with Rust. */
-export const FOCUS_KEYBOARD_HEIGHT_RATIO = 0.42;
+/**
+ * Default keyboard height when the user has not set a grip ratio yet.
+ * Shared by Normal and Focus; keep numeric value in sync with Rust
+ * `FOCUS_KEYBOARD_HEIGHT_RATIO` / `DEFAULT_WINDOW_HEIGHT_RATIO`.
+ */
+export { DEFAULT_WINDOW_HEIGHT_RATIO as FOCUS_KEYBOARD_HEIGHT_RATIO } from "./sectionLayouts";
 
 /**
  * Focus mode keyboard toolbar chrome. `pl-3` matches AppShell header `px-3`
