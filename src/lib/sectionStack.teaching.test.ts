@@ -5,6 +5,7 @@ import {
   migrateLegacySectionLayouts,
   normalizeSectionStack,
   toggleStackMinimized,
+  type LegacySectionLayouts,
 } from "./sectionStack";
 
 describe("ensureSectionExpanded", () => {
@@ -33,9 +34,16 @@ describe("ensureSectionExpanded", () => {
 describe("migrateLegacySectionLayouts", () => {
   it("keeps explicit teaching layout when phrases also maps to teaching", () => {
     const migrated = migrateLegacySectionLayouts({
-      teaching: { hPct: 60, minimized: false },
-      phrases: { hPct: 10, minimized: true, expandedHPct: 10 },
-    });
+      teaching: { xPct: 0, yPct: 0, wPct: 100, hPct: 60, minimized: false },
+      phrases: {
+        xPct: 0,
+        yPct: 0,
+        wPct: 100,
+        hPct: 10,
+        minimized: true,
+        expandedHPct: 10,
+      },
+    } as LegacySectionLayouts);
     expect(migrated.weights.teaching).toBe(60);
     expect(migrated.minimized.teaching).toBeUndefined();
   });
