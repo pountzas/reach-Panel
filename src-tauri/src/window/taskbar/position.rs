@@ -11,8 +11,8 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::process::Command;
 
-use super::taskbar::{collect_tray_rects, RectI};
-use super::{list_monitors, monitor_for_rect, monitors_overlap, MonitorInfo};
+use super::detect::{collect_tray_rects, RectI};
+use super::super::{list_monitors, monitor_for_rect, monitors_overlap, MonitorInfo};
 
 const STUCK_RECTS_PATH: &str =
     "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3";
@@ -37,14 +37,14 @@ pub enum TaskbarPosition {
 }
 
 impl TaskbarPosition {
-    fn byte(self) -> u8 {
+    pub(super) fn byte(self) -> u8 {
         match self {
             Self::Top => 1,
             Self::Bottom => 3,
         }
     }
 
-    fn from_byte(byte: u8) -> Option<Self> {
+    pub(super) fn from_byte(byte: u8) -> Option<Self> {
         match byte {
             1 => Some(Self::Top),
             3 => Some(Self::Bottom),
@@ -52,7 +52,7 @@ impl TaskbarPosition {
         }
     }
 
-    fn parse(value: &str) -> Option<Self> {
+    pub(super) fn parse(value: &str) -> Option<Self> {
         match value.trim().to_ascii_lowercase().as_str() {
             "top" => Some(Self::Top),
             "bottom" => Some(Self::Bottom),
@@ -60,7 +60,7 @@ impl TaskbarPosition {
         }
     }
 
-    fn as_str(self) -> &'static str {
+    pub(super) fn as_str(self) -> &'static str {
         match self {
             Self::Top => "top",
             Self::Bottom => "bottom",
@@ -90,15 +90,15 @@ struct RegistryBackup {
 
 /// Full monitor bounds (`rcMonitor`) used to match `MMStuckRects3` registry value names.
 #[derive(Debug, Clone)]
-struct MonitorFrame {
-    id: u32,
-    is_primary: bool,
-    left: i32,
-    top: i32,
-    right: i32,
-    bottom: i32,
+pub(super) struct MonitorFrame {
+    pub(super) id: u32,
+    pub(super) is_primary: bool,
+    pub(super) left: i32,
+    pub(super) top: i32,
+    pub(super) right: i32,
+    pub(super) bottom: i32,
     #[allow(dead_code)]
-    device_name: String,
+    pub(super) device_name: String,
 }
 
 impl MonitorFrame {
@@ -173,7 +173,7 @@ fn list_monitor_frames() -> Vec<MonitorFrame> {
     collector.frames
 }
 
-fn parse_localdisplay_key(key: &str) -> Option<(i32, i32, i32, i32)> {
+pub(super) fn parse_localdisplay_key(key: &str) -> Option<(i32, i32, i32, i32)> {
     let inner = key.strip_prefix("LOCALDISPLAY(")?.strip_suffix(')')?;
     let parts: Vec<i32> = inner
         .split(',')
@@ -187,7 +187,7 @@ fn parse_localdisplay_key(key: &str) -> Option<(i32, i32, i32, i32)> {
 }
 
 /// Map each monitor id to its `MMStuckRects3` registry value name.
-fn build_mm_key_map(
+pub(super) fn build_mm_key_map(
     keys: &HashMap<String, Vec<u8>>,
     monitors: &[MonitorFrame],
 ) -> HashMap<u32, String> {
@@ -300,7 +300,7 @@ fn should_write_taskbar_location_dword() -> bool {
 /// Success requires live tray geometry to match both after poll and after settle.
 /// Registry alone is never proof — Explorer may still rewrite StuckRects to bottom.
 #[cfg(test)]
-fn live_position_verified(
+pub(super) fn live_position_verified(
     live_after_poll: Option<TaskbarPosition>,
     live_after_settle: Option<TaskbarPosition>,
     expected: TaskbarPosition,
@@ -308,7 +308,7 @@ fn live_position_verified(
     live_after_poll == Some(expected) && live_after_settle == Some(expected)
 }
 
-fn set_position_byte(data: &mut [u8], position: TaskbarPosition) -> Result<(), String> {
+pub(super) fn set_position_byte(data: &mut [u8], position: TaskbarPosition) -> Result<(), String> {
     if data.len() <= POSITION_BYTE_INDEX {
         return Err("Taskbar Settings value is too short".to_string());
     }
@@ -764,7 +764,7 @@ fn monitor_id_for_tray(tray: RectI, frames: &[MonitorFrame]) -> Option<u32> {
     best_id
 }
 
-fn detect_taskbar_position_for_tray(tray: RectI, frame: &MonitorFrame) -> Option<TaskbarPosition> {
+pub(super) fn detect_taskbar_position_for_tray(tray: RectI, frame: &MonitorFrame) -> Option<TaskbarPosition> {
     let screen_w = frame.width();
     let screen_h = frame.height();
     if screen_w <= 0 || screen_h <= 0 {
@@ -1064,170 +1064,4 @@ pub fn apply_taskbar_position_from_str(
         position,
         resolve_monitor_id(monitor_id),
     ))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn position_byte_mapping() {
-        assert_eq!(TaskbarPosition::Top.byte(), 1);
-        assert_eq!(TaskbarPosition::Bottom.byte(), 3);
-    }
-
-    #[test]
-    fn position_from_byte_roundtrip() {
-        for pos in [TaskbarPosition::Top, TaskbarPosition::Bottom] {
-            assert_eq!(TaskbarPosition::from_byte(pos.byte()), Some(pos));
-        }
-        assert_eq!(TaskbarPosition::from_byte(0), None);
-        assert_eq!(TaskbarPosition::from_byte(2), None);
-        assert_eq!(TaskbarPosition::from_byte(9), None);
-    }
-
-    #[test]
-    fn parse_position_strings() {
-        assert_eq!(
-            TaskbarPosition::parse("bottom"),
-            Some(TaskbarPosition::Bottom)
-        );
-        assert_eq!(TaskbarPosition::parse("TOP"), Some(TaskbarPosition::Top));
-        assert_eq!(TaskbarPosition::parse("left"), None);
-        assert_eq!(TaskbarPosition::parse("right"), None);
-        assert_eq!(TaskbarPosition::parse("invalid"), None);
-    }
-
-    #[test]
-    fn horizontal_tray_detection_geometry() {
-        let top = RectI {
-            left: 0,
-            top: 0,
-            right: 1920,
-            bottom: 48,
-        };
-        assert!(top.is_horizontal_bar());
-        assert_eq!(top.height(), 48);
-    }
-
-    #[test]
-    fn parse_localdisplay_registry_key() {
-        assert_eq!(
-            parse_localdisplay_key("LOCALDISPLAY(-3840,0,-1920,1080)"),
-            Some((-3840, 0, -1920, 1080))
-        );
-        assert_eq!(parse_localdisplay_key("Default_Monitor#abc"), None);
-    }
-
-    #[test]
-    fn build_mm_key_map_matches_localdisplay_monitor() {
-        let mut keys = HashMap::new();
-        keys.insert("LOCALDISPLAY(-3840,0,-1920,1080)".to_string(), vec![0; 20]);
-        keys.insert("Default_Monitor#1".to_string(), vec![0; 20]);
-        let monitors = vec![
-            MonitorFrame {
-                id: 0,
-                is_primary: true,
-                left: 0,
-                top: 0,
-                right: 1920,
-                bottom: 1080,
-                device_name: String::new(),
-            },
-            MonitorFrame {
-                id: 1,
-                is_primary: false,
-                left: -3840,
-                top: 0,
-                right: -1920,
-                bottom: 1080,
-                device_name: String::new(),
-            },
-        ];
-        let map = build_mm_key_map(&keys, &monitors);
-        assert_eq!(
-            map.get(&1),
-            Some(&"LOCALDISPLAY(-3840,0,-1920,1080)".to_string())
-        );
-        assert_eq!(map.get(&0), Some(&"Default_Monitor#1".to_string()));
-    }
-
-    #[test]
-    fn detect_taskbar_top_on_secondary_monitor_coords() {
-        let frame = MonitorFrame {
-            id: 1,
-            is_primary: false,
-            left: -3840,
-            top: 0,
-            right: -1920,
-            bottom: 1080,
-            device_name: String::new(),
-        };
-        let tray = RectI {
-            left: -3840,
-            top: 0,
-            right: -1920,
-            bottom: 48,
-        };
-        assert_eq!(
-            detect_taskbar_position_for_tray(tray, &frame),
-            Some(TaskbarPosition::Top)
-        );
-    }
-
-    #[test]
-    fn vertical_tray_is_ignored() {
-        let frame = MonitorFrame {
-            id: 0,
-            is_primary: true,
-            left: 0,
-            top: 0,
-            right: 1920,
-            bottom: 1080,
-            device_name: String::new(),
-        };
-        let left_tray = RectI {
-            left: 0,
-            top: 0,
-            right: 48,
-            bottom: 1080,
-        };
-        assert_eq!(detect_taskbar_position_for_tray(left_tray, &frame), None);
-    }
-
-    #[test]
-    fn live_verification_requires_poll_and_settle_match() {
-        assert!(live_position_verified(
-            Some(TaskbarPosition::Top),
-            Some(TaskbarPosition::Top),
-            TaskbarPosition::Top
-        ));
-        assert!(!live_position_verified(
-            Some(TaskbarPosition::Top),
-            Some(TaskbarPosition::Bottom),
-            TaskbarPosition::Top
-        ));
-        assert!(!live_position_verified(
-            Some(TaskbarPosition::Top),
-            None,
-            TaskbarPosition::Top
-        ));
-        assert!(!live_position_verified(
-            None,
-            Some(TaskbarPosition::Top),
-            TaskbarPosition::Top
-        ));
-    }
-
-    #[test]
-    fn registry_match_alone_is_not_live_proof() {
-        // Documented contract: only live tray geometry counts for apply success.
-        let registry_says_top = Some(TaskbarPosition::Top);
-        let live_missing = None;
-        assert!(!live_position_verified(
-            live_missing,
-            registry_says_top,
-            TaskbarPosition::Top
-        ));
-    }
 }
