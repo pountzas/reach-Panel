@@ -150,7 +150,9 @@ fn press_key_impl(request: KeyPressRequest) -> Result<()> {
     }
 
     if key.len() == 1 {
-        let ch = key.chars().next().unwrap();
+        let Some(ch) = key.chars().next() else {
+            return Err(anyhow!("Empty key"));
+        };
         // Greek EL maps ";" to the Q slot — char_to_vk(';') hits tonos (VK 0xBA) instead.
         if ch.is_ascii() {
             if let Some(pk) = request.physical_key.as_deref() {
@@ -258,8 +260,10 @@ fn press_combo_impl(keys: Vec<String>) -> Result<()> {
         } else if let Some(vk) = special_vk(key) {
             vks.push(vk);
         } else if key.len() == 1 {
-            if let Some(vk) = char_to_vk(key.chars().next().unwrap()) {
-                vks.push(vk);
+            if let Some(ch) = key.chars().next() {
+                if let Some(vk) = char_to_vk(ch) {
+                    vks.push(vk);
+                }
             }
         }
     }

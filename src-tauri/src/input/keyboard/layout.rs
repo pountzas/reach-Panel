@@ -545,6 +545,12 @@ fn pending_dead_keys() -> &'static Mutex<HashMap<u64, PendingDeadKey>> {
     MAP.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+fn lock_pending_dead_keys() -> std::sync::MutexGuard<'static, HashMap<u64, PendingDeadKey>> {
+    pending_dead_keys()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 fn is_layout_dead_key_vk(vk: u16) -> bool {
     // Only the QWERTY ; and ' slots are layout dead keys (tonos / dialytika).
     vk == 0xBA || vk == 0xDE
@@ -654,7 +660,7 @@ pub fn translate_layout_key_press(
     };
     let hkl_id = hkl.0 as u64;
 
-    if let Some(dead) = pending_dead_keys().lock().unwrap().remove(&hkl_id) {
+    if let Some(dead) = lock_pending_dead_keys().remove(&hkl_id) {
         if is_layout_dead_key_vk(dead.vk) {
             let (replay_result, _) = to_unicode_ex(dead.vk as u32, dead.shift, dead.caps_lock, hkl);
             let _ = replay_result;
@@ -665,7 +671,7 @@ pub fn translate_layout_key_press(
 
     if result < 0 || is_spacing_accent_text(&text) {
         if is_layout_dead_key_vk(vk) {
-            pending_dead_keys().lock().unwrap().insert(
+            lock_pending_dead_keys().insert(
                 hkl_id,
                 PendingDeadKey {
                     vk,
@@ -681,7 +687,7 @@ pub fn translate_layout_key_press(
         flush_thread_dead_state(hkl);
         let (retry_result, retry_text) = to_unicode_ex(vk as u32, shift, caps_lock, hkl);
         if retry_result > 0 && !retry_text.is_empty() && !is_spacing_accent_text(&retry_text) {
-            pending_dead_keys().lock().unwrap().remove(&hkl_id);
+            lock_pending_dead_keys().remove(&hkl_id);
             return LayoutKeyTranslation {
                 text: retry_text,
                 dead: false,
@@ -694,11 +700,11 @@ pub fn translate_layout_key_press(
     }
 
     if result > 0 && !text.is_empty() {
-        pending_dead_keys().lock().unwrap().remove(&hkl_id);
+        lock_pending_dead_keys().remove(&hkl_id);
         return LayoutKeyTranslation { text, dead: false };
     }
 
-    pending_dead_keys().lock().unwrap().remove(&hkl_id);
+    lock_pending_dead_keys().remove(&hkl_id);
     if let Some(fallback) = greek_physical_fallback(vk, shift, hkl) {
         return LayoutKeyTranslation {
             text: fallback,
@@ -722,7 +728,7 @@ pub fn reset_layout_compose_state(hkl_value: Option<u64>) {
         _ => active_hkl(),
     };
     let hkl_id = hkl.0 as u64;
-    pending_dead_keys().lock().unwrap().remove(&hkl_id);
+    lock_pending_dead_keys().remove(&hkl_id);
 
     unsafe {
         let scan = MapVirtualKeyExW(VK_SPACE.0 as u32, MAPVK_VK_TO_VSC, hkl);
