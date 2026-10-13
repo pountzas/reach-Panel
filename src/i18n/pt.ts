@@ -175,12 +175,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Prata",
 
-  focusModeCollapse: "Voltar ao modo Foco",
-
-  largeHeaders: "Cabeçalhos grandes para redimensionar mais facilmente",
-
-  largeHeadersHint:
-    "Duplica a altura dos cabeçalhos e dos botões. Arraste a área vazia do cabeçalho para alterar a altura da secção ou da janela.",
+  focusModeCollapse: "Voltar ao modo Foco",
 
   primary: "Principal",
 
@@ -206,15 +201,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   speedFast: "Rápida",
 
-  speedVeryFast: "Muito rápida",
-
-  quickActions: "Ações rápidas",
-
-  showQuickActionsBar: "Mostrar barra de ações rápidas",
-
-  phrasesAndSuggestions: "Frases e sugestões",
-
-  showPhrasesSection: "Mostrar secção de frases",
+  speedVeryFast: "Muito rápida",
 
   showSuggestionsBar: "Mostrar barra de sugestões",
 
@@ -331,17 +318,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   layoutEditDone: "Concluído",
 
-  dragToMove: "Arrastar para mover",
-
-  macroBuilder: "Criador de macros",
-
-  headTracking: "Seguimento da cabeça",
-
-  phrases: "Frases",
-
-  emergency: "Emergência",
-
-  showEmergency: "Emergência",
+  dragToMove: "Arrastar para mover",
 
   predictionsOff: "Previsões desativadas",
 
@@ -548,27 +525,7 @@ export const pt: Record<keyof typeof en, string> = {
 
   settingsGeneral: "Geral",
 
-  settingsToolsMaintenance: "Ferramentas e manutenção",
-
-  quickActionLabel: "Etiqueta",
-
-  quickActionTarget: "Destino (app ou URL)",
-
-  quickActionTypeApp: "App",
-
-  quickActionTypeUrl: "URL",
-
-  quickActionAdd: "Adicionar ação",
-
-  quickActionDelete: "Eliminar",
-
-  quickActionSearchApps: "Procurar programas instalados…",
-
-  quickActionBrowse: "Procurar…",
-
-  quickActionLoadingApps: "A carregar programas instalados…",
-
-  quickActionNoApps: "Nenhum programa correspondente.",
+  settingsToolsMaintenance: "Ferramentas e manutenção",
 
   settingsAbout: "Acerca",
 

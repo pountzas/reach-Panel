@@ -175,12 +175,7 @@ export const es: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Plateado",
 
-  focusModeCollapse: "Volver al modo enfoque",
-
-  largeHeaders: "Encabezados grandes para redimensionar más fácilmente",
-
-  largeHeadersHint:
-    "Duplica la altura de los encabezados y sus botones. Arrastra el área vacía del encabezado para cambiar la altura de la sección o ventana.",
+  focusModeCollapse: "Volver al modo enfoque",
 
   primary: "Principal",
 
@@ -206,15 +201,7 @@ export const es: Record<keyof typeof en, string> = {
 
   speedFast: "Rápida",
 
-  speedVeryFast: "Muy rápida",
-
-  quickActions: "Acciones rápidas",
-
-  showQuickActionsBar: "Mostrar barra de acciones rápidas",
-
-  phrasesAndSuggestions: "Frases y sugerencias",
-
-  showPhrasesSection: "Mostrar sección de frases",
+  speedVeryFast: "Muy rápida",
 
   showSuggestionsBar: "Mostrar barra de sugerencias",
 
@@ -331,17 +318,7 @@ export const es: Record<keyof typeof en, string> = {
 
   layoutEditDone: "Listo",
 
-  dragToMove: "Arrastrar para mover",
-
-  macroBuilder: "Creador de macros",
-
-  headTracking: "Seguimiento de cabeza",
-
-  phrases: "Frases",
-
-  emergency: "Emergencia",
-
-  showEmergency: "Emergencia",
+  dragToMove: "Arrastrar para mover",
 
   predictionsOff: "Predicciones desactivadas",
 
@@ -548,27 +525,7 @@ export const es: Record<keyof typeof en, string> = {
 
   settingsGeneral: "General",
 
-  settingsToolsMaintenance: "Herramientas y mantenimiento",
-
-  quickActionLabel: "Etiqueta",
-
-  quickActionTarget: "Destino (app o URL)",
-
-  quickActionTypeApp: "App",
-
-  quickActionTypeUrl: "URL",
-
-  quickActionAdd: "Añadir acción",
-
-  quickActionDelete: "Eliminar",
-
-  quickActionSearchApps: "Buscar programas instalados…",
-
-  quickActionBrowse: "Examinar…",
-
-  quickActionLoadingApps: "Cargando programas instalados…",
-
-  quickActionNoApps: "No se encontraron programas.",
+  settingsToolsMaintenance: "Herramientas y mantenimiento",
 
   settingsAbout: "Acerca de",
 

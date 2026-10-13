@@ -17,8 +17,6 @@
     "test:blob": "node --test scripts/upload-to-blob.test.mjs scripts/merge-downloads-latest.test.mjs companion/scripts/upload-apk-to-blob.test.mjs"
   },
   "dependencies": {
-    "@mediapipe/camera_utils": "^0.3.1675466862",
-    "@mediapipe/face_mesh": "^0.4.1633559619",
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-autostart": "^2.7.0",

@@ -178,12 +178,7 @@ export const el: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Ασημί",
 
-  focusModeCollapse: "Επιστροφή στη λειτουργία εστίασης",
-
-  largeHeaders: "Μεγάλα headers για εύκολη αλλαγή μεγέθους",
-
-  largeHeadersHint:
-    "Διπλασιάζει το ύψος των headers και τα κουμπιά τους. Σύρετε την κενή περιοχή του header για να αλλάξετε το ύψος ενότητας ή παραθύρου.",
+  focusModeCollapse: "Επιστροφή στη λειτουργία εστίασης",
 
   primary: "Κύρια",
 
@@ -209,15 +204,7 @@ export const el: Record<keyof typeof en, string> = {
 
   speedFast: "Γρήγορη",
 
-  speedVeryFast: "Πολύ γρήγορη",
-
-  quickActions: "Γρήγορες ενέργειες",
-
-  showQuickActionsBar: "Εμφάνιση γρήγορων ενεργειών",
-
-  phrasesAndSuggestions: "Φράσεις & Προτάσεις",
-
-  showPhrasesSection: "Εμφάνιση φράσεων",
+  speedVeryFast: "Πολύ γρήγορη",
 
   showSuggestionsBar: "Εμφάνιση προτάσεων",
 
@@ -335,17 +322,7 @@ export const el: Record<keyof typeof en, string> = {
 
   layoutEditDone: "Τέλος",
 
-  dragToMove: "Σύρετε για μετακίνηση",
-
-  macroBuilder: "Δημιουργός μακροεντολών",
-
-  headTracking: "Παρακολούθηση κεφαλής",
-
-  phrases: "Φράσεις",
-
-  emergency: "Επείγον",
-
-  showEmergency: "Επείγον",
+  dragToMove: "Σύρετε για μετακίνηση",
 
   predictionsOff: "Οι προτάσεις είναι απενεργοποιημένες",
 
@@ -555,27 +532,7 @@ export const el: Record<keyof typeof en, string> = {
 
   settingsGeneral: "Γενικά",
 
-  settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
-
-  quickActionLabel: "Ετικέτα",
-
-  quickActionTarget: "Στόχος (εφαρμογή ή URL)",
-
-  quickActionTypeApp: "Εφαρμογή",
-
-  quickActionTypeUrl: "URL",
-
-  quickActionAdd: "Προσθήκη ενέργειας",
-
-  quickActionDelete: "Διαγραφή",
-
-  quickActionSearchApps: "Αναζήτηση εγκατεστημένων προγραμμάτων…",
-
-  quickActionBrowse: "Εξερεύνηση…",
-
-  quickActionLoadingApps: "Φόρτωση εγκατεστημένων προγραμμάτων…",
-
-  quickActionNoApps: "Δεν βρέθηκαν προγράμματα.",
+  settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
 
   settingsAbout: "Σχετικά",
 

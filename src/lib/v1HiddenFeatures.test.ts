@@ -6,47 +6,28 @@ import {
 import { resolveDockedSectionVisibility } from "./sectionRegistry";
 import {
   V1_HIDDEN_FEATURES,
-  effectiveLargeHeaders,
   effectiveMouseVisible,
-  effectivePhrasesVisible,
-  effectiveQuickActionsVisible,
   isMusicLessonSlotVisible,
+  isTeachingFullWorkArea,
   isV1FeatureHidden,
-  isV1ToolWindowHidden,
-  resolveV1SectionVisibility,
 } from "./v1HiddenFeatures";
 
 describe("v1HiddenFeatures", () => {
-  it("exposes the planned hide flags as true", () => {
-    expect(V1_HIDDEN_FEATURES.largeHeaders).toBe(true);
-    expect(V1_HIDDEN_FEATURES.mouse).toBe(true);
-    expect(V1_HIDDEN_FEATURES.quickActions).toBe(true);
-    expect(V1_HIDDEN_FEATURES.phrases).toBe(true);
-    expect(V1_HIDDEN_FEATURES.macroBuilder).toBe(true);
-    expect(V1_HIDDEN_FEATURES.headTracking).toBe(true);
+  it("exposes only the mouse gate", () => {
+    expect(V1_HIDDEN_FEATURES).toEqual({ mouse: true });
+    expect(Object.keys(V1_HIDDEN_FEATURES)).toEqual(["mouse"]);
   });
 
-  it("isV1FeatureHidden mirrors the constant", () => {
+  it("isV1FeatureHidden mirrors the mouse constant", () => {
     expect(isV1FeatureHidden("mouse")).toBe(V1_HIDDEN_FEATURES.mouse);
-    expect(isV1FeatureHidden("phrases")).toBe(V1_HIDDEN_FEATURES.phrases);
   });
 
-  it("forces effective chrome visibility off while flags are on", () => {
-    expect(effectiveLargeHeaders(true)).toBe(false);
+  it("forces mouse chrome off while the flag is on", () => {
     expect(effectiveMouseVisible(true)).toBe(false);
-    expect(effectiveQuickActionsVisible(true)).toBe(false);
-    expect(effectivePhrasesVisible(true)).toBe(false);
-    expect(effectivePhrasesVisible(true, true)).toBe(false);
-  });
-
-  it("blocks macro-builder and head-tracking tool windows", () => {
-    expect(isV1ToolWindowHidden("macro-builder")).toBe(true);
-    expect(isV1ToolWindowHidden("head-tracking")).toBe(true);
-    expect(isV1ToolWindowHidden("settings")).toBe(false);
+    expect(effectiveMouseVisible(false)).toBe(false);
   });
 
   it("treats music lesson slot as teaching + synthesizer only", () => {
-    // enableMusicTeaching must not require / write phrasesVisible.
     expect(
       isMusicLessonSlotVisible({
         musicTeachingEnabled: true,
@@ -97,45 +78,45 @@ describe("v1HiddenFeatures", () => {
       }),
     ).toBe(false);
   });
+
+  it("matches full work area to teaching + synthesizer", () => {
+    expect(
+      isTeachingFullWorkArea({
+        musicTeachingEnabled: true,
+        keyboardSectionMode: "synthesizer",
+      }),
+    ).toBe(true);
+    expect(
+      isTeachingFullWorkArea({
+        musicTeachingEnabled: false,
+        keyboardSectionMode: "synthesizer",
+      }),
+    ).toBe(false);
+  });
 });
 
-describe("resolveV1SectionVisibility / content height", () => {
-  it("hides QA and phrases when lesson slot is off", () => {
-    const visibility = resolveV1SectionVisibility({
-      quickActionsVisible: true,
-      phrasesVisible: true,
+describe("teaching section visibility / content height", () => {
+  it("hides teaching height when lesson slot is off", () => {
+    const visibility = resolveDockedSectionVisibility({
       lessonSlotVisible: false,
     });
-    expect(visibility).toEqual({ quickActions: false, phrases: false });
-    expect(resolveDockedSectionVisibility({
-      quickActionsVisible: true,
-      phrasesVisible: true,
-      lessonSlotVisible: false,
-    })).toEqual(visibility);
+    expect(visibility).toEqual({ teaching: false });
 
-    const ratio = computeContentHeightRatioFromSettings(
-      { quickActionsVisible: true, phrasesVisible: true },
-      false,
-    );
-    expect(ratio).toBe(computeContentHeightRatio({ quickActions: false, phrases: false }));
+    const ratio = computeContentHeightRatioFromSettings(false);
+    expect(ratio).toBe(computeContentHeightRatio({ teaching: false }));
     expect(ratio).toBeLessThan(1);
   });
 
-  it("keeps phrases height only when lesson slot is visible", () => {
-    const visibility = resolveV1SectionVisibility({
-      quickActionsVisible: true,
-      phrasesVisible: false,
+  it("keeps teaching height only when lesson slot is visible", () => {
+    const visibility = resolveDockedSectionVisibility({
       lessonSlotVisible: true,
     });
-    expect(visibility).toEqual({ quickActions: false, phrases: true });
+    expect(visibility).toEqual({ teaching: true });
 
-    const ratio = computeContentHeightRatioFromSettings(
-      { quickActionsVisible: true, phrasesVisible: false },
-      true,
-    );
-    expect(ratio).toBe(computeContentHeightRatio({ quickActions: false, phrases: true }));
+    const ratio = computeContentHeightRatioFromSettings(true);
+    expect(ratio).toBe(computeContentHeightRatio({ teaching: true }));
     expect(ratio).toBeGreaterThan(
-      computeContentHeightRatio({ quickActions: false, phrases: false }),
+      computeContentHeightRatio({ teaching: false }),
     );
   });
 });

@@ -124,7 +124,7 @@ export function Trackpad() {
 
   const speed =
     (SPEED_MAP[resolveMouseSpeed(settings.mouseSpeed)] ?? 1) *
-    (precision || settings.precisionMode ? 0.4 : 1) *
+    (precision ? 0.4 : 1) *
     (settings.mouseCustomSpeed ?? 1);
 
   const clearPendingClick = () => {

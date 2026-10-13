@@ -27,8 +27,7 @@ const MIN_SECTION_WIDTH = 160;
 const MIN_SECTION_HEIGHT = 80;
 
 const SECTION_TITLE_KEY: Record<StackableSectionId, TranslationKey> = {
-  "quick-actions": "quickActions",
-  phrases: "phrases",
+  teaching: "modeTeaching",
 };
 
 interface FloatingSectionProps {
@@ -59,26 +58,20 @@ export function FloatingSection({
   onDragStop,
 }: FloatingSectionProps) {
   const { t } = useTranslation();
-  const updateSettings = useAppStore((s) => s.updateSettings);
   const setAppMode = useAppStore((s) => s.setAppMode);
   const modeBeforeTeaching = useAppStore((s) => s.modeBeforeTeaching);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
-  const keyboardSectionMode = useAppStore((s) => s.settings.keyboardSectionMode);
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
-  const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
   const pointerDragActive = usePointerDragActive();
   const teachingLesson = useAppStore((s) => s.teachingLesson);
-  const showMusicLesson =
-    id === "phrases" &&
-    musicTeachingEnabled &&
-    keyboardSectionMode === "synthesizer";
-  const sectionTitleKey: TranslationKey = showMusicLesson
+  const showTeaching = id === "teaching" && musicTeachingEnabled;
+  const sectionTitleKey: TranslationKey = showTeaching
     ? teachingLessonTitleKey(teachingLesson)
     : SECTION_TITLE_KEY[id];
   const surface = getSurfaceColors(appBgColor);
-  const headerHeight = headerHeightFor(largeHeaders);
-  const iconSize = largeHeaders ? "lg" : "sm";
-  const iconClass = largeHeaders ? "h-7 w-7" : "h-3.5 w-3.5";
+  const headerHeight = headerHeightFor(false);
+  const iconSize = "sm" as const;
+  const iconClass = "h-3.5 w-3.5";
   const pixels = floatRectToPixels(rect, containerWidth, containerHeight);
   const effectiveHeight = minimized ? headerHeight : pixels.height;
   const interactingRef = useRef(false);
@@ -104,14 +97,9 @@ export function FloatingSection({
 
   const handleClose = () => {
     switch (id) {
-      case "quick-actions":
-        updateSettings({ quickActionsVisible: false });
-        break;
-      case "phrases":
+      case "teaching":
         if (musicTeachingEnabled) {
           void setAppMode(lessonCloseAppMode(modeBeforeTeaching));
-        } else {
-          updateSettings({ phrasesVisible: false });
         }
         break;
       default: {
@@ -225,7 +213,7 @@ export function FloatingSection({
       >
         <div
           className={`section-drag-handle flex shrink-0 cursor-grab items-center border-b px-2 active:cursor-grabbing ${
-            showMusicLesson ? "grid grid-cols-[1fr_auto_1fr] gap-2" : "justify-between"
+            showTeaching ? "grid grid-cols-[1fr_auto_1fr] gap-2" : "justify-between"
           }`}
           style={{
             height: headerHeight,
@@ -235,12 +223,12 @@ export function FloatingSection({
           }}
         >
           <span
-            className={`min-w-0 truncate font-medium ${largeHeaders ? "text-sm" : "text-xs"}`}
+            className="min-w-0 truncate text-xs font-medium"
             style={{ color: surface.panelMutedText }}
           >
             {t(sectionTitleKey)}
           </span>
-          {showMusicLesson ? (
+          {showTeaching ? (
             <div className="section-no-drag flex items-center justify-center">
               <TeachingLessonModeToggle />
             </div>

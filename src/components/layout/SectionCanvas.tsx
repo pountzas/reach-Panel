@@ -31,33 +31,27 @@ import {
   type SectionVisibility,
   type StackableSectionId,
 } from "../../lib/sectionStack";
-import { useAppStore } from "../../stores/appStore";
 import { DockedSection, HolePlaceholder } from "./DockedSection";
 import { FloatingSection } from "./FloatingSection";
 
 interface SectionCanvasProps {
-  quickActionsVisible: boolean;
-  phrasesVisible: boolean;
+  teachingVisible: boolean;
   savedStack?: SectionStackState;
   legacyLayouts?: LegacySectionLayouts;
   onStackChange: (stack: SectionStackState) => void;
-  quickActions: ReactNode;
-  phrases: ReactNode;
+  teaching: ReactNode;
   inputRow: ReactNode;
 }
 
 export function SectionCanvas({
-  quickActionsVisible,
-  phrasesVisible,
+  teachingVisible,
   savedStack,
   legacyLayouts,
   onStackChange,
-  quickActions,
-  phrases,
+  teaching,
   inputRow,
 }: SectionCanvasProps) {
-  const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
-  const headerEstimate = appHeaderHeightPx(largeHeaders);
+  const headerEstimate = appHeaderHeightPx();
 
   const fallbackCanvasSize = useCallback(() => {
     return {
@@ -126,10 +120,9 @@ export function SectionCanvas({
 
   const visibility: SectionVisibility = useMemo(
     () => ({
-      quickActions: quickActionsVisible,
-      phrases: phrasesVisible,
+      teaching: teachingVisible,
     }),
-    [quickActionsVisible, phrasesVisible],
+    [teachingVisible],
   );
 
   const stackFromSettings = useMemo(
@@ -148,18 +141,15 @@ export function SectionCanvas({
   useEffect(() => {
     const current = stackRef.current;
     let next = current;
-    if (!visibility.quickActions && current.undocked["quick-actions"]) {
-      next = dockSection(next, "quick-actions");
-    }
-    if (!visibility.phrases && current.undocked.phrases) {
-      next = dockSection(next, "phrases");
+    if (!visibility.teaching && current.undocked.teaching) {
+      next = dockSection(next, "teaching");
     }
     if (next !== current) {
       setStack(next);
       stackRef.current = next;
       onStackChangeRef.current(next);
     }
-  }, [visibility.quickActions, visibility.phrases]);
+  }, [visibility.teaching]);
 
   useEffect(() => {
     if (savedStack && Array.isArray(savedStack.order)) return;
@@ -168,8 +158,7 @@ export function SectionCanvas({
   }, [savedStack, legacyLayouts, stackFromSettings]);
 
   const contentById: Record<SectionId, ReactNode> = {
-    "quick-actions": quickActions,
-    phrases: phrases,
+    teaching: teaching,
     "input-row": inputRow,
   };
 
@@ -179,10 +168,10 @@ export function SectionCanvas({
         stack,
         visibility,
         containerSize.height,
-        largeHeaders,
+        false,
         STACK_GAP_PX,
       ),
-    [stack, visibility, containerSize.height, largeHeaders],
+    [stack, visibility, containerSize.height],
   );
 
   const slotById = useMemo(() => {
@@ -334,7 +323,7 @@ export function SectionCanvas({
           delta,
           containerSize.height,
           visibility,
-          largeHeaders,
+          false,
         ),
       );
     },
@@ -439,10 +428,8 @@ function isSectionVisibleId(
   visibility: SectionVisibility,
 ): boolean {
   switch (id) {
-    case "quick-actions":
-      return visibility.quickActions;
-    case "phrases":
-      return visibility.phrases;
+    case "teaching":
+      return visibility.teaching;
     default: {
       const _exhaustive: never = id;
       return _exhaustive;

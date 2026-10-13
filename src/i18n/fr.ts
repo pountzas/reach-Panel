@@ -175,12 +175,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Argent",
 
-  focusModeCollapse: "Retour au mode Focus",
-
-  largeHeaders: "En-têtes larges pour un redimensionnement plus facile",
-
-  largeHeadersHint:
-    "Double la hauteur des en-têtes et des boutons. Faites glisser la zone vide de l’en-tête pour changer la hauteur de la section ou de la fenêtre.",
+  focusModeCollapse: "Retour au mode Focus",
 
   primary: "Principal",
 
@@ -206,15 +201,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   speedFast: "Rapide",
 
-  speedVeryFast: "Très rapide",
-
-  quickActions: "Actions rapides",
-
-  showQuickActionsBar: "Afficher la barre d’actions rapides",
-
-  phrasesAndSuggestions: "Phrases et suggestions",
-
-  showPhrasesSection: "Afficher la section phrases",
+  speedVeryFast: "Très rapide",
 
   showSuggestionsBar: "Afficher la barre de suggestions",
 
@@ -331,17 +318,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   layoutEditDone: "Terminé",
 
-  dragToMove: "Glisser pour déplacer",
-
-  macroBuilder: "Créateur de macros",
-
-  headTracking: "Suivi de tête",
-
-  phrases: "Phrases",
-
-  emergency: "Urgence",
-
-  showEmergency: "Urgence",
+  dragToMove: "Glisser pour déplacer",
 
   predictionsOff: "Prédictions désactivées",
 
@@ -548,27 +525,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   settingsGeneral: "Général",
 
-  settingsToolsMaintenance: "Outils et maintenance",
-
-  quickActionLabel: "Libellé",
-
-  quickActionTarget: "Cible (app ou URL)",
-
-  quickActionTypeApp: "App",
-
-  quickActionTypeUrl: "URL",
-
-  quickActionAdd: "Ajouter une action",
-
-  quickActionDelete: "Supprimer",
-
-  quickActionSearchApps: "Rechercher des programmes installés…",
-
-  quickActionBrowse: "Parcourir…",
-
-  quickActionLoadingApps: "Chargement des programmes installés…",
-
-  quickActionNoApps: "Aucun programme correspondant.",
+  settingsToolsMaintenance: "Outils et maintenance",
 
   settingsAbout: "À propos",
 

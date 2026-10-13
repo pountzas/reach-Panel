@@ -175,12 +175,7 @@ export const it: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Argento",
 
-  focusModeCollapse: "Torna alla modalità Focus",
-
-  largeHeaders: "Intestazioni grandi per ridimensionare più facilmente",
-
-  largeHeadersHint:
-    "Raddoppia l’altezza delle intestazioni e dei pulsanti. Trascina l’area vuota dell’intestazione per cambiare l’altezza della sezione o della finestra.",
+  focusModeCollapse: "Torna alla modalità Focus",
 
   primary: "Principale",
 
@@ -206,15 +201,7 @@ export const it: Record<keyof typeof en, string> = {
 
   speedFast: "Veloce",
 
-  speedVeryFast: "Molto veloce",
-
-  quickActions: "Azioni rapide",
-
-  showQuickActionsBar: "Mostra barra azioni rapide",
-
-  phrasesAndSuggestions: "Frasi e suggerimenti",
-
-  showPhrasesSection: "Mostra sezione frasi",
+  speedVeryFast: "Molto veloce",
 
   showSuggestionsBar: "Mostra barra suggerimenti",
 
@@ -332,17 +319,7 @@ export const it: Record<keyof typeof en, string> = {
 
   layoutEditDone: "Fatto",
 
-  dragToMove: "Trascina per spostare",
-
-  macroBuilder: "Generatore di macro",
-
-  headTracking: "Tracciamento della testa",
-
-  phrases: "Frasi",
-
-  emergency: "Emergenza",
-
-  showEmergency: "Emergenza",
+  dragToMove: "Trascina per spostare",
 
   predictionsOff: "Previsioni disattivate",
 
@@ -549,27 +526,7 @@ export const it: Record<keyof typeof en, string> = {
 
   settingsGeneral: "Generale",
 
-  settingsToolsMaintenance: "Strumenti e manutenzione",
-
-  quickActionLabel: "Etichetta",
-
-  quickActionTarget: "Destinazione (app o URL)",
-
-  quickActionTypeApp: "App",
-
-  quickActionTypeUrl: "URL",
-
-  quickActionAdd: "Aggiungi azione",
-
-  quickActionDelete: "Elimina",
-
-  quickActionSearchApps: "Cerca programmi installati…",
-
-  quickActionBrowse: "Sfoglia…",
-
-  quickActionLoadingApps: "Caricamento programmi installati…",
-
-  quickActionNoApps: "Nessun programma corrispondente.",
+  settingsToolsMaintenance: "Strumenti e manutenzione",
 
   settingsAbout: "Informazioni",
 

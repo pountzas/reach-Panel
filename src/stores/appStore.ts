@@ -15,14 +15,9 @@ import {
   CommandResult,
   DEFAULT_SETTINGS,
   INTERNAL_PROFILE_ID,
-  MacroDef,
-  MacroStep,
   MonitorInfo,
-  Phrase,
-  PhraseCategory,
   PointerInputKind,
   ProfileFileInfo,
-  QuickAction,
 } from "../lib/types";
 import {
   isWidePianoOctaveCount,
@@ -82,10 +77,8 @@ import {
   type ToolWindowLabel,
 } from "../lib/toolWindows";
 import {
-  effectiveLargeHeaders,
   isMusicLessonSlotVisible,
   isTeachingFullWorkArea,
-  isV1ToolWindowHidden,
 } from "../lib/v1HiddenFeatures";
 import {
   captureModeBeforeCompanion,
@@ -616,7 +609,6 @@ function heightRatioFromSettings(
     return 1.0;
   }
   const contentRatio = computeContentHeightRatioFromSettings(
-    settings,
     lessonSlotVisibleFromState(settings, musicTeachingEnabled),
   );
   if (settings.windowHeightRatio == null) {
@@ -625,15 +617,6 @@ function heightRatioFromSettings(
   // Explicit grip override wins — do not floor to contentRatio or shrink
   // snaps back to full when all sections are visible.
   return clampWindowHeightRatio(settings.windowHeightRatio);
-}
-
-/** Apply effective v1 chrome reads without wiping unrelated stored prefs. */
-function withV1EffectiveChrome(settings: AppSettings): AppSettings {
-  const largeHeaders = effectiveLargeHeaders(settings.largeHeaders);
-  if (largeHeaders === settings.largeHeaders) {
-    return settings;
-  }
-  return { ...settings, largeHeaders };
 }
 
 function windowLayoutInvokeArgs(
@@ -707,10 +690,6 @@ interface AppStore {
   /** Last pointer kind used for touch vs mouse layout profiles. */
   pointerInputKind: PointerInputKind;
   monitors: MonitorInfo[];
-  quickActions: QuickAction[];
-  phrases: Phrase[];
-  phraseCategories: PhraseCategory[];
-  macros: MacroDef[];
   suggestions: string[];
   typedBuffer: string;
   greekPendingAccent: GreekPendingAccent | null;
@@ -720,19 +699,16 @@ interface AppStore {
   dictationState: DictationState;
   sttCapability: SttCapability | null;
   showSettings: boolean;
-  showMacroBuilder: boolean;
-  showHeadTrackingWizard: boolean;
   keyboardLayout: string;
   inputMethods: InputMethod[];
   layoutKeyLabels: LayoutKeyLabel[];
   languagePickerOpen: boolean;
-  /** Session-only: guided piano teaching replaces Phrases while on. */
+  /** Session-only: guided teaching occupies the teaching section while on. */
   musicTeachingEnabled: boolean;
   musicSongId: string | null;
   musicNoteIndex: number;
   /** Session-only: demo playback of the selected song. */
   musicPlaybackActive: boolean;
-  phrasesVisibleBeforeTeaching: boolean | null;
   /** Session-only: which lesson fills the teaching slot. */
   teachingLesson: TeachingLesson;
   /** Session-only: typing mode to restore when leaving Teaching. */
@@ -817,9 +793,6 @@ interface AppStore {
   resetSettingsToDefaults: () => Promise<void>;
   wipeActiveProfile: () => Promise<void>;
   loadMonitors: () => Promise<void>;
-  loadQuickActions: () => Promise<void>;
-  loadPhrases: () => Promise<void>;
-  loadMacros: () => Promise<void>;
   saveActiveProfile: () => Promise<void>;
   pickBackgroundImage: () => Promise<void>;
   setTypedBuffer: (text: string) => void;
@@ -864,8 +837,6 @@ interface AppStore {
   toggleDictation: () => Promise<void>;
   stopDictation: () => Promise<void>;
   setShowSettings: (show: boolean) => void;
-  setShowMacroBuilder: (show: boolean) => void;
-  setShowHeadTrackingWizard: (show: boolean) => void;
   syncWindowFocusable: () => Promise<void>;
   loadKeyboardLayout: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
@@ -876,7 +847,7 @@ interface AppStore {
   /** Collapse keyboard back to the focus-mode FAB stack. */
   collapseFocusModeKeyboard: () => Promise<void>;
   enableMusicTeaching: () => Promise<void>;
-  disableMusicTeaching: (options?: { hidePhrases?: boolean }) => Promise<void>;
+  disableMusicTeaching: () => Promise<void>;
   /** Select Normal / Focus / Teaching / Companion tablet mode. */
   setAppMode: (
     mode: AppModeTablet,
@@ -956,6 +927,13 @@ function parseSettings(json: string): AppSettings {
       mouseSide,
       language: legacyLanguage,
       onscreenLayout: _legacyOnscreenLayout,
+      // Removed v1 UI prefs — ignore so old profiles still load.
+      quickActionsVisible: _quickActionsVisible,
+      phrasesVisible: _phrasesVisible,
+      largeHeaders: _largeHeaders,
+      headTrackingEnabled: _headTrackingEnabled,
+      emergencyVisible: _emergencyVisible,
+      precisionMode: _precisionMode,
       ...parsed
     } = migrated as Partial<AppSettings> & {
       theme?: unknown;
@@ -963,7 +941,19 @@ function parseSettings(json: string): AppSettings {
       language?: string;
       /** Removed: on-screen layout always follows Windows. */
       onscreenLayout?: string;
+      quickActionsVisible?: unknown;
+      phrasesVisible?: unknown;
+      largeHeaders?: unknown;
+      headTrackingEnabled?: unknown;
+      emergencyVisible?: unknown;
+      precisionMode?: unknown;
     };
+    void _quickActionsVisible;
+    void _phrasesVisible;
+    void _largeHeaders;
+    void _headTrackingEnabled;
+    void _emergencyVisible;
+    void _precisionMode;
     const colorProfile = resolveColorProfile({ ...parsed, theme });
     const mousePanelSide =
       parsed.mousePanelSide ??
@@ -980,13 +970,10 @@ function parseSettings(json: string): AppSettings {
     const legacyFill: Partial<AppSettings> = {
       predictionEnabled:
         parsed.predictionEnabled ?? parsed.suggestionsVisible ?? true,
-      quickActionsVisible: parsed.quickActionsVisible ?? true,
-      phrasesVisible: parsed.phrasesVisible ?? true,
       suggestionsVisible: parsed.suggestionsVisible ?? true,
       dictationVisible: parsed.dictationVisible ?? true,
       inputPreviewVisible: parsed.inputPreviewVisible ?? true,
       inputPreviewFocusModeVisible: parsed.inputPreviewFocusModeVisible ?? true,
-      emergencyVisible: parsed.emergencyVisible ?? true,
       keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,
     };
     // Focus Auto dropped: null / missing override → Normal (false).
@@ -1045,13 +1032,8 @@ function buildDefaultSettings(
   };
 }
 
-const TOOL_WINDOW_FLAG: Record<
-  ToolWindowLabel,
-  "showSettings" | "showMacroBuilder" | "showHeadTrackingWizard"
-> = {
+const TOOL_WINDOW_FLAG: Record<ToolWindowLabel, "showSettings"> = {
   settings: "showSettings",
-  "macro-builder": "showMacroBuilder",
-  "head-tracking": "showHeadTrackingWizard",
 };
 
 async function setToolWindowVisible(
@@ -1146,13 +1128,13 @@ async function loadProfileData(
   const parsed = active
     ? parseSettings(active.settings_json)
     : DEFAULT_SETTINGS;
-  const settings = withV1EffectiveChrome({
+  const settings = {
     ...parsed,
     keyboardSectionMode: hydrateKeyboardSectionMode(
       parsed.keyboardSectionMode,
       get().musicTeachingEnabled,
     ),
-  });
+  };
   set({ settings, settingsEpoch: get().settingsEpoch + 1 });
   const isMainWindow = WebviewWindow.getCurrent().label === "main";
   if (isMainWindow) {
@@ -1162,9 +1144,6 @@ async function loadProfileData(
     await get().pollKeyboardState();
     await syncInputPreviewEnabled(get);
   }
-  await get().loadQuickActions();
-  await get().loadPhrases();
-  await get().loadMacros();
   if (migratedFocusAuto || migratedKeyboardSectionMode) {
     const epoch = get().settingsEpoch;
     await persistSettingsIfCurrent(get, epoch, get().settings);
@@ -1244,10 +1223,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   profileHydrated: false,
   pointerInputKind: "mouse",
   monitors: [],
-  quickActions: [],
-  phrases: [],
-  phraseCategories: [],
-  macros: [],
   suggestions: [],
   typedBuffer: "",
   greekPendingAccent: null,
@@ -1257,8 +1232,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   dictationState: "idle",
   sttCapability: null,
   showSettings: false,
-  showMacroBuilder: false,
-  showHeadTrackingWizard: false,
   keyboardLayout: "QWERTY",
   inputMethods: [],
   layoutKeyLabels: [],
@@ -1267,7 +1240,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   musicSongId: "twinkle",
   musicNoteIndex: 0,
   musicPlaybackActive: false,
-  phrasesVisibleBeforeTeaching: null,
   teachingLesson: "language",
   modeBeforeTeaching: null,
   windowHeightRatioBeforeTeaching: null,
@@ -1493,21 +1465,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
       partial.keyboardSectionMode !== "synthesizer" &&
       get().musicTeachingEnabled;
     if (leavingSynthesizer) {
-      const before = get().phrasesVisibleBeforeTeaching;
       const modeBefore = get().modeBeforeTeaching;
       const heightBefore = get().windowHeightRatioBeforeTeaching;
       set({
         musicTeachingEnabled: false,
         musicNoteIndex: 0,
         musicPlaybackActive: false,
-        phrasesVisibleBeforeTeaching: null,
         modeBeforeTeaching: null,
         windowHeightRatioBeforeTeaching: null,
         ...emptyLanguageLessonState(),
       });
-      if (before !== null) {
-        next = { ...next, phrasesVisible: before };
-      }
       // Restore saved typing mode + height when Teaching exits via keyboardSectionMode.
       if (modeBefore === "mic") {
         next = { ...next, focusModeOverride: true, micMode: true };
@@ -1535,7 +1502,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       next = persistLayoutForKind(next, get().pointerInputKind);
     }
 
-    next = withV1EffectiveChrome(next);
 
     if (get().settingsEpoch !== epoch) {
       return;
@@ -1621,7 +1587,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (uiLanguageChanged) {
       set({ typedBuffer: "", ...clearGreekPendingAccent() });
       commitSuggestionList(set, []);
-      await get().loadPhrases();
       await get().loadSuggestions();
     }
     if (
@@ -1638,9 +1603,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
     if (WebviewWindow.getCurrent().label === "main") {
       const current = get().settings;
-      const visibilityChanged =
-        partial.phrasesVisible !== undefined ||
-        partial.quickActionsVisible !== undefined;
       // Transparent is CSS-only; do not trigger mini layout refresh/animation.
       const focusModeSettingChanged =
         partial.focusModeOverride !== undefined ||
@@ -1674,8 +1636,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       } else if (get().focusModeActive) {
         if (
           partial.collapsed !== undefined ||
-          Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio") ||
-          visibilityChanged
+          Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")
         ) {
           if (
             Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")
@@ -1707,26 +1668,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
             get().musicTeachingEnabled,
           ),
         });
-      } else if (visibilityChanged && !current.collapsed) {
-        const args = {
-          monitorId: current.accessibilityMonitorId,
-          collapsed: false,
-          collapsedDictation: false,
-          heightRatio: heightRatioFromSettings(
-            current,
-            get().musicTeachingEnabled,
-          ),
-          fullWorkArea: teachingFullWorkAreaActive(
-            current,
-            get().musicTeachingEnabled,
-          ),
-        };
-        await invoke(
-          prefersReducedMotion()
-            ? "cmd_apply_window_layout"
-            : "cmd_animate_window_layout",
-          args,
-        );
       }
     }
   },
@@ -1874,34 +1815,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (WebviewWindow.getCurrent().label === "main" && get().profileHydrated) {
       await refreshFocusModeState({ animate: false });
     }
-  },
-
-  loadQuickActions: async () => {
-    const quickActions = await invoke<QuickAction[]>("cmd_get_quick_actions", {
-      profileId: INTERNAL_PROFILE_ID,
-    });
-    set({ quickActions });
-  },
-
-  loadPhrases: async () => {
-    const { settings } = get();
-    const [phrases, phraseCategories] = await Promise.all([
-      invoke<Phrase[]>("cmd_get_phrases", {
-        profileId: INTERNAL_PROFILE_ID,
-        language: settings.uiLanguage,
-      }),
-      invoke<PhraseCategory[]>("cmd_get_phrase_categories", {
-        profileId: INTERNAL_PROFILE_ID,
-      }),
-    ]);
-    set({ phrases, phraseCategories });
-  },
-
-  loadMacros: async () => {
-    const macros = await invoke<MacroDef[]>("cmd_get_macros", {
-      profileId: INTERNAL_PROFILE_ID,
-    });
-    set({ macros });
   },
 
   setTypedBuffer: (text) => {
@@ -2346,18 +2259,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setShowSettings: (show) => {
     void setToolWindowVisible(get, set, "settings", show);
   },
-  setShowMacroBuilder: (show) => {
-    if (show && isV1ToolWindowHidden("macro-builder")) {
-      return;
-    }
-    void setToolWindowVisible(get, set, "macro-builder", show);
-  },
-  setShowHeadTrackingWizard: (show) => {
-    if (show && isV1ToolWindowHidden("head-tracking")) {
-      return;
-    }
-    void setToolWindowVisible(get, set, "head-tracking", show);
-  },
 
   loadKeyboardLayout: async () => {
     const keyboardLayout = await invoke<string>("cmd_get_keyboard_layout");
@@ -2376,7 +2277,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (musicTeachingEnabled) return;
     set({
       musicTeachingEnabled: true,
-      phrasesVisibleBeforeTeaching: settings.phrasesVisible,
       musicNoteIndex: 0,
       musicSongId: musicSongId ?? "twinkle",
       ...(teachingLesson === "language"
@@ -2387,7 +2287,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
           )
         : emptyLanguageLessonState()),
     });
-    // Lesson slot does not depend on phrasesVisible — do not force it on.
     const song = getSongById(get().musicSongId, importedSongs);
     if (song) {
       const fit = songPianoRangeFit(song);
@@ -2642,7 +2541,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
-            phrasesVisibleBeforeTeaching: null,
             modeBeforeTeaching: null,
             windowHeightRatioBeforeTeaching: null,
             ...emptyLanguageLessonState(),
@@ -2676,7 +2574,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
-            phrasesVisibleBeforeTeaching: null,
             modeBeforeTeaching: null,
             windowHeightRatioBeforeTeaching: null,
             ...emptyLanguageLessonState(),
@@ -2704,7 +2601,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
-            phrasesVisibleBeforeTeaching: null,
             modeBeforeTeaching: null,
             windowHeightRatioBeforeTeaching: null,
             ...emptyLanguageLessonState(),
@@ -2743,7 +2639,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             get().settings.sectionStack,
             get().settings.sectionLayouts,
           ),
-          "phrases",
+          "teaching",
         );
         await get().updateSettings({
           focusModeOverride: false,
@@ -2761,31 +2657,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  disableMusicTeaching: async (options) => {
-    if (
-      !get().musicTeachingEnabled &&
-      get().phrasesVisibleBeforeTeaching === null
-    ) {
-      if (options?.hidePhrases) {
-        await get().updateSettings({ phrasesVisible: false });
-      }
+  disableMusicTeaching: async () => {
+    if (!get().musicTeachingEnabled) {
       return;
     }
-    const before = get().phrasesVisibleBeforeTeaching;
     set({
       musicTeachingEnabled: false,
       musicNoteIndex: 0,
       musicPlaybackActive: false,
-      phrasesVisibleBeforeTeaching: null,
       ...emptyLanguageLessonState(),
     });
-    if (options?.hidePhrases) {
-      await get().updateSettings({ phrasesVisible: false });
-      return;
-    }
-    if (before !== null && before !== get().settings.phrasesVisible) {
-      await get().updateSettings({ phrasesVisible: before });
-    }
     await emitTeachingSession(get);
     void get().syncWindowFocusable();
   },
@@ -3522,6 +3403,3 @@ void invoke<boolean>("cmd_get_input_focused")
     /* keep false */
   });
 
-export async function getMacroSteps(macroId: string): Promise<MacroStep[]> {
-  return invoke<MacroStep[]>("cmd_get_macro_steps", { macroId });
-}
