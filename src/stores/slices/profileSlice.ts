@@ -319,7 +319,7 @@ export const createProfileSlice: StateCreator<
         focusModeSettingChanged ||
         partial.accessibilityMonitorId !== undefined
       ) {
-        await refreshFocusModeStateHelper({ animate: true });
+        await refreshFocusModeStateHelper(get, set, { animate: true });
         // Monitor moves (and Teaching→Normal height/section patches) must still
         // re-apply non-focus layout when refresh is a no-op with Focus already off.
         if (
@@ -351,7 +351,7 @@ export const createProfileSlice: StateCreator<
           ) {
             storeFlags.liveHeightRatioPreview = null;
           }
-          await syncFocusModeWindowLayout(true);
+          await syncFocusModeWindowLayout(get, set, true);
         }
       } else if (
         partial.accessibilityMonitorId !== undefined ||
@@ -392,7 +392,7 @@ export const createProfileSlice: StateCreator<
     }
     if (WebviewWindow.getCurrent().label === "main") {
       if (get().focusModeActive) {
-        void syncFocusModeWindowLayout(true);
+        void syncFocusModeWindowLayout(get, set, true);
       } else {
         void syncWindowLayoutFromSettings(
           next,
@@ -445,7 +445,7 @@ export const createProfileSlice: StateCreator<
     const monitors = await invoke<MonitorInfo[]>("cmd_list_monitors");
     set({ monitors });
     if (WebviewWindow.getCurrent().label === "main" && get().profileHydrated) {
-      await refreshFocusModeStateHelper({ animate: false });
+      await refreshFocusModeStateHelper(get, set, { animate: false });
     }
   },
   saveActiveProfile: async () => {

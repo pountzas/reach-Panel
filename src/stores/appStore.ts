@@ -71,7 +71,11 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
     }
     if (state.settings.micMode === true) {
       if (state.modeMenuOpen) {
-        void syncFocusModeWindowLayout(false);
+        void syncFocusModeWindowLayout(
+          useAppStore.getState,
+          useAppStore.setState,
+          false,
+        );
       }
       return;
     }
@@ -80,9 +84,18 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
         focusModeKeyboardVisible: true,
         isAnimatingWindow: true,
       });
-      void syncFocusModeWindowLayout(true, { continueHeld: true });
+      void syncFocusModeWindowLayout(
+        useAppStore.getState,
+        useAppStore.setState,
+        true,
+        { continueHeld: true },
+      );
     } else if (state.modeMenuOpen) {
-      void syncFocusModeWindowLayout(false);
+      void syncFocusModeWindowLayout(
+        useAppStore.getState,
+        useAppStore.setState,
+        false,
+      );
     }
     return;
   }
@@ -106,7 +119,12 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
       isAnimatingWindow: true,
       focusContentAnim: animateContent ? "exit" : "idle",
     });
-    void syncFocusModeWindowLayout(true, { continueHeld: true });
+    void syncFocusModeWindowLayout(
+      useAppStore.getState,
+      useAppStore.setState,
+      true,
+      { continueHeld: true },
+    );
   }
 });
 

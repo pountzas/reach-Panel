@@ -63,7 +63,6 @@ import {
   windowLayoutInvokeArgs,
 } from "./lib/windowLayoutArgs";
 import type { AppStore } from "./types";
-import { useAppStore } from "./appStore";
 import { storeFlags } from "./storeFlags";
 
 export {
@@ -144,10 +143,12 @@ type SyncFocusLayoutOptions = {
  * Always ends aligned with the latest `focusModeKeyboardVisible` (no squashed keyboard in FAB).
  */
 export async function syncFocusModeWindowLayout(
+  get: () => AppStore,
+  set: (partial: Partial<AppStore>) => void,
   preferAnimate = true,
   options?: SyncFocusLayoutOptions,
 ) {
-  const state = useAppStore.getState();
+  const state = get();
   if (!state.focusModeActive) {
     storeFlags.pendingFocusLayoutSync = null;
     return;
@@ -163,13 +164,13 @@ export async function syncFocusModeWindowLayout(
   const animateContent = preferAnimate && !prefersReducedMotion();
   storeFlags.focusLayoutSyncInFlight = true;
   if (!state.isAnimatingWindow) {
-    useAppStore.setState({ isAnimatingWindow: true });
+    set({ isAnimatingWindow: true });
   }
   try {
-    const { settings } = useAppStore.getState();
+    const { settings } = get();
     const sharedHeightRatio = heightRatioFromSettings(
       settings,
-      useAppStore.getState().musicTeachingEnabled,
+      get().musicTeachingEnabled,
       true,
     );
     const args = {
@@ -188,26 +189,26 @@ export async function syncFocusModeWindowLayout(
       // FAB must paint hidden before bounds grow, or the last FAB frame stretches
       // across the keyboard strip (top-left blink).
       await afterNextPaint();
-      if (useAppStore.getState().focusModeKeyboardVisible !== visibleAtStart) {
+      if (get().focusModeKeyboardVisible !== visibleAtStart) {
         return; // finally re-syncs to the latest visibility
       }
       await invoke("cmd_apply_window_layout", args);
       if (animateContent) {
         const wait = beginFocusContentAnimWait();
-        useAppStore.setState({ focusContentAnim: "enter" });
+        set({ focusContentAnim: "enter" });
         await Promise.race([
           wait,
           new Promise<void>((r) =>
             window.setTimeout(r, MOTION.focusKeyboard + 80),
           ),
         ]);
-        useAppStore.setState({ focusContentAnim: "idle" });
+        set({ focusContentAnim: "idle" });
       }
     } else {
       if (animateContent) {
         const wait = peekOrBeginFocusContentAnimWait();
-        if (useAppStore.getState().focusContentAnim !== "exit") {
-          useAppStore.setState({ focusContentAnim: "exit" });
+        if (get().focusContentAnim !== "exit") {
+          set({ focusContentAnim: "exit" });
         }
         await Promise.race([
           wait,
@@ -215,25 +216,25 @@ export async function syncFocusModeWindowLayout(
             window.setTimeout(r, MOTION.focusKeyboard + 80),
           ),
         ]);
-        useAppStore.setState({ focusContentAnim: "idle" });
+        set({ focusContentAnim: "idle" });
       }
       // Keyboard must paint gone before bounds shrink into the FAB corner.
-      if (useAppStore.getState().focusModeKeyboardVisible !== visibleAtStart) {
+      if (get().focusModeKeyboardVisible !== visibleAtStart) {
         return; // finally re-syncs to the latest visibility
       }
       await afterNextPaint();
-      if (useAppStore.getState().focusModeKeyboardVisible !== visibleAtStart) {
+      if (get().focusModeKeyboardVisible !== visibleAtStart) {
         return; // finally re-syncs to the latest visibility
       }
       await invoke("cmd_apply_window_layout", args);
     }
-    if (useAppStore.getState().dictationState !== "idle") {
+    if (get().dictationState !== "idle") {
       void showDictationOverlay();
     }
   } finally {
     storeFlags.focusLayoutSyncInFlight = false;
-    useAppStore.setState({ isAnimatingWindow: false, focusContentAnim: "idle" });
-    const latest = useAppStore.getState();
+    set({ isAnimatingWindow: false, focusContentAnim: "idle" });
+    const latest = get();
     const queued = storeFlags.pendingFocusLayoutSync;
     storeFlags.pendingFocusLayoutSync = null;
     if (
@@ -241,7 +242,7 @@ export async function syncFocusModeWindowLayout(
       (queued !== null || latest.focusModeKeyboardVisible !== visibleAtStart)
     ) {
       const nextAnimate = queued ?? preferAnimate;
-      void syncFocusModeWindowLayout(nextAnimate);
+      void syncFocusModeWindowLayout(get, set, nextAnimate);
     }
   }
 }
@@ -294,8 +295,12 @@ export async function ensureUpdatePromptVisible(get: () => AppStore) {
  * Keep focusModeActive / mouseVisible in sync with settings + monitors.
  * Enter: hide mouse panel (session restore on exit). Leave: restore layout.
  */
-export async function refreshFocusModeStateHelper(options?: { animate?: boolean }) {
-  const state = useAppStore.getState();
+export async function refreshFocusModeStateHelper(
+  get: () => AppStore,
+  set: (partial: Partial<AppStore>) => void,
+  options?: { animate?: boolean },
+) {
+  const state = get();
   const { settings, monitors, focusModeActive: wasActive } = state;
   const teachingActive =
     state.musicTeachingEnabled &&
@@ -307,7 +312,7 @@ export async function refreshFocusModeStateHelper(options?: { animate?: boolean 
 
   if (enabled && !wasActive) {
     const mouseBefore = settings.mouseVisible;
-    useAppStore.setState({
+    set({
       focusModeActive: true,
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
@@ -315,12 +320,12 @@ export async function refreshFocusModeStateHelper(options?: { animate?: boolean 
       mouseVisibleBeforeFocusMode: mouseBefore,
       settings: mouseBefore ? { ...settings, mouseVisible: false } : settings,
     });
-    await syncFocusModeWindowLayout(animate);
+    await syncFocusModeWindowLayout(get, set, animate);
   } else if (!enabled && wasActive) {
     const restore = state.mouseVisibleBeforeFocusMode;
     const nextSettings =
       restore !== null ? { ...settings, mouseVisible: restore } : settings;
-    useAppStore.setState({
+    set({
       focusModeActive: false,
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
@@ -331,22 +336,22 @@ export async function refreshFocusModeStateHelper(options?: { animate?: boolean 
     await syncWindowLayoutFromSettings(
       nextSettings,
       animate,
-      useAppStore.getState().musicTeachingEnabled,
+      get().musicTeachingEnabled,
     );
   } else if (enabled) {
     // Still active: enforce mouse panel hidden and keep window layout in sync.
     if (settings.mouseVisible) {
       if (state.mouseVisibleBeforeFocusMode === null) {
-        useAppStore.setState({ mouseVisibleBeforeFocusMode: true });
+        set({ mouseVisibleBeforeFocusMode: true });
       }
-      useAppStore.setState({
+      set({
         settings: { ...settings, mouseVisible: false },
       });
     }
-    await syncFocusModeWindowLayout(animate);
+    await syncFocusModeWindowLayout(get, set, animate);
   }
 
-  await syncInputPreviewEnabled(useAppStore.getState);
+  await syncInputPreviewEnabled(get);
 }
 
 export const LANGUAGE_CHANGE_FALLBACK =
@@ -584,7 +589,7 @@ export async function loadProfileData(
     await persistSettingsIfCurrent(get, epoch, get().settings);
   }
   if (isMainWindow) {
-    await refreshFocusModeStateHelper({
+    await refreshFocusModeStateHelper(get, set, {
       animate: options?.animateLayout === true,
     });
     if (!get().focusModeActive) {

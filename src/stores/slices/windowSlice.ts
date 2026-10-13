@@ -193,7 +193,7 @@ export const createWindowSlice: StateCreator<
       const queued = storeFlags.pendingFocusLayoutSync;
       storeFlags.pendingFocusLayoutSync = null;
       if (queued !== null && get().focusModeActive) {
-        void syncFocusModeWindowLayout(queued);
+        void syncFocusModeWindowLayout(get, set, queued);
       }
     }
   },

@@ -60,7 +60,7 @@ export const createFocusModeSlice: StateCreator<
       return;
     }
     if (get().focusModeActive) {
-      await syncFocusModeWindowLayout(false);
+      await syncFocusModeWindowLayout(get, set, false);
     } else {
       await syncWindowLayoutFromSettings(
         get().settings,
@@ -70,7 +70,7 @@ export const createFocusModeSlice: StateCreator<
     }
   },
   refreshFocusModeState: async (options) => {
-    await refreshFocusModeStateHelper(options);
+    await refreshFocusModeStateHelper(get, set, options);
   },
   expandFocusModeKeyboard: async () => {
     if (!get().focusModeActive || get().isAnimatingWindow) {
@@ -87,7 +87,7 @@ export const createFocusModeSlice: StateCreator<
       focusModeSuppressAutoShow: false,
       isAnimatingWindow: true,
     });
-    await syncFocusModeWindowLayout(true, { continueHeld: true });
+    await syncFocusModeWindowLayout(get, set, true, { continueHeld: true });
   },
   collapseFocusModeKeyboard: async () => {
     if (!get().focusModeActive || get().isAnimatingWindow) {
@@ -108,6 +108,6 @@ export const createFocusModeSlice: StateCreator<
       isAnimatingWindow: true,
       focusContentAnim: animateContent ? "exit" : "idle",
     });
-    await syncFocusModeWindowLayout(true, { continueHeld: true });
+    await syncFocusModeWindowLayout(get, set, true, { continueHeld: true });
   },
 });
