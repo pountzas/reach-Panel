@@ -1,7 +1,6 @@
 mod companion;
 mod db;
 mod input;
-mod installed_apps;
 mod language;
 mod music;
 mod prediction;
@@ -9,7 +8,6 @@ mod profiles;
 mod services;
 mod stt;
 mod teaching_pdf;
-mod tts;
 mod window;
 
 #[cfg(not(target_os = "windows"))]
@@ -18,18 +16,17 @@ compile_error!("ReachPanel is Windows-only. macOS is not supported.");
 use db::{Database, Profile};
 use input::focus_target;
 use input::{
-    begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position,
-    primary_mouse_button_down, get_input_methods,
+    begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position, get_input_methods,
     get_keyboard_layout, get_keyboard_state, get_layout_key_labels, mouse_click,
-    mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
-    press_key, press_media_key, reset_layout_compose_state, set_input_method_by_hkl,
+    mouse_double_click, mouse_scroll, move_cursor_relative, press_key,
+    primary_mouse_button_down, reset_layout_compose_state, set_input_method_by_hkl,
     set_input_method_by_language, set_system_language, translate_layout_key_press, type_text,
     windows_ui_language, InputMethod, KeyPressRequest, KeyboardState, LayoutKeyLabel,
     LayoutKeyTranslation,
 };
 use prediction::{
-    ensure_english_pack, get_installed_languages, get_suggestions, install_word_pack,
-    list_word_packs, record_usage, uninstall_word_pack, WordPackInfo,
+    ensure_english_pack, get_suggestions, install_word_pack, list_word_packs, record_usage,
+    uninstall_word_pack, WordPackInfo,
 };
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use serde::Serialize;
@@ -37,7 +34,6 @@ use std::sync::Mutex;
 use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
-use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use window::{
     apply_taskbar_position_from_str, compute_window_layout, get_taskbar_position_for_monitor,
     list_monitors, MonitorInfo, TaskbarPosition, TaskbarPositionResult, WindowLayout,
@@ -97,34 +93,6 @@ fn cmd_press_key(request: KeyPressRequest, state: State<AppState>) -> CommandRes
 #[tauri::command]
 fn cmd_type_text(text: String, state: State<AppState>) -> CommandResult {
     match type_text(&text) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
-    }
-}
-
-#[tauri::command]
-fn cmd_press_combo(keys: Vec<String>, state: State<AppState>) -> CommandResult {
-    match press_combo(keys) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
-    }
-}
-
-#[tauri::command]
-fn cmd_press_media_key(key: String, state: State<AppState>) -> CommandResult {
-    match press_media_key(&key) {
         Ok(()) => {
             set_error(&state, None);
             ok()
@@ -259,17 +227,6 @@ fn cmd_trackpad_gesture_end(state: State<AppState>) -> CommandResult {
             set_error(&state, None);
             ok()
         }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
-    }
-}
-
-#[tauri::command]
-fn cmd_move_cursor_absolute(x: i32, y: i32, state: State<AppState>) -> CommandResult {
-    match move_cursor_absolute(x, y) {
-        Ok(()) => ok(),
         Err(e) => {
             set_error(&state, Some(e.to_string()));
             err(e)
@@ -511,27 +468,6 @@ async fn cmd_animate_window_layout(
 }
 
 #[tauri::command]
-async fn cmd_move_window_to_monitor(
-    app: tauri::AppHandle,
-    monitor_id: u32,
-    height_ratio: f32,
-) -> Result<(), String> {
-    apply_window_layout(
-        &app,
-        monitor_id,
-        false,
-        false,
-        false,
-        height_ratio,
-        false,
-        false,
-        window::FOCUS_KEYBOARD_HEIGHT_RATIO,
-        false,
-    )
-    .await
-}
-
-#[tauri::command]
 fn cmd_exclude_window_from_capture(app: tauri::AppHandle, label: String) -> Result<(), String> {
     let window = app.get_webview_window(&label).ok_or("window not found")?;
     let hwnd = window.hwnd().map_err(|e| e.to_string())?;
@@ -557,29 +493,6 @@ async fn cmd_set_window_focusable(app: tauri::AppHandle, focusable: bool) -> Res
         }
     }
     Ok(())
-}
-
-#[tauri::command]
-async fn cmd_set_collapsed(
-    app: tauri::AppHandle,
-    monitor_id: u32,
-    collapsed: bool,
-    collapsed_dictation: bool,
-    height_ratio: f32,
-) -> Result<(), String> {
-    apply_window_layout(
-        &app,
-        monitor_id,
-        collapsed,
-        collapsed_dictation,
-        false,
-        height_ratio,
-        false,
-        false,
-        window::FOCUS_KEYBOARD_HEIGHT_RATIO,
-        false,
-    )
-    .await
 }
 
 #[tauri::command]
@@ -802,38 +715,6 @@ fn cmd_save_teaching_pdfs(app: tauri::AppHandle, entries: serde_json::Value) -> 
 }
 
 #[tauri::command]
-async fn cmd_list_installed_apps() -> Result<Vec<installed_apps::InstalledApp>, String> {
-    tokio::task::spawn_blocking(installed_apps::list_installed_apps)
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-fn pick_app_executable(app: &tauri::AppHandle) -> Result<Option<String>, String> {
-    let window = app
-        .get_webview_window("settings")
-        .or_else(|| app.get_webview_window("main"))
-        .ok_or_else(|| "No window found".to_string())?;
-
-    let _ = window.set_always_on_top(false);
-    let _restore = RestoreAlwaysOnTop(app.clone());
-
-    let file = rfd::FileDialog::new()
-        .add_filter("Programs", &["exe"])
-        .set_title("Select application")
-        .set_parent(&window)
-        .pick_file();
-
-    Ok(file.map(|p| p.to_string_lossy().into_owned()))
-}
-
-#[tauri::command]
-async fn cmd_pick_app_executable(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    tokio::task::spawn_blocking(move || pick_app_executable(&app))
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
 fn cmd_read_music_file(app: tauri::AppHandle, path: String) -> Result<MusicFilePayload, String> {
     let bytes = music::read_music_file_bytes(&app, &path)?;
     Ok(MusicFilePayload {
@@ -899,58 +780,10 @@ fn cmd_update_profile_settings(
     Ok(())
 }
 
-#[tauri::command]
-async fn cmd_speak(
-    text: String,
-    rate: i32,
-    volume: u16,
-    language: String,
-    app: AppHandle,
-) -> Result<(), String> {
-    if companion_tablet_audio_active(&app) {
-        return Ok(());
-    }
-    tokio::task::spawn_blocking(move || {
-        speak_text(
-            &text,
-            TtsSettings {
-                rate,
-                volume,
-                language,
-            },
-        )
-        .map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
 fn companion_tablet_audio_active(app: &AppHandle) -> bool {
     app.try_state::<companion::CompanionBridge>()
         .map(|bridge| bridge.session().tablet_audio_active())
         .unwrap_or(false)
-}
-
-#[tauri::command]
-async fn cmd_stop_speaking() -> Result<(), String> {
-    tokio::task::spawn_blocking(|| stop_speaking().map_err(|e| e.to_string()))
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-fn cmd_list_voices() -> Result<Vec<String>, String> {
-    list_voices().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_get_tts_status() -> Result<String, String> {
-    get_tts_status().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_validate_tts() -> Result<(), String> {
-    validate_tts().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -1085,11 +918,6 @@ fn cmd_uninstall_word_pack(
     list_word_packs(&state.db).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-fn cmd_get_languages() -> Vec<String> {
-    get_installed_languages()
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1156,8 +984,6 @@ pub fn run() {
             get_last_error,
             cmd_press_key,
             cmd_type_text,
-            cmd_press_combo,
-            cmd_press_media_key,
             cmd_get_keyboard_layout,
             cmd_get_keyboard_state,
             cmd_set_input_preview_enabled,
@@ -1171,7 +997,6 @@ pub fn run() {
             cmd_move_cursor_relative,
             cmd_trackpad_gesture_begin,
             cmd_trackpad_gesture_end,
-            cmd_move_cursor_absolute,
             cmd_get_cursor_position,
             cmd_primary_mouse_button_down,
             cmd_mouse_click,
@@ -1181,11 +1006,9 @@ pub fn run() {
             cmd_get_main_window_monitor,
             cmd_apply_window_layout,
             cmd_animate_window_layout,
-            cmd_move_window_to_monitor,
             cmd_set_always_on_top,
             cmd_exclude_window_from_capture,
             cmd_set_window_focusable,
-            cmd_set_collapsed,
             cmd_expand_window_for_mode_menu,
             cmd_get_profiles,
             cmd_list_profile_files,
@@ -1199,8 +1022,6 @@ pub fn run() {
             cmd_pick_background_image,
             cmd_pick_music_song_file,
             cmd_pick_teaching_pdf,
-            cmd_list_installed_apps,
-            cmd_pick_app_executable,
             cmd_read_music_file,
             cmd_read_teaching_pdf,
             cmd_list_imported_songs,
@@ -1212,11 +1033,6 @@ pub fn run() {
             cmd_upsert_custom_language_pack,
             cmd_delete_custom_language_pack,
             cmd_update_profile_settings,
-            cmd_speak,
-            cmd_stop_speaking,
-            cmd_list_voices,
-            cmd_get_tts_status,
-            cmd_validate_tts,
             cmd_start_dictation,
             cmd_stop_dictation,
             cmd_get_stt_status,
@@ -1228,7 +1044,6 @@ pub fn run() {
             cmd_list_word_packs,
             cmd_install_word_pack,
             cmd_uninstall_word_pack,
-            cmd_get_languages,
             companion::cmd_companion_start,
             companion::cmd_companion_stop,
             companion::cmd_companion_status,

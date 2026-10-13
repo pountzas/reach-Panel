@@ -273,22 +273,6 @@ fn press_combo_impl(keys: Vec<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn press_media_key(key: &str) -> Result<()> {
-    let vk = match key.to_lowercase().as_str() {
-        "volumeup" => VIRTUAL_KEY(0xAF),
-        "volumedown" => VIRTUAL_KEY(0xAE),
-        "volumemute" => VIRTUAL_KEY(0xAD),
-        "playpause" => VIRTUAL_KEY(0xB3),
-        "stop" => VIRTUAL_KEY(0xB2),
-        "nexttrack" => VIRTUAL_KEY(0xB0),
-        "prevtrack" => VIRTUAL_KEY(0xB1),
-        _ => return Err(anyhow!("Unknown media key: {key}")),
-    };
-    send_vk(vk, false)?;
-    send_vk(vk, true)?;
-    Ok(())
-}
-
 pub fn get_caps_lock_state() -> bool {
     unsafe { GetKeyState(VK_CAPITAL.0 as i32) & 0x0001 != 0 }
 }
@@ -557,19 +541,6 @@ pub fn get_input_methods() -> Vec<InputMethod> {
             .then_with(|| a.klid.cmp(&b.klid))
     });
     methods
-}
-
-pub fn get_installed_language_tags() -> Vec<String> {
-    let mut tags: Vec<String> = get_input_methods()
-        .into_iter()
-        .map(|m| m.lang_tag)
-        .collect();
-    tags.sort();
-    tags.dedup();
-    if tags.is_empty() {
-        tags.push("en".to_string());
-    }
-    tags
 }
 
 pub fn get_keyboard_layout() -> String {
