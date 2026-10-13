@@ -19,7 +19,8 @@ compile_error!("ReachPanel is Windows-only. macOS is not supported.");
 use db::{Database, Profile};
 use input::focus_target;
 use input::{
-    begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position, get_input_methods,
+    begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position,
+    primary_mouse_button_down, get_input_methods,
     get_keyboard_layout, get_keyboard_state, get_layout_key_labels, mouse_click,
     mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
     press_key, press_media_key, reset_layout_compose_state, set_input_method_by_hkl,
@@ -280,6 +281,11 @@ fn cmd_move_cursor_absolute(x: i32, y: i32, state: State<AppState>) -> CommandRe
 #[tauri::command]
 fn cmd_get_cursor_position() -> Result<(i32, i32), String> {
     get_cursor_position().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn cmd_primary_mouse_button_down() -> bool {
+    primary_mouse_button_down()
 }
 
 #[tauri::command]
@@ -1179,6 +1185,7 @@ pub fn run() {
             cmd_trackpad_gesture_end,
             cmd_move_cursor_absolute,
             cmd_get_cursor_position,
+            cmd_primary_mouse_button_down,
             cmd_mouse_click,
             cmd_mouse_double_click,
             cmd_mouse_scroll,

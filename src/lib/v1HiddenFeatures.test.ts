@@ -1,8 +1,4 @@
 import { describe, expect, it } from "vitest";
-import {
-  computeContentHeightRatio,
-  computeContentHeightRatioFromSettings,
-} from "./sectionLayouts";
 import { resolveDockedSectionVisibility } from "./sectionRegistry";
 import {
   V1_HIDDEN_FEATURES,
@@ -95,28 +91,20 @@ describe("v1HiddenFeatures", () => {
   });
 });
 
-describe("teaching section visibility / content height", () => {
-  it("hides teaching height when lesson slot is off", () => {
-    const visibility = resolveDockedSectionVisibility({
-      lessonSlotVisible: false,
-    });
-    expect(visibility).toEqual({ teaching: false });
-
-    const ratio = computeContentHeightRatioFromSettings(false);
-    expect(ratio).toBe(computeContentHeightRatio({ teaching: false }));
-    expect(ratio).toBeLessThan(1);
+describe("teaching section visibility", () => {
+  it("hides teaching when lesson slot is off", () => {
+    expect(
+      resolveDockedSectionVisibility({
+        lessonSlotVisible: false,
+      }),
+    ).toEqual({ teaching: false });
   });
 
-  it("keeps teaching height only when lesson slot is visible", () => {
-    const visibility = resolveDockedSectionVisibility({
-      lessonSlotVisible: true,
-    });
-    expect(visibility).toEqual({ teaching: true });
-
-    const ratio = computeContentHeightRatioFromSettings(true);
-    expect(ratio).toBe(computeContentHeightRatio({ teaching: true }));
-    expect(ratio).toBeGreaterThan(
-      computeContentHeightRatio({ teaching: false }),
-    );
+  it("shows teaching only when lesson slot is visible", () => {
+    expect(
+      resolveDockedSectionVisibility({
+        lessonSlotVisible: true,
+      }),
+    ).toEqual({ teaching: true });
   });
 });

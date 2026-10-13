@@ -6,7 +6,7 @@ import { AppShell } from "./components/layout/AppShell";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { AppToaster } from "./components/common/AppToaster";
 import { UpdatePrompt } from "./components/common/UpdatePrompt";
-import { computeContentHeightRatioFromSettings } from "./lib/sectionLayouts";
+import { resolveWindowHeightRatio } from "./lib/sectionLayouts";
 import { DictationOverlay } from "./components/keyboard/DictationOverlay";
 import {
   hideDictationOverlay,
@@ -35,7 +35,6 @@ import {
 } from "./lib/companionSession";
 import { reconcileAutostartOnLoad } from "./lib/autostart";
 import {
-  isMusicLessonSlotVisible,
   isTeachingFullWorkArea,
 } from "./lib/v1HiddenFeatures";
 import { useAppStore } from "./stores/appStore";
@@ -73,10 +72,6 @@ function MainApp() {
         if (cancelled) return;
         if (!useAppStore.getState().focusModeActive) {
           const { settings, musicTeachingEnabled } = useAppStore.getState();
-          const lessonSlotVisible = isMusicLessonSlotVisible({
-            musicTeachingEnabled,
-            keyboardSectionMode: settings.keyboardSectionMode,
-          });
           const fullWorkArea = isTeachingFullWorkArea({
             musicTeachingEnabled,
             keyboardSectionMode: settings.keyboardSectionMode,
@@ -85,9 +80,9 @@ function MainApp() {
             monitorId: settings.accessibilityMonitorId,
             collapsed: settings.collapsed,
             collapsedDictation: false,
-            heightRatio: fullWorkArea
-              ? 1.0
-              : computeContentHeightRatioFromSettings(lessonSlotVisible),
+            heightRatio: resolveWindowHeightRatio(settings.windowHeightRatio, {
+              teachingFullWorkArea: fullWorkArea,
+            }),
             fullWorkArea,
           });
         }
