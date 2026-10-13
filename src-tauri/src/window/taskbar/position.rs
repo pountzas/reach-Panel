@@ -11,8 +11,8 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::process::Command;
 
-use super::detect::{collect_tray_rects, RectI};
 use super::super::{list_monitors, monitor_for_rect, monitors_overlap, MonitorInfo};
+use super::detect::{collect_tray_rects, RectI};
 
 const STUCK_RECTS_PATH: &str =
     "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3";
@@ -60,7 +60,7 @@ impl TaskbarPosition {
         }
     }
 
-    pub(super) fn as_str(self) -> &'static str {
+    fn as_str(self) -> &'static str {
         match self {
             Self::Top => "top",
             Self::Bottom => "bottom",
@@ -764,7 +764,10 @@ fn monitor_id_for_tray(tray: RectI, frames: &[MonitorFrame]) -> Option<u32> {
     best_id
 }
 
-pub(super) fn detect_taskbar_position_for_tray(tray: RectI, frame: &MonitorFrame) -> Option<TaskbarPosition> {
+pub(super) fn detect_taskbar_position_for_tray(
+    tray: RectI,
+    frame: &MonitorFrame,
+) -> Option<TaskbarPosition> {
     let screen_w = frame.width();
     let screen_h = frame.height();
     if screen_w <= 0 || screen_h <= 0 {
