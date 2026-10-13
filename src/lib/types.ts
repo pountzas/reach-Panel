@@ -48,10 +48,7 @@ export interface AppSettings {
   backgroundImageOpacity?: number;
   mouseSpeed: MouseSpeed;
   mouseCustomSpeed?: number;
-  precisionMode: boolean;
   predictionEnabled: boolean;
-  quickActionsVisible: boolean;
-  phrasesVisible: boolean;
   suggestionsVisible: boolean;
   /** When false, hides the keyboard mic / dictation key. */
   dictationVisible: boolean;
@@ -63,10 +60,8 @@ export interface AppSettings {
   taskbarPositionPreference?: TaskbarPosition;
   /** Free Groq API key for cloud dictation when Windows speech packs are unavailable (e.g. Greek). */
   groqApiKey?: string;
-  emergencyVisible: boolean;
   accessibilityMonitorId: number;
   collapsed: boolean;
-  headTrackingEnabled: boolean;
   mouseAutoHide?: boolean;
   fnKeyMode: FnKeyMode;
   keyboardSectionMode: KeyboardSectionMode;
@@ -83,11 +78,6 @@ export interface AppSettings {
   inputAreaCompact: boolean;
   /** When false, hides drag lock, precision, and scroll buttons on the trackpad. */
   mouseBottomRowVisible: boolean;
-  /**
-   * Doubles header heights and header chrome buttons, and turns non-button
-   * header areas into vertical resize grips (sections + OS window).
-   */
-  largeHeaders: boolean;
   /**
    * User-set OS window height as a fraction of the monitor layout region
    * (Normal and Focus share this; clamped 25%–100%). Unset uses the shared default.
@@ -142,47 +132,6 @@ export interface Profile {
   created_at: string;
 }
 
-export interface QuickAction {
-  id: string;
-  profile_id: string;
-  label: string;
-  target: string;
-  action_type: "app" | "url";
-  category: string;
-  sort_order: number;
-}
-
-export interface Phrase {
-  id: string;
-  profile_id: string;
-  category_id: string;
-  text: string;
-  action: "type" | "speak" | "both";
-  is_favorite: boolean;
-  is_emergency: boolean;
-}
-
-export interface PhraseCategory {
-  id: string;
-  profile_id: string;
-  name: string;
-  sort_order: number;
-}
-
-export interface MacroDef {
-  id: string;
-  profile_id: string;
-  name: string;
-}
-
-export interface MacroStep {
-  id: string;
-  macro_id: string;
-  step_order: number;
-  action_type: string;
-  payload_json: string;
-}
-
 export interface MonitorInfo {
   id: number;
   name: string;
@@ -202,14 +151,6 @@ export interface CommandResult {
   error?: string;
 }
 
-export interface HeadTrackingSettings {
-  sensitivity: number;
-  deadZone: number;
-  acceleration: number;
-  smoothing: number;
-  calibrated: boolean;
-}
-
 export const DEFAULT_SETTINGS: AppSettings = {
   colorProfile: "dark-grey",
   ...COLOR_PROFILE_PRESETS["dark-grey"],
@@ -222,20 +163,15 @@ export const DEFAULT_SETTINGS: AppSettings = {
   keyboardFontSize: 18,
   backgroundImageOpacity: 0.35,
   mouseSpeed: "medium",
-  precisionMode: false,
   predictionEnabled: false,
-  quickActionsVisible: false,
-  phrasesVisible: false,
   suggestionsVisible: false,
   dictationVisible: true,
   inputPreviewVisible: true,
   inputPreviewFocusModeVisible: true,
   taskbarPositionPreference: "bottom",
   groqApiKey: "",
-  emergencyVisible: false,
   accessibilityMonitorId: 0,
   collapsed: false,
-  headTrackingEnabled: false,
   mouseAutoHide: false,
   fnKeyMode: "one-shot",
   keyboardSectionMode: "keyboard",
@@ -247,7 +183,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   inputRowRightRatio: 0.28,
   inputAreaCompact: false,
   mouseBottomRowVisible: true,
-  largeHeaders: false,
   transparentKeyColor: "white",
   focusModeOverride: false,
   micMode: false,

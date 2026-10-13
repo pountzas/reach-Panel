@@ -3,13 +3,8 @@ import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { monitorsOverlap } from "./focusMode";
 import type { MonitorInfo } from "./types";
-import { isV1ToolWindowHidden } from "./v1HiddenFeatures";
 
-export const TOOL_WINDOW_LABELS = [
-  "settings",
-  "macro-builder",
-  "head-tracking",
-] as const;
+export const TOOL_WINDOW_LABELS = ["settings"] as const;
 
 export type ToolWindowLabel = (typeof TOOL_WINDOW_LABELS)[number];
 
@@ -27,8 +22,6 @@ export const TOOL_WINDOW_SIZE = { width: 900, height: 700 } as const;
 
 export const TOOL_WINDOW_TITLES: Record<ToolWindowLabel, string> = {
   settings: "Settings",
-  "macro-builder": "Macro Builder",
-  "head-tracking": "Head Tracking",
 };
 
 export function isToolWindowLabel(label: string): label is ToolWindowLabel {
@@ -179,9 +172,6 @@ export async function openToolWindow(
     onDestroyed?: () => void;
   },
 ): Promise<void> {
-  if (isV1ToolWindowHidden(label)) {
-    return;
-  }
   const placement = await resolvePlacement(options.monitor);
   const existing = await WebviewWindow.getByLabel(label);
   if (existing) {

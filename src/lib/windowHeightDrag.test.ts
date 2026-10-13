@@ -5,7 +5,6 @@ import {
   shouldApplyLiveWindowHeightRatio,
 } from "./windowHeightDrag";
 import { WINDOW_HEIGHT_RATIO_MAX, WINDOW_HEIGHT_RATIO_MIN } from "./sectionLayouts";
-import { V1_HIDDEN_FEATURES, effectiveLargeHeaders } from "./v1HiddenFeatures";
 import type { MonitorInfo } from "./types";
 
 const monitor = (partial: Partial<MonitorInfo> & Pick<MonitorInfo, "height">): MonitorInfo => ({
@@ -110,12 +109,5 @@ describe("nextWindowHeightRatioFromScreenY", () => {
   it("tracks the cursor absolutely (same screenY → same ratio regardless of prior ratio)", () => {
     expect(nextWindowHeightRatioFromScreenY(600, region)).toBeCloseTo(0.8, 10);
     expect(nextWindowHeightRatioFromScreenY(600, region)).toBeCloseTo(0.8, 10);
-  });
-});
-
-describe("height grips leave largeHeaders v1-hidden", () => {
-  it("keeps largeHeaders hidden so grips replace whole-header drag", () => {
-    expect(V1_HIDDEN_FEATURES.largeHeaders).toBe(true);
-    expect(effectiveLargeHeaders(true)).toBe(false);
   });
 });

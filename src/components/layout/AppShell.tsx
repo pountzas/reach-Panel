@@ -4,8 +4,6 @@ import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
 import { MOUSE_PANEL_MIN_WIDTH } from "../../lib/mousePanelLayout";
-import { QuickActionsBar } from "../quick-actions/QuickActionsBar";
-import { PhrasePanel } from "../phrases/PhrasePanel";
 import { MusicLessonPanel } from "../music/MusicLessonPanel";
 import { MathLessonPanel } from "../teaching/MathLessonPanel";
 import { LanguageLessonPanel } from "../teaching/LanguageLessonPanel";
@@ -36,12 +34,8 @@ import {
   shouldShowHeaderHeightGrip,
 } from "../../lib/appModeLayout";
 import {
-  effectiveLargeHeaders,
   effectiveMouseVisible,
-  effectiveQuickActionsVisible,
   isMusicLessonSlotVisible,
-  isV1FeatureHidden,
-  resolveV1SectionVisibility,
 } from "../../lib/v1HiddenFeatures";
 import { handleCloseApp } from "./appShellUtils";
 
@@ -121,22 +115,14 @@ export function AppShell() {
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const { t } = useTranslation();
   const heightDrag = useWindowHeightDrag();
-  const largeHeaders = effectiveLargeHeaders(settings.largeHeaders);
-  const headerHeight = appHeaderHeightPx(largeHeaders);
-  const iconSize = largeHeaders ? "lg" : "sm";
-  const iconClass = largeHeaders ? "h-7 w-7" : "h-4 w-4";
-  const lessonSlotVisible = isMusicLessonSlotVisible({
+  const headerHeight = appHeaderHeightPx();
+  const iconSize = "sm" as const;
+  const iconClass = "h-4 w-4";
+  const teachingVisible = isMusicLessonSlotVisible({
     musicTeachingEnabled,
     keyboardSectionMode: settings.keyboardSectionMode,
     teachingLesson,
   });
-  const sectionVisibility = resolveV1SectionVisibility({
-    quickActionsVisible: settings.quickActionsVisible,
-    phrasesVisible: settings.phrasesVisible,
-    lessonSlotVisible,
-  });
-  const quickActionsVisible = effectiveQuickActionsVisible(settings.quickActionsVisible);
-  const phrasesSlotVisible = sectionVisibility.phrases;
 
   // Focus mode: keyboard+suggestions or collapsed FAB — not the full app chrome.
   // Teaching wins: never host Teaching inside FocusModeShell.
@@ -167,13 +153,9 @@ export function AppShell() {
     shellStyle.backgroundRepeat = "no-repeat";
   }
 
-  const phrasesContent = lessonSlotVisible
+  const teachingContent = teachingVisible
     ? renderTeachingLessonPanel(teachingLesson)
-    : isV1FeatureHidden("phrases")
-      ? null
-      : (
-        <PhrasePanel />
-      );
+    : null;
 
   return (
     <div
@@ -213,9 +195,7 @@ export function AppShell() {
               </button>
             ) : null}
           </div>
-          <span
-            className={`justify-self-center font-semibold ${largeHeaders ? "text-lg" : ""}`}
-          >
+          <span className="justify-self-center font-semibold">
             {t("appTitle")}
           </span>
           <div className="section-no-drag flex justify-end gap-1">
@@ -253,13 +233,11 @@ export function AppShell() {
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <ErrorBanner />
           <SectionCanvas
-            quickActionsVisible={quickActionsVisible}
-            phrasesVisible={phrasesSlotVisible}
+            teachingVisible={teachingVisible}
             savedStack={settings.sectionStack}
             legacyLayouts={settings.sectionLayouts}
             onStackChange={(sectionStack) => updateSettings({ sectionStack })}
-            quickActions={quickActionsVisible ? <QuickActionsBar /> : null}
-            phrases={phrasesContent}
+            teaching={teachingContent}
             inputRow={<InputRowPanel />}
           />
         </div>

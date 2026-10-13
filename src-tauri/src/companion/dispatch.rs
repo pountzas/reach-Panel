@@ -7,7 +7,7 @@ use crate::input::{
 };
 use crate::prediction::{get_suggestions, record_usage};
 use crate::profiles::INTERNAL_PROFILE_ID;
-use crate::services::{build_profile_snapshot, launch_quick_action, type_phrase_text};
+use crate::services::build_profile_snapshot;
 use tauri::{AppHandle, Emitter, Manager};
 
 fn active_typing_language(db: &Database, fallback: &str) -> String {
@@ -148,33 +148,6 @@ pub fn handle_message(app: &AppHandle, db: &Database, env: &Envelope) -> Vec<Env
                 Err(e) => vec![Envelope::error(id, "input_failed", e.to_string())],
             }
         }
-        "phrase.type" => {
-            let text = env
-                .payload
-                .get("text")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
-            match type_phrase_text(text) {
-                Ok(()) => vec![Envelope::reply(id, "ok", serde_json::json!({}))],
-                Err(e) => vec![Envelope::error(id, "phrase_failed", e)],
-            }
-        }
-        "qa.launch" => {
-            let action_type = env
-                .payload
-                .get("actionType")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
-            let target = env
-                .payload
-                .get("target")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
-            match launch_quick_action(app, action_type, target) {
-                Ok(()) => vec![Envelope::reply(id, "ok", serde_json::json!({}))],
-                Err(e) => vec![Envelope::error(id, "qa_failed", e)],
-            }
-        }
         "predict.query" => {
             let profile_id = env
                 .payload
@@ -227,12 +200,7 @@ pub fn handle_message(app: &AppHandle, db: &Database, env: &Envelope) -> Vec<Env
                 .get("profileId")
                 .and_then(|v| v.as_str())
                 .unwrap_or(INTERNAL_PROFILE_ID);
-            let language = env
-                .payload
-                .get("language")
-                .and_then(|v| v.as_str())
-                .unwrap_or("en");
-            match build_profile_snapshot(db, profile_id, language) {
+            match build_profile_snapshot(db, profile_id) {
                 Ok(snapshot) => match serde_json::to_value(snapshot) {
                     Ok(payload) => {
                         vec![Envelope::reply(id, "profile.snapshot.ok", payload)]

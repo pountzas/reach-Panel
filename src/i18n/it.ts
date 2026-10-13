@@ -177,10 +177,7 @@ export const it: Record<keyof typeof en, string> = {
 
   focusModeCollapse: "Torna alla modalità Focus",
 
-  largeHeaders: "Intestazioni grandi per ridimensionare più facilmente",
 
-  largeHeadersHint:
-    "Raddoppia l’altezza delle intestazioni e dei pulsanti. Trascina l’area vuota dell’intestazione per cambiare l’altezza della sezione o della finestra.",
 
   primary: "Principale",
 
@@ -208,13 +205,9 @@ export const it: Record<keyof typeof en, string> = {
 
   speedVeryFast: "Molto veloce",
 
-  quickActions: "Azioni rapide",
 
-  showQuickActionsBar: "Mostra barra azioni rapide",
 
-  phrasesAndSuggestions: "Frasi e suggerimenti",
 
-  showPhrasesSection: "Mostra sezione frasi",
 
   showSuggestionsBar: "Mostra barra suggerimenti",
 
@@ -334,15 +327,10 @@ export const it: Record<keyof typeof en, string> = {
 
   dragToMove: "Trascina per spostare",
 
-  macroBuilder: "Generatore di macro",
 
-  headTracking: "Tracciamento della testa",
 
-  phrases: "Frasi",
 
-  emergency: "Emergenza",
 
-  showEmergency: "Emergenza",
 
   predictionsOff: "Previsioni disattivate",
 
@@ -551,25 +539,15 @@ export const it: Record<keyof typeof en, string> = {
 
   settingsToolsMaintenance: "Strumenti e manutenzione",
 
-  quickActionLabel: "Etichetta",
 
-  quickActionTarget: "Destinazione (app o URL)",
 
-  quickActionTypeApp: "App",
 
-  quickActionTypeUrl: "URL",
 
-  quickActionAdd: "Aggiungi azione",
 
-  quickActionDelete: "Elimina",
 
-  quickActionSearchApps: "Cerca programmi installati…",
 
-  quickActionBrowse: "Sfoglia…",
 
-  quickActionLoadingApps: "Caricamento programmi installati…",
 
-  quickActionNoApps: "Nessun programma corrispondente.",
 
   settingsAbout: "Informazioni",
 

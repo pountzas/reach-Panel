@@ -1,13 +1,10 @@
-use crate::db::{
-    Database, MacroDef, MacroStep, PhraseCategory, PhraseWithLanguage, PredictionEntry, QuickAction,
-};
+use crate::db::{Database, PredictionEntry};
 use crate::input::windows_ui_language;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use uuid::Uuid;
 
 const ACTIVE_PROFILE_CONFIG: &str = "active_profile.txt";
 pub const INTERNAL_PROFILE_ID: &str = "active";
@@ -19,41 +16,13 @@ pub struct ProfileFileInfo {
     pub name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProfileFilePhrase {
-    pub id: String,
-    pub category_id: String,
-    pub text: String,
-    pub action: String,
-    pub is_favorite: bool,
-    pub is_emergency: bool,
-    pub language: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProfileFileMacroStep {
-    pub step_order: i32,
-    pub action_type: String,
-    pub payload_json: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProfileFileMacro {
-    pub id: String,
-    pub name: String,
-    pub steps: Vec<ProfileFileMacroStep>,
-}
-
+/// On-disk profile. Legacy fields (phrases, QA, macros, head_tracking) are ignored
+/// on import via serde's default unknown-field skip; they are never re-exported.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfileFile {
     pub name: String,
     pub settings: serde_json::Value,
-    pub quick_actions: Vec<QuickAction>,
-    pub phrase_categories: Vec<PhraseCategory>,
-    pub phrases: Vec<ProfileFilePhrase>,
-    pub macros: Vec<ProfileFileMacro>,
     pub predictions: Vec<PredictionEntry>,
-    pub head_tracking_settings: serde_json::Value,
 }
 
 pub struct ProfileStore {
@@ -249,7 +218,7 @@ impl ProfileStore {
         Ok(())
     }
 
-    /// Reset settings + wipe QA/macros/phrases/predictions/HT, keep profile filename/name.
+    /// Reset settings + wipe predictions, keep profile filename/name.
     pub fn wipe_active_profile(&self, db: &Database) -> Result<()> {
         let _guard = self.lock_io()?;
         let name = db
@@ -300,112 +269,52 @@ impl ProfileStore {
     }
 }
 
+/// Settings keys for features removed in #225. Stripped on import and export so
+/// old profile files still load and new exports never carry them.
+const REMOVED_SETTINGS_KEYS: &[&str] = &[
+    "quickActionsVisible",
+    "phrasesVisible",
+    "largeHeaders",
+    "headTrackingEnabled",
+    "emergencyVisible",
+    "precisionMode",
+];
+
+fn strip_removed_settings_keys(mut settings: serde_json::Value) -> serde_json::Value {
+    if let Some(obj) = settings.as_object_mut() {
+        for key in REMOVED_SETTINGS_KEYS {
+            obj.remove(*key);
+        }
+    }
+    settings
+}
+
 fn export_profile_from_db(db: &Database, profile_id: &str) -> Result<ProfileFile> {
     let profile = db
         .get_profile_by_id(profile_id)?
         .ok_or_else(|| anyhow!("Profile not found"))?;
     let settings: serde_json::Value = serde_json::from_str(&profile.settings_json)?;
-    let quick_actions = db.get_quick_actions(profile_id)?;
-    let phrase_categories = db.get_phrase_categories(profile_id)?;
-    let phrases = db
-        .get_all_phrases(profile_id)?
-        .into_iter()
-        .map(|p| ProfileFilePhrase {
-            id: p.id,
-            category_id: p.category_id,
-            text: p.text,
-            action: p.action,
-            is_favorite: p.is_favorite,
-            is_emergency: p.is_emergency,
-            language: p.language,
-        })
-        .collect();
-    let macro_defs = db.get_macros(profile_id)?;
-    let mut macros = Vec::new();
-    for macro_def in macro_defs {
-        let steps = db
-            .get_macro_steps(&macro_def.id)?
-            .into_iter()
-            .map(|s| ProfileFileMacroStep {
-                step_order: s.step_order,
-                action_type: s.action_type,
-                payload_json: s.payload_json,
-            })
-            .collect();
-        macros.push(ProfileFileMacro {
-            id: macro_def.id,
-            name: macro_def.name,
-            steps,
-        });
-    }
     let predictions = db.get_all_predictions(profile_id)?;
-    let head_tracking_settings: serde_json::Value =
-        serde_json::from_str(&db.get_head_tracking_settings(profile_id)?)?;
     Ok(ProfileFile {
         name: profile.name,
-        settings,
-        quick_actions,
-        phrase_categories,
-        phrases,
-        macros,
+        settings: strip_removed_settings_keys(settings),
         predictions,
-        head_tracking_settings,
     })
 }
 
 fn import_profile_into_db(db: &Database, profile_id: &str, file: &ProfileFile) -> Result<()> {
-    let ui_language = file
-        .settings
+    let settings = strip_removed_settings_keys(file.settings.clone());
+    let ui_language = settings
         .get("uiLanguage")
         .and_then(|v| v.as_str())
         .unwrap_or("en");
     db.ensure_internal_profile(profile_id, &file.name, ui_language)?;
     db.clear_profile_data(profile_id)?;
-    db.update_profile_settings(profile_id, &file.settings.to_string())?;
+    db.update_profile_settings(profile_id, &settings.to_string())?;
 
-    for action in &file.quick_actions {
-        db.save_quick_action(action)?;
-    }
-    for category in &file.phrase_categories {
-        db.save_phrase_category(category)?;
-    }
-    for phrase in &file.phrases {
-        db.insert_phrase_with_language(&PhraseWithLanguage {
-            id: phrase.id.clone(),
-            profile_id: profile_id.to_string(),
-            category_id: phrase.category_id.clone(),
-            text: phrase.text.clone(),
-            action: phrase.action.clone(),
-            is_favorite: phrase.is_favorite,
-            is_emergency: phrase.is_emergency,
-            language: phrase.language.clone(),
-        })?;
-    }
-    for macro_def in &file.macros {
-        let steps: Vec<MacroStep> = macro_def
-            .steps
-            .iter()
-            .map(|s| MacroStep {
-                id: Uuid::new_v4().to_string(),
-                macro_id: macro_def.id.clone(),
-                step_order: s.step_order,
-                action_type: s.action_type.clone(),
-                payload_json: s.payload_json.clone(),
-            })
-            .collect();
-        db.save_macro(
-            &MacroDef {
-                id: macro_def.id.clone(),
-                profile_id: profile_id.to_string(),
-                name: macro_def.name.clone(),
-            },
-            &steps,
-        )?;
-    }
     for entry in &file.predictions {
         db.insert_prediction(profile_id, entry)?;
     }
-    db.save_head_tracking_settings(profile_id, &file.head_tracking_settings.to_string())?;
     Ok(())
 }
 
@@ -433,12 +342,7 @@ mod tests {
                 "appBgColor": marker,
                 "groqApiKey": format!("key-{marker}"),
             }),
-            quick_actions: vec![],
-            phrase_categories: vec![],
-            phrases: vec![],
-            macros: vec![],
             predictions: vec![],
-            head_tracking_settings: json!({}),
         };
         fs::write(
             dir.join("profiles").join(filename),
@@ -636,6 +540,67 @@ mod tests {
         // was updated. The IO lock forbids that corruption path.
         assert_eq!(a_color, "#aaa");
 
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn import_tolerates_legacy_head_tracking_and_phrase_fields() {
+        let root = temp_dir();
+        let db = Database::new(root.clone()).expect("db");
+        fs::create_dir_all(root.join("profiles")).unwrap();
+        let legacy = json!({
+            "name": "Legacy",
+            "settings": {
+                "uiLanguage": "en",
+                "appBgColor": "#legacy",
+                "quickActionsVisible": true,
+                "phrasesVisible": true,
+                "largeHeaders": true,
+                "headTrackingEnabled": true,
+                "emergencyVisible": true,
+                "precisionMode": true
+            },
+            "quick_actions": [],
+            "phrase_categories": [],
+            "phrases": [],
+            "macros": [],
+            "predictions": [],
+            "head_tracking_settings": { "sensitivity": 5 }
+        });
+        fs::write(
+            root.join("profiles").join("legacy.profile.json"),
+            serde_json::to_string_pretty(&legacy).unwrap(),
+        )
+        .unwrap();
+        let store = ProfileStore::new(&root).expect("store");
+        store
+            .load_profile_file(&db, "legacy.profile.json")
+            .expect("legacy import");
+        let exported = export_profile_from_db(&db, INTERNAL_PROFILE_ID).expect("export");
+        let wire = serde_json::to_value(&exported).unwrap();
+        assert!(wire.get("head_tracking_settings").is_none());
+        assert!(wire.get("phrases").is_none());
+        assert!(wire.get("quick_actions").is_none());
+        assert_eq!(
+            exported
+                .settings
+                .get("appBgColor")
+                .and_then(|v| v.as_str()),
+            Some("#legacy")
+        );
+        for key in [
+            "quickActionsVisible",
+            "phrasesVisible",
+            "largeHeaders",
+            "headTrackingEnabled",
+            "emergencyVisible",
+            "precisionMode",
+        ] {
+            assert!(
+                exported.settings.get(key).is_none(),
+                "removed setting {key} must not survive import/export"
+            );
+        }
         let _ = fs::remove_dir_all(&root);
     }
 

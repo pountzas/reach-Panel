@@ -180,10 +180,7 @@ export const el: Record<keyof typeof en, string> = {
 
   focusModeCollapse: "Επιστροφή στη λειτουργία εστίασης",
 
-  largeHeaders: "Μεγάλα headers για εύκολη αλλαγή μεγέθους",
 
-  largeHeadersHint:
-    "Διπλασιάζει το ύψος των headers και τα κουμπιά τους. Σύρετε την κενή περιοχή του header για να αλλάξετε το ύψος ενότητας ή παραθύρου.",
 
   primary: "Κύρια",
 
@@ -211,13 +208,9 @@ export const el: Record<keyof typeof en, string> = {
 
   speedVeryFast: "Πολύ γρήγορη",
 
-  quickActions: "Γρήγορες ενέργειες",
 
-  showQuickActionsBar: "Εμφάνιση γρήγορων ενεργειών",
 
-  phrasesAndSuggestions: "Φράσεις & Προτάσεις",
 
-  showPhrasesSection: "Εμφάνιση φράσεων",
 
   showSuggestionsBar: "Εμφάνιση προτάσεων",
 
@@ -337,15 +330,10 @@ export const el: Record<keyof typeof en, string> = {
 
   dragToMove: "Σύρετε για μετακίνηση",
 
-  macroBuilder: "Δημιουργός μακροεντολών",
 
-  headTracking: "Παρακολούθηση κεφαλής",
 
-  phrases: "Φράσεις",
 
-  emergency: "Επείγον",
 
-  showEmergency: "Επείγον",
 
   predictionsOff: "Οι προτάσεις είναι απενεργοποιημένες",
 
@@ -557,25 +545,15 @@ export const el: Record<keyof typeof en, string> = {
 
   settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
 
-  quickActionLabel: "Ετικέτα",
 
-  quickActionTarget: "Στόχος (εφαρμογή ή URL)",
 
-  quickActionTypeApp: "Εφαρμογή",
 
-  quickActionTypeUrl: "URL",
 
-  quickActionAdd: "Προσθήκη ενέργειας",
 
-  quickActionDelete: "Διαγραφή",
 
-  quickActionSearchApps: "Αναζήτηση εγκατεστημένων προγραμμάτων…",
 
-  quickActionBrowse: "Εξερεύνηση…",
 
-  quickActionLoadingApps: "Φόρτωση εγκατεστημένων προγραμμάτων…",
 
-  quickActionNoApps: "Δεν βρέθηκαν προγράμματα.",
 
   settingsAbout: "Σχετικά",
 

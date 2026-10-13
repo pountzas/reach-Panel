@@ -40,11 +40,6 @@ pub fn is_app_installed(target: &str) -> bool {
     resolve_app_path(target).is_some()
 }
 
-/// Resolve a quick-action app target to an existing `.exe` path when possible.
-pub fn resolve_launch_app_path(target: &str) -> Option<PathBuf> {
-    resolve_app_path(target)
-}
-
 const ICON_CACHE_RETENTION: std::time::Duration = std::time::Duration::from_secs(30 * 24 * 60 * 60);
 
 fn icon_cache_dir(app: &AppHandle) -> Result<PathBuf, String> {

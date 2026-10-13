@@ -68,6 +68,6 @@ Tablet tabs while connected: keyboard, trackpad, numpad, dictation, profile, USB
 ## Known Limitations
 
 - Input injection does not work into elevated (admin) applications or UAC prompts
-- Eye tracking and AutoHotkey import remain future phases
-- Host Windows chrome for mouse panel, phrases, Quick Actions, macros, and head tracking is gated off for v1 and planned for removal; companion keeps trackpad/numpad
+- Host mouse / NumKeypad chrome stays soft-gated for v1; companion keeps trackpad/numpad
+- Phrases, Quick Actions, Macro Builder, head tracking, and related host chrome were removed (#225)
 - **Tablet companion (shipped):** Android-first Expo app in `companion/` pairs over local Wi‑Fi or USB tether to `src-tauri/src/companion/`; tablet owns mic while connected; host-only injection. Design: `docs/superpowers/specs/2026-08-05-tablet-companion-design.md`

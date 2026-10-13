@@ -6,7 +6,6 @@ import {
   type ReactNode,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { QuickActionEditor } from "../quick-actions/QuickActionEditor";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -400,8 +399,6 @@ export function SettingsPanel() {
     setTeachingLesson,
     setLanguagePackId,
     setShowSettings,
-    setShowMacroBuilder,
-    setShowHeadTrackingWizard,
     resetSettingsToDefaults,
     wipeActiveProfile,
     checkForUpdates,
@@ -431,8 +428,6 @@ export function SettingsPanel() {
       setTeachingLesson: s.setTeachingLesson,
       setLanguagePackId: s.setLanguagePackId,
       setShowSettings: s.setShowSettings,
-      setShowMacroBuilder: s.setShowMacroBuilder,
-      setShowHeadTrackingWizard: s.setShowHeadTrackingWizard,
       resetSettingsToDefaults: s.resetSettingsToDefaults,
       wipeActiveProfile: s.wipeActiveProfile,
       checkForUpdates: s.checkForUpdates,
@@ -816,22 +811,6 @@ export function SettingsPanel() {
                 );
               })}
             </ul>
-            {!isV1FeatureHidden("largeHeaders") && (
-              <div className="mt-3">
-                <ToggleRow
-                  label={t("largeHeaders")}
-                  checked={settings.largeHeaders}
-                  onChange={(checked) => updateSettings({ largeHeaders: checked })}
-                  surface={surface}
-                />
-                <p
-                  className="mt-1 px-1 text-xs"
-                  style={{ color: surface.panelMutedText }}
-                >
-                  {t("largeHeadersHint")}
-                </p>
-              </div>
-            )}
           </SettingsSection>
 
           <SettingsSection title={t("taskbarPosition")} surface={surface}>
@@ -1033,22 +1012,6 @@ export function SettingsPanel() {
                   surface={surface}
                 />
               )}
-              {!isV1FeatureHidden("quickActions") && (
-                <ToggleRow
-                  label={t("showQuickActionsBar")}
-                  checked={settings.quickActionsVisible}
-                  onChange={(checked) => updateSettings({ quickActionsVisible: checked })}
-                  surface={surface}
-                />
-              )}
-              {!isV1FeatureHidden("phrases") && (
-                <ToggleRow
-                  label={t("showPhrasesSection")}
-                  checked={settings.phrasesVisible}
-                  onChange={(checked) => updateSettings({ phrasesVisible: checked })}
-                  surface={surface}
-                />
-              )}
               <ToggleRow
                 label={t("showSuggestionsBar")}
                 checked={settings.suggestionsVisible}
@@ -1133,12 +1096,6 @@ export function SettingsPanel() {
                 onChange={(checked) => updateSettings({ mouseBottomRowVisible: checked })}
                 surface={surface}
               />
-            </SettingsSection>
-          )}
-
-          {!isV1FeatureHidden("quickActions") && (
-            <SettingsSection title={t("quickActions")} surface={surface}>
-              <QuickActionEditor surface={surface} />
             </SettingsSection>
           )}
 
@@ -1240,36 +1197,6 @@ export function SettingsPanel() {
           </SettingsSection>
 
           <SettingsSection title={t("settingsToolsMaintenance")} surface={surface}>
-            {(!isV1FeatureHidden("macroBuilder") ||
-              !isV1FeatureHidden("headTracking")) && (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {!isV1FeatureHidden("macroBuilder") && (
-                  <button
-                    type="button"
-                    className="rounded-lg border px-3 py-2 text-sm"
-                    style={secondaryButtonStyle}
-                    onClick={() => {
-                      setShowMacroBuilder(true);
-                    }}
-                  >
-                    {t("macroBuilder")}
-                  </button>
-                )}
-                {!isV1FeatureHidden("headTracking") && (
-                  <button
-                    type="button"
-                    className="rounded-lg border px-3 py-2 text-sm"
-                    style={secondaryButtonStyle}
-                    onClick={() => {
-                      setShowHeadTrackingWizard(true);
-                    }}
-                  >
-                    {t("headTracking")}
-                  </button>
-                )}
-              </div>
-            )}
-
             <div className="mb-4">
               <button
                 type="button"

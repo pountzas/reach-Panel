@@ -4,7 +4,6 @@ mod icons;
 mod input;
 mod installed_apps;
 mod language;
-mod macros;
 mod music;
 mod prediction;
 mod profiles;
@@ -17,7 +16,7 @@ mod window;
 #[cfg(not(target_os = "windows"))]
 compile_error!("ReachPanel is Windows-only. macOS is not supported.");
 
-use db::{Database, MacroDef, MacroStep, Phrase, Profile, QuickAction};
+use db::{Database, Profile};
 use input::focus_target;
 use input::{
     begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position,
@@ -34,7 +33,7 @@ use prediction::{
     list_word_packs, record_usage, uninstall_word_pack, WordPackInfo,
 };
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::Mutex;
 use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tauri::{AppHandle, Manager, State};
@@ -901,39 +900,6 @@ fn cmd_update_profile_settings(
     Ok(())
 }
 
-#[tauri::command]
-fn cmd_get_quick_actions(
-    profile_id: String,
-    state: State<AppState>,
-) -> Result<Vec<QuickAction>, String> {
-    state
-        .db
-        .get_quick_actions(&profile_id)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_save_quick_action(action: QuickAction, state: State<AppState>) -> Result<(), String> {
-    state
-        .db
-        .save_quick_action(&action)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_delete_quick_action(id: String, state: State<AppState>) -> Result<(), String> {
-    state.db.delete_quick_action(&id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_launch_quick_action(
-    app: tauri::AppHandle,
-    action_type: String,
-    target: String,
-) -> Result<(), String> {
-    services::launch_quick_action(&app, &action_type, &target)
-}
-
 /// Returns a cached PNG path for an installed app icon (for `convertFileSrc`), or null.
 #[tauri::command]
 fn cmd_get_app_icon(app: tauri::AppHandle, target: String) -> Option<String> {
@@ -943,60 +909,6 @@ fn cmd_get_app_icon(app: tauri::AppHandle, target: String) -> Option<String> {
 #[tauri::command]
 fn cmd_is_app_installed(target: String) -> bool {
     icons::is_app_installed(&target)
-}
-
-#[tauri::command]
-fn cmd_get_phrases(
-    profile_id: String,
-    language: String,
-    state: State<AppState>,
-) -> Result<Vec<Phrase>, String> {
-    state
-        .db
-        .get_phrases(&profile_id, &language)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_get_phrase_categories(
-    profile_id: String,
-    state: State<AppState>,
-) -> Result<Vec<db::PhraseCategory>, String> {
-    state
-        .db
-        .get_phrase_categories(&profile_id)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn cmd_use_phrase(
-    text: String,
-    action: String,
-    language: String,
-    app: AppHandle,
-    _state: State<'_, AppState>,
-) -> Result<(), String> {
-    let skip_host_tts = companion_tablet_audio_active(&app);
-    tokio::task::spawn_blocking(move || {
-        if action == "type" || action == "both" {
-            type_text(&text).map_err(|e| e.to_string())?;
-        }
-        // While companion owns audio, Speak runs on the tablet — skip host TTS.
-        if !skip_host_tts && (action == "speak" || action == "both") {
-            speak_text(
-                &text,
-                TtsSettings {
-                    rate: 0,
-                    volume: 100,
-                    language,
-                },
-            )
-            .map_err(|e| e.to_string())?;
-        }
-        Ok(())
-    })
-    .await
-    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -1190,98 +1102,6 @@ fn cmd_get_languages() -> Vec<String> {
     get_installed_languages()
 }
 
-#[tauri::command]
-fn cmd_get_macros(profile_id: String, state: State<AppState>) -> Result<Vec<MacroDef>, String> {
-    state.db.get_macros(&profile_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_get_macro_steps(macro_id: String, state: State<AppState>) -> Result<Vec<MacroStep>, String> {
-    state
-        .db
-        .get_macro_steps(&macro_id)
-        .map_err(|e| e.to_string())
-}
-
-#[derive(Debug, Deserialize)]
-struct SaveMacroPayload {
-    macro_def: MacroDef,
-    steps: Vec<MacroStep>,
-}
-
-#[tauri::command]
-fn cmd_save_macro(payload: SaveMacroPayload, state: State<AppState>) -> Result<(), String> {
-    state
-        .db
-        .save_macro(&payload.macro_def, &payload.steps)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_delete_macro(id: String, state: State<AppState>) -> Result<(), String> {
-    state.db.delete_macro(&id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn cmd_run_macro(
-    macro_id: String,
-    app: tauri::AppHandle,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
-    macros::run_macro(&app, &state.db, &macro_id)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_export_macro(macro_id: String, state: State<AppState>) -> Result<String, String> {
-    macros::export_macro(&state.db, &macro_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_import_macro(json: String, state: State<AppState>) -> Result<MacroDef, String> {
-    let macro_def = macros::import_macro(&state.db, &json).map_err(|e| e.to_string())?;
-    state
-        .profiles
-        .save_active_profile(&state.db)
-        .map_err(|e| e.to_string())?;
-    Ok(macro_def)
-}
-
-#[tauri::command]
-fn cmd_get_head_tracking_settings(
-    profile_id: String,
-    state: State<AppState>,
-) -> Result<String, String> {
-    state
-        .db
-        .get_head_tracking_settings(&profile_id)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_save_head_tracking_settings(
-    profile_id: String,
-    settings_json: String,
-    state: State<AppState>,
-) -> Result<(), String> {
-    state
-        .db
-        .save_head_tracking_settings(&profile_id, &settings_json)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_head_tracking_move(dx: i32, dy: i32, state: State<AppState>) -> CommandResult {
-    match move_cursor_relative(dx, dy) {
-        Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
-    }
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1404,15 +1224,8 @@ pub fn run() {
             cmd_upsert_custom_language_pack,
             cmd_delete_custom_language_pack,
             cmd_update_profile_settings,
-            cmd_get_quick_actions,
-            cmd_save_quick_action,
-            cmd_delete_quick_action,
-            cmd_launch_quick_action,
             cmd_get_app_icon,
             cmd_is_app_installed,
-            cmd_get_phrases,
-            cmd_get_phrase_categories,
-            cmd_use_phrase,
             cmd_speak,
             cmd_stop_speaking,
             cmd_list_voices,
@@ -1430,16 +1243,6 @@ pub fn run() {
             cmd_install_word_pack,
             cmd_uninstall_word_pack,
             cmd_get_languages,
-            cmd_get_macros,
-            cmd_get_macro_steps,
-            cmd_save_macro,
-            cmd_delete_macro,
-            cmd_run_macro,
-            cmd_export_macro,
-            cmd_import_macro,
-            cmd_get_head_tracking_settings,
-            cmd_save_head_tracking_settings,
-            cmd_head_tracking_move,
             companion::cmd_companion_start,
             companion::cmd_companion_stop,
             companion::cmd_companion_status,

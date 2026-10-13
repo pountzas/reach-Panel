@@ -177,10 +177,7 @@ export const fr: Record<keyof typeof en, string> = {
 
   focusModeCollapse: "Retour au mode Focus",
 
-  largeHeaders: "En-têtes larges pour un redimensionnement plus facile",
 
-  largeHeadersHint:
-    "Double la hauteur des en-têtes et des boutons. Faites glisser la zone vide de l’en-tête pour changer la hauteur de la section ou de la fenêtre.",
 
   primary: "Principal",
 
@@ -208,13 +205,9 @@ export const fr: Record<keyof typeof en, string> = {
 
   speedVeryFast: "Très rapide",
 
-  quickActions: "Actions rapides",
 
-  showQuickActionsBar: "Afficher la barre d’actions rapides",
 
-  phrasesAndSuggestions: "Phrases et suggestions",
 
-  showPhrasesSection: "Afficher la section phrases",
 
   showSuggestionsBar: "Afficher la barre de suggestions",
 
@@ -333,15 +326,10 @@ export const fr: Record<keyof typeof en, string> = {
 
   dragToMove: "Glisser pour déplacer",
 
-  macroBuilder: "Créateur de macros",
 
-  headTracking: "Suivi de tête",
 
-  phrases: "Phrases",
 
-  emergency: "Urgence",
 
-  showEmergency: "Urgence",
 
   predictionsOff: "Prédictions désactivées",
 
@@ -550,25 +538,15 @@ export const fr: Record<keyof typeof en, string> = {
 
   settingsToolsMaintenance: "Outils et maintenance",
 
-  quickActionLabel: "Libellé",
 
-  quickActionTarget: "Cible (app ou URL)",
 
-  quickActionTypeApp: "App",
 
-  quickActionTypeUrl: "URL",
 
-  quickActionAdd: "Ajouter une action",
 
-  quickActionDelete: "Supprimer",
 
-  quickActionSearchApps: "Rechercher des programmes installés…",
 
-  quickActionBrowse: "Parcourir…",
 
-  quickActionLoadingApps: "Chargement des programmes installés…",
 
-  quickActionNoApps: "Aucun programme correspondant.",
 
   settingsAbout: "À propos",
 

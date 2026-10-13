@@ -192,10 +192,7 @@ export const en = {
 
   focusModeCollapse: "Back to Focus mode",
 
-  largeHeaders: "Large headers for easier resize",
 
-  largeHeadersHint:
-    "Doubles header height and header buttons. Drag the empty header area to change section or window height.",
 
   primary: "Primary",
 
@@ -223,13 +220,9 @@ export const en = {
 
   speedVeryFast: "Very fast",
 
-  quickActions: "Quick Actions",
 
-  showQuickActionsBar: "Show quick actions bar",
 
-  phrasesAndSuggestions: "Phrases & Suggestions",
 
-  showPhrasesSection: "Show phrases section",
 
   showSuggestionsBar: "Show suggestions bar",
 
@@ -283,7 +276,7 @@ export const en = {
 
   appLanguage: "App language",
 
-  appLanguageHint: "Menus, phrases, and speech",
+  appLanguageHint: "Menus and speech",
 
   launchAtWindowsSignIn: "Start ReachPanel when Windows starts",
 
@@ -322,15 +315,15 @@ export const en = {
   resetUi: "Reset UI",
 
   resetUiHint:
-    "Restores all settings (theme, visibility, layout, languages) to defaults. Keeps quick actions, macros, phrases, and predictions.",
+    "Restores all settings (theme, visibility, layout, languages) to defaults. Keeps predictions.",
 
   wipeProfile: "Wipe profile",
 
   wipeProfileHint:
-    "Clears quick actions, macros, phrases, predictions, and head tracking, and resets all settings to defaults.",
+    "Clears predictions and resets all settings to defaults.",
 
   wipeProfileConfirm:
-    "Wipe this profile? All quick actions, macros, phrases, predictions, and settings will be reset.",
+    "Wipe this profile? All predictions and settings will be reset.",
 
   saveProfile: "Save profile",
 
@@ -351,15 +344,10 @@ export const en = {
 
   dragToMove: "Drag to move",
 
-  macroBuilder: "Macro Builder",
 
-  headTracking: "Head Tracking",
 
-  phrases: "Phrases",
 
-  emergency: "Emergency",
 
-  showEmergency: "Emergency",
 
   predictionsOff: "Predictions off",
 
@@ -569,25 +557,15 @@ export const en = {
 
   settingsToolsMaintenance: "Tools & Maintenance",
 
-  quickActionLabel: "Label",
 
-  quickActionTarget: "Target (app or URL)",
 
-  quickActionTypeApp: "App",
 
-  quickActionTypeUrl: "URL",
 
-  quickActionAdd: "Add action",
 
-  quickActionDelete: "Delete",
 
-  quickActionSearchApps: "Search installed programs…",
 
-  quickActionBrowse: "Browse…",
 
-  quickActionLoadingApps: "Loading installed programs…",
 
-  quickActionNoApps: "No matching programs found.",
 
   settingsAbout: "About",
 
