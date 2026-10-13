@@ -190,7 +190,7 @@ pub fn satellite_matches_remembered_owner(
         || (current_hwnd != 0 && hwnd != 0 && current_hwnd == hwnd)
 }
 
-pub(super) fn live_last_real_text_focus() -> Option<(u32, usize)> {
+fn live_last_real_text_focus() -> Option<(u32, usize)> {
     let guard = LAST_REAL_TEXT_FOCUS.lock().ok()?;
     let last = guard.as_ref()?;
     if !is_last_real_text_focus_live(last.at, Instant::now()) {
@@ -233,11 +233,11 @@ pub(super) fn clear_last_real_text_focus() {
     }
 }
 
-pub(super) fn uia_element_process_id(element: &IUIAutomationElement) -> u32 {
+fn uia_element_process_id(element: &IUIAutomationElement) -> u32 {
     unsafe { element.CurrentProcessId().ok().map(|pid| pid as u32) }.unwrap_or(0)
 }
 
-pub(super) fn uia_element_hwnd_usize(element: &IUIAutomationElement) -> usize {
+fn uia_element_hwnd_usize(element: &IUIAutomationElement) -> usize {
     unsafe {
         element
             .CurrentNativeWindowHandle()
@@ -282,7 +282,7 @@ pub(super) fn uia_ancestor_is_autocomplete_satellite(
     false
 }
 
-pub(super) fn ensure_com_for_uia() {
+fn ensure_com_for_uia() {
     // Per-thread: CoInitializeEx is required on each thread that uses COM/UIA.
     // S_FALSE / RPC_E_CHANGED_MODE are fine if already initialized.
     unsafe {
@@ -431,7 +431,7 @@ pub(super) fn uia_caret_point(element: &IUIAutomationElement) -> Option<(i32, i3
     }
 }
 
-pub(super) fn text_range_caret_point(range: &IUIAutomationTextRange) -> Option<(i32, i32)> {
+fn text_range_caret_point(range: &IUIAutomationTextRange) -> Option<(i32, i32)> {
     if let Some(pt) = bounding_rect_center(range) {
         return Some(pt);
     }
@@ -448,14 +448,14 @@ pub(super) fn text_range_caret_point(range: &IUIAutomationTextRange) -> Option<(
     }
 }
 
-pub(super) fn bounding_rect_center(range: &IUIAutomationTextRange) -> Option<(i32, i32)> {
+fn bounding_rect_center(range: &IUIAutomationTextRange) -> Option<(i32, i32)> {
     unsafe {
         let psa = range.GetBoundingRectangles().ok()?;
         first_rect_center(psa)
     }
 }
 
-pub(super) fn first_rect_center(psa: *mut SAFEARRAY) -> Option<(i32, i32)> {
+fn first_rect_center(psa: *mut SAFEARRAY) -> Option<(i32, i32)> {
     if psa.is_null() {
         return None;
     }

@@ -47,7 +47,7 @@ pub(super) fn window_class_name(hwnd: HWND) -> String {
 }
 
 /// Desktop / taskbar are not typing targets.
-pub(super) fn is_shell_window(hwnd: HWND) -> bool {
+fn is_shell_window(hwnd: HWND) -> bool {
     let class = window_class_name(hwnd);
     matches!(
         class.as_str(),

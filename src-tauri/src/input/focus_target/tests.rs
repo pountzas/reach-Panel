@@ -1,10 +1,13 @@
+use super::uia::{
+    classify_aria_role, combo_box_accepts_text, is_last_real_text_focus_live,
+    satellite_matches_remembered_owner, should_retain_text_focus, uia_control_is_text_input,
+    uia_signals_are_autocomplete_satellite, AriaRoleKind, UiaTextInputSignals,
+    LAST_REAL_TEXT_FOCUS_TTL,
+};
+use super::win32::{host_is_chromium, is_editable_class};
 use super::{
-    classify_aria_role, combo_box_accepts_text, host_is_chromium, is_editable_class,
-    is_last_real_text_focus_live, line_strip_bounds, resolve_bounds_with_sticky,
-    satellite_matches_remembered_owner, should_retain_text_focus, sticky_rect_for_target,
-    uia_control_is_text_input, uia_signals_are_autocomplete_satellite, AriaRoleKind,
-    ScreenRect, UiaTextInputSignals, LAST_REAL_TEXT_FOCUS_TTL, LINE_STRIP_HEIGHT,
-    LINE_STRIP_WIDTH,
+    line_strip_bounds, resolve_bounds_with_sticky, sticky_rect_for_target, ScreenRect,
+    LINE_STRIP_HEIGHT, LINE_STRIP_WIDTH,
 };
 use std::time::{Duration, Instant};
 

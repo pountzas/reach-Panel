@@ -6,23 +6,16 @@ mod win32;
 #[cfg(test)]
 mod tests;
 
-// Re-exports keep the previous `focus_target::` public API (also used by unit tests).
-#[allow(unused_imports)]
-pub use uia::{
-    classify_aria_role, combo_box_accepts_text, is_autocomplete_satellite_role,
-    is_last_real_text_focus_live, satellite_matches_remembered_owner, should_retain_text_focus,
-    uia_control_is_text_input, uia_signals_are_autocomplete_satellite, AriaRoleKind,
-    UiaTextInputSignals, LAST_REAL_TEXT_FOCUS_TTL,
-};
 pub use win32::{host_is_chromium, is_editable_class, is_valid_typing_target};
 
 use uia::{
     clear_last_real_text_focus, note_text_focus, previously_text_focused,
-    uia_ancestor_is_autocomplete_satellite, uia_caret_point,
-    uia_element_belongs_to_remembered_text_focus, uia_element_aria_role, uia_element_bounds,
-    uia_element_framework_id, uia_element_has_text_pattern, uia_element_is_our_process,
-    uia_element_native_class, uia_element_text_pattern_editable, uia_element_value_writable,
-    with_uia,
+    should_retain_text_focus, uia_ancestor_is_autocomplete_satellite, uia_caret_point,
+    uia_control_is_text_input, uia_element_belongs_to_remembered_text_focus,
+    uia_element_aria_role, uia_element_bounds, uia_element_framework_id,
+    uia_element_has_text_pattern, uia_element_is_our_process, uia_element_native_class,
+    uia_element_text_pattern_editable, uia_element_value_writable,
+    uia_signals_are_autocomplete_satellite, with_uia, UiaTextInputSignals,
 };
 use win32::{
     bring_to_foreground, gui_thread_info, hwnd_or_ancestor_is_editable, hwnd_to_usize,
