@@ -9,8 +9,7 @@ import {
   noteIdToMidi,
   type PianoKey,
 } from "../../lib/music/pianoKeys";
-import { useKeyPress, type ActiveVoice } from "./useKeyPress";
-import { useStickyModifiers } from "../../hooks/useStickyModifiers";
+import { useSynthKeyPress, type ActiveVoice } from "./useSynthKeyPress";
 import { getSongById, songBeatSeconds } from "../../lib/music/songs";
 
 /** Keep short allegro notes audible even when slot spacing is very tight. */
@@ -248,9 +247,6 @@ export function Synthesizer() {
     [ensureAudio],
   );
 
-  // Sticky modifiers unused on piano; import keeps the shared hook surface for this module.
-  useStickyModifiers();
-
   const {
     pressedKeys,
     onPianoPointerDown,
@@ -258,7 +254,7 @@ export function Synthesizer() {
     onPianoPointerUp,
     onPianoLostPointerCapture,
     clearActivePointers,
-  } = useKeyPress({
+  } = useSynthKeyPress({
     pianoRef,
     keyById,
     targetKeyIdRef,

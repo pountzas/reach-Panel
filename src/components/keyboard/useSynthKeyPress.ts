@@ -30,7 +30,7 @@ type UseSynthKeyPressArgs = {
 };
 
 /** Pointer → piano key press/release for the synthesizer. */
-export function useKeyPress({
+export function useSynthKeyPress({
   pianoRef,
   keyById,
   targetKeyIdRef,

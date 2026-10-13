@@ -30,7 +30,7 @@ import { effectiveKeyboardFontSize } from "../../lib/keyboardFontSize";
 import { isTransparentUiActive, transparentKeyPalette } from "../../lib/focusMode";
 import { inject } from "./keyboardUtils";
 import { useStickyModifiers } from "../../hooks/useStickyModifiers";
-import { useKeyPress } from "../../hooks/useKeyPress";
+import { useKeyboardKeyPress } from "./useKeyboardKeyPress";
 
 export function Keyboard() {
   const settings = useAppStore((s) => s.settings);
@@ -184,7 +184,7 @@ export function Keyboard() {
       hkl: physicalKeyState.systemHkl || null,
     });
 
-  const handleKey = useKeyPress({
+  const handleKey = useKeyboardKeyPress({
     pollKeyboardState,
     pollError,
     loadInputMethods,

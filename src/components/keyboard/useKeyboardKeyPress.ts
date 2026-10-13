@@ -1,13 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
-import { isLanguageLessonCaptureActive } from "../lib/language";
-import { isFnMappedKey, resolveKeyOutput, type KeyDef } from "../lib/keyboardLayouts";
-import type { LayoutKeyTranslation } from "../lib/layoutKeyTranslation";
+import { isLanguageLessonCaptureActive } from "../../lib/language";
+import { isFnMappedKey, resolveKeyOutput, type KeyDef } from "../../lib/keyboardLayouts";
+import type { LayoutKeyTranslation } from "../../lib/layoutKeyTranslation";
+import type { AppSettings } from "../../lib/types";
 import {
   clearModifiersAfterKey,
   greekTranslateOptions,
   openLanguagePicker,
-} from "../components/keyboard/keyboardUtils";
-import type { AppSettings } from "../lib/types";
+} from "./keyboardUtils";
 
 export type KeyPressContext = {
   pollKeyboardState: () => Promise<void> | void;
@@ -66,7 +66,7 @@ export type KeyPressContext = {
   checkLanguageAnswer: () => void;
 };
 
-export function useKeyPress(ctx: KeyPressContext) {
+export function useKeyboardKeyPress(ctx: KeyPressContext) {
   const handleKey = async (
       keyDef: KeyDef,
       options?: { deferSuggestions?: boolean },
