@@ -235,7 +235,6 @@ Windows installers are built in CI and published automatically when a [release-p
 
 ## Roadmap
 
-- Eye tracking support
 - iOS companion (TestFlight)
 
 ## Known limitations
