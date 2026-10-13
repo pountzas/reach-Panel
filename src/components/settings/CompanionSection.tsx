@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import type { SurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
 import { APP_INFO, openExternalLink } from "../../lib/appInfo";
+import { logIpc } from "../../lib/logIpc";
 import { notify } from "../../lib/notify";
 import { useTranslation } from "../../hooks/useTranslation";
 import {
@@ -117,7 +118,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
       setStatus(event.payload);
       void invoke<PairedDevice[]>("cmd_companion_list_devices")
         .then(setDevices)
-        .catch(() => undefined);
+        .catch(logIpc("cmd_companion_list_devices"));
     });
     return () => {
       void unlisten.then((fn) => fn());

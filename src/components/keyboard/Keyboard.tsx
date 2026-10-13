@@ -21,6 +21,8 @@ import {
   createSerialCoalesceGate,
   type SerialCoalesceGate,
 } from "../../lib/keyRepeat";
+import { commandFailure } from "../../lib/logIpc";
+import type { CommandResult } from "../../lib/types";
 import { KeyButton } from "./KeyButton";
 import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
@@ -54,7 +56,7 @@ export function Keyboard() {
   const setTypedBuffer = useAppStore((s) => s.setTypedBuffer);
   const loadSuggestions = useAppStore((s) => s.loadSuggestions);
   const recordTypedWord = useAppStore((s) => s.recordTypedWord);
-  const pollError = useAppStore((s) => s.pollError);
+  const setLastError = useAppStore((s) => s.setLastError);
   const inputMethods = useAppStore((s) => s.inputMethods);
   const layoutKeyLabels = useAppStore((s) => s.layoutKeyLabels);
   const languagePickerOpen = useAppStore((s) => s.languagePickerOpen);
@@ -197,11 +199,12 @@ export function Keyboard() {
     const deferSuggestions = options?.deferSuggestions === true;
 
     if (key === "capslock") {
-      await invoke("cmd_press_key", {
+      const result = await invoke<CommandResult>("cmd_press_key", {
         request: { key: "capslock", modifiers: [] },
       });
       await pollKeyboardState();
-      await pollError();
+      const failure = commandFailure(result);
+      if (failure) setLastError(failure);
       return;
     }
 
@@ -211,7 +214,6 @@ export function Keyboard() {
         languagePickerOpen,
         setLanguagePickerOpen,
       );
-      await pollError();
       return;
     }
 
@@ -219,7 +221,6 @@ export function Keyboard() {
       if (!dictateDisabled) {
         await toggleDictation();
       }
-      await pollError();
       return;
     }
 
@@ -388,20 +389,29 @@ export function Keyboard() {
           hkl: physicalKeyState.systemHkl || null,
         });
       }
-      await invoke("cmd_press_key", { request: { key: "backspace", modifiers: [] } });
+      {
+        const result = await invoke<CommandResult>("cmd_press_key", {
+          request: { key: "backspace", modifiers: [] },
+        });
+        const failure = commandFailure(result);
+        if (failure) setLastError(failure);
+      }
       if (!deferSuggestions) {
         await loadSuggestions();
       }
-      await pollError();
       return;
     }
 
     if (key === "enter") {
       await recordTypedWord();
       setTypedBuffer("");
-      await invoke("cmd_press_key", {
-        request: { key: "enter", modifiers: [...activeModifiers] },
-      });
+      {
+        const result = await invoke<CommandResult>("cmd_press_key", {
+          request: { key: "enter", modifiers: [...activeModifiers] },
+        });
+        const failure = commandFailure(result);
+        if (failure) setLastError(failure);
+      }
       clearModifiersAfterKey(
         settings.fnKeyMode,
         activeModifiers,
@@ -410,7 +420,6 @@ export function Keyboard() {
         clearSticky,
       );
       await loadSuggestions();
-      await pollError();
       return;
     }
 
@@ -418,9 +427,11 @@ export function Keyboard() {
       await recordTypedWord();
       const inject = typeCharacter(" ");
       if (inject) {
-        await invoke("cmd_press_key", {
+        const result = await invoke<CommandResult>("cmd_press_key", {
           request: { key: "space", modifiers: [...activeModifiers] },
         });
+        const failure = commandFailure(result);
+        if (failure) setLastError(failure);
       }
       clearModifiersAfterKey(
         settings.fnKeyMode,
@@ -430,7 +441,6 @@ export function Keyboard() {
         clearSticky,
       );
       await loadSuggestions();
-      await pollError();
       return;
     }
 
@@ -448,13 +458,15 @@ export function Keyboard() {
         ),
       );
       if (inject) {
-        await invoke("cmd_press_key", {
+        const result = await invoke<CommandResult>("cmd_press_key", {
           request: {
             key: inject,
             modifiers: [...activeModifiers],
             physicalKey: keyDef.physicalKey,
           },
         });
+        const failure = commandFailure(result);
+        if (failure) setLastError(failure);
       }
       clearModifiersAfterKey(
         settings.fnKeyMode,
@@ -464,7 +476,6 @@ export function Keyboard() {
         clearSticky,
       );
       await loadSuggestions();
-      await pollError();
       return;
     }
 
@@ -478,18 +489,22 @@ export function Keyboard() {
     if (output.length === 1 || keyDef.physicalKey) {
       const inject = typeCharacter(output, { physicalKey: keyDef.physicalKey });
       if (inject) {
-        await invoke("cmd_press_key", {
+        const result = await invoke<CommandResult>("cmd_press_key", {
           request: {
             key: inject,
             modifiers: [...activeModifiers],
             physicalKey: keyDef.physicalKey,
           },
         });
+        const failure = commandFailure(result);
+        if (failure) setLastError(failure);
       }
     } else {
-      await invoke("cmd_press_key", {
+      const result = await invoke<CommandResult>("cmd_press_key", {
         request: { key: output, modifiers: [...activeModifiers] },
       });
+      const failure = commandFailure(result);
+      if (failure) setLastError(failure);
     }
     clearModifiersAfterKey(
       settings.fnKeyMode,
@@ -499,7 +514,6 @@ export function Keyboard() {
       clearSticky,
     );
     await loadSuggestions();
-    await pollError();
   };
 
   const dictateBgColor = transparent

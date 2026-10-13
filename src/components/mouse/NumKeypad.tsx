@@ -4,6 +4,8 @@ import { KeyButton } from "../keyboard/KeyButton";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
 import { effectiveKeyboardFontSize } from "../../lib/keyboardFontSize";
+import { commandFailure } from "../../lib/logIpc";
+import type { CommandResult } from "../../lib/types";
 
 const NUMPAD_ROW_COUNT = 5;
 
@@ -35,7 +37,7 @@ const NUMPAD_KEYS: NumpadKeyDef[] = [
 
 export function NumKeypad() {
   const settings = useAppStore((s) => s.settings);
-  const pollError = useAppStore((s) => s.pollError);
+  const setLastError = useAppStore((s) => s.setLastError);
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const { keyHeight, spacing } = computeKeyMetrics(height, NUMPAD_ROW_COUNT);
   const fontSize = effectiveKeyboardFontSize(
@@ -44,8 +46,11 @@ export function NumKeypad() {
   );
 
   const handleKey = async (key: string) => {
-    await invoke("cmd_press_key", { request: { key, modifiers: [] } });
-    await pollError();
+    const result = await invoke<CommandResult>("cmd_press_key", {
+      request: { key, modifiers: [] },
+    });
+    const failure = commandFailure(result);
+    if (failure) setLastError(failure);
   };
 
   return (

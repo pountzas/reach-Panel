@@ -6,10 +6,12 @@ import { usePressableButton } from "../../hooks/usePressableButton";
 import { HoverTooltip } from "../common/HoverTooltip";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 import { getSurfaceColors } from "../../lib/colorProfiles";
+import { commandFailure, logIpc } from "../../lib/logIpc";
 import {
   MOUSE_SPEED_MULTIPLIERS,
   resolveMouseSpeed,
 } from "../../lib/mouseSpeed";
+import type { CommandResult } from "../../lib/types";
 import {
   DoubleClickIcon,
   DragLockIcon,
@@ -99,7 +101,7 @@ function TrackpadButton({
 
 export function Trackpad() {
   const settings = useAppStore((s) => s.settings);
-  const pollError = useAppStore((s) => s.pollError);
+  const setLastError = useAppStore((s) => s.setLastError);
   const { ref, width } = useContainerSize<HTMLDivElement>();
   const compact = settings.inputAreaCompact;
   const showBottomRow = settings.mouseBottomRowVisible;
@@ -142,7 +144,9 @@ export function Trackpad() {
       gestureReady.current = false;
       if (dragging.current) {
         dragging.current = false;
-        void invoke("cmd_trackpad_gesture_end").catch(() => {});
+        void invoke("cmd_trackpad_gesture_end").catch(
+          logIpc("cmd_trackpad_gesture_end"),
+        );
       }
     };
   }, []);
@@ -157,21 +161,29 @@ export function Trackpad() {
     if (dx === 0 && dy === 0) return;
     pendingDelta.current = { dx: 0, dy: 0 };
     ipcInFlight.current = true;
-    void invoke("cmd_move_cursor_relative", { dx, dy })
-      .catch(() => {})
+    void invoke<CommandResult>("cmd_move_cursor_relative", { dx, dy })
+      .then((result) => {
+        const failure = commandFailure(result);
+        if (failure) logIpc("cmd_move_cursor_relative")(failure);
+      })
+      .catch(logIpc("cmd_move_cursor_relative"))
       .finally(() => {
         ipcInFlight.current = false;
       });
   };
 
   const fireLeftClick = async () => {
-    await invoke("cmd_mouse_click", { button: "left" });
-    await pollError();
+    const result = await invoke<CommandResult>("cmd_mouse_click", {
+      button: "left",
+    });
+    const failure = commandFailure(result);
+    if (failure) setLastError(failure);
   };
 
   const fireDoubleClick = async () => {
-    await invoke("cmd_mouse_double_click");
-    await pollError();
+    const result = await invoke<CommandResult>("cmd_mouse_double_click");
+    const failure = commandFailure(result);
+    if (failure) setLastError(failure);
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -185,19 +197,31 @@ export function Trackpad() {
     const gen = ++gestureGen.current;
     dragging.current = true;
     gestureReady.current = false;
-    void invoke("cmd_trackpad_gesture_begin")
-      .then(() => {
+    void invoke<CommandResult>("cmd_trackpad_gesture_begin")
+      .then((result) => {
+        const failure = commandFailure(result);
+        if (failure) {
+          if (gestureGen.current === gen) {
+            dragging.current = false;
+            gestureReady.current = false;
+            setLastError(failure);
+          }
+          return;
+        }
         if (gestureGen.current !== gen) {
-          void invoke("cmd_trackpad_gesture_end").catch(() => {});
+          void invoke("cmd_trackpad_gesture_end").catch(
+            logIpc("cmd_trackpad_gesture_end"),
+          );
           return;
         }
         gestureReady.current = true;
       })
-      .catch(() => {
+      .catch((error) => {
+        logIpc("cmd_trackpad_gesture_begin")(error);
         if (gestureGen.current === gen) {
           dragging.current = false;
           gestureReady.current = false;
-          void pollError();
+          setLastError(error instanceof Error ? error.message : String(error));
         }
       });
   };
@@ -268,8 +292,12 @@ export function Trackpad() {
 
     const endBackend = () => {
       if (gestureGen.current !== endedGen) return;
-      void invoke("cmd_trackpad_gesture_end")
-        .catch(() => {})
+      void invoke<CommandResult>("cmd_trackpad_gesture_end")
+        .then((result) => {
+          const failure = commandFailure(result);
+          if (failure) logIpc("cmd_trackpad_gesture_end")(failure);
+        })
+        .catch(logIpc("cmd_trackpad_gesture_end"))
         .finally(() => {
           if (gestureGen.current !== endedGen) return;
           if (wasTap) handleTap();
@@ -289,8 +317,12 @@ export function Trackpad() {
       }
       pendingDelta.current = { dx: 0, dy: 0 };
       ipcInFlight.current = true;
-      void invoke("cmd_move_cursor_relative", { dx, dy })
-        .catch(() => {})
+      void invoke<CommandResult>("cmd_move_cursor_relative", { dx, dy })
+        .then((result) => {
+          const failure = commandFailure(result);
+          if (failure) logIpc("cmd_move_cursor_relative")(failure);
+        })
+        .catch(logIpc("cmd_move_cursor_relative"))
         .finally(() => {
           ipcInFlight.current = false;
           if (gestureGen.current !== endedGen) return;
@@ -335,8 +367,11 @@ export function Trackpad() {
           icon={LeftClickIcon}
           {...buttonProps}
           onClick={async () => {
-            await invoke("cmd_mouse_click", { button: "left" });
-            await pollError();
+            const result = await invoke<CommandResult>("cmd_mouse_click", {
+              button: "left",
+            });
+            const failure = commandFailure(result);
+            if (failure) setLastError(failure);
           }}
         />
         <TrackpadButton
@@ -344,8 +379,9 @@ export function Trackpad() {
           icon={DoubleClickIcon}
           {...buttonProps}
           onClick={async () => {
-            await invoke("cmd_mouse_double_click");
-            await pollError();
+            const result = await invoke<CommandResult>("cmd_mouse_double_click");
+            const failure = commandFailure(result);
+            if (failure) setLastError(failure);
           }}
         />
         <TrackpadButton
@@ -353,8 +389,11 @@ export function Trackpad() {
           icon={RightClickIcon}
           {...buttonProps}
           onClick={async () => {
-            await invoke("cmd_mouse_click", { button: "right" });
-            await pollError();
+            const result = await invoke<CommandResult>("cmd_mouse_click", {
+              button: "right",
+            });
+            const failure = commandFailure(result);
+            if (failure) setLastError(failure);
           }}
         />
         {showBottomRow && (
@@ -378,7 +417,12 @@ export function Trackpad() {
               icon={ScrollIcon}
               {...buttonProps}
               onClick={async () => {
-                await invoke("cmd_mouse_scroll", { delta: 120, horizontal: false });
+                const result = await invoke<CommandResult>("cmd_mouse_scroll", {
+                  delta: 120,
+                  horizontal: false,
+                });
+                const failure = commandFailure(result);
+                if (failure) setLastError(failure);
               }}
             />
           </>

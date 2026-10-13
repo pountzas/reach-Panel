@@ -33,7 +33,6 @@ use prediction::{
 };
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
 use serde::Serialize;
-use std::sync::Mutex;
 use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -46,7 +45,6 @@ use window::{
 pub(crate) struct AppState {
     pub(crate) db: Database,
     pub(crate) profiles: ProfileStore,
-    last_error: Mutex<Option<String>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -69,70 +67,35 @@ fn err(e: impl ToString) -> CommandResult {
     }
 }
 
-fn set_error(state: &State<AppState>, message: Option<String>) {
-    if let Ok(mut guard) = state.last_error.lock() {
-        *guard = message;
-    }
-}
-
 #[tauri::command]
-fn get_last_error(state: State<AppState>) -> Option<String> {
-    state.last_error.lock().ok().and_then(|g| g.clone())
-}
-
-#[tauri::command]
-fn cmd_press_key(request: KeyPressRequest, state: State<AppState>) -> CommandResult {
+fn cmd_press_key(request: KeyPressRequest) -> CommandResult {
     match press_key(request) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_type_text(text: String, state: State<AppState>) -> CommandResult {
+fn cmd_type_text(text: String) -> CommandResult {
     match type_text(&text) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_press_combo(keys: Vec<String>, state: State<AppState>) -> CommandResult {
+fn cmd_press_combo(keys: Vec<String>) -> CommandResult {
     match press_combo(keys) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_press_media_key(key: String, state: State<AppState>) -> CommandResult {
+fn cmd_press_media_key(key: String) -> CommandResult {
     match press_media_key(&key) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
@@ -157,24 +120,14 @@ fn cmd_get_input_focused() -> bool {
 }
 
 #[tauri::command]
-fn cmd_set_system_language(
-    language: String,
-    klid: Option<String>,
-    state: State<AppState>,
-) -> CommandResult {
+fn cmd_set_system_language(language: String, klid: Option<String>) -> CommandResult {
     let result = match klid.as_deref() {
         Some(k) if !k.is_empty() => set_input_method_by_language(&language, Some(k)),
         _ => set_system_language(&language),
     };
     match result {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
@@ -184,16 +137,10 @@ fn cmd_get_input_methods() -> Vec<InputMethod> {
 }
 
 #[tauri::command]
-fn cmd_set_input_method(hkl: u64, state: State<AppState>) -> CommandResult {
+fn cmd_set_input_method(hkl: u64) -> CommandResult {
     match set_input_method_by_hkl(hkl) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
@@ -218,62 +165,38 @@ fn cmd_reset_layout_compose_state(hkl: Option<u64>) {
 }
 
 #[tauri::command]
-fn cmd_move_cursor_relative(dx: i32, dy: i32, state: State<AppState>) -> CommandResult {
+fn cmd_move_cursor_relative(dx: i32, dy: i32) -> CommandResult {
     match move_cursor_relative(dx, dy) {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_trackpad_gesture_begin(
-    window: tauri::WebviewWindow,
-    state: State<AppState>,
-) -> CommandResult {
+fn cmd_trackpad_gesture_begin(window: tauri::WebviewWindow) -> CommandResult {
     let hwnd = match window.hwnd() {
         Ok(hwnd) => hwnd.0 as isize,
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            return err(e);
-        }
+        Err(e) => return err(e),
     };
     match begin_trackpad_gesture(hwnd) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_trackpad_gesture_end(state: State<AppState>) -> CommandResult {
+fn cmd_trackpad_gesture_end() -> CommandResult {
     match end_trackpad_gesture() {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_move_cursor_absolute(x: i32, y: i32, state: State<AppState>) -> CommandResult {
+fn cmd_move_cursor_absolute(x: i32, y: i32) -> CommandResult {
     match move_cursor_absolute(x, y) {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
     }
 }
 
@@ -288,35 +211,26 @@ fn cmd_primary_mouse_button_down() -> bool {
 }
 
 #[tauri::command]
-fn cmd_mouse_click(button: String, state: State<AppState>) -> CommandResult {
+fn cmd_mouse_click(button: String) -> CommandResult {
     match mouse_click(&button) {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_mouse_double_click(state: State<AppState>) -> CommandResult {
+fn cmd_mouse_double_click() -> CommandResult {
     match mouse_double_click() {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_mouse_scroll(delta: i32, horizontal: bool, state: State<AppState>) -> CommandResult {
+fn cmd_mouse_scroll(delta: i32, horizontal: bool) -> CommandResult {
     match mouse_scroll(delta, horizontal) {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
     }
 }
 
@@ -1112,7 +1026,6 @@ pub fn run() {
             app.manage(AppState {
                 db,
                 profiles,
-                last_error: Mutex::new(None),
             });
 
             match companion::CompanionBridge::new(&app_data_dir) {
@@ -1153,7 +1066,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            get_last_error,
             cmd_press_key,
             cmd_type_text,
             cmd_press_combo,
