@@ -1,6 +1,6 @@
 import { en } from "./en";
 
-export const fr: Record<keyof typeof en, string> = {
+export const fr = {
   appTitle: "ReachPanel",
 
   collapse: "Réduire",
@@ -22,10 +22,6 @@ export const fr: Record<keyof typeof en, string> = {
   cancel: "Annuler",
 
   add: "Ajouter",
-
-  appNotInstalled: "{app} n’est pas installé.",
-
-  installApp: "Installer",
 
   profile: "Profil",
 
@@ -57,7 +53,6 @@ export const fr: Record<keyof typeof en, string> = {
   teachingLessonMath: "Mathématiques",
 
   teachingLessonLanguage: "Langue",
-
 
   teachingTabSpelling: "Orthographe",
   teachingTabFreeWrite: "Écriture libre",
@@ -146,16 +141,7 @@ export const fr: Record<keyof typeof en, string> = {
   modeTabletsHint:
     "Normal et Focus sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon reste indisponible tant que le pont n’est pas démarré ou qu’aucune tablette n’est appariée ; sélectionné quand une tablette est connectée.",
 
-  focusModeAutoDescription:
-    "Sur un seul écran ou une configuration en miroir, le clavier apparaît automatiquement lorsque vous touchez un champ de saisie.",
-
   focusModeOverrideLabel: "Mode Focus",
-
-  focusModeOverrideAuto: "Automatique",
-
-  focusModeOverrideOn: "Activé",
-
-  focusModeOverrideOff: "Désactivé",
 
   focusModeTransparent: "Clavier transparent",
 
@@ -176,8 +162,6 @@ export const fr: Record<keyof typeof en, string> = {
   transparentKeyColorSilver: "Argent",
 
   focusModeCollapse: "Retour au mode Focus",
-
-
 
   primary: "Principal",
 
@@ -204,10 +188,6 @@ export const fr: Record<keyof typeof en, string> = {
   speedFast: "Rapide",
 
   speedVeryFast: "Très rapide",
-
-
-
-
 
   showSuggestionsBar: "Afficher la barre de suggestions",
 
@@ -289,12 +269,6 @@ export const fr: Record<keyof typeof en, string> = {
 
   languagePortuguese: "Portugais",
 
-
-  resetSettings: "Réinitialiser les paramètres",
-
-  resetSettingsHint:
-    "Restaure la disposition, la position du moniteur, les tailles des panneaux et tous les autres paramètres par défaut.",
-
   resetUi: "Réinitialiser l’interface",
 
   resetUiHint:
@@ -320,24 +294,9 @@ export const fr: Record<keyof typeof en, string> = {
 
   profileWiped: "Profil effacé.",
 
-  layoutEdit: "Modifier la disposition",
-
-  layoutEditDone: "Terminé",
-
   dragToMove: "Glisser pour déplacer",
 
-
-
-
-
-
-  predictionsOff: "Prédictions désactivées",
-
   enable: "Activer",
-
-  suggest: "Suggestion :",
-
-  turnOff: "Désactiver",
 
   inputError: "Erreur de saisie :",
 
@@ -371,8 +330,6 @@ export const fr: Record<keyof typeof en, string> = {
 
   synthesizer: "Synthétiseur",
 
-  synthesizerHint: "Appuyez sur les touches pour jouer des notes",
-
   synthesizerVolume: "Volume",
 
   dictationStart: "Démarrer la dictée",
@@ -385,8 +342,6 @@ export const fr: Record<keyof typeof en, string> = {
 
   dictationErrorNoLanguage:
     "La reconnaissance vocale pour cette langue de saisie n’est pas installée. Ajoutez le pack vocal dans Paramètres Windows → Heure et langue → Parole, puis réessayez.",
-
-  dictationErrorUnavailable: "La dictée vocale n’est disponible que sous Windows.",
 
   dictationErrorSpeechPrivacy:
     "La reconnaissance vocale en ligne est désactivée dans Windows. Activez-la dans Confidentialité et sécurité → Parole, puis réessayez. (Ce n’est pas une demande d’autorisation du micro.)",
@@ -421,10 +376,6 @@ export const fr: Record<keyof typeof en, string> = {
 
   unmute: "Réactiver le son",
 
-  teachMusic: "Enseigner",
-
-  stopTeaching: "Arrêter l’enseignement",
-
   musicLesson: "Leçon de musique",
 
   partiture: "Partition",
@@ -446,10 +397,6 @@ export const fr: Record<keyof typeof en, string> = {
   builtInSongs: "Intégrées",
 
   importedSongs: "Importées",
-
-  playingNote: "Lecture",
-
-  waitingForNote: "Jouer",
 
   lessonComplete: "Chanson terminée !",
 
@@ -479,8 +426,6 @@ export const fr: Record<keyof typeof en, string> = {
   octaveCount4: "4 octaves",
 
   octaveCount5: "5 octaves",
-
-  showKeyboardModeToggle: "Afficher la bascule clavier / synthétiseur",
 
   keyboardSectionMode: "Mode de la section clavier",
 
@@ -524,8 +469,6 @@ export const fr: Record<keyof typeof en, string> = {
 
   updateFailed: "Échec de la mise à jour :",
 
-  updateRetry: "Réessayer",
-
   checkForUpdates: "Rechercher les mises à jour",
 
   updateUpToDate: "Vous avez la dernière version.",
@@ -537,16 +480,6 @@ export const fr: Record<keyof typeof en, string> = {
   settingsGeneral: "Général",
 
   settingsToolsMaintenance: "Outils et maintenance",
-
-
-
-
-
-
-
-
-
-
 
   settingsAbout: "À propos",
 
@@ -613,4 +546,4 @@ export const fr: Record<keyof typeof en, string> = {
 
   aboutEmail: "E-mail",
 
-};
+} satisfies Record<keyof typeof en, string>;

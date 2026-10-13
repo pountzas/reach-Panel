@@ -1,8 +1,6 @@
 import { en } from "./en";
 
-
-
-export const el: Record<keyof typeof en, string> = {
+export const el = {
 
   appTitle: "ReachPanel",
 
@@ -25,10 +23,6 @@ export const el: Record<keyof typeof en, string> = {
   cancel: "Ακύρωση",
 
   add: "Προσθήκη",
-
-  appNotInstalled: "Το {app} δεν είναι εγκατεστημένο.",
-
-  installApp: "Εγκατάσταση",
 
   profile: "Προφίλ",
 
@@ -60,7 +54,6 @@ export const el: Record<keyof typeof en, string> = {
   teachingLessonMath: "Μαθηματικά",
 
   teachingLessonLanguage: "Γλώσσα",
-
 
   teachingTabSpelling: "Ορθογραφία",
   teachingTabFreeWrite: "Ελεύθερη γραφή",
@@ -149,16 +142,7 @@ export const el: Record<keyof typeof en, string> = {
   modeTabletsHint:
     "Κανονική και Εστίαση είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή. Ο Συνοδός είναι μη διαθέσιμος μέχρι να ξεκινήσει η γέφυρα ή να συνδεθεί tablet· επιλέγεται όσο είναι συνδεδεμένο.",
 
-  focusModeAutoDescription:
-    "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
-
   focusModeOverrideLabel: "Λειτουργία εστίασης",
-
-  focusModeOverrideAuto: "Αυτόματο",
-
-  focusModeOverrideOn: "Ενεργό",
-
-  focusModeOverrideOff: "Ανενεργό",
 
   focusModeTransparent: "Διαφανές πληκτρολόγιο",
 
@@ -179,8 +163,6 @@ export const el: Record<keyof typeof en, string> = {
   transparentKeyColorSilver: "Ασημί",
 
   focusModeCollapse: "Επιστροφή στη λειτουργία εστίασης",
-
-
 
   primary: "Κύρια",
 
@@ -207,10 +189,6 @@ export const el: Record<keyof typeof en, string> = {
   speedFast: "Γρήγορη",
 
   speedVeryFast: "Πολύ γρήγορη",
-
-
-
-
 
   showSuggestionsBar: "Εμφάνιση προτάσεων",
 
@@ -292,12 +270,6 @@ export const el: Record<keyof typeof en, string> = {
 
   languagePortuguese: "Πορτογαλικά",
 
-  resetSettings: "Επαναφορά ρυθμίσεων",
-
-  resetSettingsHint:
-
-    "Επαναφέρει διάταξη, θέση οθόνης, μεγέθη πάνελ και όλες τις ρυθμίσεις στις προεπιλογές.",
-
   resetUi: "Επαναφορά διεπαφής",
 
   resetUiHint:
@@ -324,24 +296,9 @@ export const el: Record<keyof typeof en, string> = {
 
   profileWiped: "Το προφίλ εκκαθαρίστηκε.",
 
-  layoutEdit: "Επεξεργασία διάταξης",
-
-  layoutEditDone: "Τέλος",
-
   dragToMove: "Σύρετε για μετακίνηση",
 
-
-
-
-
-
-  predictionsOff: "Οι προτάσεις είναι απενεργοποιημένες",
-
   enable: "Ενεργοποίηση",
-
-  suggest: "Πρόταση:",
-
-  turnOff: "Απενεργοποίηση",
 
   inputError: "Σφάλμα εισόδου:",
 
@@ -375,8 +332,6 @@ export const el: Record<keyof typeof en, string> = {
 
   synthesizer: "Συνθετητής",
 
-  synthesizerHint: "Πατήστε πλήκτρα για να παίξετε νότες",
-
   synthesizerVolume: "Ένταση",
 
   dictationStart: "Έναρξη υπαγόρευσης",
@@ -389,9 +344,6 @@ export const el: Record<keyof typeof en, string> = {
 
   dictationErrorNoLanguage:
     "Η αναγνώριση ομιλίας για αυτή τη γλώσσα πληκτρολόγησης δεν είναι εγκατεστημένη. Προσθέστε το πακέτο ομιλίας στις Ρυθμίσεις Windows → Ώρα και γλώσσα → Ομιλία (ή Γλώσσα και περιοχή) και δοκιμάστε ξανά.",
-
-  dictationErrorUnavailable:
-    "Η υπαγόρευση φωνής είναι διαθέσιμη μόνο στα Windows.",
 
   dictationErrorSpeechPrivacy:
     "Η διαδικτυακή αναγνώριση ομιλίας είναι απενεργοποιημένη στα Windows. Ενεργοποιήστε την στις Ρυθμίσεις → Απόρρητο και ασφάλεια → Ομιλία και δοκιμάστε ξανά. (Δεν είναι αίτημα άδειας μικροφώνου.)",
@@ -427,10 +379,6 @@ export const el: Record<keyof typeof en, string> = {
 
   unmute: "Ξεσίγαση",
 
-  teachMusic: "Διδασκαλία",
-
-  stopTeaching: "Διακοπή διδασκαλίας",
-
   musicLesson: "Μάθημα μουσικής",
 
   partiture: "Παρτιτούρα",
@@ -452,10 +400,6 @@ export const el: Record<keyof typeof en, string> = {
   builtInSongs: "Ενσωματωμένα",
 
   importedSongs: "Εισαγμένα",
-
-  playingNote: "Παίζει",
-
-  waitingForNote: "Παίξε",
 
   lessonComplete: "Το τραγούδι ολοκληρώθηκε!",
 
@@ -485,8 +429,6 @@ export const el: Record<keyof typeof en, string> = {
   octaveCount4: "4 οκτάβες",
 
   octaveCount5: "5 οκτάβες",
-
-  showKeyboardModeToggle: "Εμφάνιση εναλλαγής πληκτρολογίου / συνθετητή",
 
   keyboardSectionMode: "Λειτουργία τμήματος πληκτρολογίου",
 
@@ -530,30 +472,17 @@ export const el: Record<keyof typeof en, string> = {
 
   updateFailed: "Η ενημέρωση απέτυχε:",
 
-  updateRetry: "Επανάληψη",
-
   checkForUpdates: "Έλεγχος για ενημερώσεις",
 
   updateUpToDate: "Έχετε την τελευταία έκδοση.",
 
   updateCheckFailed: "Δεν ήταν δυνατός ο έλεγχος για ενημερώσεις.",
 
-
   settingsVisibleSections: "Ορατά τμήματα",
 
   settingsGeneral: "Γενικά",
 
   settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
-
-
-
-
-
-
-
-
-
-
 
   settingsAbout: "Σχετικά",
 
@@ -621,4 +550,4 @@ export const el: Record<keyof typeof en, string> = {
 
   aboutEmail: "Email",
 
-};
+} satisfies Record<keyof typeof en, string>;

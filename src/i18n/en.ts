@@ -22,10 +22,6 @@ export const en = {
 
   add: "Add",
 
-  appNotInstalled: "{app} is not installed.",
-
-  installApp: "Install",
-
   profile: "Profile",
 
   accessibilityScreen: "Accessibility Screen",
@@ -160,16 +156,7 @@ export const en = {
   modeTabletsHint:
     "Normal and Focus are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion stays unavailable until the bridge is started or a tablet is paired; it becomes the selected mode while a tablet is connected.",
 
-  focusModeAutoDescription:
-    "On a single display or mirrored setup, the keyboard appears automatically when you tap an input field.",
-
   focusModeOverrideLabel: "Focus mode",
-
-  focusModeOverrideAuto: "Auto",
-
-  focusModeOverrideOn: "On",
-
-  focusModeOverrideOff: "Off",
 
   focusModeTransparent: "Transparent keyboard",
 
@@ -191,8 +178,6 @@ export const en = {
   transparentKeyColorSilver: "Silver",
 
   focusModeCollapse: "Back to Focus mode",
-
-
 
   primary: "Primary",
 
@@ -219,10 +204,6 @@ export const en = {
   speedFast: "Fast",
 
   speedVeryFast: "Very fast",
-
-
-
-
 
   showSuggestionsBar: "Show suggestions bar",
 
@@ -306,12 +287,6 @@ export const en = {
 
   languagePortuguese: "Portuguese",
 
-  resetSettings: "Reset settings to defaults",
-
-  resetSettingsHint:
-
-    "Restores layout, monitor position, panel sizes, and all other settings to their defaults.",
-
   resetUi: "Reset UI",
 
   resetUiHint:
@@ -338,24 +313,9 @@ export const en = {
 
   profileWiped: "Profile wiped.",
 
-  layoutEdit: "Edit layout",
-
-  layoutEditDone: "Done",
-
   dragToMove: "Drag to move",
 
-
-
-
-
-
-  predictionsOff: "Predictions off",
-
   enable: "Enable",
-
-  suggest: "Suggest:",
-
-  turnOff: "Turn off",
 
   inputError: "Input error:",
 
@@ -389,8 +349,6 @@ export const en = {
 
   synthesizer: "Synthesizer",
 
-  synthesizerHint: "Tap keys to play notes",
-
   synthesizerVolume: "Volume",
 
   dictationStart: "Start dictation",
@@ -403,9 +361,6 @@ export const en = {
 
   dictationErrorNoLanguage:
     "Speech recognition for this typing language is not installed. Add the speech pack in Windows Settings → Time & language → Speech (or Language & region), then try again.",
-
-  dictationErrorUnavailable:
-    "Voice dictation is only available on Windows.",
 
   dictationErrorSpeechPrivacy:
     "Online speech recognition is turned off in Windows. Turn it on in Privacy & security → Speech, then try again. (This is not a microphone permission prompt.)",
@@ -440,10 +395,6 @@ export const en = {
 
   unmute: "Unmute",
 
-  teachMusic: "Teach",
-
-  stopTeaching: "Stop teaching",
-
   musicLesson: "Music lesson",
 
   partiture: "Partiture",
@@ -465,10 +416,6 @@ export const en = {
   builtInSongs: "Built-in",
 
   importedSongs: "Imported",
-
-  playingNote: "Playing",
-
-  waitingForNote: "Play",
 
   lessonComplete: "Song complete!",
 
@@ -498,8 +445,6 @@ export const en = {
   octaveCount4: "4 octaves",
 
   octaveCount5: "5 octaves",
-
-  showKeyboardModeToggle: "Show keyboard / synthesizer toggle",
 
   keyboardSectionMode: "Keyboard section mode",
 
@@ -543,8 +488,6 @@ export const en = {
 
   updateFailed: "Update failed:",
 
-  updateRetry: "Retry",
-
   checkForUpdates: "Check for updates",
 
   updateUpToDate: "You are on the latest version.",
@@ -556,16 +499,6 @@ export const en = {
   settingsGeneral: "General",
 
   settingsToolsMaintenance: "Tools & Maintenance",
-
-
-
-
-
-
-
-
-
-
 
   settingsAbout: "About",
 

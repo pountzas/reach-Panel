@@ -32,18 +32,6 @@ export interface SectionStackState {
   undocked: Partial<Record<StackableSectionId, FloatRect>>;
 }
 
-/** Legacy free-float layout (migration only). */
-export interface LegacySectionLayout {
-  xPct: number;
-  yPct: number;
-  wPct: number;
-  hPct: number;
-  minimized?: boolean;
-  expandedHPct?: number;
-}
-
-export type LegacySectionLayouts = Partial<Record<SectionId, LegacySectionLayout>>;
-
 export interface SectionVisibility {
   teaching: boolean;
 }
@@ -142,48 +130,11 @@ export function normalizeSectionStack(
   };
 }
 
-/**
- * Prefer `sectionStack`; otherwise migrate legacy `sectionLayouts`.
- */
+/** Normalize persisted stack state, or return defaults when absent. */
 export function resolveSectionStack(
   stack: SectionStackState | undefined,
-  legacy: LegacySectionLayouts | undefined,
 ): SectionStackState {
-  if (stack && Array.isArray(stack.order)) {
-    return normalizeSectionStack(stack);
-  }
-  if (legacy && Object.keys(legacy).length > 0) {
-    return migrateLegacySectionLayouts(legacy);
-  }
-  return createDefaultSectionStack();
-}
-
-export function migrateLegacySectionLayouts(
-  legacy: LegacySectionLayouts,
-): SectionStackState {
-  const next = createDefaultSectionStack();
-  const hasExplicitTeaching = legacy.teaching != null;
-  for (const raw of Object.keys(legacy)) {
-    const layout = legacy[raw as SectionId];
-    if (!layout) continue;
-    const id: SectionId | null =
-      raw === "input-row" ? "input-row" : coerceStackableSectionId(raw);
-    if (id == null) continue;
-    if (id === "teaching" && raw !== "teaching" && hasExplicitTeaching) {
-      continue;
-    }
-    next.weights[id] = Math.max(1, layout.hPct);
-    if (layout.minimized) {
-      next.minimized[id] = true;
-      if (layout.expandedHPct != null) {
-        next.expandedWeights = {
-          ...next.expandedWeights,
-          [id]: Math.max(1, layout.expandedHPct),
-        };
-      }
-    }
-  }
-  return next;
+  return normalizeSectionStack(stack);
 }
 
 export function isSectionVisible(
