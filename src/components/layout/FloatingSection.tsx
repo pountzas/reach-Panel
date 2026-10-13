@@ -69,7 +69,7 @@ export function FloatingSection({
     ? teachingLessonTitleKey(teachingLesson)
     : SECTION_TITLE_KEY[id];
   const surface = getSurfaceColors(appBgColor);
-  const headerHeight = headerHeightFor(false);
+  const headerHeight = headerHeightFor();
   const iconSize = "sm" as const;
   const iconClass = "h-3.5 w-3.5";
   const pixels = floatRectToPixels(rect, containerWidth, containerHeight);

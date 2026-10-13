@@ -175,7 +175,9 @@ export const es: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Plateado",
 
-  focusModeCollapse: "Volver al modo enfoque",
+  focusModeCollapse: "Volver al modo enfoque",
+
+
 
   primary: "Principal",
 
@@ -201,7 +203,11 @@ export const es: Record<keyof typeof en, string> = {
 
   speedFast: "Rápida",
 
-  speedVeryFast: "Muy rápida",
+  speedVeryFast: "Muy rápida",
+
+
+
+
 
   showSuggestionsBar: "Mostrar barra de sugerencias",
 
@@ -318,7 +324,12 @@ export const es: Record<keyof typeof en, string> = {
 
   layoutEditDone: "Listo",
 
-  dragToMove: "Arrastrar para mover",
+  dragToMove: "Arrastrar para mover",
+
+
+
+
+
 
   predictionsOff: "Predicciones desactivadas",
 
@@ -525,7 +536,17 @@ export const es: Record<keyof typeof en, string> = {
 
   settingsGeneral: "General",
 
-  settingsToolsMaintenance: "Herramientas y mantenimiento",
+  settingsToolsMaintenance: "Herramientas y mantenimiento",
+
+
+
+
+
+
+
+
+
+
 
   settingsAbout: "Acerca de",
 

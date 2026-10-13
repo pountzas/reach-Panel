@@ -192,7 +192,7 @@ describe("settingsForPersist", () => {
 describe("shouldDelegateAppModeToMain", () => {
   it("delegates tablet changes from Settings so main owns the lesson slot", () => {
     expect(shouldDelegateAppModeToMain("settings")).toBe(true);
-    expect(shouldDelegateAppModeToMain("macro-builder")).toBe(true);
+    expect(shouldDelegateAppModeToMain("dictation-overlay")).toBe(true);
     expect(shouldDelegateAppModeToMain("main")).toBe(false);
   });
 });

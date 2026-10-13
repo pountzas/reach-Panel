@@ -38,8 +38,6 @@ fn default_settings_json(ui_language: &str) -> serde_json::Value {
         "backgroundImageOpacity": 0.35,
         "mouseSpeed": "medium",
         "predictionEnabled": false,
-        "quickActionsVisible": false,
-        "phrasesVisible": false,
         "suggestionsVisible": false,
         "dictationVisible": true,
         "inputPreviewVisible": true,
@@ -47,7 +45,6 @@ fn default_settings_json(ui_language: &str) -> serde_json::Value {
         "taskbarPositionPreference": "bottom",
         "accessibilityMonitorId": 0,
         "collapsed": false,
-        "headTrackingEnabled": false,
         "mouseAutoHide": false,
         "fnKeyMode": "one-shot",
         "keyboardSectionMode": "keyboard",
@@ -58,8 +55,7 @@ fn default_settings_json(ui_language: &str) -> serde_json::Value {
         "synthesizerStartOctave": 3,
         "inputRowRightRatio": 0.28,
         "inputAreaCompact": false,
-        "mouseBottomRowVisible": true,
-        "largeHeaders": false
+        "mouseBottomRowVisible": true
     })
 }
 

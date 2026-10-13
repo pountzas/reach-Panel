@@ -13,6 +13,12 @@ pub struct PublicProfile {
 #[serde(rename_all = "camelCase")]
 pub struct ProfileSnapshot {
     pub profile: PublicProfile,
+    /// Always empty since #225. Kept only so tablet builds that still read
+    /// `snapshot.phrases.length` / `snapshot.quickActions.length` don't crash.
+    /// Remove together with a `PROTOCOL_VERSION` bump.
+    pub phrases: Vec<serde_json::Value>,
+    pub phrase_categories: Vec<serde_json::Value>,
+    pub quick_actions: Vec<serde_json::Value>,
     /// Parsed settings object when valid JSON; otherwise raw string omitted.
     pub settings: serde_json::Value,
 }
@@ -36,6 +42,9 @@ pub fn build_profile_snapshot(db: &Database, profile_id: &str) -> Result<Profile
             name: profile.name,
             created_at: profile.created_at,
         },
+        phrases: Vec::new(),
+        phrase_categories: Vec::new(),
+        quick_actions: Vec::new(),
         settings,
     })
 }

@@ -178,7 +178,9 @@ export const el: Record<keyof typeof en, string> = {
 
   transparentKeyColorSilver: "Ασημί",
 
-  focusModeCollapse: "Επιστροφή στη λειτουργία εστίασης",
+  focusModeCollapse: "Επιστροφή στη λειτουργία εστίασης",
+
+
 
   primary: "Κύρια",
 
@@ -204,7 +206,11 @@ export const el: Record<keyof typeof en, string> = {
 
   speedFast: "Γρήγορη",
 
-  speedVeryFast: "Πολύ γρήγορη",
+  speedVeryFast: "Πολύ γρήγορη",
+
+
+
+
 
   showSuggestionsBar: "Εμφάνιση προτάσεων",
 
@@ -322,7 +328,12 @@ export const el: Record<keyof typeof en, string> = {
 
   layoutEditDone: "Τέλος",
 
-  dragToMove: "Σύρετε για μετακίνηση",
+  dragToMove: "Σύρετε για μετακίνηση",
+
+
+
+
+
 
   predictionsOff: "Οι προτάσεις είναι απενεργοποιημένες",
 
@@ -532,7 +543,17 @@ export const el: Record<keyof typeof en, string> = {
 
   settingsGeneral: "Γενικά",
 
-  settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
+  settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
+
+
+
+
+
+
+
+
+
+
 
   settingsAbout: "Σχετικά",
 

@@ -190,7 +190,9 @@ export const en = {
 
   transparentKeyColorSilver: "Silver",
 
-  focusModeCollapse: "Back to Focus mode",
+  focusModeCollapse: "Back to Focus mode",
+
+
 
   primary: "Primary",
 
@@ -216,7 +218,11 @@ export const en = {
 
   speedFast: "Fast",
 
-  speedVeryFast: "Very fast",
+  speedVeryFast: "Very fast",
+
+
+
+
 
   showSuggestionsBar: "Show suggestions bar",
 
@@ -336,7 +342,12 @@ export const en = {
 
   layoutEditDone: "Done",
 
-  dragToMove: "Drag to move",
+  dragToMove: "Drag to move",
+
+
+
+
+
 
   predictionsOff: "Predictions off",
 
@@ -544,7 +555,17 @@ export const en = {
 
   settingsGeneral: "General",
 
-  settingsToolsMaintenance: "Tools & Maintenance",
+  settingsToolsMaintenance: "Tools & Maintenance",
+
+
+
+
+
+
+
+
+
+
 
   settingsAbout: "About",
 

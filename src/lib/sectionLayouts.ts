@@ -1,19 +1,17 @@
 export const SECTION_HEADER_HEIGHT_PX = 28;
-export const SECTION_HEADER_HEIGHT_LARGE_PX = 56;
 export const APP_HEADER_HEIGHT_PX = 48;
-export const APP_HEADER_HEIGHT_LARGE_PX = 96;
 /** Clamp for user-dragged OS window height ratio (min = 25% of region). */
 export const WINDOW_HEIGHT_RATIO_MIN = 0.25;
 export const WINDOW_HEIGHT_RATIO_MAX = 1;
 /** Shared Normal/Focus default when the user has not set a grip height yet. */
 export const DEFAULT_WINDOW_HEIGHT_RATIO = 0.42;
 
-export function sectionHeaderHeightPx(largeHeaders = false): number {
-  return largeHeaders ? SECTION_HEADER_HEIGHT_LARGE_PX : SECTION_HEADER_HEIGHT_PX;
+export function sectionHeaderHeightPx(): number {
+  return SECTION_HEADER_HEIGHT_PX;
 }
 
-export function appHeaderHeightPx(largeHeaders = false): number {
-  return largeHeaders ? APP_HEADER_HEIGHT_LARGE_PX : APP_HEADER_HEIGHT_PX;
+export function appHeaderHeightPx(): number {
+  return APP_HEADER_HEIGHT_PX;
 }
 
 export function clampWindowHeightRatio(ratio: number): number {

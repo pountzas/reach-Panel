@@ -168,7 +168,6 @@ export function SectionCanvas({
         stack,
         visibility,
         containerSize.height,
-        false,
         STACK_GAP_PX,
       ),
     [stack, visibility, containerSize.height],
@@ -323,7 +322,6 @@ export function SectionCanvas({
           delta,
           containerSize.height,
           visibility,
-          false,
         ),
       );
     },

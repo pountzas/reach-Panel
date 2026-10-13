@@ -10,7 +10,6 @@ import {
 } from "./sectionRegistry";
 import {
   SECTION_HEADER_HEIGHT_PX,
-  SECTION_HEADER_HEIGHT_LARGE_PX,
   sectionHeaderHeightPx,
 } from "./sectionLayouts";
 
@@ -229,13 +228,12 @@ export function resolveDockedSlots(
   stack: SectionStackState,
   visibility: SectionVisibility,
   canvasHeight: number,
-  largeHeaders: boolean,
   gapPx: number = STACK_GAP_PX,
 ): DockedSlot[] {
   const ids = visibleStackSlotIds(stack, visibility);
   if (ids.length === 0 || canvasHeight <= 0) return [];
 
-  const headerH = sectionHeaderHeightPx(largeHeaders);
+  const headerH = sectionHeaderHeightPx();
   const gapsTotal = Math.max(0, ids.length - 1) * gapPx;
 
   type Plan = {
@@ -355,10 +353,9 @@ export function applySplitterDelta(
   deltaPx: number,
   canvasHeight: number,
   visibility: SectionVisibility,
-  largeHeaders: boolean,
 ): SectionStackState {
   if (deltaPx === 0) return stack;
-  const slots = resolveDockedSlots(stack, visibility, canvasHeight, largeHeaders);
+  const slots = resolveDockedSlots(stack, visibility, canvasHeight);
   const upper = slots.find((s) => s.id === upperId);
   const lower = slots.find((s) => s.id === lowerId);
   if (!upper || !lower) return stack;
@@ -578,6 +575,6 @@ export function defaultFloatRectFromSlot(
   );
 }
 
-export function headerHeightFor(largeHeaders: boolean): number {
-  return largeHeaders ? SECTION_HEADER_HEIGHT_LARGE_PX : SECTION_HEADER_HEIGHT_PX;
+export function headerHeightFor(): number {
+  return SECTION_HEADER_HEIGHT_PX;
 }

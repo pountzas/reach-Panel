@@ -269,10 +269,22 @@ impl ProfileStore {
     }
 }
 
+/// Settings keys for features removed in #225. Stripped on import and export so
+/// old profile files still load and new exports never carry them.
+const REMOVED_SETTINGS_KEYS: &[&str] = &[
+    "quickActionsVisible",
+    "phrasesVisible",
+    "largeHeaders",
+    "headTrackingEnabled",
+    "emergencyVisible",
+    "precisionMode",
+];
+
 fn strip_removed_settings_keys(mut settings: serde_json::Value) -> serde_json::Value {
     if let Some(obj) = settings.as_object_mut() {
-        obj.remove("emergencyVisible");
-        obj.remove("precisionMode");
+        for key in REMOVED_SETTINGS_KEYS {
+            obj.remove(*key);
+        }
     }
     settings
 }
@@ -538,7 +550,16 @@ mod tests {
         fs::create_dir_all(root.join("profiles")).unwrap();
         let legacy = json!({
             "name": "Legacy",
-            "settings": { "uiLanguage": "en", "appBgColor": "#legacy" },
+            "settings": {
+                "uiLanguage": "en",
+                "appBgColor": "#legacy",
+                "quickActionsVisible": true,
+                "phrasesVisible": true,
+                "largeHeaders": true,
+                "headTrackingEnabled": true,
+                "emergencyVisible": true,
+                "precisionMode": true
+            },
             "quick_actions": [],
             "phrase_categories": [],
             "phrases": [],
@@ -567,6 +588,19 @@ mod tests {
                 .and_then(|v| v.as_str()),
             Some("#legacy")
         );
+        for key in [
+            "quickActionsVisible",
+            "phrasesVisible",
+            "largeHeaders",
+            "headTrackingEnabled",
+            "emergencyVisible",
+            "precisionMode",
+        ] {
+            assert!(
+                exported.settings.get(key).is_none(),
+                "removed setting {key} must not survive import/export"
+            );
+        }
         let _ = fs::remove_dir_all(&root);
     }
 
