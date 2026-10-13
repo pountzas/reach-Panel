@@ -23,8 +23,8 @@ export const createModeSlice: StateCreator<
   ModeSlice
 > = (set, get) => ({
   restoreStack: [],
-  pushRestore: (reason, patch) => {
-    const next = pushRestoreEntry(get().restoreStack, reason, patch);
+  pushRestore: (reason, patch, options) => {
+    const next = pushRestoreEntry(get().restoreStack, reason, patch, options);
     if (next !== get().restoreStack) {
       set({ restoreStack: next });
     }
@@ -271,12 +271,16 @@ export const createModeSlice: StateCreator<
               ? "mic"
               : "focus"
             : "normal";
-        get().pushRestore("teaching", {
-          mode: previousMode,
-          windowHeightRatio: captureWindowHeightRatioBeforeTeaching(
-            settings.windowHeightRatio,
-          ),
-        });
+        get().pushRestore(
+          "teaching",
+          {
+            mode: previousMode,
+            windowHeightRatio: captureWindowHeightRatioBeforeTeaching(
+              settings.windowHeightRatio,
+            ),
+          },
+          { replace: true },
+        );
         set({ teachingLesson: "language" });
         // Flags on before synthesizer patch so first layout sync sees Teaching.
         await get().enableMusicTeaching();

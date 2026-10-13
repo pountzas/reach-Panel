@@ -37,7 +37,7 @@ export const createCompanionSlice: StateCreator<
         }),
       );
       if (captured != null) {
-        get().pushRestore("companion", { mode: captured });
+        get().pushRestore("companion", { mode: captured }, { replace: true });
       }
       set({
         companionSessionLive: true,

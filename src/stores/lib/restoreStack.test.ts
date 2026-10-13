@@ -23,6 +23,23 @@ describe("restoreStack", () => {
     expect(peekRestore(next, "widePiano")).toEqual({ mouseVisible: true });
   });
 
+  it("pushRestoreEntry with replace swaps the existing frame and moves it to the top", () => {
+    const stack: RestoreStackEntry[] = [
+      { reason: "teaching", patch: { mode: "normal", windowHeightRatio: 0.5 } },
+      { reason: "widePiano", patch: { mouseVisible: true } },
+    ];
+    const next = pushRestoreEntry(
+      stack,
+      "teaching",
+      { mode: "focus", windowHeightRatio: 0.7 },
+      { replace: true },
+    );
+    expect(next).toEqual([
+      { reason: "widePiano", patch: { mouseVisible: true } },
+      { reason: "teaching", patch: { mode: "focus", windowHeightRatio: 0.7 } },
+    ]);
+  });
+
   it("popRestoreEntry removes the most recent matching reason and returns its patch", () => {
     const stack: RestoreStackEntry[] = [
       { reason: "focusMode", patch: { mouseVisible: true } },

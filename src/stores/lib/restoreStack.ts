@@ -20,16 +20,29 @@ export type RestoreStackEntry = {
   patch: RestorePatch;
 };
 
-/** Append a restore frame. No-op when `reason` is already on the stack. */
+/**
+ * Append a restore frame. When `reason` is already on the stack the existing
+ * frame is kept, unless `options.replace` is set: then it is replaced and moved
+ * to the top (use this at mode entry points, which used to overwrite).
+ */
 export function pushRestoreEntry(
   stack: RestoreStackEntry[],
   reason: RestoreReason,
   patch: RestorePatch,
+  options?: { replace?: boolean },
 ): RestoreStackEntry[] {
-  if (stack.some((entry) => entry.reason === reason)) {
+  const index = stack.findIndex((entry) => entry.reason === reason);
+  if (index === -1) {
+    return [...stack, { reason, patch }];
+  }
+  if (options?.replace !== true) {
     return stack;
   }
-  return [...stack, { reason, patch }];
+  return [
+    ...stack.slice(0, index),
+    ...stack.slice(index + 1),
+    { reason, patch },
+  ];
 }
 
 /** Remove the most recent frame with `reason` and return its patch. */

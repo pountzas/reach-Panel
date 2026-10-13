@@ -234,7 +234,11 @@ export interface FocusModeSlice {
 export interface ModeSlice {
   /** LIFO session snapshots for nested mode/mouse restores. */
   restoreStack: RestoreStackEntry[];
-  pushRestore: (reason: RestoreReason, patch: RestorePatch) => void;
+  pushRestore: (
+    reason: RestoreReason,
+    patch: RestorePatch,
+    options?: { replace?: boolean },
+  ) => void;
   popRestore: (reason: RestoreReason) => RestorePatch | null;
   setAppMode: (
     mode: AppModeTablet,

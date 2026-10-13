@@ -312,9 +312,11 @@ export async function refreshFocusModeStateHelper(
 
   if (enabled && !wasActive) {
     const mouseBefore = settings.mouseVisible;
-    get().pushRestore("focusMode", {
-      mouseVisible: mouseBefore,
-    });
+    get().pushRestore(
+      "focusMode",
+      { mouseVisible: mouseBefore },
+      { replace: true },
+    );
     set({
       focusModeActive: true,
       focusModeKeyboardVisible: false,
