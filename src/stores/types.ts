@@ -22,10 +22,14 @@ import type { LayoutKeyTranslation } from "../lib/layoutKeyTranslation";
 import type {
   AppModeTablet,
   CompanionSessionPhase,
-  HostAppMode,
   TeachingSessionPayload,
   WindowHeightRatioBeforeTeaching,
 } from "../lib/appModeLayout";
+import type {
+  RestorePatch,
+  RestoreReason,
+  RestoreStackEntry,
+} from "./lib/restoreStack";
 
 export type LanguageListAuthoringField = "title" | "words";
 
@@ -75,7 +79,6 @@ export interface DictationSlice {
 
 export interface CompanionSlice {
   companionModeActive: boolean;
-  modeBeforeCompanion: HostAppMode | null;
   companionSessionLive: boolean;
   inputPreviewFrame: string | null;
   externalInputFocused: boolean;
@@ -90,9 +93,6 @@ export interface TeachingSlice {
   musicNoteIndex: number;
   musicPlaybackActive: boolean;
   teachingLesson: TeachingLesson;
-  modeBeforeTeaching: "normal" | "focus" | "mic" | null;
-  windowHeightRatioBeforeTeaching: WindowHeightRatioBeforeTeaching;
-  mouseVisibleBeforeWidePiano: boolean | null;
   importedSongs: ImportedMusicSong[];
   customLanguagePacks: LanguagePack[];
   languagePackId: string | null;
@@ -224,7 +224,6 @@ export interface FocusModeSlice {
   focusModeManualExpand: boolean;
   focusModeSuppressAutoShow: boolean;
   modeMenuOpen: boolean;
-  mouseVisibleBeforeFocusMode: boolean | null;
   openModeMenu: () => Promise<void>;
   closeModeMenu: () => Promise<void>;
   refreshFocusModeState: (options?: { animate?: boolean }) => Promise<void>;
@@ -233,6 +232,10 @@ export interface FocusModeSlice {
 }
 
 export interface ModeSlice {
+  /** LIFO session snapshots for nested mode/mouse restores. */
+  restoreStack: RestoreStackEntry[];
+  pushRestore: (reason: RestoreReason, patch: RestorePatch) => void;
+  popRestore: (reason: RestoreReason) => RestorePatch | null;
   setAppMode: (
     mode: AppModeTablet,
     options?: { skipCompanionBridgeStop?: boolean },
@@ -277,3 +280,4 @@ export type AppStore = ErrorsSlice &
   ProfileSlice;
 
 export type { AppModeTablet, WindowHeightRatioBeforeTeaching };
+export type { RestorePatch, RestoreReason, RestoreStackEntry };

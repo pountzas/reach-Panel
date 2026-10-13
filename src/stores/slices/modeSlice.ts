@@ -14,6 +14,7 @@ import { resolveSectionStack, ensureSectionExpanded } from "../../lib/sectionSta
 import { shouldStopCompanionBridgeOnHostMode } from "../../lib/companionSession";
 import { captureWindowHeightRatioBeforeTeaching, heightRatioAfterLeavingTeaching, shouldDelegateAppModeToMain, APP_MODE_REQUEST_EVENT } from "../../lib/appModeLayout";
 import type { AppModeRequest } from "../../lib/appModeLayout";
+import { popRestoreEntry, pushRestoreEntry } from "../lib/restoreStack";
 
 export const createModeSlice: StateCreator<
   AppStore,
@@ -21,6 +22,20 @@ export const createModeSlice: StateCreator<
   [],
   ModeSlice
 > = (set, get) => ({
+  restoreStack: [],
+  pushRestore: (reason, patch) => {
+    const next = pushRestoreEntry(get().restoreStack, reason, patch);
+    if (next !== get().restoreStack) {
+      set({ restoreStack: next });
+    }
+  },
+  popRestore: (reason) => {
+    const { stack, patch } = popRestoreEntry(get().restoreStack, reason);
+    if (stack !== get().restoreStack) {
+      set({ restoreStack: stack });
+    }
+    return patch;
+  },
   setAppMode: async (mode, options) => {
     const skipCompanionBridgeStop = options?.skipCompanionBridgeStop === true;
 
@@ -32,13 +47,13 @@ export const createModeSlice: StateCreator<
           break;
         }
         case "teaching":
+          get().popRestore("companion");
           set({
             companionModeActive: false,
             companionSessionLive: false,
             companionBridgeArmed: skipCompanionBridgeStop
               ? get().companionBridgeArmed
               : false,
-            modeBeforeCompanion: null,
             musicTeachingEnabled: true,
             teachingLesson: "language",
             settings: {
@@ -50,13 +65,13 @@ export const createModeSlice: StateCreator<
           });
           break;
         case "mic":
+          get().popRestore("companion");
           set({
             companionModeActive: false,
             companionSessionLive: false,
             companionBridgeArmed: skipCompanionBridgeStop
               ? get().companionBridgeArmed
               : false,
-            modeBeforeCompanion: null,
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
@@ -70,13 +85,13 @@ export const createModeSlice: StateCreator<
           });
           break;
         case "focus":
+          get().popRestore("companion");
           set({
             companionModeActive: false,
             companionSessionLive: false,
             companionBridgeArmed: skipCompanionBridgeStop
               ? get().companionBridgeArmed
               : false,
-            modeBeforeCompanion: null,
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
@@ -90,13 +105,13 @@ export const createModeSlice: StateCreator<
           });
           break;
         case "normal":
+          get().popRestore("companion");
           set({
             companionModeActive: false,
             companionSessionLive: false,
             companionBridgeArmed: skipCompanionBridgeStop
               ? get().companionBridgeArmed
               : false,
-            modeBeforeCompanion: null,
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
@@ -129,11 +144,11 @@ export const createModeSlice: StateCreator<
           companionModeActive,
         )
       ) {
+        get().popRestore("companion");
         set({
           companionBridgeArmed: false,
           companionModeActive: false,
           companionSessionLive: false,
-          modeBeforeCompanion: null,
         });
         await stopCompanionBridge();
       }
@@ -157,9 +172,12 @@ export const createModeSlice: StateCreator<
       case "normal": {
         set({ companionModeActive: false });
         // Clear teaching first so leavingSynthesizer does not restore Focus.
+        const teachingPatch = inTeaching
+          ? get().popRestore("teaching")
+          : null;
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(
-              state.windowHeightRatioBeforeTeaching,
+              teachingPatch?.windowHeightRatio ?? null,
             )
           : settings.windowHeightRatio;
         if (inTeaching) {
@@ -168,8 +186,6 @@ export const createModeSlice: StateCreator<
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
-            modeBeforeTeaching: null,
-            windowHeightRatioBeforeTeaching: null,
             ...emptyLanguageLessonState(),
           });
         }
@@ -190,9 +206,12 @@ export const createModeSlice: StateCreator<
           focusModeKeyboardVisible: false,
           focusModeManualExpand: false,
         });
+        const teachingPatch = inTeaching
+          ? get().popRestore("teaching")
+          : null;
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(
-              state.windowHeightRatioBeforeTeaching,
+              teachingPatch?.windowHeightRatio ?? null,
             )
           : undefined;
         if (inTeaching) {
@@ -201,8 +220,6 @@ export const createModeSlice: StateCreator<
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
-            modeBeforeTeaching: null,
-            windowHeightRatioBeforeTeaching: null,
             ...emptyLanguageLessonState(),
           });
         }
@@ -217,9 +234,12 @@ export const createModeSlice: StateCreator<
       }
       case "focus": {
         set({ companionModeActive: false });
+        const teachingPatch = inTeaching
+          ? get().popRestore("teaching")
+          : null;
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(
-              state.windowHeightRatioBeforeTeaching,
+              teachingPatch?.windowHeightRatio ?? null,
             )
           : undefined;
         if (inTeaching) {
@@ -228,8 +248,6 @@ export const createModeSlice: StateCreator<
             musicTeachingEnabled: false,
             musicNoteIndex: 0,
             musicPlaybackActive: false,
-            modeBeforeTeaching: null,
-            windowHeightRatioBeforeTeaching: null,
             ...emptyLanguageLessonState(),
           });
         }
@@ -253,12 +271,13 @@ export const createModeSlice: StateCreator<
               ? "mic"
               : "focus"
             : "normal";
-        set({
-          modeBeforeTeaching: previousMode,
-          windowHeightRatioBeforeTeaching:
-            captureWindowHeightRatioBeforeTeaching(settings.windowHeightRatio),
-          teachingLesson: "language",
+        get().pushRestore("teaching", {
+          mode: previousMode,
+          windowHeightRatio: captureWindowHeightRatioBeforeTeaching(
+            settings.windowHeightRatio,
+          ),
         });
+        set({ teachingLesson: "language" });
         // Flags on before synthesizer patch so first layout sync sees Teaching.
         await get().enableMusicTeaching();
         const sectionStack = ensureSectionExpanded(

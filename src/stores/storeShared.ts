@@ -312,25 +312,28 @@ export async function refreshFocusModeStateHelper(
 
   if (enabled && !wasActive) {
     const mouseBefore = settings.mouseVisible;
+    get().pushRestore("focusMode", {
+      mouseVisible: mouseBefore,
+    });
     set({
       focusModeActive: true,
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
       focusModeSuppressAutoShow: false,
-      mouseVisibleBeforeFocusMode: mouseBefore,
       settings: mouseBefore ? { ...settings, mouseVisible: false } : settings,
     });
     await syncFocusModeWindowLayout(get, set, animate);
   } else if (!enabled && wasActive) {
-    const restore = state.mouseVisibleBeforeFocusMode;
+    const restore = get().popRestore("focusMode");
     const nextSettings =
-      restore !== null ? { ...settings, mouseVisible: restore } : settings;
+      restore?.mouseVisible !== undefined
+        ? { ...settings, mouseVisible: restore.mouseVisible }
+        : settings;
     set({
       focusModeActive: false,
       focusModeKeyboardVisible: false,
       focusModeManualExpand: false,
       focusModeSuppressAutoShow: false,
-      mouseVisibleBeforeFocusMode: null,
       settings: nextSettings,
     });
     await syncWindowLayoutFromSettings(
@@ -341,9 +344,9 @@ export async function refreshFocusModeStateHelper(
   } else if (enabled) {
     // Still active: enforce mouse panel hidden and keep window layout in sync.
     if (settings.mouseVisible) {
-      if (state.mouseVisibleBeforeFocusMode === null) {
-        set({ mouseVisibleBeforeFocusMode: true });
-      }
+      get().pushRestore("focusMode", {
+        mouseVisible: true,
+      });
       set({
         settings: { ...settings, mouseVisible: false },
       });

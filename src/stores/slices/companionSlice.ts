@@ -3,6 +3,7 @@ import type { AppStore, CompanionSlice } from "../types";
 import { mapCompanionSessionPhase, shouldIgnoreCompanionIdle } from "../../lib/companionSession";
 import { captureModeBeforeCompanion, resolveSelectedAppMode, restoreModeAfterCompanion } from "../../lib/appModeLayout";
 import type { HostAppMode } from "../../lib/appModeLayout";
+import { peekRestore } from "../lib/restoreStack";
 
 export const createCompanionSlice: StateCreator<
   AppStore,
@@ -11,13 +12,14 @@ export const createCompanionSlice: StateCreator<
   CompanionSlice
 > = (set, get) => ({
   companionModeActive: false,
-  modeBeforeCompanion: null,
   companionSessionLive: false,
   inputPreviewFrame: null,
   externalInputFocused: false,
   companionBridgeArmed: false,
   applyCompanionSessionPhase: async (phase) => {
-    const mapped = mapCompanionSessionPhase(phase, get().modeBeforeCompanion);
+    const companionMode =
+      peekRestore(get().restoreStack, "companion")?.mode ?? null;
+    const mapped = mapCompanionSessionPhase(phase, companionMode);
     if (mapped.live) {
       if (get().companionSessionLive) {
         return;
@@ -34,21 +36,23 @@ export const createCompanionSlice: StateCreator<
           micMode: current.settings.micMode === true,
         }),
       );
+      if (captured != null) {
+        get().pushRestore("companion", { mode: captured });
+      }
       set({
         companionSessionLive: true,
         companionModeActive: true,
         companionBridgeArmed: true,
-        ...(captured != null ? { modeBeforeCompanion: captured } : {}),
       });
       return;
     }
     if (shouldIgnoreCompanionIdle(get().companionModeActive)) {
       return;
     }
+    get().popRestore("companion");
     set({
       companionSessionLive: false,
       companionModeActive: false,
-      modeBeforeCompanion: null,
       companionBridgeArmed: true,
     });
     await get().setAppMode(mapped.restore, { skipCompanionBridgeStop: true });
@@ -64,9 +68,11 @@ export const createCompanionSlice: StateCreator<
       focusModeOverride: current.settings.focusModeOverride ?? undefined,
       micMode: current.settings.micMode === true,
     });
+    const companionMode =
+      peekRestore(current.restoreStack, "companion")?.mode ?? null;
     const host: HostAppMode =
       selected === "companion"
-        ? restoreModeAfterCompanion(current.modeBeforeCompanion)
+        ? restoreModeAfterCompanion(companionMode)
         : selected;
     await get().setAppMode(host);
   },
