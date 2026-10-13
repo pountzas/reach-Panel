@@ -4,6 +4,7 @@ import { commandFailure, logIpc } from "./logIpc";
 describe("logIpc", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it("returns a catch handler that console.warns the label and error in development", () => {
@@ -14,6 +15,15 @@ describe("logIpc", () => {
     handler(err);
 
     expect(warn).toHaveBeenCalledWith("[ipc] cmd_trackpad_gesture_end", err);
+  });
+
+  it("does not log outside development builds", () => {
+    vi.stubEnv("DEV", false);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    logIpc("cmd_trackpad_gesture_end")(new Error("gesture failed"));
+
+    expect(warn).not.toHaveBeenCalled();
   });
 });
 

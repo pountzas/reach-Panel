@@ -144,9 +144,12 @@ export function Trackpad() {
       gestureReady.current = false;
       if (dragging.current) {
         dragging.current = false;
-        void invoke("cmd_trackpad_gesture_end").catch(
-          logIpc("cmd_trackpad_gesture_end"),
-        );
+        void invoke<CommandResult>("cmd_trackpad_gesture_end")
+          .then((result) => {
+            const failure = commandFailure(result);
+            if (failure) logIpc("cmd_trackpad_gesture_end")(failure);
+          })
+          .catch(logIpc("cmd_trackpad_gesture_end"));
       }
     };
   }, []);
@@ -209,9 +212,15 @@ export function Trackpad() {
           return;
         }
         if (gestureGen.current !== gen) {
-          void invoke("cmd_trackpad_gesture_end").catch(
-            logIpc("cmd_trackpad_gesture_end"),
-          );
+          void invoke<CommandResult>("cmd_trackpad_gesture_end")
+            .then((endResult) => {
+              const endFailure = commandFailure(endResult);
+              if (endFailure) {
+                logIpc("cmd_trackpad_gesture_end")(endFailure);
+                setLastError(endFailure);
+              }
+            })
+            .catch(logIpc("cmd_trackpad_gesture_end"));
           return;
         }
         gestureReady.current = true;
@@ -295,9 +304,15 @@ export function Trackpad() {
       void invoke<CommandResult>("cmd_trackpad_gesture_end")
         .then((result) => {
           const failure = commandFailure(result);
-          if (failure) logIpc("cmd_trackpad_gesture_end")(failure);
+          if (failure) {
+            logIpc("cmd_trackpad_gesture_end")(failure);
+            setLastError(failure);
+          }
         })
-        .catch(logIpc("cmd_trackpad_gesture_end"))
+        .catch((error) => {
+          logIpc("cmd_trackpad_gesture_end")(error);
+          setLastError(error instanceof Error ? error.message : String(error));
+        })
         .finally(() => {
           if (gestureGen.current !== endedGen) return;
           if (wasTap) handleTap();
