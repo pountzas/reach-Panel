@@ -17,6 +17,7 @@ type WindowHeightDragRef = {
   /** Physical→logical scale for GetCursorPos samples. */
   scale: number;
   active: boolean;
+  pointerType: string;
 };
 
 type WindowHeightDragHandlers = {
@@ -86,10 +87,12 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
       if (!current?.active) return;
 
       try {
-        const down = await invoke<boolean>("cmd_primary_mouse_button_down");
-        if (!down) {
-          finishDrag(current.latestRatio);
-          return;
+        if (current.pointerType === "mouse") {
+          const down = await invoke<boolean>("cmd_primary_mouse_button_down");
+          if (!down) {
+            finishDrag(current.latestRatio);
+            return;
+          }
         }
         const [, physicalY] = await invoke<[number, number]>("cmd_get_cursor_position");
         const screenY = physicalY / current.scale;
@@ -133,6 +136,7 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
       latestRatio: startRatio,
       scale,
       active: true,
+      pointerType: event.pointerType,
     };
 
     try {
@@ -140,6 +144,13 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
     } catch {
       // Optional; polling does not need element capture.
     }
+
+    const endFromPointer = () => {
+      const drag = windowResizeRef.current;
+      if (drag?.active) finishDrag(drag.latestRatio);
+    };
+    window.addEventListener("pointerup", endFromPointer, { once: true });
+    window.addEventListener("pointercancel", endFromPointer, { once: true });
 
     void applyWindowHeightRatioLive(startRatio);
     pollRafRef.current = requestAnimationFrame(tickPoll);

@@ -1,6 +1,5 @@
 mod companion;
 mod db;
-mod icons;
 mod input;
 mod installed_apps;
 mod language;
@@ -900,17 +899,6 @@ fn cmd_update_profile_settings(
     Ok(())
 }
 
-/// Returns a cached PNG path for an installed app icon (for `convertFileSrc`), or null.
-#[tauri::command]
-fn cmd_get_app_icon(app: tauri::AppHandle, target: String) -> Option<String> {
-    icons::app_icon_cached_path(&app, &target)
-}
-
-#[tauri::command]
-fn cmd_is_app_installed(target: String) -> bool {
-    icons::is_app_installed(&target)
-}
-
 #[tauri::command]
 async fn cmd_speak(
     text: String,
@@ -1224,8 +1212,6 @@ pub fn run() {
             cmd_upsert_custom_language_pack,
             cmd_delete_custom_language_pack,
             cmd_update_profile_settings,
-            cmd_get_app_icon,
-            cmd_is_app_installed,
             cmd_speak,
             cmd_stop_speaking,
             cmd_list_voices,

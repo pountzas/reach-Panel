@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_NORMAL_WINDOW_HEIGHT_RATIO,
   DEFAULT_WINDOW_HEIGHT_RATIO,
   WINDOW_HEIGHT_RATIO_MAX,
   WINDOW_HEIGHT_RATIO_MIN,
@@ -12,15 +13,22 @@ describe("resolveWindowHeightRatio", () => {
     expect(resolveWindowHeightRatio(0.7)).toBe(0.7);
   });
 
-  it("falls back to the shared default when unset (no content-section snap)", () => {
-    expect(resolveWindowHeightRatio(null)).toBe(DEFAULT_WINDOW_HEIGHT_RATIO);
-    expect(resolveWindowHeightRatio(undefined)).toBe(DEFAULT_WINDOW_HEIGHT_RATIO);
+  it("falls back to mode defaults when unset (no content-section snap)", () => {
+    expect(resolveWindowHeightRatio(null)).toBe(
+      DEFAULT_NORMAL_WINDOW_HEIGHT_RATIO,
+    );
+    expect(resolveWindowHeightRatio(undefined)).toBe(
+      DEFAULT_NORMAL_WINDOW_HEIGHT_RATIO,
+    );
+    expect(resolveWindowHeightRatio(null, { focusMode: true })).toBe(
+      DEFAULT_WINDOW_HEIGHT_RATIO,
+    );
   });
 
   it("uses full work area for teaching", () => {
-    expect(
-      resolveWindowHeightRatio(0.5, { teachingFullWorkArea: true }),
-    ).toBe(1);
+    expect(resolveWindowHeightRatio(0.5, { teachingFullWorkArea: true })).toBe(
+      1,
+    );
   });
 
   it("clamps to 25%–100% of the region", () => {

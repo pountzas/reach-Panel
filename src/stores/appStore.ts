@@ -377,6 +377,7 @@ async function syncFocusModeWindowLayout(
     const sharedHeightRatio = heightRatioFromSettings(
       settings,
       useAppStore.getState().musicTeachingEnabled,
+      true,
     );
     const args = {
       monitorId: settings.accessibilityMonitorId,
@@ -593,12 +594,14 @@ export type { AppModeTablet, WindowHeightRatioBeforeTeaching };
 function heightRatioFromSettings(
   settings: AppSettings,
   musicTeachingEnabled = false,
+  focusMode = false,
 ): number {
   return resolveWindowHeightRatio(settings.windowHeightRatio, {
     teachingFullWorkArea: teachingFullWorkAreaActive(
       settings,
       musicTeachingEnabled,
     ),
+    focusMode,
   });
 }
 

@@ -6,11 +6,26 @@ export const MOTION = {
   focusKeyboard: 250,
 } as const;
 
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
 export function prefersReducedMotion(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return false;
   }
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+/** Notifies when the OS reduced-motion preference changes (e.g. mid-dictation). */
+export function subscribePrefersReducedMotion(
+  onChange: (reduced: boolean) => void,
+): () => void {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return () => {};
+  }
+  const media = window.matchMedia(REDUCED_MOTION_QUERY);
+  const handler = () => onChange(media.matches);
+  media.addEventListener("change", handler);
+  return () => media.removeEventListener("change", handler);
 }
 
 /**

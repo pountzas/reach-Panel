@@ -43,7 +43,7 @@ Still open (this spec):
 - `animate_window_layout` uses `COLLAPSE_ANIMATION_FRAME_MS = 60` step loop (~16 fps).
 - `FocusModeShell` hard-swaps FAB ↔ keyboard; `syncFocusModeWindowLayout` animates native bounds for show/hide.
 - `DictationVisualizer` calls `setLevels` every rAF and animates `height`.
-- Seven components still destructure the whole store.
+- Five components still destructure the whole store.
 - Music-note chip and UpdatePrompt progress still animate layout/paint-heavy properties; unused `src/App.css` remains.
 - Mode menu exit animation; FAB stack enter stagger.
 
@@ -51,19 +51,19 @@ Naming: product “Focus mode” (`focusMode.ts`, `FocusModeShell`); issue text�
 
 ## 4. Decision summary
 
-| Topic | Choice |
-| --- | --- |
-| Shared tokens | CSS vars + `src/lib/motion.ts` (`MOTION`, `prefersReducedMotion`) |
-| Focus show/hide | Apply final window layout once + CSS content slide/fade |
-| Remaining native morphs | Time-based loop, `WINDOW_ANIMATION_FRAME_MS = 16`, exact final frame |
-| High-res Windows timer | Not in first cut; only if profiling shows uneven pacing |
-| Waveform | Imperative `transform`/`opacity` on bar refs |
-| Preview / suggestions | React 19.3 `<ViewTransition>` + `startTransition` on visibility toggles |
-| VT fallback | Compositor CSS (`opacity`/`transform` only) if transparent WebView misbehaves |
-| Overlay | Existing window; content-only motion tokens; no window resize anim |
-| Mode menu | Keep instant window expand/restore; content enter + exit (`opacity`/`translateX`); tokens + shared reduced-motion |
-| FAB stack appear | Stagger opacity + slight `scale` (Mic → Settings → R); hover/press scales unchanged |
-| Libraries / GPU flags | None |
+| Topic                   | Choice                                                                                                            |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Shared tokens           | CSS vars + `src/lib/motion.ts` (`MOTION`, `prefersReducedMotion`)                                                 |
+| Focus show/hide         | Apply final window layout once + CSS content slide/fade                                                           |
+| Remaining native morphs | Time-based loop, `WINDOW_ANIMATION_FRAME_MS = 16`, exact final frame                                              |
+| High-res Windows timer  | Not in first cut; only if profiling shows uneven pacing                                                           |
+| Waveform                | Imperative `transform`/`opacity` on bar refs                                                                      |
+| Preview / suggestions   | React 19.3 `<ViewTransition>` + `startTransition` on visibility toggles                                           |
+| VT fallback             | Compositor CSS (`opacity`/`transform` only) if transparent WebView misbehaves                                     |
+| Overlay                 | Existing window; content-only motion tokens; no window resize anim                                                |
+| Mode menu               | Keep instant window expand/restore; content enter + exit (`opacity`/`translateX`); tokens + shared reduced-motion |
+| FAB stack appear        | Stagger opacity + slight `scale` (Mic → Settings → R); hover/press scales unchanged                               |
+| Libraries / GPU flags   | None                                                                                                              |
 
 ## 5. Architecture
 
@@ -144,8 +144,7 @@ File: `src/components/keyboard/DictationVisualizer.tsx`.
 
 - Render 28 `<span>` bars once with fixed `height: MAX_BAR` and `transform-origin: center`.
 - Hold `useRef<(HTMLSpanElement | null)[]>` (or equivalent); rAF tick writes:
-
-  - `el.style.transform = \`scaleY(${(MIN_BAR + level * (MAX_BAR - MIN_BAR)) / MAX_BAR})\``
+  - `el.style.transform = \`scaleY(${(MIN_BAR + level \* (MAX_BAR - MIN_BAR)) / MAX_BAR})\``
   - `el.style.opacity = String(0.55 + level * 0.45)`
 
 - No `setLevels` per frame; remove height/opacity CSS transitions on bars.
@@ -161,9 +160,7 @@ Replace bare `useAppStore()` destructuring with per-field selectors or `useShall
 - `ErrorBanner.tsx`
 - `InputAreaViewButtons.tsx`
 - `SettingsPanel.tsx`
-- `QuickActionEditor.tsx`
 - `MousePanel.tsx`
-- `MacroBuilder.tsx`
 
 `CollapsedFab` already done — leave as-is unless a touch-up is needed for consistency.
 

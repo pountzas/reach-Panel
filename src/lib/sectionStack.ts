@@ -162,12 +162,16 @@ export function migrateLegacySectionLayouts(
   legacy: LegacySectionLayouts,
 ): SectionStackState {
   const next = createDefaultSectionStack();
+  const hasExplicitTeaching = legacy.teaching != null;
   for (const raw of Object.keys(legacy)) {
     const layout = legacy[raw as SectionId];
     if (!layout) continue;
     const id: SectionId | null =
       raw === "input-row" ? "input-row" : coerceStackableSectionId(raw);
     if (id == null) continue;
+    if (id === "teaching" && raw !== "teaching" && hasExplicitTeaching) {
+      continue;
+    }
     next.weights[id] = Math.max(1, layout.hPct);
     if (layout.minimized) {
       next.minimized[id] = true;

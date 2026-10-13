@@ -5,11 +5,11 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_MOUSE, MOUSEEVENTF_ABSOLUTE,
     MOUSEEVENTF_HWHEEL, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN,
     MOUSEEVENTF_MIDDLEUP, MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
-    MOUSEEVENTF_VIRTUALDESK, MOUSEEVENTF_WHEEL, MOUSEINPUT, VK_LBUTTON,
+    MOUSEEVENTF_VIRTUALDESK, MOUSEEVENTF_WHEEL, MOUSEINPUT, VK_LBUTTON, VK_RBUTTON,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     GetCursorPos, GetSystemMetrics, GetWindowRect, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN,
-    SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN,
+    SM_SWAPBUTTON, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN,
 };
 
 use super::cursor_highlight;
@@ -190,9 +190,12 @@ pub fn get_cursor_position() -> Result<(i32, i32)> {
     Ok((point.x, point.y))
 }
 
-/// True while the primary mouse button is held (physical Win32 state).
+/// True while the *logical* primary mouse button is held.
+/// `GetAsyncKeyState` reads physical buttons, so honor the left-handed swap setting.
 pub fn primary_mouse_button_down() -> bool {
-    unsafe { (GetAsyncKeyState(i32::from(VK_LBUTTON.0)) as u16) & 0x8000 != 0 }
+    let swapped = unsafe { GetSystemMetrics(SM_SWAPBUTTON) } != 0;
+    let vk = if swapped { VK_RBUTTON } else { VK_LBUTTON };
+    unsafe { (GetAsyncKeyState(i32::from(vk.0)) as u16) & 0x8000 != 0 }
 }
 
 pub fn mouse_click(button: &str) -> Result<()> {

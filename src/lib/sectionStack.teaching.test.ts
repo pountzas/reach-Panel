@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createDefaultSectionStack,
   ensureSectionExpanded,
+  migrateLegacySectionLayouts,
   normalizeSectionStack,
   toggleStackMinimized,
 } from "./sectionStack";
@@ -14,7 +15,10 @@ describe("ensureSectionExpanded", () => {
   });
 
   it("expands a minimized teaching section and restores its weight", () => {
-    const minimized = toggleStackMinimized(createDefaultSectionStack(), "teaching");
+    const minimized = toggleStackMinimized(
+      createDefaultSectionStack(),
+      "teaching",
+    );
     expect(minimized.minimized.teaching).toBe(true);
     const savedWeight = minimized.expandedWeights?.teaching;
 
@@ -23,6 +27,17 @@ describe("ensureSectionExpanded", () => {
     if (savedWeight != null) {
       expect(expanded.weights.teaching).toBe(savedWeight);
     }
+  });
+});
+
+describe("migrateLegacySectionLayouts", () => {
+  it("keeps explicit teaching layout when phrases also maps to teaching", () => {
+    const migrated = migrateLegacySectionLayouts({
+      teaching: { hPct: 60, minimized: false },
+      phrases: { hPct: 10, minimized: true, expandedHPct: 10 },
+    });
+    expect(migrated.weights.teaching).toBe(60);
+    expect(migrated.minimized.teaching).toBeUndefined();
   });
 });
 

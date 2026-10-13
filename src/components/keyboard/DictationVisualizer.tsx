@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
-import { prefersReducedMotion } from "../../lib/motion";
+import {
+  prefersReducedMotion,
+  subscribePrefersReducedMotion,
+} from "../../lib/motion";
 
 const BAR_COUNT = 28;
 const GRAPH_WIDTH = 112;
@@ -36,7 +39,10 @@ export function DictationVisualizer({
     stream: MediaStream;
     analyser: AnalyserNode;
   } | null>(null);
-  const smoothRef = useRef<number[]>(Array.from({ length: BAR_COUNT }, () => 0.08));
+  const smoothRef = useRef<number[]>(
+    Array.from({ length: BAR_COUNT }, () => 0.08),
+  );
+  const reducedMotionRef = useRef(prefersReducedMotion());
 
   useLayoutEffect(() => {
     if (!active) {
@@ -55,6 +61,21 @@ export function DictationVisualizer({
   }, [active]);
 
   useEffect(() => {
+    return subscribePrefersReducedMotion((reduced) => {
+      reducedMotionRef.current = reduced;
+      if (!reduced || !active) return;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      paintBars(
+        barsRef.current,
+        Array.from({ length: BAR_COUNT }, () => 0.15),
+      );
+    });
+  }, [active]);
+
+  useEffect(() => {
     if (!active) {
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
@@ -69,7 +90,8 @@ export function DictationVisualizer({
       return;
     }
 
-    if (prefersReducedMotion()) {
+    reducedMotionRef.current = prefersReducedMotion();
+    if (reducedMotionRef.current) {
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
@@ -81,7 +103,7 @@ export function DictationVisualizer({
     if (!captureAudio) {
       let cancelled = false;
       const tick = () => {
-        if (cancelled) return;
+        if (cancelled || reducedMotionRef.current) return;
         const next = smoothRef.current.map((prev, i) => {
           const shimmer =
             0.08 + 0.06 * Math.sin(performance.now() / 220 + i * 0.55);
@@ -130,7 +152,7 @@ export function DictationVisualizer({
         const freq = new Uint8Array(analyser.frequencyBinCount);
 
         const tick = () => {
-          if (!audioRef.current) return;
+          if (!audioRef.current || reducedMotionRef.current) return;
           const { analyser: node } = audioRef.current;
           node.getByteTimeDomainData(time);
           node.getByteFrequencyData(freq);
@@ -145,7 +167,8 @@ export function DictationVisualizer({
 
           const next = smoothRef.current.map((prev, i) => {
             // Map bars from center outward across low→mid frequency energy.
-            const dist = Math.abs(i - (BAR_COUNT - 1) / 2) / ((BAR_COUNT - 1) / 2);
+            const dist =
+              Math.abs(i - (BAR_COUNT - 1) / 2) / ((BAR_COUNT - 1) / 2);
             const bin = Math.min(
               freq.length - 1,
               Math.floor(2 + dist * (freq.length * 0.35)),
@@ -158,8 +181,7 @@ export function DictationVisualizer({
             // Idle shimmer so the waveform feels alive while listening.
             const shimmer =
               0.04 +
-              0.03 * Math.sin(performance.now() / 220 + i * 0.55) *
-                (1 - voice);
+              0.03 * Math.sin(performance.now() / 220 + i * 0.55) * (1 - voice);
             const desired = Math.max(target, shimmer);
             return prev + (desired - prev) * 0.35;
           });
@@ -200,12 +222,10 @@ export function DictationVisualizer({
     <div
       className={`box-border ${KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS} flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-900/90 px-2`}
       style={{ width: GRAPH_WIDTH }}
-      aria-hidden
-    >
+      aria-hidden>
       <div
         className="flex h-full w-full items-center justify-center gap-[2px]"
-        style={{ willChange: "transform" }}
-      >
+        style={{ willChange: "transform" }}>
         {Array.from({ length: BAR_COUNT }, (_, index) => (
           <span
             key={index}

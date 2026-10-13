@@ -9,6 +9,7 @@ const motionMocks = vi.hoisted(() => ({
 
 vi.mock("../../lib/motion", () => ({
   prefersReducedMotion: motionMocks.prefersReducedMotion,
+  subscribePrefersReducedMotion: () => () => {},
   MOTION: { fast: 120, base: 200, slow: 300 },
 }));
 
@@ -20,7 +21,9 @@ describe("DictationVisualizer", () => {
       (cb: FrameRequestCallback) =>
         window.setTimeout(() => cb(performance.now()), 16) as unknown as number,
     );
-    vi.stubGlobal("cancelAnimationFrame", (id: number) => window.clearTimeout(id));
+    vi.stubGlobal("cancelAnimationFrame", (id: number) =>
+      window.clearTimeout(id),
+    );
   });
   afterEach(() => {
     vi.unstubAllGlobals();
