@@ -224,7 +224,7 @@ Windows installers are built in CI and published automatically when a [release-p
 | `src-tauri/src/window/`              | Monitor enumeration and taskbar-aware layout (Windows APIs)          |
 | `src-tauri/src/tts/`                 | Text-to-speech (Windows SAPI / WinRT)                                |
 | `src-tauri/src/stt/`                 | Voice dictation (WinRT speech recognition; Groq cloud fallback)      |
-| `src-tauri/src/db/`                  | SQLite persistence (profiles, phrases, macros)                       |
+| `src-tauri/src/db/`                  | SQLite persistence (profiles and settings)                           |
 | `src-tauri/src/prediction/`          | Predictive text + word-pack install/download                         |
 | `src-tauri/src/companion/`           | Android tablet WebSocket bridge (pairing, session, dispatch)         |
 | `src-tauri/src/profiles/`            | File-based named profiles                                            |
@@ -236,9 +236,7 @@ Windows installers are built in CI and published automatically when a [release-p
 ## Roadmap
 
 - Eye tracking support
-- AutoHotkey macro import
 - iOS companion (TestFlight)
-- Remove leftover Windows chrome for mouse panel, phrases, Quick Actions, macros, and head tracking (tablet trackpad/numpad stays)
 
 ## Known limitations
 
