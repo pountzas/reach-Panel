@@ -147,24 +147,26 @@ export const createProfileSlice: StateCreator<
     const nowWide = isWidePianoOctaveCount(next.synthesizerOctaveCount);
     if (nowWide) {
       if (next.mouseVisible) {
-        if (get().mouseVisibleBeforeWidePiano === null) {
-          set({ mouseVisibleBeforeWidePiano: settings.mouseVisible });
-        }
+        get().pushRestore("widePiano", {
+          mouseVisible: settings.mouseVisible,
+        });
         next = { ...next, mouseVisible: false };
       }
     } else if (wasWide && partial.synthesizerOctaveCount !== undefined) {
-      const restore = get().mouseVisibleBeforeWidePiano;
-      set({ mouseVisibleBeforeWidePiano: null });
-      if (restore !== null && partial.mouseVisible === undefined) {
-        next = { ...next, mouseVisible: restore };
+      const restore = get().popRestore("widePiano");
+      if (
+        restore?.mouseVisible !== undefined &&
+        partial.mouseVisible === undefined
+      ) {
+        next = { ...next, mouseVisible: restore.mouseVisible };
       }
     }
 
     // Focus mode: keep mouse panel hidden (OS cursor stays visible).
     if (get().focusModeActive && next.mouseVisible) {
-      if (get().mouseVisibleBeforeFocusMode === null) {
-        set({ mouseVisibleBeforeFocusMode: settings.mouseVisible });
-      }
+      get().pushRestore("focusMode", {
+        mouseVisible: settings.mouseVisible,
+      });
       next = { ...next, mouseVisible: false };
     }
 
@@ -173,14 +175,13 @@ export const createProfileSlice: StateCreator<
       partial.keyboardSectionMode !== "synthesizer" &&
       get().musicTeachingEnabled;
     if (leavingSynthesizer) {
-      const modeBefore = get().modeBeforeTeaching;
-      const heightBefore = get().windowHeightRatioBeforeTeaching;
+      const teachingPatch = get().popRestore("teaching");
+      const modeBefore = teachingPatch?.mode;
+      const heightBefore = teachingPatch?.windowHeightRatio ?? null;
       set({
         musicTeachingEnabled: false,
         musicNoteIndex: 0,
         musicPlaybackActive: false,
-        modeBeforeTeaching: null,
-        windowHeightRatioBeforeTeaching: null,
         ...emptyLanguageLessonState(),
       });
       // Restore saved typing mode + height when Teaching exits via keyboardSectionMode.

@@ -42,8 +42,7 @@ describe("setAppMode", () => {
         keyboardSectionMode: "keyboard",
       },
       musicTeachingEnabled: false,
-      modeBeforeTeaching: null,
-      windowHeightRatioBeforeTeaching: null,
+      restoreStack: [],
       profileHydrated: true,
       companionBridgeArmed: false,
       companionModeActive: false,
@@ -60,14 +59,23 @@ describe("setAppMode", () => {
     expect(useAppStore.getState().settings.keyboardSectionMode).toBe(
       "synthesizer",
     );
-    expect(useAppStore.getState().modeBeforeTeaching).toBe("normal");
+    expect(useAppStore.getState().restoreStack).toEqual([
+      {
+        reason: "teaching",
+        patch: { mode: "normal", windowHeightRatio: "unset" },
+      },
+    ]);
   });
 
   it("setAppMode('normal') from teaching clears teaching and restores keyboard mode", async () => {
     useAppStore.setState({
       musicTeachingEnabled: true,
-      modeBeforeTeaching: "focus",
-      windowHeightRatioBeforeTeaching: 0.6,
+      restoreStack: [
+        {
+          reason: "teaching",
+          patch: { mode: "focus", windowHeightRatio: 0.6 },
+        },
+      ],
       settings: {
         ...DEFAULT_SETTINGS,
         keyboardSectionMode: "synthesizer",

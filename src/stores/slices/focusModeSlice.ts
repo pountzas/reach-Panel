@@ -24,7 +24,6 @@ export const createFocusModeSlice: StateCreator<
   focusModeManualExpand: false,
   focusModeSuppressAutoShow: false,
   modeMenuOpen: false,
-  mouseVisibleBeforeFocusMode: null,
   openModeMenu: async () => {
     if (get().isAnimatingWindow || get().modeMenuOpen) {
       return;

@@ -9,6 +9,7 @@ import {
 } from "../../lib/sectionStack";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
+import { peekTeachingRestoreMode } from "../../stores/lib/restoreStack";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import { lessonCloseAppMode, teachingLessonTitleKey } from "../../lib/appModeLayout";
 import { usePointerDragActive } from "../../lib/pointerDrag";
@@ -59,7 +60,9 @@ export function FloatingSection({
 }: FloatingSectionProps) {
   const { t } = useTranslation();
   const setAppMode = useAppStore((s) => s.setAppMode);
-  const modeBeforeTeaching = useAppStore((s) => s.modeBeforeTeaching);
+  const modeBeforeTeaching = useAppStore((s) =>
+    peekTeachingRestoreMode(s.restoreStack),
+  );
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const pointerDragActive = usePointerDragActive();
