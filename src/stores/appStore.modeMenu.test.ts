@@ -60,7 +60,7 @@ vi.mock("@tauri-apps/plugin-updater", () => ({
 }));
 
 vi.mock("../lib/motion", () => ({
-  MOTION: { fast: 120, base: 200, slow: 300 },
+  MOTION: { fast: 120, base: 200, slow: 300, focusKeyboard: 250 },
   prefersReducedMotion: motionMocks.prefersReducedMotion,
   afterNextPaint: motionMocks.afterNextPaint,
 }));
