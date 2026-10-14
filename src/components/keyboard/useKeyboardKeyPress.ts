@@ -13,7 +13,6 @@ import {
 
 export type KeyPressContext = {
   pollKeyboardState: () => Promise<void> | void;
-  pollError: () => Promise<void> | void;
   loadInputMethods: () => Promise<void>;
   languagePickerOpen: boolean;
   setLanguagePickerOpen: (open: boolean) => void;
@@ -89,7 +88,6 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
         });
         await ctx.pollKeyboardState();
         reportCommandFailure(result);
-        await ctx.pollError();
         return;
       }
 
@@ -99,7 +97,6 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
           ctx.languagePickerOpen,
           ctx.setLanguagePickerOpen,
         );
-        await ctx.pollError();
         return;
       }
 
@@ -107,7 +104,6 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
         if (!ctx.dictateDisabled) {
           await ctx.toggleDictation();
         }
-        await ctx.pollError();
         return;
       }
 
@@ -283,7 +279,6 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
         if (!deferSuggestions) {
           await ctx.loadSuggestions();
         }
-        await ctx.pollError();
         return;
       }
 
@@ -302,7 +297,6 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
           ctx.clearSticky,
         );
         await ctx.loadSuggestions();
-        await ctx.pollError();
         return;
       }
 
@@ -323,7 +317,6 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
           ctx.clearSticky,
         );
         await ctx.loadSuggestions();
-        await ctx.pollError();
         return;
       }
 
@@ -358,7 +351,6 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
           ctx.clearSticky,
         );
         await ctx.loadSuggestions();
-        await ctx.pollError();
         return;
       }
 
@@ -395,7 +387,6 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
         ctx.clearSticky,
       );
       await ctx.loadSuggestions();
-      await ctx.pollError();
     };
   return handleKey;
 }

@@ -185,7 +185,6 @@ export function Keyboard() {
 
   const handleKey = useKeyboardKeyPress({
     pollKeyboardState,
-    pollError,
     loadInputMethods,
     languagePickerOpen,
     setLanguagePickerOpen,
