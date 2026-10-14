@@ -153,6 +153,8 @@ pub const WINDOW_ANIMATION_FRAME_MS: u64 = 16;
 pub const FOCUS_KEYBOARD_HEIGHT_RATIO: f32 = 0.42;
 /// Min OS window height ratio (keep in sync with TS `WINDOW_HEIGHT_RATIO_MIN`).
 pub const WINDOW_HEIGHT_RATIO_MIN: f32 = 0.25;
+/// Max OS window height ratio (keep in sync with TS `WINDOW_HEIGHT_RATIO_MAX`).
+pub const WINDOW_HEIGHT_RATIO_MAX: f32 = 1.0;
 
 fn ease_out_cubic(t: f32) -> f32 {
     1.0 - (1.0 - t).powi(3)
@@ -200,7 +202,7 @@ pub fn compute_window_layout(
     if focus_mode {
         if focus_keyboard_visible {
             let ratio = if focus_keyboard_height_ratio > 0.0 {
-                focus_keyboard_height_ratio.clamp(WINDOW_HEIGHT_RATIO_MIN, 1.0)
+                focus_keyboard_height_ratio.clamp(WINDOW_HEIGHT_RATIO_MIN, WINDOW_HEIGHT_RATIO_MAX)
             } else {
                 FOCUS_KEYBOARD_HEIGHT_RATIO
             };
@@ -250,7 +252,7 @@ pub fn compute_window_layout(
         w = collapsed_w;
         h = collapsed_h;
     } else {
-        let ratio = height_ratio.clamp(WINDOW_HEIGHT_RATIO_MIN, 1.0);
+        let ratio = height_ratio.clamp(WINDOW_HEIGHT_RATIO_MIN, WINDOW_HEIGHT_RATIO_MAX);
         let region_y = y;
         let region_h = h;
         h = ((region_h as f32) * ratio).round().max(1.0) as u32;
@@ -632,6 +634,92 @@ mod tests {
             layout.y > 540,
             "FAB must sit on full monitor, not bottom half"
         );
+    }
+
+    #[test]
+    fn expanded_height_ratio_clamps_below_min() {
+        assert_eq!(WINDOW_HEIGHT_RATIO_MIN, 0.25);
+        let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
+        let layout = compute_window_layout(
+            &monitors,
+            0,
+            false,
+            false,
+            false,
+            0.05,
+            false,
+            false,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
+            1.0,
+            false,
+        )
+        .unwrap();
+
+        // Single-monitor region is bottom half (540px); min ratio → 135px.
+        let expected_h = ((540.0_f32) * WINDOW_HEIGHT_RATIO_MIN).round() as u32;
+        assert_eq!(layout.height, expected_h);
+        assert_eq!(layout.y + layout.height as i32, 1080);
+    }
+
+    #[test]
+    fn expanded_height_ratio_clamps_above_max() {
+        assert_eq!(WINDOW_HEIGHT_RATIO_MAX, 1.0);
+        let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
+        let layout = compute_window_layout(
+            &monitors,
+            0,
+            false,
+            false,
+            false,
+            1.5,
+            false,
+            false,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
+            1.0,
+            false,
+        )
+        .unwrap();
+
+        assert_eq!(layout.height, 540);
+        assert_eq!(layout.y, 540);
+    }
+
+    #[test]
+    fn focus_height_ratio_clamps_below_min_and_above_max() {
+        let monitors = vec![sample_monitor(0, 0, 0, 1920, 1080)];
+        let below = compute_window_layout(
+            &monitors,
+            0,
+            false,
+            false,
+            false,
+            0.5,
+            true,
+            true,
+            0.1,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let above = compute_window_layout(
+            &monitors,
+            0,
+            false,
+            false,
+            false,
+            0.5,
+            true,
+            true,
+            2.0,
+            1.0,
+            false,
+        )
+        .unwrap();
+
+        let min_h = ((1080.0_f32) * WINDOW_HEIGHT_RATIO_MIN).round() as u32;
+        let max_h = ((1080.0_f32) * WINDOW_HEIGHT_RATIO_MAX).round() as u32;
+        assert_eq!(below.height, min_h);
+        assert_eq!(above.height, max_h);
     }
 
     #[test]

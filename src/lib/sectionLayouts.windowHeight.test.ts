@@ -31,11 +31,14 @@ describe("resolveWindowHeightRatio", () => {
     );
   });
 
-  it("clamps to 25%–100% of the region", () => {
+  it("clamps to 25%–100% of the region (shared with Rust)", () => {
     expect(WINDOW_HEIGHT_RATIO_MIN).toBe(0.25);
     expect(WINDOW_HEIGHT_RATIO_MAX).toBe(1);
-    expect(clampWindowHeightRatio(0.1)).toBe(0.25);
-    expect(clampWindowHeightRatio(1.5)).toBe(1);
-    expect(resolveWindowHeightRatio(0.1)).toBe(0.25);
+    expect(clampWindowHeightRatio(0.1)).toBe(WINDOW_HEIGHT_RATIO_MIN);
+    expect(clampWindowHeightRatio(0.05)).toBe(WINDOW_HEIGHT_RATIO_MIN);
+    expect(clampWindowHeightRatio(1.5)).toBe(WINDOW_HEIGHT_RATIO_MAX);
+    expect(clampWindowHeightRatio(2)).toBe(WINDOW_HEIGHT_RATIO_MAX);
+    expect(resolveWindowHeightRatio(0.1)).toBe(WINDOW_HEIGHT_RATIO_MIN);
+    expect(resolveWindowHeightRatio(1.5)).toBe(WINDOW_HEIGHT_RATIO_MAX);
   });
 });

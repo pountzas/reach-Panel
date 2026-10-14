@@ -1,6 +1,9 @@
 export const SECTION_HEADER_HEIGHT_PX = 28;
 export const APP_HEADER_HEIGHT_PX = 48;
-/** Clamp for user-dragged OS window height ratio (min = 25% of region). */
+/**
+ * Clamp for user-dragged OS window height ratio (25%–100% of region).
+ * Keep in sync with Rust `WINDOW_HEIGHT_RATIO_MIN` / `WINDOW_HEIGHT_RATIO_MAX`.
+ */
 export const WINDOW_HEIGHT_RATIO_MIN = 0.25;
 export const WINDOW_HEIGHT_RATIO_MAX = 1;
 /** Focus-mode default (fraction of the full monitor) when no grip height is saved. */
