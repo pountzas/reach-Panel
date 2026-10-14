@@ -276,19 +276,3 @@ fn press_combo_impl(keys: Vec<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn press_media_key(key: &str) -> Result<()> {
-    let vk = match key.to_lowercase().as_str() {
-        "volumeup" => VIRTUAL_KEY(0xAF),
-        "volumedown" => VIRTUAL_KEY(0xAE),
-        "volumemute" => VIRTUAL_KEY(0xAD),
-        "playpause" => VIRTUAL_KEY(0xB3),
-        "stop" => VIRTUAL_KEY(0xB2),
-        "nexttrack" => VIRTUAL_KEY(0xB0),
-        "prevtrack" => VIRTUAL_KEY(0xB1),
-        _ => return Err(anyhow!("Unknown media key: {key}")),
-    };
-    send_vk(vk, false)?;
-    send_vk(vk, true)?;
-    Ok(())
-}
-

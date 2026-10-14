@@ -49,7 +49,7 @@ pub(super) fn active_input_method() -> InputMethod {
     describe_hkl(hkl)
 }
 
-pub fn lang_id_to_iso_tag(lang_id: u32) -> String {
+fn lang_id_to_iso_tag(lang_id: u32) -> String {
     use windows::Win32::Globalization::{GetLocaleInfoW, LOCALE_SISO639LANGNAME};
 
     let lcid = lang_id & 0xFFFF;
@@ -209,19 +209,6 @@ pub fn get_input_methods() -> Vec<InputMethod> {
             .then_with(|| a.klid.cmp(&b.klid))
     });
     methods
-}
-
-pub fn get_installed_language_tags() -> Vec<String> {
-    let mut tags: Vec<String> = get_input_methods()
-        .into_iter()
-        .map(|m| m.lang_tag)
-        .collect();
-    tags.sort();
-    tags.dedup();
-    if tags.is_empty() {
-        tags.push("en".to_string());
-    }
-    tags
 }
 
 pub fn get_keyboard_layout() -> String {
