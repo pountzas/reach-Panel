@@ -1238,5 +1238,9 @@ pub fn run() {
             companion::cmd_companion_revoke_device,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .unwrap_or_else(|e| {
+            // Process entry: no caller to return to; exit instead of panicking.
+            eprintln!("error while running tauri application: {e}");
+            std::process::exit(1);
+        });
 }
