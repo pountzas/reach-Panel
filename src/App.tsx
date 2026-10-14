@@ -34,6 +34,7 @@ import {
   type CompanionUiState,
 } from "./lib/companionSession";
 import { reconcileAutostartOnLoad } from "./lib/autostart";
+import { logIpc } from "./lib/logIpc";
 import {
   isTeachingFullWorkArea,
 } from "./lib/v1HiddenFeatures";
@@ -170,7 +171,7 @@ function MainApp() {
       listen<{ message: string }>("stt-error", (event) => {
         setDictationState("idle");
         setLastError(event.payload.message);
-        void invoke("cmd_stop_dictation").catch(() => {});
+        void invoke("cmd_stop_dictation").catch(logIpc("cmd_stop_dictation"));
         void refreshSttCapability();
       }),
     );

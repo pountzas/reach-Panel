@@ -52,7 +52,7 @@ export function Keyboard() {
   const setTypedBuffer = useAppStore((s) => s.setTypedBuffer);
   const loadSuggestions = useAppStore((s) => s.loadSuggestions);
   const recordTypedWord = useAppStore((s) => s.recordTypedWord);
-  const pollError = useAppStore((s) => s.pollError);
+  const setLastError = useAppStore((s) => s.setLastError);
   const inputMethods = useAppStore((s) => s.inputMethods);
   const layoutKeyLabels = useAppStore((s) => s.layoutKeyLabels);
   const languagePickerOpen = useAppStore((s) => s.languagePickerOpen);

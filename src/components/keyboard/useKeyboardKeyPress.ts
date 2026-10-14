@@ -2,7 +2,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { isLanguageLessonCaptureActive } from "../../lib/language";
 import { isFnMappedKey, resolveKeyOutput, type KeyDef } from "../../lib/keyboardLayouts";
 import type { LayoutKeyTranslation } from "../../lib/layoutKeyTranslation";
-import type { AppSettings } from "../../lib/types";
+import { commandFailure } from "../../lib/logIpc";
+import type { AppSettings, CommandResult } from "../../lib/types";
+import { useAppStore } from "../../stores/appStore";
 import {
   clearModifiersAfterKey,
   greekTranslateOptions,
@@ -67,6 +69,13 @@ export type KeyPressContext = {
 };
 
 export function useKeyboardKeyPress(ctx: KeyPressContext) {
+  const setLastError = useAppStore((s) => s.setLastError);
+
+  const reportCommandFailure = (result: CommandResult) => {
+    const failure = commandFailure(result);
+    if (failure) setLastError(failure);
+  };
+
   const handleKey = async (
       keyDef: KeyDef,
       options?: { deferSuggestions?: boolean },
@@ -75,10 +84,11 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
       const deferSuggestions = options?.deferSuggestions === true;
 
       if (key === "capslock") {
-        await invoke("cmd_press_key", {
+        const result = await invoke<CommandResult>("cmd_press_key", {
           request: { key: "capslock", modifiers: [] },
         });
         await ctx.pollKeyboardState();
+        reportCommandFailure(result);
         await ctx.pollError();
         return;
       }
@@ -266,7 +276,10 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
             hkl: ctx.physicalKeyState.systemHkl || null,
           });
         }
-        await invoke("cmd_press_key", { request: { key: "backspace", modifiers: [] } });
+        const backspaceResult = await invoke<CommandResult>("cmd_press_key", {
+          request: { key: "backspace", modifiers: [] },
+        });
+        reportCommandFailure(backspaceResult);
         if (!deferSuggestions) {
           await ctx.loadSuggestions();
         }
@@ -277,9 +290,10 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
       if (key === "enter") {
         await ctx.recordTypedWord();
         ctx.setTypedBuffer("");
-        await invoke("cmd_press_key", {
+        const enterResult = await invoke<CommandResult>("cmd_press_key", {
           request: { key: "enter", modifiers: [...ctx.activeModifiers] },
         });
+        reportCommandFailure(enterResult);
         clearModifiersAfterKey(
           ctx.settings.fnKeyMode,
           ctx.activeModifiers,
@@ -296,9 +310,10 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
         await ctx.recordTypedWord();
         const inject = ctx.typeCharacter(" ");
         if (inject) {
-          await invoke("cmd_press_key", {
+          const spaceResult = await invoke<CommandResult>("cmd_press_key", {
             request: { key: "space", modifiers: [...ctx.activeModifiers] },
           });
+          reportCommandFailure(spaceResult);
         }
         clearModifiersAfterKey(
           ctx.settings.fnKeyMode,
@@ -326,13 +341,14 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
           ),
         );
         if (inject) {
-          await invoke("cmd_press_key", {
+          const greekResult = await invoke<CommandResult>("cmd_press_key", {
             request: {
               key: inject,
               modifiers: [...ctx.activeModifiers],
               physicalKey: keyDef.physicalKey,
             },
           });
+          reportCommandFailure(greekResult);
         }
         clearModifiersAfterKey(
           ctx.settings.fnKeyMode,
@@ -356,18 +372,20 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
       if (output.length === 1 || keyDef.physicalKey) {
         const inject = ctx.typeCharacter(output, { physicalKey: keyDef.physicalKey });
         if (inject) {
-          await invoke("cmd_press_key", {
+          const charResult = await invoke<CommandResult>("cmd_press_key", {
             request: {
               key: inject,
               modifiers: [...ctx.activeModifiers],
               physicalKey: keyDef.physicalKey,
             },
           });
+          reportCommandFailure(charResult);
         }
       } else {
-        await invoke("cmd_press_key", {
+        const specialResult = await invoke<CommandResult>("cmd_press_key", {
           request: { key: output, modifiers: [...ctx.activeModifiers] },
         });
+        reportCommandFailure(specialResult);
       }
       clearModifiersAfterKey(
         ctx.settings.fnKeyMode,

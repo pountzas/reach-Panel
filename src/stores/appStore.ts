@@ -816,7 +816,6 @@ interface AppStore {
   applySuggestion: (word: string) => Promise<void>;
   recordTypedWord: () => Promise<void>;
   setLastError: (error: string | null) => void;
-  pollError: () => Promise<void>;
   setDictationState: (state: DictationState) => void;
   setSttCapability: (capability: SttCapability | null) => void;
   refreshSttCapability: () => Promise<void>;
@@ -2148,10 +2147,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     notify.error(error);
     set({ lastError: null });
   },
-  pollError: async () => {
-    const error = await invoke<string | null>("get_last_error");
-    get().setLastError(error);
-  },
 
   setDictationState: (state) => set({ dictationState: state }),
 
@@ -2230,7 +2225,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
         groqApiKey: settings.groqApiKey?.trim() || null,
       });
       set({ dictationState: "listening" });
-      await get().pollError();
       await get().refreshSttCapability();
     } catch (error) {
       set({ dictationState: "idle" });

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { TranslationKey } from "../../i18n";
+import { logIpc } from "../../lib/logIpc";
 import { notify } from "../../lib/notify";
 import type { TaskbarPosition } from "../../lib/types";
 
@@ -84,7 +85,7 @@ export const applyTaskbarPosition = async (
     if (result.open_taskbar_settings) {
       void invoke("cmd_open_windows_settings", {
         uri: "ms-settings:taskbar",
-      }).catch(() => {});
+      }).catch(logIpc("cmd_open_windows_settings"));
     }
   } catch {
     updateSettings({ taskbarPositionPreference: previous });
