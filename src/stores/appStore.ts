@@ -984,10 +984,7 @@ function parseSettings(json: string): AppSettings {
       micMode,
       keyboardSectionMode,
       taskbarPositionPreference,
-      sectionStack: resolveSectionStack(
-        parsed.sectionStack,
-        parsed.sectionLayouts,
-      ),
+      sectionStack: resolveSectionStack(parsed.sectionStack),
       synthesizerOctaveCount: resolveSynthOctaveCount(
         parsed.synthesizerOctaveCount,
       ),
@@ -2632,10 +2629,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         // Flags on before synthesizer patch so first layout sync sees Teaching.
         await get().enableMusicTeaching();
         const sectionStack = ensureSectionExpanded(
-          resolveSectionStack(
-            get().settings.sectionStack,
-            get().settings.sectionLayouts,
-          ),
+          resolveSectionStack(get().settings.sectionStack),
           "teaching",
         );
         await get().updateSettings({

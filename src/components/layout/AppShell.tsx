@@ -235,7 +235,6 @@ export function AppShell() {
           <SectionCanvas
             teachingVisible={teachingVisible}
             savedStack={settings.sectionStack}
-            legacyLayouts={settings.sectionLayouts}
             onStackChange={(sectionStack) => updateSettings({ sectionStack })}
             teaching={teachingContent}
             inputRow={<InputRowPanel />}

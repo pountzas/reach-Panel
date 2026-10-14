@@ -13,6 +13,7 @@
     "build:tauri:release": "tauri build --config src-tauri/tauri.release.conf.json",
     "preview": "vite preview",
     "tauri": "tauri",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:blob": "node --test scripts/upload-to-blob.test.mjs scripts/merge-downloads-latest.test.mjs companion/scripts/upload-apk-to-blob.test.mjs"
   },

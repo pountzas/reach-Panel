@@ -7,13 +7,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const yaml = readFileSync(join(__dirname, "build.yml"), "utf8");
 
 describe("build.yml PR checks", () => {
-  it("runs test:blob before release changes merge", () => {
-    expect(yaml).toContain("npm run test:blob");
-    expect(yaml).toMatch(/test-blob:/);
-  });
-
-  it("runs host vitest on PRs to main", () => {
+  it("runs typecheck, vitest, and test:blob on Windows for PRs to main and dev", () => {
+    expect(yaml).toMatch(/branches:\s*\[[^\]]*\bmain\b[^\]]*\bdev\b/);
+    expect(yaml).toMatch(/check:/);
+    expect(yaml).toContain("runs-on: windows-latest");
+    expect(yaml).toContain("npm run typecheck");
     expect(yaml).toContain("npm test");
+    expect(yaml).toContain("npm run test:blob");
   });
 
   it("uses Node 22 in every job", () => {

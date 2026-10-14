@@ -25,7 +25,6 @@ import {
   updateFloatRect,
   type DockedSlot,
   type FloatRect,
-  type LegacySectionLayouts,
   type SectionId,
   type SectionStackState,
   type SectionVisibility,
@@ -37,7 +36,6 @@ import { FloatingSection } from "./FloatingSection";
 interface SectionCanvasProps {
   teachingVisible: boolean;
   savedStack?: SectionStackState;
-  legacyLayouts?: LegacySectionLayouts;
   onStackChange: (stack: SectionStackState) => void;
   teaching: ReactNode;
   inputRow: ReactNode;
@@ -46,7 +44,6 @@ interface SectionCanvasProps {
 export function SectionCanvas({
   teachingVisible,
   savedStack,
-  legacyLayouts,
   onStackChange,
   teaching,
   inputRow,
@@ -126,8 +123,8 @@ export function SectionCanvas({
   );
 
   const stackFromSettings = useMemo(
-    () => resolveSectionStack(savedStack, legacyLayouts),
-    [savedStack, legacyLayouts],
+    () => resolveSectionStack(savedStack),
+    [savedStack],
   );
   const [stack, setStack] = useState(stackFromSettings);
   const stackRef = useRef(stack);
@@ -150,12 +147,6 @@ export function SectionCanvas({
       onStackChangeRef.current(next);
     }
   }, [visibility.teaching]);
-
-  useEffect(() => {
-    if (savedStack && Array.isArray(savedStack.order)) return;
-    if (!legacyLayouts || Object.keys(legacyLayouts).length === 0) return;
-    onStackChangeRef.current(stackFromSettings);
-  }, [savedStack, legacyLayouts, stackFromSettings]);
 
   const contentById: Record<SectionId, ReactNode> = {
     teaching: teaching,

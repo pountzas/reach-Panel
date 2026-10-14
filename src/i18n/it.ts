@@ -1,6 +1,6 @@
 import { en } from "./en";
 
-export const it: Record<keyof typeof en, string> = {
+export const it = {
   appTitle: "ReachPanel",
 
   collapse: "Comprimi",
@@ -22,10 +22,6 @@ export const it: Record<keyof typeof en, string> = {
   cancel: "Annulla",
 
   add: "Aggiungi",
-
-  appNotInstalled: "{app} non è installato.",
-
-  installApp: "Installa",
 
   profile: "Profilo",
 
@@ -57,7 +53,6 @@ export const it: Record<keyof typeof en, string> = {
   teachingLessonMath: "Matematica",
 
   teachingLessonLanguage: "Lingua",
-
 
   teachingTabSpelling: "Ortografia",
   teachingTabFreeWrite: "Scrittura libera",
@@ -146,16 +141,7 @@ export const it: Record<keyof typeof en, string> = {
   modeTabletsHint:
     "Normale e Focus sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno resta non disponibile finché il bridge non è avviato o un tablet non è associato; selezionato mentre un tablet è connesso.",
 
-  focusModeAutoDescription:
-    "Su un singolo display o in configurazione speculare, la tastiera appare automaticamente quando tocchi un campo di input.",
-
   focusModeOverrideLabel: "Modalità Focus",
-
-  focusModeOverrideAuto: "Automatica",
-
-  focusModeOverrideOn: "Attiva",
-
-  focusModeOverrideOff: "Disattiva",
 
   focusModeTransparent: "Tastiera trasparente",
 
@@ -176,8 +162,6 @@ export const it: Record<keyof typeof en, string> = {
   transparentKeyColorSilver: "Argento",
 
   focusModeCollapse: "Torna alla modalità Focus",
-
-
 
   primary: "Principale",
 
@@ -204,10 +188,6 @@ export const it: Record<keyof typeof en, string> = {
   speedFast: "Veloce",
 
   speedVeryFast: "Molto veloce",
-
-
-
-
 
   showSuggestionsBar: "Mostra barra suggerimenti",
 
@@ -289,12 +269,6 @@ export const it: Record<keyof typeof en, string> = {
 
   languagePortuguese: "Portoghese",
 
-
-  resetSettings: "Reimposta impostazioni",
-
-  resetSettingsHint:
-    "Ripristina layout, posizione del monitor, dimensioni dei pannelli e tutte le altre impostazioni predefinite.",
-
   resetUi: "Reimposta interfaccia",
 
   resetUiHint:
@@ -321,24 +295,9 @@ export const it: Record<keyof typeof en, string> = {
 
   profileWiped: "Profilo cancellato.",
 
-  layoutEdit: "Modifica layout",
-
-  layoutEditDone: "Fatto",
-
   dragToMove: "Trascina per spostare",
 
-
-
-
-
-
-  predictionsOff: "Previsioni disattivate",
-
   enable: "Attiva",
-
-  suggest: "Suggerimento:",
-
-  turnOff: "Disattiva",
 
   inputError: "Errore di input:",
 
@@ -372,8 +331,6 @@ export const it: Record<keyof typeof en, string> = {
 
   synthesizer: "Sintetizzatore",
 
-  synthesizerHint: "Tocca i tasti per suonare le note",
-
   synthesizerVolume: "Volume",
 
   dictationStart: "Avvia dettatura",
@@ -386,8 +343,6 @@ export const it: Record<keyof typeof en, string> = {
 
   dictationErrorNoLanguage:
     "Il riconoscimento vocale per questa lingua di digitazione non è installato. Aggiungi il pacchetto vocale in Impostazioni Windows → Ora e lingua → Voce, poi riprova.",
-
-  dictationErrorUnavailable: "La dettatura vocale è disponibile solo su Windows.",
 
   dictationErrorSpeechPrivacy:
     "Il riconoscimento vocale online è disattivato in Windows. Attivalo in Privacy e sicurezza → Voce, poi riprova. (Non è una richiesta di permesso del microfono.)",
@@ -422,10 +377,6 @@ export const it: Record<keyof typeof en, string> = {
 
   unmute: "Riattiva audio",
 
-  teachMusic: "Insegna",
-
-  stopTeaching: "Interrompi insegnamento",
-
   musicLesson: "Lezione di musica",
 
   partiture: "Partitura",
@@ -447,10 +398,6 @@ export const it: Record<keyof typeof en, string> = {
   builtInSongs: "Integrati",
 
   importedSongs: "Importati",
-
-  playingNote: "In riproduzione",
-
-  waitingForNote: "Suona",
 
   lessonComplete: "Brano completato!",
 
@@ -480,8 +427,6 @@ export const it: Record<keyof typeof en, string> = {
   octaveCount4: "4 ottave",
 
   octaveCount5: "5 ottave",
-
-  showKeyboardModeToggle: "Mostra commutatore tastiera / sintetizzatore",
 
   keyboardSectionMode: "Modalità sezione tastiera",
 
@@ -525,8 +470,6 @@ export const it: Record<keyof typeof en, string> = {
 
   updateFailed: "Aggiornamento non riuscito:",
 
-  updateRetry: "Riprova",
-
   checkForUpdates: "Controlla aggiornamenti",
 
   updateUpToDate: "Hai l’ultima versione.",
@@ -538,16 +481,6 @@ export const it: Record<keyof typeof en, string> = {
   settingsGeneral: "Generale",
 
   settingsToolsMaintenance: "Strumenti e manutenzione",
-
-
-
-
-
-
-
-
-
-
 
   settingsAbout: "Informazioni",
 
@@ -614,4 +547,4 @@ export const it: Record<keyof typeof en, string> = {
 
   aboutEmail: "Email",
 
-};
+} satisfies Record<keyof typeof en, string>;
