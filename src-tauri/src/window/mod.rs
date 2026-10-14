@@ -741,10 +741,9 @@ mod tests {
 }
 
 mod taskbar;
-mod taskbar_position;
 mod windows;
 
-pub use taskbar_position::{
+pub use taskbar::{
     apply_taskbar_position_from_str, get_taskbar_position_for_monitor, TaskbarPosition,
     TaskbarPositionResult,
 };
