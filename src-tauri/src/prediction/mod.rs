@@ -41,10 +41,6 @@ pub fn record_usage(db: &Database, profile_id: &str, word: &str, language: &str)
     db.record_word_usage(profile_id, &word.to_lowercase(), language)
 }
 
-pub fn get_installed_languages() -> Vec<String> {
-    crate::input::get_installed_language_tags()
-}
-
 pub fn list_word_packs(db: &Database) -> Result<Vec<WordPackInfo>> {
     let installed = db.list_installed_packs()?;
     let installed_map: std::collections::HashMap<String, i32> = installed.into_iter().collect();
