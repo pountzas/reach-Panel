@@ -2,6 +2,7 @@ import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../stores/appStore";
 import {
+  attachWindowHeightPointerEndListeners,
   nextWindowHeightRatioFromScreenY,
   resolveWindowHeightDragRegion,
   type WindowHeightDragRegion,
@@ -40,6 +41,7 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
 
   const windowResizeRef = useRef<WindowHeightDragRef | null>(null);
   const pollRafRef = useRef<number | null>(null);
+  const pointerEndCleanupRef = useRef<(() => void) | null>(null);
 
   const fullWorkArea = isTeachingFullWorkArea({
     musicTeachingEnabled,
@@ -53,6 +55,11 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
     }
   };
 
+  const clearPointerEndListeners = () => {
+    pointerEndCleanupRef.current?.();
+    pointerEndCleanupRef.current = null;
+  };
+
   useEffect((): (() => void) => {
     return () => {
       if (windowResizeRef.current) {
@@ -62,6 +69,8 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
         cancelAnimationFrame(pollRafRef.current);
         pollRafRef.current = null;
       }
+      pointerEndCleanupRef.current?.();
+      pointerEndCleanupRef.current = null;
       windowResizeRef.current = null;
     };
   }, []);
@@ -71,6 +80,7 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
       windowResizeRef.current.active = false;
     }
     stopPoll();
+    clearPointerEndListeners();
     windowResizeRef.current = null;
     void updateSettings({ windowHeightRatio: ratio });
   };
@@ -145,12 +155,14 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
       // Optional; polling does not need element capture.
     }
 
-    const endFromPointer = () => {
-      const drag = windowResizeRef.current;
-      if (drag?.active) finishDrag(drag.latestRatio);
-    };
-    window.addEventListener("pointerup", endFromPointer, { once: true });
-    window.addEventListener("pointercancel", endFromPointer, { once: true });
+    clearPointerEndListeners();
+    pointerEndCleanupRef.current = attachWindowHeightPointerEndListeners(
+      event.pointerId,
+      () => {
+        const drag = windowResizeRef.current;
+        if (drag?.active) finishDrag(drag.latestRatio);
+      },
+    );
 
     void applyWindowHeightRatioLive(startRatio);
     pollRafRef.current = requestAnimationFrame(tickPoll);

@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  attachWindowHeightPointerEndListeners,
   nextWindowHeightRatioFromScreenY,
   resolveWindowHeightDragRegion,
   shouldApplyLiveWindowHeightRatio,
@@ -109,5 +111,41 @@ describe("nextWindowHeightRatioFromScreenY", () => {
   it("tracks the cursor absolutely (same screenY → same ratio regardless of prior ratio)", () => {
     expect(nextWindowHeightRatioFromScreenY(600, region)).toBeCloseTo(0.8, 10);
     expect(nextWindowHeightRatioFromScreenY(600, region)).toBeCloseTo(0.8, 10);
+  });
+});
+
+describe("attachWindowHeightPointerEndListeners", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("ignores pointerup from a different pointer than the drag", () => {
+    const onEnd = vi.fn();
+    const detach = attachWindowHeightPointerEndListeners(7, onEnd);
+    window.dispatchEvent(
+      new PointerEvent("pointerup", { pointerId: 3, bubbles: true }),
+    );
+    expect(onEnd).not.toHaveBeenCalled();
+    detach();
+  });
+
+  it("ends the drag on pointerup for the matching pointerId", () => {
+    const onEnd = vi.fn();
+    const detach = attachWindowHeightPointerEndListeners(7, onEnd);
+    window.dispatchEvent(
+      new PointerEvent("pointerup", { pointerId: 7, bubbles: true }),
+    );
+    expect(onEnd).toHaveBeenCalledTimes(1);
+    detach();
+  });
+
+  it("stops listening after detach so a later matching pointerup is ignored", () => {
+    const onEnd = vi.fn();
+    const detach = attachWindowHeightPointerEndListeners(7, onEnd);
+    detach();
+    window.dispatchEvent(
+      new PointerEvent("pointerup", { pointerId: 7, bubbles: true }),
+    );
+    expect(onEnd).not.toHaveBeenCalled();
   });
 });

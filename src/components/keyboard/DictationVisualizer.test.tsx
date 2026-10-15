@@ -1,15 +1,27 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { DictationVisualizer } from "./DictationVisualizer";
 
-const motionMocks = vi.hoisted(() => ({
-  prefersReducedMotion: vi.fn(() => false),
-}));
+const motionMocks = vi.hoisted(() => {
+  let listener: ((reduced: boolean) => void) | null = null;
+  return {
+    prefersReducedMotion: vi.fn(() => false),
+    subscribePrefersReducedMotion: vi.fn((onChange: (reduced: boolean) => void) => {
+      listener = onChange;
+      return () => {
+        if (listener === onChange) listener = null;
+      };
+    }),
+    emitReducedMotion: (reduced: boolean) => {
+      listener?.(reduced);
+    },
+  };
+});
 
 vi.mock("../../lib/motion", () => ({
   prefersReducedMotion: motionMocks.prefersReducedMotion,
-  subscribePrefersReducedMotion: () => () => {},
+  subscribePrefersReducedMotion: motionMocks.subscribePrefersReducedMotion,
   MOTION: { fast: 120, base: 200, slow: 300 },
 }));
 
@@ -38,6 +50,24 @@ describe("DictationVisualizer", () => {
       expect(bar).toBeTruthy();
       expect((bar as HTMLElement).style.height).toBe(`${22 /* MAX_BAR */}px`);
       expect((bar as HTMLElement).style.transform).toMatch(/scaleY/);
+    });
+  });
+
+  it("restarts the idle waveform when reduced motion is turned off while active", async () => {
+    motionMocks.prefersReducedMotion.mockReturnValue(true);
+    const raf = vi.fn();
+    vi.stubGlobal("requestAnimationFrame", raf);
+
+    render(<DictationVisualizer active captureAudio={false} />);
+    expect(raf).not.toHaveBeenCalled();
+
+    motionMocks.prefersReducedMotion.mockReturnValue(false);
+    act(() => {
+      motionMocks.emitReducedMotion(false);
+    });
+
+    await vi.waitFor(() => {
+      expect(raf).toHaveBeenCalled();
     });
   });
 

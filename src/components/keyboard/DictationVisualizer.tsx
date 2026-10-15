@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { KEYBOARD_TOOLBAR_CONTROL_HEIGHT_CLASS } from "../../lib/buttonClasses";
 import {
   prefersReducedMotion,
@@ -42,7 +42,9 @@ export function DictationVisualizer({
   const smoothRef = useRef<number[]>(
     Array.from({ length: BAR_COUNT }, () => 0.08),
   );
-  const reducedMotionRef = useRef(prefersReducedMotion());
+  const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
+
+  useEffect(() => subscribePrefersReducedMotion(setReducedMotion), []);
 
   useLayoutEffect(() => {
     if (!active) {
@@ -52,28 +54,13 @@ export function DictationVisualizer({
       );
       return;
     }
-    if (prefersReducedMotion()) {
+    if (reducedMotion) {
       paintBars(
         barsRef.current,
         Array.from({ length: BAR_COUNT }, () => 0.15),
       );
     }
-  }, [active]);
-
-  useEffect(() => {
-    return subscribePrefersReducedMotion((reduced) => {
-      reducedMotionRef.current = reduced;
-      if (!reduced || !active) return;
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      paintBars(
-        barsRef.current,
-        Array.from({ length: BAR_COUNT }, () => 0.15),
-      );
-    });
-  }, [active]);
+  }, [active, reducedMotion]);
 
   useEffect(() => {
     if (!active) {
@@ -90,11 +77,15 @@ export function DictationVisualizer({
       return;
     }
 
-    reducedMotionRef.current = prefersReducedMotion();
-    if (reducedMotionRef.current) {
+    if (reducedMotion) {
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
+      }
+      if (audioRef.current) {
+        audioRef.current.stream.getTracks().forEach((track) => track.stop());
+        void audioRef.current.context.close();
+        audioRef.current = null;
       }
       return;
     }
@@ -103,7 +94,7 @@ export function DictationVisualizer({
     if (!captureAudio) {
       let cancelled = false;
       const tick = () => {
-        if (cancelled || reducedMotionRef.current) return;
+        if (cancelled) return;
         const next = smoothRef.current.map((prev, i) => {
           const shimmer =
             0.08 + 0.06 * Math.sin(performance.now() / 220 + i * 0.55);
@@ -152,7 +143,7 @@ export function DictationVisualizer({
         const freq = new Uint8Array(analyser.frequencyBinCount);
 
         const tick = () => {
-          if (!audioRef.current || reducedMotionRef.current) return;
+          if (!audioRef.current) return;
           const { analyser: node } = audioRef.current;
           node.getByteTimeDomainData(time);
           node.getByteFrequencyData(freq);
@@ -212,7 +203,7 @@ export function DictationVisualizer({
         audioRef.current = null;
       }
     };
-  }, [active, captureAudio]);
+  }, [active, captureAudio, reducedMotion]);
 
   if (!active) {
     return null;
