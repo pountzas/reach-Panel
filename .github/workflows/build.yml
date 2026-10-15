@@ -29,6 +29,20 @@ jobs:
       - name: Run Blob and downloads-manifest tests
         run: npm run test:blob
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Rust check + tests
+        working-directory: src-tauri
+        run: |
+          cargo check --locked --all-targets
+          cargo test --locked
+
   build-windows:
     # Only ship-validation builds: PRs from the integration branch into main.
     if: github.base_ref == 'main' && github.head_ref == 'dev'
