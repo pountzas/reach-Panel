@@ -123,4 +123,3 @@ Same branch; reviewable as two commits or stacked PRs.
 - Unit: Teaching on/off × helpers on/off × compact/synth/spelling × Visible Sections flags for the three chrome pieces.
 - Unit/integration: turning helpers off while Teaching and dictation listening → `stopDictation`.
 - Manual QA: toggle in Settings while Teaching open; Normal/Focus/Mini unchanged; restart persistence; companion unaffected.
-`}
