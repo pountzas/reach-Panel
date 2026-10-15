@@ -156,8 +156,7 @@ export interface TeachingSlice {
   setFreeWriteNotepadLineNumbers: (on: boolean) => void;
   loadTeachingPdfLibrary: () => Promise<void>;
   pickTeachingPdf: () => Promise<void>;
-  openTeachingPdf: (id: string) => Promise<void>;
-  removeTeachingPdf: (id: string) => Promise<void>;
+  closeTeachingPdf: () => Promise<void>;
 }
 
 export interface TypingSlice {

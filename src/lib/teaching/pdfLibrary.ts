@@ -1,5 +1,3 @@
-export const TEACHING_PDF_LIBRARY_CAP = 20;
-
 export type TeachingPdfEntry = {
   id: string;
   title: string;
@@ -10,21 +8,29 @@ export type TeachingPdfEntry = {
 export function sortTeachingPdfEntriesByRecent(
   entries: TeachingPdfEntry[],
 ): TeachingPdfEntry[] {
-  return [...entries].sort((a, b) => b.lastOpenedAt.localeCompare(a.lastOpenedAt));
+  return [...entries].sort((a, b) => {
+    const byTime = b.lastOpenedAt.localeCompare(a.lastOpenedAt);
+    if (byTime !== 0) return byTime;
+    return a.id.localeCompare(b.id);
+  });
 }
 
-export function upsertTeachingPdfEntry(
-  entries: TeachingPdfEntry[],
-  entry: TeachingPdfEntry,
-): TeachingPdfEntry[] {
-  const without = entries.filter((e) => e.id !== entry.id && e.path !== entry.path);
-  const next = [...without, entry];
-  return sortTeachingPdfEntriesByRecent(next).slice(0, TEACHING_PDF_LIBRARY_CAP);
+/** Cap legacy multi-entry libraries to the single most recent document. */
+export function migrateToSingleTeachingPdf(entries: TeachingPdfEntry[]): {
+  entries: TeachingPdfEntry[];
+  didMigrate: boolean;
+} {
+  if (entries.length <= 1) {
+    return { entries, didMigrate: false };
+  }
+  const [kept] = sortTeachingPdfEntriesByRecent(entries);
+  return { entries: kept ? [kept] : [], didMigrate: true };
 }
 
-export function removeTeachingPdfEntry(
-  entries: TeachingPdfEntry[],
-  id: string,
-): TeachingPdfEntry[] {
-  return entries.filter((e) => e.id !== id);
+export function replaceTeachingPdf(entry: TeachingPdfEntry): TeachingPdfEntry[] {
+  return [entry];
+}
+
+export function clearTeachingPdf(): TeachingPdfEntry[] {
+  return [];
 }

@@ -75,7 +75,7 @@ export const en = {
 
   freeWriteOpenPdf: "Open PDF…",
 
-  freeWriteRecentPdfs: "Recent PDFs",
+  freeWriteClosePdf: "Close PDF",
 
   freeWritePdfMissing: "This PDF file could not be found.",
 
@@ -84,8 +84,6 @@ export const en = {
   freeWritePdfPrevPage: "Previous page",
 
   freeWritePdfNextPage: "Next page",
-
-  freeWriteRemovePdf: "Remove",
 
   comingSoon: "Coming soon",
 
