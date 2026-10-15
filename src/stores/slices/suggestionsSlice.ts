@@ -6,7 +6,7 @@ import {
   suggestionSuffixAfterPrefix,
 } from "../storeShared";
 import { invoke } from "@tauri-apps/api/core";
-import { commandFailure } from "../../lib/logIpc";
+import { commandFailure, logIpc } from "../../lib/logIpc";
 import type { CommandResult } from "../../lib/types";
 import { INTERNAL_PROFILE_ID } from "../../lib/types";
 import {
@@ -80,19 +80,28 @@ export const createSuggestionsSlice: StateCreator<
         return;
       }
     } else {
+      let deleted = 0;
+      const rollback = () =>
+        set({
+          typedBuffer: previousTypedBuffer.slice(
+            0,
+            previousTypedBuffer.length - deleted,
+          ),
+        });
       for (let i = 0; i < prefix.length; i++) {
         const r = await invoke<CommandResult>("cmd_press_key", {
           request: { key: "backspace", modifiers: [] },
         });
         if (fail(r)) {
-          set({ typedBuffer: previousTypedBuffer });
+          rollback();
           return;
         }
+        deleted += 1;
       }
       if (
         fail(await invoke<CommandResult>("cmd_type_text", { text: word + " " }))
       ) {
-        set({ typedBuffer: previousTypedBuffer });
+        rollback();
         return;
       }
     }
@@ -100,7 +109,7 @@ export const createSuggestionsSlice: StateCreator<
       profileId: INTERNAL_PROFILE_ID,
       word,
       language: settings.typingLanguage || "en",
-    });
+    }).catch(logIpc("cmd_record_word"));
     await get().loadSuggestions();
   },
   recordTypedWord: async () => {
