@@ -7,6 +7,8 @@ type AnimatedToggleProps = {
   surface: SurfaceColors;
   disabled?: boolean;
   id?: string;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
 };
 
 export function AnimatedToggle({
@@ -15,6 +17,8 @@ export function AnimatedToggle({
   surface,
   disabled = false,
   id,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
 }: AnimatedToggleProps): JSX.Element {
   return (
     <button
@@ -22,6 +26,8 @@ export function AnimatedToggle({
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       disabled={disabled}
       className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ease-out motion-reduce:transition-none ${
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"

@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useState,
   type CSSProperties,
   type JSX,
@@ -69,6 +70,8 @@ export const ToggleRow = ({
   surface,
   disabled = false,
 }: ToggleRowProps): JSX.Element => {
+  const labelId = useId();
+
   return (
     <div
       role="presentation"
@@ -79,7 +82,11 @@ export const ToggleRow = ({
         onChange(!checked);
       }}
     >
-      <span className="text-sm" style={{ color: surface.panelText }}>
+      <span
+        id={labelId}
+        className="text-sm"
+        style={{ color: surface.panelText }}
+      >
         {label}
       </span>
       <AnimatedToggle
@@ -87,6 +94,7 @@ export const ToggleRow = ({
         disabled={disabled}
         onChange={onChange}
         surface={surface}
+        aria-labelledby={labelId}
       />
     </div>
   );
