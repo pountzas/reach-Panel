@@ -32,6 +32,10 @@ import {
   isTeachingSessionActive,
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
+import {
+  teachingHidesInputHelpers,
+  shouldSuppressLanguageSuggestions,
+} from "../../lib/teachingInputHelpers";
 
 const INPUT_PREVIEW_STRIP_HEIGHT_PX = 48;
 const SUGGESTION_CHIP_HEIGHT_PX = 32;
@@ -62,10 +66,14 @@ export function KeyboardSection() {
     musicTeachingEnabled,
     settings.keyboardSectionMode,
   );
+  const helpersHidden = teachingHidesInputHelpers(
+    teachingSessionActive,
+    settings,
+  );
   const showInputPreview =
     !showSynth &&
     !compact &&
-    !teachingSessionActive &&
+    !helpersHidden &&
     !companionSessionLive &&
     isInputPreviewActiveForMode(settings, focusModeActive);
   const languageLessonActive = isLanguageLessonActive({
@@ -77,8 +85,8 @@ export function KeyboardSection() {
     !showSynth &&
     settings.suggestionsVisible &&
     !compact &&
-    !teachingSessionActive &&
-    !languageLessonActive;
+    !helpersHidden &&
+    !shouldSuppressLanguageSuggestions(languageLessonActive, settings);
   const hasSuggestionChips = showSuggestions && suggestionCount > 0;
   const transparentUi = isTransparentUiActive(settings, focusModeActive);
   const showTransparentToggle = focusModeActive && !showSynth && !compact;
