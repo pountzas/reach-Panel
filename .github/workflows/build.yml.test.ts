@@ -14,6 +14,8 @@ describe("build.yml PR checks", () => {
     expect(yaml).toContain("npm run typecheck");
     expect(yaml).toContain("npm test");
     expect(yaml).toContain("npm run test:blob");
+    expect(yaml).toContain("cargo check --locked --all-targets");
+    expect(yaml).toContain("cargo test --locked");
   });
 
   it("uses Node 22 in every job", () => {

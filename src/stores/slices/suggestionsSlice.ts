@@ -6,8 +6,13 @@ import {
   suggestionSuffixAfterPrefix,
 } from "../storeShared";
 import { invoke } from "@tauri-apps/api/core";
+import { commandFailure, logIpc } from "../../lib/logIpc";
+import type { CommandResult } from "../../lib/types";
 import { INTERNAL_PROFILE_ID } from "../../lib/types";
-import { shouldClearSuggestions, suggestionWordPrefix } from "../../lib/suggestionPrefix";
+import {
+  shouldClearSuggestions,
+  suggestionWordPrefix,
+} from "../../lib/suggestionPrefix";
 import { isLanguageLessonActive } from "../../lib/language";
 
 export const createSuggestionsSlice: StateCreator<
@@ -51,28 +56,60 @@ export const createSuggestionsSlice: StateCreator<
   applySuggestion: async (word) => {
     if (isLanguageLessonActive(get())) return;
     const { settings, typedBuffer } = get();
+    const previousTypedBuffer = typedBuffer;
     const parts = typedBuffer.split(/\s+/);
     const prefix = parts[parts.length - 1] ?? "";
     parts[parts.length - 1] = word;
     const next = parts.join(" ") + " ";
     set({ typedBuffer: next });
 
+    const fail = (result: CommandResult): boolean => {
+      const failure = commandFailure(result);
+      if (failure) get().setLastError(failure);
+      return failure !== null;
+    };
+
     const suffix = suggestionSuffixAfterPrefix(word, prefix);
     if (suffix !== null) {
-      await invoke("cmd_type_text", { text: suffix + " " });
+      if (
+        fail(
+          await invoke<CommandResult>("cmd_type_text", { text: suffix + " " }),
+        )
+      ) {
+        set({ typedBuffer: previousTypedBuffer });
+        return;
+      }
     } else {
+      let deleted = 0;
+      const rollback = () =>
+        set({
+          typedBuffer: previousTypedBuffer.slice(
+            0,
+            previousTypedBuffer.length - deleted,
+          ),
+        });
       for (let i = 0; i < prefix.length; i++) {
-        await invoke("cmd_press_key", {
+        const r = await invoke<CommandResult>("cmd_press_key", {
           request: { key: "backspace", modifiers: [] },
         });
+        if (fail(r)) {
+          rollback();
+          return;
+        }
+        deleted += 1;
       }
-      await invoke("cmd_type_text", { text: word + " " });
+      if (
+        fail(await invoke<CommandResult>("cmd_type_text", { text: word + " " }))
+      ) {
+        rollback();
+        return;
+      }
     }
     await invoke("cmd_record_word", {
       profileId: INTERNAL_PROFILE_ID,
       word,
       language: settings.typingLanguage || "en",
-    });
+    }).catch(logIpc("cmd_record_word"));
     await get().loadSuggestions();
   },
   recordTypedWord: async () => {
