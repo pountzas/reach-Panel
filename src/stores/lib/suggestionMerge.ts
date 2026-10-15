@@ -27,3 +27,15 @@ export function suggestionSuffixAfterPrefix(
   }
   return null;
 }
+
+/** Replace the trailing whitespace-delimited token with `word`. */
+export function replaceTrailingWord(
+  buffer: string,
+  word: string,
+  trailingSpace: boolean,
+): string {
+  const parts = buffer.split(/\s+/);
+  parts[parts.length - 1] = word;
+  const next = parts.join(" ");
+  return trailingSpace ? `${next} ` : next;
+}

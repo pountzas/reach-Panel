@@ -3,10 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { isTeachingSessionActive } from "../../lib/appModeLayout";
 import { isLanguageLessonCaptureActive } from "../../lib/language";
 import { isFreeWriteCaptureActive } from "../../lib/teaching";
-import {
-  isDictationKeyVisible,
-  shouldStopDictationForVisibility,
-} from "../../lib/teachingInputHelpers";
+import { isDictationKeyVisible } from "../../lib/teachingInputHelpers";
 import { useAppStore } from "../../stores/appStore";
 import {
   displayLabel,
@@ -65,7 +62,6 @@ export function Keyboard() {
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
   const dictationState = useAppStore((s) => s.dictationState);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
-  const stopDictation = useAppStore((s) => s.stopDictation);
   const sttCapability = useAppStore((s) => s.sttCapability);
   const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
   const applyTypedLayoutTranslation = useAppStore((s) => s.applyTypedLayoutTranslation);
@@ -168,12 +164,6 @@ export function Keyboard() {
   useEffect((): void => {
     void refreshSttCapability();
   }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
-
-  useEffect((): void => {
-    if (shouldStopDictationForVisibility(dictationKeyVisible, dictationState)) {
-      void stopDictation();
-    }
-  }, [dictationKeyVisible, dictationState, stopDictation]);
 
   let dictateAriaLabel = listening ? t("dictationStop") : t("dictationStart");
   if (dictateDisabled) {

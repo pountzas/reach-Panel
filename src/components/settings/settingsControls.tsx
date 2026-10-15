@@ -75,7 +75,7 @@ export const ToggleRow = ({
   return (
     <div
       role="presentation"
-      className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ${disabled ? "opacity-60" : ""}`}
+      className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
       style={{ backgroundColor: surface.insetBg }}
       onClick={() => {
         if (disabled) return;
