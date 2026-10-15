@@ -5,6 +5,11 @@ import {
   commitSuggestionList,
   suggestionSuffixAfterPrefix,
 } from "../storeShared";
+import {
+  freeWriteModeFromState,
+  languageLessonModeFromState,
+} from "../lib/teachingVisibility";
+import { replaceTrailingWord } from "../lib/suggestionMerge";
 import { invoke } from "@tauri-apps/api/core";
 import { commandFailure, logIpc } from "../../lib/logIpc";
 import type { CommandResult } from "../../lib/types";
@@ -14,6 +19,7 @@ import {
   suggestionWordPrefix,
 } from "../../lib/suggestionPrefix";
 import { isLanguageLessonActive } from "../../lib/language";
+import { isFreeWriteCaptureActive } from "../../lib/teaching";
 
 export const createSuggestionsSlice: StateCreator<
   AppStore,
@@ -54,8 +60,45 @@ export const createSuggestionsSlice: StateCreator<
     );
   },
   applySuggestion: async (word) => {
-    if (isLanguageLessonActive(get())) return;
-    const { settings, typedBuffer } = get();
+    const state = get();
+    if (state.languageListAuthoringActive) return;
+
+    // Free write notepad: never inject into the external focused window.
+    if (isFreeWriteCaptureActive(freeWriteModeFromState(state))) {
+      const text = state.settings.freeWriteNotepadText ?? "";
+      const next = replaceTrailingWord(text, word, true);
+      set({
+        typedBuffer: next,
+        settings: { ...state.settings, freeWriteNotepadText: next },
+      });
+      void get().updateSettings({ freeWriteNotepadText: next });
+      await invoke("cmd_record_word", {
+        profileId: INTERNAL_PROFILE_ID,
+        word,
+        language: state.settings.typingLanguage || "en",
+      }).catch(logIpc("cmd_record_word"));
+      await get().loadSuggestions();
+      return;
+    }
+
+    // Spelling tab: write into the lesson buffer (not OS focus).
+    if (isLanguageLessonActive(languageLessonModeFromState(state))) {
+      const next = replaceTrailingWord(state.languageInputBuffer, word, false);
+      set({
+        languageInputBuffer: next,
+        typedBuffer: `${next} `,
+        languageAnswerIncorrect: false,
+      });
+      await invoke("cmd_record_word", {
+        profileId: INTERNAL_PROFILE_ID,
+        word,
+        language: state.settings.typingLanguage || "en",
+      }).catch(logIpc("cmd_record_word"));
+      await get().loadSuggestions();
+      return;
+    }
+
+    const { settings, typedBuffer } = state;
     const previousTypedBuffer = typedBuffer;
     const parts = typedBuffer.split(/\s+/);
     const prefix = parts[parts.length - 1] ?? "";

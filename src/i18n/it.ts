@@ -141,6 +141,11 @@ export const it = {
   modeTabletsHint:
     "Normale e Focus sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno resta non disponibile finché il bridge non è avviato o un tablet non è associato; selezionato mentre un tablet è connesso.",
 
+  showTeachingInputHelpers: "Mostra gli aiuti di input in modalità Insegnamento",
+
+  showTeachingInputHelpersDescription:
+    "Barra dei suggerimenti, microfono e anteprima live dell'input mentre l'insegnamento è attivo.",
+
   focusModeOverrideLabel: "Modalità Focus",
 
   focusModeTransparent: "Tastiera trasparente",

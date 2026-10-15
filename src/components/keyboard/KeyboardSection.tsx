@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   CollapseIcon,
   HeightGripIcon,
@@ -23,7 +24,6 @@ import {
   nextTransparentKeyColor,
   transparentKeyPalette,
   transparentOutlineStyle,
-  isInputPreviewActiveForMode,
   focusModeToolbarClassName,
 } from "../../lib/focusMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
@@ -32,6 +32,10 @@ import {
   isTeachingSessionActive,
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
+import {
+  computeTeachingChromeVisibility,
+  shouldStopDictationForVisibility,
+} from "../../lib/teachingInputHelpers";
 
 const INPUT_PREVIEW_STRIP_HEIGHT_PX = 48;
 const SUGGESTION_CHIP_HEIGHT_PX = 32;
@@ -49,6 +53,9 @@ export function KeyboardSection() {
   const importedSongs = useAppStore((s) => s.importedSongs);
   const companionSessionLive = useAppStore((s) => s.companionSessionLive);
   const suggestionCount = useAppStore((s) => s.suggestions.length);
+  const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
+  const dictationState = useAppStore((s) => s.dictationState);
+  const stopDictation = useAppStore((s) => s.stopDictation);
   const { t } = useTranslation();
   const heightDrag = useWindowHeightDrag();
   const showSynth =
@@ -62,23 +69,28 @@ export function KeyboardSection() {
     musicTeachingEnabled,
     settings.keyboardSectionMode,
   );
-  const showInputPreview =
-    !showSynth &&
-    !compact &&
-    !teachingSessionActive &&
-    !companionSessionLive &&
-    isInputPreviewActiveForMode(settings, focusModeActive);
   const languageLessonActive = isLanguageLessonActive({
     musicTeachingEnabled,
     teachingLesson,
     settings,
+    languageSubjectTab,
   });
-  const showSuggestions =
-    !showSynth &&
-    settings.suggestionsVisible &&
-    !compact &&
-    !teachingSessionActive &&
-    !languageLessonActive;
+  const { showInputPreview, showSuggestions, dictationKeyVisible } =
+    computeTeachingChromeVisibility({
+      teachingSessionActive,
+      settings,
+      showSynth,
+      compact,
+      companionSessionLive,
+      languageLessonActive,
+      focusModeActive,
+    });
+  // KeyboardSection stays mounted when Music swaps <Keyboard /> for <Synthesizer />.
+  useEffect((): void => {
+    if (shouldStopDictationForVisibility(dictationKeyVisible, dictationState)) {
+      void stopDictation();
+    }
+  }, [dictationKeyVisible, dictationState, stopDictation]);
   const hasSuggestionChips = showSuggestions && suggestionCount > 0;
   const transparentUi = isTransparentUiActive(settings, focusModeActive);
   const showTransparentToggle = focusModeActive && !showSynth && !compact;
