@@ -75,6 +75,7 @@ export const el = {
   freeWritePdfEraser: "Σβήστρα",
   freeWritePdfTextTool: "Κείμενο",
   freeWritePdfUndo: "Αναίρεση",
+  freeWritePdfRedo: "Επανάληψη",
   freeWritePdfClearAll: "Εκκαθάριση όλων",
   freeWritePdfClearAllConfirm:
     "Εκκαθάριση όλων των επισημάνσεων και κειμένων για αυτό το PDF; Διαγράφεται το αντίγραφο εργασίας Reach.",

@@ -74,6 +74,7 @@ export const pt = {
   freeWritePdfEraser: "Borracha",
   freeWritePdfTextTool: "Texto",
   freeWritePdfUndo: "Desfazer",
+  freeWritePdfRedo: "Refazer",
   freeWritePdfClearAll: "Limpar tudo",
   freeWritePdfClearAllConfirm:
     "Limpar toda a tinta e o texto deste PDF? A cópia de trabalho Reach será eliminada.",

@@ -28,13 +28,16 @@ export type PdfAnnotationDoc = {
 
 export type UndoEntry = {
   undo: () => void;
+  redo: () => void;
 };
 
 export type UndoStack = {
   push: (entry: UndoEntry) => void;
   undo: () => void;
+  redo: () => void;
   clear: () => void;
   size: () => number;
+  redoSize: () => number;
 };
 
 const SCHEMA_VERSION = 1 as const;
@@ -73,23 +76,43 @@ export function parsePdfAnnotationJson(text: string): PdfAnnotationDoc {
 }
 
 export function createUndoStack(max = 50): UndoStack {
-  const entries: UndoEntry[] = [];
+  const undoEntries: UndoEntry[] = [];
+  const redoEntries: UndoEntry[] = [];
   return {
     push(entry) {
-      entries.push(entry);
-      while (entries.length > max) {
-        entries.shift();
+      undoEntries.push(entry);
+      redoEntries.length = 0;
+      while (undoEntries.length > max) {
+        undoEntries.shift();
       }
     },
     undo() {
-      const entry = entries.pop();
-      entry?.undo();
+      const entry = undoEntries.pop();
+      if (!entry) return;
+      entry.undo();
+      redoEntries.push(entry);
+      while (redoEntries.length > max) {
+        redoEntries.shift();
+      }
+    },
+    redo() {
+      const entry = redoEntries.pop();
+      if (!entry) return;
+      entry.redo();
+      undoEntries.push(entry);
+      while (undoEntries.length > max) {
+        undoEntries.shift();
+      }
     },
     clear() {
-      entries.length = 0;
+      undoEntries.length = 0;
+      redoEntries.length = 0;
     },
     size() {
-      return entries.length;
+      return undoEntries.length;
+    },
+    redoSize() {
+      return redoEntries.length;
     },
   };
 }

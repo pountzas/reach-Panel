@@ -113,6 +113,7 @@ export interface TeachingSlice {
   freeWriteSelectedTextId: string | null;
   freeWriteAnnotationDirty: boolean;
   freeWriteUndoDepth: number;
+  freeWriteRedoDepth: number;
   enableMusicTeaching: () => Promise<void>;
   disableMusicTeaching: () => Promise<void>;
   setTeachingLesson: (lesson: TeachingLesson) => void;
@@ -175,6 +176,7 @@ export interface TeachingSlice {
     options?: { pushUndo?: boolean; undoFrom?: PdfAnnotationDoc },
   ) => void;
   undoFreeWriteAnnotation: () => void;
+  redoFreeWriteAnnotation: () => void;
 }
 
 export interface TypingSlice {

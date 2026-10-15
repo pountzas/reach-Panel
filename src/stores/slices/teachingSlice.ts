@@ -81,6 +81,7 @@ export const createTeachingSlice: StateCreator<
   freeWriteSelectedTextId: null,
   freeWriteAnnotationDirty: false,
   freeWriteUndoDepth: 0,
+  freeWriteRedoDepth: 0,
   enableMusicTeaching: async () => {
     const {
       settings,
@@ -697,6 +698,7 @@ export const createTeachingSlice: StateCreator<
         freeWriteSelectedTextId: null,
         freeWriteAnnotationDirty: false,
         freeWriteUndoDepth: 0,
+        freeWriteRedoDepth: 0,
         freeWritePdfTool: "pen",
         freeWriteFocus:
           get().freeWriteFocus === "pdf" || get().freeWriteFocus === "pdfText"
@@ -740,6 +742,7 @@ export const createTeachingSlice: StateCreator<
         freeWriteSelectedTextId: null,
         freeWriteAnnotationDirty: false,
         freeWriteUndoDepth: 0,
+        freeWriteRedoDepth: 0,
       });
       return;
     }
@@ -754,6 +757,7 @@ export const createTeachingSlice: StateCreator<
         freeWriteSelectedTextId: null,
         freeWriteAnnotationDirty: false,
         freeWriteUndoDepth: 0,
+        freeWriteRedoDepth: 0,
         freeWritePdfTool: "pen",
       });
     } catch (error) {
@@ -764,6 +768,7 @@ export const createTeachingSlice: StateCreator<
         freeWriteSelectedTextId: null,
         freeWriteAnnotationDirty: false,
         freeWriteUndoDepth: 0,
+        freeWriteRedoDepth: 0,
       });
     }
   },
@@ -845,6 +850,7 @@ export const createTeachingSlice: StateCreator<
         freeWriteSelectedTextId: null,
         freeWriteAnnotationDirty: false,
         freeWriteUndoDepth: 0,
+        freeWriteRedoDepth: 0,
       });
       return true;
     }
@@ -860,6 +866,7 @@ export const createTeachingSlice: StateCreator<
         freeWriteSelectedTextId: null,
         freeWriteAnnotationDirty: false,
         freeWriteUndoDepth: 0,
+        freeWriteRedoDepth: 0,
         freeWriteFocus:
           get().freeWriteFocus === "pdfText" ? "pdf" : get().freeWriteFocus,
       });
@@ -875,13 +882,20 @@ export const createTeachingSlice: StateCreator<
     const next = updater(clonePdfAnnotationDoc(current));
     const pushUndo = options?.pushUndo !== false;
     if (pushUndo) {
-      const snapshot = clonePdfAnnotationDoc(options?.undoFrom ?? current);
+      const before = clonePdfAnnotationDoc(options?.undoFrom ?? current);
+      const after = clonePdfAnnotationDoc(next);
       freeWriteUndoStack.push({
         undo: () => {
           set({
-            freeWriteAnnotationDoc: snapshot,
+            freeWriteAnnotationDoc: before,
             freeWriteAnnotationDirty: true,
-            freeWriteUndoDepth: freeWriteUndoStack.size(),
+          });
+          get().scheduleSaveFreeWriteAnnotations();
+        },
+        redo: () => {
+          set({
+            freeWriteAnnotationDoc: after,
+            freeWriteAnnotationDirty: true,
           });
           get().scheduleSaveFreeWriteAnnotations();
         },
@@ -891,11 +905,22 @@ export const createTeachingSlice: StateCreator<
       freeWriteAnnotationDoc: next,
       freeWriteAnnotationDirty: true,
       freeWriteUndoDepth: freeWriteUndoStack.size(),
+      freeWriteRedoDepth: freeWriteUndoStack.redoSize(),
     });
     get().scheduleSaveFreeWriteAnnotations();
   },
   undoFreeWriteAnnotation: () => {
     freeWriteUndoStack.undo();
-    set({ freeWriteUndoDepth: freeWriteUndoStack.size() });
+    set({
+      freeWriteUndoDepth: freeWriteUndoStack.size(),
+      freeWriteRedoDepth: freeWriteUndoStack.redoSize(),
+    });
+  },
+  redoFreeWriteAnnotation: () => {
+    freeWriteUndoStack.redo();
+    set({
+      freeWriteUndoDepth: freeWriteUndoStack.size(),
+      freeWriteRedoDepth: freeWriteUndoStack.redoSize(),
+    });
   },
 });

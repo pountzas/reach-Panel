@@ -93,6 +93,8 @@ export const en = {
 
   freeWritePdfUndo: "Undo",
 
+  freeWritePdfRedo: "Redo",
+
   freeWritePdfClearAll: "Clear all",
 
   freeWritePdfClearAllConfirm:

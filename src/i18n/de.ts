@@ -74,6 +74,7 @@ export const de = {
   freeWritePdfEraser: "Radierer",
   freeWritePdfTextTool: "Text",
   freeWritePdfUndo: "Rückgängig",
+  freeWritePdfRedo: "Wiederholen",
   freeWritePdfClearAll: "Alles löschen",
   freeWritePdfClearAllConfirm:
     "Alle Markierungen und Texte für dieses PDF löschen? Die Reach-Arbeitskopie wird entfernt.",

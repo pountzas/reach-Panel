@@ -2,12 +2,23 @@ import { invoke } from "@tauri-apps/api/core";
 import * as pdfjs from "pdfjs-dist";
 import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { IoIosRedo, IoIosUndo } from "react-icons/io";
+import { IoPencilOutline } from "react-icons/io5";
+import { MdOutlineZoomIn, MdOutlineZoomOut } from "react-icons/md";
+import { PiEraserLight } from "react-icons/pi";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import { clonePdfAnnotationDoc, ensurePage } from "../../lib/teaching";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
-import { CloseIcon, LoadSongIcon, TrashIcon } from "../common/SectionIcons";
+import { ConfirmDialog } from "../common/ConfirmDialog";
+import {
+  CloseIcon,
+  LoadSongIcon,
+  PdfFileIcon,
+  TextSlashIcon,
+  TextToolIcon,
+} from "../common/SectionIcons";
 import { TeachingLessonToolbarButton } from "./TeachingLessonPanel";
 import { FreeWritePdfAnnotationOverlay } from "./FreeWritePdfAnnotationOverlay";
 import { FreeWritePdfExportDialog } from "./FreeWritePdfExportDialog";
@@ -40,7 +51,9 @@ export function FreeWritePdfPane() {
   const tool = useAppStore((s) => s.freeWritePdfTool);
   const setTool = useAppStore((s) => s.setFreeWritePdfTool);
   const undoDepth = useAppStore((s) => s.freeWriteUndoDepth);
+  const redoDepth = useAppStore((s) => s.freeWriteRedoDepth);
   const undoAnnotation = useAppStore((s) => s.undoFreeWriteAnnotation);
+  const redoAnnotation = useAppStore((s) => s.redoFreeWriteAnnotation);
   const clearAll = useAppStore((s) => s.clearAllFreeWriteAnnotations);
   const exportTeachingReachPdf = useAppStore((s) => s.exportTeachingReachPdf);
   const selectedTextId = useAppStore((s) => s.freeWriteSelectedTextId);
@@ -49,6 +62,7 @@ export function FreeWritePdfPane() {
 
   const surface = getSurfaceColors(settings.appBgColor);
   const [exportOpen, setExportOpen] = useState(false);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const active =
     teachingPdfLibrary.find((e) => e.id === freeWriteActivePdfId) ??
     teachingPdfLibrary[0] ??
@@ -184,7 +198,7 @@ export function FreeWritePdfPane() {
   const toolBtn = (
     id: "pen" | "eraser" | "text",
     label: string,
-    glyph: string,
+    icon: ReactNode,
   ) => (
     <TeachingLessonToolbarButton
       key={id}
@@ -194,7 +208,7 @@ export function FreeWritePdfPane() {
       borderColor={surface.panelBorder}
       color={surface.panelText}
     >
-      <span className="text-sm font-medium">{glyph}</span>
+      {icon}
     </TeachingLessonToolbarButton>
   );
 
@@ -211,11 +225,6 @@ export function FreeWritePdfPane() {
     setSelectedTextId(null);
   };
 
-  const onClearAll = () => {
-    if (!window.confirm(t("freeWritePdfClearAllConfirm"))) return;
-    void clearAll();
-  };
-
   return (
     <div
       className="flex h-full min-h-0 flex-col gap-2"
@@ -225,121 +234,157 @@ export function FreeWritePdfPane() {
         }
       }}
     >
-      <div className="flex shrink-0 flex-wrap items-center gap-1">
-        <TeachingLessonToolbarButton
-          label={t("freeWriteOpenPdf")}
-          onClick={() => void pickTeachingPdf()}
-          backgroundColor={surface.panelBg}
-          borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
-          <LoadSongIcon className={TOOLBAR_ICON_CLASS} />
-        </TeachingLessonToolbarButton>
-        {active ? (
-          <TeachingLessonToolbarButton
-            label={t("freeWriteClosePdf")}
-            onClick={() => void closeTeachingPdf()}
-            backgroundColor={surface.panelBg}
-            borderColor={surface.panelBorder}
-            color={surface.panelText}
-          >
-            <CloseIcon className={TOOLBAR_ICON_CLASS} />
-          </TeachingLessonToolbarButton>
-        ) : null}
-        <TeachingLessonToolbarButton
-          label={t("freeWritePdfPrevPage")}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page <= 1}
-          backgroundColor={surface.panelBg}
-          borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
-          <span className="text-sm">◀</span>
-        </TeachingLessonToolbarButton>
-        <span className="text-xs" style={{ color: surface.panelMutedText }}>
-          {pageCount > 0 ? `${page} / ${pageCount}` : "—"}
-        </span>
-        <TeachingLessonToolbarButton
-          label={t("freeWritePdfNextPage")}
-          onClick={() => setPage((p) => Math.min(pageCount || 1, p + 1))}
-          disabled={!pageCount || page >= pageCount}
-          backgroundColor={surface.panelBg}
-          borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
-          <span className="text-sm">▶</span>
-        </TeachingLessonToolbarButton>
-        <TeachingLessonToolbarButton
-          label={t("freeWriteZoomOut")}
-          onClick={() => setViewerZoom((z) => Math.max(50, z - 25))}
-          backgroundColor={surface.panelBg}
-          borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
-          <span className="text-lg leading-none">−</span>
-        </TeachingLessonToolbarButton>
-        <TeachingLessonToolbarButton
-          label={t("freeWriteZoomIn")}
-          onClick={() => setViewerZoom((z) => Math.min(250, z + 25))}
-          backgroundColor={surface.panelBg}
-          borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
-          <span className="text-lg leading-none">+</span>
-        </TeachingLessonToolbarButton>
-        {active ? (
-          <>
-            {toolBtn("pen", t("freeWritePdfPen"), "✏")}
-            {toolBtn("eraser", t("freeWritePdfEraser"), "⌫")}
-            {toolBtn("text", t("freeWritePdfTextTool"), "T")}
-            <TeachingLessonToolbarButton
-              label={t("freeWritePdfUndo")}
-              onClick={() => undoAnnotation()}
-              disabled={undoDepth <= 0}
-              backgroundColor={surface.panelBg}
-              borderColor={surface.panelBorder}
-              color={surface.panelText}
-            >
-              <span className="text-sm">↶</span>
-            </TeachingLessonToolbarButton>
-            <TeachingLessonToolbarButton
-              label={t("freeWritePdfClearAll")}
-              onClick={onClearAll}
-              backgroundColor={surface.panelBg}
-              borderColor={surface.panelBorder}
-              color={surface.panelText}
-            >
-              <span className="text-xs font-medium">CLR</span>
-            </TeachingLessonToolbarButton>
-            <TeachingLessonToolbarButton
-              label={t("freeWritePdfExport")}
-              onClick={() => setExportOpen(true)}
-              backgroundColor={surface.panelBg}
-              borderColor={surface.panelBorder}
-              color={surface.panelText}
-            >
-              <span className="text-xs font-medium">EXP</span>
-            </TeachingLessonToolbarButton>
-            {selectedTextId ? (
-              <TeachingLessonToolbarButton
-                label={t("freeWritePdfDeleteText")}
-                onClick={deleteSelectedText}
-                backgroundColor={surface.panelBg}
-                borderColor={surface.panelBorder}
-                color={surface.panelText}
-              >
-                <TrashIcon className={TOOLBAR_ICON_CLASS} />
-              </TeachingLessonToolbarButton>
-            ) : null}
+      <div className="flex w-full shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex min-w-0 max-w-[40%] items-center">
+          {active ? (
             <span
-              className="min-w-0 max-w-[12rem] truncate text-xs"
+              className="min-w-0 truncate text-xs"
               style={{ color: surface.panelText }}
               title={active.path}
             >
               {active.title}
             </span>
-          </>
-        ) : null}
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1">
+          <TeachingLessonToolbarButton
+            label={t("freeWritePdfPrevPage")}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            backgroundColor={surface.panelBg}
+            borderColor={surface.panelBorder}
+            color={surface.panelText}
+          >
+            <span className="text-sm">◀</span>
+          </TeachingLessonToolbarButton>
+          <span className="text-xs tabular-nums" style={{ color: surface.panelMutedText }}>
+            {pageCount > 0 ? `${page} / ${pageCount}` : "—"}
+          </span>
+          <TeachingLessonToolbarButton
+            label={t("freeWritePdfNextPage")}
+            onClick={() => setPage((p) => Math.min(pageCount || 1, p + 1))}
+            disabled={!pageCount || page >= pageCount}
+            backgroundColor={surface.panelBg}
+            borderColor={surface.panelBorder}
+            color={surface.panelText}
+          >
+            <span className="text-sm">▶</span>
+          </TeachingLessonToolbarButton>
+          <TeachingLessonToolbarButton
+            label={t("freeWriteZoomOut")}
+            onClick={() => setViewerZoom((z) => Math.max(50, z - 25))}
+            backgroundColor={surface.panelBg}
+            borderColor={surface.panelBorder}
+            color={surface.panelText}
+          >
+            <MdOutlineZoomOut className={TOOLBAR_ICON_CLASS} />
+          </TeachingLessonToolbarButton>
+          <TeachingLessonToolbarButton
+            label={t("freeWriteZoomIn")}
+            onClick={() => setViewerZoom((z) => Math.min(250, z + 25))}
+            backgroundColor={surface.panelBg}
+            borderColor={surface.panelBorder}
+            color={surface.panelText}
+          >
+            <MdOutlineZoomIn className={TOOLBAR_ICON_CLASS} />
+          </TeachingLessonToolbarButton>
+
+          <span className="mx-1 inline-block w-2 shrink-0" aria-hidden />
+
+          {active ? (
+            <>
+              <TeachingLessonToolbarButton
+                label={t("freeWritePdfUndo")}
+                onClick={() => undoAnnotation()}
+                disabled={undoDepth <= 0}
+                backgroundColor={surface.panelBg}
+                borderColor={surface.panelBorder}
+                color={surface.panelText}
+              >
+                <IoIosUndo className={TOOLBAR_ICON_CLASS} />
+              </TeachingLessonToolbarButton>
+              <TeachingLessonToolbarButton
+                label={t("freeWritePdfRedo")}
+                onClick={() => redoAnnotation()}
+                disabled={redoDepth <= 0}
+                backgroundColor={surface.panelBg}
+                borderColor={surface.panelBorder}
+                color={surface.panelText}
+              >
+                <IoIosRedo className={TOOLBAR_ICON_CLASS} />
+              </TeachingLessonToolbarButton>
+              {toolBtn(
+                "pen",
+                t("freeWritePdfPen"),
+                <IoPencilOutline className={TOOLBAR_ICON_CLASS} />,
+              )}
+              {toolBtn(
+                "eraser",
+                t("freeWritePdfEraser"),
+                <PiEraserLight className={TOOLBAR_ICON_CLASS} />,
+              )}
+              {toolBtn(
+                "text",
+                t("freeWritePdfTextTool"),
+                <TextToolIcon className={TOOLBAR_ICON_CLASS} />,
+              )}
+              <TeachingLessonToolbarButton
+                label={t("freeWritePdfDeleteText")}
+                onClick={deleteSelectedText}
+                disabled={!selectedTextId}
+                backgroundColor={surface.panelBg}
+                borderColor={surface.panelBorder}
+                color={surface.panelText}
+              >
+                <TextSlashIcon className={TOOLBAR_ICON_CLASS} />
+              </TeachingLessonToolbarButton>
+              <TeachingLessonToolbarButton
+                label={t("freeWritePdfClearAll")}
+                onClick={() => setClearConfirmOpen(true)}
+                backgroundColor={surface.panelBg}
+                borderColor={surface.panelBorder}
+                color={surface.panelText}
+              >
+                <span className="text-xs font-medium">CLR</span>
+              </TeachingLessonToolbarButton>
+            </>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-1">
+          <TeachingLessonToolbarButton
+            label={t("freeWriteOpenPdf")}
+            onClick={() => void pickTeachingPdf()}
+            backgroundColor={surface.panelBg}
+            borderColor={surface.panelBorder}
+            color={surface.panelText}
+          >
+            <LoadSongIcon className={TOOLBAR_ICON_CLASS} />
+          </TeachingLessonToolbarButton>
+          {active ? (
+            <>
+              <TeachingLessonToolbarButton
+                label={t("freeWritePdfExport")}
+                onClick={() => setExportOpen(true)}
+                backgroundColor={surface.panelBg}
+                borderColor={surface.panelBorder}
+                color={surface.panelText}
+              >
+                <PdfFileIcon className={TOOLBAR_ICON_CLASS} />
+              </TeachingLessonToolbarButton>
+              <TeachingLessonToolbarButton
+                label={t("freeWriteClosePdf")}
+                onClick={() => void closeTeachingPdf()}
+                backgroundColor={surface.panelBg}
+                borderColor={surface.panelBorder}
+                color={surface.panelText}
+              >
+                <CloseIcon className={TOOLBAR_ICON_CLASS} />
+              </TeachingLessonToolbarButton>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div
@@ -381,6 +426,19 @@ export function FreeWritePdfPane() {
           setExportOpen(false);
           void exportTeachingReachPdf(from, to);
         }}
+      />
+
+      <ConfirmDialog
+        open={clearConfirmOpen}
+        message={t("freeWritePdfClearAllConfirm")}
+        confirmLabel={t("freeWritePdfClearAll")}
+        cancelLabel={t("cancel")}
+        onConfirm={() => {
+          setClearConfirmOpen(false);
+          void clearAll();
+        }}
+        onCancel={() => setClearConfirmOpen(false)}
+        surface={surface}
       />
     </div>
   );

@@ -74,6 +74,7 @@ export const fr = {
   freeWritePdfEraser: "Gomme",
   freeWritePdfTextTool: "Texte",
   freeWritePdfUndo: "Annuler",
+  freeWritePdfRedo: "Rétablir",
   freeWritePdfClearAll: "Tout effacer",
   freeWritePdfClearAllConfirm:
     "Effacer toute l’encre et le texte de ce PDF ? La copie de travail Reach sera supprimée.",

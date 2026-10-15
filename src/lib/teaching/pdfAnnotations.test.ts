@@ -44,12 +44,40 @@ describe("pdfAnnotations", () => {
     const log: number[] = [];
     for (let i = 0; i < 55; i += 1) {
       const n = i;
-      stack.push({ undo: () => log.push(n) });
+      stack.push({
+        undo: () => log.push(n),
+        redo: () => log.push(-n),
+      });
     }
     expect(stack.size()).toBe(50);
     stack.undo();
     expect(log).toEqual([54]);
     stack.undo();
     expect(log).toEqual([54, 53]);
+  });
+
+  it("redo restores after undo; new push clears redo", () => {
+    const stack = createUndoStack(50);
+    const log: string[] = [];
+    stack.push({
+      undo: () => log.push("u1"),
+      redo: () => log.push("r1"),
+    });
+    stack.push({
+      undo: () => log.push("u2"),
+      redo: () => log.push("r2"),
+    });
+    stack.undo();
+    expect(log).toEqual(["u2"]);
+    expect(stack.redoSize()).toBe(1);
+    stack.redo();
+    expect(log).toEqual(["u2", "r2"]);
+    expect(stack.redoSize()).toBe(0);
+    stack.undo();
+    stack.push({
+      undo: () => log.push("u3"),
+      redo: () => log.push("r3"),
+    });
+    expect(stack.redoSize()).toBe(0);
   });
 });
