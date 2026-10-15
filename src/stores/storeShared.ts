@@ -420,6 +420,7 @@ export function parseSettings(json: string): AppSettings {
         parsed.predictionEnabled ?? parsed.suggestionsVisible ?? true,
       suggestionsVisible: parsed.suggestionsVisible ?? true,
       dictationVisible: parsed.dictationVisible ?? true,
+      showTeachingInputHelpers: parsed.showTeachingInputHelpers ?? true,
       inputPreviewVisible: parsed.inputPreviewVisible ?? true,
       inputPreviewFocusModeVisible: parsed.inputPreviewFocusModeVisible ?? true,
       keyboardModeToggleVisible: parsed.keyboardModeToggleVisible ?? true,

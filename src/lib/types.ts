@@ -50,6 +50,11 @@ export interface AppSettings {
   suggestionsVisible: boolean;
   /** When false, hides the keyboard mic / dictation key. */
   dictationVisible: boolean;
+  /**
+   * When false, hide suggestions, mic, and live input preview while Teaching is active.
+   * Default true.
+   */
+  showTeachingInputHelpers?: boolean;
   /** Live thumbnail of the focused external input field above the keyboard (Normal mode). */
   inputPreviewVisible?: boolean;
   /** Live input preview while Focus mode keyboard is shown. */
@@ -164,6 +169,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   predictionEnabled: false,
   suggestionsVisible: false,
   dictationVisible: true,
+  showTeachingInputHelpers: true,
   inputPreviewVisible: true,
   inputPreviewFocusModeVisible: true,
   taskbarPositionPreference: "bottom",

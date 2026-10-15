@@ -40,6 +40,7 @@ fn default_settings_json(ui_language: &str) -> serde_json::Value {
         "predictionEnabled": false,
         "suggestionsVisible": false,
         "dictationVisible": true,
+        "showTeachingInputHelpers": true,
         "inputPreviewVisible": true,
         "inputPreviewFocusModeVisible": true,
         "taskbarPositionPreference": "bottom",
