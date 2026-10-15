@@ -14,6 +14,7 @@ import type { ImportedMusicSong } from "../lib/music/importTypes";
 import type {
   FreeWriteFocus,
   LanguageSubjectTab,
+  PdfAnnotationDoc,
   TeachingPdfEntry,
 } from "../lib/teaching";
 import type { GreekPendingAccent } from "../lib/language/greekCompose";
@@ -107,6 +108,12 @@ export interface TeachingSlice {
   freeWriteFocus: FreeWriteFocus;
   teachingPdfLibrary: TeachingPdfEntry[];
   freeWriteActivePdfId: string | null;
+  freeWritePdfTool: "pen" | "eraser" | "text";
+  freeWriteAnnotationDoc: PdfAnnotationDoc;
+  freeWriteSelectedTextId: string | null;
+  freeWriteAnnotationDirty: boolean;
+  freeWriteUndoDepth: number;
+  freeWriteRedoDepth: number;
   enableMusicTeaching: () => Promise<void>;
   disableMusicTeaching: () => Promise<void>;
   setTeachingLesson: (lesson: TeachingLesson) => void;
@@ -156,8 +163,20 @@ export interface TeachingSlice {
   setFreeWriteNotepadLineNumbers: (on: boolean) => void;
   loadTeachingPdfLibrary: () => Promise<void>;
   pickTeachingPdf: () => Promise<void>;
-  openTeachingPdf: (id: string) => Promise<void>;
-  removeTeachingPdf: (id: string) => Promise<void>;
+  closeTeachingPdf: () => Promise<void>;
+  setFreeWritePdfTool: (tool: "pen" | "eraser" | "text") => void;
+  setFreeWriteSelectedTextId: (id: string | null) => void;
+  loadFreeWriteAnnotations: (path: string | null) => Promise<void>;
+  scheduleSaveFreeWriteAnnotations: () => void;
+  flushFreeWriteAnnotations: () => Promise<void>;
+  exportTeachingReachPdf: (from: number, to: number) => Promise<void>;
+  clearAllFreeWriteAnnotations: () => Promise<boolean>;
+  applyFreeWriteAnnotationUpdater: (
+    updater: (doc: PdfAnnotationDoc) => PdfAnnotationDoc,
+    options?: { pushUndo?: boolean; undoFrom?: PdfAnnotationDoc },
+  ) => void;
+  undoFreeWriteAnnotation: () => void;
+  redoFreeWriteAnnotation: () => void;
 }
 
 export interface TypingSlice {

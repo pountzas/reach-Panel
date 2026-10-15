@@ -75,7 +75,7 @@ export const en = {
 
   freeWriteOpenPdf: "Open PDF…",
 
-  freeWriteRecentPdfs: "Recent PDFs",
+  freeWriteClosePdf: "Close PDF",
 
   freeWritePdfMissing: "This PDF file could not be found.",
 
@@ -85,7 +85,40 @@ export const en = {
 
   freeWritePdfNextPage: "Next page",
 
-  freeWriteRemovePdf: "Remove",
+  freeWritePdfPen: "Pen",
+
+  freeWritePdfEraser: "Eraser",
+
+  freeWritePdfTextTool: "Text",
+
+  freeWritePdfUndo: "Undo",
+
+  freeWritePdfRedo: "Redo",
+
+  freeWritePdfClearAll: "Clear all",
+
+  freeWritePdfClearAllConfirm:
+    "Clear all ink and text for this PDF? This deletes the Reach working copy.",
+
+  freeWritePdfDeleteText: "Delete text",
+
+  freeWritePdfExport: "Export PDF…",
+
+  freeWritePdfExportFrom: "From",
+
+  freeWritePdfExportTo: "To",
+
+  freeWritePdfExportAll: "All pages",
+
+  freeWritePdfExportCurrent: "Current page",
+
+  freeWritePdfExportSave: "Export…",
+
+  freeWritePdfExportCancel: "Cancel",
+
+  freeWritePdfExportInvalidRange: "Enter a valid From/To page range.",
+
+  freeWritePdfExportSuccess: "PDF exported.",
 
   comingSoon: "Coming soon",
 
