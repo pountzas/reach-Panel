@@ -10,6 +10,7 @@ import type { SurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
 import { useTranslation } from "../../hooks/useTranslation";
+import { AnimatedToggle } from "./AnimatedToggle";
 
 export const fieldStyle = (surface: SurfaceColors): CSSProperties => ({
   backgroundColor: surface.insetBg,
@@ -69,20 +70,25 @@ export const ToggleRow = ({
   disabled = false,
 }: ToggleRowProps): JSX.Element => {
   return (
-    <label
-      className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+    <div
+      role="presentation"
+      className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ${disabled ? "opacity-60" : ""}`}
       style={{ backgroundColor: surface.insetBg }}
+      onClick={() => {
+        if (disabled) return;
+        onChange(!checked);
+      }}
     >
       <span className="text-sm" style={{ color: surface.panelText }}>
         {label}
       </span>
-      <input
-        type="checkbox"
+      <AnimatedToggle
         checked={checked}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={onChange}
+        surface={surface}
       />
-    </label>
+    </div>
   );
 };
 
