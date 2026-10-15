@@ -85,6 +85,21 @@ export const en = {
 
   freeWritePdfNextPage: "Next page",
 
+  freeWritePdfPen: "Pen",
+
+  freeWritePdfEraser: "Eraser",
+
+  freeWritePdfTextTool: "Text",
+
+  freeWritePdfUndo: "Undo",
+
+  freeWritePdfClearAll: "Clear all",
+
+  freeWritePdfClearAllConfirm:
+    "Clear all ink and text for this PDF? This deletes the Reach working copy.",
+
+  freeWritePdfDeleteText: "Delete text",
+
   comingSoon: "Coming soon",
 
   mathLessonTitle: "Mathematics",

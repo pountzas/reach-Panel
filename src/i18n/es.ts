@@ -70,6 +70,14 @@ export const es = {
   freeWritePdfEmpty: "Abre un PDF para leer junto a tus notas.",
   freeWritePdfPrevPage: "Página anterior",
   freeWritePdfNextPage: "Página siguiente",
+  freeWritePdfPen: "Lápiz",
+  freeWritePdfEraser: "Borrador",
+  freeWritePdfTextTool: "Texto",
+  freeWritePdfUndo: "Deshacer",
+  freeWritePdfClearAll: "Borrar todo",
+  freeWritePdfClearAllConfirm:
+    "¿Borrar toda la tinta y el texto de este PDF? Se elimina la copia de trabajo de Reach.",
+  freeWritePdfDeleteText: "Eliminar texto",
 
   comingSoon: "Próximamente",
 

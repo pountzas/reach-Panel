@@ -25,11 +25,25 @@ import { currentSpellAnswer, defaultLanguagePackId, getLanguagePackById, isLangu
 import {
   clampFreeWriteZoom,
   clearTeachingPdf,
+  clonePdfAnnotationDoc,
+  createUndoStack,
+  emptyPdfAnnotationDoc,
   isFreeWriteCaptureActive,
   migrateToSingleTeachingPdf,
+  parsePdfAnnotationJson,
   replaceTeachingPdf,
+  serializePdfAnnotationJson,
 } from "../../lib/teaching";
 import type { TeachingPdfEntry } from "../../lib/teaching";
+
+const SAVE_DEBOUNCE_MS = 400;
+let freeWriteSaveTimer: ReturnType<typeof setTimeout> | null = null;
+let freeWriteUndoStack = createUndoStack(50);
+let freeWriteAnnotationsPath: string | null = null;
+
+function resetFreeWriteUndo(): void {
+  freeWriteUndoStack = createUndoStack(50);
+}
 import { greekComposeEnabled, processCharacterInput } from "../../lib/keyboardCharacterInput";
 import { applyGreekLayoutTranslation } from "../../lib/layoutKeyTranslation";
 import type { LanguagePack } from "../../lib/language/types";
@@ -60,6 +74,11 @@ export const createTeachingSlice: StateCreator<
   freeWriteFocus: "notepad",
   teachingPdfLibrary: [],
   freeWriteActivePdfId: null,
+  freeWritePdfTool: "pen",
+  freeWriteAnnotationDoc: emptyPdfAnnotationDoc(),
+  freeWriteSelectedTextId: null,
+  freeWriteAnnotationDirty: false,
+  freeWriteUndoDepth: 0,
   enableMusicTeaching: async () => {
     const {
       settings,
@@ -440,6 +459,25 @@ export const createTeachingSlice: StateCreator<
   freeWriteNotepadInput: (ch) => {
     if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
     const state = get();
+    if (state.freeWriteFocus === "pdfText") {
+      const textId = state.freeWriteSelectedTextId;
+      if (!textId) return;
+      get().applyFreeWriteAnnotationUpdater(
+        (doc) => {
+          const next = clonePdfAnnotationDoc(doc);
+          for (const page of Object.values(next.pages)) {
+            const box = page.texts.find((t) => t.id === textId);
+            if (box) {
+              box.body = `${box.body}${ch}`;
+              break;
+            }
+          }
+          return next;
+        },
+        { pushUndo: false },
+      );
+      return;
+    }
     const greek = greekComposeEnabled({
       typingLanguage: state.settings.typingLanguage,
       keyboardLayout: state.keyboardLayout,
@@ -459,6 +497,29 @@ export const createTeachingSlice: StateCreator<
   freeWriteNotepadBackspace: () => {
     if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
     const state = get();
+    if (state.freeWriteFocus === "pdfText") {
+      const textId = state.freeWriteSelectedTextId;
+      if (!textId) return;
+      if (state.greekPendingAccent) {
+        set(clearGreekPendingAccent());
+        return;
+      }
+      get().applyFreeWriteAnnotationUpdater(
+        (doc) => {
+          const next = clonePdfAnnotationDoc(doc);
+          for (const page of Object.values(next.pages)) {
+            const box = page.texts.find((t) => t.id === textId);
+            if (box) {
+              box.body = box.body.slice(0, -1);
+              break;
+            }
+          }
+          return next;
+        },
+        { pushUndo: false },
+      );
+      return;
+    }
     if (state.greekPendingAccent) {
       set(clearGreekPendingAccent());
       return;
@@ -470,6 +531,54 @@ export const createTeachingSlice: StateCreator<
   applyFreeWriteLayoutTranslation: (translation, options) => {
     if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
     const state = get();
+    if (state.freeWriteFocus === "pdfText") {
+      const textId = state.freeWriteSelectedTextId;
+      if (!textId) return;
+      const greek = greekComposeEnabled({
+        typingLanguage: state.settings.typingLanguage,
+        keyboardLayout: state.keyboardLayout,
+        languageLessonActive: true,
+        lessonLanguage:
+          state.settings.typingLanguage === "el"
+            ? "el"
+            : state.settings.languageLessonLanguage,
+      });
+      let currentBody = "";
+      for (const page of Object.values(state.freeWriteAnnotationDoc.pages)) {
+        const box = page.texts.find((t) => t.id === textId);
+        if (box) {
+          currentBody = box.body;
+          break;
+        }
+      }
+      const result = applyGreekLayoutTranslation(
+        currentBody,
+        state.greekPendingAccent,
+        translation,
+        {
+          physicalKey: options?.physicalKey,
+          shift: options?.shift,
+          fallbackOutput: options?.fallbackOutput,
+          greekCompose: greek,
+        },
+      );
+      set({ greekPendingAccent: result.pending });
+      get().applyFreeWriteAnnotationUpdater(
+        (doc) => {
+          const next = clonePdfAnnotationDoc(doc);
+          for (const page of Object.values(next.pages)) {
+            const box = page.texts.find((t) => t.id === textId);
+            if (box) {
+              box.body = result.buffer;
+              break;
+            }
+          }
+          return next;
+        },
+        { pushUndo: false },
+      );
+      return;
+    }
     const greek = greekComposeEnabled({
       typingLanguage: state.settings.typingLanguage,
       keyboardLayout: state.keyboardLayout,
@@ -540,6 +649,7 @@ export const createTeachingSlice: StateCreator<
       if (!kept && lastId) {
         await get().updateSettings({ freeWriteLastPdfId: null });
       }
+      await get().loadFreeWriteAnnotations(kept?.path ?? null);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       notify.error(message);
@@ -547,6 +657,7 @@ export const createTeachingSlice: StateCreator<
   },
   pickTeachingPdf: async () => {
     try {
+      await get().flushFreeWriteAnnotations();
       const path = await invoke<string | null>("cmd_pick_teaching_pdf");
       if (!path) return;
       const existing = get().teachingPdfLibrary.find((e) => e.path === path);
@@ -558,8 +669,13 @@ export const createTeachingSlice: StateCreator<
       };
       const teachingPdfLibrary = replaceTeachingPdf(entry);
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
-      set({ teachingPdfLibrary, freeWriteActivePdfId: entry.id });
+      set({
+        teachingPdfLibrary,
+        freeWriteActivePdfId: entry.id,
+        freeWritePdfTool: "pen",
+      });
       await get().updateSettings({ freeWriteLastPdfId: entry.id });
+      await get().loadFreeWriteAnnotations(path);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       notify.error(message);
@@ -567,9 +683,24 @@ export const createTeachingSlice: StateCreator<
   },
   closeTeachingPdf: async () => {
     try {
+      await get().flushFreeWriteAnnotations();
       const teachingPdfLibrary = clearTeachingPdf();
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
-      set({ teachingPdfLibrary, freeWriteActivePdfId: null });
+      freeWriteAnnotationsPath = null;
+      resetFreeWriteUndo();
+      set({
+        teachingPdfLibrary,
+        freeWriteActivePdfId: null,
+        freeWriteAnnotationDoc: emptyPdfAnnotationDoc(),
+        freeWriteSelectedTextId: null,
+        freeWriteAnnotationDirty: false,
+        freeWriteUndoDepth: 0,
+        freeWritePdfTool: "pen",
+        freeWriteFocus:
+          get().freeWriteFocus === "pdf" || get().freeWriteFocus === "pdfText"
+            ? "notepad"
+            : get().freeWriteFocus,
+      });
       if (get().settings.freeWriteLastPdfId) {
         await get().updateSettings({ freeWriteLastPdfId: null });
       }
@@ -577,5 +708,148 @@ export const createTeachingSlice: StateCreator<
       const message = error instanceof Error ? error.message : String(error);
       notify.error(message);
     }
+  },
+  setFreeWritePdfTool: (tool) => {
+    set({
+      freeWritePdfTool: tool,
+      freeWriteSelectedTextId:
+        tool === "text" ? get().freeWriteSelectedTextId : null,
+      freeWriteFocus: tool === "text" ? get().freeWriteFocus : "pdf",
+    });
+  },
+  setFreeWriteSelectedTextId: (id) => {
+    set({
+      freeWriteSelectedTextId: id,
+      freeWriteFocus: id ? "pdfText" : "pdf",
+      freeWritePdfTool: id ? "text" : get().freeWritePdfTool,
+    });
+    void get().syncWindowFocusable();
+  },
+  loadFreeWriteAnnotations: async (path) => {
+    if (freeWriteSaveTimer) {
+      clearTimeout(freeWriteSaveTimer);
+      freeWriteSaveTimer = null;
+    }
+    resetFreeWriteUndo();
+    freeWriteAnnotationsPath = path;
+    if (!path) {
+      set({
+        freeWriteAnnotationDoc: emptyPdfAnnotationDoc(),
+        freeWriteSelectedTextId: null,
+        freeWriteAnnotationDirty: false,
+        freeWriteUndoDepth: 0,
+      });
+      return;
+    }
+    try {
+      const result = await invoke<{ json: string }>(
+        "cmd_read_teaching_reach_annotations",
+        { path },
+      );
+      const doc = parsePdfAnnotationJson(result.json);
+      set({
+        freeWriteAnnotationDoc: doc,
+        freeWriteSelectedTextId: null,
+        freeWriteAnnotationDirty: false,
+        freeWriteUndoDepth: 0,
+        freeWritePdfTool: "pen",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+      set({
+        freeWriteAnnotationDoc: emptyPdfAnnotationDoc(),
+        freeWriteSelectedTextId: null,
+        freeWriteAnnotationDirty: false,
+        freeWriteUndoDepth: 0,
+      });
+    }
+  },
+  scheduleSaveFreeWriteAnnotations: () => {
+    if (freeWriteSaveTimer) clearTimeout(freeWriteSaveTimer);
+    freeWriteSaveTimer = setTimeout(() => {
+      freeWriteSaveTimer = null;
+      void get().flushFreeWriteAnnotations();
+    }, SAVE_DEBOUNCE_MS);
+  },
+  flushFreeWriteAnnotations: async () => {
+    if (freeWriteSaveTimer) {
+      clearTimeout(freeWriteSaveTimer);
+      freeWriteSaveTimer = null;
+    }
+    const state = get();
+    if (!state.freeWriteAnnotationDirty || !freeWriteAnnotationsPath) return;
+    try {
+      await invoke("cmd_write_teaching_reach_annotations", {
+        path: freeWriteAnnotationsPath,
+        json: serializePdfAnnotationJson(state.freeWriteAnnotationDoc),
+      });
+      set({ freeWriteAnnotationDirty: false });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+  clearAllFreeWriteAnnotations: async () => {
+    const path = freeWriteAnnotationsPath;
+    if (!path) {
+      resetFreeWriteUndo();
+      set({
+        freeWriteAnnotationDoc: emptyPdfAnnotationDoc(),
+        freeWriteSelectedTextId: null,
+        freeWriteAnnotationDirty: false,
+        freeWriteUndoDepth: 0,
+      });
+      return true;
+    }
+    try {
+      if (freeWriteSaveTimer) {
+        clearTimeout(freeWriteSaveTimer);
+        freeWriteSaveTimer = null;
+      }
+      await invoke("cmd_delete_teaching_reach_pdf", { path });
+      resetFreeWriteUndo();
+      set({
+        freeWriteAnnotationDoc: emptyPdfAnnotationDoc(),
+        freeWriteSelectedTextId: null,
+        freeWriteAnnotationDirty: false,
+        freeWriteUndoDepth: 0,
+        freeWriteFocus:
+          get().freeWriteFocus === "pdfText" ? "pdf" : get().freeWriteFocus,
+      });
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+      return false;
+    }
+  },
+  applyFreeWriteAnnotationUpdater: (updater, options) => {
+    const current = get().freeWriteAnnotationDoc;
+    const next = updater(clonePdfAnnotationDoc(current));
+    const pushUndo = options?.pushUndo !== false;
+    if (pushUndo) {
+      const snapshot = clonePdfAnnotationDoc(options?.undoFrom ?? current);
+      freeWriteUndoStack.push({
+        undo: () => {
+          set({
+            freeWriteAnnotationDoc: snapshot,
+            freeWriteAnnotationDirty: true,
+            freeWriteUndoDepth: freeWriteUndoStack.size(),
+          });
+          get().scheduleSaveFreeWriteAnnotations();
+        },
+      });
+    }
+    set({
+      freeWriteAnnotationDoc: next,
+      freeWriteAnnotationDirty: true,
+      freeWriteUndoDepth: freeWriteUndoStack.size(),
+    });
+    get().scheduleSaveFreeWriteAnnotations();
+  },
+  undoFreeWriteAnnotation: () => {
+    freeWriteUndoStack.undo();
+    set({ freeWriteUndoDepth: freeWriteUndoStack.size() });
   },
 });

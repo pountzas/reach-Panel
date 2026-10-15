@@ -71,6 +71,14 @@ export const el = {
   freeWritePdfEmpty: "Ανοίξτε ένα PDF για ανάγνωση δίπλα στις σημειώσεις σας.",
   freeWritePdfPrevPage: "Προηγούμενη σελίδα",
   freeWritePdfNextPage: "Επόμενη σελίδα",
+  freeWritePdfPen: "Πένα",
+  freeWritePdfEraser: "Σβήστρα",
+  freeWritePdfTextTool: "Κείμενο",
+  freeWritePdfUndo: "Αναίρεση",
+  freeWritePdfClearAll: "Εκκαθάριση όλων",
+  freeWritePdfClearAllConfirm:
+    "Εκκαθάριση όλων των επισημάνσεων και κειμένων για αυτό το PDF; Διαγράφεται το αντίγραφο εργασίας Reach.",
+  freeWritePdfDeleteText: "Διαγραφή κειμένου",
 
   comingSoon: "Σύντομα",
 

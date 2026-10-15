@@ -70,6 +70,14 @@ export const it = {
   freeWritePdfEmpty: "Apri un PDF da leggere accanto alle note.",
   freeWritePdfPrevPage: "Pagina precedente",
   freeWritePdfNextPage: "Pagina successiva",
+  freeWritePdfPen: "Penna",
+  freeWritePdfEraser: "Gomma",
+  freeWritePdfTextTool: "Testo",
+  freeWritePdfUndo: "Annulla",
+  freeWritePdfClearAll: "Cancella tutto",
+  freeWritePdfClearAllConfirm:
+    "Cancellare tutta l’inchiostro e il testo di questo PDF? La copia di lavoro Reach verrà eliminata.",
+  freeWritePdfDeleteText: "Elimina testo",
 
   comingSoon: "Prossimamente",
 
