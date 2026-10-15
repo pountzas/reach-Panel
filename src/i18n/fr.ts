@@ -65,12 +65,11 @@ export const fr = {
   freeWriteLineNumbers: "Numéros de ligne",
   freeWriteNotepadEmpty: "Tapez des notes ici…",
   freeWriteOpenPdf: "Ouvrir un PDF…",
-  freeWriteRecentPdfs: "PDF récents",
+  freeWriteClosePdf: "Fermer le PDF",
   freeWritePdfMissing: "Ce fichier PDF est introuvable.",
   freeWritePdfEmpty: "Ouvrez un PDF à lire à côté de vos notes.",
   freeWritePdfPrevPage: "Page précédente",
   freeWritePdfNextPage: "Page suivante",
-  freeWriteRemovePdf: "Supprimer",
 
   comingSoon: "Bientôt disponible",
 

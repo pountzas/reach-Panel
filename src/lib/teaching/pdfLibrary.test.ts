@@ -1,43 +1,78 @@
 import { describe, expect, it } from "vitest";
 import {
-  TEACHING_PDF_LIBRARY_CAP,
-  removeTeachingPdfEntry,
-  upsertTeachingPdfEntry,
+  clearTeachingPdf,
+  migrateToSingleTeachingPdf,
+  replaceTeachingPdf,
+  sortTeachingPdfEntriesByRecent,
 } from "./pdfLibrary";
 
-const base = (id: string, lastOpenedAt: string) => ({
+const base = (
+  id: string,
+  lastOpenedAt: string,
+  path = `C:\\docs\\${id}.pdf`,
+) => ({
   id,
   title: `${id}.pdf`,
-  path: `C:\\docs\\${id}.pdf`,
+  path,
   lastOpenedAt,
 });
 
-describe("upsertTeachingPdfEntry", () => {
-  it("updates existing path by id and bumps lastOpenedAt", () => {
-    const next = upsertTeachingPdfEntry(
-      [base("a", "2026-01-01T00:00:00.000Z")],
-      base("a", "2026-08-20T12:00:00.000Z"),
-    );
-    expect(next).toHaveLength(1);
-    expect(next[0].lastOpenedAt).toBe("2026-08-20T12:00:00.000Z");
-  });
-
-  it("caps at TEACHING_PDF_LIBRARY_CAP dropping oldest lastOpenedAt", () => {
-    const seeded = Array.from({ length: TEACHING_PDF_LIBRARY_CAP }, (_, i) =>
-      base(`id-${i}`, `2026-01-${String(i + 1).padStart(2, "0")}T00:00:00.000Z`),
-    );
-    const next = upsertTeachingPdfEntry(
-      seeded,
-      base("new", "2026-08-20T00:00:00.000Z"),
-    );
-    expect(next).toHaveLength(TEACHING_PDF_LIBRARY_CAP);
-    expect(next.find((e) => e.id === "id-0")).toBeUndefined();
-    expect(next.find((e) => e.id === "new")).toBeTruthy();
+describe("sortTeachingPdfEntriesByRecent", () => {
+  it("orders by lastOpenedAt descending", () => {
+    const sorted = sortTeachingPdfEntriesByRecent([
+      base("a", "2026-01-01T00:00:00.000Z"),
+      base("b", "2026-08-20T00:00:00.000Z"),
+    ]);
+    expect(sorted.map((e) => e.id)).toEqual(["b", "a"]);
   });
 });
 
-describe("removeTeachingPdfEntry", () => {
-  it("removes by id", () => {
-    expect(removeTeachingPdfEntry([base("a", "2026-01-01T00:00:00.000Z")], "a")).toEqual([]);
+describe("migrateToSingleTeachingPdf", () => {
+  it("keeps empty as empty without migrate flag", () => {
+    expect(migrateToSingleTeachingPdf([])).toEqual({
+      entries: [],
+      didMigrate: false,
+    });
+  });
+
+  it("keeps a single entry without migrate flag", () => {
+    const one = [base("a", "2026-01-01T00:00:00.000Z")];
+    expect(migrateToSingleTeachingPdf(one)).toEqual({
+      entries: one,
+      didMigrate: false,
+    });
+  });
+
+  it("keeps most recent when multiple; didMigrate true", () => {
+    const result = migrateToSingleTeachingPdf([
+      base("old", "2026-01-01T00:00:00.000Z"),
+      base("mid", "2026-03-01T00:00:00.000Z"),
+      base("new", "2026-08-20T00:00:00.000Z"),
+    ]);
+    expect(result.didMigrate).toBe(true);
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0].id).toBe("new");
+  });
+
+  it("breaks lastOpenedAt ties by id ascending", () => {
+    const result = migrateToSingleTeachingPdf([
+      base("b", "2026-08-20T00:00:00.000Z"),
+      base("a", "2026-08-20T00:00:00.000Z"),
+    ]);
+    expect(result.entries[0].id).toBe("a");
+    expect(result.didMigrate).toBe(true);
+  });
+});
+
+describe("replaceTeachingPdf", () => {
+  it("returns a one-element library", () => {
+    const entry = base("x", "2026-08-20T00:00:00.000Z");
+    expect(replaceTeachingPdf(entry)).toEqual([entry]);
+  });
+});
+
+describe("clearTeachingPdf", () => {
+  it("returns empty library", () => {
+    expect(clearTeachingPdf()).toEqual([]);
   });
 });

@@ -66,12 +66,11 @@ export const el = {
   freeWriteLineNumbers: "Αριθμοί γραμμών",
   freeWriteNotepadEmpty: "Πληκτρολογήστε σημειώσεις εδώ…",
   freeWriteOpenPdf: "Άνοιγμα PDF…",
-  freeWriteRecentPdfs: "Πρόσφατα PDF",
+  freeWriteClosePdf: "Κλείσιμο PDF",
   freeWritePdfMissing: "Αυτό το αρχείο PDF δεν βρέθηκε.",
   freeWritePdfEmpty: "Ανοίξτε ένα PDF για ανάγνωση δίπλα στις σημειώσεις σας.",
   freeWritePdfPrevPage: "Προηγούμενη σελίδα",
   freeWritePdfNextPage: "Επόμενη σελίδα",
-  freeWriteRemovePdf: "Αφαίρεση",
 
   comingSoon: "Σύντομα",
 

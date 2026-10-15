@@ -22,7 +22,13 @@ import { notify } from "../../lib/notify";
 import { shouldDelegateAppModeToMain, TEACHING_LESSON_REQUEST_EVENT } from "../../lib/appModeLayout";
 import type { TeachingLessonRequest } from "../../lib/appModeLayout";
 import { currentSpellAnswer, defaultLanguagePackId, getLanguagePackById, isLanguageLessonActive, isLanguageLessonSpellingActive, languageAnswersMatch } from "../../lib/language";
-import { clampFreeWriteZoom, isFreeWriteCaptureActive, removeTeachingPdfEntry, upsertTeachingPdfEntry } from "../../lib/teaching";
+import {
+  clampFreeWriteZoom,
+  clearTeachingPdf,
+  isFreeWriteCaptureActive,
+  migrateToSingleTeachingPdf,
+  replaceTeachingPdf,
+} from "../../lib/teaching";
 import type { TeachingPdfEntry } from "../../lib/teaching";
 import { greekComposeEnabled, processCharacterInput } from "../../lib/keyboardCharacterInput";
 import { applyGreekLayoutTranslation } from "../../lib/layoutKeyTranslation";
@@ -507,20 +513,33 @@ export const createTeachingSlice: StateCreator<
   },
   loadTeachingPdfLibrary: async () => {
     try {
-      const entries = await invoke<TeachingPdfEntry[]>(
+      const raw = await invoke<TeachingPdfEntry[]>(
         "cmd_list_teaching_pdfs",
       );
-      const teachingPdfLibrary = Array.isArray(entries)
-        ? entries.filter(
+      const filtered = Array.isArray(raw)
+        ? raw.filter(
             (e) => e && typeof e.id === "string" && typeof e.path === "string",
           )
         : [];
+      const { entries, didMigrate } = migrateToSingleTeachingPdf(filtered);
+      if (didMigrate) {
+        await invoke("cmd_save_teaching_pdfs", { entries });
+      }
+      const kept = entries[0] ?? null;
       const lastId = get().settings.freeWriteLastPdfId ?? null;
       const freeWriteActivePdfId =
-        lastId && teachingPdfLibrary.some((e) => e.id === lastId)
-          ? lastId
-          : get().freeWriteActivePdfId;
-      set({ teachingPdfLibrary, freeWriteActivePdfId });
+        kept == null
+          ? null
+          : lastId === kept.id
+            ? lastId
+            : kept.id;
+      set({ teachingPdfLibrary: entries, freeWriteActivePdfId });
+      if (kept && lastId !== kept.id) {
+        await get().updateSettings({ freeWriteLastPdfId: kept.id });
+      }
+      if (!kept && lastId) {
+        await get().updateSettings({ freeWriteLastPdfId: null });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       notify.error(message);
@@ -537,10 +556,7 @@ export const createTeachingSlice: StateCreator<
         path,
         lastOpenedAt: new Date().toISOString(),
       };
-      const teachingPdfLibrary = upsertTeachingPdfEntry(
-        get().teachingPdfLibrary,
-        entry,
-      );
+      const teachingPdfLibrary = replaceTeachingPdf(entry);
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
       set({ teachingPdfLibrary, freeWriteActivePdfId: entry.id });
       await get().updateSettings({ freeWriteLastPdfId: entry.id });
@@ -549,37 +565,12 @@ export const createTeachingSlice: StateCreator<
       notify.error(message);
     }
   },
-  openTeachingPdf: async (id) => {
-    const entry = get().teachingPdfLibrary.find((e) => e.id === id);
-    if (!entry) return;
+  closeTeachingPdf: async () => {
     try {
-      const updated: TeachingPdfEntry = {
-        ...entry,
-        lastOpenedAt: new Date().toISOString(),
-      };
-      const teachingPdfLibrary = upsertTeachingPdfEntry(
-        get().teachingPdfLibrary,
-        updated,
-      );
+      const teachingPdfLibrary = clearTeachingPdf();
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
-      set({ teachingPdfLibrary, freeWriteActivePdfId: id });
-      await get().updateSettings({ freeWriteLastPdfId: id });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      notify.error(message);
-    }
-  },
-  removeTeachingPdf: async (id) => {
-    try {
-      const teachingPdfLibrary = removeTeachingPdfEntry(
-        get().teachingPdfLibrary,
-        id,
-      );
-      await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
-      const freeWriteActivePdfId =
-        get().freeWriteActivePdfId === id ? null : get().freeWriteActivePdfId;
-      set({ teachingPdfLibrary, freeWriteActivePdfId });
-      if (get().settings.freeWriteLastPdfId === id) {
+      set({ teachingPdfLibrary, freeWriteActivePdfId: null });
+      if (get().settings.freeWriteLastPdfId) {
         await get().updateSettings({ freeWriteLastPdfId: null });
       }
     } catch (error) {
