@@ -9,7 +9,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { commandFailure } from "../../lib/logIpc";
 import type { CommandResult } from "../../lib/types";
 import { INTERNAL_PROFILE_ID } from "../../lib/types";
-import { shouldClearSuggestions, suggestionWordPrefix } from "../../lib/suggestionPrefix";
+import {
+  shouldClearSuggestions,
+  suggestionWordPrefix,
+} from "../../lib/suggestionPrefix";
 import { isLanguageLessonActive } from "../../lib/language";
 
 export const createSuggestionsSlice: StateCreator<
@@ -87,9 +90,7 @@ export const createSuggestionsSlice: StateCreator<
         }
       }
       if (
-        fail(
-          await invoke<CommandResult>("cmd_type_text", { text: word + " " }),
-        )
+        fail(await invoke<CommandResult>("cmd_type_text", { text: word + " " }))
       ) {
         set({ typedBuffer: previousTypedBuffer });
         return;
