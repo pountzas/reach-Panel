@@ -1,8 +1,9 @@
 # Free write PDF: single document (Slice 1) — Design Spec
 
 **Date:** 2026-10-15  
-**Status:** Draft for review  
+**Status:** Approved for implementation  
 **Issue:** https://github.com/pountzas/reach-Panel/issues/168  
+**Epic:** [2026-10-15-free-write-pdf-epic.md](./2026-10-15-free-write-pdf-epic.md)  
 **Scope:** Teaching → Language → Free write PDF pane: one active PDF, toolbar chrome, library migration. Windows app only.  
 **Supersedes (PDF chrome only):** multi-entry “recent library” / Remove UX in `docs/superpowers/specs/2026-08-20-teaching-free-write-design.md` §7.3.
 
@@ -136,11 +137,18 @@ Empty state: existing empty copy. Missing file: error text only; user Open to re
 
 ## 9. Epic handoff (Slices 2–3)
 
-Documented so Slice 1 does not paint into a corner:
+See the epic index: [2026-10-15-free-write-pdf-epic.md](./2026-10-15-free-write-pdf-epic.md).
 
-- **Ink** will key strokes by document identity (path hash or stable id) and page index; single active document simplifies “which file owns ink.”
-- **Export** will let the user select pages (example: ink on pages 4–12 of a 50-page PDF → export only 4–12 with strokes). Editable round-trip format (PDF annotations vs sidecar vs hybrid) is a Slice 3 design decision.
-- Close confirmation may appear when Slice 2 introduces unsaved or dirty ink.
+| Next slice | Spec | Plan |
+| --- | --- | --- |
+| **2 — Ink & text** | [2026-10-15-free-write-pdf-ink-design.md](./2026-10-15-free-write-pdf-ink-design.md) | [../plans/2026-10-15-free-write-pdf-ink.md](../plans/2026-10-15-free-write-pdf-ink.md) |
+| **3 — Export & appearances** | [2026-10-15-free-write-pdf-export-design.md](./2026-10-15-free-write-pdf-export-design.md) | [../plans/2026-10-15-free-write-pdf-export.md](../plans/2026-10-15-free-write-pdf-export.md) |
+
+Slice 1 leaves room for:
+
+- Sibling `name.reach.pdf` + embedded JSON (ink/text), original untouched.
+- Export of selected pages with editable JSON + visible appearances.
+- Flush pending annotation saves on Close; Clear all lives in Slice 2.
 
 ## 10. Acceptance criteria (Slice 1 only)
 
