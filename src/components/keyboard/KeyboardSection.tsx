@@ -23,7 +23,6 @@ import {
   nextTransparentKeyColor,
   transparentKeyPalette,
   transparentOutlineStyle,
-  isInputPreviewActiveForMode,
   focusModeToolbarClassName,
 } from "../../lib/focusMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
@@ -32,10 +31,7 @@ import {
   isTeachingSessionActive,
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
-import {
-  teachingHidesInputHelpers,
-  shouldSuppressLanguageSuggestions,
-} from "../../lib/teachingInputHelpers";
+import { computeTeachingChromeVisibility } from "../../lib/teachingInputHelpers";
 
 const INPUT_PREVIEW_STRIP_HEIGHT_PX = 48;
 const SUGGESTION_CHIP_HEIGHT_PX = 32;
@@ -66,27 +62,20 @@ export function KeyboardSection() {
     musicTeachingEnabled,
     settings.keyboardSectionMode,
   );
-  const helpersHidden = teachingHidesInputHelpers(
-    teachingSessionActive,
-    settings,
-  );
-  const showInputPreview =
-    !showSynth &&
-    !compact &&
-    !helpersHidden &&
-    !companionSessionLive &&
-    isInputPreviewActiveForMode(settings, focusModeActive);
   const languageLessonActive = isLanguageLessonActive({
     musicTeachingEnabled,
     teachingLesson,
     settings,
   });
-  const showSuggestions =
-    !showSynth &&
-    settings.suggestionsVisible &&
-    !compact &&
-    !helpersHidden &&
-    !shouldSuppressLanguageSuggestions(languageLessonActive, settings);
+  const { showInputPreview, showSuggestions } = computeTeachingChromeVisibility({
+    teachingSessionActive,
+    settings,
+    showSynth,
+    compact,
+    companionSessionLive,
+    languageLessonActive,
+    focusModeActive,
+  });
   const hasSuggestionChips = showSuggestions && suggestionCount > 0;
   const transparentUi = isTransparentUiActive(settings, focusModeActive);
   const showTransparentToggle = focusModeActive && !showSynth && !compact;

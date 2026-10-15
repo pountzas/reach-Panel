@@ -3,7 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { isTeachingSessionActive } from "../../lib/appModeLayout";
 import { isLanguageLessonCaptureActive } from "../../lib/language";
 import { isFreeWriteCaptureActive } from "../../lib/teaching";
-import { isDictationKeyVisible } from "../../lib/teachingInputHelpers";
+import {
+  isDictationKeyVisible,
+  shouldStopDictationForVisibility,
+} from "../../lib/teachingInputHelpers";
 import { useAppStore } from "../../stores/appStore";
 import {
   displayLabel,
@@ -167,7 +170,7 @@ export function Keyboard() {
   }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
 
   useEffect((): void => {
-    if (!dictationKeyVisible && dictationState !== "idle") {
+    if (shouldStopDictationForVisibility(dictationKeyVisible, dictationState)) {
       void stopDictation();
     }
   }, [dictationKeyVisible, dictationState, stopDictation]);
