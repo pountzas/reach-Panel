@@ -78,6 +78,15 @@ export const it = {
   freeWritePdfClearAllConfirm:
     "Cancellare tutta l’inchiostro e il testo di questo PDF? La copia di lavoro Reach verrà eliminata.",
   freeWritePdfDeleteText: "Elimina testo",
+  freeWritePdfExport: "Esporta PDF…",
+  freeWritePdfExportFrom: "Da",
+  freeWritePdfExportTo: "A",
+  freeWritePdfExportAll: "Tutte le pagine",
+  freeWritePdfExportCurrent: "Pagina corrente",
+  freeWritePdfExportSave: "Esporta…",
+  freeWritePdfExportCancel: "Annulla",
+  freeWritePdfExportInvalidRange: "Inserisci un intervallo Da/A valido.",
+  freeWritePdfExportSuccess: "PDF esportato.",
 
   comingSoon: "Prossimamente",
 

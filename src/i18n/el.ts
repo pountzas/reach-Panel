@@ -80,6 +80,16 @@ export const el = {
     "Εκκαθάριση όλων των επισημάνσεων και κειμένων για αυτό το PDF; Διαγράφεται το αντίγραφο εργασίας Reach.",
   freeWritePdfDeleteText: "Διαγραφή κειμένου",
 
+  freeWritePdfExport: "Εξαγωγή PDF…",
+  freeWritePdfExportFrom: "Από",
+  freeWritePdfExportTo: "Έως",
+  freeWritePdfExportAll: "Όλες οι σελίδες",
+  freeWritePdfExportCurrent: "Τρέχουσα σελίδα",
+  freeWritePdfExportSave: "Εξαγωγή…",
+  freeWritePdfExportCancel: "Ακύρωση",
+  freeWritePdfExportInvalidRange: "Εισαγάγετε έγκυρο εύρος σελίδων Από/Έως.",
+  freeWritePdfExportSuccess: "Το PDF εξήχθη.",
+
   comingSoon: "Σύντομα",
 
   mathLessonTitle: "Μαθηματικά",

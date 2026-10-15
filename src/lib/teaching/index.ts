@@ -4,3 +4,4 @@ export * from "./notepadPrefs";
 export * from "./reachPdfPath";
 export * from "./pdfAnnotations";
 export * from "./pdfInkGeometry";
+export * from "./pdfExportRange";
