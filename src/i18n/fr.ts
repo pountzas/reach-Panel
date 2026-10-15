@@ -158,6 +158,11 @@ export const fr = {
   modeTabletsHint:
     "Normal et Focus sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon reste indisponible tant que le pont n’est pas démarré ou qu’aucune tablette n’est appariée ; sélectionné quand une tablette est connectée.",
 
+  showTeachingInputHelpers: "Afficher les aides à la saisie en mode Enseignement",
+
+  showTeachingInputHelpersDescription:
+    "Barre de suggestions, micro et aperçu de saisie en direct pendant l’enseignement.",
+
   focusModeOverrideLabel: "Mode Focus",
 
   focusModeTransparent: "Clavier transparent",

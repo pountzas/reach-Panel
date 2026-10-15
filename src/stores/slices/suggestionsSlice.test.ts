@@ -123,4 +123,68 @@ describe("applySuggestion", () => {
     expect(notifyError).not.toHaveBeenCalled();
     expect(useAppStore.getState().typedBuffer).toBe("hello ");
   });
+
+  it("applies into the Free write notepad instead of OS inject", async () => {
+    invokeMock.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_suggestions") return Promise.resolve([]);
+      if (cmd === "cmd_record_word") return Promise.resolve(null);
+      return Promise.resolve({ success: true });
+    });
+    useAppStore.setState({
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "freeWrite",
+      freeWriteFocus: "notepad",
+      typedBuffer: "hel",
+      settings: {
+        ...DEFAULT_SETTINGS,
+        suggestionsVisible: true,
+        predictionEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        freeWriteNotepadText: "hel",
+        showTeachingInputHelpers: true,
+      },
+    });
+
+    await useAppStore.getState().applySuggestion("hello");
+
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "cmd_type_text",
+      expect.anything(),
+    );
+    expect(useAppStore.getState().settings.freeWriteNotepadText).toBe("hello ");
+    expect(useAppStore.getState().typedBuffer).toBe("hello ");
+  });
+
+  it("applies into the spelling buffer instead of OS inject", async () => {
+    invokeMock.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_suggestions") return Promise.resolve([]);
+      if (cmd === "cmd_record_word") return Promise.resolve(null);
+      return Promise.resolve({ success: true });
+    });
+    useAppStore.setState({
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "spelling",
+      languageLessonPlaying: true,
+      languageInputBuffer: "hel",
+      typedBuffer: "hel",
+      settings: {
+        ...DEFAULT_SETTINGS,
+        suggestionsVisible: true,
+        predictionEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        showTeachingInputHelpers: true,
+      },
+    });
+
+    await useAppStore.getState().applySuggestion("hello");
+
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "cmd_type_text",
+      expect.anything(),
+    );
+    expect(useAppStore.getState().languageInputBuffer).toBe("hello");
+    expect(useAppStore.getState().typedBuffer).toBe("hello ");
+  });
 });

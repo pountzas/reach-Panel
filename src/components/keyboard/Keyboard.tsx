@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { isTeachingSessionActive } from "../../lib/appModeLayout";
 import { isLanguageLessonCaptureActive } from "../../lib/language";
 import { isFreeWriteCaptureActive } from "../../lib/teaching";
+import { isDictationKeyVisible } from "../../lib/teachingInputHelpers";
 import { useAppStore } from "../../stores/appStore";
 import {
   displayLabel,
@@ -60,7 +62,6 @@ export function Keyboard() {
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
   const dictationState = useAppStore((s) => s.dictationState);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
-  const stopDictation = useAppStore((s) => s.stopDictation);
   const sttCapability = useAppStore((s) => s.sttCapability);
   const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
   const applyTypedLayoutTranslation = useAppStore((s) => s.applyTypedLayoutTranslation);
@@ -97,10 +98,18 @@ export function Keyboard() {
     settings.typingLanguage,
     layoutKeyLabels,
   );
+  const teachingSessionActive = isTeachingSessionActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
+  const dictationKeyVisible = isDictationKeyVisible(
+    settings,
+    teachingSessionActive,
+  );
   const rows = useMemo<KeyDef[][]>(() => {
-    if (settings.dictationVisible) return baseRows;
+    if (dictationKeyVisible) return baseRows;
     return baseRows.map((row) => row.filter((k) => k.key !== "dictate"));
-  }, [baseRows, settings.dictationVisible]);
+  }, [baseRows, dictationKeyVisible]);
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
   const fontSize = effectiveKeyboardFontSize(
     settings.keyboardFontSize,
@@ -155,12 +164,6 @@ export function Keyboard() {
   useEffect((): void => {
     void refreshSttCapability();
   }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
-
-  useEffect((): void => {
-    if (!settings.dictationVisible && dictationState !== "idle") {
-      void stopDictation();
-    }
-  }, [settings.dictationVisible, dictationState, stopDictation]);
 
   let dictateAriaLabel = listening ? t("dictationStop") : t("dictationStart");
   if (dictateDisabled) {

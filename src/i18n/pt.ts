@@ -158,6 +158,11 @@ export const pt = {
   modeTabletsHint:
     "Normal e Foco são teclado. Ensino abre lições; Música mostra o sintetizador. Companheiro fica indisponível até a bridge estar ativa ou um tablet emparelhado; fica selecionado enquanto um tablet estiver ligado.",
 
+  showTeachingInputHelpers: "Mostrar ajudas de entrada no modo Ensino",
+
+  showTeachingInputHelpersDescription:
+    "Barra de sugestões, microfone e pré-visualização ao vivo enquanto o Ensino está ativo.",
+
   focusModeOverrideLabel: "Modo Foco",
 
   focusModeTransparent: "Teclado transparente",

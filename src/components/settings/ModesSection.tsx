@@ -169,6 +169,22 @@ export function ModesSection({ surface }: { surface: SurfaceColors }) {
           );
         })}
       </div>
+      <div className="mt-3">
+        <ToggleRow
+          label={t("showTeachingInputHelpers")}
+          checked={settings.showTeachingInputHelpers !== false}
+          onChange={(checked) =>
+            updateSettings({ showTeachingInputHelpers: checked })
+          }
+          surface={surface}
+        />
+        <p
+          className="mt-1 px-1 text-xs"
+          style={{ color: surface.panelMutedText }}
+        >
+          {t("showTeachingInputHelpersDescription")}
+        </p>
+      </div>
       {selectedMode === "teaching" && (
         <div className="mt-3 flex flex-wrap gap-2">
           {(

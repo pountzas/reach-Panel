@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useState,
   type CSSProperties,
   type JSX,
@@ -10,6 +11,7 @@ import type { SurfaceColors } from "../../lib/colorProfiles";
 import type { TranslationKey } from "../../i18n";
 import { notify } from "../../lib/notify";
 import { useTranslation } from "../../hooks/useTranslation";
+import { AnimatedToggle } from "./AnimatedToggle";
 
 export const fieldStyle = (surface: SurfaceColors): CSSProperties => ({
   backgroundColor: surface.insetBg,
@@ -68,21 +70,33 @@ export const ToggleRow = ({
   surface,
   disabled = false,
 }: ToggleRowProps): JSX.Element => {
+  const labelId = useId();
+
   return (
-    <label
+    <div
+      role="presentation"
       className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
       style={{ backgroundColor: surface.insetBg }}
+      onClick={() => {
+        if (disabled) return;
+        onChange(!checked);
+      }}
     >
-      <span className="text-sm" style={{ color: surface.panelText }}>
+      <span
+        id={labelId}
+        className="text-sm"
+        style={{ color: surface.panelText }}
+      >
         {label}
       </span>
-      <input
-        type="checkbox"
+      <AnimatedToggle
         checked={checked}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={onChange}
+        surface={surface}
+        aria-labelledby={labelId}
       />
-    </label>
+    </div>
   );
 };
 

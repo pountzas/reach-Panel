@@ -189,6 +189,11 @@ export const en = {
   modeTabletsHint:
     "Normal and Focus are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion stays unavailable until the bridge is started or a tablet is paired; it becomes the selected mode while a tablet is connected.",
 
+  showTeachingInputHelpers: "Show input helpers in Teaching mode",
+
+  showTeachingInputHelpersDescription:
+    "Suggestions bar, mic, and live input preview while Teaching is active.",
+
   focusModeOverrideLabel: "Focus mode",
 
   focusModeTransparent: "Transparent keyboard",
