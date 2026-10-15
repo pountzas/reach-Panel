@@ -70,6 +70,14 @@ export const de = {
   freeWritePdfEmpty: "Öffnen Sie ein PDF zum Lesen neben Ihren Notizen.",
   freeWritePdfPrevPage: "Vorherige Seite",
   freeWritePdfNextPage: "Nächste Seite",
+  freeWritePdfPen: "Stift",
+  freeWritePdfEraser: "Radierer",
+  freeWritePdfTextTool: "Text",
+  freeWritePdfUndo: "Rückgängig",
+  freeWritePdfClearAll: "Alles löschen",
+  freeWritePdfClearAllConfirm:
+    "Alle Markierungen und Texte für dieses PDF löschen? Die Reach-Arbeitskopie wird entfernt.",
+  freeWritePdfDeleteText: "Text löschen",
 
   comingSoon: "Demnächst",
 

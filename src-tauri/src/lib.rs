@@ -8,6 +8,7 @@ mod profiles;
 mod services;
 mod stt;
 mod teaching_pdf;
+mod teaching_pdf_reach;
 mod window;
 
 #[cfg(not(target_os = "windows"))]
@@ -644,6 +645,39 @@ fn cmd_save_teaching_pdfs(app: tauri::AppHandle, entries: serde_json::Value) -> 
 }
 
 #[tauri::command]
+fn cmd_ensure_teaching_reach_pdf(
+    app: tauri::AppHandle,
+    original_path: String,
+) -> Result<teaching_pdf_reach::ReachPathResult, String> {
+    teaching_pdf_reach::ensure_reach_pdf(&app, &original_path)
+}
+
+#[tauri::command]
+fn cmd_read_teaching_reach_annotations(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<teaching_pdf_reach::ReachAnnotationsResult, String> {
+    teaching_pdf_reach::read_reach_annotations(&app, &path)
+}
+
+#[tauri::command]
+fn cmd_write_teaching_reach_annotations(
+    app: tauri::AppHandle,
+    path: String,
+    json: String,
+) -> Result<teaching_pdf_reach::ReachPathResult, String> {
+    teaching_pdf_reach::write_reach_annotations(&app, &path, &json)
+}
+
+#[tauri::command]
+fn cmd_delete_teaching_reach_pdf(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<teaching_pdf_reach::ReachDeleteResult, String> {
+    teaching_pdf_reach::delete_reach_pdf(&app, &path)
+}
+
+#[tauri::command]
 fn cmd_read_music_file(app: tauri::AppHandle, path: String) -> Result<MusicFilePayload, String> {
     let bytes = music::read_music_file_bytes(&app, &path)?;
     Ok(MusicFilePayload {
@@ -956,6 +990,10 @@ pub fn run() {
             cmd_delete_imported_song,
             cmd_list_teaching_pdfs,
             cmd_save_teaching_pdfs,
+            cmd_ensure_teaching_reach_pdf,
+            cmd_read_teaching_reach_annotations,
+            cmd_write_teaching_reach_annotations,
+            cmd_delete_teaching_reach_pdf,
             cmd_list_custom_language_packs,
             cmd_upsert_custom_language_pack,
             cmd_delete_custom_language_pack,

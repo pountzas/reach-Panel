@@ -4,10 +4,12 @@ import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSurfaceColors } from "../../lib/colorProfiles";
+import { clonePdfAnnotationDoc, ensurePage } from "../../lib/teaching";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
-import { CloseIcon, LoadSongIcon } from "../common/SectionIcons";
+import { CloseIcon, LoadSongIcon, TrashIcon } from "../common/SectionIcons";
 import { TeachingLessonToolbarButton } from "./TeachingLessonPanel";
+import { FreeWritePdfAnnotationOverlay } from "./FreeWritePdfAnnotationOverlay";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -34,6 +36,14 @@ export function FreeWritePdfPane() {
   const pickTeachingPdf = useAppStore((s) => s.pickTeachingPdf);
   const closeTeachingPdf = useAppStore((s) => s.closeTeachingPdf);
   const setFreeWriteFocus = useAppStore((s) => s.setFreeWriteFocus);
+  const tool = useAppStore((s) => s.freeWritePdfTool);
+  const setTool = useAppStore((s) => s.setFreeWritePdfTool);
+  const undoDepth = useAppStore((s) => s.freeWriteUndoDepth);
+  const undoAnnotation = useAppStore((s) => s.undoFreeWriteAnnotation);
+  const clearAll = useAppStore((s) => s.clearAllFreeWriteAnnotations);
+  const selectedTextId = useAppStore((s) => s.freeWriteSelectedTextId);
+  const setSelectedTextId = useAppStore((s) => s.setFreeWriteSelectedTextId);
+  const applyUpdater = useAppStore((s) => s.applyFreeWriteAnnotationUpdater);
 
   const surface = getSurfaceColors(settings.appBgColor);
   const active =
@@ -47,6 +57,7 @@ export function FreeWritePdfPane() {
   const [viewerZoom, setViewerZoom] = useState(100);
   const [error, setError] = useState<string | null>(null);
   const [docReadyPath, setDocReadyPath] = useState<string | null>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasMounted, setCanvasMounted] = useState(false);
@@ -77,6 +88,7 @@ export function FreeWritePdfPane() {
       }
       setDocReadyPath(null);
       setError(null);
+      setCanvasSize({ width: 0, height: 0 });
 
       if (!activePath) {
         setPageCount(0);
@@ -140,6 +152,7 @@ export function FreeWritePdfPane() {
         if (!context) return;
         canvas!.width = viewport.width;
         canvas!.height = viewport.height;
+        setCanvasSize({ width: viewport.width, height: viewport.height });
         const task = pdfPage.render({
           canvasContext: context,
           viewport,
@@ -165,10 +178,49 @@ export function FreeWritePdfPane() {
     };
   }, [activePath, docReadyPath, page, viewerZoom, canvasMounted]);
 
+  const toolBtn = (
+    id: "pen" | "eraser" | "text",
+    label: string,
+    glyph: string,
+  ) => (
+    <TeachingLessonToolbarButton
+      key={id}
+      label={label}
+      onClick={() => setTool(id)}
+      backgroundColor={tool === id ? surface.panelHeaderBg : surface.panelBg}
+      borderColor={surface.panelBorder}
+      color={surface.panelText}
+    >
+      <span className="text-sm font-medium">{glyph}</span>
+    </TeachingLessonToolbarButton>
+  );
+
+  const deleteSelectedText = () => {
+    if (!selectedTextId) return;
+    applyUpdater((d) => {
+      const next = clonePdfAnnotationDoc(d);
+      for (const key of Object.keys(next.pages)) {
+        const p = ensurePage(next, key);
+        p.texts = p.texts.filter((box) => box.id !== selectedTextId);
+      }
+      return next;
+    });
+    setSelectedTextId(null);
+  };
+
+  const onClearAll = () => {
+    if (!window.confirm(t("freeWritePdfClearAllConfirm"))) return;
+    void clearAll();
+  };
+
   return (
     <div
       className="flex h-full min-h-0 flex-col gap-2"
-      onPointerDown={() => setFreeWriteFocus("pdf")}
+      onPointerDown={() => {
+        if (useAppStore.getState().freeWriteFocus !== "pdfText") {
+          setFreeWriteFocus("pdf");
+        }
+      }}
     >
       <div className="flex shrink-0 flex-wrap items-center gap-1">
         <TeachingLessonToolbarButton
@@ -233,13 +285,48 @@ export function FreeWritePdfPane() {
           <span className="text-lg leading-none">+</span>
         </TeachingLessonToolbarButton>
         {active ? (
-          <span
-            className="min-w-0 max-w-[12rem] truncate text-xs"
-            style={{ color: surface.panelText }}
-            title={active.path}
-          >
-            {active.title}
-          </span>
+          <>
+            {toolBtn("pen", t("freeWritePdfPen"), "✏")}
+            {toolBtn("eraser", t("freeWritePdfEraser"), "⌫")}
+            {toolBtn("text", t("freeWritePdfTextTool"), "T")}
+            <TeachingLessonToolbarButton
+              label={t("freeWritePdfUndo")}
+              onClick={() => undoAnnotation()}
+              disabled={undoDepth <= 0}
+              backgroundColor={surface.panelBg}
+              borderColor={surface.panelBorder}
+              color={surface.panelText}
+            >
+              <span className="text-sm">↶</span>
+            </TeachingLessonToolbarButton>
+            <TeachingLessonToolbarButton
+              label={t("freeWritePdfClearAll")}
+              onClick={onClearAll}
+              backgroundColor={surface.panelBg}
+              borderColor={surface.panelBorder}
+              color={surface.panelText}
+            >
+              <span className="text-xs font-medium">CLR</span>
+            </TeachingLessonToolbarButton>
+            {selectedTextId ? (
+              <TeachingLessonToolbarButton
+                label={t("freeWritePdfDeleteText")}
+                onClick={deleteSelectedText}
+                backgroundColor={surface.panelBg}
+                borderColor={surface.panelBorder}
+                color={surface.panelText}
+              >
+                <TrashIcon className={TOOLBAR_ICON_CLASS} />
+              </TeachingLessonToolbarButton>
+            ) : null}
+            <span
+              className="min-w-0 max-w-[12rem] truncate text-xs"
+              style={{ color: surface.panelText }}
+              title={active.path}
+            >
+              {active.title}
+            </span>
+          </>
         ) : null}
       </div>
 
@@ -259,7 +346,16 @@ export function FreeWritePdfPane() {
             {t("freeWritePdfEmpty")}
           </p>
         ) : (
-          <canvas ref={setCanvasNode} className="mx-auto block max-w-full" />
+          <div className="relative mx-auto w-fit max-w-full">
+            <canvas ref={setCanvasNode} className="block max-w-full" />
+            {canvasSize.width > 0 && canvasSize.height > 0 ? (
+              <FreeWritePdfAnnotationOverlay
+                page={page}
+                width={canvasSize.width}
+                height={canvasSize.height}
+              />
+            ) : null}
+          </div>
         )}
       </div>
     </div>
