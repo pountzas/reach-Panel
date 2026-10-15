@@ -78,6 +78,15 @@ export const pt = {
   freeWritePdfClearAllConfirm:
     "Limpar toda a tinta e o texto deste PDF? A cópia de trabalho Reach será eliminada.",
   freeWritePdfDeleteText: "Eliminar texto",
+  freeWritePdfExport: "Exportar PDF…",
+  freeWritePdfExportFrom: "De",
+  freeWritePdfExportTo: "Até",
+  freeWritePdfExportAll: "Todas as páginas",
+  freeWritePdfExportCurrent: "Página atual",
+  freeWritePdfExportSave: "Exportar…",
+  freeWritePdfExportCancel: "Cancelar",
+  freeWritePdfExportInvalidRange: "Introduza um intervalo De/Até válido.",
+  freeWritePdfExportSuccess: "PDF exportado.",
 
   comingSoon: "Em breve",
 

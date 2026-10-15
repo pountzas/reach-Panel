@@ -8,6 +8,10 @@ use std::path::{Path, PathBuf};
 use tauri::AppHandle;
 
 use crate::teaching_pdf::{self, allow_teaching_pdf_read_path, path_is_allowed};
+use crate::teaching_pdf_appearances::{
+    apply_reach_appearances, filter_and_remap_annotations, parse_annotation_doc,
+    serialize_annotation_doc,
+};
 
 const ATTACHMENT_NAME: &str = "reach-annotations.json";
 const EMPTY_ANNOTATION_JSON: &str = r#"{"schemaVersion":1,"pages":{}}"#;
@@ -17,6 +21,8 @@ const REACH_SUFFIX: &str = ".reach.pdf";
 #[serde(rename_all = "camelCase")]
 pub struct ReachPathResult {
     pub reach_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub appearance_warning: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -29,6 +35,14 @@ pub struct ReachAnnotationsResult {
 #[serde(rename_all = "camelCase")]
 pub struct ReachDeleteResult {
     pub deleted: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReachExportResult {
+    pub dest_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub appearance_warning: Option<String>,
 }
 
 fn path_ends_with_ignore_ascii_case(path: &Path, suffix: &str) -> bool {
@@ -381,6 +395,7 @@ pub fn ensure_reach_pdf(app: &AppHandle, original_path: &str) -> Result<ReachPat
 
     Ok(ReachPathResult {
         reach_path: reach.to_string_lossy().into_owned(),
+        appearance_warning: None,
     })
 }
 
@@ -424,8 +439,139 @@ pub fn write_reach_annotations(
     }
     let mut doc = load_doc(&reach)?;
     upsert_embedded_json(&mut doc, json)?;
+    // JSON must persist even if appearances fail (spec §7).
+    let appearance_warning = match parse_annotation_doc(json) {
+        Ok(ann) => match apply_reach_appearances(&mut doc, &ann) {
+            Ok(()) => None,
+            Err(e) => Some(format!("Annotations saved, but appearances failed: {e}")),
+        },
+        Err(e) => Some(format!("Annotations saved, but appearances failed: {e}")),
+    };
     save_doc(&mut doc, &reach)?;
-    Ok(ensured)
+    Ok(ReachPathResult {
+        reach_path: ensured.reach_path,
+        appearance_warning,
+    })
+}
+
+fn ensure_dest_is_reach_pdf(path: &Path) -> Result<PathBuf, String> {
+    if is_reach_pdf_path(path) {
+        return Ok(path.to_path_buf());
+    }
+    let s = path.to_string_lossy();
+    if s.to_ascii_lowercase().ends_with(".pdf") {
+        let stem = &s[..s.len() - 4];
+        return Ok(PathBuf::from(format!("{stem}{REACH_SUFFIX}")));
+    }
+    Ok(PathBuf::from(format!("{s}{REACH_SUFFIX}")))
+}
+
+fn page_source_for_export(source: &Path) -> PathBuf {
+    let original = to_original_pdf_path(source);
+    let reach = to_reach_pdf_path(source);
+    if original.exists() {
+        original
+    } else if reach.exists() {
+        reach
+    } else {
+        source.to_path_buf()
+    }
+}
+
+/// Export pages `from_page..=to_page` (1-based inclusive) to a new `.reach.pdf`.
+/// Never modifies the original or replaces the full working sibling with a subset.
+pub fn export_reach_pdf(
+    app: &AppHandle,
+    source_path: &str,
+    from_page: u32,
+    to_page: u32,
+    dest_path: &str,
+) -> Result<ReachExportResult, String> {
+    let source_trimmed = source_path.trim();
+    let dest_trimmed = dest_path.trim();
+    if source_trimmed.is_empty() || dest_trimmed.is_empty() {
+        return Err("Teaching PDF path is empty".to_string());
+    }
+    if from_page == 0 || to_page == 0 || from_page > to_page {
+        return Err("Invalid export page range".to_string());
+    }
+
+    let source = PathBuf::from(source_trimmed);
+    let _ = assert_allowed_pdf(app, &source)?;
+
+    let dest = ensure_dest_is_reach_pdf(Path::new(dest_trimmed))?;
+    if !is_reach_pdf_path(&dest) {
+        return Err("Export destination must be a .reach.pdf".to_string());
+    }
+    // Never overwrite the open full sibling with a subset export.
+    let source_reach = to_reach_pdf_path(&source);
+    if dest.exists() {
+        if let (Ok(dest_can), Ok(reach_can)) = (dest.canonicalize(), source_reach.canonicalize()) {
+            if dest_can == reach_can {
+                return Err("Refusing to replace the full working sibling with an export".to_string());
+            }
+        } else if dest == source_reach {
+            return Err("Refusing to replace the full working sibling with an export".to_string());
+        }
+    }
+    let source_original = to_original_pdf_path(&source);
+    if dest == source_original || (!is_reach_pdf_path(&dest) && dest == source) {
+        return Err("Refusing to write original PDF".to_string());
+    }
+
+    let page_source = page_source_for_export(&source);
+    if !page_source.exists() {
+        return Err("Source PDF for export not found".to_string());
+    }
+
+    // Annotations come from the reach sibling when present.
+    let ann_json = {
+        let reach = to_reach_pdf_path(&source);
+        if reach.exists() {
+            allow_teaching_pdf_read_path(&reach);
+            let mut reach_doc = load_doc(&reach)?;
+            extract_embedded_json(&mut reach_doc)?.unwrap_or_else(|| EMPTY_ANNOTATION_JSON.to_string())
+        } else {
+            EMPTY_ANNOTATION_JSON.to_string()
+        }
+    };
+    let ann_doc = parse_annotation_doc(&ann_json)?;
+    let remapped = filter_and_remap_annotations(&ann_doc, from_page, to_page);
+    let remapped_json = serialize_annotation_doc(&remapped)?;
+
+    let mut doc = load_doc(&page_source)?;
+    let pages = doc.get_pages();
+    let page_count = pages.len() as u32;
+    if to_page > page_count {
+        return Err(format!(
+            "Export range {from_page}-{to_page} exceeds page count {page_count}"
+        ));
+    }
+    let to_delete: Vec<u32> = pages
+        .keys()
+        .copied()
+        .filter(|n| *n < from_page || *n > to_page)
+        .collect();
+    if !to_delete.is_empty() {
+        doc.delete_pages(&to_delete);
+    }
+
+    upsert_embedded_json(&mut doc, &remapped_json)?;
+    let appearance_warning = match apply_reach_appearances(&mut doc, &remapped) {
+        Ok(()) => None,
+        Err(e) => Some(format!("Export written, but appearances failed: {e}")),
+    };
+
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create export folder: {e}"))?;
+    }
+    save_doc(&mut doc, &dest)?;
+    allow_teaching_pdf_read_path(&dest);
+
+    Ok(ReachExportResult {
+        dest_path: dest.to_string_lossy().into_owned(),
+        appearance_warning,
+    })
 }
 
 pub fn delete_reach_pdf(app: &AppHandle, path: &str) -> Result<ReachDeleteResult, String> {

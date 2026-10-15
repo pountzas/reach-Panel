@@ -79,6 +79,16 @@ export const de = {
     "Alle Markierungen und Texte für dieses PDF löschen? Die Reach-Arbeitskopie wird entfernt.",
   freeWritePdfDeleteText: "Text löschen",
 
+  freeWritePdfExport: "PDF exportieren…",
+  freeWritePdfExportFrom: "Von",
+  freeWritePdfExportTo: "Bis",
+  freeWritePdfExportAll: "Alle Seiten",
+  freeWritePdfExportCurrent: "Aktuelle Seite",
+  freeWritePdfExportSave: "Exportieren…",
+  freeWritePdfExportCancel: "Abbrechen",
+  freeWritePdfExportInvalidRange: "Gültigen Von/Bis-Seitenbereich eingeben.",
+  freeWritePdfExportSuccess: "PDF exportiert.",
+
   comingSoon: "Demnächst",
 
   mathLessonTitle: "Mathematik",

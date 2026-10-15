@@ -8,6 +8,7 @@ mod profiles;
 mod services;
 mod stt;
 mod teaching_pdf;
+mod teaching_pdf_appearances;
 mod teaching_pdf_reach;
 mod window;
 
@@ -609,6 +610,50 @@ async fn cmd_pick_teaching_pdf(app: tauri::AppHandle) -> Result<Option<String>, 
         .map_err(|e| e.to_string())?
 }
 
+fn pick_teaching_reach_export_path(
+    app: &tauri::AppHandle,
+    suggested_name: String,
+) -> Result<Option<String>, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    window.set_always_on_top(false).map_err(|e| e.to_string())?;
+    let _restore = RestoreAlwaysOnTop(app.clone());
+
+    let file = rfd::FileDialog::new()
+        .add_filter("PDF", &["pdf"])
+        .set_file_name(&suggested_name)
+        .set_parent(&window)
+        .save_file();
+
+    Ok(file.map(|p| {
+        teaching_pdf::allow_teaching_pdf_read_path(&p);
+        p.to_string_lossy().into_owned()
+    }))
+}
+
+#[tauri::command]
+async fn cmd_pick_teaching_reach_export_path(
+    app: tauri::AppHandle,
+    suggested_name: String,
+) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || pick_teaching_reach_export_path(&app, suggested_name))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn cmd_export_teaching_reach_pdf(
+    app: tauri::AppHandle,
+    source_path: String,
+    from_page: u32,
+    to_page: u32,
+    dest_path: String,
+) -> Result<teaching_pdf_reach::ReachExportResult, String> {
+    teaching_pdf_reach::export_reach_pdf(&app, &source_path, from_page, to_page, &dest_path)
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct TeachingPdfPayload {
@@ -994,6 +1039,8 @@ pub fn run() {
             cmd_read_teaching_reach_annotations,
             cmd_write_teaching_reach_annotations,
             cmd_delete_teaching_reach_pdf,
+            cmd_pick_teaching_reach_export_path,
+            cmd_export_teaching_reach_pdf,
             cmd_list_custom_language_packs,
             cmd_upsert_custom_language_pack,
             cmd_delete_custom_language_pack,

@@ -100,6 +100,24 @@ export const en = {
 
   freeWritePdfDeleteText: "Delete text",
 
+  freeWritePdfExport: "Export PDF…",
+
+  freeWritePdfExportFrom: "From",
+
+  freeWritePdfExportTo: "To",
+
+  freeWritePdfExportAll: "All pages",
+
+  freeWritePdfExportCurrent: "Current page",
+
+  freeWritePdfExportSave: "Export…",
+
+  freeWritePdfExportCancel: "Cancel",
+
+  freeWritePdfExportInvalidRange: "Enter a valid From/To page range.",
+
+  freeWritePdfExportSuccess: "PDF exported.",
+
   comingSoon: "Coming soon",
 
   mathLessonTitle: "Mathematics",

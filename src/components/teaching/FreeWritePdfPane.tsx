@@ -10,6 +10,7 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { CloseIcon, LoadSongIcon, TrashIcon } from "../common/SectionIcons";
 import { TeachingLessonToolbarButton } from "./TeachingLessonPanel";
 import { FreeWritePdfAnnotationOverlay } from "./FreeWritePdfAnnotationOverlay";
+import { FreeWritePdfExportDialog } from "./FreeWritePdfExportDialog";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -41,11 +42,13 @@ export function FreeWritePdfPane() {
   const undoDepth = useAppStore((s) => s.freeWriteUndoDepth);
   const undoAnnotation = useAppStore((s) => s.undoFreeWriteAnnotation);
   const clearAll = useAppStore((s) => s.clearAllFreeWriteAnnotations);
+  const exportTeachingReachPdf = useAppStore((s) => s.exportTeachingReachPdf);
   const selectedTextId = useAppStore((s) => s.freeWriteSelectedTextId);
   const setSelectedTextId = useAppStore((s) => s.setFreeWriteSelectedTextId);
   const applyUpdater = useAppStore((s) => s.applyFreeWriteAnnotationUpdater);
 
   const surface = getSurfaceColors(settings.appBgColor);
+  const [exportOpen, setExportOpen] = useState(false);
   const active =
     teachingPdfLibrary.find((e) => e.id === freeWriteActivePdfId) ??
     teachingPdfLibrary[0] ??
@@ -308,6 +311,15 @@ export function FreeWritePdfPane() {
             >
               <span className="text-xs font-medium">CLR</span>
             </TeachingLessonToolbarButton>
+            <TeachingLessonToolbarButton
+              label={t("freeWritePdfExport")}
+              onClick={() => setExportOpen(true)}
+              backgroundColor={surface.panelBg}
+              borderColor={surface.panelBorder}
+              color={surface.panelText}
+            >
+              <span className="text-xs font-medium">EXP</span>
+            </TeachingLessonToolbarButton>
             {selectedTextId ? (
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfDeleteText")}
@@ -358,6 +370,18 @@ export function FreeWritePdfPane() {
           </div>
         )}
       </div>
+
+      <FreeWritePdfExportDialog
+        open={exportOpen && Boolean(active)}
+        pageCount={pageCount}
+        currentPage={page}
+        surface={surface}
+        onCancel={() => setExportOpen(false)}
+        onExport={(from, to) => {
+          setExportOpen(false);
+          void exportTeachingReachPdf(from, to);
+        }}
+      />
     </div>
   );
 }

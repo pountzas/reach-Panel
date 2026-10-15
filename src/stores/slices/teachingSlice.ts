@@ -33,8 +33,10 @@ import {
   parsePdfAnnotationJson,
   replaceTeachingPdf,
   serializePdfAnnotationJson,
+  suggestedExportFileName,
 } from "../../lib/teaching";
 import type { TeachingPdfEntry } from "../../lib/teaching";
+import { t as translate } from "../../i18n";
 
 const SAVE_DEBOUNCE_MS = 400;
 let freeWriteSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -780,11 +782,55 @@ export const createTeachingSlice: StateCreator<
     const state = get();
     if (!state.freeWriteAnnotationDirty || !freeWriteAnnotationsPath) return;
     try {
-      await invoke("cmd_write_teaching_reach_annotations", {
+      const result = await invoke<{
+        reachPath: string;
+        appearanceWarning?: string | null;
+      }>("cmd_write_teaching_reach_annotations", {
         path: freeWriteAnnotationsPath,
         json: serializePdfAnnotationJson(state.freeWriteAnnotationDoc),
       });
       set({ freeWriteAnnotationDirty: false });
+      if (result.appearanceWarning) {
+        notify.info(result.appearanceWarning);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify.error(message);
+    }
+  },
+  exportTeachingReachPdf: async (from, to) => {
+    const state = get();
+    const active =
+      state.teachingPdfLibrary.find((e) => e.id === state.freeWriteActivePdfId) ??
+      state.teachingPdfLibrary[0] ??
+      null;
+    if (!active?.path) {
+      notify.error(translate(state.settings.uiLanguage, "freeWritePdfEmpty"));
+      return;
+    }
+    try {
+      await get().flushFreeWriteAnnotations();
+      const suggestedName = suggestedExportFileName(active.path, from, to);
+      const destPath = await invoke<string | null>(
+        "cmd_pick_teaching_reach_export_path",
+        { suggestedName },
+      );
+      if (!destPath) return;
+      const result = await invoke<{
+        destPath: string;
+        appearanceWarning?: string | null;
+      }>("cmd_export_teaching_reach_pdf", {
+        sourcePath: active.path,
+        fromPage: from,
+        toPage: to,
+        destPath,
+      });
+      notify.success(
+        translate(state.settings.uiLanguage, "freeWritePdfExportSuccess"),
+      );
+      if (result.appearanceWarning) {
+        notify.info(result.appearanceWarning);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       notify.error(message);
