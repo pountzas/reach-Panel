@@ -53,6 +53,7 @@ export function computeTeachingChromeVisibility(
   );
   return {
     showInputPreview:
+      !input.teachingSessionActive &&
       !input.showSynth &&
       !input.compact &&
       !helpersHidden &&

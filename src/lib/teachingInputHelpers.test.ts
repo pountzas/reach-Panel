@@ -106,9 +106,9 @@ describe("teachingInputHelpers", () => {
       });
     });
 
-    it("keeps chrome when Teaching is on and helpers stay on", () => {
+    it("never shows live preview in Teaching even when helpers stay on", () => {
       expect(chrome({ teachingSessionActive: true })).toEqual({
-        showInputPreview: true,
+        showInputPreview: false,
         showSuggestions: true,
         dictationKeyVisible: true,
       });
@@ -166,7 +166,7 @@ describe("teachingInputHelpers", () => {
           languageLessonActive: true,
         }),
       ).toEqual({
-        showInputPreview: true,
+        showInputPreview: false,
         showSuggestions: true,
         dictationKeyVisible: true,
       });

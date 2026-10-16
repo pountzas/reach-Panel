@@ -34,6 +34,7 @@ import {
 import {
   coercePersistedKeyboardSectionMode,
   hydrateKeyboardSectionMode,
+  isTeachingSessionActive,
   needsKeyboardSectionModeMigration,
   settingsForPersist,
   teachingSessionKeyboardMode,
@@ -533,9 +534,15 @@ export async function syncInputPreviewEnabled(get: () => AppStore): Promise<void
   if (WebviewWindow.getCurrent().label !== "main") {
     return;
   }
-  const { settings, focusModeActive } = get();
+  const { settings, focusModeActive, musicTeachingEnabled } = get();
+  const teachingSessionActive = isTeachingSessionActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
   await invoke("cmd_set_input_preview_enabled", {
-    enabled: isInputPreviewActiveForMode(settings, focusModeActive),
+    enabled:
+      !teachingSessionActive &&
+      isInputPreviewActiveForMode(settings, focusModeActive),
   });
 }
 
