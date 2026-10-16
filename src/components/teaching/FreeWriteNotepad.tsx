@@ -51,27 +51,30 @@ export function FreeWriteNotepad() {
         </span>
         <TeachingLessonToolbarButton
           label={t("freeWriteZoomOut")}
+          size="sm"
           onClick={() => setFreeWriteNotepadZoom(zoom - 25)}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
         >
-          <span className="text-lg leading-none">−</span>
+          <span className="text-base leading-none">−</span>
         </TeachingLessonToolbarButton>
         <span className="min-w-[3rem] text-center text-xs" style={{ color: surface.panelMutedText }}>
           {zoom}%
         </span>
         <TeachingLessonToolbarButton
           label={t("freeWriteZoomIn")}
+          size="sm"
           onClick={() => setFreeWriteNotepadZoom(zoom + 25)}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
         >
-          <span className="text-lg leading-none">+</span>
+          <span className="text-base leading-none">+</span>
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteWordWrap")}
+          size="sm"
           onClick={() => setFreeWriteNotepadWrap(!wrap)}
           backgroundColor={wrap ? "#fde68a" : surface.panelBg}
           borderColor={surface.panelBorder}
@@ -81,6 +84,7 @@ export function FreeWriteNotepad() {
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteLineNumbers")}
+          size="sm"
           onClick={() => setFreeWriteNotepadLineNumbers(!lineNumbers)}
           backgroundColor={lineNumbers ? "#fde68a" : surface.panelBg}
           borderColor={surface.panelBorder}
@@ -90,6 +94,7 @@ export function FreeWriteNotepad() {
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteClearAll")}
+          size="sm"
           onClick={() => setClearConfirmOpen(true)}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
