@@ -50,6 +50,7 @@ import { greekComposeEnabled, processCharacterInput } from "../../lib/keyboardCh
 import { applyGreekLayoutTranslation } from "../../lib/layoutKeyTranslation";
 import type { LanguagePack } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
+import { syncTeachingSuggestions } from "../lib/teachingSuggestions";
 
 export const createTeachingSlice: StateCreator<
   AppStore,
@@ -392,7 +393,9 @@ export const createTeachingSlice: StateCreator<
       languageInputBuffer: result.buffer,
       greekPendingAccent: result.pendingAccent,
       languageAnswerIncorrect: false,
+      typedBuffer: result.buffer,
     });
+    void get().loadSuggestions();
   },
   languageBackspace: () => {
     if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get())))
@@ -404,11 +407,14 @@ export const createTeachingSlice: StateCreator<
           languageAnswerIncorrect: false,
         };
       }
+      const languageInputBuffer = state.languageInputBuffer.slice(0, -1);
       return {
-        languageInputBuffer: state.languageInputBuffer.slice(0, -1),
+        languageInputBuffer,
         languageAnswerIncorrect: false,
+        typedBuffer: languageInputBuffer,
       };
     });
+    void get().loadSuggestions();
   },
   checkLanguageAnswer: () => {
     const state = get();
@@ -438,12 +444,14 @@ export const createTeachingSlice: StateCreator<
       languageTaskIndex: state.languageTaskIndex + 1,
       languageInputBuffer: "",
       languageAnswerIncorrect: false,
+      typedBuffer: "",
       languageLessonPlaying:
         state.languageTaskIndex + 1 >= pack.tasks.length
           ? false
           : state.languageLessonPlaying,
       ...clearGreekPendingAccent(),
     });
+    void get().loadSuggestions();
   },
   setLanguageSubjectTab: (tab) => {
     if (tab !== "spelling" && get().languageLessonPlaying) {
@@ -465,6 +473,7 @@ export const createTeachingSlice: StateCreator<
     if (state.freeWriteFocus === "pdfText") {
       const textId = state.freeWriteSelectedTextId;
       if (!textId) return;
+      let nextBody = "";
       get().applyFreeWriteAnnotationUpdater(
         (doc) => {
           const next = clonePdfAnnotationDoc(doc);
@@ -472,6 +481,7 @@ export const createTeachingSlice: StateCreator<
             const box = page.texts.find((t) => t.id === textId);
             if (box) {
               box.body = `${box.body}${ch}`;
+              nextBody = box.body;
               break;
             }
           }
@@ -479,6 +489,7 @@ export const createTeachingSlice: StateCreator<
         },
         { pushUndo: false },
       );
+      syncTeachingSuggestions({ get, set, buffer: nextBody });
       return;
     }
     const greek = greekComposeEnabled({
@@ -494,8 +505,12 @@ export const createTeachingSlice: StateCreator<
     const result = processCharacterInput(text, state.greekPendingAccent, ch, {
       greekCompose: greek,
     });
-    set({ greekPendingAccent: result.pendingAccent });
+    set({
+      greekPendingAccent: result.pendingAccent,
+      typedBuffer: result.buffer,
+    });
     void get().updateSettings({ freeWriteNotepadText: result.buffer });
+    void get().loadSuggestions();
   },
   freeWriteNotepadBackspace: () => {
     if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
@@ -507,6 +522,7 @@ export const createTeachingSlice: StateCreator<
         set(clearGreekPendingAccent());
         return;
       }
+      let nextBody = "";
       get().applyFreeWriteAnnotationUpdater(
         (doc) => {
           const next = clonePdfAnnotationDoc(doc);
@@ -514,6 +530,7 @@ export const createTeachingSlice: StateCreator<
             const box = page.texts.find((t) => t.id === textId);
             if (box) {
               box.body = box.body.slice(0, -1);
+              nextBody = box.body;
               break;
             }
           }
@@ -521,6 +538,7 @@ export const createTeachingSlice: StateCreator<
         },
         { pushUndo: false },
       );
+      syncTeachingSuggestions({ get, set, buffer: nextBody });
       return;
     }
     if (state.greekPendingAccent) {
@@ -529,7 +547,10 @@ export const createTeachingSlice: StateCreator<
     }
     const text = state.settings.freeWriteNotepadText ?? "";
     if (!text) return;
-    void get().updateSettings({ freeWriteNotepadText: text.slice(0, -1) });
+    const next = text.slice(0, -1);
+    set({ typedBuffer: next });
+    void get().updateSettings({ freeWriteNotepadText: next });
+    void get().loadSuggestions();
   },
   applyFreeWriteLayoutTranslation: (translation, options) => {
     if (!isFreeWriteCaptureActive(freeWriteModeFromState(get()))) return;
@@ -580,6 +601,7 @@ export const createTeachingSlice: StateCreator<
         },
         { pushUndo: false },
       );
+      syncTeachingSuggestions({ get, set, buffer: result.buffer });
       return;
     }
     const greek = greekComposeEnabled({
@@ -603,8 +625,12 @@ export const createTeachingSlice: StateCreator<
         greekCompose: greek,
       },
     );
-    set({ greekPendingAccent: result.pending });
+    set({
+      greekPendingAccent: result.pending,
+      typedBuffer: result.buffer,
+    });
     void get().updateSettings({ freeWriteNotepadText: result.buffer });
+    void get().loadSuggestions();
   },
   setFreeWriteNotepadText: (text) => {
     void get().updateSettings({ freeWriteNotepadText: text });
