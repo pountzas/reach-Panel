@@ -13,6 +13,8 @@ import { useAppStore } from "../../stores/appStore";
 const PEN_COLOR = "#000000";
 const PEN_WIDTH = 0.002;
 const ERASER_RADIUS = 0.018;
+const DOUBLE_TAP_MS = 350;
+const DOUBLE_TAP_MOVE = 0.015;
 
 type Props = {
   page: number;
@@ -35,6 +37,25 @@ function clientToNormalized(
   return [Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))];
 }
 
+function cursorForTool(
+  tool: "pointer" | "pen" | "eraser" | "text",
+): string {
+  switch (tool) {
+    case "pointer":
+      return "default";
+    case "pen":
+      return "crosshair";
+    case "eraser":
+      return "cell";
+    case "text":
+      return "text";
+    default: {
+      const _exhaustive: never = tool;
+      return _exhaustive;
+    }
+  }
+}
+
 /** Ink / text overlay sized to the rendered PDF page canvas. */
 export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
   const tool = useAppStore((s) => s.freeWritePdfTool);
@@ -42,6 +63,7 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
   const selectedTextId = useAppStore((s) => s.freeWriteSelectedTextId);
   const applyUpdater = useAppStore((s) => s.applyFreeWriteAnnotationUpdater);
   const setSelectedTextId = useAppStore((s) => s.setFreeWriteSelectedTextId);
+  const beginTextEdit = useAppStore((s) => s.beginFreeWritePdfTextEdit);
   const setFreeWriteFocus = useAppStore((s) => s.setFreeWriteFocus);
 
   const drawingRef = useRef<{ id: string; points: PdfPoint[] } | null>(null);
@@ -50,6 +72,11 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     id: string;
     start: PdfPoint;
     origin: { x: number; y: number };
+  } | null>(null);
+  const lastTapRef = useRef<{
+    id: string;
+    at: number;
+    point: PdfPoint;
   } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -64,57 +91,68 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
 
     root.setPointerCapture(e.pointerId);
     const pt = clientToNormalized(root, e.clientX, e.clientY);
-    setFreeWriteFocus(tool === "text" ? "pdfText" : "pdf");
 
-    if (tool === "pen") {
-      gestureBeforeRef.current = clonePdfAnnotationDoc(doc);
-      const id = crypto.randomUUID();
-      drawingRef.current = { id, points: [pt] };
-      applyUpdater(
-        (d) => {
+    switch (tool) {
+      case "pointer": {
+        setSelectedTextId(null);
+        return;
+      }
+      case "pen": {
+        setFreeWriteFocus("pdf");
+        gestureBeforeRef.current = clonePdfAnnotationDoc(doc);
+        const id = crypto.randomUUID();
+        drawingRef.current = { id, points: [pt] };
+        applyUpdater(
+          (d) => {
+            const next = clonePdfAnnotationDoc(d);
+            ensurePage(next, pageKey(page)).strokes.push({
+              id,
+              color: PEN_COLOR,
+              width: PEN_WIDTH,
+              points: [pt],
+            });
+            return next;
+          },
+          { pushUndo: false },
+        );
+        return;
+      }
+      case "eraser": {
+        setFreeWriteFocus("pdf");
+        gestureBeforeRef.current = clonePdfAnnotationDoc(doc);
+        applyUpdater(
+          (d) => {
+            const next = clonePdfAnnotationDoc(d);
+            const p = ensurePage(next, pageKey(page));
+            p.strokes = eraseStrokesWithBrush(p.strokes, pt, ERASER_RADIUS);
+            return next;
+          },
+          { pushUndo: false },
+        );
+        return;
+      }
+      case "text": {
+        setFreeWriteFocus("pdfText");
+        const id = crypto.randomUUID();
+        const box: PdfTextBox = {
+          id,
+          x: Math.min(pt[0], 0.95),
+          y: Math.min(pt[1], 0.95),
+          w: 0.35,
+          body: "",
+        };
+        applyUpdater((d) => {
           const next = clonePdfAnnotationDoc(d);
-          ensurePage(next, pageKey(page)).strokes.push({
-            id,
-            color: PEN_COLOR,
-            width: PEN_WIDTH,
-            points: [pt],
-          });
+          ensurePage(next, pageKey(page)).texts.push(box);
           return next;
-        },
-        { pushUndo: false },
-      );
-      return;
-    }
-
-    if (tool === "eraser") {
-      gestureBeforeRef.current = clonePdfAnnotationDoc(doc);
-      applyUpdater(
-        (d) => {
-          const next = clonePdfAnnotationDoc(d);
-          const p = ensurePage(next, pageKey(page));
-          p.strokes = eraseStrokesWithBrush(p.strokes, pt, ERASER_RADIUS);
-          return next;
-        },
-        { pushUndo: false },
-      );
-      return;
-    }
-
-    if (tool === "text") {
-      const id = crypto.randomUUID();
-      const box: PdfTextBox = {
-        id,
-        x: Math.min(pt[0], 0.95),
-        y: Math.min(pt[1], 0.95),
-        w: 0.35,
-        body: "",
-      };
-      applyUpdater((d) => {
-        const next = clonePdfAnnotationDoc(d);
-        ensurePage(next, pageKey(page)).texts.push(box);
-        return next;
-      });
-      setSelectedTextId(id);
+        });
+        beginTextEdit(id);
+        return;
+      }
+      default: {
+        const _exhaustive: never = tool;
+        return _exhaustive;
+      }
     }
   };
 
@@ -202,7 +240,11 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
       start,
       origin: { x: box.x, y: box.y },
     };
-    setSelectedTextId(box.id);
+    if (tool === "text") {
+      beginTextEdit(box.id);
+    } else {
+      setSelectedTextId(box.id);
+    }
   };
 
   const moveTextDrag = (e: ReactPointerEvent, boxId: string) => {
@@ -238,18 +280,46 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     dragRef.current = null;
     const before = gestureBeforeRef.current;
     gestureBeforeRef.current = null;
+    const currentBox = useAppStore
+      .getState()
+      .freeWriteAnnotationDoc.pages[pageKey(page)]?.texts.find(
+        (t) => t.id === boxId,
+      );
     const moved =
-      Math.abs(drag.origin.x - (useAppStore.getState().freeWriteAnnotationDoc.pages[pageKey(page)]?.texts.find((t) => t.id === boxId)?.x ?? drag.origin.x)) >
-        0.0005 ||
-      Math.abs(drag.origin.y - (useAppStore.getState().freeWriteAnnotationDoc.pages[pageKey(page)]?.texts.find((t) => t.id === boxId)?.y ?? drag.origin.y)) >
-        0.0005;
+      Math.abs(drag.origin.x - (currentBox?.x ?? drag.origin.x)) > 0.0005 ||
+      Math.abs(drag.origin.y - (currentBox?.y ?? drag.origin.y)) > 0.0005;
     if (moved && before) {
       applyUpdater((d) => d, { undoFrom: before });
+      lastTapRef.current = null;
+      return;
     }
+
+    if (tool !== "pointer") {
+      lastTapRef.current = null;
+      return;
+    }
+
+    const root = rootRef.current;
+    const point = root
+      ? clientToNormalized(root, e.clientX, e.clientY)
+      : drag.start;
+    const now = Date.now();
+    const prev = lastTapRef.current;
+    const isDouble =
+      prev &&
+      prev.id === boxId &&
+      now - prev.at <= DOUBLE_TAP_MS &&
+      Math.hypot(point[0] - prev.point[0], point[1] - prev.point[1]) <=
+        DOUBLE_TAP_MOVE;
+    if (isDouble) {
+      lastTapRef.current = null;
+      beginTextEdit(boxId);
+      return;
+    }
+    lastTapRef.current = { id: boxId, at: now, point };
   };
 
-  const cursor =
-    tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "text";
+  const cursor = cursorForTool(tool);
 
   return (
     <div
@@ -312,10 +382,6 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
             onPointerDown={(ev) => startTextDrag(ev, box)}
             onPointerMove={(ev) => moveTextDrag(ev, box.id)}
             onPointerUp={(ev) => endTextDrag(ev, box.id)}
-            onClick={(ev) => {
-              ev.stopPropagation();
-              setSelectedTextId(box.id);
-            }}
           >
             {box.body || "\u00a0"}
           </div>

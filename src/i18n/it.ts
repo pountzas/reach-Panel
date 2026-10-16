@@ -71,6 +71,7 @@ export const it = {
   freeWritePdfPrevPage: "Pagina precedente",
   freeWritePdfGoToPage: "Vai alla pagina",
   freeWritePdfNextPage: "Pagina successiva",
+  freeWritePdfPointer: "Puntatore",
   freeWritePdfPen: "Penna",
   freeWritePdfEraser: "Gomma",
   freeWritePdfTextTool: "Testo",

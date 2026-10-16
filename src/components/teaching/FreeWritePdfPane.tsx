@@ -6,7 +6,11 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { BiExport } from "react-icons/bi";
 import { IoIosRedo, IoIosUndo } from "react-icons/io";
 import { IoPencilOutline } from "react-icons/io5";
-import { MdOutlineZoomIn, MdOutlineZoomOut } from "react-icons/md";
+import {
+  MdOutlineNearMe,
+  MdOutlineZoomIn,
+  MdOutlineZoomOut,
+} from "react-icons/md";
 import { PiEraserLight } from "react-icons/pi";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import {
@@ -53,7 +57,6 @@ export function FreeWritePdfPane() {
   const loadTeachingPdfLibrary = useAppStore((s) => s.loadTeachingPdfLibrary);
   const pickTeachingPdf = useAppStore((s) => s.pickTeachingPdf);
   const closeTeachingPdf = useAppStore((s) => s.closeTeachingPdf);
-  const setFreeWriteFocus = useAppStore((s) => s.setFreeWriteFocus);
   const tool = useAppStore((s) => s.freeWritePdfTool);
   const setTool = useAppStore((s) => s.setFreeWritePdfTool);
   const undoDepth = useAppStore((s) => s.freeWriteUndoDepth);
@@ -218,7 +221,7 @@ export function FreeWritePdfPane() {
   }, [activePath, docReadyPath, page, viewerZoom, canvasMounted]);
 
   const toolBtn = (
-    id: "pen" | "eraser" | "text",
+    id: "pointer" | "pen" | "eraser" | "text",
     label: string,
     icon: ReactNode,
   ) => (
@@ -229,7 +232,7 @@ export function FreeWritePdfPane() {
       onClick={() => setTool(id)}
       backgroundColor={tool === id ? surface.panelHeaderBg : surface.panelBg}
       borderColor={surface.panelBorder}
-      color={surface.panelText}
+      color={tool === id ? "#2563eb" : surface.panelText}
     >
       {icon}
     </TeachingLessonToolbarButton>
@@ -251,10 +254,22 @@ export function FreeWritePdfPane() {
   return (
     <div
       className="flex h-full min-h-0 flex-col gap-2"
-      onPointerDown={() => {
-        if (useAppStore.getState().freeWriteFocus !== "pdfText") {
-          setFreeWriteFocus("pdf");
+      onPointerDown={(e) => {
+        const target = e.target as HTMLElement;
+        // Page canvas/overlay owns its own tools (e.g. text create-on-empty).
+        if (target.closest("[data-pdf-page]")) return;
+        if (target.closest("[data-pdf-text-box]")) return;
+        if (
+          target.closest("button, input, select, textarea, [role='button']")
+        ) {
+          return;
         }
+        // Chrome / margins outside the page: leave text-edit → pointer.
+        if (tool === "text") {
+          setTool("pointer");
+          return;
+        }
+        setSelectedTextId(null);
       }}
     >
       <div className="flex w-full shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -384,6 +399,11 @@ export function FreeWritePdfPane() {
                 <IoIosRedo className={TOOLBAR_ICON_CLASS} />
               </TeachingLessonToolbarButton>
               {toolBtn(
+                "pointer",
+                t("freeWritePdfPointer"),
+                <MdOutlineNearMe className={TOOLBAR_ICON_CLASS} />,
+              )}
+              {toolBtn(
                 "pen",
                 t("freeWritePdfPen"),
                 <IoPencilOutline className={TOOLBAR_ICON_CLASS} />,
@@ -405,7 +425,7 @@ export function FreeWritePdfPane() {
                 disabled={!selectedTextId}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
-                color={surface.panelText}
+                color={selectedTextId ? "#2563eb" : surface.panelText}
               >
                 <TextSlashIcon className={TOOLBAR_ICON_CLASS} />
               </TeachingLessonToolbarButton>
@@ -477,7 +497,10 @@ export function FreeWritePdfPane() {
             {t("freeWritePdfEmpty")}
           </p>
         ) : (
-          <div className="relative mx-auto w-fit max-w-full">
+          <div
+            className="relative mx-auto w-fit max-w-full"
+            data-pdf-page
+          >
             <canvas ref={setCanvasNode} className="block max-w-full" />
             {canvasSize.width > 0 && canvasSize.height > 0 ? (
               <FreeWritePdfAnnotationOverlay

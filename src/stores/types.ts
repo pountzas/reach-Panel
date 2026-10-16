@@ -108,7 +108,7 @@ export interface TeachingSlice {
   freeWriteFocus: FreeWriteFocus;
   teachingPdfLibrary: TeachingPdfEntry[];
   freeWriteActivePdfId: string | null;
-  freeWritePdfTool: "pen" | "eraser" | "text";
+  freeWritePdfTool: "pointer" | "pen" | "eraser" | "text";
   freeWriteAnnotationDoc: PdfAnnotationDoc;
   freeWriteSelectedTextId: string | null;
   freeWriteAnnotationDirty: boolean;
@@ -172,8 +172,9 @@ export interface TeachingSlice {
   loadTeachingPdfLibrary: () => Promise<void>;
   pickTeachingPdf: () => Promise<void>;
   closeTeachingPdf: () => Promise<void>;
-  setFreeWritePdfTool: (tool: "pen" | "eraser" | "text") => void;
+  setFreeWritePdfTool: (tool: "pointer" | "pen" | "eraser" | "text") => void;
   setFreeWriteSelectedTextId: (id: string | null) => void;
+  beginFreeWritePdfTextEdit: (id: string) => void;
   loadFreeWriteAnnotations: (path: string | null) => Promise<void>;
   scheduleSaveFreeWriteAnnotations: () => void;
   flushFreeWriteAnnotations: () => Promise<void>;

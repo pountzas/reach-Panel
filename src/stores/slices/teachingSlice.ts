@@ -98,7 +98,7 @@ export const createTeachingSlice: StateCreator<
   freeWriteFocus: "notepad",
   teachingPdfLibrary: [],
   freeWriteActivePdfId: null,
-  freeWritePdfTool: "pen",
+  freeWritePdfTool: "pointer",
   freeWriteAnnotationDoc: emptyPdfAnnotationDoc(),
   freeWriteSelectedTextId: null,
   freeWriteAnnotationDirty: false,
@@ -528,6 +528,19 @@ export const createTeachingSlice: StateCreator<
     if (focus !== get().freeWriteFocus) {
       dropTeachingSuggestionPrefix(set);
     }
+    // Leaving the PDF for notepad exits text-edit mode (pointer + no capture).
+    if (
+      focus === "notepad" &&
+      (get().freeWritePdfTool === "text" || get().freeWriteSelectedTextId)
+    ) {
+      set({
+        freeWriteFocus: "notepad",
+        freeWritePdfTool: "pointer",
+        freeWriteSelectedTextId: null,
+      });
+      void get().syncWindowFocusable();
+      return;
+    }
     set({ freeWriteFocus: focus });
     void get().syncWindowFocusable();
   },
@@ -765,7 +778,7 @@ export const createTeachingSlice: StateCreator<
       set({
         teachingPdfLibrary,
         freeWriteActivePdfId: entry.id,
-        freeWritePdfTool: "pen",
+        freeWritePdfTool: "pointer",
       });
       await get().updateSettings({ freeWriteLastPdfId: entry.id });
       await get().loadFreeWriteAnnotations(path);
@@ -789,7 +802,7 @@ export const createTeachingSlice: StateCreator<
         freeWriteAnnotationDirty: false,
         freeWriteUndoDepth: 0,
         freeWriteRedoDepth: 0,
-        freeWritePdfTool: "pen",
+        freeWritePdfTool: "pointer",
         freeWriteFocus:
           get().freeWriteFocus === "pdf" || get().freeWriteFocus === "pdfText"
             ? "notepad"
@@ -819,14 +832,49 @@ export const createTeachingSlice: StateCreator<
   },
   setFreeWriteSelectedTextId: (id) => {
     const prevId = get().freeWriteSelectedTextId;
-    const nextFocus = id ? "pdfText" : "pdf";
+    const tool = get().freeWritePdfTool;
+    if (id === null) {
+      if (prevId !== null || get().freeWriteFocus !== "pdf") {
+        dropTeachingSuggestionPrefix(set);
+      }
+      set({
+        freeWriteSelectedTextId: null,
+        freeWriteFocus: "pdf",
+      });
+      void get().syncWindowFocusable();
+      return;
+    }
+    if (tool === "pointer") {
+      if (prevId !== id || get().freeWriteFocus !== "pdf") {
+        dropTeachingSuggestionPrefix(set);
+      }
+      set({
+        freeWriteSelectedTextId: id,
+        freeWriteFocus: "pdf",
+      });
+      void get().syncWindowFocusable();
+      return;
+    }
+    const nextFocus = "pdfText";
     if (prevId !== id || get().freeWriteFocus !== nextFocus) {
       dropTeachingSuggestionPrefix(set);
     }
     set({
       freeWriteSelectedTextId: id,
       freeWriteFocus: nextFocus,
-      freeWritePdfTool: id ? "text" : get().freeWritePdfTool,
+      freeWritePdfTool: "text",
+    });
+    void get().syncWindowFocusable();
+  },
+  beginFreeWritePdfTextEdit: (id) => {
+    const prevId = get().freeWriteSelectedTextId;
+    if (prevId !== id || get().freeWriteFocus !== "pdfText") {
+      dropTeachingSuggestionPrefix(set);
+    }
+    set({
+      freeWritePdfTool: "text",
+      freeWriteSelectedTextId: id,
+      freeWriteFocus: "pdfText",
     });
     void get().syncWindowFocusable();
   },
@@ -859,7 +907,7 @@ export const createTeachingSlice: StateCreator<
         freeWriteAnnotationDirty: false,
         freeWriteUndoDepth: 0,
         freeWriteRedoDepth: 0,
-        freeWritePdfTool: "pen",
+        freeWritePdfTool: "pointer",
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

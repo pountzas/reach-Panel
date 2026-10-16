@@ -73,6 +73,7 @@ export const el = {
 
   freeWritePdfGoToPage: "Μετάβαση στη σελίδα",
   freeWritePdfNextPage: "Επόμενη σελίδα",
+  freeWritePdfPointer: "Δείκτης",
   freeWritePdfPen: "Πένα",
   freeWritePdfEraser: "Σβήστρα",
   freeWritePdfTextTool: "Κείμενο",
