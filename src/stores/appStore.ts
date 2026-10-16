@@ -12,6 +12,7 @@ import { createSuggestionsSlice } from "./slices/suggestionsSlice";
 import { createDictationSlice } from "./slices/dictationSlice";
 import { createCompanionSlice } from "./slices/companionSlice";
 import { createTeachingSlice } from "./slices/teachingSlice";
+import { createPianoRangeSlice } from "./slices/pianoRangeSlice";
 import { createTypingSlice } from "./slices/typingSlice";
 import { createWindowSlice } from "./slices/windowSlice";
 import { createFocusModeSlice } from "./slices/focusModeSlice";
@@ -38,6 +39,7 @@ export const useAppStore = create<AppStore>()((...a) => ({
   ...createDictationSlice(...a),
   ...createCompanionSlice(...a),
   ...createTeachingSlice(...a),
+  ...createPianoRangeSlice(...a),
   ...createTypingSlice(...a),
   ...createWindowSlice(...a),
   ...createFocusModeSlice(...a),

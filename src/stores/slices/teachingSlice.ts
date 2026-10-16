@@ -8,7 +8,6 @@ import type {
   PdfSlice,
   PianoSlice,
   PartituresSlice,
-  PianoRangeSlice,
 } from "../types";
 import {
   commitSuggestionList,
@@ -25,7 +24,7 @@ import { storeFlags } from "../storeFlags";
 import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { BUILT_IN_SONGS, getSongById, songPianoRangeFit } from "../../lib/music/songs";
+import { BUILT_IN_SONGS, getSongById } from "../../lib/music/songs";
 import type { ImportedMusicSong } from "../../lib/music/importTypes";
 import { parseMusicFilePayload } from "../../lib/music/parseMusicFile";
 import type { MusicFilePayload } from "../../lib/music/parseMusicFile";
@@ -93,8 +92,7 @@ export const createTeachingSlice: StateCreator<
     NotepadSlice &
     PdfSlice &
     PianoSlice &
-    PartituresSlice &
-    PianoRangeSlice
+    PartituresSlice
 > = (set, get) => ({
   musicTeachingEnabled: false,
   musicSongId: "twinkle",
@@ -238,15 +236,6 @@ export const createTeachingSlice: StateCreator<
     if (!song) return;
     set({ musicSongId: songId, musicNoteIndex: 0, musicPlaybackActive: false });
     await get().fitPianoRangeForSong(song);
-  },
-  fitPianoRangeForSong: async (song) => {
-    const fit = songPianoRangeFit(song);
-    if (fit) {
-      await get().updateSettings({
-        synthesizerOctaveCount: fit.octaveCount,
-        synthesizerStartOctave: fit.startOctave,
-      });
-    }
   },
   restartMusicLesson: () => {
     set({ musicNoteIndex: 0, musicPlaybackActive: false });
