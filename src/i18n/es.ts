@@ -161,7 +161,7 @@ export const es = {
   showTeachingInputHelpers: "Mostrar ayudas de entrada en modo Enseñanza",
 
   showTeachingInputHelpersDescription:
-    "Barra de sugerencias, micrófono y vista previa en vivo mientras Enseñanza está activa.",
+    "Barra de sugerencias y micrófono mientras Enseñanza está activa.",
 
   focusModeOverrideLabel: "Modo enfoque",
 

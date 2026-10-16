@@ -161,7 +161,7 @@ export const fr = {
   showTeachingInputHelpers: "Afficher les aides à la saisie en mode Enseignement",
 
   showTeachingInputHelpersDescription:
-    "Barre de suggestions, micro et aperçu de saisie en direct pendant l’enseignement.",
+    "Barre de suggestions et micro pendant l’enseignement.",
 
   focusModeOverrideLabel: "Mode Focus",
 

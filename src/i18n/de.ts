@@ -162,7 +162,7 @@ export const de = {
   showTeachingInputHelpers: "Eingabe-Hilfen im Unterrichtsmodus anzeigen",
 
   showTeachingInputHelpersDescription:
-    "Vorschlagsleiste, Mikrofon und Live-Eingabevorschau, solange der Unterricht aktiv ist.",
+    "Vorschlagsleiste und Mikrofon, solange der Unterricht aktiv ist.",
 
   focusModeOverrideLabel: "Fokusmodus",
 

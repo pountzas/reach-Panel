@@ -192,7 +192,7 @@ export const en = {
   showTeachingInputHelpers: "Show input helpers in Teaching mode",
 
   showTeachingInputHelpersDescription:
-    "Suggestions bar, mic, and live input preview while Teaching is active.",
+    "Suggestions bar and mic while Teaching is active.",
 
   focusModeOverrideLabel: "Focus mode",
 
