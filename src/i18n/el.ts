@@ -457,6 +457,8 @@ export const el = {
 
   inputAreaNormal: "Κανονική προβολή",
 
+  teachingKeyboardFocus: "Εστίαση",
+
   inputAreaCompact: "Μεγιστοποίηση πληκτρολογίου και trackpad",
 
   showMouseBottomRow: "Εμφάνιση σειράς drag, precision & scroll",

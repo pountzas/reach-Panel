@@ -17,6 +17,7 @@ import type { LanguageSubjectTab } from "../../lib/teaching";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useLanguageLessonPhysicalKeyboard } from "../../hooks/useLanguageLessonPhysicalKeyboard";
 import { useFreeWritePhysicalKeyboard } from "../../hooks/useFreeWritePhysicalKeyboard";
+import { useTeachingKeyboardFocusRestore } from "../../hooks/useTeachingKeyboardFocusRestore";
 import { useWindowHeightDrag } from "../../hooks/useWindowHeightDrag";
 import {
   CollapseIcon,
@@ -105,6 +106,7 @@ const InputRowPanel = (): JSX.Element => {
 export function AppShell() {
   useLanguageLessonPhysicalKeyboard();
   useFreeWritePhysicalKeyboard();
+  useTeachingKeyboardFocusRestore();
   const settings = useAppStore((s) => s.settings);
   const monitors = useAppStore((s) => s.monitors);
   const setShowSettings = useAppStore((s) => s.setShowSettings);

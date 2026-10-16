@@ -455,6 +455,8 @@ export const de = {
 
   inputAreaNormal: "Normale Ansicht",
 
+  teachingKeyboardFocus: "Fokus",
+
   inputAreaCompact: "Tastatur und Trackpad maximieren",
 
   showMouseBottomRow: "Zeile Ziehen, Präzision & Scrollen anzeigen",

@@ -488,6 +488,8 @@ export const en = {
 
   inputAreaNormal: "Normal view",
 
+  teachingKeyboardFocus: "Focus",
+
   inputAreaCompact: "Maximize keyboard and trackpad",
 
   showMouseBottomRow: "Show drag, precision & scroll row",

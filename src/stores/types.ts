@@ -114,9 +114,17 @@ export interface TeachingSlice {
   freeWriteAnnotationDirty: boolean;
   freeWriteUndoDepth: number;
   freeWriteRedoDepth: number;
+  /** Ephemeral: Language/Math keyboard chrome minimize (not persisted). */
+  teachingKeyboardMinimized: boolean;
+  /** Ephemeral: Focus auto-minimize toggle (not persisted). */
+  teachingKeyboardAutoFocus: boolean;
   enableMusicTeaching: () => Promise<void>;
   disableMusicTeaching: () => Promise<void>;
   setTeachingLesson: (lesson: TeachingLesson) => void;
+  setTeachingKeyboardMinimized: (minimized: boolean) => void;
+  setTeachingKeyboardAutoFocus: (autoFocus: boolean) => void;
+  toggleTeachingKeyboardMinimized: () => void;
+  toggleTeachingKeyboardAutoFocus: () => void;
   applyTeachingSession: (payload: TeachingSessionPayload) => void;
   broadcastTeachingSession: () => Promise<void>;
   setMusicSongId: (songId: string) => Promise<void>;

@@ -454,6 +454,8 @@ export const it = {
 
   inputAreaNormal: "Vista normale",
 
+  teachingKeyboardFocus: "Focus",
+
   inputAreaCompact: "Ingrandisci tastiera e trackpad",
 
   showMouseBottomRow: "Mostra riga trascina, precisione e scorrimento",

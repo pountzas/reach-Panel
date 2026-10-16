@@ -453,6 +453,8 @@ export const fr = {
 
   inputAreaNormal: "Vue normale",
 
+  teachingKeyboardFocus: "Focus",
+
   inputAreaCompact: "Maximiser clavier et pavé tactile",
 
   showMouseBottomRow: "Afficher la ligne glisser, précision et défilement",

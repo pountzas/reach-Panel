@@ -51,6 +51,16 @@ import { applyGreekLayoutTranslation } from "../../lib/layoutKeyTranslation";
 import type { LanguagePack } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
 import { syncTeachingSuggestions } from "../lib/teachingSuggestions";
+import {
+  isTeachingKeyboardChromeVisible,
+  nextTeachingKeyboardMinimizeState,
+} from "../../lib/teaching/teachingKeyboardMinimize";
+
+const TEACHING_KEYBOARD_MINIMIZE_RESET = nextTeachingKeyboardMinimizeState({
+  teachingKeyboardMinimized: false,
+  teachingKeyboardAutoFocus: false,
+  action: { type: "reset" },
+});
 
 export const createTeachingSlice: StateCreator<
   AppStore,
@@ -83,6 +93,8 @@ export const createTeachingSlice: StateCreator<
   freeWriteAnnotationDirty: false,
   freeWriteUndoDepth: 0,
   freeWriteRedoDepth: 0,
+  teachingKeyboardMinimized: false,
+  teachingKeyboardAutoFocus: false,
   enableMusicTeaching: async () => {
     const {
       settings,
@@ -126,6 +138,7 @@ export const createTeachingSlice: StateCreator<
       musicNoteIndex: 0,
       musicPlaybackActive: false,
       ...emptyLanguageLessonState(),
+      ...TEACHING_KEYBOARD_MINIMIZE_RESET,
     });
     await emitTeachingSession(get);
     void get().syncWindowFocusable();
@@ -142,7 +155,15 @@ export const createTeachingSlice: StateCreator<
         : prev === "language"
           ? emptyLanguageLessonState()
           : {};
-    set({ teachingLesson: lesson, ...nextState });
+    const chromeStillVisible = isTeachingKeyboardChromeVisible({
+      musicTeachingEnabled: get().musicTeachingEnabled,
+      teachingLesson: lesson,
+    });
+    set({
+      teachingLesson: lesson,
+      ...nextState,
+      ...(chromeStillVisible ? {} : TEACHING_KEYBOARD_MINIMIZE_RESET),
+    });
     void get().syncWindowFocusable();
     if (shouldDelegateAppModeToMain(WebviewWindow.getCurrent().label)) {
       void emit(TEACHING_LESSON_REQUEST_EVENT, {
@@ -151,6 +172,30 @@ export const createTeachingSlice: StateCreator<
       return;
     }
     void emitTeachingSession(get);
+  },
+  setTeachingKeyboardMinimized: (minimized) => {
+    set(
+      nextTeachingKeyboardMinimizeState({
+        teachingKeyboardMinimized: get().teachingKeyboardMinimized,
+        teachingKeyboardAutoFocus: get().teachingKeyboardAutoFocus,
+        action: { type: "setMinimized", value: minimized },
+      }),
+    );
+  },
+  setTeachingKeyboardAutoFocus: (autoFocus) => {
+    set(
+      nextTeachingKeyboardMinimizeState({
+        teachingKeyboardMinimized: get().teachingKeyboardMinimized,
+        teachingKeyboardAutoFocus: get().teachingKeyboardAutoFocus,
+        action: { type: "setAutoFocus", value: autoFocus },
+      }),
+    );
+  },
+  toggleTeachingKeyboardMinimized: () => {
+    get().setTeachingKeyboardMinimized(!get().teachingKeyboardMinimized);
+  },
+  toggleTeachingKeyboardAutoFocus: () => {
+    get().setTeachingKeyboardAutoFocus(!get().teachingKeyboardAutoFocus);
   },
   applyTeachingSession: (payload) => {
     set({

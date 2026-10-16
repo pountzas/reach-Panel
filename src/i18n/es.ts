@@ -453,6 +453,8 @@ export const es = {
 
   inputAreaNormal: "Vista normal",
 
+  teachingKeyboardFocus: "Enfoque",
+
   inputAreaCompact: "Maximizar teclado y trackpad",
 
   showMouseBottomRow: "Mostrar fila arrastrar, precisión y desplazamiento",
