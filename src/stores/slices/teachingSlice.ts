@@ -1,5 +1,15 @@
 import type { StateCreator } from "zustand";
-import type { AppStore, TeachingSlice } from "../types";
+import type {
+  AppStore,
+  TeachingSlice,
+  SpellingSlice,
+  LanguagePacksSlice,
+  NotepadSlice,
+  PdfSlice,
+  PianoSlice,
+  PartituresSlice,
+  PianoRangeSlice,
+} from "../types";
 import {
   commitSuggestionList,
   emitTeachingSession,
@@ -77,7 +87,14 @@ export const createTeachingSlice: StateCreator<
   AppStore,
   [],
   [],
-  TeachingSlice
+  TeachingSlice &
+    SpellingSlice &
+    LanguagePacksSlice &
+    NotepadSlice &
+    PdfSlice &
+    PianoSlice &
+    PartituresSlice &
+    PianoRangeSlice
 > = (set, get) => ({
   musicTeachingEnabled: false,
   musicSongId: "twinkle",
@@ -130,13 +147,7 @@ export const createTeachingSlice: StateCreator<
     });
     const song = getSongById(get().musicSongId, importedSongs);
     if (song) {
-      const fit = songPianoRangeFit(song);
-      if (fit) {
-        await get().updateSettings({
-          synthesizerOctaveCount: fit.octaveCount,
-          synthesizerStartOctave: fit.startOctave,
-        });
-      }
+      await get().fitPianoRangeForSong(song);
     }
     void get().syncWindowFocusable();
   },
@@ -226,6 +237,9 @@ export const createTeachingSlice: StateCreator<
     const song = getSongById(songId, get().importedSongs);
     if (!song) return;
     set({ musicSongId: songId, musicNoteIndex: 0, musicPlaybackActive: false });
+    await get().fitPianoRangeForSong(song);
+  },
+  fitPianoRangeForSong: async (song) => {
     const fit = songPianoRangeFit(song);
     if (fit) {
       await get().updateSettings({

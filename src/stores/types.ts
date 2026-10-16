@@ -11,6 +11,7 @@ import type {
   ProfileFileInfo,
 } from "../lib/types";
 import type { ImportedMusicSong } from "../lib/music/importTypes";
+import type { MusicSong } from "../lib/music/songs";
 import type {
   FreeWriteFocus,
   LanguageSubjectTab,
@@ -90,30 +91,9 @@ export interface CompanionSlice {
 
 export interface TeachingSlice {
   musicTeachingEnabled: boolean;
-  musicSongId: string | null;
-  musicNoteIndex: number;
-  musicPlaybackActive: boolean;
   teachingLesson: TeachingLesson;
-  importedSongs: ImportedMusicSong[];
-  customLanguagePacks: LanguagePack[];
-  languagePackId: string | null;
-  languageTaskIndex: number;
-  languageInputBuffer: string;
-  languageAnswerIncorrect: boolean;
-  languageLessonPlaying: boolean;
-  languageListAuthoringActive: boolean;
-  languageListAuthoringField: LanguageListAuthoringField;
-  languageListAuthoringHandlers: LanguageListAuthoringHandlers | null;
   languageSubjectTab: LanguageSubjectTab;
   freeWriteFocus: FreeWriteFocus;
-  teachingPdfLibrary: TeachingPdfEntry[];
-  freeWriteActivePdfId: string | null;
-  freeWritePdfTool: "pointer" | "pen" | "eraser" | "text";
-  freeWriteAnnotationDoc: PdfAnnotationDoc;
-  freeWriteSelectedTextId: string | null;
-  freeWriteAnnotationDirty: boolean;
-  freeWriteUndoDepth: number;
-  freeWriteRedoDepth: number;
   /** Ephemeral: Language/Math keyboard chrome minimize (not persisted). */
   teachingKeyboardMinimized: boolean;
   /** Ephemeral: Focus auto-minimize toggle (not persisted). */
@@ -127,20 +107,18 @@ export interface TeachingSlice {
   toggleTeachingKeyboardAutoFocus: () => void;
   applyTeachingSession: (payload: TeachingSessionPayload) => void;
   broadcastTeachingSession: () => Promise<void>;
-  setMusicSongId: (songId: string) => Promise<void>;
-  restartMusicLesson: () => void;
-  reportMusicKeyPlayed: (keyId: string) => void;
-  startMusicPlayback: () => void;
-  stopMusicPlayback: () => void;
-  setMusicPlaybackNoteIndex: (index: number) => void;
-  finishMusicPlayback: () => void;
-  loadImportedSongs: () => Promise<void>;
-  importMusicSongsFromFile: () => Promise<void>;
-  deleteImportedSong: (id: string) => Promise<void>;
-  loadCustomLanguagePacks: () => Promise<void>;
-  createCustomLanguagePack: (pack: LanguagePack) => Promise<void>;
-  deleteCustomLanguagePack: (id: string) => Promise<void>;
-  setLanguagePackId: (id: string) => void;
+  setLanguageSubjectTab: (tab: LanguageSubjectTab) => void;
+  setFreeWriteFocus: (focus: FreeWriteFocus) => void;
+}
+
+export interface SpellingSlice {
+  languageTaskIndex: number;
+  languageInputBuffer: string;
+  languageAnswerIncorrect: boolean;
+  languageLessonPlaying: boolean;
+  languageListAuthoringActive: boolean;
+  languageListAuthoringField: LanguageListAuthoringField;
+  languageListAuthoringHandlers: LanguageListAuthoringHandlers | null;
   restartLanguageLesson: () => void;
   startLanguageLessonPlayback: () => void;
   stopLanguageLessonPlayback: () => void;
@@ -152,8 +130,18 @@ export interface TeachingSlice {
   languageKeyInput: (ch: string, options?: { physicalKey?: string }) => void;
   languageBackspace: () => void;
   checkLanguageAnswer: () => void;
-  setLanguageSubjectTab: (tab: LanguageSubjectTab) => void;
-  setFreeWriteFocus: (focus: FreeWriteFocus) => void;
+}
+
+export interface LanguagePacksSlice {
+  customLanguagePacks: LanguagePack[];
+  languagePackId: string | null;
+  loadCustomLanguagePacks: () => Promise<void>;
+  createCustomLanguagePack: (pack: LanguagePack) => Promise<void>;
+  deleteCustomLanguagePack: (id: string) => Promise<void>;
+  setLanguagePackId: (id: string) => void;
+}
+
+export interface NotepadSlice {
   freeWriteNotepadInput: (ch: string) => void;
   freeWriteNotepadBackspace: () => void;
   applyFreeWriteLayoutTranslation: (
@@ -169,6 +157,17 @@ export interface TeachingSlice {
   setFreeWriteNotepadZoom: (zoom: number) => void;
   setFreeWriteNotepadWrap: (wrap: boolean) => void;
   setFreeWriteNotepadLineNumbers: (on: boolean) => void;
+}
+
+export interface PdfSlice {
+  teachingPdfLibrary: TeachingPdfEntry[];
+  freeWriteActivePdfId: string | null;
+  freeWritePdfTool: "pointer" | "pen" | "eraser" | "text";
+  freeWriteAnnotationDoc: PdfAnnotationDoc;
+  freeWriteSelectedTextId: string | null;
+  freeWriteAnnotationDirty: boolean;
+  freeWriteUndoDepth: number;
+  freeWriteRedoDepth: number;
   loadTeachingPdfLibrary: () => Promise<void>;
   pickTeachingPdf: () => Promise<void>;
   closeTeachingPdf: () => Promise<void>;
@@ -186,6 +185,30 @@ export interface TeachingSlice {
   ) => void;
   undoFreeWriteAnnotation: () => void;
   redoFreeWriteAnnotation: () => void;
+}
+
+export interface PianoSlice {
+  musicNoteIndex: number;
+  musicPlaybackActive: boolean;
+  restartMusicLesson: () => void;
+  reportMusicKeyPlayed: (keyId: string) => void;
+  startMusicPlayback: () => void;
+  stopMusicPlayback: () => void;
+  setMusicPlaybackNoteIndex: (index: number) => void;
+  finishMusicPlayback: () => void;
+}
+
+export interface PartituresSlice {
+  musicSongId: string | null;
+  importedSongs: ImportedMusicSong[];
+  setMusicSongId: (songId: string) => Promise<void>;
+  loadImportedSongs: () => Promise<void>;
+  importMusicSongsFromFile: () => Promise<void>;
+  deleteImportedSong: (id: string) => Promise<void>;
+}
+
+export interface PianoRangeSlice {
+  fitPianoRangeForSong: (song: MusicSong) => Promise<void>;
 }
 
 export interface TypingSlice {
@@ -305,6 +328,13 @@ export type AppStore = ErrorsSlice &
   DictationSlice &
   CompanionSlice &
   TeachingSlice &
+  SpellingSlice &
+  LanguagePacksSlice &
+  NotepadSlice &
+  PdfSlice &
+  PianoSlice &
+  PartituresSlice &
+  PianoRangeSlice &
   TypingSlice &
   WindowSlice &
   FocusModeSlice &
