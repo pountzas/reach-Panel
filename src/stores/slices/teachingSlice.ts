@@ -2,23 +2,18 @@ import type { StateCreator } from "zustand";
 import type {
   AppStore,
   TeachingSlice,
-  SpellingSlice,
-  LanguagePacksSlice,
   NotepadSlice,
   PdfSlice,
 } from "../types";
 import {
-  commitSuggestionList,
+  dropTeachingSuggestionPrefix,
   emitTeachingSession,
   emptyLanguageLessonState,
   initLanguageLessonState,
-  greekComposeContextFromState,
-  languageLessonModeFromState,
   freeWriteModeFromState,
   teachingPdfFileName,
   clearGreekPendingAccent,
 } from "../storeShared";
-import { storeFlags } from "../storeFlags";
 import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -26,7 +21,6 @@ import { getSongById } from "../../lib/music/songs";
 import { notify } from "../../lib/notify";
 import { shouldDelegateAppModeToMain, TEACHING_LESSON_REQUEST_EVENT } from "../../lib/appModeLayout";
 import type { TeachingLessonRequest } from "../../lib/appModeLayout";
-import { currentSpellAnswer, defaultLanguagePackId, getLanguagePackById, isLanguageLessonActive, isLanguageLessonSpellingActive, languageAnswersMatch } from "../../lib/language";
 import {
   clampFreeWriteZoom,
   clearTeachingPdf,
@@ -53,8 +47,6 @@ function resetFreeWriteUndo(): void {
 }
 import { greekComposeEnabled, processCharacterInput } from "../../lib/keyboardCharacterInput";
 import { applyGreekLayoutTranslation } from "../../lib/layoutKeyTranslation";
-import type { LanguagePack } from "../../lib/language/types";
-import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
 import { syncTeachingSuggestions } from "../lib/teachingSuggestions";
 import {
   isTeachingKeyboardChromeVisible,
@@ -67,36 +59,14 @@ const TEACHING_KEYBOARD_MINIMIZE_RESET = nextTeachingKeyboardMinimizeState({
   action: { type: "reset" },
 });
 
-/** Drop Teaching-sourced prefix + chips so they can't be applied to another target. */
-function dropTeachingSuggestionPrefix(
-  set: (partial: { typedBuffer?: string; suggestions?: string[] }) => void,
-): void {
-  storeFlags.suggestionsRequestId += 1;
-  commitSuggestionList(set, []);
-  set({ typedBuffer: "" });
-}
-
 export const createTeachingSlice: StateCreator<
   AppStore,
   [],
   [],
-  TeachingSlice &
-    SpellingSlice &
-    LanguagePacksSlice &
-    NotepadSlice &
-    PdfSlice
+  TeachingSlice & NotepadSlice & PdfSlice
 > = (set, get) => ({
   musicTeachingEnabled: false,
   teachingLesson: "language",
-  customLanguagePacks: [],
-  languagePackId: null,
-  languageTaskIndex: 0,
-  languageInputBuffer: "",
-  languageAnswerIncorrect: false,
-  languageLessonPlaying: false,
-  languageListAuthoringActive: false,
-  languageListAuthoringField: "title",
-  languageListAuthoringHandlers: null,
   languageSubjectTab: "spelling",
   freeWriteFocus: "notepad",
   teachingPdfLibrary: [],
@@ -218,190 +188,6 @@ export const createTeachingSlice: StateCreator<
   },
   broadcastTeachingSession: async () => {
     await emitTeachingSession(get);
-  },
-  loadCustomLanguagePacks: async () => {
-    try {
-      const packs = await invoke<LanguagePack[]>(
-        "cmd_list_custom_language_packs",
-      );
-      set({
-        customLanguagePacks: Array.isArray(packs)
-          ? packs.filter((pack) => pack && typeof pack.id === "string")
-          : [],
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      notify.error(message);
-    }
-  },
-  createCustomLanguagePack: async (pack) => {
-    try {
-      await invoke("cmd_upsert_custom_language_pack", { pack });
-      await get().loadCustomLanguagePacks();
-      get().setLanguagePackId(pack.id);
-      notify.success(pack.title);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      notify.error(message);
-    }
-  },
-  deleteCustomLanguagePack: async (id) => {
-    const pack = get().customLanguagePacks.find((entry) => entry.id === id);
-    if (!pack) return;
-    try {
-      await invoke("cmd_delete_custom_language_pack", { id });
-      await get().loadCustomLanguagePacks();
-      if (get().languagePackId === id) {
-        const { settings } = get();
-        const band =
-          settings.languageLessonAgeBand ?? DEFAULT_LANGUAGE_AGE_BAND;
-        const language = settings.languageLessonLanguage ?? "el";
-        get().setLanguagePackId(defaultLanguagePackId(band, language));
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      notify.error(message);
-    }
-  },
-  setLanguagePackId: (id) => {
-    if (!getLanguagePackById(id, get().customLanguagePacks)) return;
-    set({
-      languagePackId: id,
-      languageTaskIndex: 0,
-      languageInputBuffer: "",
-      languageAnswerIncorrect: false,
-      languageLessonPlaying: false,
-      ...clearGreekPendingAccent(),
-    });
-  },
-  restartLanguageLesson: () => {
-    set({
-      languageTaskIndex: 0,
-      languageInputBuffer: "",
-      languageAnswerIncorrect: false,
-      languageLessonPlaying: false,
-      ...clearGreekPendingAccent(),
-    });
-  },
-  startLanguageLessonPlayback: () => {
-    const state = get();
-    if (!isLanguageLessonActive(languageLessonModeFromState(state))) return;
-    const pack = getLanguagePackById(
-      state.languagePackId,
-      state.customLanguagePacks,
-    );
-    if (!pack || pack.tasks.length === 0) return;
-    set({
-      languageLessonPlaying: true,
-      languageTaskIndex: 0,
-      languageInputBuffer: "",
-      languageAnswerIncorrect: false,
-      ...clearGreekPendingAccent(),
-    });
-    void get().syncWindowFocusable();
-  },
-  stopLanguageLessonPlayback: () => {
-    if (!get().languageLessonPlaying) return;
-    dropTeachingSuggestionPrefix(set);
-    set({ languageLessonPlaying: false });
-    void get().syncWindowFocusable();
-  },
-  setLanguageListAuthoringActive: (active) => {
-    set({
-      languageListAuthoringActive: active,
-      ...(active
-        ? {
-            languageLessonPlaying: false,
-            languageListAuthoringField: "title" as const,
-          }
-        : {
-            languageListAuthoringField: "title" as const,
-            languageListAuthoringHandlers: null,
-          }),
-    });
-    void get().syncWindowFocusable();
-  },
-  setLanguageListAuthoringField: (field) => {
-    set({ languageListAuthoringField: field });
-  },
-  registerLanguageListAuthoringHandlers: (handlers) => {
-    set({ languageListAuthoringHandlers: handlers });
-  },
-  languageKeyInput: (ch, options) => {
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get())))
-      return;
-
-    const state = get();
-    const greek = greekComposeEnabled(greekComposeContextFromState(state));
-    const result = processCharacterInput(
-      state.languageInputBuffer,
-      state.greekPendingAccent,
-      ch,
-      { physicalKey: options?.physicalKey, greekCompose: greek },
-    );
-    set({
-      languageInputBuffer: result.buffer,
-      greekPendingAccent: result.pendingAccent,
-      languageAnswerIncorrect: false,
-      typedBuffer: result.buffer,
-    });
-    void get().loadSuggestions();
-  },
-  languageBackspace: () => {
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(get())))
-      return;
-    set((state) => {
-      if (state.greekPendingAccent) {
-        return {
-          ...clearGreekPendingAccent(),
-          languageAnswerIncorrect: false,
-        };
-      }
-      const languageInputBuffer = state.languageInputBuffer.slice(0, -1);
-      return {
-        languageInputBuffer,
-        languageAnswerIncorrect: false,
-        typedBuffer: languageInputBuffer,
-      };
-    });
-    void get().loadSuggestions();
-  },
-  checkLanguageAnswer: () => {
-    const state = get();
-    if (!isLanguageLessonSpellingActive(languageLessonModeFromState(state)))
-      return;
-    const pack = getLanguagePackById(
-      state.languagePackId,
-      state.customLanguagePacks,
-    );
-    if (!pack) return;
-    const expected = currentSpellAnswer(pack, state.languageTaskIndex);
-    if (!expected) return;
-    const ignoreCase = state.settings.languageLessonIgnoreCase !== false;
-    const ignoreTones = state.settings.languageLessonIgnoreTones !== false;
-    if (
-      !languageAnswersMatch(
-        state.languageInputBuffer,
-        expected,
-        pack.lessonLanguage,
-        { ignoreCase, ignoreTones },
-      )
-    ) {
-      set({ languageAnswerIncorrect: true });
-      return;
-    }
-    set({
-      languageTaskIndex: state.languageTaskIndex + 1,
-      languageInputBuffer: "",
-      languageAnswerIncorrect: false,
-      typedBuffer: "",
-      languageLessonPlaying:
-        state.languageTaskIndex + 1 >= pack.tasks.length
-          ? false
-          : state.languageLessonPlaying,
-      ...clearGreekPendingAccent(),
-    });
-    void get().loadSuggestions();
   },
   setLanguageSubjectTab: (tab) => {
     if (tab !== "spelling" && get().languageLessonPlaying) {

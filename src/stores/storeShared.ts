@@ -83,6 +83,15 @@ export {
   windowLayoutInvokeArgs,
 };
 
+/** Drop Teaching-sourced prefix + chips so they can't be applied to another target. */
+export function dropTeachingSuggestionPrefix(
+  set: (partial: { typedBuffer?: string; suggestions?: string[] }) => void,
+): void {
+  storeFlags.suggestionsRequestId += 1;
+  commitSuggestionList(set, []);
+  set({ typedBuffer: "" });
+}
+
 /** storeFlags.lastAnnouncedError → storeFlags */
 
 export async function startCompanionBridge(): Promise<void> {
