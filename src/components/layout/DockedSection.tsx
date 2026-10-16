@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import {
   headerHeightFor,
   type DockedSlot,
@@ -6,6 +6,7 @@ import {
   type StackableSectionId,
 } from "../../lib/sectionStack";
 import { getSectionDefinition, isStackableSectionId } from "../../lib/sectionRegistry";
+import { useFlipLayoutTransition } from "../../hooks/useFlipLayoutTransition";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { peekTeachingRestoreMode } from "../../stores/lib/restoreStack";
@@ -79,6 +80,9 @@ export function DockedSection({
   const canUndock =
     isStackableSectionId(slot.id) && getSectionDefinition(slot.id).canUndock;
   const showPanelControls = slot.id !== "input-row";
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Snap top/height in layout; animate only transform (GPU), not layout props.
+  useFlipLayoutTransition(rootRef, { top: slot.y, height: slot.height });
 
   const handleClose = () => {
     switch (slot.id) {
@@ -99,7 +103,8 @@ export function DockedSection({
 
   return (
     <div
-      className="absolute overflow-hidden rounded-md border shadow-md motion-reduce:transition-none transition-[top,height] duration-200"
+      ref={rootRef}
+      className="absolute overflow-hidden rounded-md border shadow-md"
       style={{
         left: 0,
         top: slot.y,
