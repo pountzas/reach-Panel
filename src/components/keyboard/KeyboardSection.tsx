@@ -326,7 +326,7 @@ export function KeyboardSection() {
           </div>
         ) : (
           <div
-            className={`relative z-20 grid w-full shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${compact ? "pt-2" : showInputPreview || hasSuggestionChips ? "pt-1 pb-0" : "pt-6"}`}
+            className={`relative z-20 grid w-full shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${compact ? "pt-2" : showInputPreview || hasSuggestionChips || showSynth ? "pt-1 pb-0" : "pt-6"}`}
           >
             <div aria-hidden className="min-w-0" />
             <div
