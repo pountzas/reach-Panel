@@ -25,7 +25,7 @@ import { FreeWritePdfExportDialog } from "./FreeWritePdfExportDialog";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-const TOOLBAR_ICON_CLASS = "h-5 w-5";
+const TOOLBAR_ICON_CLASS = "h-4 w-4";
 
 type PdfPayload = { path: string; contentBase64: string };
 
@@ -203,6 +203,7 @@ export function FreeWritePdfPane() {
     <TeachingLessonToolbarButton
       key={id}
       label={label}
+      size="sm"
       onClick={() => setTool(id)}
       backgroundColor={tool === id ? surface.panelHeaderBg : surface.panelBg}
       borderColor={surface.panelBorder}
@@ -250,6 +251,7 @@ export function FreeWritePdfPane() {
         <div className="flex flex-wrap items-center gap-1">
           <TeachingLessonToolbarButton
             label={t("freeWritePdfPrevPage")}
+            size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
             backgroundColor={surface.panelBg}
@@ -263,6 +265,7 @@ export function FreeWritePdfPane() {
           </span>
           <TeachingLessonToolbarButton
             label={t("freeWritePdfNextPage")}
+            size="sm"
             onClick={() => setPage((p) => Math.min(pageCount || 1, p + 1))}
             disabled={!pageCount || page >= pageCount}
             backgroundColor={surface.panelBg}
@@ -273,6 +276,7 @@ export function FreeWritePdfPane() {
           </TeachingLessonToolbarButton>
           <TeachingLessonToolbarButton
             label={t("freeWriteZoomOut")}
+            size="sm"
             onClick={() => setViewerZoom((z) => Math.max(50, z - 25))}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
@@ -282,6 +286,7 @@ export function FreeWritePdfPane() {
           </TeachingLessonToolbarButton>
           <TeachingLessonToolbarButton
             label={t("freeWriteZoomIn")}
+            size="sm"
             onClick={() => setViewerZoom((z) => Math.min(250, z + 25))}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
@@ -296,6 +301,7 @@ export function FreeWritePdfPane() {
             <>
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfUndo")}
+                size="sm"
                 onClick={() => undoAnnotation()}
                 disabled={undoDepth <= 0}
                 backgroundColor={surface.panelBg}
@@ -306,6 +312,7 @@ export function FreeWritePdfPane() {
               </TeachingLessonToolbarButton>
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfRedo")}
+                size="sm"
                 onClick={() => redoAnnotation()}
                 disabled={redoDepth <= 0}
                 backgroundColor={surface.panelBg}
@@ -331,6 +338,7 @@ export function FreeWritePdfPane() {
               )}
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfDeleteText")}
+                size="sm"
                 onClick={deleteSelectedText}
                 disabled={!selectedTextId}
                 backgroundColor={surface.panelBg}
@@ -341,6 +349,7 @@ export function FreeWritePdfPane() {
               </TeachingLessonToolbarButton>
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfClearAll")}
+                size="sm"
                 onClick={() => setClearConfirmOpen(true)}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
@@ -355,6 +364,7 @@ export function FreeWritePdfPane() {
         <div className="flex shrink-0 flex-wrap items-center gap-1">
           <TeachingLessonToolbarButton
             label={t("freeWriteOpenPdf")}
+            size="sm"
             onClick={() => void pickTeachingPdf()}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
@@ -366,6 +376,7 @@ export function FreeWritePdfPane() {
             <>
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfExport")}
+                size="sm"
                 onClick={() => setExportOpen(true)}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
@@ -375,6 +386,7 @@ export function FreeWritePdfPane() {
               </TeachingLessonToolbarButton>
               <TeachingLessonToolbarButton
                 label={t("freeWriteClosePdf")}
+                size="sm"
                 onClick={() => void closeTeachingPdf()}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}

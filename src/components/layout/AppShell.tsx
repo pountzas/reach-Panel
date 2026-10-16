@@ -1,5 +1,7 @@
 import { type CSSProperties, type JSX } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { IoPencilOutline } from "react-icons/io5";
+import { MdOutlineAbc } from "react-icons/md";
 import { ResizableSplitPane } from "./ResizableSplitPane";
 import { KeyboardSection } from "../keyboard/KeyboardSection";
 import { MousePanel } from "../mouse/MousePanel";
@@ -9,6 +11,7 @@ import { MathLessonPanel } from "../teaching/MathLessonPanel";
 import { LanguageLessonPanel } from "../teaching/LanguageLessonPanel";
 import { FreeWritePanel } from "../teaching/FreeWritePanel";
 import { TeachingSubjectShell } from "../teaching/TeachingSubjectShell";
+import type { TeachingSubjectTabOption } from "../teaching/TeachingSubjectTabs";
 import { ErrorBanner } from "../common/ErrorBanner";
 import { SectionCanvas } from "./SectionCanvas";
 import { useAppStore } from "../../stores/appStore";
@@ -40,16 +43,27 @@ import {
 } from "../../lib/v1HiddenFeatures";
 import { handleCloseApp } from "./appShellUtils";
 
+const LANGUAGE_TAB_ICON_CLASS = "h-4 w-4";
+
 const LanguageTeachingBody = (): JSX.Element => {
   const { t } = useTranslation();
   const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
   const setLanguageSubjectTab = useAppStore((s) => s.setLanguageSubjectTab);
-  const tabs: { id: LanguageSubjectTab; label: string }[] = [
-    { id: "spelling", label: t("teachingTabSpelling") },
-    { id: "freeWrite", label: t("teachingTabFreeWrite") },
+  const tabs: TeachingSubjectTabOption<LanguageSubjectTab>[] = [
+    {
+      id: "spelling",
+      label: t("teachingTabSpelling"),
+      icon: <MdOutlineAbc className={LANGUAGE_TAB_ICON_CLASS} aria-hidden />,
+    },
+    {
+      id: "freeWrite",
+      label: t("teachingTabFreeWrite"),
+      icon: <IoPencilOutline className={LANGUAGE_TAB_ICON_CLASS} aria-hidden />,
+    },
   ];
   return (
     <TeachingSubjectShell
+      orientation="vertical"
       tabs={tabs}
       activeId={languageSubjectTab}
       onChange={setLanguageSubjectTab}
