@@ -6,8 +6,6 @@ import type {
   LanguagePacksSlice,
   NotepadSlice,
   PdfSlice,
-  PianoSlice,
-  PartituresSlice,
 } from "../types";
 import {
   commitSuggestionList,
@@ -24,11 +22,7 @@ import { storeFlags } from "../storeFlags";
 import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { BUILT_IN_SONGS, getSongById } from "../../lib/music/songs";
-import type { ImportedMusicSong } from "../../lib/music/importTypes";
-import { parseMusicFilePayload } from "../../lib/music/parseMusicFile";
-import type { MusicFilePayload } from "../../lib/music/parseMusicFile";
-import { isImportedMusicSong } from "../../lib/music/parseJsonSong";
+import { getSongById } from "../../lib/music/songs";
 import { notify } from "../../lib/notify";
 import { shouldDelegateAppModeToMain, TEACHING_LESSON_REQUEST_EVENT } from "../../lib/appModeLayout";
 import type { TeachingLessonRequest } from "../../lib/appModeLayout";
@@ -90,16 +84,10 @@ export const createTeachingSlice: StateCreator<
     SpellingSlice &
     LanguagePacksSlice &
     NotepadSlice &
-    PdfSlice &
-    PianoSlice &
-    PartituresSlice
+    PdfSlice
 > = (set, get) => ({
   musicTeachingEnabled: false,
-  musicSongId: "twinkle",
-  musicNoteIndex: 0,
-  musicPlaybackActive: false,
   teachingLesson: "language",
-  importedSongs: [],
   customLanguagePacks: [],
   languagePackId: null,
   languageTaskIndex: 0,
@@ -230,105 +218,6 @@ export const createTeachingSlice: StateCreator<
   },
   broadcastTeachingSession: async () => {
     await emitTeachingSession(get);
-  },
-  setMusicSongId: async (songId) => {
-    const song = getSongById(songId, get().importedSongs);
-    if (!song) return;
-    set({ musicSongId: songId, musicNoteIndex: 0, musicPlaybackActive: false });
-    await get().fitPianoRangeForSong(song);
-  },
-  restartMusicLesson: () => {
-    set({ musicNoteIndex: 0, musicPlaybackActive: false });
-  },
-  reportMusicKeyPlayed: (keyId) => {
-    const {
-      musicTeachingEnabled,
-      musicPlaybackActive,
-      musicSongId,
-      musicNoteIndex,
-      importedSongs,
-    } = get();
-    if (!musicTeachingEnabled || musicPlaybackActive) return;
-    const song = getSongById(musicSongId, importedSongs);
-    if (!song) return;
-    if (musicNoteIndex >= song.notes.length) return;
-    if (song.notes[musicNoteIndex]?.pitch !== keyId) return;
-    set({ musicNoteIndex: musicNoteIndex + 1 });
-  },
-  startMusicPlayback: () => {
-    if (!get().musicTeachingEnabled) return;
-    const song = getSongById(get().musicSongId, get().importedSongs);
-    if (!song || song.notes.length === 0) return;
-    set({ musicPlaybackActive: true, musicNoteIndex: 0 });
-  },
-  stopMusicPlayback: () => {
-    if (!get().musicPlaybackActive) return;
-    set({ musicPlaybackActive: false });
-  },
-  setMusicPlaybackNoteIndex: (index) => {
-    if (!get().musicPlaybackActive) return;
-    set({ musicNoteIndex: index });
-  },
-  finishMusicPlayback: () => {
-    if (!get().musicPlaybackActive) return;
-    set({ musicPlaybackActive: false, musicNoteIndex: 0 });
-  },
-  loadImportedSongs: async () => {
-    try {
-      const songs = await invoke<ImportedMusicSong[]>(
-        "cmd_list_imported_songs",
-      );
-      set({
-        importedSongs: Array.isArray(songs)
-          ? songs.filter((song) => song && typeof song.id === "string")
-          : [],
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      notify.error(message);
-    }
-  },
-  importMusicSongsFromFile: async () => {
-    try {
-      const path = await invoke<string | null>("cmd_pick_music_song_file");
-      if (!path) return;
-      const payload = await invoke<MusicFilePayload>("cmd_read_music_file", {
-        path,
-      });
-      const songs = await parseMusicFilePayload(payload);
-      for (const song of songs) {
-        await invoke("cmd_upsert_imported_song", { song });
-      }
-      await get().loadImportedSongs();
-      const last = songs[songs.length - 1];
-      if (last) {
-        await get().setMusicSongId(last.id);
-      }
-      notify.success(
-        songs.length === 1
-          ? `Imported “${songs[0]!.title}”`
-          : `Imported ${songs.length} songs`,
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      notify.error(message);
-    }
-  },
-  deleteImportedSong: async (id) => {
-    const song = get().importedSongs.find((entry) => entry.id === id);
-    if (!song || !isImportedMusicSong(song)) return;
-    try {
-      get().stopMusicPlayback();
-      await invoke("cmd_delete_imported_song", { id });
-      await get().loadImportedSongs();
-      if (get().musicSongId === id) {
-        await get().setMusicSongId(BUILT_IN_SONGS[0]?.id ?? "twinkle");
-      }
-      notify.success(`Deleted “${song.title}”`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      notify.error(message);
-    }
   },
   loadCustomLanguagePacks: async () => {
     try {
