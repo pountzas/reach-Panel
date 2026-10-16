@@ -4,7 +4,7 @@ use super::uia::{
     uia_signals_are_autocomplete_satellite, AriaRoleKind, UiaTextInputSignals,
     LAST_REAL_TEXT_FOCUS_TTL,
 };
-use super::win32::{host_is_chromium, is_editable_class};
+use super::win32::{host_is_chromium, is_editable_class, is_shell_window_class};
 use super::{
     line_strip_bounds, resolve_bounds_with_sticky, sticky_rect_for_target, ScreenRect,
     LINE_STRIP_HEIGHT, LINE_STRIP_WIDTH,
@@ -213,6 +213,15 @@ fn editable_class_names_include_common_inputs() {
     // Whole-page browser HWNDs are not text fields — UIA must decide.
     assert!(!is_editable_class("Chrome_RenderWidgetHostHWND"));
     assert!(!is_editable_class("Internet Explorer_Server"));
+}
+
+#[test]
+fn shell_window_classes_include_taskbar_hosts() {
+    assert!(is_shell_window_class("Shell_TrayWnd"));
+    assert!(is_shell_window_class("Shell_SecondaryTrayWnd"));
+    assert!(is_shell_window_class("XamlExplorerHostIslandWindow"));
+    assert!(!is_shell_window_class("Edit"));
+    assert!(!is_shell_window_class("Chrome_WidgetWin_1"));
 }
 
 #[test]

@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import type { AppStore, TeachingSlice } from "../types";
 import {
+  commitSuggestionList,
   emitTeachingSession,
   emptyLanguageLessonState,
   initLanguageLessonState,
@@ -10,6 +11,7 @@ import {
   teachingPdfFileName,
   clearGreekPendingAccent,
 } from "../storeShared";
+import { storeFlags } from "../storeFlags";
 import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -61,6 +63,15 @@ const TEACHING_KEYBOARD_MINIMIZE_RESET = nextTeachingKeyboardMinimizeState({
   teachingKeyboardAutoFocus: false,
   action: { type: "reset" },
 });
+
+/** Drop Teaching-sourced prefix + chips so they can't be applied to another target. */
+function dropTeachingSuggestionPrefix(
+  set: (partial: { typedBuffer?: string; suggestions?: string[] }) => void,
+): void {
+  storeFlags.suggestionsRequestId += 1;
+  commitSuggestionList(set, []);
+  set({ typedBuffer: "" });
+}
 
 export const createTeachingSlice: StateCreator<
   AppStore,
@@ -133,6 +144,7 @@ export const createTeachingSlice: StateCreator<
     if (!get().musicTeachingEnabled) {
       return;
     }
+    dropTeachingSuggestionPrefix(set);
     set({
       musicTeachingEnabled: false,
       musicNoteIndex: 0,
@@ -398,6 +410,7 @@ export const createTeachingSlice: StateCreator<
   },
   stopLanguageLessonPlayback: () => {
     if (!get().languageLessonPlaying) return;
+    dropTeachingSuggestionPrefix(set);
     set({ languageLessonPlaying: false });
     void get().syncWindowFocusable();
   },
@@ -502,6 +515,9 @@ export const createTeachingSlice: StateCreator<
     if (tab !== "spelling" && get().languageLessonPlaying) {
       get().stopLanguageLessonPlayback();
     }
+    if (tab !== get().languageSubjectTab) {
+      dropTeachingSuggestionPrefix(set);
+    }
     set({
       languageSubjectTab: tab,
       freeWriteFocus: tab === "freeWrite" ? "notepad" : get().freeWriteFocus,
@@ -509,6 +525,9 @@ export const createTeachingSlice: StateCreator<
     void get().syncWindowFocusable();
   },
   setFreeWriteFocus: (focus) => {
+    if (focus !== get().freeWriteFocus) {
+      dropTeachingSuggestionPrefix(set);
+    }
     set({ freeWriteFocus: focus });
     void get().syncWindowFocusable();
   },
@@ -785,17 +804,28 @@ export const createTeachingSlice: StateCreator<
     }
   },
   setFreeWritePdfTool: (tool) => {
+    const prevId = get().freeWriteSelectedTextId;
+    const prevFocus = get().freeWriteFocus;
+    const nextId = tool === "text" ? prevId : null;
+    const nextFocus = tool === "text" ? prevFocus : "pdf";
+    if (prevId !== nextId || prevFocus !== nextFocus) {
+      dropTeachingSuggestionPrefix(set);
+    }
     set({
       freeWritePdfTool: tool,
-      freeWriteSelectedTextId:
-        tool === "text" ? get().freeWriteSelectedTextId : null,
-      freeWriteFocus: tool === "text" ? get().freeWriteFocus : "pdf",
+      freeWriteSelectedTextId: nextId,
+      freeWriteFocus: nextFocus,
     });
   },
   setFreeWriteSelectedTextId: (id) => {
+    const prevId = get().freeWriteSelectedTextId;
+    const nextFocus = id ? "pdfText" : "pdf";
+    if (prevId !== id || get().freeWriteFocus !== nextFocus) {
+      dropTeachingSuggestionPrefix(set);
+    }
     set({
       freeWriteSelectedTextId: id,
-      freeWriteFocus: id ? "pdfText" : "pdf",
+      freeWriteFocus: nextFocus,
       freeWritePdfTool: id ? "text" : get().freeWritePdfTool,
     });
     void get().syncWindowFocusable();

@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { useRef } from "react";
+import { describe, expect, it, vi } from "vitest";
+import { act, renderHook } from "@testing-library/react";
 import {
   applyFlipInvert,
   clearFlipStyles,
@@ -10,31 +9,61 @@ import {
   FLIP_TRANSFORM_TRANSITION,
   playFlipToIdentity,
 } from "./flipLayout";
+import { useFlipLayoutTransition } from "../hooks/useFlipLayoutTransition";
 
-const dockedSectionSrc = readFileSync(
-  join(
-    dirname(fileURLToPath(import.meta.url)),
-    "../components/layout/DockedSection.tsx",
-  ),
-  "utf8",
-);
+vi.mock("./motion", () => ({
+  prefersReducedMotion: () => false,
+}));
 
-describe("DockedSection compositing (issue #274)", () => {
-  it("does not animate layout props top/height", () => {
-    expect(dockedSectionSrc).not.toMatch(/transition-\[top,\s*height\]/);
-    expect(dockedSectionSrc).not.toMatch(/transition:\s*[^;]*(top|height)/);
-  });
+describe("useFlipLayoutTransition trigger gating (issue #274)", () => {
+  it("does not animate when only layout changes; animates when trigger flips", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
 
-  it("uses transform-only FLIP for minimize/restore geometry changes", () => {
-    expect(dockedSectionSrc).toContain("useFlipLayoutTransition");
+    const { rerender } = renderHook(
+      ({
+        layout,
+        trigger,
+      }: {
+        layout: { top: number; height: number };
+        trigger: boolean;
+      }) => {
+        const ref = useRef(el);
+        useFlipLayoutTransition(ref, layout, trigger);
+      },
+      {
+        initialProps: {
+          layout: { top: 100, height: 200 },
+          trigger: false,
+        },
+      },
+    );
+
+    act(() => {
+      rerender({ layout: { top: 100, height: 80 }, trigger: false });
+    });
+    expect(el.style.transform).toBe("");
+
+    act(() => {
+      rerender({ layout: { top: 220, height: 60 }, trigger: true });
+    });
+    expect(el.style.transform.startsWith("translateY(")).toBe(true);
+
+    el.remove();
   });
 });
 
 describe("flipInvertTransform", () => {
-  it("returns translateY and scaleY so the new box looks like the old one", () => {
+  it("returns translateY so the new top looks like the old one", () => {
     expect(
       flipInvertTransform({ top: 100, height: 200 }, { top: 40, height: 80 }),
-    ).toEqual({ translateY: 60, scaleY: 2.5 });
+    ).toEqual({ translateY: 60 });
+  });
+
+  it("returns null when top did not change (height-only)", () => {
+    expect(
+      flipInvertTransform({ top: 10, height: 50 }, { top: 10, height: 80 }),
+    ).toBeNull();
   });
 
   it("returns null when layout did not change", () => {
@@ -49,24 +78,24 @@ describe("flipInvertTransform", () => {
     ).toBeNull();
   });
 
-  it("uses scaleY 1 when the previous height was zero", () => {
+  it("animates top change even when previous height was zero", () => {
     expect(
       flipInvertTransform({ top: 20, height: 0 }, { top: 0, height: 40 }),
-    ).toEqual({ translateY: 20, scaleY: 1 });
+    ).toEqual({ translateY: 20 });
   });
 });
 
 describe("applyFlipInvert / playFlipToIdentity", () => {
   it("promotes the layer only while the transform transition runs", () => {
     const el = document.createElement("div");
-    applyFlipInvert(el, { translateY: 40, scaleY: 2 });
+    applyFlipInvert(el, { translateY: 40 });
     expect(el.style.willChange).toBe("transform");
-    expect(el.style.transform).toBe("translateY(40px) scaleY(2)");
+    expect(el.style.transform).toBe("translateY(40px)");
     expect(el.style.transition).toBe("none");
 
     const stop = playFlipToIdentity(el);
     expect(el.style.transition).toBe(FLIP_TRANSFORM_TRANSITION);
-    expect(el.style.transform).toBe("translateY(0) scaleY(1)");
+    expect(el.style.transform).toBe("translateY(0)");
     expect(el.style.willChange).toBe("transform");
 
     el.dispatchEvent(
@@ -84,7 +113,7 @@ describe("applyFlipInvert / playFlipToIdentity", () => {
 
   it("clearFlipStyles strips invert inline styles", () => {
     const el = document.createElement("div");
-    applyFlipInvert(el, { translateY: 1, scaleY: 1.5 });
+    applyFlipInvert(el, { translateY: 1 });
     clearFlipStyles(el);
     expect(el.style.willChange).toBe("");
     expect(el.style.transform).toBe("");
@@ -101,7 +130,7 @@ describe("applyFlipInvert / playFlipToIdentity", () => {
     const el = document.createElement("div");
     const child = document.createElement("span");
     el.appendChild(child);
-    applyFlipInvert(el, { translateY: 10, scaleY: 1 });
+    applyFlipInvert(el, { translateY: 10 });
     playFlipToIdentity(el);
     child.dispatchEvent(
       new TransitionEvent("transitionend", {

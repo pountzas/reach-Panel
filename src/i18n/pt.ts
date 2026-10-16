@@ -69,6 +69,7 @@ export const pt = {
   freeWritePdfMissing: "Este arquivo PDF não foi encontrado.",
   freeWritePdfEmpty: "Abra um PDF para ler ao lado das suas notas.",
   freeWritePdfPrevPage: "Página anterior",
+  freeWritePdfGoToPage: "Ir para a página",
   freeWritePdfNextPage: "Próxima página",
   freeWritePdfPen: "Caneta",
   freeWritePdfEraser: "Borracha",

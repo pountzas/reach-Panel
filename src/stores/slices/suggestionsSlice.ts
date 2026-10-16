@@ -23,6 +23,7 @@ import { isLanguageLessonActive } from "../../lib/language";
 import {
   clonePdfAnnotationDoc,
   isFreeWriteCaptureActive,
+  isLanguageSubjectActive,
 } from "../../lib/teaching";
 
 export const createSuggestionsSlice: StateCreator<
@@ -130,6 +131,11 @@ export const createSuggestionsSlice: StateCreator<
         language: state.settings.typingLanguage || "en",
       }).catch(logIpc("cmd_record_word"));
       await get().loadSuggestions();
+      return;
+    }
+
+    // Teaching Language with no in-app capture target: never inject into the OS.
+    if (isLanguageSubjectActive(freeWriteModeFromState(state))) {
       return;
     }
 

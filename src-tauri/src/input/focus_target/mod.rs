@@ -18,8 +18,8 @@ use uia::{
     uia_signals_are_autocomplete_satellite, with_uia, UiaTextInputSignals,
 };
 use win32::{
-    bring_to_foreground, gui_thread_info, hwnd_or_ancestor_is_editable, hwnd_to_usize,
-    is_chromium_class, is_null, is_our_window, is_readonly_edit, usize_to_hwnd, win32_caret_point,
+    bring_to_foreground, gui_thread_info, hwnd_or_ancestor_is_editable, hwnd_or_ancestor_is_shell,
+    hwnd_to_usize, is_null, is_our_window, is_readonly_edit, usize_to_hwnd, win32_caret_point,
     window_class_name,
 };
 
@@ -203,6 +203,12 @@ fn uia_focused_is_text_input() -> Option<bool> {
         if uia_element_is_our_process(&element) {
             return Some(false);
         }
+        // Taskbar / desktop chrome: never keep the keyboard up via stale Win32 caret.
+        let focus_hwnd = unsafe { element.CurrentNativeWindowHandle().unwrap_or_default() };
+        if !is_null(focus_hwnd) && hwnd_or_ancestor_is_shell(focus_hwnd) {
+            clear_last_real_text_focus();
+            return Some(false);
+        }
         let control_type = unsafe { element.CurrentControlType().ok()?.0 };
         let framework_id = uia_element_framework_id(&element);
         let native_class = uia_element_native_class(&element);
@@ -246,20 +252,12 @@ fn uia_focused_is_text_input() -> Option<bool> {
 /// True when an external app's focusable input-like control is active.
 fn is_editable_input_focused() -> bool {
     // UI Automation covers WinUI / UWP / Search / Chromium inputs that lack
-    // classic Win32 Edit classes or hwndCaret.
+    // classic Win32 Edit classes or hwndCaret. When UIA names a concrete
+    // focused element that is not a text field (taskbar, button, etc.), trust
+    // that — do not keep the keyboard up from a stale Win32 caret in the
+    // previous editor.
     if let Some(focused) = uia_focused_is_text_input() {
-        if focused {
-            return true;
-        }
-        // UIA identified a non-text control. In Chromium the renderer HWND is
-        // not a text field — do not let Win32 class/caret heuristics override.
-        unsafe {
-            let fg = GetForegroundWindow();
-            if is_chromium_class(&window_class_name(fg)) {
-                return false;
-            }
-        }
-        // Non-browser apps: still allow Win32 heuristics for incomplete UIA trees.
+        return focused;
     }
 
     unsafe {

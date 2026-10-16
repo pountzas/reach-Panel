@@ -4,7 +4,7 @@
 
 | Surface | Before | After |
 | --- | --- | --- |
-| Teaching / docked minimize (`DockedSection`) | CSS `transition-[top,height]` (layout thrash) | Snap `top`/`height`; FLIP via `translateY` + `scaleY` only (`useFlipLayoutTransition` / `flipLayout.ts`). Tokens: `--rp-dur-base` / `--rp-ease-out`. |
+| Teaching / docked minimize (`DockedSection`) | No transition (`top`/`height` snap) | Snap `top`/`height`; FLIP via `translateY` only when `teachingKeyboardMinimized` flips (`useFlipLayoutTransition` / `flipLayout.ts`). Tokens: `--rp-dur-base` / `--rp-ease-out`. |
 | Mode menu FAB (`ModeMenu`) | Already `opacity` + `translateX` | Same motion; `will-change: opacity, transform` only while transitioning. |
 | Collapsed FAB stack appear | Already `opacity` + `scale` | Same; temporary `will-change` during stagger appear. |
 

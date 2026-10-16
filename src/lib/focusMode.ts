@@ -41,7 +41,7 @@ export function isMicFabEnabled(input: {
 export function focusModeToolbarClassName(_hasSuggestionChips: boolean): string {
   return [
     "relative z-20 flex w-full shrink-0 flex-col overflow-visible",
-    "pl-3 pr-1 pt-1 pb-0",
+    "pl-3 pr-1 py-0",
   ].join(" ");
 }
 

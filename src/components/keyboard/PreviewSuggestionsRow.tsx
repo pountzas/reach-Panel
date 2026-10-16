@@ -21,8 +21,13 @@ export function PreviewSuggestionsRow({
       lastSuggestionsRef.current = suggestions;
     }
   }, [suggestions]);
-  const displaySuggestions =
-    suggestions.length > 0 ? suggestions : lastSuggestionsRef.current;
+  // While the slot is open, show live suggestions (empty → lightbulb only).
+  // While hiding, keep the last chips for the exit transition.
+  const displaySuggestions = deferredSuggestions
+    ? suggestions
+    : suggestions.length > 0
+      ? suggestions
+      : lastSuggestionsRef.current;
 
   return (
     <div className="flex w-full min-w-0 items-center justify-center">

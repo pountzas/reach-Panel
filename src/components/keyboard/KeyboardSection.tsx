@@ -92,6 +92,8 @@ export function KeyboardSection() {
     }
   }, [dictationKeyVisible, dictationState, stopDictation]);
   const hasSuggestionChips = showSuggestions && suggestionCount > 0;
+  /** Suggestions strip stays mounted (lightbulb) whenever helpers allow chips. */
+  const showSuggestionsRow = showSuggestions;
   const transparentUi = isTransparentUiActive(settings, focusModeActive);
   const showTransparentToggle = focusModeActive && !showSynth && !compact;
   const showFocusModeCollapse =
@@ -109,7 +111,7 @@ export function KeyboardSection() {
   const showToolbar =
     showSynthToolbar ||
     showInputPreview ||
-    hasSuggestionChips ||
+    showSuggestionsRow ||
     showTransparentToggle ||
     showFocusModeCollapse;
   const song = musicTeachingEnabled
@@ -127,7 +129,7 @@ export function KeyboardSection() {
 
   const auxCenterMinHeightPx = showInputPreview
     ? INPUT_PREVIEW_STRIP_HEIGHT_PX
-    : hasSuggestionChips
+    : showSuggestionsRow
       ? SUGGESTION_CHIP_HEIGHT_PX
       : 0;
 
@@ -311,14 +313,14 @@ export function KeyboardSection() {
                 className={`flex min-w-0 flex-1 items-center justify-center px-1 ${
                   showInputPreview
                     ? "min-h-[48px]"
-                    : hasSuggestionChips
-                      ? "min-h-8"
+                    : showSuggestionsRow
+                      ? "min-h-7"
                       : ""
                 }`}
               >
                 <PreviewSuggestionsRow
                   showPreview={showInputPreview}
-                  showSuggestions={hasSuggestionChips}
+                  showSuggestions={showSuggestionsRow}
                 />
               </div>
               {endControls}
@@ -326,7 +328,7 @@ export function KeyboardSection() {
           </div>
         ) : (
           <div
-            className={`relative z-20 grid w-full shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${compact ? "pt-2" : showInputPreview || hasSuggestionChips || showSynth ? "pt-1 pb-0" : "pt-6"}`}
+            className={`relative z-20 grid w-full shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${compact ? "pt-2" : showInputPreview || showSuggestionsRow || showSynth ? "py-0" : "pt-6"}`}
           >
             <div aria-hidden className="min-w-0" />
             <div
@@ -339,7 +341,7 @@ export function KeyboardSection() {
             >
               <PreviewSuggestionsRow
                 showPreview={showInputPreview}
-                showSuggestions={hasSuggestionChips}
+                showSuggestions={showSuggestionsRow}
               />
             </div>
             {endControls}

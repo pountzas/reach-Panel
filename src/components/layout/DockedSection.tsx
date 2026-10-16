@@ -81,8 +81,15 @@ export function DockedSection({
     isStackableSectionId(slot.id) && getSectionDefinition(slot.id).canUndock;
   const showPanelControls = slot.id !== "input-row";
   const rootRef = useRef<HTMLDivElement>(null);
-  // Snap top/height in layout; animate only transform (GPU), not layout props.
-  useFlipLayoutTransition(rootRef, { top: slot.y, height: slot.height });
+  const teachingKeyboardMinimized = useAppStore(
+    (s) => s.teachingKeyboardMinimized,
+  );
+  // Snap top/height in layout; FLIP only when Teaching minimize/restore flips.
+  useFlipLayoutTransition(
+    rootRef,
+    { top: slot.y, height: slot.height },
+    teachingKeyboardMinimized,
+  );
 
   const handleClose = () => {
     switch (slot.id) {

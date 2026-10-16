@@ -85,6 +85,8 @@ export const en = {
 
   freeWritePdfNextPage: "Next page",
 
+  freeWritePdfGoToPage: "Go to page",
+
   freeWritePdfPen: "Pen",
 
   freeWritePdfEraser: "Eraser",

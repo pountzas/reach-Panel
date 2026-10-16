@@ -70,6 +70,8 @@ export const el = {
   freeWritePdfMissing: "Αυτό το αρχείο PDF δεν βρέθηκε.",
   freeWritePdfEmpty: "Ανοίξτε ένα PDF για ανάγνωση δίπλα στις σημειώσεις σας.",
   freeWritePdfPrevPage: "Προηγούμενη σελίδα",
+
+  freeWritePdfGoToPage: "Μετάβαση στη σελίδα",
   freeWritePdfNextPage: "Επόμενη σελίδα",
   freeWritePdfPen: "Πένα",
   freeWritePdfEraser: "Σβήστρα",

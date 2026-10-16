@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { HoverTooltip } from "../common/HoverTooltip";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import { useAppStore } from "../../stores/appStore";
@@ -31,6 +31,7 @@ export function TeachingSubjectTabs<T extends string>({
   orientation?: TeachingSubjectTabOrientation;
 }) {
   const settings = useAppStore((s) => s.settings);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   if (tabs.length <= 1) return null;
 
   const surface = getSurfaceColors(settings.appBgColor);
@@ -39,8 +40,11 @@ export function TeachingSubjectTabs<T extends string>({
   const moveActive = (delta: 1 | -1) => {
     const index = tabs.findIndex((tab) => tab.id === activeId);
     if (index < 0) return;
-    const next = tabs[(index + delta + tabs.length) % tabs.length];
-    if (next) onChange(next.id);
+    const nextIndex = (index + delta + tabs.length) % tabs.length;
+    const next = tabs[nextIndex];
+    if (!next) return;
+    onChange(next.id);
+    tabRefs.current[nextIndex]?.focus();
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -81,15 +85,19 @@ export function TeachingSubjectTabs<T extends string>({
         aria-orientation="vertical"
         onKeyDown={onKeyDown}
       >
-        {tabs.map((tab) => {
+        {tabs.map((tab, i) => {
           const active = tab.id === activeId;
           return (
             <button
               key={tab.id}
+              ref={(el) => {
+                tabRefs.current[i] = el;
+              }}
               type="button"
               role="tab"
               aria-selected={active}
               aria-label={tab.label}
+              tabIndex={active ? 0 : -1}
               className="group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md border"
               style={{
                 borderColor: active ? surface.panelBorder : "transparent",
@@ -120,14 +128,18 @@ export function TeachingSubjectTabs<T extends string>({
       aria-label="Teaching subject tabs"
       onKeyDown={onKeyDown}
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, i) => {
         const active = tab.id === activeId;
         return (
           <button
             key={tab.id}
+            ref={(el) => {
+              tabRefs.current[i] = el;
+            }}
             type="button"
             role="tab"
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
             className="relative h-9 min-w-[7.5rem] max-w-[12rem] truncate rounded-t-lg border px-3 text-sm font-medium"
             style={{
               borderColor: surface.panelBorder,

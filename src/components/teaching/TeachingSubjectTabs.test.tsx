@@ -55,7 +55,7 @@ describe("TeachingSubjectShell vertical rail", () => {
     expect(freeWrite.querySelector("[data-testid='icon-free']")).toBeTruthy();
   });
 
-  it("moves to next tab with ArrowDown", () => {
+  it("moves to next tab with ArrowDown and moves focus with selection", () => {
     const onChange = vi.fn();
     render(
       <TeachingSubjectShell
@@ -70,6 +70,25 @@ describe("TeachingSubjectShell vertical rail", () => {
 
     fireEvent.keyDown(screen.getByRole("tablist"), { key: "ArrowDown" });
     expect(onChange).toHaveBeenCalledWith("freeWrite");
+    expect(document.activeElement).toBe(
+      screen.getByRole("tab", { name: "Free write" }),
+    );
+  });
+
+  it("uses roving tabIndex so only the active tab is in the tab order", () => {
+    render(
+      <TeachingSubjectShell
+        orientation="vertical"
+        tabs={tabs}
+        activeId="spelling"
+        onChange={vi.fn()}
+      >
+        <div>Body</div>
+      </TeachingSubjectShell>,
+    );
+
+    expect(screen.getByRole("tab", { name: "Spelling" }).tabIndex).toBe(0);
+    expect(screen.getByRole("tab", { name: "Free write" }).tabIndex).toBe(-1);
   });
 
   it("moves to previous tab with ArrowUp when free write is active", () => {

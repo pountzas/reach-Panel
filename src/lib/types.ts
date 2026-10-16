@@ -107,7 +107,7 @@ export interface AppSettings {
   freeWriteLeftRatio?: number;
   /** Teaching → Language → Free write: notepad draft (plain text). */
   freeWriteNotepadText?: string;
-  /** Teaching → Language → Free write: notepad zoom percent (75–200). */
+  /** Teaching → Language → Free write: notepad zoom percent (75–200, 12.5% steps). */
   freeWriteNotepadZoom?: number;
   /** Teaching → Language → Free write: word wrap. */
   freeWriteNotepadWrap?: boolean;

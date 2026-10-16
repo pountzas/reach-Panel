@@ -3,19 +3,25 @@ import * as pdfjs from "pdfjs-dist";
 import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { BiExport } from "react-icons/bi";
 import { IoIosRedo, IoIosUndo } from "react-icons/io";
 import { IoPencilOutline } from "react-icons/io5";
 import { MdOutlineZoomIn, MdOutlineZoomOut } from "react-icons/md";
 import { PiEraserLight } from "react-icons/pi";
 import { getSurfaceColors } from "../../lib/colorProfiles";
-import { clonePdfAnnotationDoc, ensurePage } from "../../lib/teaching";
+import {
+  clampFreeWritePdfZoom,
+  clonePdfAnnotationDoc,
+  ensurePage,
+  formatFreeWriteZoomPercent,
+  FREE_WRITE_ZOOM_STEP,
+} from "../../lib/teaching";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import {
   CloseIcon,
   LoadSongIcon,
-  PdfFileIcon,
   TextSlashIcon,
   TextToolIcon,
 } from "../common/SectionIcons";
@@ -71,6 +77,7 @@ export function FreeWritePdfPane() {
 
   const [page, setPage] = useState(1);
   const [pageCount, setPageCount] = useState(0);
+  const [pageDraft, setPageDraft] = useState("1");
   const [viewerZoom, setViewerZoom] = useState(100);
   const [error, setError] = useState<string | null>(null);
   const [docReadyPath, setDocReadyPath] = useState<string | null>(null);
@@ -91,6 +98,21 @@ export function FreeWritePdfPane() {
   useEffect(() => {
     void loadTeachingPdfLibrary();
   }, [loadTeachingPdfLibrary]);
+
+  useEffect(() => {
+    setPageDraft(String(page));
+  }, [page]);
+
+  const commitPageDraft = useCallback(() => {
+    const parsed = Number.parseInt(pageDraft, 10);
+    if (!Number.isFinite(parsed) || pageCount < 1) {
+      setPageDraft(String(page));
+      return;
+    }
+    const next = Math.min(pageCount, Math.max(1, parsed));
+    setPage(next);
+    setPageDraft(String(next));
+  }, [page, pageCount, pageDraft]);
 
   // Load (or clear) the PDF document when the active path changes.
   useEffect(() => {
@@ -260,9 +282,39 @@ export function FreeWritePdfPane() {
           >
             <span className="text-sm">◀</span>
           </TeachingLessonToolbarButton>
-          <span className="text-xs tabular-nums" style={{ color: surface.panelMutedText }}>
-            {pageCount > 0 ? `${page} / ${pageCount}` : "—"}
-          </span>
+          {pageCount > 0 ? (
+            <label className="flex items-center gap-1 text-xs tabular-nums" style={{ color: surface.panelMutedText }}>
+              <span className="sr-only">{t("freeWritePdfGoToPage")}</span>
+              <input
+                type="number"
+                min={1}
+                max={pageCount}
+                inputMode="numeric"
+                aria-label={t("freeWritePdfGoToPage")}
+                className="w-14 rounded border px-1 py-0.5 text-center text-xs tabular-nums outline-none"
+                style={{
+                  borderColor: surface.panelBorder,
+                  backgroundColor: surface.panelBg,
+                  color: surface.panelText,
+                }}
+                value={pageDraft}
+                onChange={(e) => setPageDraft(e.target.value)}
+                onBlur={() => commitPageDraft()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    commitPageDraft();
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+              <span>/ {pageCount}</span>
+            </label>
+          ) : (
+            <span className="text-xs tabular-nums" style={{ color: surface.panelMutedText }}>
+              —
+            </span>
+          )}
           <TeachingLessonToolbarButton
             label={t("freeWritePdfNextPage")}
             size="sm"
@@ -277,17 +329,27 @@ export function FreeWritePdfPane() {
           <TeachingLessonToolbarButton
             label={t("freeWriteZoomOut")}
             size="sm"
-            onClick={() => setViewerZoom((z) => Math.max(50, z - 25))}
+            onClick={() =>
+              setViewerZoom((z) => clampFreeWritePdfZoom(z - FREE_WRITE_ZOOM_STEP))
+            }
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
             color={surface.panelText}
           >
             <MdOutlineZoomOut className={TOOLBAR_ICON_CLASS} />
           </TeachingLessonToolbarButton>
+          <span
+            className="min-w-[3.25rem] text-center text-xs tabular-nums"
+            style={{ color: surface.panelMutedText }}
+          >
+            {formatFreeWriteZoomPercent(viewerZoom)}
+          </span>
           <TeachingLessonToolbarButton
             label={t("freeWriteZoomIn")}
             size="sm"
-            onClick={() => setViewerZoom((z) => Math.min(250, z + 25))}
+            onClick={() =>
+              setViewerZoom((z) => clampFreeWritePdfZoom(z + FREE_WRITE_ZOOM_STEP))
+            }
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
             color={surface.panelText}
@@ -382,7 +444,7 @@ export function FreeWritePdfPane() {
                 borderColor={surface.panelBorder}
                 color={surface.panelText}
               >
-                <PdfFileIcon className={TOOLBAR_ICON_CLASS} />
+                <BiExport className={TOOLBAR_ICON_CLASS} />
               </TeachingLessonToolbarButton>
               <TeachingLessonToolbarButton
                 label={t("freeWriteClosePdf")}

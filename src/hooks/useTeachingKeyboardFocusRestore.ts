@@ -65,19 +65,17 @@ export function useTeachingKeyboardFocusRestore(): void {
   const prevTypingRef = useRef(typingTargetActive);
 
   useEffect(() => {
-    if (!chromeVisible) {
-      prevTypingRef.current = typingTargetActive;
-      return;
-    }
-
     const wasActive = prevTypingRef.current;
     prevTypingRef.current = typingTargetActive;
+    if (!chromeVisible) return;
 
-    if (typingTargetActive && minimized) {
-      setMinimized(false);
+    // Rising edge only: an in-app input was just selected → restore.
+    if (!wasActive && typingTargetActive) {
+      if (minimized) setMinimized(false);
       return;
     }
 
+    // Falling edge with Focus on: the input was left → minimize again.
     if (autoFocus && wasActive && !typingTargetActive && !minimized) {
       setMinimized(true);
     }
@@ -94,6 +92,14 @@ export function useTeachingKeyboardFocusRestore(): void {
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (!isTypingKeyEvent(event)) return;
+      // Enter/Space on a focused control (e.g. the Restore button) must not
+      // restore here, or the button's own click toggles it back to minimized.
+      if (
+        event.target instanceof Element &&
+        event.target.closest("button, [role='button'], [role='tab'], select")
+      ) {
+        return;
+      }
       const state = useAppStore.getState();
       if (
         !isTeachingKeyboardChromeVisible({

@@ -69,6 +69,7 @@ export const fr = {
   freeWritePdfMissing: "Ce fichier PDF est introuvable.",
   freeWritePdfEmpty: "Ouvrez un PDF à lire à côté de vos notes.",
   freeWritePdfPrevPage: "Page précédente",
+  freeWritePdfGoToPage: "Aller à la page",
   freeWritePdfNextPage: "Page suivante",
   freeWritePdfPen: "Stylo",
   freeWritePdfEraser: "Gomme",
