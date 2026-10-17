@@ -148,3 +148,221 @@ export function ensurePage(
 export function clonePdfAnnotationDoc(doc: PdfAnnotationDoc): PdfAnnotationDoc {
   return parsePdfAnnotationJson(serializePdfAnnotationJson(doc));
 }
+
+/** Per-gesture undo/redo payload — never a full document snapshot. */
+export type PdfAnnotationChange =
+  | { kind: "addStroke"; pageKey: string; stroke: PdfStroke }
+  | { kind: "removeStrokes"; pageKey: string; strokes: PdfStroke[] }
+  | { kind: "restoreStrokes"; pageKey: string; strokes: PdfStroke[] }
+  /** Eraser gesture: page stroke list before/after (may trim or drop strokes). */
+  | {
+      kind: "replaceStrokes";
+      pageKey: string;
+      before: PdfStroke[];
+      after: PdfStroke[];
+    }
+  | { kind: "addText"; pageKey: string; box: PdfTextBox }
+  | { kind: "removeText"; pageKey: string; box: PdfTextBox }
+  | {
+      kind: "moveText";
+      pageKey: string;
+      id: string;
+      from: { x: number; y: number };
+      to: { x: number; y: number };
+    };
+
+function emptyPage(): PdfPageAnnotations {
+  return { strokes: [], texts: [] };
+}
+
+function withPage(
+  doc: PdfAnnotationDoc,
+  pageKey: string,
+  page: PdfPageAnnotations,
+): PdfAnnotationDoc {
+  return {
+    ...doc,
+    pages: {
+      ...doc.pages,
+      [pageKey]: page,
+    },
+  };
+}
+
+export function addStrokeToPage(
+  doc: PdfAnnotationDoc,
+  pageKey: string,
+  stroke: PdfStroke,
+): PdfAnnotationDoc {
+  const prev = doc.pages[pageKey] ?? emptyPage();
+  return withPage(doc, pageKey, {
+    ...prev,
+    strokes: [...prev.strokes, stroke],
+  });
+}
+
+export function removeStrokesFromPage(
+  doc: PdfAnnotationDoc,
+  pageKey: string,
+  strokeIds: ReadonlySet<string>,
+): PdfAnnotationDoc {
+  const prev = doc.pages[pageKey];
+  if (!prev) return doc;
+  const strokes = prev.strokes.filter((s) => !strokeIds.has(s.id));
+  if (strokes.length === prev.strokes.length) return doc;
+  return withPage(doc, pageKey, { ...prev, strokes });
+}
+
+export function replacePageStrokes(
+  doc: PdfAnnotationDoc,
+  pageKey: string,
+  strokes: PdfStroke[],
+): PdfAnnotationDoc {
+  const prev = doc.pages[pageKey] ?? emptyPage();
+  if (prev.strokes === strokes) return doc;
+  return withPage(doc, pageKey, { ...prev, strokes });
+}
+
+export function addTextToPage(
+  doc: PdfAnnotationDoc,
+  pageKey: string,
+  box: PdfTextBox,
+): PdfAnnotationDoc {
+  const prev = doc.pages[pageKey] ?? emptyPage();
+  return withPage(doc, pageKey, {
+    ...prev,
+    texts: [...prev.texts, box],
+  });
+}
+
+export function moveTextOnPage(
+  doc: PdfAnnotationDoc,
+  pageKey: string,
+  id: string,
+  pos: { x: number; y: number },
+): PdfAnnotationDoc {
+  const prev = doc.pages[pageKey];
+  if (!prev) return doc;
+  let found = false;
+  const texts = prev.texts.map((t) => {
+    if (t.id !== id) return t;
+    found = true;
+    if (t.x === pos.x && t.y === pos.y) return t;
+    return { ...t, x: pos.x, y: pos.y };
+  });
+  if (!found) return doc;
+  return withPage(doc, pageKey, { ...prev, texts });
+}
+
+/** Re-insert removed strokes (undo erase). Appends missing strokes only. */
+export function restoreStrokesToPage(
+  doc: PdfAnnotationDoc,
+  pageKey: string,
+  strokes: PdfStroke[],
+): PdfAnnotationDoc {
+  if (strokes.length === 0) return doc;
+  const prev = doc.pages[pageKey] ?? emptyPage();
+  const existing = new Set(prev.strokes.map((s) => s.id));
+  const toAdd = strokes.filter((s) => !existing.has(s.id));
+  if (toAdd.length === 0) return doc;
+  return withPage(doc, pageKey, {
+    ...prev,
+    strokes: [...prev.strokes, ...toAdd],
+  });
+}
+
+export function removeTextFromPage(
+  doc: PdfAnnotationDoc,
+  pageKey: string,
+  id: string,
+): PdfAnnotationDoc {
+  const prev = doc.pages[pageKey];
+  if (!prev) return doc;
+  const texts = prev.texts.filter((t) => t.id !== id);
+  if (texts.length === prev.texts.length) return doc;
+  return withPage(doc, pageKey, { ...prev, texts });
+}
+
+export function applyPdfAnnotationChange(
+  doc: PdfAnnotationDoc,
+  change: PdfAnnotationChange,
+): PdfAnnotationDoc {
+  switch (change.kind) {
+    case "addStroke":
+      return addStrokeToPage(doc, change.pageKey, change.stroke);
+    case "removeStrokes": {
+      const ids = new Set(change.strokes.map((s) => s.id));
+      return removeStrokesFromPage(doc, change.pageKey, ids);
+    }
+    case "restoreStrokes":
+      return restoreStrokesToPage(doc, change.pageKey, change.strokes);
+    case "replaceStrokes":
+      return replacePageStrokes(doc, change.pageKey, change.after);
+    case "addText":
+      return addTextToPage(doc, change.pageKey, change.box);
+    case "removeText":
+      return removeTextFromPage(doc, change.pageKey, change.box.id);
+    case "moveText":
+      return moveTextOnPage(doc, change.pageKey, change.id, change.to);
+    default: {
+      const _exhaustive: never = change;
+      return _exhaustive;
+    }
+  }
+}
+
+export function invertPdfAnnotationChange(
+  change: PdfAnnotationChange,
+): PdfAnnotationChange {
+  switch (change.kind) {
+    case "addStroke":
+      return {
+        kind: "removeStrokes",
+        pageKey: change.pageKey,
+        strokes: [change.stroke],
+      };
+    case "removeStrokes":
+      return {
+        kind: "restoreStrokes",
+        pageKey: change.pageKey,
+        strokes: change.strokes,
+      };
+    case "restoreStrokes":
+      return {
+        kind: "removeStrokes",
+        pageKey: change.pageKey,
+        strokes: change.strokes,
+      };
+    case "replaceStrokes":
+      return {
+        kind: "replaceStrokes",
+        pageKey: change.pageKey,
+        before: change.after,
+        after: change.before,
+      };
+    case "addText":
+      return {
+        kind: "removeText",
+        pageKey: change.pageKey,
+        box: change.box,
+      };
+    case "removeText":
+      return {
+        kind: "addText",
+        pageKey: change.pageKey,
+        box: change.box,
+      };
+    case "moveText":
+      return {
+        kind: "moveText",
+        pageKey: change.pageKey,
+        id: change.id,
+        from: change.to,
+        to: change.from,
+      };
+    default: {
+      const _exhaustive: never = change;
+      return _exhaustive;
+    }
+  }
+}
