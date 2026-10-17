@@ -1,11 +1,13 @@
-import { useRef } from "react";
+import { memo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import {
-  clonePdfAnnotationDoc,
+  addStrokeToPage,
+  addTextToPage,
   eraseStrokesWithBrush,
-  ensurePage,
-  type PdfAnnotationDoc,
+  moveTextOnPage,
+  replacePageStrokes,
   type PdfPoint,
+  type PdfStroke,
   type PdfTextBox,
 } from "../../lib/teaching";
 import { useAppStore } from "../../stores/appStore";
@@ -37,6 +39,20 @@ function clientToNormalized(
   return [Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))];
 }
 
+function pointsAttr(
+  points: readonly PdfPoint[],
+  width: number,
+  height: number,
+): string {
+  let out = "";
+  for (let i = 0; i < points.length; i += 1) {
+    const p = points[i]!;
+    if (i > 0) out += " ";
+    out += `${p[0] * width},${p[1] * height}`;
+  }
+  return out;
+}
+
 function cursorForTool(
   tool: "pointer" | "pen" | "eraser" | "text",
 ): string {
@@ -56,6 +72,31 @@ function cursorForTool(
   }
 }
 
+const FinishedStrokePolyline = memo(function FinishedStrokePolyline({
+  stroke,
+  width,
+  height,
+}: {
+  stroke: PdfStroke;
+  width: number;
+  height: number;
+}) {
+  if (stroke.points.length < 2) return null;
+  return (
+    <polyline
+      points={pointsAttr(stroke.points, width, height)}
+      fill="none"
+      stroke={stroke.color || PEN_COLOR}
+      strokeWidth={Math.max(
+        1.5,
+        (stroke.width || PEN_WIDTH) * Math.min(width, height),
+      )}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  );
+});
+
 /** Ink / text overlay sized to the rendered PDF page canvas. */
 export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
   const tool = useAppStore((s) => s.freeWritePdfTool);
@@ -67,7 +108,10 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
   const setFreeWriteFocus = useAppStore((s) => s.setFreeWriteFocus);
 
   const drawingRef = useRef<{ id: string; points: PdfPoint[] } | null>(null);
-  const gestureBeforeRef = useRef<PdfAnnotationDoc | null>(null);
+  const livePolylineRef = useRef<SVGPolylineElement | null>(null);
+  const eraserBeforeRef = useRef<PdfStroke[] | null>(null);
+  const eraserLiveRef = useRef<PdfStroke[] | null>(null);
+  const eraserRafRef = useRef<number | null>(null);
   const dragRef = useRef<{
     id: string;
     start: PdfPoint;
@@ -80,7 +124,35 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
   } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
+  const [liveStroke, setLiveStroke] = useState<PdfStroke | null>(null);
+  const [eraserPreview, setEraserPreview] = useState<PdfStroke[] | null>(null);
+  const [dragPreview, setDragPreview] = useState<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const dragPreviewRef = useRef<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
   const pageAnn = doc.pages[pageKey(page)] ?? { strokes: [], texts: [] };
+  const displayStrokes = eraserPreview ?? pageAnn.strokes;
+
+  const flushEraserFrame = () => {
+    eraserRafRef.current = null;
+    const live = eraserLiveRef.current;
+    if (!live) return;
+    applyUpdater((d) => replacePageStrokes(d, pageKey(page), live), {
+      pushUndo: false,
+    });
+  };
+
+  const scheduleEraserCommit = () => {
+    if (eraserRafRef.current != null) return;
+    eraserRafRef.current = requestAnimationFrame(flushEraserFrame);
+  };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -99,36 +171,26 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
       }
       case "pen": {
         setFreeWriteFocus("pdf");
-        gestureBeforeRef.current = clonePdfAnnotationDoc(doc);
         const id = crypto.randomUUID();
-        drawingRef.current = { id, points: [pt] };
-        applyUpdater(
-          (d) => {
-            const next = clonePdfAnnotationDoc(d);
-            ensurePage(next, pageKey(page)).strokes.push({
-              id,
-              color: PEN_COLOR,
-              width: PEN_WIDTH,
-              points: [pt],
-            });
-            return next;
-          },
-          { pushUndo: false },
-        );
+        const points: PdfPoint[] = [pt];
+        drawingRef.current = { id, points };
+        const stroke: PdfStroke = {
+          id,
+          color: PEN_COLOR,
+          width: PEN_WIDTH,
+          points,
+        };
+        setLiveStroke(stroke);
         return;
       }
       case "eraser": {
         setFreeWriteFocus("pdf");
-        gestureBeforeRef.current = clonePdfAnnotationDoc(doc);
-        applyUpdater(
-          (d) => {
-            const next = clonePdfAnnotationDoc(d);
-            const p = ensurePage(next, pageKey(page));
-            p.strokes = eraseStrokesWithBrush(p.strokes, pt, ERASER_RADIUS);
-            return next;
-          },
-          { pushUndo: false },
-        );
+        const before = pageAnn.strokes;
+        eraserBeforeRef.current = before;
+        const next = eraseStrokesWithBrush(before, pt, ERASER_RADIUS);
+        eraserLiveRef.current = next;
+        setEraserPreview(next);
+        scheduleEraserCommit();
         return;
       }
       case "text": {
@@ -141,10 +203,8 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
           w: 0.35,
           body: "",
         };
-        applyUpdater((d) => {
-          const next = clonePdfAnnotationDoc(d);
-          ensurePage(next, pageKey(page)).texts.push(box);
-          return next;
+        applyUpdater((d) => addTextToPage(d, pageKey(page), box), {
+          change: { kind: "addText", pageKey: pageKey(page), box },
         });
         beginTextEdit(id);
         return;
@@ -162,33 +222,26 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     const pt = clientToNormalized(root, e.clientX, e.clientY);
 
     if (tool === "pen" && drawingRef.current) {
-      const { id } = drawingRef.current;
       drawingRef.current.points.push(pt);
-      const points = [...drawingRef.current.points];
-      applyUpdater(
-        (d) => {
-          const next = clonePdfAnnotationDoc(d);
-          const stroke = ensurePage(next, pageKey(page)).strokes.find(
-            (s) => s.id === id,
-          );
-          if (stroke) stroke.points = points;
-          return next;
-        },
-        { pushUndo: false },
-      );
+      const el = livePolylineRef.current;
+      if (el) {
+        el.setAttribute(
+          "points",
+          pointsAttr(drawingRef.current.points, width, height),
+        );
+      }
       return;
     }
 
-    if (tool === "eraser" && gestureBeforeRef.current) {
-      applyUpdater(
-        (d) => {
-          const next = clonePdfAnnotationDoc(d);
-          const p = ensurePage(next, pageKey(page));
-          p.strokes = eraseStrokesWithBrush(p.strokes, pt, ERASER_RADIUS);
-          return next;
-        },
-        { pushUndo: false },
+    if (tool === "eraser" && eraserBeforeRef.current && eraserLiveRef.current) {
+      const next = eraseStrokesWithBrush(
+        eraserLiveRef.current,
+        pt,
+        ERASER_RADIUS,
       );
+      eraserLiveRef.current = next;
+      setEraserPreview(next);
+      scheduleEraserCommit();
     }
   };
 
@@ -201,30 +254,49 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     if (tool === "pen" && drawingRef.current) {
       const finished = drawingRef.current;
       drawingRef.current = null;
-      const before = gestureBeforeRef.current;
-      gestureBeforeRef.current = null;
+      setLiveStroke(null);
       if (finished.points.length < 2) {
-        applyUpdater(
-          (d) => {
-            const next = clonePdfAnnotationDoc(d);
-            const p = ensurePage(next, pageKey(page));
-            p.strokes = p.strokes.filter((s) => s.id !== finished.id);
-            return next;
-          },
-          { pushUndo: false },
-        );
         return;
       }
-      if (before) {
-        applyUpdater((d) => d, { undoFrom: before });
-      }
+      const stroke: PdfStroke = {
+        id: finished.id,
+        color: PEN_COLOR,
+        width: PEN_WIDTH,
+        points: finished.points.slice(),
+      };
+      applyUpdater((d) => addStrokeToPage(d, pageKey(page), stroke), {
+        change: { kind: "addStroke", pageKey: pageKey(page), stroke },
+      });
       return;
     }
 
-    if (tool === "eraser" && gestureBeforeRef.current) {
-      const before = gestureBeforeRef.current;
-      gestureBeforeRef.current = null;
-      applyUpdater((d) => d, { undoFrom: before });
+    if (tool === "eraser" && eraserBeforeRef.current) {
+      if (eraserRafRef.current != null) {
+        cancelAnimationFrame(eraserRafRef.current);
+        eraserRafRef.current = null;
+      }
+      const before = eraserBeforeRef.current;
+      const after = eraserLiveRef.current ?? before;
+      eraserBeforeRef.current = null;
+      eraserLiveRef.current = null;
+      setEraserPreview(null);
+      const changed =
+        before.length !== after.length ||
+        before.some(
+          (s, i) =>
+            !after[i] ||
+            s.id !== after[i]!.id ||
+            s.points.length !== after[i]!.points.length,
+        );
+      if (!changed) return;
+      applyUpdater((d) => replacePageStrokes(d, pageKey(page), after), {
+        change: {
+          kind: "replaceStrokes",
+          pageKey: pageKey(page),
+          before,
+          after,
+        },
+      });
     }
   };
 
@@ -233,13 +305,15 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     const root = rootRef.current;
     if (!root) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    gestureBeforeRef.current = clonePdfAnnotationDoc(doc);
     const start = clientToNormalized(root, e.clientX, e.clientY);
     dragRef.current = {
       id: box.id,
       start,
       origin: { x: box.x, y: box.y },
     };
+    const preview = { id: box.id, x: box.x, y: box.y };
+    dragPreviewRef.current = preview;
+    setDragPreview(preview);
     if (tool === "text") {
       beginTextEdit(box.id);
     } else {
@@ -255,41 +329,43 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     const pt = clientToNormalized(root, e.clientX, e.clientY);
     const dx = pt[0] - drag.start[0];
     const dy = pt[1] - drag.start[1];
-    applyUpdater(
-      (d) => {
-        const next = clonePdfAnnotationDoc(d);
-        for (const p of Object.values(next.pages)) {
-          const box = p.texts.find((t) => t.id === boxId);
-          if (box) {
-            box.x = Math.min(1, Math.max(0, drag.origin.x + dx));
-            box.y = Math.min(1, Math.max(0, drag.origin.y + dy));
-            break;
-          }
-        }
-        return next;
-      },
-      { pushUndo: false },
-    );
+    const preview = {
+      id: boxId,
+      x: Math.min(1, Math.max(0, drag.origin.x + dx)),
+      y: Math.min(1, Math.max(0, drag.origin.y + dy)),
+    };
+    dragPreviewRef.current = preview;
+    setDragPreview(preview);
   };
 
   const endTextDrag = (e: ReactPointerEvent, boxId: string) => {
     const el = e.currentTarget as HTMLElement;
     if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
     const drag = dragRef.current;
-    if (!drag || drag.id !== boxId) return;
+    const preview = dragPreviewRef.current;
     dragRef.current = null;
-    const before = gestureBeforeRef.current;
-    gestureBeforeRef.current = null;
-    const currentBox = useAppStore
-      .getState()
-      .freeWriteAnnotationDoc.pages[pageKey(page)]?.texts.find(
-        (t) => t.id === boxId,
-      );
+    dragPreviewRef.current = null;
+    setDragPreview(null);
+    if (!drag || drag.id !== boxId) return;
+
+    const nextX = preview?.id === boxId ? preview.x : drag.origin.x;
+    const nextY = preview?.id === boxId ? preview.y : drag.origin.y;
     const moved =
-      Math.abs(drag.origin.x - (currentBox?.x ?? drag.origin.x)) > 0.0005 ||
-      Math.abs(drag.origin.y - (currentBox?.y ?? drag.origin.y)) > 0.0005;
-    if (moved && before) {
-      applyUpdater((d) => d, { undoFrom: before });
+      Math.abs(drag.origin.x - nextX) > 0.0005 ||
+      Math.abs(drag.origin.y - nextY) > 0.0005;
+    if (moved) {
+      applyUpdater(
+        (d) => moveTextOnPage(d, pageKey(page), boxId, { x: nextX, y: nextY }),
+        {
+          change: {
+            kind: "moveText",
+            pageKey: pageKey(page),
+            id: boxId,
+            from: { x: drag.origin.x, y: drag.origin.y },
+            to: { x: nextX, y: nextY },
+          },
+        },
+      );
       lastTapRef.current = null;
       return;
     }
@@ -337,30 +413,36 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
         className="pointer-events-none absolute inset-0 h-full w-full"
         aria-hidden
       >
-        {pageAnn.strokes.map((stroke) => {
-          if (stroke.points.length < 2) return null;
-          const points = stroke.points
-            .map(([x, y]) => `${x * width},${y * height}`)
-            .join(" ");
-          return (
-            <polyline
-              key={stroke.id}
-              points={points}
-              fill="none"
-              stroke={stroke.color || PEN_COLOR}
-              strokeWidth={Math.max(
-                1.5,
-                (stroke.width || PEN_WIDTH) * Math.min(width, height),
-              )}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          );
-        })}
+        {displayStrokes.map((stroke) => (
+          <FinishedStrokePolyline
+            key={stroke.id}
+            stroke={stroke}
+            width={width}
+            height={height}
+          />
+        ))}
+        {liveStroke && liveStroke.points.length >= 1 ? (
+          <polyline
+            ref={livePolylineRef}
+            points={pointsAttr(liveStroke.points, width, height)}
+            fill="none"
+            stroke={PEN_COLOR}
+            strokeWidth={Math.max(
+              1.5,
+              PEN_WIDTH * Math.min(width, height),
+            )}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : null}
       </svg>
 
       {pageAnn.texts.map((box) => {
         const selected = box.id === selectedTextId;
+        const preview =
+          dragPreview && dragPreview.id === box.id ? dragPreview : null;
+        const x = preview?.x ?? box.x;
+        const y = preview?.y ?? box.y;
         return (
           <div
             key={box.id}
@@ -368,8 +450,8 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
             data-teaching-input
             className="absolute box-border min-h-[1.25em] border px-1 py-0.5 text-sm leading-snug"
             style={{
-              left: `${box.x * 100}%`,
-              top: `${box.y * 100}%`,
+              left: `${x * 100}%`,
+              top: `${y * 100}%`,
               width: `${box.w * 100}%`,
               color: PEN_COLOR,
               backgroundColor: selected

@@ -15,6 +15,7 @@ import type { MusicSong } from "../lib/music/songs";
 import type {
   FreeWriteFocus,
   LanguageSubjectTab,
+  PdfAnnotationChange,
   PdfAnnotationDoc,
   TeachingPdfEntry,
 } from "../lib/teaching";
@@ -181,7 +182,16 @@ export interface PdfSlice {
   clearAllFreeWriteAnnotations: () => Promise<boolean>;
   applyFreeWriteAnnotationUpdater: (
     updater: (doc: PdfAnnotationDoc) => PdfAnnotationDoc,
-    options?: { pushUndo?: boolean; undoFrom?: PdfAnnotationDoc },
+    options?: {
+      pushUndo?: boolean;
+      /**
+       * @deprecated Prefer `change`. Kept for call-site compat; ignored when
+       * `change` is set. Never cloned into the undo stack.
+       */
+      undoFrom?: PdfAnnotationDoc;
+      /** Per-gesture patch stored on the undo stack (not a full doc). */
+      change?: PdfAnnotationChange;
+    },
   ) => void;
   undoFreeWriteAnnotation: () => void;
   redoFreeWriteAnnotation: () => void;
