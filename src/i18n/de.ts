@@ -69,7 +69,9 @@ export const de = {
   freeWritePdfMissing: "Diese PDF-Datei wurde nicht gefunden.",
   freeWritePdfEmpty: "Öffnen Sie ein PDF zum Lesen neben Ihren Notizen.",
   freeWritePdfPrevPage: "Vorherige Seite",
+  freeWritePdfGoToPage: "Zu Seite",
   freeWritePdfNextPage: "Nächste Seite",
+  freeWritePdfPointer: "Zeiger",
   freeWritePdfPen: "Stift",
   freeWritePdfEraser: "Radierer",
   freeWritePdfTextTool: "Text",
@@ -162,7 +164,7 @@ export const de = {
   showTeachingInputHelpers: "Eingabe-Hilfen im Unterrichtsmodus anzeigen",
 
   showTeachingInputHelpersDescription:
-    "Vorschlagsleiste, Mikrofon und Live-Eingabevorschau, solange der Unterricht aktiv ist.",
+    "Vorschlagsleiste und Mikrofon, solange der Unterricht aktiv ist.",
 
   focusModeOverrideLabel: "Fokusmodus",
 
@@ -454,6 +456,8 @@ export const de = {
   keyboardSectionMode: "Tastaturbereich-Modus",
 
   inputAreaNormal: "Normale Ansicht",
+
+  teachingKeyboardFocus: "Fokus",
 
   inputAreaCompact: "Tastatur und Trackpad maximieren",
 

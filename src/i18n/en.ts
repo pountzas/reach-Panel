@@ -85,6 +85,10 @@ export const en = {
 
   freeWritePdfNextPage: "Next page",
 
+  freeWritePdfGoToPage: "Go to page",
+
+  freeWritePdfPointer: "Pointer",
+
   freeWritePdfPen: "Pen",
 
   freeWritePdfEraser: "Eraser",
@@ -192,7 +196,7 @@ export const en = {
   showTeachingInputHelpers: "Show input helpers in Teaching mode",
 
   showTeachingInputHelpersDescription:
-    "Suggestions bar, mic, and live input preview while Teaching is active.",
+    "Suggestions bar and mic while Teaching is active.",
 
   focusModeOverrideLabel: "Focus mode",
 
@@ -487,6 +491,8 @@ export const en = {
   keyboardSectionMode: "Keyboard section mode",
 
   inputAreaNormal: "Normal view",
+
+  teachingKeyboardFocus: "Focus",
 
   inputAreaCompact: "Maximize keyboard and trackpad",
 

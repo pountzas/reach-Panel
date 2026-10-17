@@ -138,6 +138,17 @@ describe("PreviewSuggestionsRow", () => {
     });
   });
 
+  it("shows the lightbulb with an empty chip list while the slot is open", () => {
+    storeState.suggestions = [];
+    render(
+      <PreviewSuggestionsRow showPreview={false} showSuggestions={true} />,
+    );
+    expect(
+      screen.getByRole("img", { name: "Show suggestions bar" }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
   it("marks hidden preview slot inert and aria-hidden", () => {
     const { container } = render(
       <PreviewSuggestionsRow showPreview={false} showSuggestions={false} />,

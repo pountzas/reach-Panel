@@ -123,7 +123,9 @@ export const createTypingSlice: StateCreator<
       languageInputBuffer: result.buffer,
       greekPendingAccent: result.pending,
       languageAnswerIncorrect: false,
+      typedBuffer: result.buffer,
     });
+    void get().loadSuggestions();
   },
   backspaceTyped: () => {
     const state = get();

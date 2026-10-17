@@ -10,6 +10,7 @@ import {
   languageLessonModeFromState,
 } from "../lib/teachingVisibility";
 import { replaceTrailingWord } from "../lib/suggestionMerge";
+import { selectedPdfTextBoxBody } from "../lib/teachingSuggestions";
 import { invoke } from "@tauri-apps/api/core";
 import { commandFailure, logIpc } from "../../lib/logIpc";
 import type { CommandResult } from "../../lib/types";
@@ -19,7 +20,11 @@ import {
   suggestionWordPrefix,
 } from "../../lib/suggestionPrefix";
 import { isLanguageLessonActive } from "../../lib/language";
-import { isFreeWriteCaptureActive } from "../../lib/teaching";
+import {
+  clonePdfAnnotationDoc,
+  isFreeWriteCaptureActive,
+  isLanguageSubjectActive,
+} from "../../lib/teaching";
 
 export const createSuggestionsSlice: StateCreator<
   AppStore,
@@ -63,8 +68,39 @@ export const createSuggestionsSlice: StateCreator<
     const state = get();
     if (state.languageListAuthoringActive) return;
 
-    // Free write notepad: never inject into the external focused window.
+    // Free write notepad / PDF text: never inject into the external focused window.
     if (isFreeWriteCaptureActive(freeWriteModeFromState(state))) {
+      if (state.freeWriteFocus === "pdfText") {
+        const textId = state.freeWriteSelectedTextId;
+        if (!textId) return;
+        const text = selectedPdfTextBoxBody(
+          state.freeWriteAnnotationDoc,
+          textId,
+        );
+        const next = replaceTrailingWord(text, word, true);
+        get().applyFreeWriteAnnotationUpdater(
+          (doc) => {
+            const updated = clonePdfAnnotationDoc(doc);
+            for (const page of Object.values(updated.pages)) {
+              const box = page.texts.find((t) => t.id === textId);
+              if (box) {
+                box.body = next;
+                break;
+              }
+            }
+            return updated;
+          },
+          { pushUndo: false },
+        );
+        set({ typedBuffer: next });
+        await invoke("cmd_record_word", {
+          profileId: INTERNAL_PROFILE_ID,
+          word,
+          language: state.settings.typingLanguage || "en",
+        }).catch(logIpc("cmd_record_word"));
+        await get().loadSuggestions();
+        return;
+      }
       const text = state.settings.freeWriteNotepadText ?? "";
       const next = replaceTrailingWord(text, word, true);
       set({
@@ -95,6 +131,11 @@ export const createSuggestionsSlice: StateCreator<
         language: state.settings.typingLanguage || "en",
       }).catch(logIpc("cmd_record_word"));
       await get().loadSuggestions();
+      return;
+    }
+
+    // Teaching Language with no in-app capture target: never inject into the OS.
+    if (isLanguageSubjectActive(freeWriteModeFromState(state))) {
       return;
     }
 

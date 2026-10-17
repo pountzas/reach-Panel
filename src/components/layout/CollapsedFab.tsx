@@ -22,7 +22,11 @@ import { ModeMenu } from "./ModeMenu";
 
 const FAB_STAGGER_MS = 40;
 
-function fabAppearStyle(index: number, stackEntered: boolean): CSSProperties {
+function fabAppearStyle(
+  index: number,
+  stackEntered: boolean,
+  promoteLayer: boolean,
+): CSSProperties {
   const reduce = prefersReducedMotion();
   const delay = index * FAB_STAGGER_MS;
   const appear = `${MOTION.fast}ms var(--rp-ease-out) ${delay}ms`;
@@ -32,6 +36,7 @@ function fabAppearStyle(index: number, stackEntered: boolean): CSSProperties {
     transition: reduce
       ? undefined
       : `opacity ${appear}, transform ${appear}, background-color 200ms ease, color 200ms ease`,
+    willChange: promoteLayer && !reduce ? "opacity, transform" : undefined,
   };
 }
 
@@ -71,16 +76,31 @@ export function CollapsedFab({
   const [menuMounted, setMenuMounted] = useState(false);
   const [menuEntered, setMenuEntered] = useState(false);
   const [stackEntered, setStackEntered] = useState(() => prefersReducedMotion());
+  const [promoteFabLayer, setPromoteFabLayer] = useState(
+    () => !prefersReducedMotion(),
+  );
 
   useEffect(() => {
     if (prefersReducedMotion()) {
       setStackEntered(true);
+      setPromoteFabLayer(false);
       return;
     }
+    setPromoteFabLayer(true);
     setStackEntered(false);
     const id = requestAnimationFrame(() => setStackEntered(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  useEffect(() => {
+    if (!stackEntered || prefersReducedMotion()) return;
+    // Last FAB stagger index is at most 2; clear layer promotion after settle.
+    const id = window.setTimeout(
+      () => setPromoteFabLayer(false),
+      MOTION.fast + FAB_STAGGER_MS * 2 + 40,
+    );
+    return () => window.clearTimeout(id);
+  }, [stackEntered]);
 
   useEffect(() => {
     if (modeMenuOpen) {
@@ -192,7 +212,7 @@ export function CollapsedFab({
                 : micEnabled
                   ? MIC_FAB_ARMED_ICON_COLOR
                   : textColor,
-              ...fabAppearStyle(0, stackEntered),
+              ...fabAppearStyle(0, stackEntered, promoteFabLayer),
             }}
             disabled={!micEnabled}
             aria-disabled={!micEnabled}
@@ -213,7 +233,7 @@ export function CollapsedFab({
               height: COLLAPSED_FAB_SIZE,
               backgroundColor: bgColor,
               color: textColor,
-              ...fabAppearStyle(showDictation ? 1 : 0, stackEntered),
+              ...fabAppearStyle(showDictation ? 1 : 0, stackEntered, promoteFabLayer),
             }}
             onClick={() => {
               if (modeMenuOpen) {
@@ -241,6 +261,7 @@ export function CollapsedFab({
             ...fabAppearStyle(
               (showDictation ? 1 : 0) + (showSettings ? 1 : 0),
               stackEntered,
+              promoteFabLayer,
             ),
           }}
           onClick={() =>

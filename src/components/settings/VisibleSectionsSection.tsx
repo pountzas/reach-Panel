@@ -52,6 +52,22 @@ export function VisibleSectionsSection({ surface }: { surface: SurfaceColors }) 
           surface={surface}
         />
       </div>
+      <div className="mt-3">
+        <ToggleRow
+          label={t("showTeachingInputHelpers")}
+          checked={settings.showTeachingInputHelpers !== false}
+          onChange={(checked) =>
+            updateSettings({ showTeachingInputHelpers: checked })
+          }
+          surface={surface}
+        />
+        <p
+          className="mt-1 px-1 text-xs"
+          style={{ color: surface.panelMutedText }}
+        >
+          {t("showTeachingInputHelpersDescription")}
+        </p>
+      </div>
       <WordPackDictionaries surface={surface} />
     </SettingsSection>
   );

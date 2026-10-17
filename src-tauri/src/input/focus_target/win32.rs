@@ -46,11 +46,10 @@ pub(super) fn window_class_name(hwnd: HWND) -> String {
     }
 }
 
-/// Desktop / taskbar are not typing targets.
-fn is_shell_window(hwnd: HWND) -> bool {
-    let class = window_class_name(hwnd);
+/// Desktop / taskbar (and Win11 XAML tray hosts) are not typing targets.
+pub fn is_shell_window_class(class: &str) -> bool {
     matches!(
-        class.as_str(),
+        class,
         "Progman"
             | "WorkerW"
             | "Shell_TrayWnd"
@@ -58,7 +57,33 @@ fn is_shell_window(hwnd: HWND) -> bool {
             | "DV2ControlHost"
             | "ForegroundStaging"
             | "ApplicationManager_DesktopShellWindow"
+            // Win11 tray / flyout XAML host. Do not list the generic island bridge
+            // (Windows.UI.Composition.DesktopWindowContentBridge): XAML-island apps
+            // such as Windows Terminal use it too. Taskbar islands are children of
+            // Shell_TrayWnd, so the ancestor walk already catches them.
+            | "XamlExplorerHostIslandWindow"
     )
+}
+
+fn is_shell_window(hwnd: HWND) -> bool {
+    is_shell_window_class(&window_class_name(hwnd))
+}
+
+/// True when `hwnd` or an ancestor is a shell/taskbar window.
+pub(super) fn hwnd_or_ancestor_is_shell(hwnd: HWND) -> bool {
+    let mut current = hwnd;
+    for _ in 0..12 {
+        if is_null(current) {
+            break;
+        }
+        if is_shell_window(current) {
+            return true;
+        }
+        unsafe {
+            current = GetParent(current).unwrap_or(HWND::default());
+        }
+    }
+    false
 }
 
 pub fn is_valid_typing_target(hwnd: HWND) -> bool {

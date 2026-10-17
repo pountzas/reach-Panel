@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import {
   headerHeightFor,
   type DockedSlot,
@@ -6,6 +6,7 @@ import {
   type StackableSectionId,
 } from "../../lib/sectionStack";
 import { getSectionDefinition, isStackableSectionId } from "../../lib/sectionRegistry";
+import { useFlipLayoutTransition } from "../../hooks/useFlipLayoutTransition";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { peekTeachingRestoreMode } from "../../stores/lib/restoreStack";
@@ -20,7 +21,9 @@ import {
 } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { InputAreaViewButtons } from "./InputAreaViewButtons";
+import { TeachingKeyboardHeaderControls } from "./TeachingKeyboardHeaderControls";
 import { TeachingLessonModeToggle } from "../teaching/TeachingLessonModeToggle";
+import { isTeachingKeyboardChromeVisible } from "../../lib/teaching/teachingKeyboardMinimize";
 
 const SECTION_TITLE_KEY: Record<SectionId, TranslationKey> = {
   teaching: "modeTeaching",
@@ -60,6 +63,13 @@ export function DockedSection({
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const showTeaching = slot.id === "teaching" && musicTeachingEnabled;
+  const showKeyboardChrome =
+    slot.id === "input-row" &&
+    isTeachingKeyboardChromeVisible({
+      musicTeachingEnabled,
+      teachingLesson,
+    });
+  const useCenterGrid = showTeaching || showKeyboardChrome;
   const sectionTitleKey: TranslationKey = showTeaching
     ? teachingLessonTitleKey(teachingLesson)
     : SECTION_TITLE_KEY[slot.id];
@@ -70,6 +80,16 @@ export function DockedSection({
   const canUndock =
     isStackableSectionId(slot.id) && getSectionDefinition(slot.id).canUndock;
   const showPanelControls = slot.id !== "input-row";
+  const rootRef = useRef<HTMLDivElement>(null);
+  const teachingKeyboardMinimized = useAppStore(
+    (s) => s.teachingKeyboardMinimized,
+  );
+  // Snap top/height in layout; FLIP only when Teaching minimize/restore flips.
+  useFlipLayoutTransition(
+    rootRef,
+    { top: slot.y, height: slot.height },
+    teachingKeyboardMinimized,
+  );
 
   const handleClose = () => {
     switch (slot.id) {
@@ -90,6 +110,7 @@ export function DockedSection({
 
   return (
     <div
+      ref={rootRef}
       className="absolute overflow-hidden rounded-md border shadow-md"
       style={{
         left: 0,
@@ -107,7 +128,9 @@ export function DockedSection({
       <div className="flex h-full flex-col overflow-hidden">
         <div
           className={`flex shrink-0 cursor-grab items-center border-b px-2 active:cursor-grabbing ${
-            showTeaching ? "grid grid-cols-[1fr_auto_1fr] gap-2" : "justify-between"
+            useCenterGrid
+              ? "grid grid-cols-[1fr_auto_1fr] gap-2"
+              : "justify-between"
           }`}
           style={{
             height: headerHeight,
@@ -150,8 +173,17 @@ export function DockedSection({
               <TeachingLessonModeToggle />
             </div>
           ) : null}
+          {showKeyboardChrome ? <TeachingKeyboardHeaderControls /> : null}
           {slot.id === "input-row" ? (
-            <InputAreaViewButtons />
+            <div
+              className={
+                showKeyboardChrome
+                  ? "section-no-drag flex items-center justify-end"
+                  : undefined
+              }
+            >
+              <InputAreaViewButtons />
+            </div>
           ) : (
             showPanelControls && (
               <div className="section-no-drag ml-1 flex shrink-0 items-center justify-end gap-0.5">

@@ -187,4 +187,310 @@ describe("applySuggestion", () => {
     expect(useAppStore.getState().languageInputBuffer).toBe("hello");
     expect(useAppStore.getState().typedBuffer).toBe("hello ");
   });
+
+  it("applies into the selected Free write PDF text box instead of notepad or OS", async () => {
+    invokeMock.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_suggestions") return Promise.resolve([]);
+      if (cmd === "cmd_record_word") return Promise.resolve(null);
+      return Promise.resolve({ success: true });
+    });
+    useAppStore.setState({
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "freeWrite",
+      freeWriteFocus: "pdfText",
+      freeWriteSelectedTextId: "t1",
+      freeWriteAnnotationDoc: {
+        schemaVersion: 1,
+        pages: {
+          "1": {
+            strokes: [],
+            texts: [{ id: "t1", x: 0, y: 0, w: 100, body: "hel" }],
+          },
+        },
+      },
+      typedBuffer: "hel",
+      settings: {
+        ...DEFAULT_SETTINGS,
+        suggestionsVisible: true,
+        predictionEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        freeWriteNotepadText: "notepad untouched",
+        showTeachingInputHelpers: true,
+      },
+    });
+
+    await useAppStore.getState().applySuggestion("hello");
+
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "cmd_type_text",
+      expect.anything(),
+    );
+    expect(useAppStore.getState().settings.freeWriteNotepadText).toBe(
+      "notepad untouched",
+    );
+    expect(
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]!.texts[0]!.body,
+    ).toBe("hello ");
+    expect(useAppStore.getState().typedBuffer).toBe("hello ");
+  });
+});
+
+describe("Teaching suggestion production", () => {
+  beforeEach(() => {
+    invokeMock.mockReset();
+    notifyError.mockReset();
+    storeFlags.lastAnnouncedError = null;
+    storeFlags.suggestionsRequestId = 0;
+    invokeMock.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_suggestions") {
+        return Promise.resolve([{ word: "hello" }]);
+      }
+      return Promise.resolve({ success: true });
+    });
+  });
+
+  it("loads suggestions from the spelling buffer after Teaching key input", async () => {
+    useAppStore.setState({
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "spelling",
+      languageLessonPlaying: true,
+      languageInputBuffer: "",
+      typedBuffer: "",
+      suggestions: [],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        suggestionsVisible: true,
+        predictionEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        showTeachingInputHelpers: true,
+      },
+    });
+
+    useAppStore.getState().languageKeyInput("h");
+    useAppStore.getState().languageKeyInput("e");
+
+    expect(useAppStore.getState().languageInputBuffer).toBe("he");
+    expect(useAppStore.getState().typedBuffer).toBe("he");
+    await vi.waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith(
+        "cmd_get_suggestions",
+        expect.objectContaining({ prefix: "he" }),
+      );
+    });
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().suggestions).toEqual(["hello"]);
+    });
+  });
+
+  it("clears suggestions after spelling backspace leaves a short prefix", async () => {
+    useAppStore.setState({
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "spelling",
+      languageLessonPlaying: true,
+      languageInputBuffer: "he",
+      typedBuffer: "he",
+      suggestions: ["hello"],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        suggestionsVisible: true,
+        predictionEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        showTeachingInputHelpers: true,
+      },
+    });
+
+    useAppStore.getState().languageBackspace();
+
+    expect(useAppStore.getState().languageInputBuffer).toBe("h");
+    expect(useAppStore.getState().typedBuffer).toBe("h");
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().suggestions).toEqual([]);
+    });
+  });
+
+  it("loads suggestions from the Free write notepad after typing a prefix", async () => {
+    useAppStore.setState({
+      profileHydrated: true,
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "freeWrite",
+      freeWriteFocus: "notepad",
+      typedBuffer: "",
+      suggestions: [],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        suggestionsVisible: true,
+        predictionEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        freeWriteNotepadText: "",
+        showTeachingInputHelpers: true,
+      },
+    });
+
+    useAppStore.getState().freeWriteNotepadInput("h");
+    useAppStore.getState().freeWriteNotepadInput("e");
+
+    expect(useAppStore.getState().settings.freeWriteNotepadText).toBe("he");
+    expect(useAppStore.getState().typedBuffer).toBe("he");
+    await vi.waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith(
+        "cmd_get_suggestions",
+        expect.objectContaining({ prefix: "he" }),
+      );
+    });
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().suggestions).toEqual(["hello"]);
+    });
+  });
+
+  it("clears suggestions after Free write space like the normal path", async () => {
+    useAppStore.setState({
+      profileHydrated: true,
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "freeWrite",
+      freeWriteFocus: "notepad",
+      typedBuffer: "he",
+      suggestions: ["hello"],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        suggestionsVisible: true,
+        predictionEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        freeWriteNotepadText: "he",
+        showTeachingInputHelpers: true,
+      },
+    });
+
+    useAppStore.getState().freeWriteNotepadInput(" ");
+
+    expect(useAppStore.getState().typedBuffer).toBe("he ");
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().suggestions).toEqual([]);
+    });
+  });
+
+  it("loads suggestions from the selected PDF text box after typing a prefix", async () => {
+    useAppStore.setState({
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "freeWrite",
+      freeWriteFocus: "pdfText",
+      freeWriteSelectedTextId: "t1",
+      freeWriteAnnotationDoc: {
+        schemaVersion: 1,
+        pages: {
+          "1": {
+            strokes: [],
+            texts: [{ id: "t1", x: 0, y: 0, w: 100, body: "" }],
+          },
+        },
+      },
+      typedBuffer: "",
+      suggestions: [],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        suggestionsVisible: true,
+        predictionEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        showTeachingInputHelpers: true,
+      },
+    });
+
+    useAppStore.getState().freeWriteNotepadInput("h");
+    useAppStore.getState().freeWriteNotepadInput("e");
+
+    expect(
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]!.texts[0]!.body,
+    ).toBe("he");
+    expect(useAppStore.getState().typedBuffer).toBe("he");
+    await vi.waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith(
+        "cmd_get_suggestions",
+        expect.objectContaining({ prefix: "he" }),
+      );
+    });
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().suggestions).toEqual(["hello"]);
+    });
+  });
+
+  it("clears Teaching chips when the PDF text target ends so applySuggestion cannot OS-inject", async () => {
+    invokeMock.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_get_suggestions") {
+        return Promise.resolve([{ word: "hello" }]);
+      }
+      return Promise.resolve({ success: true });
+    });
+    useAppStore.setState({
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "freeWrite",
+      freeWriteFocus: "pdfText",
+      freeWriteSelectedTextId: "t1",
+      freeWriteAnnotationDoc: {
+        schemaVersion: 1,
+        pages: {
+          "1": {
+            strokes: [],
+            texts: [{ id: "t1", x: 0, y: 0, w: 100, body: "" }],
+          },
+        },
+      },
+      typedBuffer: "",
+      suggestions: [],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        suggestionsVisible: true,
+        predictionEnabled: true,
+        keyboardSectionMode: "synthesizer",
+        showTeachingInputHelpers: true,
+      },
+    });
+
+    useAppStore.getState().freeWriteNotepadInput("h");
+    useAppStore.getState().freeWriteNotepadInput("e");
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().suggestions).toEqual(["hello"]);
+    });
+
+    useAppStore.getState().setFreeWriteSelectedTextId(null);
+    expect(useAppStore.getState().typedBuffer).toBe("");
+    expect(useAppStore.getState().suggestions).toEqual([]);
+
+    invokeMock.mockClear();
+    await useAppStore.getState().applySuggestion("hello");
+
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "cmd_type_text",
+      expect.anything(),
+    );
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "cmd_press_key",
+      expect.anything(),
+    );
+  });
+
+  it("clears typedBuffer and suggestions when leaving Teaching", async () => {
+    useAppStore.setState({
+      musicTeachingEnabled: true,
+      teachingLesson: "language",
+      languageSubjectTab: "freeWrite",
+      freeWriteFocus: "notepad",
+      typedBuffer: "hel",
+      suggestions: ["hello"],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        keyboardSectionMode: "synthesizer",
+      },
+    });
+
+    await useAppStore.getState().disableMusicTeaching();
+
+    expect(useAppStore.getState().typedBuffer).toBe("");
+    expect(useAppStore.getState().suggestions).toEqual([]);
+  });
 });

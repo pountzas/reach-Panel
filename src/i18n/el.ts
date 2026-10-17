@@ -70,7 +70,10 @@ export const el = {
   freeWritePdfMissing: "Αυτό το αρχείο PDF δεν βρέθηκε.",
   freeWritePdfEmpty: "Ανοίξτε ένα PDF για ανάγνωση δίπλα στις σημειώσεις σας.",
   freeWritePdfPrevPage: "Προηγούμενη σελίδα",
+
+  freeWritePdfGoToPage: "Μετάβαση στη σελίδα",
   freeWritePdfNextPage: "Επόμενη σελίδα",
+  freeWritePdfPointer: "Δείκτης",
   freeWritePdfPen: "Πένα",
   freeWritePdfEraser: "Σβήστρα",
   freeWritePdfTextTool: "Κείμενο",
@@ -163,7 +166,7 @@ export const el = {
   showTeachingInputHelpers: "Εμφάνιση βοηθημάτων εισόδου στη Διδασκαλία",
 
   showTeachingInputHelpersDescription:
-    "Γραμμή προτάσεων, μικρόφωνο και ζωντανή προεπισκόπηση εισόδου όσο είναι ενεργή η Διδασκαλία.",
+    "Γραμμή προτάσεων και μικρόφωνο όσο είναι ενεργή η Διδασκαλία.",
 
   focusModeOverrideLabel: "Λειτουργία εστίασης",
 
@@ -456,6 +459,8 @@ export const el = {
   keyboardSectionMode: "Λειτουργία τμήματος πληκτρολογίου",
 
   inputAreaNormal: "Κανονική προβολή",
+
+  teachingKeyboardFocus: "Εστίαση",
 
   inputAreaCompact: "Μεγιστοποίηση πληκτρολογίου και trackpad",
 

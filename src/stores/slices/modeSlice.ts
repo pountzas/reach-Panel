@@ -5,6 +5,7 @@ import {
   startCompanionBridge,
   stopCompanionBridge,
   syncWindowLayoutFromSettings,
+  syncInputPreviewEnabled,
   emitTeachingSession,
   emptyLanguageLessonState,
 } from "../storeShared";
@@ -197,6 +198,9 @@ export const createModeSlice: StateCreator<
         });
         // Explicit Normal must re-apply non-focus layout even if refresh was a no-op.
         await syncWindowLayoutFromSettings(get().settings, true, false);
+        if (inTeaching) {
+          await syncInputPreviewEnabled(get);
+        }
         await emitTeachingSession(get);
         return;
       }
@@ -229,6 +233,9 @@ export const createModeSlice: StateCreator<
           keyboardSectionMode: "keyboard",
           ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
+        if (inTeaching) {
+          await syncInputPreviewEnabled(get);
+        }
         await emitTeachingSession(get);
         return;
       }
@@ -257,6 +264,9 @@ export const createModeSlice: StateCreator<
           keyboardSectionMode: "keyboard",
           ...(inTeaching ? { windowHeightRatio: heightRestore } : {}),
         });
+        if (inTeaching) {
+          await syncInputPreviewEnabled(get);
+        }
         await emitTeachingSession(get);
         return;
       }
@@ -281,7 +291,7 @@ export const createModeSlice: StateCreator<
           },
           { replace: true },
         );
-        set({ teachingLesson: "language" });
+        set({ teachingLesson: "language", inputPreviewFrame: null });
         // Flags on before synthesizer patch so first layout sync sees Teaching.
         await get().enableMusicTeaching();
         const sectionStack = ensureSectionExpanded(
@@ -294,6 +304,7 @@ export const createModeSlice: StateCreator<
           keyboardSectionMode: "synthesizer",
           sectionStack,
         });
+        await syncInputPreviewEnabled(get);
         await emitTeachingSession(get);
         return;
       }

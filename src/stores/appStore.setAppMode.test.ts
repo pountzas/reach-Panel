@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "../lib/types";
+import { invoke } from "@tauri-apps/api/core";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
@@ -32,14 +33,25 @@ vi.mock("../lib/motion", () => ({
 
 import { useAppStore } from "./appStore";
 
+const invokeMock = vi.mocked(invoke);
+
+function lastPreviewEnableCall() {
+  const calls = invokeMock.mock.calls.filter(
+    ([cmd]) => cmd === "cmd_set_input_preview_enabled",
+  );
+  return calls[calls.length - 1];
+}
+
 describe("setAppMode", () => {
   beforeEach(() => {
+    invokeMock.mockClear();
     useAppStore.setState({
       settings: {
         ...DEFAULT_SETTINGS,
         focusModeOverride: false,
         micMode: false,
         keyboardSectionMode: "keyboard",
+        inputPreviewVisible: true,
       },
       musicTeachingEnabled: false,
       restoreStack: [],
@@ -50,6 +62,7 @@ describe("setAppMode", () => {
       focusModeActive: false,
       isAnimatingWindow: false,
       monitors: [],
+      inputPreviewFrame: null,
     });
   });
 
@@ -67,6 +80,18 @@ describe("setAppMode", () => {
     ]);
   });
 
+  it("setAppMode('teaching') clears preview frames and disables capture", async () => {
+    useAppStore.setState({
+      inputPreviewFrame: "data:image/jpeg;base64,abc",
+    });
+    await useAppStore.getState().setAppMode("teaching");
+    expect(useAppStore.getState().inputPreviewFrame).toBeNull();
+    expect(lastPreviewEnableCall()).toEqual([
+      "cmd_set_input_preview_enabled",
+      { enabled: false },
+    ]);
+  });
+
   it("setAppMode('normal') from teaching clears teaching and restores keyboard mode", async () => {
     useAppStore.setState({
       musicTeachingEnabled: true,
@@ -81,6 +106,7 @@ describe("setAppMode", () => {
         keyboardSectionMode: "synthesizer",
         focusModeOverride: false,
         micMode: false,
+        inputPreviewVisible: true,
       },
       profileHydrated: true,
     });
@@ -90,5 +116,30 @@ describe("setAppMode", () => {
       "keyboard",
     );
     expect(useAppStore.getState().settings.focusModeOverride).toBe(false);
+  });
+
+  it("setAppMode('normal') from teaching restores input preview capture", async () => {
+    useAppStore.setState({
+      musicTeachingEnabled: true,
+      restoreStack: [
+        {
+          reason: "teaching",
+          patch: { mode: "normal", windowHeightRatio: "unset" },
+        },
+      ],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        keyboardSectionMode: "synthesizer",
+        focusModeOverride: false,
+        micMode: false,
+        inputPreviewVisible: true,
+      },
+      profileHydrated: true,
+    });
+    await useAppStore.getState().setAppMode("normal");
+    expect(lastPreviewEnableCall()).toEqual([
+      "cmd_set_input_preview_enabled",
+      { enabled: true },
+    ]);
   });
 });

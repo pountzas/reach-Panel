@@ -412,6 +412,7 @@ export function LanguageLessonPanel() {
               {t("languageYourAnswer")}
             </div>
             <p
+              data-teaching-input
               className="mt-1 min-h-[2.25rem] rounded-md border px-2 py-1 font-mono text-lg"
               style={{
                 borderColor: languageAnswerIncorrect ? "#dc2626" : surface.panelBorder,

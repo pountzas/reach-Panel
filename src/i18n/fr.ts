@@ -69,7 +69,9 @@ export const fr = {
   freeWritePdfMissing: "Ce fichier PDF est introuvable.",
   freeWritePdfEmpty: "Ouvrez un PDF à lire à côté de vos notes.",
   freeWritePdfPrevPage: "Page précédente",
+  freeWritePdfGoToPage: "Aller à la page",
   freeWritePdfNextPage: "Page suivante",
+  freeWritePdfPointer: "Pointeur",
   freeWritePdfPen: "Stylo",
   freeWritePdfEraser: "Gomme",
   freeWritePdfTextTool: "Texte",
@@ -161,7 +163,7 @@ export const fr = {
   showTeachingInputHelpers: "Afficher les aides à la saisie en mode Enseignement",
 
   showTeachingInputHelpersDescription:
-    "Barre de suggestions, micro et aperçu de saisie en direct pendant l’enseignement.",
+    "Barre de suggestions et micro pendant l’enseignement.",
 
   focusModeOverrideLabel: "Mode Focus",
 
@@ -452,6 +454,8 @@ export const fr = {
   keyboardSectionMode: "Mode de la section clavier",
 
   inputAreaNormal: "Vue normale",
+
+  teachingKeyboardFocus: "Focus",
 
   inputAreaCompact: "Maximiser clavier et pavé tactile",
 

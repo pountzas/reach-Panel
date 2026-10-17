@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
   APP_MODE_OPTIONS,
   isTeachingSessionActive,
@@ -65,6 +65,15 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
   const textColor = settings.headerTextColor ?? "#ffffff";
   const reduce = prefersReducedMotion();
   const show = entered || reduce;
+  const [promoteLayer, setPromoteLayer] = useState(false);
+
+  useEffect(() => {
+    if (reduce) {
+      setPromoteLayer(false);
+      return;
+    }
+    setPromoteLayer(true);
+  }, [show, reduce]);
 
   const onShowKeyboardClick = async () => {
     await closeModeMenu();
@@ -130,6 +139,14 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
         transition: reduce
           ? undefined
           : `opacity ${MOTION.fast}ms var(--rp-ease-out), transform ${MOTION.fast}ms var(--rp-ease-out)`,
+        willChange: promoteLayer ? "opacity, transform" : undefined,
+      }}
+      onTransitionEnd={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.propertyName !== "opacity" && event.propertyName !== "transform") {
+          return;
+        }
+        setPromoteLayer(false);
       }}
       onKeyDown={onKeyDown}
     >

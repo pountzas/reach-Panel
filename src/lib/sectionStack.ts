@@ -179,17 +179,24 @@ export function visibleStackSlotIds(
   return ids;
 }
 
+export type ResolveDockedSlotsOptions = {
+  /** Ephemeral minimize (e.g. teaching keyboard) — does not mutate stack.minimized. */
+  forceMinimized?: Partial<Record<SectionId, boolean>>;
+};
+
 export function resolveDockedSlots(
   stack: SectionStackState,
   visibility: SectionVisibility,
   canvasHeight: number,
   gapPx: number = STACK_GAP_PX,
+  options?: ResolveDockedSlotsOptions,
 ): DockedSlot[] {
   const ids = visibleStackSlotIds(stack, visibility);
   if (ids.length === 0 || canvasHeight <= 0) return [];
 
   const headerH = sectionHeaderHeightPx();
   const gapsTotal = Math.max(0, ids.length - 1) * gapPx;
+  const forceMinimized = options?.forceMinimized;
 
   type Plan = {
     id: SectionId;
@@ -201,7 +208,9 @@ export function resolveDockedSlots(
 
   const plan: Plan[] = ids.map((id) => {
     const hole = isUndocked(stack, id);
-    const minimized = !hole && Boolean(stack.minimized[id]);
+    const minimized =
+      !hole &&
+      (Boolean(stack.minimized[id]) || Boolean(forceMinimized?.[id]));
     if (minimized) {
       return {
         id,

@@ -53,6 +53,7 @@ export function computeTeachingChromeVisibility(
   );
   return {
     showInputPreview:
+      !input.teachingSessionActive &&
       !input.showSynth &&
       !input.compact &&
       !helpersHidden &&
@@ -79,4 +80,17 @@ export function shouldStopDictationForVisibility(
   dictationState: "idle" | "listening" | "processing",
 ): boolean {
   return !dictationKeyVisible && dictationState !== "idle";
+}
+
+/**
+ * Teaching keeps the suggestions strip mounted (lightbulb) so chips don't
+ * shift keys. Other modes only show the row when there are chips.
+ */
+export function resolveShowSuggestionsRow(
+  teachingSessionActive: boolean,
+  showSuggestions: boolean,
+  suggestionCount: number,
+): boolean {
+  const hasSuggestionChips = showSuggestions && suggestionCount > 0;
+  return teachingSessionActive ? showSuggestions : hasSuggestionChips;
 }

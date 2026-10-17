@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from "./types";
 import {
   computeTeachingChromeVisibility,
   isDictationKeyVisible,
+  resolveShowSuggestionsRow,
   shouldStopDictationForVisibility,
   shouldSuppressLanguageSuggestions,
   teachingHidesInputHelpers,
@@ -106,9 +107,9 @@ describe("teachingInputHelpers", () => {
       });
     });
 
-    it("keeps chrome when Teaching is on and helpers stay on", () => {
+    it("never shows live preview in Teaching even when helpers stay on", () => {
       expect(chrome({ teachingSessionActive: true })).toEqual({
-        showInputPreview: true,
+        showInputPreview: false,
         showSuggestions: true,
         dictationKeyVisible: true,
       });
@@ -166,7 +167,7 @@ describe("teachingInputHelpers", () => {
           languageLessonActive: true,
         }),
       ).toEqual({
-        showInputPreview: true,
+        showInputPreview: false,
         showSuggestions: true,
         dictationKeyVisible: true,
       });
@@ -242,6 +243,20 @@ describe("teachingInputHelpers", () => {
 
     it("does not stop when dictation is already idle", () => {
       expect(shouldStopDictationForVisibility(false, "idle")).toBe(false);
+    });
+  });
+
+  describe("resolveShowSuggestionsRow", () => {
+    it("keeps the lightbulb strip in Teaching with zero chips", () => {
+      expect(resolveShowSuggestionsRow(true, true, 0)).toBe(true);
+    });
+
+    it("hides the empty strip in Normal/Focus when there are no chips", () => {
+      expect(resolveShowSuggestionsRow(false, true, 0)).toBe(false);
+    });
+
+    it("shows the strip in Normal/Focus when chips exist", () => {
+      expect(resolveShowSuggestionsRow(false, true, 2)).toBe(true);
     });
   });
 });

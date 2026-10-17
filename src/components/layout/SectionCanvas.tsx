@@ -32,6 +32,8 @@ import {
 } from "../../lib/sectionStack";
 import { DockedSection, HolePlaceholder } from "./DockedSection";
 import { FloatingSection } from "./FloatingSection";
+import { useAppStore } from "../../stores/appStore";
+import { isTeachingKeyboardChromeVisible } from "../../lib/teaching/teachingKeyboardMinimize";
 
 interface SectionCanvasProps {
   teachingVisible: boolean;
@@ -153,6 +155,18 @@ export function SectionCanvas({
     "input-row": inputRow,
   };
 
+  const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const teachingLesson = useAppStore((s) => s.teachingLesson);
+  const teachingKeyboardMinimized = useAppStore(
+    (s) => s.teachingKeyboardMinimized,
+  );
+  const forceTeachingKeyboardMinimized =
+    teachingKeyboardMinimized &&
+    isTeachingKeyboardChromeVisible({
+      musicTeachingEnabled,
+      teachingLesson,
+    });
+
   const slots = useMemo(
     () =>
       resolveDockedSlots(
@@ -160,8 +174,11 @@ export function SectionCanvas({
         visibility,
         containerSize.height,
         STACK_GAP_PX,
+        forceTeachingKeyboardMinimized
+          ? { forceMinimized: { "input-row": true } }
+          : undefined,
       ),
-    [stack, visibility, containerSize.height],
+    [stack, visibility, containerSize.height, forceTeachingKeyboardMinimized],
   );
 
   const slotById = useMemo(() => {
