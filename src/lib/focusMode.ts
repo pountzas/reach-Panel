@@ -144,7 +144,7 @@ export function resolveFocusModeEnabled(
 
 /** True when focus mode is active and the transparent keyboard setting is on. */
 export function isTransparentUiActive(
-  settings: AppSettings,
+  settings: Pick<AppSettings, "focusModeTransparent">,
   focusModeActive: boolean,
 ): boolean {
   return Boolean(focusModeActive && settings.focusModeTransparent);
