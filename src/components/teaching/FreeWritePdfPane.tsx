@@ -32,20 +32,16 @@ import {
 import { TeachingLessonToolbarButton } from "./TeachingLessonPanel";
 import { FreeWritePdfAnnotationOverlay } from "./FreeWritePdfAnnotationOverlay";
 import { FreeWritePdfExportDialog } from "./FreeWritePdfExportDialog";
+import { computeFreeWritePdfCanvasSize } from "./freeWritePdfCanvasSize";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const TOOLBAR_ICON_CLASS = "h-4 w-4";
 
-type PdfPayload = { path: string; contentBase64: string };
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
+function readDevicePixelRatio(): number {
+  if (typeof window === "undefined") return 1;
+  const dpr = window.devicePixelRatio;
+  return Number.isFinite(dpr) && dpr >= 1 ? dpr : 1;
 }
 
 /** PDF library controls + pdf.js page viewer for Free write. */
@@ -85,6 +81,7 @@ export function FreeWritePdfPane() {
   const [error, setError] = useState<string | null>(null);
   const [docReadyPath, setDocReadyPath] = useState<string | null>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [devicePixelRatio, setDevicePixelRatio] = useState(readDevicePixelRatio);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasMounted, setCanvasMounted] = useState(false);
@@ -105,6 +102,21 @@ export function FreeWritePdfPane() {
   useEffect(() => {
     setPageDraft(String(page));
   }, [page]);
+
+  // Re-paint when Windows display scaling changes (e.g. window moved to another monitor).
+  useEffect(() => {
+    const syncDpr = () => {
+      const next = readDevicePixelRatio();
+      setDevicePixelRatio((prev) => (prev === next ? prev : next));
+    };
+    const mq = window.matchMedia(`(resolution: ${devicePixelRatio}dppx)`);
+    mq.addEventListener("change", syncDpr);
+    window.addEventListener("resize", syncDpr);
+    return () => {
+      mq.removeEventListener("change", syncDpr);
+      window.removeEventListener("resize", syncDpr);
+    };
+  }, [devicePixelRatio]);
 
   const commitPageDraft = useCallback(() => {
     const parsed = Number.parseInt(pageDraft, 10);
@@ -138,11 +150,12 @@ export function FreeWritePdfPane() {
       }
 
       try {
-        const payload = await invoke<PdfPayload>("cmd_read_teaching_pdf", {
+        const buffer = await invoke<ArrayBuffer>("cmd_read_teaching_pdf", {
           path: activePath,
         });
         if (cancelled) return;
-        const data = base64ToUint8Array(payload.contentBase64);
+        const data = new Uint8Array(buffer);
+        // enableHWA left off: no measured win on low-end Windows without artefact risk.
         const doc = await pdfjs.getDocument({ data }).promise;
         if (cancelled) {
           void doc.loadingTask.destroy();
@@ -190,15 +203,28 @@ export function FreeWritePdfPane() {
         const pdfPage = await doc!.getPage(pageNum);
         if (cancelled) return;
         const viewport = pdfPage.getViewport({ scale: viewerZoom / 100 });
+        const size = computeFreeWritePdfCanvasSize(
+          viewport.width,
+          viewport.height,
+          devicePixelRatio,
+        );
         const context = canvas!.getContext("2d");
         if (!context) return;
-        canvas!.width = viewport.width;
-        canvas!.height = viewport.height;
-        setCanvasSize({ width: viewport.width, height: viewport.height });
+        canvas!.width = size.bufferWidth;
+        canvas!.height = size.bufferHeight;
+        // CSS size = viewport (not buffer). Apply immediately so the bitmap does not flash full-res.
+        // max-w-full + h-auto may shrink display; overlay still gets CSS viewport size via state.
+        canvas!.style.width = `${size.cssWidth}px`;
+        setCanvasSize({ width: size.cssWidth, height: size.cssHeight });
+        const transform =
+          size.outputScale !== 1
+            ? [size.outputScale, 0, 0, size.outputScale, 0, 0]
+            : undefined;
         const task = pdfPage.render({
           canvasContext: context,
           viewport,
           canvas: canvas!,
+          transform,
         });
         renderTaskRef.current = task;
         await task.promise;
@@ -218,7 +244,7 @@ export function FreeWritePdfPane() {
       renderTaskRef.current?.cancel();
       renderTaskRef.current = null;
     };
-  }, [activePath, docReadyPath, page, viewerZoom, canvasMounted]);
+  }, [activePath, docReadyPath, page, viewerZoom, canvasMounted, devicePixelRatio]);
 
   const toolBtn = (
     id: "pointer" | "pen" | "eraser" | "text",
@@ -501,7 +527,11 @@ export function FreeWritePdfPane() {
             className="relative mx-auto w-fit max-w-full"
             data-pdf-page
           >
-            <canvas ref={setCanvasNode} className="block h-auto max-w-full" />
+            <canvas
+              ref={setCanvasNode}
+              className="block h-auto max-w-full"
+              style={{ width: canvasSize.width || undefined }}
+            />
             {canvasSize.width > 0 && canvasSize.height > 0 ? (
               <FreeWritePdfAnnotationOverlay
                 page={page}
