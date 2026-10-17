@@ -220,6 +220,10 @@ fn shell_window_classes_include_taskbar_hosts() {
     assert!(is_shell_window_class("Shell_TrayWnd"));
     assert!(is_shell_window_class("Shell_SecondaryTrayWnd"));
     assert!(is_shell_window_class("XamlExplorerHostIslandWindow"));
+    // Generic XAML island bridge — used by Windows Terminal and others, not shell-only.
+    assert!(!is_shell_window_class(
+        "Windows.UI.Composition.DesktopWindowContentBridge"
+    ));
     assert!(!is_shell_window_class("Edit"));
     assert!(!is_shell_window_class("Chrome_WidgetWin_1"));
 }

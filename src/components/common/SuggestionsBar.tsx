@@ -40,6 +40,7 @@ export function SuggestionsBar({
       style={transparent ? { backgroundColor: "transparent" } : undefined}
     >
       <span
+        role="img"
         className="inline-flex shrink-0 items-center justify-center"
         style={{ color: transparent ? transparentPalette.text : SUGGESTION_CHIP_TEXT }}
         aria-label={t("showSuggestionsBar")}

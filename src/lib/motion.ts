@@ -1,9 +1,9 @@
 export const MOTION = {
-  fast: 180,
-  base: 300,
-  slow: 450,
+  fast: 120,
+  base: 200,
+  slow: 300,
   /** Focus keyboard slide show/hide — keep in sync with --rp-dur-focus-keyboard. */
-  focusKeyboard: 350,
+  focusKeyboard: 250,
 } as const;
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";

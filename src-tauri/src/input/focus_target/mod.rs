@@ -19,8 +19,8 @@ use uia::{
 };
 use win32::{
     bring_to_foreground, gui_thread_info, hwnd_or_ancestor_is_editable, hwnd_or_ancestor_is_shell,
-    hwnd_to_usize, is_null, is_our_window, is_readonly_edit, usize_to_hwnd, win32_caret_point,
-    window_class_name,
+    hwnd_to_usize, is_chromium_class, is_null, is_our_window, is_readonly_edit, usize_to_hwnd,
+    win32_caret_point, window_class_name,
 };
 
 use anyhow::Result;
@@ -252,12 +252,21 @@ fn uia_focused_is_text_input() -> Option<bool> {
 /// True when an external app's focusable input-like control is active.
 fn is_editable_input_focused() -> bool {
     // UI Automation covers WinUI / UWP / Search / Chromium inputs that lack
-    // classic Win32 Edit classes or hwndCaret. When UIA names a concrete
-    // focused element that is not a text field (taskbar, button, etc.), trust
-    // that — do not keep the keyboard up from a stale Win32 caret in the
-    // previous editor.
+    // classic Win32 Edit classes or hwndCaret.
     if let Some(focused) = uia_focused_is_text_input() {
-        return focused;
+        if focused {
+            return true;
+        }
+        // UIA identified a non-text control. In Chromium and in the shell /
+        // taskbar the Win32 caret can be stale, so do not let class/caret
+        // heuristics override.
+        unsafe {
+            let fg = GetForegroundWindow();
+            if is_chromium_class(&window_class_name(fg)) || hwnd_or_ancestor_is_shell(fg) {
+                return false;
+            }
+        }
+        // Non-browser apps: still allow Win32 heuristics for incomplete UIA trees.
     }
 
     unsafe {

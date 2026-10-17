@@ -57,9 +57,11 @@ pub fn is_shell_window_class(class: &str) -> bool {
             | "DV2ControlHost"
             | "ForegroundStaging"
             | "ApplicationManager_DesktopShellWindow"
-            // Win11 taskbar / tray XAML islands
+            // Win11 tray / flyout XAML host. Do not list the generic island bridge
+            // (Windows.UI.Composition.DesktopWindowContentBridge): XAML-island apps
+            // such as Windows Terminal use it too. Taskbar islands are children of
+            // Shell_TrayWnd, so the ancestor walk already catches them.
             | "XamlExplorerHostIslandWindow"
-            | "Windows.UI.Composition.DesktopWindowContentBridge"
     )
 }
 

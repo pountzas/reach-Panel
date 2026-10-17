@@ -136,6 +136,7 @@ export function FreeWriteNotepad() {
         ) : null}
         <textarea
           ref={bodyRef}
+          data-teaching-input
           className="h-full min-h-0 w-full flex-1 resize-none bg-transparent p-2 outline-none"
           style={{
             color: surface.panelText,

@@ -113,7 +113,22 @@ export function useTeachingKeyboardFocusRestore(): void {
       state.setTeachingKeyboardMinimized(false);
     };
 
+    // Selecting an in-app Teaching input restores, even when the store target
+    // is unchanged (Free write opens with freeWriteFocus already "notepad").
+    const onSelectInput = (event: Event) => {
+      if (!(event.target instanceof Element)) return;
+      if (!event.target.closest("[data-teaching-input]")) return;
+      const state = useAppStore.getState();
+      if (state.teachingKeyboardMinimized) state.setTeachingKeyboardMinimized(false);
+    };
+
     window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
+    window.addEventListener("pointerdown", onSelectInput, true);
+    window.addEventListener("focusin", onSelectInput, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("pointerdown", onSelectInput, true);
+      window.removeEventListener("focusin", onSelectInput, true);
+    };
   }, [chromeVisible, minimized]);
 }

@@ -365,6 +365,7 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
           <div
             key={box.id}
             data-pdf-text-box
+            data-teaching-input
             className="absolute box-border min-h-[1.25em] border px-1 py-0.5 text-sm leading-snug"
             style={{
               left: `${box.x * 100}%`,

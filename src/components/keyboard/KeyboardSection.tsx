@@ -34,6 +34,7 @@ import {
 import { isLanguageLessonActive } from "../../lib/language";
 import {
   computeTeachingChromeVisibility,
+  resolveShowSuggestionsRow,
   shouldStopDictationForVisibility,
 } from "../../lib/teachingInputHelpers";
 
@@ -92,8 +93,12 @@ export function KeyboardSection() {
     }
   }, [dictationKeyVisible, dictationState, stopDictation]);
   const hasSuggestionChips = showSuggestions && suggestionCount > 0;
-  /** Suggestions strip stays mounted (lightbulb) whenever helpers allow chips. */
-  const showSuggestionsRow = showSuggestions;
+  /** Teaching keeps the strip mounted (lightbulb); other modes keep chip-only. */
+  const showSuggestionsRow = resolveShowSuggestionsRow(
+    teachingSessionActive,
+    showSuggestions,
+    suggestionCount,
+  );
   const transparentUi = isTransparentUiActive(settings, focusModeActive);
   const showTransparentToggle = focusModeActive && !showSynth && !compact;
   const showFocusModeCollapse =

@@ -143,7 +143,9 @@ describe("PreviewSuggestionsRow", () => {
     render(
       <PreviewSuggestionsRow showPreview={false} showSuggestions={true} />,
     );
-    expect(screen.getByLabelText("Show suggestions bar")).toBeTruthy();
+    expect(
+      screen.getByRole("img", { name: "Show suggestions bar" }),
+    ).toBeTruthy();
     expect(screen.queryByRole("button")).toBeNull();
   });
 

@@ -3,12 +3,12 @@
 :root {
   font-family: "Segoe UI", system-ui, sans-serif;
   color: #1a1a2e;
-  --rp-dur-fast: 180ms;
-  --rp-dur-base: 300ms;
+  --rp-dur-fast: 120ms;
+  --rp-dur-base: 200ms;
   --rp-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --rp-dur-slow: 450ms;
+  --rp-dur-slow: 300ms;
   /* Focus keyboard sheet: longer + symmetric ease for up/down. */
-  --rp-dur-focus-keyboard: 350ms;
+  --rp-dur-focus-keyboard: 250ms;
   --rp-ease-focus-keyboard: cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 

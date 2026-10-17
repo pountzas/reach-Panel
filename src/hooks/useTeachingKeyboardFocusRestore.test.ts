@@ -128,4 +128,27 @@ describe("useTeachingKeyboardFocusRestore", () => {
 
     expect(useAppStore.getState().teachingKeyboardMinimized).toBe(true);
   });
+
+  it("with Focus on, restores when tapping an already-selected Teaching input", () => {
+    useAppStore.setState(
+      teachingFreeWriteState({
+        freeWriteFocus: "notepad",
+        teachingKeyboardAutoFocus: true,
+        teachingKeyboardMinimized: true,
+      }),
+    );
+    renderHook(() => useTeachingKeyboardFocusRestore());
+
+    const textarea = document.createElement("textarea");
+    textarea.setAttribute("data-teaching-input", "");
+    document.body.appendChild(textarea);
+
+    act(() => {
+      textarea.dispatchEvent(
+        new PointerEvent("pointerdown", { bubbles: true }),
+      );
+    });
+
+    expect(useAppStore.getState().teachingKeyboardMinimized).toBe(false);
+  });
 });

@@ -16,10 +16,10 @@ describe("motion", () => {
   });
 
   it("exports durations matching CSS tokens", () => {
-    expect(MOTION.fast).toBe(180);
-    expect(MOTION.base).toBe(300);
-    expect(MOTION.slow).toBe(450);
-    expect(MOTION.focusKeyboard).toBe(350);
+    expect(MOTION.fast).toBe(120);
+    expect(MOTION.base).toBe(200);
+    expect(MOTION.slow).toBe(300);
+    expect(MOTION.focusKeyboard).toBe(250);
     expect(indexCss).toContain(`--rp-dur-fast: ${MOTION.fast}ms`);
     expect(indexCss).toContain(`--rp-dur-base: ${MOTION.base}ms`);
     expect(indexCss).toContain(`--rp-dur-slow: ${MOTION.slow}ms`);
