@@ -295,6 +295,16 @@ async fn animate_window_layout(
     focus_keyboard_height_ratio: f32,
     full_work_area: bool,
 ) -> Result<(), String> {
+    // Pause input-preview GDI capture for the whole animation (cleared on Drop).
+    struct AnimationPreviewPause;
+    impl Drop for AnimationPreviewPause {
+        fn drop(&mut self) {
+            input::input_preview::set_pause_for_animation(false);
+        }
+    }
+    input::input_preview::set_pause_for_animation(true);
+    let _pause_preview = AnimationPreviewPause;
+
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
