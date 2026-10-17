@@ -1,4 +1,10 @@
-import type { KeyboardEvent, MouseEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
 import { MicrophoneIcon, SettingsIcon } from "../common/SectionIcons";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -11,7 +17,28 @@ import {
   isMicFabEnabled,
   type CollapsedFabCount,
 } from "../../lib/focusMode";
+import { MOTION, prefersReducedMotion } from "../../lib/motion";
 import { ModeMenu } from "./ModeMenu";
+
+const FAB_STAGGER_MS = 40;
+
+function fabAppearStyle(
+  index: number,
+  stackEntered: boolean,
+  promoteLayer: boolean,
+): CSSProperties {
+  const reduce = prefersReducedMotion();
+  const delay = index * FAB_STAGGER_MS;
+  const appear = `${MOTION.fast}ms var(--rp-ease-out) ${delay}ms`;
+  return {
+    opacity: stackEntered ? 1 : 0,
+    transform: stackEntered ? "scale(1)" : "scale(0.92)",
+    transition: reduce
+      ? undefined
+      : `opacity ${appear}, transform ${appear}, background-color 200ms ease, color 200ms ease`,
+    willChange: promoteLayer && !reduce ? "opacity, transform" : undefined,
+  };
+}
 
 export interface CollapsedFabProps {
   /** Show Settings (gear) above Expand (Focus mode). */
@@ -21,6 +48,11 @@ export interface CollapsedFabProps {
   onSettings?: () => void;
   /** When set, Expand uses this instead of toggleCollapsed (Focus mode manual expand). */
   onExpand?: () => void;
+  /**
+   * When false, size to content instead of filling the parent (used while the
+   * Focus window is full-strip but the FAB must stay at the collapsed corner).
+   */
+  fillWindow?: boolean;
 }
 
 export function CollapsedFab({
@@ -28,6 +60,7 @@ export function CollapsedFab({
   showDictation = false,
   onSettings,
   onExpand,
+  fillWindow = true,
 }: CollapsedFabProps) {
   const settings = useAppStore((s) => s.settings);
   const toggleCollapsed = useAppStore((s) => s.toggleCollapsed);
@@ -40,6 +73,54 @@ export function CollapsedFab({
   const openModeMenu = useAppStore((s) => s.openModeMenu);
   const closeModeMenu = useAppStore((s) => s.closeModeMenu);
   const { t } = useTranslation();
+  const [menuMounted, setMenuMounted] = useState(false);
+  const [menuEntered, setMenuEntered] = useState(false);
+  const [stackEntered, setStackEntered] = useState(() => prefersReducedMotion());
+  const [promoteFabLayer, setPromoteFabLayer] = useState(
+    () => !prefersReducedMotion(),
+  );
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      setStackEntered(true);
+      setPromoteFabLayer(false);
+      return;
+    }
+    setPromoteFabLayer(true);
+    setStackEntered(false);
+    const id = requestAnimationFrame(() => setStackEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    if (!stackEntered || prefersReducedMotion()) return;
+    // Last FAB stagger index is at most 2; clear layer promotion after settle.
+    const id = window.setTimeout(
+      () => setPromoteFabLayer(false),
+      MOTION.fast + FAB_STAGGER_MS * 2 + 40,
+    );
+    return () => window.clearTimeout(id);
+  }, [stackEntered]);
+
+  useEffect(() => {
+    if (modeMenuOpen) {
+      setMenuMounted(true);
+      setMenuEntered(false);
+      const id = requestAnimationFrame(() => setMenuEntered(true));
+      return () => cancelAnimationFrame(id);
+    }
+    if (!menuMounted) return;
+    if (prefersReducedMotion()) {
+      setMenuMounted(false);
+      setMenuEntered(false);
+      return;
+    }
+    setMenuEntered(false);
+    const timeoutId = window.setTimeout(() => {
+      setMenuMounted(false);
+    }, MOTION.fast);
+    return () => window.clearTimeout(timeoutId);
+  }, [modeMenuOpen, menuMounted]);
 
   const bgColor = settings.headerBgColor ?? "#1e293b";
   const textColor = settings.headerTextColor ?? "#ffffff";
@@ -97,12 +178,18 @@ export function CollapsedFab({
 
   return (
     <div
-      className="flex h-full w-full flex-row items-end justify-end overflow-visible"
+      className={
+        fillWindow
+          ? "flex h-full w-full flex-row items-end justify-end overflow-visible"
+          : "flex flex-row items-end justify-end overflow-visible"
+      }
       style={{ background: "transparent" }}
       onClick={handleRootClick}
       onKeyDown={handleRootKeyDown}
     >
-      {modeMenuOpen ? <ModeMenu onShowKeyboard={handleExpand} /> : null}
+      {menuMounted ? (
+        <ModeMenu onShowKeyboard={handleExpand} entered={menuEntered} />
+      ) : null}
       <div
         className="flex flex-col items-center justify-center"
         style={{
@@ -115,7 +202,7 @@ export function CollapsedFab({
         {showDictation && (
           <button
             type="button"
-            className="flex items-center justify-center rounded-full shadow-lg transition-[transform,background-color,color] duration-200 hover:scale-[1.03] active:scale-95 disabled:opacity-50"
+            className="group flex items-center justify-center rounded-full shadow-lg transition-[background-color,color] duration-200 disabled:opacity-50"
             style={{
               width: COLLAPSED_FAB_SIZE,
               height: COLLAPSED_FAB_SIZE,
@@ -125,24 +212,28 @@ export function CollapsedFab({
                 : micEnabled
                   ? MIC_FAB_ARMED_ICON_COLOR
                   : textColor,
+              ...fabAppearStyle(0, stackEntered, promoteFabLayer),
             }}
             disabled={!micEnabled}
             aria-disabled={!micEnabled}
             onClick={() => void toggleDictation()}
             aria-label={micAriaLabel}
           >
-            <MicrophoneIcon className="h-6 w-6 transition-colors duration-200" />
+            <span className="flex h-full w-full items-center justify-center transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-95">
+              <MicrophoneIcon className="h-6 w-6 transition-colors duration-200" />
+            </span>
           </button>
         )}
         {showSettings && (
           <button
             type="button"
-            className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-[1.03] active:scale-95"
+            className="group flex items-center justify-center rounded-full shadow-lg"
             style={{
               width: COLLAPSED_FAB_SIZE,
               height: COLLAPSED_FAB_SIZE,
               backgroundColor: bgColor,
               color: textColor,
+              ...fabAppearStyle(showDictation ? 1 : 0, stackEntered, promoteFabLayer),
             }}
             onClick={() => {
               if (modeMenuOpen) {
@@ -153,18 +244,25 @@ export function CollapsedFab({
             }}
             aria-label={t("settings")}
           >
-            <SettingsIcon className="h-6 w-6" />
+            <span className="flex h-full w-full items-center justify-center transition-transform group-hover:scale-[1.03] group-active:scale-95">
+              <SettingsIcon className="h-6 w-6" />
+            </span>
           </button>
         )}
         <button
           type="button"
-          className="flex items-center justify-center rounded-full font-bold shadow-lg transition-transform hover:scale-[1.03] active:scale-95 disabled:opacity-50"
+          className="group flex items-center justify-center rounded-full font-bold shadow-lg disabled:opacity-50"
           style={{
             width: COLLAPSED_FAB_SIZE,
             height: COLLAPSED_FAB_SIZE,
             backgroundColor: bgColor,
             color: textColor,
             fontSize: 22,
+            ...fabAppearStyle(
+              (showDictation ? 1 : 0) + (showSettings ? 1 : 0),
+              stackEntered,
+              promoteFabLayer,
+            ),
           }}
           onClick={() =>
             void (modeMenuOpen ? closeModeMenu() : openModeMenu())
@@ -174,7 +272,9 @@ export function CollapsedFab({
           aria-expanded={modeMenuOpen}
           aria-label={t("modeMenuOpen")}
         >
-          R
+          <span className="flex h-full w-full items-center justify-center transition-transform group-hover:scale-[1.03] group-active:scale-95">
+            R
+          </span>
         </button>
       </div>
     </div>

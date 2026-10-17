@@ -13,16 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Internal identifiers renamed to Focus (`focusMode*`, app mode `"focus"`, Rust `focus_mode`); persisted `miniMode*` settings keys migrate on load.
 - **Mode menu:** the collapsed **R** button now opens a mode menu (Show keyboard, Normal, Focus, Mic, Teaching, Companion) instead of expanding directly.
 - Live input preview and suggestion chips now share one centered row with show/hide animation (#201); the preview only captures while a text field is focused.
+- **Teaching polish (#275):** "Show input helpers in Teaching mode" moved to **Settings → Visible sections**; description is suggestions + mic only (live preview is never shown in Teaching). Language Spelling / Free write use a left vertical tab rail; Free write notepad/PDF toolbar buttons are smaller. Music octave controls sit closer under the keyboard header. Docked minimize and FAB mode transitions use GPU-composited transform/opacity motion.
 
 ### Added
 
 - **Mic mode:** Focus-mode internals with a mic FAB and no keyboard auto-show; the mic arms only when a text field is focused.
 - Floating dictation overlay (visualizer + Stop) shown while dictation is active, excluded from screen capture.
+- **Teaching keyboard Minimize / Focus** (Language and Mathematics): header controls hide keys while keeping the window size; Focus auto-minimizes until an in-app input (or physical typing) restores the keyboard. States are not persisted (#272).
+- Teaching Spelling and Free write (notepad / PDF text) produce and apply suggestion chips when helpers and suggestions are on (#270).
+
+### Removed
+
+- Legacy v1 features that were already hidden: **Phrases**, **Quick Actions**, **Macro Builder** and **head tracking** (#232). **On first launch this version permanently deletes their saved data** (custom phrases, quick actions and macros); it is not kept in profile exports and cannot be restored.
+- The large-header sizing option and the legacy free-float section layouts. Older settings files fall back to the default docked layout.
 
 ### Fixed
 
 - Text-field detection: number inputs (spinbutton) count as text, select-only comboboxes (Chromium `<select>`, Base UI/shadcn Select buttons) and read-only custom text no longer do, and contenteditable iframe editors (TinyMCE, CKEditor 4) are detected.
 - Dictation no longer gets stuck as "already active" after a WinRT silence timeout; timeouts and pauses no longer show an error.
+- Teaching no longer keeps native live-input capture running while the preview is hidden (#269).
 
 ## 0.16.0 (2026-10-12)
 

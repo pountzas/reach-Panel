@@ -1,10 +1,13 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../stores/appStore";
 import {
+  attachWindowHeightPointerEndListeners,
   nextWindowHeightRatioFromScreenY,
   resolveWindowHeightDragRegion,
   type WindowHeightDragRegion,
 } from "../lib/windowHeightDrag";
+import { resolveMonitorScaleFactor } from "../lib/toolWindows";
 import {
   isTeachingFullWorkArea,
 } from "../lib/v1HiddenFeatures";
@@ -12,19 +15,21 @@ import {
 type WindowHeightDragRef = {
   region: WindowHeightDragRegion;
   latestRatio: number;
+  /** Physical→logical scale for GetCursorPos samples. */
+  scale: number;
+  active: boolean;
+  pointerType: string;
 };
 
 type WindowHeightDragHandlers = {
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
-  onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
-  onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
-  onPointerCancel: (event: ReactPointerEvent<HTMLElement>) => void;
 };
 
 /**
  * Window-height drag for dedicated grip handles (full header + mini toolbar).
- * Maps absolute screenY → ratio so the top edge tracks the cursor (no clientY
- * feedback while the window resizes under the pointer).
+ *
+ * Live tracking polls Win32 cursor position: the grip rides the moving top edge,
+ * so WebView2 drops JS pointermove once SetWindowPos slides the button away.
  */
 export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
   const settings = useAppStore((s) => s.settings);
@@ -35,28 +40,91 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
   const applyWindowHeightRatioLive = useAppStore((s) => s.applyWindowHeightRatioLive);
 
   const windowResizeRef = useRef<WindowHeightDragRef | null>(null);
-  const resizeRafRef = useRef<number | null>(null);
+  const pollRafRef = useRef<number | null>(null);
+  const pointerEndCleanupRef = useRef<(() => void) | null>(null);
 
   const fullWorkArea = isTeachingFullWorkArea({
     musicTeachingEnabled,
     keyboardSectionMode: settings.keyboardSectionMode,
   });
 
+  const stopPoll = () => {
+    if (pollRafRef.current !== null) {
+      cancelAnimationFrame(pollRafRef.current);
+      pollRafRef.current = null;
+    }
+  };
+
+  const clearPointerEndListeners = () => {
+    pointerEndCleanupRef.current?.();
+    pointerEndCleanupRef.current = null;
+  };
+
   useEffect((): (() => void) => {
     return () => {
-      if (resizeRafRef.current !== null) {
-        cancelAnimationFrame(resizeRafRef.current);
-        resizeRafRef.current = null;
+      if (windowResizeRef.current) {
+        windowResizeRef.current.active = false;
       }
+      if (pollRafRef.current !== null) {
+        cancelAnimationFrame(pollRafRef.current);
+        pollRafRef.current = null;
+      }
+      pointerEndCleanupRef.current?.();
+      pointerEndCleanupRef.current = null;
       windowResizeRef.current = null;
     };
   }, []);
 
+  const finishDrag = (ratio: number) => {
+    if (windowResizeRef.current) {
+      windowResizeRef.current.active = false;
+    }
+    stopPoll();
+    clearPointerEndListeners();
+    windowResizeRef.current = null;
+    void updateSettings({ windowHeightRatio: ratio });
+  };
+
+  const tickPoll = () => {
+    const drag = windowResizeRef.current;
+    if (!drag?.active) {
+      pollRafRef.current = null;
+      return;
+    }
+
+    void (async () => {
+      const current = windowResizeRef.current;
+      if (!current?.active) return;
+
+      try {
+        if (current.pointerType === "mouse") {
+          const down = await invoke<boolean>("cmd_primary_mouse_button_down");
+          if (!down) {
+            finishDrag(current.latestRatio);
+            return;
+          }
+        }
+        const [, physicalY] = await invoke<[number, number]>("cmd_get_cursor_position");
+        const screenY = physicalY / current.scale;
+        const nextRatio = nextWindowHeightRatioFromScreenY(screenY, current.region);
+        current.latestRatio = nextRatio;
+        void applyWindowHeightRatioLive(nextRatio);
+      } catch {
+        // Keep polling; a single IPC blip should not end the gesture.
+      }
+
+      if (windowResizeRef.current?.active) {
+        pollRafRef.current = requestAnimationFrame(tickPoll);
+      }
+    })();
+  };
+
   const onWindowHeightPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest(".section-no-drag")) return;
+    if (event.button !== 0) return;
 
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
+    event.stopPropagation();
 
     const monitor =
       monitors.find((m) => m.id === settings.accessibilityMonitorId) ??
@@ -64,6 +132,9 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
       monitors[0];
     if (!monitor) return;
 
+    stopPoll();
+
+    const scale = resolveMonitorScaleFactor(monitor);
     const region = resolveWindowHeightDragRegion(monitor, {
       fullWorkArea,
       multiMonitor: monitors.length >= 2,
@@ -73,45 +144,31 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
     windowResizeRef.current = {
       region,
       latestRatio: startRatio,
+      scale,
+      active: true,
+      pointerType: event.pointerType,
     };
-    void applyWindowHeightRatioLive(startRatio);
-  };
 
-  const onWindowHeightPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
-    const drag = windowResizeRef.current;
-    if (!drag) return;
-
-    const nextRatio = nextWindowHeightRatioFromScreenY(event.screenY, drag.region);
-    drag.latestRatio = nextRatio;
-    if (resizeRafRef.current !== null) return;
-    resizeRafRef.current = requestAnimationFrame(() => {
-      resizeRafRef.current = null;
-      const current = windowResizeRef.current;
-      if (!current) return;
-      void applyWindowHeightRatioLive(current.latestRatio);
-    });
-  };
-
-  const onWindowHeightPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
-    const drag = windowResizeRef.current;
-    if (!drag) return;
-    windowResizeRef.current = null;
-    if (resizeRafRef.current !== null) {
-      cancelAnimationFrame(resizeRafRef.current);
-      resizeRafRef.current = null;
-    }
     try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+      event.currentTarget.setPointerCapture(event.pointerId);
     } catch {
-      // Already released.
+      // Optional; polling does not need element capture.
     }
-    void updateSettings({ windowHeightRatio: drag.latestRatio });
+
+    clearPointerEndListeners();
+    pointerEndCleanupRef.current = attachWindowHeightPointerEndListeners(
+      event.pointerId,
+      () => {
+        const drag = windowResizeRef.current;
+        if (drag?.active) finishDrag(drag.latestRatio);
+      },
+    );
+
+    void applyWindowHeightRatioLive(startRatio);
+    pollRafRef.current = requestAnimationFrame(tickPoll);
   };
 
   return {
     onPointerDown: onWindowHeightPointerDown,
-    onPointerMove: onWindowHeightPointerMove,
-    onPointerUp: onWindowHeightPointerUp,
-    onPointerCancel: onWindowHeightPointerUp,
   };
 };

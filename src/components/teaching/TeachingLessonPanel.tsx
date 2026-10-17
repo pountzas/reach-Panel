@@ -93,6 +93,8 @@ export function TeachingLessonPane({
   );
 }
 
+export type TeachingLessonToolbarButtonSize = "md" | "sm";
+
 /** Icon toolbar action used in teaching lesson headers (Language, Music, …). */
 export function TeachingLessonToolbarButton({
   label,
@@ -102,6 +104,7 @@ export function TeachingLessonToolbarButton({
   borderColor,
   color,
   children,
+  size = "md",
 }: {
   label: string;
   onClick: () => void;
@@ -110,11 +113,14 @@ export function TeachingLessonToolbarButton({
   borderColor: string;
   color: string;
   children: ReactNode;
+  /** `sm` = 32×32 (Free write notepad/PDF); default `md` = 40×40. */
+  size?: TeachingLessonToolbarButtonSize;
 }) {
+  const sizeClass = size === "sm" ? "h-8 w-8" : "h-10 w-10";
   return (
     <button
       type="button"
-      className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-md border disabled:opacity-50"
+      className={`group relative flex ${sizeClass} shrink-0 items-center justify-center rounded-md border disabled:opacity-50`}
       style={{
         borderColor,
         backgroundColor,

@@ -1,6 +1,6 @@
 import { en } from "./en";
 
-export const es: Record<keyof typeof en, string> = {
+export const es = {
   appTitle: "ReachPanel",
 
   collapse: "Contraer",
@@ -22,10 +22,6 @@ export const es: Record<keyof typeof en, string> = {
   cancel: "Cancelar",
 
   add: "Añadir",
-
-  appNotInstalled: "{app} no está instalado.",
-
-  installApp: "Instalar",
 
   profile: "Perfil",
 
@@ -58,7 +54,6 @@ export const es: Record<keyof typeof en, string> = {
 
   teachingLessonLanguage: "Idioma",
 
-
   teachingTabSpelling: "Ortografía",
   teachingTabFreeWrite: "Escritura libre",
   freeWriteNotepad: "Bloc de notas",
@@ -70,12 +65,31 @@ export const es: Record<keyof typeof en, string> = {
   freeWriteLineNumbers: "Números de línea",
   freeWriteNotepadEmpty: "Escribe notas aquí…",
   freeWriteOpenPdf: "Abrir PDF…",
-  freeWriteRecentPdfs: "PDF recientes",
+  freeWriteClosePdf: "Cerrar PDF",
   freeWritePdfMissing: "No se encontró este archivo PDF.",
   freeWritePdfEmpty: "Abre un PDF para leer junto a tus notas.",
   freeWritePdfPrevPage: "Página anterior",
+  freeWritePdfGoToPage: "Ir a la página",
   freeWritePdfNextPage: "Página siguiente",
-  freeWriteRemovePdf: "Eliminar",
+  freeWritePdfPointer: "Puntero",
+  freeWritePdfPen: "Lápiz",
+  freeWritePdfEraser: "Borrador",
+  freeWritePdfTextTool: "Texto",
+  freeWritePdfUndo: "Deshacer",
+  freeWritePdfRedo: "Rehacer",
+  freeWritePdfClearAll: "Borrar todo",
+  freeWritePdfClearAllConfirm:
+    "¿Borrar toda la tinta y el texto de este PDF? Se elimina la copia de trabajo de Reach.",
+  freeWritePdfDeleteText: "Eliminar texto",
+  freeWritePdfExport: "Exportar PDF…",
+  freeWritePdfExportFrom: "Desde",
+  freeWritePdfExportTo: "Hasta",
+  freeWritePdfExportAll: "Todas las páginas",
+  freeWritePdfExportCurrent: "Página actual",
+  freeWritePdfExportSave: "Exportar…",
+  freeWritePdfExportCancel: "Cancelar",
+  freeWritePdfExportInvalidRange: "Introduce un rango de páginas Desde/Hasta válido.",
+  freeWritePdfExportSuccess: "PDF exportado.",
 
   comingSoon: "Próximamente",
 
@@ -146,16 +160,12 @@ export const es: Record<keyof typeof en, string> = {
   modeTabletsHint:
     "Normal y Enfoque son teclado. Enseñanza abre lecciones; Música muestra el sintetizador. Compañero no está disponible hasta que el puente esté activo o haya una tableta emparejada; se selecciona mientras hay una tableta conectada.",
 
-  focusModeAutoDescription:
-    "En una sola pantalla o configuración reflejada, el teclado aparece automáticamente al tocar un campo de entrada.",
+  showTeachingInputHelpers: "Mostrar ayudas de entrada en modo Enseñanza",
+
+  showTeachingInputHelpersDescription:
+    "Barra de sugerencias y micrófono mientras Enseñanza está activa.",
 
   focusModeOverrideLabel: "Modo enfoque",
-
-  focusModeOverrideAuto: "Automático",
-
-  focusModeOverrideOn: "Activado",
-
-  focusModeOverrideOff: "Desactivado",
 
   focusModeTransparent: "Teclado transparente",
 
@@ -176,11 +186,6 @@ export const es: Record<keyof typeof en, string> = {
   transparentKeyColorSilver: "Plateado",
 
   focusModeCollapse: "Volver al modo enfoque",
-
-  largeHeaders: "Encabezados grandes para redimensionar más fácilmente",
-
-  largeHeadersHint:
-    "Duplica la altura de los encabezados y sus botones. Arrastra el área vacía del encabezado para cambiar la altura de la sección o ventana.",
 
   primary: "Principal",
 
@@ -207,14 +212,6 @@ export const es: Record<keyof typeof en, string> = {
   speedFast: "Rápida",
 
   speedVeryFast: "Muy rápida",
-
-  quickActions: "Acciones rápidas",
-
-  showQuickActionsBar: "Mostrar barra de acciones rápidas",
-
-  phrasesAndSuggestions: "Frases y sugerencias",
-
-  showPhrasesSection: "Mostrar sección de frases",
 
   showSuggestionsBar: "Mostrar barra de sugerencias",
 
@@ -264,6 +261,7 @@ export const es: Record<keyof typeof en, string> = {
   taskbarPositionFailed: "No se pudo cambiar la posición de la barra de tareas.",
 
   opacity: "Opacidad",
+  keyboardFontSize: "Tamaño de fuente del teclado",
 
   appLanguage: "Idioma de la aplicación",
 
@@ -295,12 +293,6 @@ export const es: Record<keyof typeof en, string> = {
 
   languagePortuguese: "Portugués",
 
-
-  resetSettings: "Restablecer configuración",
-
-  resetSettingsHint:
-    "Restaura el diseño, la posición del monitor, los tamaños de panel y el resto de ajustes a sus valores predeterminados.",
-
   resetUi: "Restablecer interfaz",
 
   resetUiHint:
@@ -326,29 +318,9 @@ export const es: Record<keyof typeof en, string> = {
 
   profileWiped: "Perfil borrado.",
 
-  layoutEdit: "Editar diseño",
-
-  layoutEditDone: "Listo",
-
   dragToMove: "Arrastrar para mover",
 
-  macroBuilder: "Creador de macros",
-
-  headTracking: "Seguimiento de cabeza",
-
-  phrases: "Frases",
-
-  emergency: "Emergencia",
-
-  showEmergency: "Emergencia",
-
-  predictionsOff: "Predicciones desactivadas",
-
   enable: "Activar",
-
-  suggest: "Sugerencia:",
-
-  turnOff: "Desactivar",
 
   inputError: "Error de entrada:",
 
@@ -382,8 +354,6 @@ export const es: Record<keyof typeof en, string> = {
 
   synthesizer: "Sintetizador",
 
-  synthesizerHint: "Pulsa las teclas para tocar notas",
-
   synthesizerVolume: "Volumen",
 
   dictationStart: "Iniciar dictado",
@@ -396,8 +366,6 @@ export const es: Record<keyof typeof en, string> = {
 
   dictationErrorNoLanguage:
     "El reconocimiento de voz para este idioma de escritura no está instalado. Añade el paquete de voz en Configuración de Windows → Hora e idioma → Voz e inténtalo de nuevo.",
-
-  dictationErrorUnavailable: "El dictado por voz solo está disponible en Windows.",
 
   dictationErrorSpeechPrivacy:
     "El reconocimiento de voz en línea está desactivado en Windows. Actívalo en Privacidad y seguridad → Voz e inténtalo de nuevo. (No es un permiso del micrófono.)",
@@ -432,10 +400,6 @@ export const es: Record<keyof typeof en, string> = {
 
   unmute: "Activar sonido",
 
-  teachMusic: "Enseñar",
-
-  stopTeaching: "Dejar de enseñar",
-
   musicLesson: "Lección de música",
 
   partiture: "Partitura",
@@ -457,10 +421,6 @@ export const es: Record<keyof typeof en, string> = {
   builtInSongs: "Integradas",
 
   importedSongs: "Importadas",
-
-  playingNote: "Reproduciendo",
-
-  waitingForNote: "Toca",
 
   lessonComplete: "¡Canción completada!",
 
@@ -491,11 +451,11 @@ export const es: Record<keyof typeof en, string> = {
 
   octaveCount5: "5 octavas",
 
-  showKeyboardModeToggle: "Mostrar conmutador teclado / sintetizador",
-
   keyboardSectionMode: "Modo de la sección del teclado",
 
   inputAreaNormal: "Vista normal",
+
+  teachingKeyboardFocus: "Enfoque",
 
   inputAreaCompact: "Maximizar teclado y trackpad",
 
@@ -535,8 +495,6 @@ export const es: Record<keyof typeof en, string> = {
 
   updateFailed: "Error de actualización:",
 
-  updateRetry: "Reintentar",
-
   checkForUpdates: "Buscar actualizaciones",
 
   updateUpToDate: "Tienes la última versión.",
@@ -548,26 +506,6 @@ export const es: Record<keyof typeof en, string> = {
   settingsGeneral: "General",
 
   settingsToolsMaintenance: "Herramientas y mantenimiento",
-
-  quickActionLabel: "Etiqueta",
-
-  quickActionTarget: "Destino (app o URL)",
-
-  quickActionTypeApp: "App",
-
-  quickActionTypeUrl: "URL",
-
-  quickActionAdd: "Añadir acción",
-
-  quickActionDelete: "Eliminar",
-
-  quickActionSearchApps: "Buscar programas instalados…",
-
-  quickActionBrowse: "Examinar…",
-
-  quickActionLoadingApps: "Cargando programas instalados…",
-
-  quickActionNoApps: "No se encontraron programas.",
 
   settingsAbout: "Acerca de",
 
@@ -634,4 +572,4 @@ export const es: Record<keyof typeof en, string> = {
 
   aboutEmail: "Correo",
 
-};
+} satisfies Record<keyof typeof en, string>;

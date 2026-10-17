@@ -10,12 +10,14 @@ import {
   MODE_MENU_PAD,
   MODE_MENU_WIDTH,
 } from "../../lib/focusMode";
+import { MOTION, prefersReducedMotion } from "../../lib/motion";
 import { useCompanionTabletEnabled } from "../../hooks/useCompanionTabletEnabled";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 
 export interface ModeMenuProps {
   onShowKeyboard: () => void;
+  entered?: boolean;
 }
 
 function CheckMark() {
@@ -35,7 +37,7 @@ function CheckMark() {
   );
 }
 
-export function ModeMenu({ onShowKeyboard }: ModeMenuProps) {
+export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
   const { t } = useTranslation();
   const companionTabletEnabled = useCompanionTabletEnabled();
   const settings = useAppStore((s) => s.settings);
@@ -46,7 +48,6 @@ export function ModeMenu({ onShowKeyboard }: ModeMenuProps) {
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
 
   const menuRef = useRef<HTMLDivElement>(null);
-  const [enterAnim, setEnterAnim] = useState(true);
 
   const teachingActive = isTeachingSessionActive(
     musicTeachingEnabled,
@@ -62,19 +63,17 @@ export function ModeMenu({ onShowKeyboard }: ModeMenuProps) {
 
   const bgColor = settings.headerBgColor ?? "#1e293b";
   const textColor = settings.headerTextColor ?? "#ffffff";
-  const reduceMotion =
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduce = prefersReducedMotion();
+  const show = entered || reduce;
+  const [promoteLayer, setPromoteLayer] = useState(false);
 
   useEffect(() => {
-    if (reduceMotion) {
-      setEnterAnim(false);
+    if (reduce) {
+      setPromoteLayer(false);
       return;
     }
-    const id = requestAnimationFrame(() => setEnterAnim(false));
-    return () => cancelAnimationFrame(id);
-  }, [reduceMotion]);
+    setPromoteLayer(true);
+  }, [show, reduce]);
 
   const onShowKeyboardClick = async () => {
     await closeModeMenu();
@@ -135,12 +134,19 @@ export function ModeMenu({ onShowKeyboard }: ModeMenuProps) {
         paddingBottom: MODE_MENU_PAD,
         backgroundColor: bgColor,
         color: textColor,
-        opacity: enterAnim && !reduceMotion ? 0 : 1,
-        transform:
-          enterAnim && !reduceMotion ? "translateX(8px)" : "translateX(0)",
-        transition: reduceMotion
+        opacity: show ? 1 : 0,
+        transform: show ? "translateX(0)" : "translateX(8px)",
+        transition: reduce
           ? undefined
-          : "opacity 150ms ease, transform 150ms ease",
+          : `opacity ${MOTION.fast}ms var(--rp-ease-out), transform ${MOTION.fast}ms var(--rp-ease-out)`,
+        willChange: promoteLayer ? "opacity, transform" : undefined,
+      }}
+      onTransitionEnd={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.propertyName !== "opacity" && event.propertyName !== "transform") {
+          return;
+        }
+        setPromoteLayer(false);
       }}
       onKeyDown={onKeyDown}
     >

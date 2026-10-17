@@ -1,8 +1,6 @@
 import { en } from "./en";
 
-
-
-export const el: Record<keyof typeof en, string> = {
+export const el = {
 
   appTitle: "ReachPanel",
 
@@ -25,10 +23,6 @@ export const el: Record<keyof typeof en, string> = {
   cancel: "Ακύρωση",
 
   add: "Προσθήκη",
-
-  appNotInstalled: "Το {app} δεν είναι εγκατεστημένο.",
-
-  installApp: "Εγκατάσταση",
 
   profile: "Προφίλ",
 
@@ -61,7 +55,6 @@ export const el: Record<keyof typeof en, string> = {
 
   teachingLessonLanguage: "Γλώσσα",
 
-
   teachingTabSpelling: "Ορθογραφία",
   teachingTabFreeWrite: "Ελεύθερη γραφή",
   freeWriteNotepad: "Σημειωματάριο",
@@ -73,12 +66,33 @@ export const el: Record<keyof typeof en, string> = {
   freeWriteLineNumbers: "Αριθμοί γραμμών",
   freeWriteNotepadEmpty: "Πληκτρολογήστε σημειώσεις εδώ…",
   freeWriteOpenPdf: "Άνοιγμα PDF…",
-  freeWriteRecentPdfs: "Πρόσφατα PDF",
+  freeWriteClosePdf: "Κλείσιμο PDF",
   freeWritePdfMissing: "Αυτό το αρχείο PDF δεν βρέθηκε.",
   freeWritePdfEmpty: "Ανοίξτε ένα PDF για ανάγνωση δίπλα στις σημειώσεις σας.",
   freeWritePdfPrevPage: "Προηγούμενη σελίδα",
+
+  freeWritePdfGoToPage: "Μετάβαση στη σελίδα",
   freeWritePdfNextPage: "Επόμενη σελίδα",
-  freeWriteRemovePdf: "Αφαίρεση",
+  freeWritePdfPointer: "Δείκτης",
+  freeWritePdfPen: "Πένα",
+  freeWritePdfEraser: "Σβήστρα",
+  freeWritePdfTextTool: "Κείμενο",
+  freeWritePdfUndo: "Αναίρεση",
+  freeWritePdfRedo: "Επανάληψη",
+  freeWritePdfClearAll: "Εκκαθάριση όλων",
+  freeWritePdfClearAllConfirm:
+    "Εκκαθάριση όλων των επισημάνσεων και κειμένων για αυτό το PDF; Διαγράφεται το αντίγραφο εργασίας Reach.",
+  freeWritePdfDeleteText: "Διαγραφή κειμένου",
+
+  freeWritePdfExport: "Εξαγωγή PDF…",
+  freeWritePdfExportFrom: "Από",
+  freeWritePdfExportTo: "Έως",
+  freeWritePdfExportAll: "Όλες οι σελίδες",
+  freeWritePdfExportCurrent: "Τρέχουσα σελίδα",
+  freeWritePdfExportSave: "Εξαγωγή…",
+  freeWritePdfExportCancel: "Ακύρωση",
+  freeWritePdfExportInvalidRange: "Εισαγάγετε έγκυρο εύρος σελίδων Από/Έως.",
+  freeWritePdfExportSuccess: "Το PDF εξήχθη.",
 
   comingSoon: "Σύντομα",
 
@@ -149,16 +163,12 @@ export const el: Record<keyof typeof en, string> = {
   modeTabletsHint:
     "Κανονική και Εστίαση είναι πληκτρολόγιο. Η Διδασκαλία ανοίγει μαθήματα· η Μουσική δείχνει τον συνθετητή. Ο Συνοδός είναι μη διαθέσιμος μέχρι να ξεκινήσει η γέφυρα ή να συνδεθεί tablet· επιλέγεται όσο είναι συνδεδεμένο.",
 
-  focusModeAutoDescription:
-    "Σε μία οθόνη ή σε κατοπτρική διάταξη, το πληκτρολόγιο εμφανίζεται αυτόματα όταν πατάτε ένα πεδίο εισαγωγής.",
+  showTeachingInputHelpers: "Εμφάνιση βοηθημάτων εισόδου στη Διδασκαλία",
+
+  showTeachingInputHelpersDescription:
+    "Γραμμή προτάσεων και μικρόφωνο όσο είναι ενεργή η Διδασκαλία.",
 
   focusModeOverrideLabel: "Λειτουργία εστίασης",
-
-  focusModeOverrideAuto: "Αυτόματο",
-
-  focusModeOverrideOn: "Ενεργό",
-
-  focusModeOverrideOff: "Ανενεργό",
 
   focusModeTransparent: "Διαφανές πληκτρολόγιο",
 
@@ -179,11 +189,6 @@ export const el: Record<keyof typeof en, string> = {
   transparentKeyColorSilver: "Ασημί",
 
   focusModeCollapse: "Επιστροφή στη λειτουργία εστίασης",
-
-  largeHeaders: "Μεγάλα headers για εύκολη αλλαγή μεγέθους",
-
-  largeHeadersHint:
-    "Διπλασιάζει το ύψος των headers και τα κουμπιά τους. Σύρετε την κενή περιοχή του header για να αλλάξετε το ύψος ενότητας ή παραθύρου.",
 
   primary: "Κύρια",
 
@@ -210,14 +215,6 @@ export const el: Record<keyof typeof en, string> = {
   speedFast: "Γρήγορη",
 
   speedVeryFast: "Πολύ γρήγορη",
-
-  quickActions: "Γρήγορες ενέργειες",
-
-  showQuickActionsBar: "Εμφάνιση γρήγορων ενεργειών",
-
-  phrasesAndSuggestions: "Φράσεις & Προτάσεις",
-
-  showPhrasesSection: "Εμφάνιση φράσεων",
 
   showSuggestionsBar: "Εμφάνιση προτάσεων",
 
@@ -267,6 +264,7 @@ export const el: Record<keyof typeof en, string> = {
   taskbarPositionFailed: "Δεν ήταν δυνατή η αλλαγή θέσης γραμμής εργασιών.",
 
   opacity: "Διαφάνεια",
+  keyboardFontSize: "Μέγεθος γραμματοσειράς πληκτρολογίου",
 
   appLanguage: "Γλώσσα εφαρμογής",
 
@@ -298,12 +296,6 @@ export const el: Record<keyof typeof en, string> = {
 
   languagePortuguese: "Πορτογαλικά",
 
-  resetSettings: "Επαναφορά ρυθμίσεων",
-
-  resetSettingsHint:
-
-    "Επαναφέρει διάταξη, θέση οθόνης, μεγέθη πάνελ και όλες τις ρυθμίσεις στις προεπιλογές.",
-
   resetUi: "Επαναφορά διεπαφής",
 
   resetUiHint:
@@ -330,29 +322,9 @@ export const el: Record<keyof typeof en, string> = {
 
   profileWiped: "Το προφίλ εκκαθαρίστηκε.",
 
-  layoutEdit: "Επεξεργασία διάταξης",
-
-  layoutEditDone: "Τέλος",
-
   dragToMove: "Σύρετε για μετακίνηση",
 
-  macroBuilder: "Δημιουργός μακροεντολών",
-
-  headTracking: "Παρακολούθηση κεφαλής",
-
-  phrases: "Φράσεις",
-
-  emergency: "Επείγον",
-
-  showEmergency: "Επείγον",
-
-  predictionsOff: "Οι προτάσεις είναι απενεργοποιημένες",
-
   enable: "Ενεργοποίηση",
-
-  suggest: "Πρόταση:",
-
-  turnOff: "Απενεργοποίηση",
 
   inputError: "Σφάλμα εισόδου:",
 
@@ -386,8 +358,6 @@ export const el: Record<keyof typeof en, string> = {
 
   synthesizer: "Συνθετητής",
 
-  synthesizerHint: "Πατήστε πλήκτρα για να παίξετε νότες",
-
   synthesizerVolume: "Ένταση",
 
   dictationStart: "Έναρξη υπαγόρευσης",
@@ -400,9 +370,6 @@ export const el: Record<keyof typeof en, string> = {
 
   dictationErrorNoLanguage:
     "Η αναγνώριση ομιλίας για αυτή τη γλώσσα πληκτρολόγησης δεν είναι εγκατεστημένη. Προσθέστε το πακέτο ομιλίας στις Ρυθμίσεις Windows → Ώρα και γλώσσα → Ομιλία (ή Γλώσσα και περιοχή) και δοκιμάστε ξανά.",
-
-  dictationErrorUnavailable:
-    "Η υπαγόρευση φωνής είναι διαθέσιμη μόνο στα Windows.",
 
   dictationErrorSpeechPrivacy:
     "Η διαδικτυακή αναγνώριση ομιλίας είναι απενεργοποιημένη στα Windows. Ενεργοποιήστε την στις Ρυθμίσεις → Απόρρητο και ασφάλεια → Ομιλία και δοκιμάστε ξανά. (Δεν είναι αίτημα άδειας μικροφώνου.)",
@@ -438,10 +405,6 @@ export const el: Record<keyof typeof en, string> = {
 
   unmute: "Ξεσίγαση",
 
-  teachMusic: "Διδασκαλία",
-
-  stopTeaching: "Διακοπή διδασκαλίας",
-
   musicLesson: "Μάθημα μουσικής",
 
   partiture: "Παρτιτούρα",
@@ -463,10 +426,6 @@ export const el: Record<keyof typeof en, string> = {
   builtInSongs: "Ενσωματωμένα",
 
   importedSongs: "Εισαγμένα",
-
-  playingNote: "Παίζει",
-
-  waitingForNote: "Παίξε",
 
   lessonComplete: "Το τραγούδι ολοκληρώθηκε!",
 
@@ -497,11 +456,11 @@ export const el: Record<keyof typeof en, string> = {
 
   octaveCount5: "5 οκτάβες",
 
-  showKeyboardModeToggle: "Εμφάνιση εναλλαγής πληκτρολογίου / συνθετητή",
-
   keyboardSectionMode: "Λειτουργία τμήματος πληκτρολογίου",
 
   inputAreaNormal: "Κανονική προβολή",
+
+  teachingKeyboardFocus: "Εστίαση",
 
   inputAreaCompact: "Μεγιστοποίηση πληκτρολογίου και trackpad",
 
@@ -541,40 +500,17 @@ export const el: Record<keyof typeof en, string> = {
 
   updateFailed: "Η ενημέρωση απέτυχε:",
 
-  updateRetry: "Επανάληψη",
-
   checkForUpdates: "Έλεγχος για ενημερώσεις",
 
   updateUpToDate: "Έχετε την τελευταία έκδοση.",
 
   updateCheckFailed: "Δεν ήταν δυνατός ο έλεγχος για ενημερώσεις.",
 
-
   settingsVisibleSections: "Ορατά τμήματα",
 
   settingsGeneral: "Γενικά",
 
   settingsToolsMaintenance: "Εργαλεία & Συντήρηση",
-
-  quickActionLabel: "Ετικέτα",
-
-  quickActionTarget: "Στόχος (εφαρμογή ή URL)",
-
-  quickActionTypeApp: "Εφαρμογή",
-
-  quickActionTypeUrl: "URL",
-
-  quickActionAdd: "Προσθήκη ενέργειας",
-
-  quickActionDelete: "Διαγραφή",
-
-  quickActionSearchApps: "Αναζήτηση εγκατεστημένων προγραμμάτων…",
-
-  quickActionBrowse: "Εξερεύνηση…",
-
-  quickActionLoadingApps: "Φόρτωση εγκατεστημένων προγραμμάτων…",
-
-  quickActionNoApps: "Δεν βρέθηκαν προγράμματα.",
 
   settingsAbout: "Σχετικά",
 
@@ -642,4 +578,4 @@ export const el: Record<keyof typeof en, string> = {
 
   aboutEmail: "Email",
 
-};
+} satisfies Record<keyof typeof en, string>;

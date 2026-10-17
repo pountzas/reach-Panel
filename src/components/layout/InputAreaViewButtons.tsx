@@ -4,7 +4,8 @@ import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 
 export function InputAreaViewButtons() {
-  const { settings, updateSettings } = useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
   const { t } = useTranslation();
   const compact = settings.inputAreaCompact;
 

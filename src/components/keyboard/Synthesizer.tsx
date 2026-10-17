@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { getSynthBlackKeyColors } from "../../lib/colorProfiles";
-import { findKeyIdAtPoint } from "../../lib/synthHitTest";
 import { resolveSynthOctaveCount, resolveSynthStartOctave } from "../../lib/music/octaveCount";
 import {
   buildPianoKeys,
@@ -10,6 +9,7 @@ import {
   noteIdToMidi,
   type PianoKey,
 } from "../../lib/music/pianoKeys";
+import { useSynthKeyPress, type ActiveVoice } from "./useSynthKeyPress";
 import { getSongById, songBeatSeconds } from "../../lib/music/songs";
 
 /** Keep short allegro notes audible even when slot spacing is very tight. */
@@ -42,20 +42,6 @@ function frequencyForPitch(
   return midi != null ? midiToFreq(midi) : null;
 }
 
-type ActiveVoice = {
-  oscillator: OscillatorNode;
-  gain: GainNode;
-};
-
-type ActivePointer = {
-  keyId: string;
-  voice: ActiveVoice;
-};
-
-function pressedKeysFromPointers(activePointers: Map<number, ActivePointer>): Set<string> {
-  return new Set([...activePointers.values()].map((entry) => entry.keyId));
-}
-
 export function Synthesizer() {
   const settings = useAppStore((s) => s.settings);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
@@ -70,14 +56,12 @@ export function Synthesizer() {
   const pianoRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
-  const activePointers = useRef<Map<number, ActivePointer>>(new Map());
   const playbackTimersRef = useRef<number[]>([]);
   const playbackIntervalRef = useRef<number | null>(null);
   const playbackOscillatorsRef = useRef<OscillatorNode[]>([]);
   const wrongKeyTimersRef = useRef<Map<string, number>>(new Map());
   const wrongKeysRef = useRef<Set<string>>(new Set());
   const targetKeyIdRef = useRef<string | null>(null);
-  const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set());
   const [playbackKeyId, setPlaybackKeyId] = useState<string | null>(null);
   const [wrongKeys, setWrongKeys] = useState<Set<string>>(() => new Set());
 
@@ -263,117 +247,29 @@ export function Synthesizer() {
     [ensureAudio],
   );
 
-  const syncPressedKeys = useCallback(() => {
-    setPressedKeys(pressedKeysFromPointers(activePointers.current));
-  }, []);
-
-  const releasePointer = useCallback(
-    (pointerId: number) => {
-      const active = activePointers.current.get(pointerId);
-      if (!active) return;
-
-      stopVoice(active.voice);
-      activePointers.current.delete(pointerId);
-      flashWrongKeyOnRelease(active.keyId);
-      syncPressedKeys();
-    },
-    [flashWrongKeyOnRelease, stopVoice, syncPressedKeys],
-  );
-
-  const setPointerKey = useCallback(
-    async (pointerId: number, keyId: string | null) => {
-      if (useAppStore.getState().musicPlaybackActive) return;
-
-      const current = activePointers.current.get(pointerId);
-      if (current?.keyId === keyId) return;
-
-      if (current) {
-        stopVoice(current.voice);
-        activePointers.current.delete(pointerId);
-        flashWrongKeyOnRelease(current.keyId);
-      }
-
-      if (keyId) {
-        const key = keyById.get(keyId);
-        if (!key) return;
-        const voice = await startVoice(key.freq);
-        activePointers.current.set(pointerId, { keyId, voice });
-        const teaching = useAppStore.getState().musicTeachingEnabled;
-        const target = targetKeyIdRef.current;
-        if (teaching && target && keyId !== target) {
-          markWrongKey(keyId);
-        } else {
-          clearWrongKeyFlash(keyId);
-        }
-        reportMusicKeyPlayed(keyId);
-      }
-
-      syncPressedKeys();
-    },
-    [
-      clearWrongKeyFlash,
-      flashWrongKeyOnRelease,
-      keyById,
-      markWrongKey,
-      reportMusicKeyPlayed,
-      startVoice,
-      stopVoice,
-      syncPressedKeys,
-    ],
-  );
-
-  const updatePointerFromEvent = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      const container = pianoRef.current;
-      if (!container) return;
-
-      const keyId = findKeyIdAtPoint(container, event.clientX, event.clientY);
-      void setPointerKey(event.pointerId, keyId);
-    },
-    [setPointerKey],
-  );
-
-  const onPianoPointerDown = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      event.currentTarget.setPointerCapture(event.pointerId);
-      updatePointerFromEvent(event);
-    },
-    [updatePointerFromEvent],
-  );
-
-  const onPianoPointerMove = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-      updatePointerFromEvent(event);
-    },
-    [updatePointerFromEvent],
-  );
-
-  const onPianoPointerUp = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-      releasePointer(event.pointerId);
-    },
-    [releasePointer],
-  );
-
-  const onPianoLostPointerCapture = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      releasePointer(event.pointerId);
-    },
-    [releasePointer],
-  );
+  const {
+    pressedKeys,
+    onPianoPointerDown,
+    onPianoPointerMove,
+    onPianoPointerUp,
+    onPianoLostPointerCapture,
+    clearActivePointers,
+  } = useSynthKeyPress({
+    pianoRef,
+    keyById,
+    targetKeyIdRef,
+    startVoice,
+    stopVoice,
+    markWrongKey,
+    clearWrongKeyFlash,
+    flashWrongKeyOnRelease,
+    reportMusicKeyPlayed,
+  });
 
   useEffect(() => {
-    const pointers = activePointers.current;
     const wrongTimers = wrongKeyTimersRef.current;
     return () => {
-      for (const entry of pointers.values()) {
-        stopVoice(entry.voice);
-      }
-      pointers.clear();
+      clearActivePointers();
       clearPlaybackSchedule();
       for (const timer of wrongTimers.values()) {
         window.clearTimeout(timer);
@@ -543,7 +439,7 @@ export function Synthesizer() {
         className={`relative min-w-0 flex-1 rounded-b-lg border font-semibold shadow-sm transition-transform ${isPressed || isWrong ? "key-pressed" : ""} ${ringClass}`}
         style={{
           height: whiteKeyHeight,
-          fontSize: settings.keyboardFontSize ?? 14,
+          fontSize: 18,
           color: settings.keyTextColor ?? "#475569",
           backgroundColor,
         }}
@@ -582,7 +478,7 @@ export function Synthesizer() {
           transform: "translateX(-50%)",
           width: `${blackKeyWidthRatio}%`,
           height: blackKeyHeight,
-          fontSize: Math.max(10, (settings.keyboardFontSize ?? 18) * 0.55),
+          fontSize: Math.max(10, 18 * 0.55),
           color: "#f8fafc",
           backgroundColor,
         }}

@@ -192,10 +192,9 @@ async fn handle_connection(
                                     "session": "active",
                                 });
                                 if let Some(cred) = new_credential {
-                                    payload
-                                        .as_object_mut()
-                                        .expect("payload object")
-                                        .insert("credential".into(), serde_json::json!(cred));
+                                    if let Some(obj) = payload.as_object_mut() {
+                                        obj.insert("credential".into(), serde_json::json!(cred));
+                                    }
                                 }
 
                                 let reply = Envelope::reply(env.id.clone(), "auth.ok", payload);

@@ -25,39 +25,32 @@ import {
   updateFloatRect,
   type DockedSlot,
   type FloatRect,
-  type LegacySectionLayouts,
   type SectionId,
   type SectionStackState,
   type SectionVisibility,
   type StackableSectionId,
 } from "../../lib/sectionStack";
-import { useAppStore } from "../../stores/appStore";
 import { DockedSection, HolePlaceholder } from "./DockedSection";
 import { FloatingSection } from "./FloatingSection";
+import { useAppStore } from "../../stores/appStore";
+import { isTeachingKeyboardChromeVisible } from "../../lib/teaching/teachingKeyboardMinimize";
 
 interface SectionCanvasProps {
-  quickActionsVisible: boolean;
-  phrasesVisible: boolean;
+  teachingVisible: boolean;
   savedStack?: SectionStackState;
-  legacyLayouts?: LegacySectionLayouts;
   onStackChange: (stack: SectionStackState) => void;
-  quickActions: ReactNode;
-  phrases: ReactNode;
+  teaching: ReactNode;
   inputRow: ReactNode;
 }
 
 export function SectionCanvas({
-  quickActionsVisible,
-  phrasesVisible,
+  teachingVisible,
   savedStack,
-  legacyLayouts,
   onStackChange,
-  quickActions,
-  phrases,
+  teaching,
   inputRow,
 }: SectionCanvasProps) {
-  const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
-  const headerEstimate = appHeaderHeightPx(largeHeaders);
+  const headerEstimate = appHeaderHeightPx();
 
   const fallbackCanvasSize = useCallback(() => {
     return {
@@ -126,15 +119,14 @@ export function SectionCanvas({
 
   const visibility: SectionVisibility = useMemo(
     () => ({
-      quickActions: quickActionsVisible,
-      phrases: phrasesVisible,
+      teaching: teachingVisible,
     }),
-    [quickActionsVisible, phrasesVisible],
+    [teachingVisible],
   );
 
   const stackFromSettings = useMemo(
-    () => resolveSectionStack(savedStack, legacyLayouts),
-    [savedStack, legacyLayouts],
+    () => resolveSectionStack(savedStack),
+    [savedStack],
   );
   const [stack, setStack] = useState(stackFromSettings);
   const stackRef = useRef(stack);
@@ -148,30 +140,32 @@ export function SectionCanvas({
   useEffect(() => {
     const current = stackRef.current;
     let next = current;
-    if (!visibility.quickActions && current.undocked["quick-actions"]) {
-      next = dockSection(next, "quick-actions");
-    }
-    if (!visibility.phrases && current.undocked.phrases) {
-      next = dockSection(next, "phrases");
+    if (!visibility.teaching && current.undocked.teaching) {
+      next = dockSection(next, "teaching");
     }
     if (next !== current) {
       setStack(next);
       stackRef.current = next;
       onStackChangeRef.current(next);
     }
-  }, [visibility.quickActions, visibility.phrases]);
-
-  useEffect(() => {
-    if (savedStack && Array.isArray(savedStack.order)) return;
-    if (!legacyLayouts || Object.keys(legacyLayouts).length === 0) return;
-    onStackChangeRef.current(stackFromSettings);
-  }, [savedStack, legacyLayouts, stackFromSettings]);
+  }, [visibility.teaching]);
 
   const contentById: Record<SectionId, ReactNode> = {
-    "quick-actions": quickActions,
-    phrases: phrases,
+    teaching: teaching,
     "input-row": inputRow,
   };
+
+  const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
+  const teachingLesson = useAppStore((s) => s.teachingLesson);
+  const teachingKeyboardMinimized = useAppStore(
+    (s) => s.teachingKeyboardMinimized,
+  );
+  const forceTeachingKeyboardMinimized =
+    teachingKeyboardMinimized &&
+    isTeachingKeyboardChromeVisible({
+      musicTeachingEnabled,
+      teachingLesson,
+    });
 
   const slots = useMemo(
     () =>
@@ -179,10 +173,12 @@ export function SectionCanvas({
         stack,
         visibility,
         containerSize.height,
-        largeHeaders,
         STACK_GAP_PX,
+        forceTeachingKeyboardMinimized
+          ? { forceMinimized: { "input-row": true } }
+          : undefined,
       ),
-    [stack, visibility, containerSize.height, largeHeaders],
+    [stack, visibility, containerSize.height, forceTeachingKeyboardMinimized],
   );
 
   const slotById = useMemo(() => {
@@ -334,7 +330,6 @@ export function SectionCanvas({
           delta,
           containerSize.height,
           visibility,
-          largeHeaders,
         ),
       );
     },
@@ -439,10 +434,8 @@ function isSectionVisibleId(
   visibility: SectionVisibility,
 ): boolean {
   switch (id) {
-    case "quick-actions":
-      return visibility.quickActions;
-    case "phrases":
-      return visibility.phrases;
+    case "teaching":
+      return visibility.teaching;
     default: {
       const _exhaustive: never = id;
       return _exhaustive;

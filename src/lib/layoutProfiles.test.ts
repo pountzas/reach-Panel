@@ -120,13 +120,13 @@ describe("layoutProfiles", () => {
     const mouseStack = createDefaultSectionStack();
     const touchStack = {
       ...createDefaultSectionStack(),
-      order: ["phrases", "quick-actions"] as ReturnType<
+      order: ["teaching"] as ReturnType<
         typeof createDefaultSectionStack
       >["order"],
     };
     const editedMouseStack = {
       ...mouseStack,
-      weights: { ...mouseStack.weights, phrases: 5 },
+      weights: { ...mouseStack.weights, teaching: 5 },
     };
 
     let settings: AppSettings = {
@@ -147,13 +147,13 @@ describe("layoutProfiles", () => {
     );
     const switched = switchPointerInputKindLayout(settings, "mouse", "touch");
     expect(switched.mouseLayout?.inputRowRightRatio).toBe(0.22);
-    expect(switched.mouseLayout?.sectionStack?.weights?.phrases).toBe(5);
+    expect(switched.mouseLayout?.sectionStack?.weights?.teaching).toBe(5);
     expect(switched.inputRowRightRatio).toBe(0.55);
-    expect(switched.sectionStack?.order).toEqual(["phrases", "quick-actions"]);
+    expect(switched.sectionStack?.order).toEqual(["teaching"]);
 
     const back = switchPointerInputKindLayout(switched, "touch", "mouse");
     expect(back.inputRowRightRatio).toBe(0.22);
-    expect(back.sectionStack?.weights?.phrases).toBe(5);
+    expect(back.sectionStack?.weights?.teaching).toBe(5);
     expect(back.sectionStack?.order).toEqual(mouseStack.order);
   });
 

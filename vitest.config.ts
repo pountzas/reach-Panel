@@ -10,6 +10,8 @@ export default defineConfig({
       "**/dist/**",
       "**/*.test.mjs",
       "**/.worktrees/**",
+      // Companion uses Expo tsconfig; run those tests from companion/ after npm ci there.
+      "companion/**",
     ],
   },
 });

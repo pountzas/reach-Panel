@@ -4,13 +4,18 @@ import type { MonitorInfo } from "./types";
 
 /**
  * Gate for applyWindowHeightRatioLive.
- * Collapsed FAB is the only skip; focus mode grips must still preview height.
+ * Skip the true FAB (collapsed, or focus with keyboard hidden). Focus keeps
+ * `settings.collapsed === true` while the keyboard is open — grips must still
+ * preview height in that state.
  */
 export function shouldApplyLiveWindowHeightRatio(input: {
   collapsed: boolean;
   focusModeActive: boolean;
+  focusModeKeyboardVisible: boolean;
 }): boolean {
-  void input.focusModeActive;
+  if (input.focusModeActive && input.focusModeKeyboardVisible) {
+    return true;
+  }
   return !input.collapsed;
 }
 
@@ -56,4 +61,21 @@ export function nextWindowHeightRatioFromScreenY(
 ): number {
   if (region.height <= 0) return clampWindowHeightRatio(0);
   return clampWindowHeightRatio((region.bottom - screenY) / region.height);
+}
+
+/** End a height-grip drag on matching window pointerup/pointercancel. */
+export function attachWindowHeightPointerEndListeners(
+  pointerId: number,
+  onMatchingEnd: () => void,
+): () => void {
+  const handler = (event: PointerEvent) => {
+    if (event.pointerId !== pointerId) return;
+    onMatchingEnd();
+  };
+  window.addEventListener("pointerup", handler);
+  window.addEventListener("pointercancel", handler);
+  return () => {
+    window.removeEventListener("pointerup", handler);
+    window.removeEventListener("pointercancel", handler);
+  };
 }

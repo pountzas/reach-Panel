@@ -92,18 +92,19 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - **Normal** — full typing keyboard and predictive suggestions
 - **Focus** — focus-driven keyboard (shows when a text field is focused); collapses to a branded FAB when idle; optional transparent outlined keys (white / dark gray / silver). Collapsed **R** opens a mode menu (Show keyboard + modes) without opening Settings
 - **Mic** — Focus layout that stays collapsed; mic FAB above Settings arms when a text field is focused (no keyboard auto-show); **R** opens the same mode menu (Show keyboard restores the keyboard); shared recording overlay while dictating
-- **Teaching** — fullscreen work area; switch Language / Music / Math from the lesson section header. Music: piano/synth (2–5 octaves), partiture, built-in songs and file import, resizable lesson split. Language: Spelling (Play to spell from built-in or custom lists, optional Greek tone checking) and Free write (notepad + PDF library/viewer); Math is a placeholder for now
+- **Teaching** — fullscreen work area; switch Language / Music / Math from the lesson section header. Music: piano/synth (2–5 octaves), partiture, built-in songs and file import, resizable lesson split. Language: left Spelling / Free write tab rail; Spelling (Play to spell from built-in or custom lists, optional Greek tone checking) and Free write (notepad + PDF library/viewer); Math is a placeholder for now. In Language/Math, the keyboard header can Minimize/Restore keys or use Focus auto-minimize (not saved across restart). **Settings → Visible sections → Show input helpers in Teaching mode** shows or hides the suggestions bar and mic while Teaching is active (live input preview stays off in Teaching).
 
 ### Keyboard
 
 - System-wide keyboard injection with sticky modifiers
 - Colors, opacity, and panel-driven key sizing
+- **Keyboard font size** — **Settings → Appearance** slider, 14–29 px (≈80%–160% of the 18 px default; default unchanged); scales keyboard and numpad labels, clamped to fit the key height; not synced to the tablet companion
 - Fn key on the bottom row maps number keys 1–0 and `-` `=` to F1–F12
 - Language switch key with country flag icons (follows installed Windows keyboards)
 - On-screen layout override (auto / QWERTY / QWERTZ / AZERTY / Greek)
-- Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle
+- Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle; in Teaching, suggestions also work for Spelling and Free write when helpers and suggestions are on
 - Dictation key beside Right Ctrl (see Voice dictation below); show/hide the mic key under **Settings → Visible sections**
-- **Input preview** — when an external text field is targeted, a live ~320×48 strip follows the writing caret (clamped inside the field so a tall textarea is not shrunk to a postage stamp) on the keyboard toolbar. Toggle under **Settings → Visible sections → Live input preview** (on by default). While a companion tablet session is active, the same strip is streamed to the tablet keyboard instead of the minimized host UI. Protected or DRM content may appear black; some custom controls may not expose a usable screen region.
+- **Input preview** — when an external text field is targeted, a live ~320×48 strip follows the writing caret (clamped inside the field so a tall textarea is not shrunk to a postage stamp) on the keyboard toolbar. Toggle under **Settings → Visible sections → Live input preview** (on by default). Disabled entirely while a Teaching session is active (no capture). While a companion tablet session is active, the same strip is streamed to the tablet keyboard instead of the minimized host UI. Protected or DRM content may appear black; some custom controls may not expose a usable screen region.
 - Special keys use symbols (Enter ↵, Shift ⇧, Backspace ⌫, Space ␣)
 - Backspace press-and-hold repeats like a Windows keyboard (~500ms delay, then ~33ms)
 - Right-click / long-press context menus are suppressed on the keyboard and main app surface
@@ -223,7 +224,7 @@ Windows installers are built in CI and published automatically when a [release-p
 | `src-tauri/src/window/`              | Monitor enumeration and taskbar-aware layout (Windows APIs)          |
 | `src-tauri/src/tts/`                 | Text-to-speech (Windows SAPI / WinRT)                                |
 | `src-tauri/src/stt/`                 | Voice dictation (WinRT speech recognition; Groq cloud fallback)      |
-| `src-tauri/src/db/`                  | SQLite persistence (profiles, phrases, macros)                       |
+| `src-tauri/src/db/`                  | SQLite persistence (profiles and settings)                           |
 | `src-tauri/src/prediction/`          | Predictive text + word-pack install/download                         |
 | `src-tauri/src/companion/`           | Android tablet WebSocket bridge (pairing, session, dispatch)         |
 | `src-tauri/src/profiles/`            | File-based named profiles                                            |
@@ -234,10 +235,7 @@ Windows installers are built in CI and published automatically when a [release-p
 
 ## Roadmap
 
-- Eye tracking support
-- AutoHotkey macro import
 - iOS companion (TestFlight)
-- Remove leftover Windows chrome for mouse panel, phrases, Quick Actions, macros, and head tracking (tablet trackpad/numpad stays)
 
 ## Known limitations
 

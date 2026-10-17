@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import { MdOutlineZoomIn, MdOutlineZoomOut } from "react-icons/md";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { getSurfaceColors } from "../../lib/colorProfiles";
-import { clampFreeWriteZoom } from "../../lib/teaching";
+import {
+  clampFreeWriteZoom,
+  formatFreeWriteZoomPercent,
+  FREE_WRITE_ZOOM_STEP,
+} from "../../lib/teaching";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { TeachingLessonToolbarButton } from "./TeachingLessonPanel";
+
+const TOOLBAR_ICON_CLASS = "h-4 w-4";
 
 const BASE_FONT_PX = 16;
 
@@ -51,27 +58,30 @@ export function FreeWriteNotepad() {
         </span>
         <TeachingLessonToolbarButton
           label={t("freeWriteZoomOut")}
-          onClick={() => setFreeWriteNotepadZoom(zoom - 25)}
+          size="sm"
+          onClick={() => setFreeWriteNotepadZoom(zoom - FREE_WRITE_ZOOM_STEP)}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
         >
-          <span className="text-lg leading-none">−</span>
+          <MdOutlineZoomOut className={TOOLBAR_ICON_CLASS} />
         </TeachingLessonToolbarButton>
-        <span className="min-w-[3rem] text-center text-xs" style={{ color: surface.panelMutedText }}>
-          {zoom}%
+        <span className="min-w-[3.25rem] text-center text-xs tabular-nums" style={{ color: surface.panelMutedText }}>
+          {formatFreeWriteZoomPercent(zoom)}
         </span>
         <TeachingLessonToolbarButton
           label={t("freeWriteZoomIn")}
-          onClick={() => setFreeWriteNotepadZoom(zoom + 25)}
+          size="sm"
+          onClick={() => setFreeWriteNotepadZoom(zoom + FREE_WRITE_ZOOM_STEP)}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
         >
-          <span className="text-lg leading-none">+</span>
+          <MdOutlineZoomIn className={TOOLBAR_ICON_CLASS} />
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteWordWrap")}
+          size="sm"
           onClick={() => setFreeWriteNotepadWrap(!wrap)}
           backgroundColor={wrap ? "#fde68a" : surface.panelBg}
           borderColor={surface.panelBorder}
@@ -81,6 +91,7 @@ export function FreeWriteNotepad() {
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteLineNumbers")}
+          size="sm"
           onClick={() => setFreeWriteNotepadLineNumbers(!lineNumbers)}
           backgroundColor={lineNumbers ? "#fde68a" : surface.panelBg}
           borderColor={surface.panelBorder}
@@ -90,6 +101,7 @@ export function FreeWriteNotepad() {
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteClearAll")}
+          size="sm"
           onClick={() => setClearConfirmOpen(true)}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
@@ -124,6 +136,7 @@ export function FreeWriteNotepad() {
         ) : null}
         <textarea
           ref={bodyRef}
+          data-teaching-input
           className="h-full min-h-0 w-full flex-1 resize-none bg-transparent p-2 outline-none"
           style={{
             color: surface.panelText,

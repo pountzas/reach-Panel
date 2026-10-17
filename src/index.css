@@ -3,6 +3,13 @@
 :root {
   font-family: "Segoe UI", system-ui, sans-serif;
   color: #1a1a2e;
+  --rp-dur-fast: 120ms;
+  --rp-dur-base: 200ms;
+  --rp-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --rp-dur-slow: 300ms;
+  /* Focus keyboard sheet: longer + symmetric ease for up/down. */
+  --rp-dur-focus-keyboard: 250ms;
+  --rp-ease-focus-keyboard: cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 
 html,
@@ -89,16 +96,14 @@ button {
 
 .music-note-chip {
   transition:
-    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 280ms var(--rp-ease-out),
     opacity 280ms ease,
-    background-color 280ms ease,
-    font-size 280ms ease,
-    box-shadow 280ms ease;
+    background-color 280ms ease;
 }
 
 .music-note-chip-active {
-  font-size: 1.5rem;
   line-height: 1;
+  transform: scale(1.55);
   box-shadow: 0 0 0 2px rgb(245 158 11 / 0.9);
   animation: music-note-pulse 1.1s ease-in-out infinite;
 }
@@ -180,4 +185,79 @@ button {
   border: 2px solid #ffffff;
   background-color: #334155;
   box-shadow: 0 1px 2px rgb(15 23 42 / 20%);
+}
+
+@keyframes rp-vt-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes rp-vt-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rp-vt-slide-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-8px);
+  }
+}
+
+@keyframes rp-vt-slide-right {
+  from {
+    transform: translateX(8px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-old(.rp-vt-fade-slide) {
+  animation:
+    var(--rp-dur-slow) var(--rp-ease-out) both rp-vt-fade-out,
+    var(--rp-dur-slow) var(--rp-ease-out) both rp-vt-slide-left;
+}
+
+::view-transition-new(.rp-vt-fade-slide) {
+  animation:
+    var(--rp-dur-slow) var(--rp-ease-out) both rp-vt-fade-in,
+    var(--rp-dur-slow) var(--rp-ease-out) both rp-vt-slide-right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rp-dur-fast: 1ms;
+    --rp-dur-base: 1ms;
+    --rp-dur-slow: 1ms;
+    --rp-dur-focus-keyboard: 1ms;
+  }
+
+  .music-note-chip-active {
+    animation: none;
+  }
+
+  .partiture-note-active .partiture-note-ring {
+    animation: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

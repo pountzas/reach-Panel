@@ -81,7 +81,11 @@ fn is_under_dir(path: &Path, root: &Path) -> bool {
     path.starts_with(root)
 }
 
-fn path_is_allowed(app: &AppHandle, canonical: &Path, original: &Path) -> Result<bool, String> {
+pub(crate) fn path_is_allowed(
+    app: &AppHandle,
+    canonical: &Path,
+    original: &Path,
+) -> Result<bool, String> {
     let teaching_root = teaching_dir(app)?;
     let teaching_root = teaching_root.canonicalize().unwrap_or(teaching_root);
     if is_under_dir(canonical, &teaching_root) || is_under_dir(original, &teaching_root) {

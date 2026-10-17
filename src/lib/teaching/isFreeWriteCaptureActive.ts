@@ -1,5 +1,5 @@
 export type LanguageSubjectTab = "spelling" | "freeWrite";
-export type FreeWriteFocus = "notepad" | "pdf";
+export type FreeWriteFocus = "notepad" | "pdf" | "pdfText";
 
 export type FreeWriteModeInput = {
   musicTeachingEnabled: boolean;
@@ -21,11 +21,11 @@ export function isLanguageSpellingTabActive(input: FreeWriteModeInput): boolean 
   return isLanguageSubjectActive(input) && input.languageSubjectTab === "spelling";
 }
 
-/** Capture for Free write notepad (v1: notepad focus only; PDF uses native field focus when available). */
+/** Capture for Free write notepad or PDF text box (OSK / physical keyboard). */
 export function isFreeWriteCaptureActive(input: FreeWriteModeInput): boolean {
   return (
     isLanguageSubjectActive(input) &&
     input.languageSubjectTab === "freeWrite" &&
-    input.freeWriteFocus === "notepad"
+    (input.freeWriteFocus === "notepad" || input.freeWriteFocus === "pdfText")
   );
 }

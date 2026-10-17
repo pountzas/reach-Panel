@@ -59,9 +59,13 @@ export function DictationOverlay() {
   return (
     <div className="flex h-screen w-screen items-end justify-center bg-transparent">
       <div
-        className={`flex items-center gap-3 rounded-full bg-slate-900/90 px-3 py-2 shadow-lg transition-all duration-200 ease-out motion-reduce:transition-none motion-reduce:translate-y-0 ${
+        className={`flex items-center gap-3 rounded-full bg-slate-900/90 px-3 py-2 shadow-lg transition-[opacity,transform] motion-reduce:transition-none motion-reduce:translate-y-0 ${
           entered ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
         }`}
+        style={{
+          transitionDuration: "var(--rp-dur-base)",
+          transitionTimingFunction: "var(--rp-ease-out)",
+        }}
       >
         <DictationVisualizer active={active} captureAudio={captureAudio} />
         <span className="whitespace-nowrap text-sm font-medium text-slate-100">

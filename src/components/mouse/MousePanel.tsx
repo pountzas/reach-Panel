@@ -8,7 +8,8 @@ import { Trackpad } from "./Trackpad";
 import { NumKeypad } from "./NumKeypad";
 
 export function MousePanel() {
-  const { settings, updateSettings } = useAppStore();
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
   const { t } = useTranslation();
   const surface = getSurfaceColors(settings.appBgColor);
   const showNumpad = settings.mousePanelMode === "numpad";

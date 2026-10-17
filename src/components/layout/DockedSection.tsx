@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import {
   headerHeightFor,
   type DockedSlot,
@@ -6,8 +6,10 @@ import {
   type StackableSectionId,
 } from "../../lib/sectionStack";
 import { getSectionDefinition, isStackableSectionId } from "../../lib/sectionRegistry";
+import { useFlipLayoutTransition } from "../../hooks/useFlipLayoutTransition";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
+import { peekTeachingRestoreMode } from "../../stores/lib/restoreStack";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import { lessonCloseAppMode, teachingLessonTitleKey } from "../../lib/appModeLayout";
 import type { TranslationKey } from "../../i18n";
@@ -19,11 +21,12 @@ import {
 } from "../common/SectionIcons";
 import { IconActionButton } from "../common/IconActionButton";
 import { InputAreaViewButtons } from "./InputAreaViewButtons";
+import { TeachingKeyboardHeaderControls } from "./TeachingKeyboardHeaderControls";
 import { TeachingLessonModeToggle } from "../teaching/TeachingLessonModeToggle";
+import { isTeachingKeyboardChromeVisible } from "../../lib/teaching/teachingKeyboardMinimize";
 
 const SECTION_TITLE_KEY: Record<SectionId, TranslationKey> = {
-  "quick-actions": "quickActions",
-  phrases: "phrases",
+  teaching: "modeTeaching",
   "input-row": "keyboard",
 };
 
@@ -52,39 +55,47 @@ export function DockedSection({
   dockHighlight = false,
 }: DockedSectionProps) {
   const { t } = useTranslation();
-  const updateSettings = useAppStore((s) => s.updateSettings);
   const setAppMode = useAppStore((s) => s.setAppMode);
-  const modeBeforeTeaching = useAppStore((s) => s.modeBeforeTeaching);
+  const modeBeforeTeaching = useAppStore((s) =>
+    peekTeachingRestoreMode(s.restoreStack),
+  );
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
-  const keyboardSectionMode = useAppStore((s) => s.settings.keyboardSectionMode);
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
-  const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
-  const showMusicLesson =
-    slot.id === "phrases" &&
-    musicTeachingEnabled &&
-    keyboardSectionMode === "synthesizer";
-  const sectionTitleKey: TranslationKey = showMusicLesson
+  const showTeaching = slot.id === "teaching" && musicTeachingEnabled;
+  const showKeyboardChrome =
+    slot.id === "input-row" &&
+    isTeachingKeyboardChromeVisible({
+      musicTeachingEnabled,
+      teachingLesson,
+    });
+  const useCenterGrid = showTeaching || showKeyboardChrome;
+  const sectionTitleKey: TranslationKey = showTeaching
     ? teachingLessonTitleKey(teachingLesson)
     : SECTION_TITLE_KEY[slot.id];
   const surface = getSurfaceColors(appBgColor);
-  const headerHeight = headerHeightFor(largeHeaders);
-  const iconSize = largeHeaders ? "lg" : "sm";
-  const iconClass = largeHeaders ? "h-7 w-7" : "h-3.5 w-3.5";
+  const headerHeight = headerHeightFor();
+  const iconSize = "sm" as const;
+  const iconClass = "h-3.5 w-3.5";
   const canUndock =
     isStackableSectionId(slot.id) && getSectionDefinition(slot.id).canUndock;
   const showPanelControls = slot.id !== "input-row";
+  const rootRef = useRef<HTMLDivElement>(null);
+  const teachingKeyboardMinimized = useAppStore(
+    (s) => s.teachingKeyboardMinimized,
+  );
+  // Snap top/height in layout; FLIP only when Teaching minimize/restore flips.
+  useFlipLayoutTransition(
+    rootRef,
+    { top: slot.y, height: slot.height },
+    teachingKeyboardMinimized,
+  );
 
   const handleClose = () => {
     switch (slot.id) {
-      case "quick-actions":
-        updateSettings({ quickActionsVisible: false });
-        break;
-      case "phrases":
+      case "teaching":
         if (musicTeachingEnabled) {
           void setAppMode(lessonCloseAppMode(modeBeforeTeaching));
-        } else {
-          updateSettings({ phrasesVisible: false });
         }
         break;
       case "input-row":
@@ -99,6 +110,7 @@ export function DockedSection({
 
   return (
     <div
+      ref={rootRef}
       className="absolute overflow-hidden rounded-md border shadow-md"
       style={{
         left: 0,
@@ -116,7 +128,9 @@ export function DockedSection({
       <div className="flex h-full flex-col overflow-hidden">
         <div
           className={`flex shrink-0 cursor-grab items-center border-b px-2 active:cursor-grabbing ${
-            showMusicLesson ? "grid grid-cols-[1fr_auto_1fr] gap-2" : "justify-between"
+            useCenterGrid
+              ? "grid grid-cols-[1fr_auto_1fr] gap-2"
+              : "justify-between"
           }`}
           style={{
             height: headerHeight,
@@ -149,18 +163,27 @@ export function DockedSection({
           }}
         >
           <span
-            className={`min-w-0 truncate font-medium ${largeHeaders ? "text-sm" : "text-xs"}`}
+            className="min-w-0 truncate text-xs font-medium"
             style={{ color: surface.panelMutedText }}
           >
             {t(sectionTitleKey)}
           </span>
-          {showMusicLesson ? (
+          {showTeaching ? (
             <div className="section-no-drag flex items-center justify-center">
               <TeachingLessonModeToggle />
             </div>
           ) : null}
+          {showKeyboardChrome ? <TeachingKeyboardHeaderControls /> : null}
           {slot.id === "input-row" ? (
-            <InputAreaViewButtons />
+            <div
+              className={
+                showKeyboardChrome
+                  ? "section-no-drag flex items-center justify-end"
+                  : undefined
+              }
+            >
+              <InputAreaViewButtons />
+            </div>
           ) : (
             showPanelControls && (
               <div className="section-no-drag ml-1 flex shrink-0 items-center justify-end gap-0.5">
