@@ -7,6 +7,7 @@ import {
   beginFocusContentAnimWait,
   syncFocusModeWindowLayout,
 } from "./storeShared";
+import { createProfileSlice } from "./slices/profileSlice";
 import { createErrorsSlice } from "./slices/errorsSlice";
 import { createSuggestionsSlice } from "./slices/suggestionsSlice";
 import { createDictationSlice } from "./slices/dictationSlice";
@@ -23,7 +24,6 @@ import { createTypingSlice } from "./slices/typingSlice";
 import { createWindowSlice } from "./slices/windowSlice";
 import { createFocusModeSlice } from "./slices/focusModeSlice";
 import { createModeSlice } from "./slices/modeSlice";
-import { createProfileSlice } from "./slices/profileSlice";
 
 export type {
   AppStore,
