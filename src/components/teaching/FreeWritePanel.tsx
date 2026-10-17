@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 import { useAppStore } from "../../stores/appStore";
 import {
@@ -10,10 +11,15 @@ import { FreeWritePdfPane } from "./FreeWritePdfPane";
 
 /** Language → Free write: notepad (left) + PDF library/viewer (right). */
 export function FreeWritePanel() {
-  const settings = useAppStore((s) => s.settings);
-  const updateSettings = useAppStore((s) => s.updateSettings);
-  const surface = getSurfaceColors(settings.appBgColor);
-  const leftRatio = settings.freeWriteLeftRatio ?? DEFAULT_TEACHING_LESSON_LEFT_RATIO;
+  const { appBgColor, freeWriteLeftRatio, updateSettings } = useAppStore(
+    useShallow((s) => ({
+      appBgColor: s.settings.appBgColor,
+      freeWriteLeftRatio: s.settings.freeWriteLeftRatio,
+      updateSettings: s.updateSettings,
+    })),
+  );
+  const surface = getSurfaceColors(appBgColor);
+  const leftRatio = freeWriteLeftRatio ?? DEFAULT_TEACHING_LESSON_LEFT_RATIO;
 
   return (
     <TeachingLessonPanel

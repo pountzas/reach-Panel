@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { MicrophoneIcon, SettingsIcon } from "../common/SectionIcons";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -62,7 +63,12 @@ export function CollapsedFab({
   onExpand,
   fillWindow = true,
 }: CollapsedFabProps) {
-  const settings = useAppStore((s) => s.settings);
+  const { headerBgColor, headerTextColor } = useAppStore(
+    useShallow((s) => ({
+      headerBgColor: s.settings.headerBgColor,
+      headerTextColor: s.settings.headerTextColor,
+    })),
+  );
   const toggleCollapsed = useAppStore((s) => s.toggleCollapsed);
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
   const dictationState = useAppStore((s) => s.dictationState);
@@ -122,8 +128,8 @@ export function CollapsedFab({
     return () => window.clearTimeout(timeoutId);
   }, [modeMenuOpen, menuMounted]);
 
-  const bgColor = settings.headerBgColor ?? "#1e293b";
-  const textColor = settings.headerTextColor ?? "#ffffff";
+  const bgColor = headerBgColor ?? "#1e293b";
+  const textColor = headerTextColor ?? "#ffffff";
 
   const listening =
     dictationState === "listening" || dictationState === "processing";
