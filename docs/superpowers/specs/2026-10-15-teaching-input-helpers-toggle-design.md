@@ -1,10 +1,19 @@
 # Teaching input helpers toggle + animated Settings switch — Design Spec
 
 **Date:** 2026-10-15  
-**Status:** Approved for implementation  
+**Status:** Implemented (#262 / PR #266). Follow-ups in #275 amended below.  
 **Issue:** https://github.com/pountzas/reach-Panel/issues/262  
 **Supersedes (Teaching hard-hide):** `docs/superpowers/specs/2026-09-25-teaching-hide-preview-suggestions-design.md` (#167)  
 **Scope:** Windows app only. Companion does not follow this setting.
+
+### Follow-ups from Teaching polish epic (#275)
+
+| Change | Issue | Spec impact |
+| --- | --- | --- |
+| Toggle moved from Modes to **Visible sections** (after section toggles, before prediction dictionaries) | #268 | §3 / §4.3 Settings placement outdated |
+| Description copy is **suggestions + mic only** (no “live input preview”) | #268 | §3 hint copy |
+| Live input preview is **always off** in Teaching (UI + native capture), regardless of helpers | #269 | §4.2 preview column for Teaching is always forced off; helpers no longer gate preview |
+| Suggestions are produced while typing in Spelling / Free write when helpers + suggestions are on | #270 | Complements §4.2 suggestions row |
 
 ## 1. Goals
 
