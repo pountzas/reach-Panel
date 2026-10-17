@@ -324,17 +324,17 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
   return (
     <div
       ref={rootRef}
-      className="absolute left-0 top-0"
-      style={{ width, height, cursor, touchAction: "none" }}
+      className="absolute inset-0"
+      style={{ cursor, touchAction: "none" }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
       <svg
-        width={width}
-        height={height}
-        className="pointer-events-none absolute left-0 top-0"
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        className="pointer-events-none absolute inset-0 h-full w-full"
         aria-hidden
       >
         {pageAnn.strokes.map((stroke) => {

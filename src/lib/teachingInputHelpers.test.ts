@@ -4,7 +4,6 @@ import { DEFAULT_SETTINGS } from "./types";
 import {
   computeTeachingChromeVisibility,
   isDictationKeyVisible,
-  resolveShowSuggestionsRow,
   shouldStopDictationForVisibility,
   shouldSuppressLanguageSuggestions,
   teachingHidesInputHelpers,
@@ -246,17 +245,25 @@ describe("teachingInputHelpers", () => {
     });
   });
 
-  describe("resolveShowSuggestionsRow", () => {
-    it("keeps the lightbulb strip in Teaching with zero chips", () => {
-      expect(resolveShowSuggestionsRow(true, true, 0)).toBe(true);
+  describe("suggestions row reservation", () => {
+    it("keeps showSuggestions true outside Teaching with zero chips when suggestions are on", () => {
+      expect(
+        chrome({
+          teachingSessionActive: false,
+          focusModeActive: false,
+          settings: { ...visibleSettings, suggestionsVisible: true },
+        }).showSuggestions,
+      ).toBe(true);
     });
 
-    it("hides the empty strip in Normal/Focus when there are no chips", () => {
-      expect(resolveShowSuggestionsRow(false, true, 0)).toBe(false);
-    });
-
-    it("shows the strip in Normal/Focus when chips exist", () => {
-      expect(resolveShowSuggestionsRow(false, true, 2)).toBe(true);
+    it("hides suggestions when Settings turns them off", () => {
+      expect(
+        chrome({
+          teachingSessionActive: false,
+          focusModeActive: false,
+          settings: { ...visibleSettings, suggestionsVisible: false },
+        }).showSuggestions,
+      ).toBe(false);
     });
   });
 });

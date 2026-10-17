@@ -61,10 +61,27 @@ export function parsePdfAnnotationJson(text: string): PdfAnnotationDoc {
       `Unsupported PDF annotation schemaVersion: ${String(obj.schemaVersion)}`,
     );
   }
-  const pages =
-    obj.pages && typeof obj.pages === "object" && !Array.isArray(obj.pages)
-      ? (obj.pages as Record<string, PdfPageAnnotations>)
-      : {};
+  const pages: Record<string, PdfPageAnnotations> = {};
+  if (obj.pages && typeof obj.pages === "object" && !Array.isArray(obj.pages)) {
+    for (const [key, value] of Object.entries(
+      obj.pages as Record<string, unknown>,
+    )) {
+      if (!value || typeof value !== "object") continue;
+      const page = value as Partial<Record<keyof PdfPageAnnotations, unknown>>;
+      pages[key] = {
+        strokes: Array.isArray(page.strokes)
+          ? (page.strokes as PdfStroke[]).filter(
+              (s) => s && Array.isArray(s.points),
+            )
+          : [],
+        texts: Array.isArray(page.texts)
+          ? (page.texts as PdfTextBox[]).filter(
+              (t) => t && typeof t.body === "string",
+            )
+          : [],
+      };
+    }
+  }
   const doc: PdfAnnotationDoc = {
     schemaVersion: SCHEMA_VERSION,
     pages,

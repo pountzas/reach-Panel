@@ -34,7 +34,6 @@ import {
 import { isLanguageLessonActive } from "../../lib/language";
 import {
   computeTeachingChromeVisibility,
-  resolveShowSuggestionsRow,
   shouldStopDictationForVisibility,
 } from "../../lib/teachingInputHelpers";
 
@@ -53,7 +52,6 @@ export function KeyboardSection() {
   const musicSongId = useAppStore((s) => s.musicSongId);
   const importedSongs = useAppStore((s) => s.importedSongs);
   const companionSessionLive = useAppStore((s) => s.companionSessionLive);
-  const suggestionCount = useAppStore((s) => s.suggestions.length);
   const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
   const dictationState = useAppStore((s) => s.dictationState);
   const stopDictation = useAppStore((s) => s.stopDictation);
@@ -92,13 +90,8 @@ export function KeyboardSection() {
       void stopDictation();
     }
   }, [dictationKeyVisible, dictationState, stopDictation]);
-  const hasSuggestionChips = showSuggestions && suggestionCount > 0;
-  /** Teaching keeps the strip mounted (lightbulb); other modes keep chip-only. */
-  const showSuggestionsRow = resolveShowSuggestionsRow(
-    teachingSessionActive,
-    showSuggestions,
-    suggestionCount,
-  );
+  /** Suggestions strip stays mounted whenever suggestions are on, so chips never resize keys. */
+  const showSuggestionsRow = showSuggestions;
   const transparentUi = isTransparentUiActive(settings, focusModeActive);
   const showTransparentToggle = focusModeActive && !showSynth && !compact;
   const showFocusModeCollapse =
@@ -295,7 +288,7 @@ export function KeyboardSection() {
       {showToolbar &&
         (showFocusModeToolbar ? (
           <div
-            className={focusModeToolbarClassName(hasSuggestionChips)}
+            className={focusModeToolbarClassName(false)}
           >
             <div className="flex w-full items-center gap-2">
               <button

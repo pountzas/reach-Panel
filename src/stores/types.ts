@@ -176,7 +176,7 @@ export interface PdfSlice {
   beginFreeWritePdfTextEdit: (id: string) => void;
   loadFreeWriteAnnotations: (path: string | null) => Promise<void>;
   scheduleSaveFreeWriteAnnotations: () => void;
-  flushFreeWriteAnnotations: () => Promise<void>;
+  flushFreeWriteAnnotations: () => Promise<boolean>;
   exportTeachingReachPdf: (from: number, to: number) => Promise<void>;
   clearAllFreeWriteAnnotations: () => Promise<boolean>;
   applyFreeWriteAnnotationUpdater: (

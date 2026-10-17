@@ -501,7 +501,7 @@ export function FreeWritePdfPane() {
             className="relative mx-auto w-fit max-w-full"
             data-pdf-page
           >
-            <canvas ref={setCanvasNode} className="block max-w-full" />
+            <canvas ref={setCanvasNode} className="block h-auto max-w-full" />
             {canvasSize.width > 0 && canvasSize.height > 0 ? (
               <FreeWritePdfAnnotationOverlay
                 page={page}

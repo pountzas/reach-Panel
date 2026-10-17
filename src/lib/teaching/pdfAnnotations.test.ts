@@ -39,6 +39,14 @@ describe("pdfAnnotations", () => {
     ).toThrow();
   });
 
+  it("normalizes damaged page entries to empty strokes/texts", () => {
+    const doc = parsePdfAnnotationJson(
+      '{"schemaVersion":1,"pages":{"1":{},"2":{"strokes":null,"texts":[null]}}}',
+    );
+    expect(doc.pages["1"]).toEqual({ strokes: [], texts: [] });
+    expect(doc.pages["2"]).toEqual({ strokes: [], texts: [] });
+  });
+
   it("undo stack pops last action and caps at 50", () => {
     const stack = createUndoStack(50);
     const log: number[] = [];

@@ -78,7 +78,7 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
   },
   pickTeachingPdf: async () => {
     try {
-      await get().flushFreeWriteAnnotations();
+      if (!(await get().flushFreeWriteAnnotations())) return;
       const path = await invoke<string | null>("cmd_pick_teaching_pdf");
       if (!path) return;
       const existing = get().teachingPdfLibrary.find((e) => e.path === path);
@@ -104,7 +104,7 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
   },
   closeTeachingPdf: async () => {
     try {
-      await get().flushFreeWriteAnnotations();
+      if (!(await get().flushFreeWriteAnnotations())) return;
       const teachingPdfLibrary = clearTeachingPdf();
       await invoke("cmd_save_teaching_pdfs", { entries: teachingPdfLibrary });
       freeWriteAnnotationsPath = null;
@@ -249,7 +249,7 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
       freeWriteSaveTimer = null;
     }
     const state = get();
-    if (!state.freeWriteAnnotationDirty || !freeWriteAnnotationsPath) return;
+    if (!state.freeWriteAnnotationDirty || !freeWriteAnnotationsPath) return true;
     try {
       const result = await invoke<{
         reachPath: string;
@@ -262,9 +262,11 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
       if (result.appearanceWarning) {
         notify.info(result.appearanceWarning);
       }
+      return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       notify.error(message);
+      return false;
     }
   },
   exportTeachingReachPdf: async (from, to) => {
@@ -278,7 +280,7 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
       return;
     }
     try {
-      await get().flushFreeWriteAnnotations();
+      if (!(await get().flushFreeWriteAnnotations())) return;
       const suggestedName = suggestedExportFileName(active.path, from, to);
       const destPath = await invoke<string | null>(
         "cmd_pick_teaching_reach_export_path",

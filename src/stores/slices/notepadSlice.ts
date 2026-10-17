@@ -25,14 +25,31 @@ export const createNotepadSlice: StateCreator<
     if (state.freeWriteFocus === "pdfText") {
       const textId = state.freeWriteSelectedTextId;
       if (!textId) return;
+      const greek = greekComposeEnabled({
+        typingLanguage: state.settings.typingLanguage,
+        keyboardLayout: state.keyboardLayout,
+        languageLessonActive: true,
+        lessonLanguage:
+          state.settings.typingLanguage === "el"
+            ? "el"
+            : state.settings.languageLessonLanguage,
+      });
       let nextBody = "";
+      let pendingAccent = state.greekPendingAccent;
       get().applyFreeWriteAnnotationUpdater(
         (doc) => {
           const next = clonePdfAnnotationDoc(doc);
           for (const page of Object.values(next.pages)) {
             const box = page.texts.find((t) => t.id === textId);
             if (box) {
-              box.body = `${box.body}${ch}`;
+              const result = processCharacterInput(
+                box.body,
+                state.greekPendingAccent,
+                ch,
+                { greekCompose: greek },
+              );
+              box.body = result.buffer;
+              pendingAccent = result.pendingAccent;
               nextBody = box.body;
               break;
             }
@@ -41,6 +58,7 @@ export const createNotepadSlice: StateCreator<
         },
         { pushUndo: false },
       );
+      set({ greekPendingAccent: pendingAccent });
       syncTeachingSuggestions({ get, set, buffer: nextBody });
       return;
     }

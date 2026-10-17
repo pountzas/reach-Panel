@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Teaching keyboard Minimize / Focus** (Language and Mathematics): header controls hide keys while keeping the window size; Focus auto-minimizes until an in-app input (or physical typing) restores the keyboard. States are not persisted (#272).
 - Teaching Spelling and Free write (notepad / PDF text) produce and apply suggestion chips when helpers and suggestions are on (#270).
 
+### Removed
+
+- Legacy v1 features that were already hidden: **Phrases**, **Quick Actions**, **Macro Builder** and **head tracking** (#232). **On first launch this version permanently deletes their saved data** (custom phrases, quick actions and macros); it is not kept in profile exports and cannot be restored.
+- The large-header sizing option and the legacy free-float section layouts. Older settings files fall back to the default docked layout.
+
 ### Fixed
 
 - Text-field detection: number inputs (spinbutton) count as text, select-only comboboxes (Chromium `<select>`, Base UI/shadcn Select buttons) and read-only custom text no longer do, and contenteditable iframe editors (TinyMCE, CKEditor 4) are detected.
