@@ -63,10 +63,10 @@ jobs:
             exit 1
           fi
 
-      - uses: expo/expo-github-action@v9
+      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # 9.0.0
         if: steps.bump.outputs.should_release == 'true'
         with:
-          eas-version: latest
+          eas-version: 25.2.0
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Bump version files
@@ -165,11 +165,11 @@ jobs:
             echo "::error::Missing Vercel secrets for install site deploy: ${missing[*]}"
             exit 1
           fi
-          npx vercel@latest deploy docs/install --prod --yes --token="$VERCEL_TOKEN"
+          npx vercel@64.5.0 deploy docs/install --prod --yes --token="$VERCEL_TOKEN"
 
       - name: Create GitHub pre-release
         if: steps.bump.outputs.should_release == 'true'
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: companion-v${{ steps.bump.outputs.new_version }}
           name: ReachPanel Companion v${{ steps.bump.outputs.new_version }}

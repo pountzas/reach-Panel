@@ -35,8 +35,24 @@ describe("release-android.yml downloads landing contract", () => {
     }
   });
 
-  it("uses Node 22 so eas-cli@latest can install", () => {
+  it("uses Node 22 so pinned eas-cli can install", () => {
     expect(yaml).toMatch(/node-version:\s*22\b/);
+  });
+
+  it("pins third-party actions and CLIs (no floating tags or @latest)", () => {
+    const thirdPartyUses = [
+      ...yaml.matchAll(/^\s*-?\s*uses:\s*(?!actions\/)([^\s#]+)/gm),
+    ].map((m) => m[1]);
+
+    expect(thirdPartyUses.length).toBeGreaterThan(0);
+    for (const uses of thirdPartyUses) {
+      expect(uses).toMatch(/@[0-9a-f]{40}$/);
+      expect(uses).not.toMatch(/@(v\d+|stable|latest)$/);
+    }
+    expect(yaml).toMatch(/eas-version:\s*["']?\d+\.\d+\.\d+/);
+    expect(yaml).not.toMatch(/eas-version:\s*["']?latest["']?/);
+    expect(yaml).toMatch(/npx vercel@\d+\.\d+\.\d+/);
+    expect(yaml).not.toMatch(/npx vercel@latest/);
   });
 
   it("serializes downloads/latest.json writes with Windows via concurrency group", () => {
