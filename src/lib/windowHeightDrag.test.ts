@@ -1,11 +1,12 @@
-import { describe, expect, it } from "vitest";
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  attachWindowHeightPointerEndListeners,
   nextWindowHeightRatioFromScreenY,
   resolveWindowHeightDragRegion,
   shouldApplyLiveWindowHeightRatio,
 } from "./windowHeightDrag";
 import { WINDOW_HEIGHT_RATIO_MAX, WINDOW_HEIGHT_RATIO_MIN } from "./sectionLayouts";
-import { V1_HIDDEN_FEATURES, effectiveLargeHeaders } from "./v1HiddenFeatures";
 import type { MonitorInfo } from "./types";
 
 const monitor = (partial: Partial<MonitorInfo> & Pick<MonitorInfo, "height">): MonitorInfo => ({
@@ -20,13 +21,24 @@ const monitor = (partial: Partial<MonitorInfo> & Pick<MonitorInfo, "height">): M
 });
 
 describe("shouldApplyLiveWindowHeightRatio", () => {
-  it("allows live height preview when focus mode is active and not collapsed", () => {
+  it("allows live height when focus keyboard is open even if settings.collapsed", () => {
     expect(
       shouldApplyLiveWindowHeightRatio({
-        collapsed: false,
+        collapsed: true,
         focusModeActive: true,
+        focusModeKeyboardVisible: true,
       }),
     ).toBe(true);
+  });
+
+  it("skips live height for focus FAB (keyboard hidden, collapsed)", () => {
+    expect(
+      shouldApplyLiveWindowHeightRatio({
+        collapsed: true,
+        focusModeActive: true,
+        focusModeKeyboardVisible: false,
+      }),
+    ).toBe(false);
   });
 
   it("skips live height preview when collapsed even outside focus mode", () => {
@@ -34,8 +46,19 @@ describe("shouldApplyLiveWindowHeightRatio", () => {
       shouldApplyLiveWindowHeightRatio({
         collapsed: true,
         focusModeActive: false,
+        focusModeKeyboardVisible: false,
       }),
     ).toBe(false);
+  });
+
+  it("allows live height in normal expanded mode", () => {
+    expect(
+      shouldApplyLiveWindowHeightRatio({
+        collapsed: false,
+        focusModeActive: false,
+        focusModeKeyboardVisible: false,
+      }),
+    ).toBe(true);
   });
 });
 
@@ -76,9 +99,9 @@ describe("nextWindowHeightRatioFromScreenY", () => {
 
   it("clamps when the pointer is above or below the allowed band", () => {
     expect(nextWindowHeightRatioFromScreenY(0, region)).toBe(WINDOW_HEIGHT_RATIO_MAX);
-    // Below 35% of the region → min ratio
+    // Below 25% of the region → min ratio
     expect(nextWindowHeightRatioFromScreenY(950, region)).toBe(WINDOW_HEIGHT_RATIO_MIN);
-    expect(WINDOW_HEIGHT_RATIO_MIN).toBe(0.35);
+    expect(WINDOW_HEIGHT_RATIO_MIN).toBe(0.25);
   });
 
   it("allows shrinking to 35% of the region", () => {
@@ -91,9 +114,38 @@ describe("nextWindowHeightRatioFromScreenY", () => {
   });
 });
 
-describe("height grips leave largeHeaders v1-hidden", () => {
-  it("keeps largeHeaders hidden so grips replace whole-header drag", () => {
-    expect(V1_HIDDEN_FEATURES.largeHeaders).toBe(true);
-    expect(effectiveLargeHeaders(true)).toBe(false);
+describe("attachWindowHeightPointerEndListeners", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("ignores pointerup from a different pointer than the drag", () => {
+    const onEnd = vi.fn();
+    const detach = attachWindowHeightPointerEndListeners(7, onEnd);
+    window.dispatchEvent(
+      new PointerEvent("pointerup", { pointerId: 3, bubbles: true }),
+    );
+    expect(onEnd).not.toHaveBeenCalled();
+    detach();
+  });
+
+  it("ends the drag on pointerup for the matching pointerId", () => {
+    const onEnd = vi.fn();
+    const detach = attachWindowHeightPointerEndListeners(7, onEnd);
+    window.dispatchEvent(
+      new PointerEvent("pointerup", { pointerId: 7, bubbles: true }),
+    );
+    expect(onEnd).toHaveBeenCalledTimes(1);
+    detach();
+  });
+
+  it("stops listening after detach so a later matching pointerup is ignored", () => {
+    const onEnd = vi.fn();
+    const detach = attachWindowHeightPointerEndListeners(7, onEnd);
+    detach();
+    window.dispatchEvent(
+      new PointerEvent("pointerup", { pointerId: 7, bubbles: true }),
+    );
+    expect(onEnd).not.toHaveBeenCalled();
   });
 });

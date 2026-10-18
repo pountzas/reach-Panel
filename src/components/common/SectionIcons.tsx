@@ -722,3 +722,61 @@ export function TransparentKeyboardIcon({ className = iconClass }: IconProps) {
     </svg>
   );
 }
+
+/** Document with folded corner — PDF / export file. */
+export function PdfFileIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h3.2a1.4 1.4 0 0 1 0 2.8H9.2V18" />
+      <path d="M14 13v5h1.6a1.5 1.5 0 0 0 0-3H14" />
+    </svg>
+  );
+}
+
+/** Text label tool. */
+export function TextToolIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M4 7V5h16v2" />
+      <path d="M12 5v14" />
+      <path d="M9 19h6" />
+    </svg>
+  );
+}
+
+/**
+ * Text with slash — FaTextSlash (Font Awesome 6 Solid, CC BY 4.0).
+ * https://fontawesome.com/icons/text-slash
+ */
+export function TextSlashIcon({ className = iconClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 640 512"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L355.7 253.5 400.2 96H503L497 120.2c-4.3 17.1 6.1 34.5 23.3 38.8s34.5-6.1 38.8-23.3l16-64c2.4-9.6 .2-19.7-5.8-27.5S553.9 32 544 32H376.1h-.3H192c-14.7 0-27.5 10-31 24.2l-9.3 37.3L38.8 5.1zm168 131.7c.1-.3 .2-.7 .3-1L217 96H333.7L301.3 210.8l-94.5-74.1zM243.3 416H192c-17.7 0-32 14.3-32 32s14.3 32 32 32H352c17.7 0 32-14.3 32-32s-14.3-32-32-32H309.8l17.6-62.1L272.9 311 243.3 416z" />
+    </svg>
+  );
+}

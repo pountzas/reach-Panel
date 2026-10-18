@@ -50,17 +50,7 @@ export function ProfilePanel({ snapshot, loading, error, onRefresh }: Props) {
             label="Predictions"
             value={flag(settings.predictionEnabled)}
           />
-          <Row label="Phrases section" value={flag(settings.phrasesVisible)} />
-          <Row
-            label="Quick actions"
-            value={flag(settings.quickActionsVisible)}
-          />
           <Row label="Mouse / trackpad" value={flag(settings.mouseVisible)} />
-          <Row label="Phrases synced" value={String(snapshot.phrases.length)} />
-          <Row
-            label="Quick actions synced"
-            value={String(snapshot.quickActions.length)}
-          />
           <Text style={styles.note}>
             API keys never sync. Speak uses this tablet while connected.
           </Text>

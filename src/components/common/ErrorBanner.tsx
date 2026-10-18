@@ -15,7 +15,9 @@ import {
  * Groq API key). All other errors are routed to toasts via the store.
  */
 export function ErrorBanner() {
-  const { lastError, setLastError, setShowSettings } = useAppStore();
+  const lastError = useAppStore((s) => s.lastError);
+  const setLastError = useAppStore((s) => s.setLastError);
+  const setShowSettings = useAppStore((s) => s.setShowSettings);
   const { t } = useTranslation();
 
   if (!lastError || !isStickySpeechError(lastError)) {

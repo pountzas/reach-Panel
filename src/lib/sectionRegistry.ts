@@ -1,12 +1,10 @@
-import { resolveV1SectionVisibility } from "./v1HiddenFeatures";
-
 /** Extensible section ids. Keyboard is always the docked base. */
-export type SectionId = "quick-actions" | "phrases" | "input-row";
+export type SectionId = "teaching" | "input-row";
 
 /** Sections that can sit above the keyboard in the stack (and undock). */
 export type StackableSectionId = Exclude<SectionId, "input-row">;
 
-export type SectionVisibilityKey = "quickActions" | "phrases";
+export type SectionVisibilityKey = "teaching";
 
 export interface SectionDefinition {
   id: SectionId;
@@ -18,31 +16,25 @@ export interface SectionDefinition {
 }
 
 /**
- * Effective QA/phrases visibility for the docked stack and window height.
- * v1 flags force QA/phrases off unless the music lesson slot is showing.
+ * Teaching section visibility for the docked stack and window height.
+ * Driven only by the music-lesson / teaching slot gate.
  */
 export function resolveDockedSectionVisibility(input: {
-  quickActionsVisible: boolean;
-  phrasesVisible: boolean;
   lessonSlotVisible?: boolean;
 }): Record<SectionVisibilityKey, boolean> {
-  return resolveV1SectionVisibility(input);
+  return {
+    teaching: Boolean(input.lessonSlotVisible),
+  };
 }
 
 export const KEYBOARD_SECTION_ID: SectionId = "input-row";
 
 export const SECTION_REGISTRY: readonly SectionDefinition[] = [
   {
-    id: "quick-actions",
-    defaultWeight: 10,
-    canUndock: true,
-    visibilityKey: "quickActions",
-  },
-  {
-    id: "phrases",
+    id: "teaching",
     defaultWeight: 38,
     canUndock: true,
-    visibilityKey: "phrases",
+    visibilityKey: "teaching",
   },
   {
     id: "input-row",
@@ -52,10 +44,7 @@ export const SECTION_REGISTRY: readonly SectionDefinition[] = [
   },
 ] as const;
 
-export const DEFAULT_STACK_ORDER: readonly StackableSectionId[] = [
-  "quick-actions",
-  "phrases",
-];
+export const DEFAULT_STACK_ORDER: readonly StackableSectionId[] = ["teaching"];
 
 export function getSectionDefinition(id: SectionId): SectionDefinition {
   const found = SECTION_REGISTRY.find((entry) => entry.id === id);
@@ -71,4 +60,16 @@ export function isStackableSectionId(id: SectionId): id is StackableSectionId {
 
 export function defaultWeightFor(id: SectionId): number {
   return getSectionDefinition(id).defaultWeight;
+}
+
+/** Legacy stack ids from pre-teaching profiles. */
+const LEGACY_STACKABLE_IDS = new Set(["quick-actions", "phrases", "teaching"]);
+
+export function coerceStackableSectionId(
+  id: string,
+): StackableSectionId | null {
+  if (id === "teaching" || id === "phrases") return "teaching";
+  if (id === "quick-actions") return null;
+  if (LEGACY_STACKABLE_IDS.has(id)) return null;
+  return null;
 }

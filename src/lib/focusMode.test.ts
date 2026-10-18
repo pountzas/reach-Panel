@@ -186,7 +186,7 @@ describe("focusMode", () => {
   it("mini toolbar padding insets the height grip from the left like the main header", () => {
     const className = focusModeToolbarClassName(false);
     expect(className.split(/\s+/)).toEqual(
-      expect.arrayContaining(["pl-3", "pr-1", "pt-1", "pb-0"]),
+      expect.arrayContaining(["pl-3", "pr-1", "py-0"]),
     );
     expect(className.split(/\s+/)).not.toContain("gap-1");
   });

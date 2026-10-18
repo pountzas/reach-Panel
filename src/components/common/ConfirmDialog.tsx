@@ -5,6 +5,7 @@ import {
   useRef,
   type CSSProperties,
 } from "react";
+import { createPortal } from "react-dom";
 import type { SurfaceColors } from "../../lib/colorProfiles";
 
 export type ConfirmDialogProps = {
@@ -105,7 +106,9 @@ export function ConfirmDialog({
     color: confirmTextColor ?? "#ffffff",
   };
 
-  return (
+  // Portal to body so `contain: layout paint` on Docked/Floating sections
+  // cannot trap or clip this fixed overlay.
+  return createPortal(
     <Activity mode={open ? "visible" : "hidden"}>
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
         <div
@@ -144,6 +147,7 @@ export function ConfirmDialog({
           </div>
         </div>
       </div>
-    </Activity>
+    </Activity>,
+    document.body,
   );
 }

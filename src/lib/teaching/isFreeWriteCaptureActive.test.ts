@@ -26,6 +26,18 @@ describe("isFreeWriteCaptureActive", () => {
   it("is false when Music subject", () => {
     expect(isFreeWriteCaptureActive({ ...base, teachingLesson: "music" })).toBe(false);
   });
+
+  it("is true on PDF text focus", () => {
+    expect(
+      isFreeWriteCaptureActive({ ...base, freeWriteFocus: "pdfText" }),
+    ).toBe(true);
+  });
+
+  it("is false on PDF viewer focus", () => {
+    expect(
+      isFreeWriteCaptureActive({ ...base, freeWriteFocus: "pdf" }),
+    ).toBe(false);
+  });
 });
 
 describe("isLanguageSpellingTabActive", () => {

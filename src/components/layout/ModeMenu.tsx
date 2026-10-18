@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   APP_MODE_OPTIONS,
   isTeachingSessionActive,
@@ -10,12 +11,14 @@ import {
   MODE_MENU_PAD,
   MODE_MENU_WIDTH,
 } from "../../lib/focusMode";
+import { MOTION, prefersReducedMotion } from "../../lib/motion";
 import { useCompanionTabletEnabled } from "../../hooks/useCompanionTabletEnabled";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 
 export interface ModeMenuProps {
   onShowKeyboard: () => void;
+  entered?: boolean;
 }
 
 function CheckMark() {
@@ -35,10 +38,24 @@ function CheckMark() {
   );
 }
 
-export function ModeMenu({ onShowKeyboard }: ModeMenuProps) {
+export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
   const { t } = useTranslation();
   const companionTabletEnabled = useCompanionTabletEnabled();
-  const settings = useAppStore((s) => s.settings);
+  const {
+    keyboardSectionMode,
+    focusModeOverride,
+    micMode,
+    headerBgColor,
+    headerTextColor,
+  } = useAppStore(
+    useShallow((s) => ({
+      keyboardSectionMode: s.settings.keyboardSectionMode,
+      focusModeOverride: s.settings.focusModeOverride,
+      micMode: s.settings.micMode,
+      headerBgColor: s.settings.headerBgColor,
+      headerTextColor: s.settings.headerTextColor,
+    })),
+  );
   const companionModeActive = useAppStore((s) => s.companionModeActive);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const setAppMode = useAppStore((s) => s.setAppMode);
@@ -46,35 +63,31 @@ export function ModeMenu({ onShowKeyboard }: ModeMenuProps) {
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
 
   const menuRef = useRef<HTMLDivElement>(null);
-  const [enterAnim, setEnterAnim] = useState(true);
 
   const teachingActive = isTeachingSessionActive(
     musicTeachingEnabled,
-    settings.keyboardSectionMode,
+    keyboardSectionMode,
   );
   const selected = resolveSelectedAppMode({
     companionModeActive,
     teachingActive,
-    focusModeOverride:
-      settings.focusModeOverride === true ? true : undefined,
-    micMode: settings.micMode === true,
+    focusModeOverride: focusModeOverride === true ? true : undefined,
+    micMode: micMode === true,
   });
 
-  const bgColor = settings.headerBgColor ?? "#1e293b";
-  const textColor = settings.headerTextColor ?? "#ffffff";
-  const reduceMotion =
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const bgColor = headerBgColor ?? "#1e293b";
+  const textColor = headerTextColor ?? "#ffffff";
+  const reduce = prefersReducedMotion();
+  const show = entered || reduce;
+  const [promoteLayer, setPromoteLayer] = useState(false);
 
   useEffect(() => {
-    if (reduceMotion) {
-      setEnterAnim(false);
+    if (reduce) {
+      setPromoteLayer(false);
       return;
     }
-    const id = requestAnimationFrame(() => setEnterAnim(false));
-    return () => cancelAnimationFrame(id);
-  }, [reduceMotion]);
+    setPromoteLayer(true);
+  }, [show, reduce]);
 
   const onShowKeyboardClick = async () => {
     await closeModeMenu();
@@ -135,12 +148,19 @@ export function ModeMenu({ onShowKeyboard }: ModeMenuProps) {
         paddingBottom: MODE_MENU_PAD,
         backgroundColor: bgColor,
         color: textColor,
-        opacity: enterAnim && !reduceMotion ? 0 : 1,
-        transform:
-          enterAnim && !reduceMotion ? "translateX(8px)" : "translateX(0)",
-        transition: reduceMotion
+        opacity: show ? 1 : 0,
+        transform: show ? "translateX(0)" : "translateX(8px)",
+        transition: reduce
           ? undefined
-          : "opacity 150ms ease, transform 150ms ease",
+          : `opacity ${MOTION.fast}ms var(--rp-ease-out), transform ${MOTION.fast}ms var(--rp-ease-out)`,
+        willChange: promoteLayer ? "opacity, transform" : undefined,
+      }}
+      onTransitionEnd={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.propertyName !== "opacity" && event.propertyName !== "transform") {
+          return;
+        }
+        setPromoteLayer(false);
       }}
       onKeyDown={onKeyDown}
     >

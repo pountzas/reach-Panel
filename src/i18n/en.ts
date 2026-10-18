@@ -22,10 +22,6 @@ export const en = {
 
   add: "Add",
 
-  appNotInstalled: "{app} is not installed.",
-
-  installApp: "Install",
-
   profile: "Profile",
 
   accessibilityScreen: "Accessibility Screen",
@@ -79,7 +75,7 @@ export const en = {
 
   freeWriteOpenPdf: "Open PDF…",
 
-  freeWriteRecentPdfs: "Recent PDFs",
+  freeWriteClosePdf: "Close PDF",
 
   freeWritePdfMissing: "This PDF file could not be found.",
 
@@ -89,7 +85,44 @@ export const en = {
 
   freeWritePdfNextPage: "Next page",
 
-  freeWriteRemovePdf: "Remove",
+  freeWritePdfGoToPage: "Go to page",
+
+  freeWritePdfPointer: "Pointer",
+
+  freeWritePdfPen: "Pen",
+
+  freeWritePdfEraser: "Eraser",
+
+  freeWritePdfTextTool: "Text",
+
+  freeWritePdfUndo: "Undo",
+
+  freeWritePdfRedo: "Redo",
+
+  freeWritePdfClearAll: "Clear all",
+
+  freeWritePdfClearAllConfirm:
+    "Clear all ink and text for this PDF? This deletes the Reach working copy.",
+
+  freeWritePdfDeleteText: "Delete text",
+
+  freeWritePdfExport: "Export PDF…",
+
+  freeWritePdfExportFrom: "From",
+
+  freeWritePdfExportTo: "To",
+
+  freeWritePdfExportAll: "All pages",
+
+  freeWritePdfExportCurrent: "Current page",
+
+  freeWritePdfExportSave: "Export…",
+
+  freeWritePdfExportCancel: "Cancel",
+
+  freeWritePdfExportInvalidRange: "Enter a valid From/To page range.",
+
+  freeWritePdfExportSuccess: "PDF exported.",
 
   comingSoon: "Coming soon",
 
@@ -160,16 +193,12 @@ export const en = {
   modeTabletsHint:
     "Normal and Focus are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion stays unavailable until the bridge is started or a tablet is paired; it becomes the selected mode while a tablet is connected.",
 
-  focusModeAutoDescription:
-    "On a single display or mirrored setup, the keyboard appears automatically when you tap an input field.",
+  showTeachingInputHelpers: "Show input helpers in Teaching mode",
+
+  showTeachingInputHelpersDescription:
+    "Suggestions bar and mic while Teaching is active.",
 
   focusModeOverrideLabel: "Focus mode",
-
-  focusModeOverrideAuto: "Auto",
-
-  focusModeOverrideOn: "On",
-
-  focusModeOverrideOff: "Off",
 
   focusModeTransparent: "Transparent keyboard",
 
@@ -191,11 +220,6 @@ export const en = {
   transparentKeyColorSilver: "Silver",
 
   focusModeCollapse: "Back to Focus mode",
-
-  largeHeaders: "Large headers for easier resize",
-
-  largeHeadersHint:
-    "Doubles header height and header buttons. Drag the empty header area to change section or window height.",
 
   primary: "Primary",
 
@@ -222,14 +246,6 @@ export const en = {
   speedFast: "Fast",
 
   speedVeryFast: "Very fast",
-
-  quickActions: "Quick Actions",
-
-  showQuickActionsBar: "Show quick actions bar",
-
-  phrasesAndSuggestions: "Phrases & Suggestions",
-
-  showPhrasesSection: "Show phrases section",
 
   showSuggestionsBar: "Show suggestions bar",
 
@@ -279,10 +295,11 @@ export const en = {
   taskbarPositionFailed: "Could not change taskbar position.",
 
   opacity: "Opacity",
+  keyboardFontSize: "Keyboard font size",
 
   appLanguage: "App language",
 
-  appLanguageHint: "Menus, phrases, and speech",
+  appLanguageHint: "Menus and speech",
 
   launchAtWindowsSignIn: "Start ReachPanel when Windows starts",
 
@@ -312,24 +329,18 @@ export const en = {
 
   languagePortuguese: "Portuguese",
 
-  resetSettings: "Reset settings to defaults",
-
-  resetSettingsHint:
-
-    "Restores layout, monitor position, panel sizes, and all other settings to their defaults.",
-
   resetUi: "Reset UI",
 
   resetUiHint:
-    "Restores all settings (theme, visibility, layout, languages) to defaults. Keeps quick actions, macros, phrases, and predictions.",
+    "Restores all settings (theme, visibility, layout, languages) to defaults. Keeps predictions.",
 
   wipeProfile: "Wipe profile",
 
   wipeProfileHint:
-    "Clears quick actions, macros, phrases, predictions, and head tracking, and resets all settings to defaults.",
+    "Clears predictions and resets all settings to defaults.",
 
   wipeProfileConfirm:
-    "Wipe this profile? All quick actions, macros, phrases, predictions, and settings will be reset.",
+    "Wipe this profile? All predictions and settings will be reset.",
 
   saveProfile: "Save profile",
 
@@ -344,29 +355,9 @@ export const en = {
 
   profileWiped: "Profile wiped.",
 
-  layoutEdit: "Edit layout",
-
-  layoutEditDone: "Done",
-
   dragToMove: "Drag to move",
 
-  macroBuilder: "Macro Builder",
-
-  headTracking: "Head Tracking",
-
-  phrases: "Phrases",
-
-  emergency: "Emergency",
-
-  showEmergency: "Emergency",
-
-  predictionsOff: "Predictions off",
-
   enable: "Enable",
-
-  suggest: "Suggest:",
-
-  turnOff: "Turn off",
 
   inputError: "Input error:",
 
@@ -400,8 +391,6 @@ export const en = {
 
   synthesizer: "Synthesizer",
 
-  synthesizerHint: "Tap keys to play notes",
-
   synthesizerVolume: "Volume",
 
   dictationStart: "Start dictation",
@@ -414,9 +403,6 @@ export const en = {
 
   dictationErrorNoLanguage:
     "Speech recognition for this typing language is not installed. Add the speech pack in Windows Settings → Time & language → Speech (or Language & region), then try again.",
-
-  dictationErrorUnavailable:
-    "Voice dictation is only available on Windows.",
 
   dictationErrorSpeechPrivacy:
     "Online speech recognition is turned off in Windows. Turn it on in Privacy & security → Speech, then try again. (This is not a microphone permission prompt.)",
@@ -451,10 +437,6 @@ export const en = {
 
   unmute: "Unmute",
 
-  teachMusic: "Teach",
-
-  stopTeaching: "Stop teaching",
-
   musicLesson: "Music lesson",
 
   partiture: "Partiture",
@@ -476,10 +458,6 @@ export const en = {
   builtInSongs: "Built-in",
 
   importedSongs: "Imported",
-
-  playingNote: "Playing",
-
-  waitingForNote: "Play",
 
   lessonComplete: "Song complete!",
 
@@ -510,11 +488,11 @@ export const en = {
 
   octaveCount5: "5 octaves",
 
-  showKeyboardModeToggle: "Show keyboard / synthesizer toggle",
-
   keyboardSectionMode: "Keyboard section mode",
 
   inputAreaNormal: "Normal view",
+
+  teachingKeyboardFocus: "Focus",
 
   inputAreaCompact: "Maximize keyboard and trackpad",
 
@@ -554,8 +532,6 @@ export const en = {
 
   updateFailed: "Update failed:",
 
-  updateRetry: "Retry",
-
   checkForUpdates: "Check for updates",
 
   updateUpToDate: "You are on the latest version.",
@@ -567,26 +543,6 @@ export const en = {
   settingsGeneral: "General",
 
   settingsToolsMaintenance: "Tools & Maintenance",
-
-  quickActionLabel: "Label",
-
-  quickActionTarget: "Target (app or URL)",
-
-  quickActionTypeApp: "App",
-
-  quickActionTypeUrl: "URL",
-
-  quickActionAdd: "Add action",
-
-  quickActionDelete: "Delete",
-
-  quickActionSearchApps: "Search installed programs…",
-
-  quickActionBrowse: "Browse…",
-
-  quickActionLoadingApps: "Loading installed programs…",
-
-  quickActionNoApps: "No matching programs found.",
 
   settingsAbout: "About",
 

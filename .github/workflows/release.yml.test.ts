@@ -40,4 +40,17 @@ describe("release.yml Windows Blob downloads upload", () => {
     expect(yaml).toMatch(/queue:\s*max/);
     expect(yaml).toMatch(/cancel-in-progress:\s*false/);
   });
+
+  it("pins third-party actions to full commit SHAs (no floating tags)", () => {
+    const thirdPartyUses = [
+      ...yaml.matchAll(/^\s*-?\s*uses:\s*(?!actions\/)([^\s#]+)/gm),
+    ].map((m) => m[1]);
+
+    expect(thirdPartyUses.length).toBeGreaterThan(0);
+    for (const uses of thirdPartyUses) {
+      expect(uses).toMatch(/@[0-9a-f]{40}$/);
+      expect(uses).not.toMatch(/@(v\d+|stable|latest)$/);
+    }
+    expect(yaml).toMatch(/toolchain:\s*["']?\d+\.\d+/);
+  });
 });

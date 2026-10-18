@@ -1,6 +1,7 @@
 import {
   DEFAULT_STACK_ORDER,
   KEYBOARD_SECTION_ID,
+  coerceStackableSectionId,
   defaultWeightFor,
   getSectionDefinition,
   isStackableSectionId,
@@ -9,7 +10,6 @@ import {
 } from "./sectionRegistry";
 import {
   SECTION_HEADER_HEIGHT_PX,
-  SECTION_HEADER_HEIGHT_LARGE_PX,
   sectionHeaderHeightPx,
 } from "./sectionLayouts";
 
@@ -32,21 +32,8 @@ export interface SectionStackState {
   undocked: Partial<Record<StackableSectionId, FloatRect>>;
 }
 
-/** Legacy free-float layout (migration only). */
-export interface LegacySectionLayout {
-  xPct: number;
-  yPct: number;
-  wPct: number;
-  hPct: number;
-  minimized?: boolean;
-  expandedHPct?: number;
-}
-
-export type LegacySectionLayouts = Partial<Record<SectionId, LegacySectionLayout>>;
-
 export interface SectionVisibility {
-  quickActions: boolean;
-  phrases: boolean;
+  teaching: boolean;
 }
 
 export interface DockedSlot {
@@ -70,8 +57,7 @@ export function createDefaultSectionStack(): SectionStackState {
   return {
     order: [...DEFAULT_STACK_ORDER],
     weights: {
-      "quick-actions": defaultWeightFor("quick-actions"),
-      phrases: defaultWeightFor("phrases"),
+      teaching: defaultWeightFor("teaching"),
       "input-row": defaultWeightFor("input-row"),
     },
     minimized: {},
@@ -81,12 +67,13 @@ export function createDefaultSectionStack(): SectionStackState {
 }
 
 export function normalizeStackOrder(
-  order: StackableSectionId[] | undefined,
+  order: readonly string[] | undefined,
 ): StackableSectionId[] {
   const seen = new Set<StackableSectionId>();
   const next: StackableSectionId[] = [];
-  for (const id of order ?? []) {
-    if (!isStackableSectionId(id) || seen.has(id)) continue;
+  for (const raw of order ?? []) {
+    const id = coerceStackableSectionId(raw);
+    if (id == null || seen.has(id)) continue;
     seen.add(id);
     next.push(id);
   }
@@ -96,55 +83,58 @@ export function normalizeStackOrder(
   return next;
 }
 
+function migratePartialRecord<T>(
+  partial: Partial<Record<string, T>> | undefined,
+): Partial<Record<SectionId, T>> {
+  const next: Partial<Record<SectionId, T>> = {};
+  if (!partial) return next;
+  for (const [raw, value] of Object.entries(partial)) {
+    if (value === undefined) continue;
+    if (raw === "input-row") {
+      next["input-row"] = value;
+      continue;
+    }
+    const id = coerceStackableSectionId(raw);
+    if (id == null) continue;
+    // Prefer an explicit teaching entry over a legacy phrases alias.
+    if (next[id] !== undefined && raw !== "teaching") continue;
+    next[id] = value;
+  }
+  return next;
+}
+
 export function normalizeSectionStack(
   stack: SectionStackState | undefined,
 ): SectionStackState {
   const base = createDefaultSectionStack();
   if (!stack) return base;
+  const weights = {
+    ...base.weights,
+    ...migratePartialRecord(stack.weights as Partial<Record<string, number>>),
+  };
+  const minimized = migratePartialRecord(
+    stack.minimized as Partial<Record<string, boolean>>,
+  );
+  const expandedWeights = migratePartialRecord(
+    stack.expandedWeights as Partial<Record<string, number>>,
+  );
+  const undocked = migratePartialRecord(
+    stack.undocked as Partial<Record<string, FloatRect>>,
+  ) as SectionStackState["undocked"];
   return {
-    order: normalizeStackOrder(stack.order),
-    weights: { ...base.weights, ...stack.weights },
-    minimized: { ...stack.minimized },
-    expandedWeights: { ...stack.expandedWeights },
-    undocked: { ...stack.undocked },
+    order: normalizeStackOrder(stack.order as unknown as string[]),
+    weights,
+    minimized,
+    expandedWeights,
+    undocked,
   };
 }
 
-/**
- * Prefer `sectionStack`; otherwise migrate legacy `sectionLayouts`.
- */
+/** Normalize persisted stack state, or return defaults when absent. */
 export function resolveSectionStack(
   stack: SectionStackState | undefined,
-  legacy: LegacySectionLayouts | undefined,
 ): SectionStackState {
-  if (stack && Array.isArray(stack.order)) {
-    return normalizeSectionStack(stack);
-  }
-  if (legacy && Object.keys(legacy).length > 0) {
-    return migrateLegacySectionLayouts(legacy);
-  }
-  return createDefaultSectionStack();
-}
-
-export function migrateLegacySectionLayouts(
-  legacy: LegacySectionLayouts,
-): SectionStackState {
-  const next = createDefaultSectionStack();
-  for (const id of Object.keys(legacy) as SectionId[]) {
-    const layout = legacy[id];
-    if (!layout) continue;
-    next.weights[id] = Math.max(1, layout.hPct);
-    if (layout.minimized) {
-      next.minimized[id] = true;
-      if (layout.expandedHPct != null) {
-        next.expandedWeights = {
-          ...next.expandedWeights,
-          [id]: Math.max(1, layout.expandedHPct),
-        };
-      }
-    }
-  }
-  return next;
+  return normalizeSectionStack(stack);
 }
 
 export function isSectionVisible(
@@ -154,10 +144,8 @@ export function isSectionVisible(
   const def = getSectionDefinition(id);
   if (def.visibilityKey == null) return true;
   switch (def.visibilityKey) {
-    case "quickActions":
-      return visibility.quickActions;
-    case "phrases":
-      return visibility.phrases;
+    case "teaching":
+      return visibility.teaching;
     default: {
       const _exhaustive: never = def.visibilityKey;
       return _exhaustive;
@@ -191,18 +179,24 @@ export function visibleStackSlotIds(
   return ids;
 }
 
+export type ResolveDockedSlotsOptions = {
+  /** Ephemeral minimize (e.g. teaching keyboard) — does not mutate stack.minimized. */
+  forceMinimized?: Partial<Record<SectionId, boolean>>;
+};
+
 export function resolveDockedSlots(
   stack: SectionStackState,
   visibility: SectionVisibility,
   canvasHeight: number,
-  largeHeaders: boolean,
   gapPx: number = STACK_GAP_PX,
+  options?: ResolveDockedSlotsOptions,
 ): DockedSlot[] {
   const ids = visibleStackSlotIds(stack, visibility);
   if (ids.length === 0 || canvasHeight <= 0) return [];
 
-  const headerH = sectionHeaderHeightPx(largeHeaders);
+  const headerH = sectionHeaderHeightPx();
   const gapsTotal = Math.max(0, ids.length - 1) * gapPx;
+  const forceMinimized = options?.forceMinimized;
 
   type Plan = {
     id: SectionId;
@@ -214,7 +208,9 @@ export function resolveDockedSlots(
 
   const plan: Plan[] = ids.map((id) => {
     const hole = isUndocked(stack, id);
-    const minimized = !hole && Boolean(stack.minimized[id]);
+    const minimized =
+      !hole &&
+      (Boolean(stack.minimized[id]) || Boolean(forceMinimized?.[id]));
     if (minimized) {
       return {
         id,
@@ -321,10 +317,9 @@ export function applySplitterDelta(
   deltaPx: number,
   canvasHeight: number,
   visibility: SectionVisibility,
-  largeHeaders: boolean,
 ): SectionStackState {
   if (deltaPx === 0) return stack;
-  const slots = resolveDockedSlots(stack, visibility, canvasHeight, largeHeaders);
+  const slots = resolveDockedSlots(stack, visibility, canvasHeight);
   const upper = slots.find((s) => s.id === upperId);
   const lower = slots.find((s) => s.id === lowerId);
   if (!upper || !lower) return stack;
@@ -544,6 +539,6 @@ export function defaultFloatRectFromSlot(
   );
 }
 
-export function headerHeightFor(largeHeaders: boolean): number {
-  return largeHeaders ? SECTION_HEADER_HEIGHT_LARGE_PX : SECTION_HEADER_HEIGHT_PX;
+export function headerHeightFor(): number {
+  return SECTION_HEADER_HEIGHT_PX;
 }

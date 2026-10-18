@@ -13,9 +13,9 @@ export const SPECIAL_KEY_LABELS: Record<
   string,
   { symbol: string; word: string; layout?: "stack" | "row" }
 > = {
-  backspace: { symbol: "⌫", word: "Backspace", layout: "stack" },
-  enter: { symbol: "↵", word: "Enter", layout: "stack" },
-  shift: { symbol: "⇧", word: "Shift", layout: "stack" },
+  backspace: { symbol: "⌫", word: "Backspace", layout: "row" },
+  enter: { symbol: "↵", word: "Enter", layout: "row" },
+  shift: { symbol: "⇧", word: "Shift", layout: "row" },
   space: { symbol: "␣", word: "Space", layout: "row" },
 };
 

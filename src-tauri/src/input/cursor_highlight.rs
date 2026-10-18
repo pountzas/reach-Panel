@@ -65,10 +65,12 @@ fn ensure_thread() {
     }
     let (tx, rx) = mpsc::sync_channel::<Cmd>(64);
     let _ = TX.set(tx);
-    thread::Builder::new()
+    if let Err(e) = thread::Builder::new()
         .name("reach-cursor-highlight".into())
         .spawn(move || run_loop(rx))
-        .expect("spawn cursor highlight thread");
+    {
+        eprintln!("Failed to spawn cursor highlight thread: {e}");
+    }
 }
 
 fn run_loop(rx: mpsc::Receiver<Cmd>) {

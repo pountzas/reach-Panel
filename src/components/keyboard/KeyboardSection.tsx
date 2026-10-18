@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   CollapseIcon,
   HeightGripIcon,
@@ -23,7 +24,6 @@ import {
   nextTransparentKeyColor,
   transparentKeyPalette,
   transparentOutlineStyle,
-  isInputPreviewActiveForMode,
   focusModeToolbarClassName,
 } from "../../lib/focusMode";
 import { isV1FeatureHidden } from "../../lib/v1HiddenFeatures";
@@ -32,6 +32,10 @@ import {
   isTeachingSessionActive,
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
+import {
+  computeTeachingChromeVisibility,
+  shouldStopDictationForVisibility,
+} from "../../lib/teachingInputHelpers";
 
 const INPUT_PREVIEW_STRIP_HEIGHT_PX = 48;
 const SUGGESTION_CHIP_HEIGHT_PX = 32;
@@ -48,7 +52,9 @@ export function KeyboardSection() {
   const musicSongId = useAppStore((s) => s.musicSongId);
   const importedSongs = useAppStore((s) => s.importedSongs);
   const companionSessionLive = useAppStore((s) => s.companionSessionLive);
-  const suggestionCount = useAppStore((s) => s.suggestions.length);
+  const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
+  const dictationState = useAppStore((s) => s.dictationState);
+  const stopDictation = useAppStore((s) => s.stopDictation);
   const { t } = useTranslation();
   const heightDrag = useWindowHeightDrag();
   const showSynth =
@@ -62,24 +68,30 @@ export function KeyboardSection() {
     musicTeachingEnabled,
     settings.keyboardSectionMode,
   );
-  const showInputPreview =
-    !showSynth &&
-    !compact &&
-    !teachingSessionActive &&
-    !companionSessionLive &&
-    isInputPreviewActiveForMode(settings, focusModeActive);
   const languageLessonActive = isLanguageLessonActive({
     musicTeachingEnabled,
     teachingLesson,
     settings,
+    languageSubjectTab,
   });
-  const showSuggestions =
-    !showSynth &&
-    settings.suggestionsVisible &&
-    !compact &&
-    !teachingSessionActive &&
-    !languageLessonActive;
-  const hasSuggestionChips = showSuggestions && suggestionCount > 0;
+  const { showInputPreview, showSuggestions, dictationKeyVisible } =
+    computeTeachingChromeVisibility({
+      teachingSessionActive,
+      settings,
+      showSynth,
+      compact,
+      companionSessionLive,
+      languageLessonActive,
+      focusModeActive,
+    });
+  // KeyboardSection stays mounted when Music swaps <Keyboard /> for <Synthesizer />.
+  useEffect((): void => {
+    if (shouldStopDictationForVisibility(dictationKeyVisible, dictationState)) {
+      void stopDictation();
+    }
+  }, [dictationKeyVisible, dictationState, stopDictation]);
+  /** Suggestions strip stays mounted whenever suggestions are on, so chips never resize keys. */
+  const showSuggestionsRow = showSuggestions;
   const transparentUi = isTransparentUiActive(settings, focusModeActive);
   const showTransparentToggle = focusModeActive && !showSynth && !compact;
   const showFocusModeCollapse =
@@ -97,7 +109,7 @@ export function KeyboardSection() {
   const showToolbar =
     showSynthToolbar ||
     showInputPreview ||
-    hasSuggestionChips ||
+    showSuggestionsRow ||
     showTransparentToggle ||
     showFocusModeCollapse;
   const song = musicTeachingEnabled
@@ -115,7 +127,7 @@ export function KeyboardSection() {
 
   const auxCenterMinHeightPx = showInputPreview
     ? INPUT_PREVIEW_STRIP_HEIGHT_PX
-    : hasSuggestionChips
+    : showSuggestionsRow
       ? SUGGESTION_CHIP_HEIGHT_PX
       : 0;
 
@@ -276,7 +288,7 @@ export function KeyboardSection() {
       {showToolbar &&
         (showFocusModeToolbar ? (
           <div
-            className={focusModeToolbarClassName(hasSuggestionChips)}
+            className={focusModeToolbarClassName(false)}
           >
             <div className="flex w-full items-center gap-2">
               <button
@@ -299,14 +311,14 @@ export function KeyboardSection() {
                 className={`flex min-w-0 flex-1 items-center justify-center px-1 ${
                   showInputPreview
                     ? "min-h-[48px]"
-                    : hasSuggestionChips
-                      ? "min-h-8"
+                    : showSuggestionsRow
+                      ? "min-h-7"
                       : ""
                 }`}
               >
                 <PreviewSuggestionsRow
                   showPreview={showInputPreview}
-                  showSuggestions={hasSuggestionChips}
+                  showSuggestions={showSuggestionsRow}
                 />
               </div>
               {endControls}
@@ -314,7 +326,7 @@ export function KeyboardSection() {
           </div>
         ) : (
           <div
-            className={`relative z-20 grid w-full shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${compact ? "pt-2" : showInputPreview || hasSuggestionChips ? "pt-1 pb-0" : "pt-6"}`}
+            className={`relative z-20 grid w-full shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-2 overflow-visible pr-1 ${compact ? "pt-2" : showInputPreview || showSuggestionsRow || showSynth ? "py-0" : "pt-6"}`}
           >
             <div aria-hidden className="min-w-0" />
             <div
@@ -327,7 +339,7 @@ export function KeyboardSection() {
             >
               <PreviewSuggestionsRow
                 showPreview={showInputPreview}
-                showSuggestions={hasSuggestionChips}
+                showSuggestions={showSuggestionsRow}
               />
             </div>
             {endControls}

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { IconActionButton, type IconActionButtonSize } from "./IconActionButton";
-import { useAppStore } from "../../stores/appStore";
 
 export type HeaderIconToggleOption<T extends string = string> = {
   id: T;
@@ -23,9 +22,8 @@ export function HeaderIconToggleGroup<T extends string>({
   onChange: (id: T) => void;
   className?: string;
 }) {
-  const largeHeaders = useAppStore((s) => s.settings.largeHeaders);
-  const iconSize: IconActionButtonSize = largeHeaders ? "lg" : "sm";
-  const iconClass = largeHeaders ? "h-7 w-7" : "h-3.5 w-3.5";
+  const iconSize: IconActionButtonSize = "sm";
+  const iconClass = "h-3.5 w-3.5";
 
   return (
     <div className={`section-no-drag flex shrink-0 items-center gap-0.5 ${className}`.trim()}>

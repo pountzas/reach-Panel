@@ -4,11 +4,9 @@ import { emit, listen } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { AppShell } from "./components/layout/AppShell";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
-import { MacroBuilder } from "./components/macros/MacroBuilder";
-import { HeadTrackingWizard } from "./components/head-tracking/HeadTrackingWizard";
 import { AppToaster } from "./components/common/AppToaster";
 import { UpdatePrompt } from "./components/common/UpdatePrompt";
-import { computeContentHeightRatioFromSettings } from "./lib/sectionLayouts";
+import { resolveWindowHeightRatio } from "./lib/sectionLayouts";
 import { DictationOverlay } from "./components/keyboard/DictationOverlay";
 import {
   hideDictationOverlay,
@@ -36,10 +34,9 @@ import {
   type CompanionUiState,
 } from "./lib/companionSession";
 import { reconcileAutostartOnLoad } from "./lib/autostart";
+import { logIpc } from "./lib/logIpc";
 import {
-  isMusicLessonSlotVisible,
   isTeachingFullWorkArea,
-  isV1ToolWindowHidden,
 } from "./lib/v1HiddenFeatures";
 import { useAppStore } from "./stores/appStore";
 
@@ -76,10 +73,6 @@ function MainApp() {
         if (cancelled) return;
         if (!useAppStore.getState().focusModeActive) {
           const { settings, musicTeachingEnabled } = useAppStore.getState();
-          const lessonSlotVisible = isMusicLessonSlotVisible({
-            musicTeachingEnabled,
-            keyboardSectionMode: settings.keyboardSectionMode,
-          });
           const fullWorkArea = isTeachingFullWorkArea({
             musicTeachingEnabled,
             keyboardSectionMode: settings.keyboardSectionMode,
@@ -88,9 +81,9 @@ function MainApp() {
             monitorId: settings.accessibilityMonitorId,
             collapsed: settings.collapsed,
             collapsedDictation: false,
-            heightRatio: fullWorkArea
-              ? 1.0
-              : computeContentHeightRatioFromSettings(settings, lessonSlotVisible),
+            heightRatio: resolveWindowHeightRatio(settings.windowHeightRatio, {
+              teachingFullWorkArea: fullWorkArea,
+            }),
             fullWorkArea,
           });
         }
@@ -178,7 +171,7 @@ function MainApp() {
       listen<{ message: string }>("stt-error", (event) => {
         setDictationState("idle");
         setLastError(event.payload.message);
-        void invoke("cmd_stop_dictation").catch(() => {});
+        void invoke("cmd_stop_dictation").catch(logIpc("cmd_stop_dictation"));
         void refreshSttCapability();
       }),
     );
@@ -229,19 +222,10 @@ function MainApp() {
     unlisteners.push(
       listen<ToolWindowRequest>(TOOL_WINDOW_REQUEST_EVENT, (event) => {
         const { label, show } = event.payload;
-        if (show && isV1ToolWindowHidden(label)) {
-          return;
-        }
         const store = useAppStore.getState();
         switch (label) {
           case "settings":
             store.setShowSettings(show);
-            break;
-          case "macro-builder":
-            store.setShowMacroBuilder(show);
-            break;
-          case "head-tracking":
-            store.setShowHeadTrackingWizard(show);
             break;
           default: {
             const _exhaustive: never = label;
@@ -330,18 +314,6 @@ function ToolApp({ label }: { label: ToolWindowLabel }) {
   switch (label) {
     case "settings":
       panel = <SettingsPanel />;
-      break;
-    case "macro-builder":
-      if (isV1ToolWindowHidden("macro-builder")) {
-        return null;
-      }
-      panel = <MacroBuilder />;
-      break;
-    case "head-tracking":
-      if (isV1ToolWindowHidden("head-tracking")) {
-        return null;
-      }
-      panel = <HeadTrackingWizard />;
       break;
     default: {
       const _exhaustive: never = label;

@@ -1,44 +1,40 @@
 mod companion;
 mod db;
-mod icons;
 mod input;
-mod installed_apps;
 mod language;
-mod macros;
 mod music;
 mod prediction;
 mod profiles;
 mod services;
 mod stt;
 mod teaching_pdf;
-mod tts;
+mod teaching_pdf_appearances;
+mod teaching_pdf_reach;
 mod window;
 
 #[cfg(not(target_os = "windows"))]
 compile_error!("ReachPanel is Windows-only. macOS is not supported.");
 
-use db::{Database, MacroDef, MacroStep, Phrase, Profile, QuickAction};
+use db::{Database, Profile};
 use input::focus_target;
 use input::{
     begin_trackpad_gesture, end_trackpad_gesture, get_cursor_position, get_input_methods,
     get_keyboard_layout, get_keyboard_state, get_layout_key_labels, mouse_click,
-    mouse_double_click, mouse_scroll, move_cursor_absolute, move_cursor_relative, press_combo,
-    press_key, press_media_key, reset_layout_compose_state, set_input_method_by_hkl,
+    mouse_double_click, mouse_scroll, move_cursor_relative, press_key,
+    primary_mouse_button_down, reset_layout_compose_state, set_input_method_by_hkl,
     set_input_method_by_language, set_system_language, translate_layout_key_press, type_text,
     windows_ui_language, InputMethod, KeyPressRequest, KeyboardState, LayoutKeyLabel,
     LayoutKeyTranslation,
 };
 use prediction::{
-    ensure_english_pack, get_installed_languages, get_suggestions, install_word_pack,
-    list_word_packs, record_usage, uninstall_word_pack, WordPackInfo,
+    ensure_english_pack, get_suggestions, install_word_pack, list_word_packs, record_usage,
+    uninstall_word_pack, WordPackInfo,
 };
 use profiles::{ProfileFileInfo, ProfileStore, INTERNAL_PROFILE_ID};
-use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
+use serde::Serialize;
 use stt::{get_status as get_stt_status, start_dictation, stop_dictation, SttStatus};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
-use tts::{get_tts_status, list_voices, speak_text, stop_speaking, validate_tts, TtsSettings};
 use window::{
     apply_taskbar_position_from_str, compute_window_layout, get_taskbar_position_for_monitor,
     list_monitors, MonitorInfo, TaskbarPosition, TaskbarPositionResult, WindowLayout,
@@ -47,7 +43,6 @@ use window::{
 pub(crate) struct AppState {
     pub(crate) db: Database,
     pub(crate) profiles: ProfileStore,
-    last_error: Mutex<Option<String>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -70,70 +65,19 @@ fn err(e: impl ToString) -> CommandResult {
     }
 }
 
-fn set_error(state: &State<AppState>, message: Option<String>) {
-    if let Ok(mut guard) = state.last_error.lock() {
-        *guard = message;
-    }
-}
-
 #[tauri::command]
-fn get_last_error(state: State<AppState>) -> Option<String> {
-    state.last_error.lock().ok().and_then(|g| g.clone())
-}
-
-#[tauri::command]
-fn cmd_press_key(request: KeyPressRequest, state: State<AppState>) -> CommandResult {
+fn cmd_press_key(request: KeyPressRequest) -> CommandResult {
     match press_key(request) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_type_text(text: String, state: State<AppState>) -> CommandResult {
+fn cmd_type_text(text: String) -> CommandResult {
     match type_text(&text) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
-    }
-}
-
-#[tauri::command]
-fn cmd_press_combo(keys: Vec<String>, state: State<AppState>) -> CommandResult {
-    match press_combo(keys) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
-    }
-}
-
-#[tauri::command]
-fn cmd_press_media_key(key: String, state: State<AppState>) -> CommandResult {
-    match press_media_key(&key) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
@@ -158,24 +102,14 @@ fn cmd_get_input_focused() -> bool {
 }
 
 #[tauri::command]
-fn cmd_set_system_language(
-    language: String,
-    klid: Option<String>,
-    state: State<AppState>,
-) -> CommandResult {
+fn cmd_set_system_language(language: String, klid: Option<String>) -> CommandResult {
     let result = match klid.as_deref() {
         Some(k) if !k.is_empty() => set_input_method_by_language(&language, Some(k)),
         _ => set_system_language(&language),
     };
     match result {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
@@ -185,16 +119,10 @@ fn cmd_get_input_methods() -> Vec<InputMethod> {
 }
 
 #[tauri::command]
-fn cmd_set_input_method(hkl: u64, state: State<AppState>) -> CommandResult {
+fn cmd_set_input_method(hkl: u64) -> CommandResult {
     match set_input_method_by_hkl(hkl) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
@@ -219,62 +147,30 @@ fn cmd_reset_layout_compose_state(hkl: Option<u64>) {
 }
 
 #[tauri::command]
-fn cmd_move_cursor_relative(dx: i32, dy: i32, state: State<AppState>) -> CommandResult {
+fn cmd_move_cursor_relative(dx: i32, dy: i32) -> CommandResult {
     match move_cursor_relative(dx, dy) {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_trackpad_gesture_begin(
-    window: tauri::WebviewWindow,
-    state: State<AppState>,
-) -> CommandResult {
+fn cmd_trackpad_gesture_begin(window: tauri::WebviewWindow) -> CommandResult {
     let hwnd = match window.hwnd() {
         Ok(hwnd) => hwnd.0 as isize,
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            return err(e);
-        }
+        Err(e) => return err(e),
     };
     match begin_trackpad_gesture(hwnd) {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
-    }
-}
-
-#[tauri::command]
-fn cmd_trackpad_gesture_end(state: State<AppState>) -> CommandResult {
-    match end_trackpad_gesture() {
-        Ok(()) => {
-            set_error(&state, None);
-            ok()
-        }
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
-    }
-}
-
-#[tauri::command]
-fn cmd_move_cursor_absolute(x: i32, y: i32, state: State<AppState>) -> CommandResult {
-    match move_cursor_absolute(x, y) {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
+    }
+}
+
+#[tauri::command]
+fn cmd_trackpad_gesture_end() -> CommandResult {
+    match end_trackpad_gesture() {
+        Ok(()) => ok(),
+        Err(e) => err(e),
     }
 }
 
@@ -284,35 +180,31 @@ fn cmd_get_cursor_position() -> Result<(i32, i32), String> {
 }
 
 #[tauri::command]
-fn cmd_mouse_click(button: String, state: State<AppState>) -> CommandResult {
+fn cmd_primary_mouse_button_down() -> bool {
+    primary_mouse_button_down()
+}
+
+#[tauri::command]
+fn cmd_mouse_click(button: String) -> CommandResult {
     match mouse_click(&button) {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_mouse_double_click(state: State<AppState>) -> CommandResult {
+fn cmd_mouse_double_click() -> CommandResult {
     match mouse_double_click() {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
     }
 }
 
 #[tauri::command]
-fn cmd_mouse_scroll(delta: i32, horizontal: bool, state: State<AppState>) -> CommandResult {
+fn cmd_mouse_scroll(delta: i32, horizontal: bool) -> CommandResult {
     match mouse_scroll(delta, horizontal) {
         Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
+        Err(e) => err(e),
     }
 }
 
@@ -403,6 +295,16 @@ async fn animate_window_layout(
     focus_keyboard_height_ratio: f32,
     full_work_area: bool,
 ) -> Result<(), String> {
+    // Pause input-preview GDI capture for the whole animation (cleared on Drop; nested-safe).
+    struct AnimationPreviewPause;
+    impl Drop for AnimationPreviewPause {
+        fn drop(&mut self) {
+            input::input_preview::end_animation_pause();
+        }
+    }
+    input::input_preview::begin_animation_pause();
+    let _pause_preview = AnimationPreviewPause;
+
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
@@ -428,17 +330,24 @@ async fn animate_window_layout(
     } else {
         window::COLLAPSE_ANIMATION_MS
     };
-    let steps = animation_ms / window::COLLAPSE_ANIMATION_FRAME_MS;
-    for step in 0..=steps {
-        let progress = step as f32 / steps as f32;
+    let duration = std::time::Duration::from_millis(animation_ms);
+    let started = std::time::Instant::now();
+    loop {
+        let elapsed = started.elapsed();
+        let progress = if duration.is_zero() {
+            1.0
+        } else {
+            (elapsed.as_secs_f32() / duration.as_secs_f32()).clamp(0.0, 1.0)
+        };
         let layout = window::interpolate_layout(from, target, progress);
         set_window_layout(app, layout).await?;
-        if step < steps {
-            tokio::time::sleep(std::time::Duration::from_millis(
-                window::COLLAPSE_ANIMATION_FRAME_MS,
-            ))
-            .await;
+        if progress >= 1.0 {
+            break;
         }
+        tokio::time::sleep(std::time::Duration::from_millis(
+            window::WINDOW_ANIMATION_FRAME_MS,
+        ))
+        .await;
     }
     Ok(())
 }
@@ -500,27 +409,6 @@ async fn cmd_animate_window_layout(
 }
 
 #[tauri::command]
-async fn cmd_move_window_to_monitor(
-    app: tauri::AppHandle,
-    monitor_id: u32,
-    height_ratio: f32,
-) -> Result<(), String> {
-    apply_window_layout(
-        &app,
-        monitor_id,
-        false,
-        false,
-        false,
-        height_ratio,
-        false,
-        false,
-        window::FOCUS_KEYBOARD_HEIGHT_RATIO,
-        false,
-    )
-    .await
-}
-
-#[tauri::command]
 fn cmd_exclude_window_from_capture(app: tauri::AppHandle, label: String) -> Result<(), String> {
     let window = app.get_webview_window(&label).ok_or("window not found")?;
     let hwnd = window.hwnd().map_err(|e| e.to_string())?;
@@ -546,29 +434,6 @@ async fn cmd_set_window_focusable(app: tauri::AppHandle, focusable: bool) -> Res
         }
     }
     Ok(())
-}
-
-#[tauri::command]
-async fn cmd_set_collapsed(
-    app: tauri::AppHandle,
-    monitor_id: u32,
-    collapsed: bool,
-    collapsed_dictation: bool,
-    height_ratio: f32,
-) -> Result<(), String> {
-    apply_window_layout(
-        &app,
-        monitor_id,
-        collapsed,
-        collapsed_dictation,
-        false,
-        height_ratio,
-        false,
-        false,
-        window::FOCUS_KEYBOARD_HEIGHT_RATIO,
-        false,
-    )
-    .await
 }
 
 #[tauri::command]
@@ -728,10 +593,13 @@ fn pick_teaching_pdf(app: &tauri::AppHandle) -> Result<Option<String>, String> {
         .set_parent(&window)
         .pick_file();
 
-    Ok(file.map(|p| {
-        teaching_pdf::allow_teaching_pdf_read_path(&p);
-        p.to_string_lossy().into_owned()
-    }))
+    match file {
+        Some(p) => {
+            teaching_pdf::allow_teaching_pdf_read_path(app, &p)?;
+            Ok(Some(p.to_string_lossy().into_owned()))
+        }
+        None => Ok(None),
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -755,23 +623,54 @@ async fn cmd_pick_teaching_pdf(app: tauri::AppHandle) -> Result<Option<String>, 
         .map_err(|e| e.to_string())?
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TeachingPdfPayload {
-    path: String,
-    content_base64: String,
+fn pick_teaching_reach_export_path(
+    app: &tauri::AppHandle,
+    suggested_name: String,
+) -> Result<Option<String>, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    window.set_always_on_top(false).map_err(|e| e.to_string())?;
+    let _restore = RestoreAlwaysOnTop(app.clone());
+
+    let file = rfd::FileDialog::new()
+        .add_filter("PDF", &["pdf"])
+        .set_file_name(&suggested_name)
+        .set_parent(&window)
+        .save_file();
+
+    Ok(file.map(|p| p.to_string_lossy().into_owned()))
+}
+
+#[tauri::command]
+async fn cmd_pick_teaching_reach_export_path(
+    app: tauri::AppHandle,
+    suggested_name: String,
+) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || pick_teaching_reach_export_path(&app, suggested_name))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn cmd_export_teaching_reach_pdf(
+    app: tauri::AppHandle,
+    source_path: String,
+    from_page: u32,
+    to_page: u32,
+    dest_path: String,
+) -> Result<teaching_pdf_reach::ReachExportResult, String> {
+    teaching_pdf_reach::export_reach_pdf(&app, &source_path, from_page, to_page, &dest_path)
 }
 
 #[tauri::command]
 fn cmd_read_teaching_pdf(
     app: tauri::AppHandle,
     path: String,
-) -> Result<TeachingPdfPayload, String> {
+) -> Result<tauri::ipc::Response, String> {
     let bytes = teaching_pdf::read_teaching_pdf_bytes(&app, &path)?;
-    Ok(TeachingPdfPayload {
-        path,
-        content_base64: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes),
-    })
+    Ok(tauri::ipc::Response::new(bytes))
 }
 
 #[tauri::command]
@@ -791,35 +690,36 @@ fn cmd_save_teaching_pdfs(app: tauri::AppHandle, entries: serde_json::Value) -> 
 }
 
 #[tauri::command]
-async fn cmd_list_installed_apps() -> Result<Vec<installed_apps::InstalledApp>, String> {
-    tokio::task::spawn_blocking(installed_apps::list_installed_apps)
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-fn pick_app_executable(app: &tauri::AppHandle) -> Result<Option<String>, String> {
-    let window = app
-        .get_webview_window("settings")
-        .or_else(|| app.get_webview_window("main"))
-        .ok_or_else(|| "No window found".to_string())?;
-
-    let _ = window.set_always_on_top(false);
-    let _restore = RestoreAlwaysOnTop(app.clone());
-
-    let file = rfd::FileDialog::new()
-        .add_filter("Programs", &["exe"])
-        .set_title("Select application")
-        .set_parent(&window)
-        .pick_file();
-
-    Ok(file.map(|p| p.to_string_lossy().into_owned()))
+fn cmd_ensure_teaching_reach_pdf(
+    app: tauri::AppHandle,
+    original_path: String,
+) -> Result<teaching_pdf_reach::ReachPathResult, String> {
+    teaching_pdf_reach::ensure_reach_pdf(&app, &original_path)
 }
 
 #[tauri::command]
-async fn cmd_pick_app_executable(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    tokio::task::spawn_blocking(move || pick_app_executable(&app))
-        .await
-        .map_err(|e| e.to_string())?
+fn cmd_read_teaching_reach_annotations(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<teaching_pdf_reach::ReachAnnotationsResult, String> {
+    teaching_pdf_reach::read_reach_annotations(&app, &path)
+}
+
+#[tauri::command]
+fn cmd_write_teaching_reach_annotations(
+    app: tauri::AppHandle,
+    path: String,
+    json: String,
+) -> Result<teaching_pdf_reach::ReachPathResult, String> {
+    teaching_pdf_reach::write_reach_annotations(&app, &path, &json)
+}
+
+#[tauri::command]
+fn cmd_delete_teaching_reach_pdf(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<teaching_pdf_reach::ReachDeleteResult, String> {
+    teaching_pdf_reach::delete_reach_pdf(&app, &path)
 }
 
 #[tauri::command]
@@ -888,156 +788,10 @@ fn cmd_update_profile_settings(
     Ok(())
 }
 
-#[tauri::command]
-fn cmd_get_quick_actions(
-    profile_id: String,
-    state: State<AppState>,
-) -> Result<Vec<QuickAction>, String> {
-    state
-        .db
-        .get_quick_actions(&profile_id)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_save_quick_action(action: QuickAction, state: State<AppState>) -> Result<(), String> {
-    state
-        .db
-        .save_quick_action(&action)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_delete_quick_action(id: String, state: State<AppState>) -> Result<(), String> {
-    state.db.delete_quick_action(&id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_launch_quick_action(
-    app: tauri::AppHandle,
-    action_type: String,
-    target: String,
-) -> Result<(), String> {
-    services::launch_quick_action(&app, &action_type, &target)
-}
-
-/// Returns a cached PNG path for an installed app icon (for `convertFileSrc`), or null.
-#[tauri::command]
-fn cmd_get_app_icon(app: tauri::AppHandle, target: String) -> Option<String> {
-    icons::app_icon_cached_path(&app, &target)
-}
-
-#[tauri::command]
-fn cmd_is_app_installed(target: String) -> bool {
-    icons::is_app_installed(&target)
-}
-
-#[tauri::command]
-fn cmd_get_phrases(
-    profile_id: String,
-    language: String,
-    state: State<AppState>,
-) -> Result<Vec<Phrase>, String> {
-    state
-        .db
-        .get_phrases(&profile_id, &language)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_get_phrase_categories(
-    profile_id: String,
-    state: State<AppState>,
-) -> Result<Vec<db::PhraseCategory>, String> {
-    state
-        .db
-        .get_phrase_categories(&profile_id)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn cmd_use_phrase(
-    text: String,
-    action: String,
-    language: String,
-    app: AppHandle,
-    _state: State<'_, AppState>,
-) -> Result<(), String> {
-    let skip_host_tts = companion_tablet_audio_active(&app);
-    tokio::task::spawn_blocking(move || {
-        if action == "type" || action == "both" {
-            type_text(&text).map_err(|e| e.to_string())?;
-        }
-        // While companion owns audio, Speak runs on the tablet — skip host TTS.
-        if !skip_host_tts && (action == "speak" || action == "both") {
-            speak_text(
-                &text,
-                TtsSettings {
-                    rate: 0,
-                    volume: 100,
-                    language,
-                },
-            )
-            .map_err(|e| e.to_string())?;
-        }
-        Ok(())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-async fn cmd_speak(
-    text: String,
-    rate: i32,
-    volume: u16,
-    language: String,
-    app: AppHandle,
-) -> Result<(), String> {
-    if companion_tablet_audio_active(&app) {
-        return Ok(());
-    }
-    tokio::task::spawn_blocking(move || {
-        speak_text(
-            &text,
-            TtsSettings {
-                rate,
-                volume,
-                language,
-            },
-        )
-        .map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
 fn companion_tablet_audio_active(app: &AppHandle) -> bool {
     app.try_state::<companion::CompanionBridge>()
         .map(|bridge| bridge.session().tablet_audio_active())
         .unwrap_or(false)
-}
-
-#[tauri::command]
-async fn cmd_stop_speaking() -> Result<(), String> {
-    tokio::task::spawn_blocking(|| stop_speaking().map_err(|e| e.to_string()))
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-fn cmd_list_voices() -> Result<Vec<String>, String> {
-    list_voices().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_get_tts_status() -> Result<String, String> {
-    get_tts_status().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_validate_tts() -> Result<(), String> {
-    validate_tts().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -1172,103 +926,6 @@ fn cmd_uninstall_word_pack(
     list_word_packs(&state.db).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-fn cmd_get_languages() -> Vec<String> {
-    get_installed_languages()
-}
-
-#[tauri::command]
-fn cmd_get_macros(profile_id: String, state: State<AppState>) -> Result<Vec<MacroDef>, String> {
-    state.db.get_macros(&profile_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_get_macro_steps(macro_id: String, state: State<AppState>) -> Result<Vec<MacroStep>, String> {
-    state
-        .db
-        .get_macro_steps(&macro_id)
-        .map_err(|e| e.to_string())
-}
-
-#[derive(Debug, Deserialize)]
-struct SaveMacroPayload {
-    macro_def: MacroDef,
-    steps: Vec<MacroStep>,
-}
-
-#[tauri::command]
-fn cmd_save_macro(payload: SaveMacroPayload, state: State<AppState>) -> Result<(), String> {
-    state
-        .db
-        .save_macro(&payload.macro_def, &payload.steps)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_delete_macro(id: String, state: State<AppState>) -> Result<(), String> {
-    state.db.delete_macro(&id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn cmd_run_macro(
-    macro_id: String,
-    app: tauri::AppHandle,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
-    macros::run_macro(&app, &state.db, &macro_id)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_export_macro(macro_id: String, state: State<AppState>) -> Result<String, String> {
-    macros::export_macro(&state.db, &macro_id).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_import_macro(json: String, state: State<AppState>) -> Result<MacroDef, String> {
-    let macro_def = macros::import_macro(&state.db, &json).map_err(|e| e.to_string())?;
-    state
-        .profiles
-        .save_active_profile(&state.db)
-        .map_err(|e| e.to_string())?;
-    Ok(macro_def)
-}
-
-#[tauri::command]
-fn cmd_get_head_tracking_settings(
-    profile_id: String,
-    state: State<AppState>,
-) -> Result<String, String> {
-    state
-        .db
-        .get_head_tracking_settings(&profile_id)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_save_head_tracking_settings(
-    profile_id: String,
-    settings_json: String,
-    state: State<AppState>,
-) -> Result<(), String> {
-    state
-        .db
-        .save_head_tracking_settings(&profile_id, &settings_json)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn cmd_head_tracking_move(dx: i32, dy: i32, state: State<AppState>) -> CommandResult {
-    match move_cursor_relative(dx, dy) {
-        Ok(()) => ok(),
-        Err(e) => {
-            set_error(&state, Some(e.to_string()));
-            err(e)
-        }
-    }
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1291,7 +948,6 @@ pub fn run() {
             app.manage(AppState {
                 db,
                 profiles,
-                last_error: Mutex::new(None),
             });
 
             match companion::CompanionBridge::new(&app_data_dir) {
@@ -1332,11 +988,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            get_last_error,
             cmd_press_key,
             cmd_type_text,
-            cmd_press_combo,
-            cmd_press_media_key,
             cmd_get_keyboard_layout,
             cmd_get_keyboard_state,
             cmd_set_input_preview_enabled,
@@ -1350,8 +1003,8 @@ pub fn run() {
             cmd_move_cursor_relative,
             cmd_trackpad_gesture_begin,
             cmd_trackpad_gesture_end,
-            cmd_move_cursor_absolute,
             cmd_get_cursor_position,
+            cmd_primary_mouse_button_down,
             cmd_mouse_click,
             cmd_mouse_double_click,
             cmd_mouse_scroll,
@@ -1359,11 +1012,9 @@ pub fn run() {
             cmd_get_main_window_monitor,
             cmd_apply_window_layout,
             cmd_animate_window_layout,
-            cmd_move_window_to_monitor,
             cmd_set_always_on_top,
             cmd_exclude_window_from_capture,
             cmd_set_window_focusable,
-            cmd_set_collapsed,
             cmd_expand_window_for_mode_menu,
             cmd_get_profiles,
             cmd_list_profile_files,
@@ -1377,8 +1028,6 @@ pub fn run() {
             cmd_pick_background_image,
             cmd_pick_music_song_file,
             cmd_pick_teaching_pdf,
-            cmd_list_installed_apps,
-            cmd_pick_app_executable,
             cmd_read_music_file,
             cmd_read_teaching_pdf,
             cmd_list_imported_songs,
@@ -1386,24 +1035,16 @@ pub fn run() {
             cmd_delete_imported_song,
             cmd_list_teaching_pdfs,
             cmd_save_teaching_pdfs,
+            cmd_ensure_teaching_reach_pdf,
+            cmd_read_teaching_reach_annotations,
+            cmd_write_teaching_reach_annotations,
+            cmd_delete_teaching_reach_pdf,
+            cmd_pick_teaching_reach_export_path,
+            cmd_export_teaching_reach_pdf,
             cmd_list_custom_language_packs,
             cmd_upsert_custom_language_pack,
             cmd_delete_custom_language_pack,
             cmd_update_profile_settings,
-            cmd_get_quick_actions,
-            cmd_save_quick_action,
-            cmd_delete_quick_action,
-            cmd_launch_quick_action,
-            cmd_get_app_icon,
-            cmd_is_app_installed,
-            cmd_get_phrases,
-            cmd_get_phrase_categories,
-            cmd_use_phrase,
-            cmd_speak,
-            cmd_stop_speaking,
-            cmd_list_voices,
-            cmd_get_tts_status,
-            cmd_validate_tts,
             cmd_start_dictation,
             cmd_stop_dictation,
             cmd_get_stt_status,
@@ -1415,17 +1056,6 @@ pub fn run() {
             cmd_list_word_packs,
             cmd_install_word_pack,
             cmd_uninstall_word_pack,
-            cmd_get_languages,
-            cmd_get_macros,
-            cmd_get_macro_steps,
-            cmd_save_macro,
-            cmd_delete_macro,
-            cmd_run_macro,
-            cmd_export_macro,
-            cmd_import_macro,
-            cmd_get_head_tracking_settings,
-            cmd_save_head_tracking_settings,
-            cmd_head_tracking_move,
             companion::cmd_companion_start,
             companion::cmd_companion_stop,
             companion::cmd_companion_status,
@@ -1435,5 +1065,9 @@ pub fn run() {
             companion::cmd_companion_revoke_device,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .unwrap_or_else(|e| {
+            // Process entry: no caller to return to; exit instead of panicking.
+            eprintln!("error while running tauri application: {e}");
+            std::process::exit(1);
+        });
 }

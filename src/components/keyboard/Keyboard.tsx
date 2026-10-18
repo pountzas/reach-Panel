@@ -1,18 +1,17 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useShallow } from "zustand/react/shallow";
+import { isTeachingSessionActive } from "../../lib/appModeLayout";
 import { isLanguageLessonCaptureActive } from "../../lib/language";
 import { isFreeWriteCaptureActive } from "../../lib/teaching";
+import { isDictationKeyVisible } from "../../lib/teachingInputHelpers";
 import { useAppStore } from "../../stores/appStore";
 import {
   displayLabel,
   getLayoutRows,
-  isFnActive,
-  isFnMappedKey,
   isKeyActive,
-  isShiftActive,
   isSpecialLabeledKey,
   KeyDef,
-  resolveKeyOutput,
   resolveOnscreenLayout,
 } from "../../lib/keyboardLayouts";
 import { greekComposeEnabled } from "../../lib/keyboardCharacterInput";
@@ -21,7 +20,7 @@ import {
   createSerialCoalesceGate,
   type SerialCoalesceGate,
 } from "../../lib/keyRepeat";
-import { KeyButton } from "./KeyButton";
+import { KeyboardKey } from "./KeyboardKey";
 import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
 import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
@@ -30,30 +29,72 @@ import { useContainerSize } from "../../hooks/useContainerSize";
 import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
+import { effectiveKeyboardFontSize } from "../../lib/keyboardFontSize";
 import { isTransparentUiActive, transparentKeyPalette } from "../../lib/focusMode";
-import {
-  clearModifiersAfterKey,
-  greekTranslateOptions,
-  inject,
-  openLanguagePicker,
-} from "./keyboardUtils";
+import type { AppSettings } from "../../lib/types";
+import { inject } from "./keyboardUtils";
+import { useStickyModifiers } from "../../hooks/useStickyModifiers";
+import { useKeyboardKeyPress } from "./useKeyboardKeyPress";
+import type { KeyRepeatFireMeta } from "../../hooks/useKeyRepeat";
+
+/** Settings fields Keyboard (and its key-press helpers) actually read. */
+type KeyboardSettingsSlice = Pick<
+  AppSettings,
+  | "typingLanguage"
+  | "keyboardSectionMode"
+  | "keyboardFontSize"
+  | "keyboardKeyColor"
+  | "keyTextColor"
+  | "transparentKeyColor"
+  | "keyboardBgColor"
+  | "opacity"
+  | "groqApiKey"
+  | "languageLessonLanguage"
+  | "dictationVisible"
+  | "showTeachingInputHelpers"
+  | "focusModeTransparent"
+  | "fnKeyMode"
+>;
 
 export function Keyboard() {
-  const settings = useAppStore((s) => s.settings);
+  const settingsSlice = useAppStore(
+    useShallow((s) => ({
+      typingLanguage: s.settings.typingLanguage,
+      keyboardSectionMode: s.settings.keyboardSectionMode,
+      keyboardFontSize: s.settings.keyboardFontSize,
+      keyboardKeyColor: s.settings.keyboardKeyColor,
+      keyTextColor: s.settings.keyTextColor,
+      transparentKeyColor: s.settings.transparentKeyColor,
+      keyboardBgColor: s.settings.keyboardBgColor,
+      opacity: s.settings.opacity,
+      groqApiKey: s.settings.groqApiKey,
+      languageLessonLanguage: s.settings.languageLessonLanguage,
+      dictationVisible: s.settings.dictationVisible,
+      showTeachingInputHelpers: s.settings.showTeachingInputHelpers,
+      focusModeTransparent: s.settings.focusModeTransparent,
+      fnKeyMode: s.settings.fnKeyMode,
+    })),
+  );
+  // Helpers take Pick<AppSettings, ...>; a missing field is a type error.
+  const settings: KeyboardSettingsSlice = settingsSlice;
   const focusModeActive = useAppStore((s) => s.focusModeActive);
   const keyboardLayout = useAppStore((s) => s.keyboardLayout);
-  const stickyModifiers = useAppStore((s) => s.stickyModifiers);
-  const physicalKeyState = useAppStore((s) => s.physicalKeyState);
-  const toggleSticky = useAppStore((s) => s.toggleSticky);
+  const {
+    stickyModifiers,
+    physicalKeyState,
+    shiftActive,
+    fnActive,
+    activeModifiers,
+    toggleSticky,
+    clearSticky,
+    clearStickyExceptFn,
+  } = useStickyModifiers();
   const pollKeyboardState = useAppStore((s) => s.pollKeyboardState);
-  const clearSticky = useAppStore((s) => s.clearSticky);
-  const clearStickyExceptFn = useAppStore((s) => s.clearStickyExceptFn);
   const typeCharacter = useAppStore((s) => s.typeCharacter);
   const backspaceTyped = useAppStore((s) => s.backspaceTyped);
   const setTypedBuffer = useAppStore((s) => s.setTypedBuffer);
   const loadSuggestions = useAppStore((s) => s.loadSuggestions);
   const recordTypedWord = useAppStore((s) => s.recordTypedWord);
-  const pollError = useAppStore((s) => s.pollError);
   const inputMethods = useAppStore((s) => s.inputMethods);
   const layoutKeyLabels = useAppStore((s) => s.layoutKeyLabels);
   const languagePickerOpen = useAppStore((s) => s.languagePickerOpen);
@@ -62,7 +103,6 @@ export function Keyboard() {
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
   const dictationState = useAppStore((s) => s.dictationState);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
-  const stopDictation = useAppStore((s) => s.stopDictation);
   const sttCapability = useAppStore((s) => s.sttCapability);
   const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
   const applyTypedLayoutTranslation = useAppStore((s) => s.applyTypedLayoutTranslation);
@@ -90,9 +130,6 @@ export function Keyboard() {
     createSerialCoalesceGate(),
   ).current;
   const { t } = useTranslation();
-  const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
-  const fnActive = isFnActive(stickyModifiers);
-  const activeModifiers = stickyModifiers.filter((m) => m !== "capslock" && m !== "fn");
   const effectiveLayout = resolveOnscreenLayout(
     keyboardLayout,
     settings.typingLanguage,
@@ -102,12 +139,23 @@ export function Keyboard() {
     settings.typingLanguage,
     layoutKeyLabels,
   );
+  const teachingSessionActive = isTeachingSessionActive(
+    musicTeachingEnabled,
+    settings.keyboardSectionMode,
+  );
+  const dictationKeyVisible = isDictationKeyVisible(
+    settings,
+    teachingSessionActive,
+  );
   const rows = useMemo<KeyDef[][]>(() => {
-    if (settings.dictationVisible) return baseRows;
+    if (dictationKeyVisible) return baseRows;
     return baseRows.map((row) => row.filter((k) => k.key !== "dictate"));
-  }, [baseRows, settings.dictationVisible]);
+  }, [baseRows, dictationKeyVisible]);
   const { keyHeight, spacing } = computeKeyMetrics(height, rows.length);
-  const fontSize = settings.keyboardFontSize ?? 18;
+  const fontSize = effectiveKeyboardFontSize(
+    settings.keyboardFontSize,
+    keyHeight,
+  );
   const typingLocale = settings.typingLanguage || "en";
   const languageLessonMode = {
     musicTeachingEnabled,
@@ -158,12 +206,6 @@ export function Keyboard() {
     void refreshSttCapability();
   }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
 
-  useEffect((): void => {
-    if (!settings.dictationVisible && dictationState !== "idle") {
-      void stopDictation();
-    }
-  }, [settings.dictationVisible, dictationState, stopDictation]);
-
   let dictateAriaLabel = listening ? t("dictationStop") : t("dictationStart");
   if (dictateDisabled) {
     if (!sttCapability?.online) {
@@ -185,318 +227,88 @@ export function Keyboard() {
       hkl: physicalKeyState.systemHkl || null,
     });
 
-  const handleKey = async (
-    keyDef: KeyDef,
-    options?: { deferSuggestions?: boolean },
-  ) => {
-    const key = keyDef.key;
-    const deferSuggestions = options?.deferSuggestions === true;
+  const handleKey = useKeyboardKeyPress({
+    pollKeyboardState,
+    loadInputMethods,
+    languagePickerOpen,
+    setLanguagePickerOpen,
+    dictateDisabled,
+    toggleDictation,
+    languageLessonMode,
+    languageListAuthoringHandlers,
+    languageListAuthoringActive,
+    languageBackspace,
+    greekKeyboardActive,
+    physicalKeyState,
+    fnActive,
+    translateLayoutKey,
+    applyLanguageLayoutTranslation,
+    settings,
+    activeModifiers,
+    clearStickyExceptFn,
+    clearSticky,
+    languageKeyInput,
+    freeWriteCaptureActive,
+    freeWriteNotepadBackspace,
+    greekFreeWriteActive,
+    freeWriteNotepadInput,
+    applyFreeWriteLayoutTranslation,
+    freeWritePdfFocus,
+    toggleSticky,
+    backspaceTyped,
+    loadSuggestions,
+    recordTypedWord,
+    setTypedBuffer,
+    typeCharacter,
+    applyTypedLayoutTranslation,
+    shiftActive,
+    typingLocale,
+    checkLanguageAnswer,
+  });
 
-    if (key === "capslock") {
-      await invoke("cmd_press_key", {
-        request: { key: "capslock", modifiers: [] },
-      });
-      await pollKeyboardState();
-      await pollError();
-      return;
+  const keyDefsByIdRef = useRef(new Map<string, KeyDef>());
+  const keyDefsById = new Map<string, KeyDef>();
+  for (let ri = 0; ri < rows.length; ri++) {
+    const row = rows[ri]!;
+    for (let ci = 0; ci < row.length; ci++) {
+      const k = row[ci]!;
+      keyDefsById.set(`${ri}-${k.key}-${ci}`, k);
     }
+  }
+  keyDefsByIdRef.current = keyDefsById;
 
-    if (key === "langswitch") {
-      await openLanguagePicker(
-        loadInputMethods,
-        languagePickerOpen,
-        setLanguagePickerOpen,
-      );
-      await pollError();
-      return;
-    }
+  const handleKeyRef = useRef(handleKey);
+  handleKeyRef.current = handleKey;
 
-    if (key === "dictate") {
-      if (!dictateDisabled) {
-        await toggleDictation();
-      }
-      await pollError();
-      return;
-    }
-
-    if (languagePickerOpen) {
-      setLanguagePickerOpen(false);
-    }
-
-    const languageCaptureActive = isLanguageLessonCaptureActive(languageLessonMode);
-
-    if (languageCaptureActive) {
-      const authoringHandlers = languageListAuthoringHandlers;
-      if (languageListAuthoringActive && !authoringHandlers) {
-        return;
-      }
-      if (keyDef.modifier) {
-        return;
-      }
-      if (key === "backspace") {
-        if (languageListAuthoringActive) {
-          authoringHandlers!.backspace();
-        } else {
-          languageBackspace();
-          if (greekKeyboardActive) {
-            void invoke("cmd_reset_layout_compose_state", {
-              hkl: physicalKeyState.systemHkl || null,
-            });
-          }
-        }
-        return;
-      }
-      if (key === "enter") {
-        if (languageListAuthoringActive) {
-          authoringHandlers!.enter();
-        } else {
-          checkLanguageAnswer();
-        }
-        return;
-      }
-      if (key === "space") {
-        if (languageListAuthoringActive) {
-          authoringHandlers!.keyInput(" ");
-        }
-        return;
-      }
-      const usedFnLang = fnActive && isFnMappedKey(keyDef.key);
-      if (greekKeyboardActive && keyDef.physicalKey) {
-        const translation = await translateLayoutKey(keyDef.physicalKey);
-        const translateOptions = greekTranslateOptions(
+  const onPressKey = useCallback(
+    (keyId: string, meta?: KeyRepeatFireMeta) => {
+      const keyDef = keyDefsByIdRef.current.get(keyId);
+      if (!keyDef) return;
+      if (keyDef.key === "backspace") {
+        const runInject = inject(
+          (kd, opts) => handleKeyRef.current(kd, opts),
           keyDef,
-          physicalKeyState.capsLock,
-          shiftActive,
-          fnActive,
-          typingLocale,
         );
-        if (languageListAuthoringActive) {
-          authoringHandlers!.layoutTranslation(translation, translateOptions);
+        if (meta?.repeat) {
+          backspaceInjectGate.coalesce(runInject);
         } else {
-          applyLanguageLayoutTranslation(translation, translateOptions);
-        }
-        clearModifiersAfterKey(
-          settings.fnKeyMode,
-          activeModifiers,
-          usedFnLang,
-          clearStickyExceptFn,
-          clearSticky,
-        );
-        return;
-      }
-      const langOutput = resolveKeyOutput(
-        keyDef,
-        physicalKeyState.capsLock,
-        shiftActive,
-        fnActive,
-        typingLocale,
-      );
-      if (langOutput.length === 1 || keyDef.physicalKey) {
-        if (languageListAuthoringActive) {
-          authoringHandlers!.keyInput(langOutput, { physicalKey: keyDef.physicalKey });
-        } else {
-          languageKeyInput(langOutput, { physicalKey: keyDef.physicalKey });
-        }
-      }
-      clearModifiersAfterKey(
-        settings.fnKeyMode,
-        activeModifiers,
-        usedFnLang,
-        clearStickyExceptFn,
-        clearSticky,
-      );
-      return;
-    }
-
-    if (freeWriteCaptureActive) {
-      if (keyDef.modifier) return;
-      if (key === "backspace") {
-        freeWriteNotepadBackspace();
-        if (greekFreeWriteActive) {
-          void invoke("cmd_reset_layout_compose_state", {
-            hkl: physicalKeyState.systemHkl || null,
-          });
+          backspaceInjectGate.enqueue(runInject);
         }
         return;
       }
-      if (key === "enter") {
-        freeWriteNotepadInput("\n");
-        return;
-      }
-      if (key === "space") {
-        freeWriteNotepadInput(" ");
-        return;
-      }
-      const usedFnFw = fnActive && isFnMappedKey(keyDef.key);
-      if (greekFreeWriteActive && keyDef.physicalKey) {
-        const translation = await translateLayoutKey(keyDef.physicalKey);
-        applyFreeWriteLayoutTranslation(
-          translation,
-          greekTranslateOptions(
-            keyDef,
-            physicalKeyState.capsLock,
-            shiftActive,
-            fnActive,
-            typingLocale,
-          ),
-        );
-        clearModifiersAfterKey(
-          settings.fnKeyMode,
-          activeModifiers,
-          usedFnFw,
-          clearStickyExceptFn,
-          clearSticky,
-        );
-        return;
-      }
-      const fwOutput = resolveKeyOutput(
-        keyDef,
-        physicalKeyState.capsLock,
-        shiftActive,
-        fnActive,
-        typingLocale,
-      );
-      if (fwOutput) freeWriteNotepadInput(fwOutput);
-      clearModifiersAfterKey(
-        settings.fnKeyMode,
-        activeModifiers,
-        usedFnFw,
-        clearStickyExceptFn,
-        clearSticky,
-      );
-      return;
-    }
+      void handleKeyRef.current(keyDef);
+    },
+    [backspaceInjectGate],
+  );
 
-    // Free write PDF focus: do not inject externally or into notepad.
-    if (freeWritePdfFocus) {
-      return;
-    }
-
-    if (keyDef.modifier) {
-      toggleSticky(key);
-      return;
-    }
-
-    if (key === "backspace") {
-      backspaceTyped();
-      if (greekKeyboardActive) {
-        void invoke("cmd_reset_layout_compose_state", {
-          hkl: physicalKeyState.systemHkl || null,
-        });
-      }
-      await invoke("cmd_press_key", { request: { key: "backspace", modifiers: [] } });
-      if (!deferSuggestions) {
-        await loadSuggestions();
-      }
-      await pollError();
-      return;
-    }
-
-    if (key === "enter") {
-      await recordTypedWord();
-      setTypedBuffer("");
-      await invoke("cmd_press_key", {
-        request: { key: "enter", modifiers: [...activeModifiers] },
-      });
-      clearModifiersAfterKey(
-        settings.fnKeyMode,
-        activeModifiers,
-        false,
-        clearStickyExceptFn,
-        clearSticky,
-      );
-      await loadSuggestions();
-      await pollError();
-      return;
-    }
-
-    if (key === "space") {
-      await recordTypedWord();
-      const inject = typeCharacter(" ");
-      if (inject) {
-        await invoke("cmd_press_key", {
-          request: { key: "space", modifiers: [...activeModifiers] },
-        });
-      }
-      clearModifiersAfterKey(
-        settings.fnKeyMode,
-        activeModifiers,
-        false,
-        clearStickyExceptFn,
-        clearSticky,
-      );
-      await loadSuggestions();
-      await pollError();
-      return;
-    }
-
-    const usedFn = fnActive && isFnMappedKey(keyDef.key);
-    if (greekKeyboardActive && keyDef.physicalKey) {
-      const translation = await translateLayoutKey(keyDef.physicalKey);
-      const inject = applyTypedLayoutTranslation(
-        translation,
-        greekTranslateOptions(
-          keyDef,
-          physicalKeyState.capsLock,
-          shiftActive,
-          fnActive,
-          typingLocale,
-        ),
-      );
-      if (inject) {
-        await invoke("cmd_press_key", {
-          request: {
-            key: inject,
-            modifiers: [...activeModifiers],
-            physicalKey: keyDef.physicalKey,
-          },
-        });
-      }
-      clearModifiersAfterKey(
-        settings.fnKeyMode,
-        activeModifiers,
-        usedFn,
-        clearStickyExceptFn,
-        clearSticky,
-      );
-      await loadSuggestions();
-      await pollError();
-      return;
-    }
-
-    const output = resolveKeyOutput(
-      keyDef,
-      physicalKeyState.capsLock,
-      shiftActive,
-      fnActive,
-      typingLocale,
-    );
-    if (output.length === 1 || keyDef.physicalKey) {
-      const inject = typeCharacter(output, { physicalKey: keyDef.physicalKey });
-      if (inject) {
-        await invoke("cmd_press_key", {
-          request: {
-            key: inject,
-            modifiers: [...activeModifiers],
-            physicalKey: keyDef.physicalKey,
-          },
-        });
-      }
-    } else {
-      await invoke("cmd_press_key", {
-        request: { key: output, modifiers: [...activeModifiers] },
-      });
-    }
-    clearModifiersAfterKey(
-      settings.fnKeyMode,
-      activeModifiers,
-      usedFn,
-      clearStickyExceptFn,
-      clearSticky,
-    );
-    await loadSuggestions();
-    await pollError();
-  };
+  const onHoldEndKey = useCallback(
+    (keyId: string) => {
+      const keyDef = keyDefsByIdRef.current.get(keyId);
+      if (keyDef?.key !== "backspace") return;
+      void backspaceInjectGate.whenIdle().then(() => loadSuggestions());
+    },
+    [backspaceInjectGate, loadSuggestions],
+  );
 
   const dictateBgColor = transparent
     ? settings.keyboardKeyColor ?? "#ffffff"
@@ -510,6 +322,48 @@ export function Keyboard() {
     : dictateDisabled
       ? "#94a3b8"
       : "#2563eb";
+  const keyBgColor = settings.keyboardKeyColor ?? "#ffffff";
+
+  // Stable label elements so memo(KeyboardKey)/memo(KeyButton) can skip keys
+  // whose only change would otherwise be a new JSX `label` every render.
+  const specialLabels = useMemo(() => {
+    const m = new Map<string, ReactNode>();
+    for (const row of rows) {
+      for (const k of row) {
+        if (isSpecialLabeledKey(k.key)) {
+          m.set(k.key, <SpecialKeyLabel keyName={k.key} fontSize={fontSize} />);
+        }
+      }
+    }
+    return m;
+  }, [rows, fontSize]);
+
+  const dictateLabel = useMemo(
+    () => (
+      <span className="relative flex h-full w-full items-center justify-center">
+        <MicrophoneIcon className="absolute h-5 w-5" />
+        {groqRemainingPercent !== null ? (
+          <span
+            className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] font-semibold leading-none tabular-nums"
+            aria-hidden
+          >
+            {groqRemainingPercent}%
+          </span>
+        ) : null}
+      </span>
+    ),
+    [groqRemainingPercent],
+  );
+
+  const langSwitchLabel = useMemo(
+    () => (
+      <LanguageSwitchLabel
+        currentLanguage={settings.typingLanguage}
+        fontSize={fontSize}
+      />
+    ),
+    [settings.typingLanguage, fontSize],
+  );
 
   return (
     <div
@@ -525,25 +379,15 @@ export function Keyboard() {
       {rows.map((row, ri) => (
         <div key={ri} className="flex w-full">
           {row.map((k, ci) => {
+            const keyId = `${ri}-${k.key}-${ci}`;
             const isLang = k.key === "langswitch";
             const isDictate = k.key === "dictate";
             if (isDictate) {
               return (
-                <KeyButton
-                  key={`${ri}-${k.key}-${k.label}-${ci}`}
-                  label={
-                    <span className="relative flex h-full w-full items-center justify-center">
-                      <MicrophoneIcon className="absolute h-5 w-5" />
-                      {groqRemainingPercent !== null ? (
-                        <span
-                          className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] font-semibold leading-none tabular-nums"
-                          aria-hidden
-                        >
-                          {groqRemainingPercent}%
-                        </span>
-                      ) : null}
-                    </span>
-                  }
+                <KeyboardKey
+                  key={keyId}
+                  keyId={keyId}
+                  label={dictateLabel}
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}
@@ -556,7 +400,7 @@ export function Keyboard() {
                   active={transparent ? listening : false}
                   disabled={dictateDisabled}
                   ariaLabel={dictateAriaLabel}
-                  onPress={() => handleKey(k)}
+                  onPressKey={onPressKey}
                 />
               );
             }
@@ -564,60 +408,40 @@ export function Keyboard() {
               const specialKey = isSpecialLabeledKey(k.key);
               const isBackspace = k.key === "backspace";
               return (
-                <KeyButton
-                  key={`${ri}-${k.key}-${k.label}-${ci}`}
+                <KeyboardKey
+                  key={keyId}
+                  keyId={keyId}
                   label={
-                    specialKey ? (
-                      <SpecialKeyLabel keyName={k.key} fontSize={fontSize} />
-                    ) : (
-                      displayLabel(
-                        k,
-                        physicalKeyState.capsLock,
-                        shiftActive,
-                        fnActive,
-                        typingLocale,
-                      )
-                    )
+                    specialKey
+                      ? specialLabels.get(k.key)
+                      : displayLabel(
+                          k,
+                          physicalKeyState.capsLock,
+                          shiftActive,
+                          fnActive,
+                          typingLocale,
+                        )
                   }
                   ariaLabel={specialKey ? specialKeyAriaLabel(k.key) : undefined}
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}
                   fontSize={fontSize}
-                  bgColor={settings.keyboardKeyColor ?? "#ffffff"}
+                  bgColor={keyBgColor}
                   textColor={keyTextColor}
                   stretch
                   transparent={transparent}
                   outlineColor={settings.transparentKeyColor}
                   active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
                   repeatOnHold={isBackspace}
-                  onHoldEnd={
-                    isBackspace
-                      ? () => {
-                        void backspaceInjectGate
-                          .whenIdle()
-                          .then(() => loadSuggestions());
-                      }
-                      : undefined
-                  }
-                  onPress={(meta) => {
-                    if (isBackspace) {
-                      const runInject = inject(handleKey, k);
-                      if (meta?.repeat) {
-                        backspaceInjectGate.coalesce(runInject);
-                      } else {
-                        backspaceInjectGate.enqueue(runInject);
-                      }
-                      return;
-                    }
-                    void handleKey(k);
-                  }}
+                  onHoldEndKey={isBackspace ? onHoldEndKey : undefined}
+                  onPressKey={onPressKey}
                 />
               );
             }
             return (
               <div
-                key={`${ri}-${k.key}-${k.label}-${ci}`}
+                key={keyId}
                 ref={langKeyAnchorRef}
                 className="relative flex"
                 style={{
@@ -639,30 +463,26 @@ export function Keyboard() {
                     onClose={() => setLanguagePickerOpen(false)}
                     fontSize={fontSize}
                     textColor={keyTextColor}
-                    bgColor={settings.keyboardKeyColor ?? "#ffffff"}
+                    bgColor={keyBgColor}
                     mutedColor="#94a3b8"
                     languageSectionLabel={t("typingLanguage")}
                   />
                 ) : null}
                 <div className="flex h-full w-full">
-                  <KeyButton
-                    label={
-                      <LanguageSwitchLabel
-                        currentLanguage={settings.typingLanguage}
-                        fontSize={fontSize}
-                      />
-                    }
+                  <KeyboardKey
+                    keyId={keyId}
+                    label={langSwitchLabel}
                     width={1}
                     size={keyHeight}
                     spacing={0}
                     fontSize={fontSize}
-                    bgColor={settings.keyboardKeyColor ?? "#ffffff"}
+                    bgColor={keyBgColor}
                     textColor={keyTextColor}
                     stretch
                     transparent={transparent}
                     outlineColor={settings.transparentKeyColor}
                     active={languagePickerOpen}
-                    onPress={() => handleKey(k)}
+                    onPressKey={onPressKey}
                   />
                 </div>
               </div>

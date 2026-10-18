@@ -6,6 +6,8 @@ import type { AppSettings, MonitorInfo, TransparentKeyColor } from "./types";
 export const COLLAPSED_FAB_SIZE = 56;
 export const COLLAPSED_FAB_GAP = 12;
 export const COLLAPSED_FAB_PAD = 10;
+/** Gap from monitor edge to collapsed FAB window — keep in sync with Rust COLLAPSED_MARGIN. */
+export const COLLAPSED_WINDOW_MARGIN = 16;
 /** Extra px for hover scale headroom (~5% of 56px). */
 export const FAB_HOVER_SLACK = 6;
 /** Collapsed FAB mode menu panel width (logical px; Rust scales by DPI). */
@@ -32,9 +34,6 @@ export function isMicFabEnabled(input: {
   return listening || (input.canDictate && input.externalInputFocused);
 }
 
-/** Default focus-mode keyboard height as fraction of full monitor height. Keep in sync with Rust. */
-export const FOCUS_KEYBOARD_HEIGHT_RATIO = 0.42;
-
 /**
  * Focus mode keyboard toolbar chrome. `pl-3` matches AppShell header `px-3`
  * so the height grip is not flush to the window edge.
@@ -42,7 +41,7 @@ export const FOCUS_KEYBOARD_HEIGHT_RATIO = 0.42;
 export function focusModeToolbarClassName(_hasSuggestionChips: boolean): string {
   return [
     "relative z-20 flex w-full shrink-0 flex-col overflow-visible",
-    "pl-3 pr-1 pt-1 pb-0",
+    "pl-3 pr-1 py-0",
   ].join(" ");
 }
 
@@ -145,7 +144,7 @@ export function resolveFocusModeEnabled(
 
 /** True when focus mode is active and the transparent keyboard setting is on. */
 export function isTransparentUiActive(
-  settings: AppSettings,
+  settings: Pick<AppSettings, "focusModeTransparent">,
   focusModeActive: boolean,
 ): boolean {
   return Boolean(focusModeActive && settings.focusModeTransparent);

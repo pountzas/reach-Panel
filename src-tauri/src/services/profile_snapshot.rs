@@ -1,4 +1,4 @@
-use crate::db::{Database, Phrase, PhraseCategory, QuickAction};
+use crate::db::Database;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -13,18 +13,17 @@ pub struct PublicProfile {
 #[serde(rename_all = "camelCase")]
 pub struct ProfileSnapshot {
     pub profile: PublicProfile,
-    pub phrases: Vec<Phrase>,
-    pub phrase_categories: Vec<PhraseCategory>,
-    pub quick_actions: Vec<QuickAction>,
+    /// Always empty since #225. Kept only so tablet builds that still read
+    /// `snapshot.phrases.length` / `snapshot.quickActions.length` don't crash.
+    /// Remove together with a `PROTOCOL_VERSION` bump.
+    pub phrases: Vec<serde_json::Value>,
+    pub phrase_categories: Vec<serde_json::Value>,
+    pub quick_actions: Vec<serde_json::Value>,
     /// Parsed settings object when valid JSON; otherwise raw string omitted.
     pub settings: serde_json::Value,
 }
 
-pub fn build_profile_snapshot(
-    db: &Database,
-    profile_id: &str,
-    language: &str,
-) -> Result<ProfileSnapshot, String> {
+pub fn build_profile_snapshot(db: &Database, profile_id: &str) -> Result<ProfileSnapshot, String> {
     let profiles = db.get_profiles().map_err(|e| e.to_string())?;
     let profile = profiles
         .into_iter()
@@ -37,25 +36,15 @@ pub fn build_profile_snapshot(
     // Strip any accidentally stored secrets before syncing to tablet.
     let settings = sanitize_settings_for_tablet(settings);
 
-    let phrases = db
-        .get_phrases(profile_id, language)
-        .map_err(|e| e.to_string())?;
-    let phrase_categories = db
-        .get_phrase_categories(profile_id)
-        .map_err(|e| e.to_string())?;
-    let quick_actions = db
-        .get_quick_actions(profile_id)
-        .map_err(|e| e.to_string())?;
-
     Ok(ProfileSnapshot {
         profile: PublicProfile {
             id: profile.id,
             name: profile.name,
             created_at: profile.created_at,
         },
-        phrases,
-        phrase_categories,
-        quick_actions,
+        phrases: Vec::new(),
+        phrase_categories: Vec::new(),
+        quick_actions: Vec::new(),
         settings,
     })
 }
@@ -66,12 +55,7 @@ fn sanitize_settings_for_tablet(settings: serde_json::Value) -> serde_json::Valu
     if let Some(language) = settings.get("typingLanguage").and_then(|v| v.as_str()) {
         public.insert("typingLanguage".into(), language.into());
     }
-    for key in [
-        "predictionEnabled",
-        "phrasesVisible",
-        "quickActionsVisible",
-        "mouseVisible",
-    ] {
+    for key in ["predictionEnabled", "mouseVisible"] {
         if let Some(value) = settings.get(key).and_then(|v| v.as_bool()) {
             public.insert(key.into(), value.into());
         }
@@ -96,7 +80,7 @@ mod audit_snapshot_regression {
             r#"{"uiLanguage":"en","groqApiKey":"AUDIT_SENTINEL_NOT_A_REAL_KEY"}"#,
         )
         .unwrap();
-        let snapshot = build_profile_snapshot(&db, "active", "en").unwrap();
+        let snapshot = build_profile_snapshot(&db, "active").unwrap();
         assert!(snapshot.settings.get("groqApiKey").is_none());
         let wire = serde_json::to_string(&snapshot).unwrap();
         assert!(

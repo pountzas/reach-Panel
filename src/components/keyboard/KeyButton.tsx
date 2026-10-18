@@ -1,4 +1,5 @@
 import {
+  memo,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
@@ -41,7 +42,7 @@ type KeyButtonProps = {
   onPress: (meta?: KeyRepeatFireMeta) => void;
 };
 
-export function KeyButton({
+export const KeyButton = memo(function KeyButton({
   label,
   width = 1,
   size,
@@ -155,4 +156,4 @@ export function KeyButton({
       {label}
     </button>
   );
-}
+});

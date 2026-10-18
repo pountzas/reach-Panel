@@ -1,13 +1,10 @@
-use crate::db::{
-    Database, MacroDef, MacroStep, PhraseCategory, PhraseWithLanguage, PredictionEntry, QuickAction,
-};
+use crate::db::{Database, PredictionEntry};
 use crate::input::windows_ui_language;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use uuid::Uuid;
 
 const ACTIVE_PROFILE_CONFIG: &str = "active_profile.txt";
 pub const INTERNAL_PROFILE_ID: &str = "active";
@@ -19,41 +16,13 @@ pub struct ProfileFileInfo {
     pub name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProfileFilePhrase {
-    pub id: String,
-    pub category_id: String,
-    pub text: String,
-    pub action: String,
-    pub is_favorite: bool,
-    pub is_emergency: bool,
-    pub language: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProfileFileMacroStep {
-    pub step_order: i32,
-    pub action_type: String,
-    pub payload_json: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProfileFileMacro {
-    pub id: String,
-    pub name: String,
-    pub steps: Vec<ProfileFileMacroStep>,
-}
-
+/// On-disk profile. Legacy fields (phrases, QA, macros, head_tracking) are ignored
+/// on import via serde's default unknown-field skip; they are never re-exported.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfileFile {
     pub name: String,
     pub settings: serde_json::Value,
-    pub quick_actions: Vec<QuickAction>,
-    pub phrase_categories: Vec<PhraseCategory>,
-    pub phrases: Vec<ProfileFilePhrase>,
-    pub macros: Vec<ProfileFileMacro>,
     pub predictions: Vec<PredictionEntry>,
-    pub head_tracking_settings: serde_json::Value,
 }
 
 pub struct ProfileStore {
@@ -249,7 +218,7 @@ impl ProfileStore {
         Ok(())
     }
 
-    /// Reset settings + wipe QA/macros/phrases/predictions/HT, keep profile filename/name.
+    /// Reset settings + wipe predictions, keep profile filename/name.
     pub fn wipe_active_profile(&self, db: &Database) -> Result<()> {
         let _guard = self.lock_io()?;
         let name = db
@@ -300,442 +269,54 @@ impl ProfileStore {
     }
 }
 
+/// Settings keys for features removed in #225. Stripped on import and export so
+/// old profile files still load and new exports never carry them.
+const REMOVED_SETTINGS_KEYS: &[&str] = &[
+    "quickActionsVisible",
+    "phrasesVisible",
+    "largeHeaders",
+    "headTrackingEnabled",
+    "emergencyVisible",
+    "precisionMode",
+];
+
+fn strip_removed_settings_keys(mut settings: serde_json::Value) -> serde_json::Value {
+    if let Some(obj) = settings.as_object_mut() {
+        for key in REMOVED_SETTINGS_KEYS {
+            obj.remove(*key);
+        }
+    }
+    settings
+}
+
 fn export_profile_from_db(db: &Database, profile_id: &str) -> Result<ProfileFile> {
     let profile = db
         .get_profile_by_id(profile_id)?
         .ok_or_else(|| anyhow!("Profile not found"))?;
     let settings: serde_json::Value = serde_json::from_str(&profile.settings_json)?;
-    let quick_actions = db.get_quick_actions(profile_id)?;
-    let phrase_categories = db.get_phrase_categories(profile_id)?;
-    let phrases = db
-        .get_all_phrases(profile_id)?
-        .into_iter()
-        .map(|p| ProfileFilePhrase {
-            id: p.id,
-            category_id: p.category_id,
-            text: p.text,
-            action: p.action,
-            is_favorite: p.is_favorite,
-            is_emergency: p.is_emergency,
-            language: p.language,
-        })
-        .collect();
-    let macro_defs = db.get_macros(profile_id)?;
-    let mut macros = Vec::new();
-    for macro_def in macro_defs {
-        let steps = db
-            .get_macro_steps(&macro_def.id)?
-            .into_iter()
-            .map(|s| ProfileFileMacroStep {
-                step_order: s.step_order,
-                action_type: s.action_type,
-                payload_json: s.payload_json,
-            })
-            .collect();
-        macros.push(ProfileFileMacro {
-            id: macro_def.id,
-            name: macro_def.name,
-            steps,
-        });
-    }
     let predictions = db.get_all_predictions(profile_id)?;
-    let head_tracking_settings: serde_json::Value =
-        serde_json::from_str(&db.get_head_tracking_settings(profile_id)?)?;
     Ok(ProfileFile {
         name: profile.name,
-        settings,
-        quick_actions,
-        phrase_categories,
-        phrases,
-        macros,
+        settings: strip_removed_settings_keys(settings),
         predictions,
-        head_tracking_settings,
     })
 }
 
 fn import_profile_into_db(db: &Database, profile_id: &str, file: &ProfileFile) -> Result<()> {
-    let ui_language = file
-        .settings
+    let settings = strip_removed_settings_keys(file.settings.clone());
+    let ui_language = settings
         .get("uiLanguage")
         .and_then(|v| v.as_str())
         .unwrap_or("en");
     db.ensure_internal_profile(profile_id, &file.name, ui_language)?;
     db.clear_profile_data(profile_id)?;
-    db.update_profile_settings(profile_id, &file.settings.to_string())?;
+    db.update_profile_settings(profile_id, &settings.to_string())?;
 
-    for action in &file.quick_actions {
-        db.save_quick_action(action)?;
-    }
-    for category in &file.phrase_categories {
-        db.save_phrase_category(category)?;
-    }
-    for phrase in &file.phrases {
-        db.insert_phrase_with_language(&PhraseWithLanguage {
-            id: phrase.id.clone(),
-            profile_id: profile_id.to_string(),
-            category_id: phrase.category_id.clone(),
-            text: phrase.text.clone(),
-            action: phrase.action.clone(),
-            is_favorite: phrase.is_favorite,
-            is_emergency: phrase.is_emergency,
-            language: phrase.language.clone(),
-        })?;
-    }
-    for macro_def in &file.macros {
-        let steps: Vec<MacroStep> = macro_def
-            .steps
-            .iter()
-            .map(|s| MacroStep {
-                id: Uuid::new_v4().to_string(),
-                macro_id: macro_def.id.clone(),
-                step_order: s.step_order,
-                action_type: s.action_type.clone(),
-                payload_json: s.payload_json.clone(),
-            })
-            .collect();
-        db.save_macro(
-            &MacroDef {
-                id: macro_def.id.clone(),
-                profile_id: profile_id.to_string(),
-                name: macro_def.name.clone(),
-            },
-            &steps,
-        )?;
-    }
     for entry in &file.predictions {
         db.insert_prediction(profile_id, entry)?;
     }
-    db.save_head_tracking_settings(profile_id, &file.head_tracking_settings.to_string())?;
     Ok(())
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    fn temp_dir() -> PathBuf {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("time")
-            .as_nanos();
-        let dir = std::env::temp_dir().join(format!("reach-panel-profile-test-{nanos}"));
-        fs::create_dir_all(&dir).expect("temp dir");
-        dir
-    }
-
-    fn write_profile(dir: &Path, filename: &str, name: &str, marker: &str) {
-        let file = ProfileFile {
-            name: name.to_string(),
-            settings: json!({
-                "uiLanguage": "en",
-                "appBgColor": marker,
-                "groqApiKey": format!("key-{marker}"),
-            }),
-            quick_actions: vec![],
-            phrase_categories: vec![],
-            phrases: vec![],
-            macros: vec![],
-            predictions: vec![],
-            head_tracking_settings: json!({}),
-        };
-        fs::write(
-            dir.join("profiles").join(filename),
-            serde_json::to_string_pretty(&file).unwrap(),
-        )
-        .unwrap();
-    }
-
-    #[test]
-    fn switch_then_save_does_not_clobber_previous_profile() {
-        let root = temp_dir();
-        let db = Database::new(root.clone()).expect("db");
-        fs::create_dir_all(root.join("profiles")).unwrap();
-
-        write_profile(&root, "a.profile.json", "A", "#aaa");
-        write_profile(&root, "b.profile.json", "B", "#bbb");
-        fs::write(
-            root.join("profiles").join(ACTIVE_PROFILE_CONFIG),
-            "a.profile.json",
-        )
-        .unwrap();
-
-        // Re-read active after writing config.
-        let store = ProfileStore::new(&root).expect("store");
-        store
-            .load_profile_file(&db, "a.profile.json")
-            .expect("load a");
-
-        // Simulate the race window: import B into DB, then save while still
-        // pointing at A would historically overwrite A. With the IO lock,
-        // load completes (active=B) before any save can run.
-        store
-            .load_profile_file(&db, "b.profile.json")
-            .expect("load b");
-        store.save_active_profile(&db).expect("save");
-
-        let a: ProfileFile = serde_json::from_str(
-            &fs::read_to_string(root.join("profiles").join("a.profile.json")).unwrap(),
-        )
-        .unwrap();
-        let b: ProfileFile = serde_json::from_str(
-            &fs::read_to_string(root.join("profiles").join("b.profile.json")).unwrap(),
-        )
-        .unwrap();
-
-        assert_eq!(
-            a.settings.get("appBgColor").and_then(|v| v.as_str()),
-            Some("#aaa")
-        );
-        assert_eq!(
-            a.settings.get("groqApiKey").and_then(|v| v.as_str()),
-            Some("key-#aaa")
-        );
-        assert_eq!(
-            b.settings.get("appBgColor").and_then(|v| v.as_str()),
-            Some("#bbb")
-        );
-        assert_eq!(store.active_filename().unwrap(), "b.profile.json");
-
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn round_trip_switch_preserves_custom_settings() {
-        let root = temp_dir();
-        let db = Database::new(root.clone()).expect("db");
-        fs::create_dir_all(root.join("profiles")).unwrap();
-
-        write_profile(&root, "a.profile.json", "A", "#aaa");
-        write_profile(&root, "b.profile.json", "B", "#bbb");
-        fs::write(
-            root.join("profiles").join(ACTIVE_PROFILE_CONFIG),
-            "a.profile.json",
-        )
-        .unwrap();
-
-        let store = ProfileStore::new(&root).expect("store");
-        store
-            .load_profile_file(&db, "a.profile.json")
-            .expect("load a");
-
-        // Mutate active (A) settings and persist.
-        db.update_profile_settings(
-            INTERNAL_PROFILE_ID,
-            &serde_json::json!({
-                "uiLanguage": "en",
-                "appBgColor": "#custom-a",
-                "groqApiKey": "secret-a",
-            })
-            .to_string(),
-        )
-        .unwrap();
-        store.save_active_profile(&db).expect("save a");
-
-        store
-            .load_profile_file(&db, "b.profile.json")
-            .expect("load b");
-        store
-            .load_profile_file(&db, "a.profile.json")
-            .expect("load a again");
-
-        let profile = db.get_profile_by_id(INTERNAL_PROFILE_ID).unwrap().unwrap();
-        let settings: serde_json::Value = serde_json::from_str(&profile.settings_json).unwrap();
-        assert_eq!(
-            settings.get("appBgColor").and_then(|v| v.as_str()),
-            Some("#custom-a")
-        );
-        assert_eq!(
-            settings.get("groqApiKey").and_then(|v| v.as_str()),
-            Some("secret-a")
-        );
-        assert_eq!(store.active_filename().unwrap(), "a.profile.json");
-
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn concurrent_switch_and_save_keeps_profiles_isolated() {
-        use std::sync::Arc;
-        use std::thread;
-
-        let root = temp_dir();
-        let db = Arc::new(Database::new(root.clone()).expect("db"));
-        fs::create_dir_all(root.join("profiles")).unwrap();
-        write_profile(&root, "a.profile.json", "A", "#aaa");
-        write_profile(&root, "b.profile.json", "B", "#bbb");
-        fs::write(
-            root.join("profiles").join(ACTIVE_PROFILE_CONFIG),
-            "a.profile.json",
-        )
-        .unwrap();
-
-        let store = Arc::new(ProfileStore::new(&root).expect("store"));
-        store
-            .load_profile_file(&db, "a.profile.json")
-            .expect("load a");
-
-        let mut handles = Vec::new();
-        for i in 0..8 {
-            let store = Arc::clone(&store);
-            let db = Arc::clone(&db);
-            handles.push(thread::spawn(move || {
-                if i % 2 == 0 {
-                    store
-                        .load_profile_file(&db, "b.profile.json")
-                        .expect("load b");
-                } else {
-                    store.save_active_profile(&db).expect("save");
-                }
-            }));
-        }
-        for handle in handles {
-            handle.join().expect("thread");
-        }
-
-        // Final explicit switch + save should leave both files self-consistent.
-        store
-            .load_profile_file(&db, "a.profile.json")
-            .expect("load a final");
-        store.save_active_profile(&db).expect("save a final");
-        store
-            .load_profile_file(&db, "b.profile.json")
-            .expect("load b final");
-        store.save_active_profile(&db).expect("save b final");
-
-        let a: ProfileFile = serde_json::from_str(
-            &fs::read_to_string(root.join("profiles").join("a.profile.json")).unwrap(),
-        )
-        .unwrap();
-        let b: ProfileFile = serde_json::from_str(
-            &fs::read_to_string(root.join("profiles").join("b.profile.json")).unwrap(),
-        )
-        .unwrap();
-
-        let a_color = a
-            .settings
-            .get("appBgColor")
-            .and_then(|v| v.as_str())
-            .unwrap();
-        let b_color = b
-            .settings
-            .get("appBgColor")
-            .and_then(|v| v.as_str())
-            .unwrap();
-        // Neither file should contain the other profile's original marker after a
-        // clean final load/save of each.
-        assert!(
-            a_color == "#aaa" || a_color == "#bbb",
-            "unexpected a color {a_color}"
-        );
-        assert_eq!(b_color, "#bbb");
-        // A must not have been permanently replaced with B's identity if we
-        // finished on a clean load of A then B — B stays B; A stays A's marker
-        // unless a save raced after loading B into the shared DB *before* active
-        // was updated. The IO lock forbids that corruption path.
-        assert_eq!(a_color, "#aaa");
-
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn save_without_active_profile_errors() {
-        let root = temp_dir();
-        let db = Database::new(root.clone()).expect("db");
-        let store = ProfileStore::new(&root).expect("store");
-        let err = store.save_active_profile(&db).expect_err("should fail");
-        assert!(err.to_string().contains("No active profile file to save"));
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn deleting_custom_profile_preserves_existing_default() {
-        let root = temp_dir();
-        let db = Database::new(root.clone()).expect("db");
-        let store = ProfileStore::new(&root).expect("store");
-        store.ensure_default_profile_file(&db).unwrap();
-        db.update_profile_settings(
-            INTERNAL_PROFILE_ID,
-            r##"{"uiLanguage":"en","appBgColor":"#123456"}"##,
-        )
-        .unwrap();
-        store.save_active_profile(&db).unwrap();
-
-        let default = root.join("profiles").join(DEFAULT_PROFILE_FILENAME);
-        let before = fs::read(&default).unwrap();
-
-        store.create_profile_file(&db, "custom", "Custom").unwrap();
-        store
-            .delete_profile_file(&db, "custom.profile.json")
-            .unwrap();
-
-        assert_eq!(
-            fs::read(&default).unwrap(),
-            before,
-            "Deleting Custom must not overwrite the unrelated Default profile"
-        );
-
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn failed_create_keeps_original_active_profile_and_settings() {
-        let root = temp_dir();
-        let db = Database::new(root.clone()).expect("db");
-        let store = ProfileStore::new(&root).expect("store");
-        store.ensure_default_profile_file(&db).unwrap();
-        db.update_profile_settings(
-            INTERNAL_PROFILE_ID,
-            r##"{"uiLanguage":"en","appBgColor":"#123456"}"##,
-        )
-        .unwrap();
-        store.save_active_profile(&db).unwrap();
-
-        let before_file = store.active_filename().unwrap();
-        let before_settings = db
-            .get_profile_by_id(INTERNAL_PROFILE_ID)
-            .unwrap()
-            .unwrap()
-            .settings_json;
-
-        assert!(store
-            .create_profile_file(&db, "missing-directory/child", "Child")
-            .is_err());
-        assert_eq!(
-            store.active_filename().unwrap(),
-            before_file,
-            "A failed Create must leave the current profile active"
-        );
-        assert_eq!(
-            db.get_profile_by_id(INTERNAL_PROFILE_ID)
-                .unwrap()
-                .unwrap()
-                .settings_json,
-            before_settings
-        );
-
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn delete_rejects_paths_outside_profiles_directory() {
-        let root = temp_dir();
-        let db = Database::new(root.clone()).expect("db");
-        let store = ProfileStore::new(&root).expect("store");
-        store.ensure_default_profile_file(&db).unwrap();
-
-        let unrelated = root.join("unrelated.txt");
-        fs::write(&unrelated, "must survive").unwrap();
-
-        let result = store.delete_profile_file(&db, "../unrelated.txt");
-        assert!(
-            result.is_err(),
-            "Profile delete accepted a path outside profiles"
-        );
-        assert!(unrelated.exists());
-        assert_eq!(fs::read_to_string(&unrelated).unwrap(), "must survive");
-
-        let _ = fs::remove_dir_all(&root);
-    }
-}
+mod tests;
