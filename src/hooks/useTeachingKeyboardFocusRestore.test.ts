@@ -151,4 +151,44 @@ describe("useTeachingKeyboardFocusRestore", () => {
 
     expect(useAppStore.getState().teachingKeyboardMinimized).toBe(false);
   });
+
+  it("does not restore on pointerdown when selecting a PDF text box", () => {
+    useAppStore.setState(
+      teachingFreeWriteState({
+        freeWriteFocus: "pdf",
+        teachingKeyboardAutoFocus: true,
+        teachingKeyboardMinimized: true,
+      }),
+    );
+    renderHook(() => useTeachingKeyboardFocusRestore());
+
+    // Overlay may still mark the box as a Teaching input; select is not edit.
+    const box = document.createElement("div");
+    box.setAttribute("data-pdf-text-box", "");
+    box.setAttribute("data-teaching-input", "");
+    document.body.appendChild(box);
+
+    act(() => {
+      box.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+    });
+
+    expect(useAppStore.getState().teachingKeyboardMinimized).toBe(true);
+  });
+
+  it("restores when Free write focus rises to pdfText", () => {
+    useAppStore.setState(
+      teachingFreeWriteState({
+        freeWriteFocus: "pdf",
+        teachingKeyboardAutoFocus: true,
+        teachingKeyboardMinimized: true,
+      }),
+    );
+    renderHook(() => useTeachingKeyboardFocusRestore());
+
+    act(() => {
+      useAppStore.getState().setFreeWriteFocus("pdfText");
+    });
+
+    expect(useAppStore.getState().teachingKeyboardMinimized).toBe(false);
+  });
 });
