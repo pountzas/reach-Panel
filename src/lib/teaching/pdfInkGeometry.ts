@@ -16,8 +16,16 @@ export function eraseStrokesWithBrush(
   center: PdfPoint,
   radius: number,
 ): PdfStroke[] {
+  let changed = false;
   const next: PdfStroke[] = [];
   for (const stroke of strokes) {
+    // Fast path: keep the same object when the brush never touches the stroke
+    // so memo(FinishedStrokePolyline) can skip unchanged polylines.
+    if (!stroke.points.some((p) => distance(p, center) <= radius)) {
+      next.push(stroke);
+      continue;
+    }
+    changed = true;
     const points = stroke.points.filter(
       (p) => distance(p, center) > radius,
     );
@@ -25,5 +33,5 @@ export function eraseStrokesWithBrush(
       next.push({ ...stroke, points });
     }
   }
-  return next;
+  return changed ? next : strokes;
 }

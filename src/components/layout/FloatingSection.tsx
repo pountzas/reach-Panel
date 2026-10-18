@@ -212,6 +212,7 @@ export function FloatingSection({
         style={{
           backgroundColor: surface.panelBg,
           borderColor: surface.panelBorder,
+          contain: "layout paint",
         }}
       >
         <div

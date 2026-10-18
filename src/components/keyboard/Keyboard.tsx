@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useShallow } from "zustand/react/shallow";
 import { isTeachingSessionActive } from "../../lib/appModeLayout";
 import { isLanguageLessonCaptureActive } from "../../lib/language";
 import { isFreeWriteCaptureActive } from "../../lib/teaching";
@@ -19,7 +20,7 @@ import {
   createSerialCoalesceGate,
   type SerialCoalesceGate,
 } from "../../lib/keyRepeat";
-import { KeyButton } from "./KeyButton";
+import { KeyboardKey } from "./KeyboardKey";
 import { SpecialKeyLabel, specialKeyAriaLabel } from "./SpecialKeyLabel";
 import { LanguagePicker } from "./LanguagePicker";
 import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
@@ -30,12 +31,52 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
 import { effectiveKeyboardFontSize } from "../../lib/keyboardFontSize";
 import { isTransparentUiActive, transparentKeyPalette } from "../../lib/focusMode";
+import type { AppSettings } from "../../lib/types";
 import { inject } from "./keyboardUtils";
 import { useStickyModifiers } from "../../hooks/useStickyModifiers";
 import { useKeyboardKeyPress } from "./useKeyboardKeyPress";
+import type { KeyRepeatFireMeta } from "../../hooks/useKeyRepeat";
+
+/** Settings fields Keyboard (and its key-press helpers) actually read. */
+type KeyboardSettingsSlice = Pick<
+  AppSettings,
+  | "typingLanguage"
+  | "keyboardSectionMode"
+  | "keyboardFontSize"
+  | "keyboardKeyColor"
+  | "keyTextColor"
+  | "transparentKeyColor"
+  | "keyboardBgColor"
+  | "opacity"
+  | "groqApiKey"
+  | "languageLessonLanguage"
+  | "dictationVisible"
+  | "showTeachingInputHelpers"
+  | "focusModeTransparent"
+  | "fnKeyMode"
+>;
 
 export function Keyboard() {
-  const settings = useAppStore((s) => s.settings);
+  const settingsSlice = useAppStore(
+    useShallow((s) => ({
+      typingLanguage: s.settings.typingLanguage,
+      keyboardSectionMode: s.settings.keyboardSectionMode,
+      keyboardFontSize: s.settings.keyboardFontSize,
+      keyboardKeyColor: s.settings.keyboardKeyColor,
+      keyTextColor: s.settings.keyTextColor,
+      transparentKeyColor: s.settings.transparentKeyColor,
+      keyboardBgColor: s.settings.keyboardBgColor,
+      opacity: s.settings.opacity,
+      groqApiKey: s.settings.groqApiKey,
+      languageLessonLanguage: s.settings.languageLessonLanguage,
+      dictationVisible: s.settings.dictationVisible,
+      showTeachingInputHelpers: s.settings.showTeachingInputHelpers,
+      focusModeTransparent: s.settings.focusModeTransparent,
+      fnKeyMode: s.settings.fnKeyMode,
+    })),
+  );
+  // Helpers take Pick<AppSettings, ...>; a missing field is a type error.
+  const settings: KeyboardSettingsSlice = settingsSlice;
   const focusModeActive = useAppStore((s) => s.focusModeActive);
   const keyboardLayout = useAppStore((s) => s.keyboardLayout);
   const {
@@ -225,6 +266,50 @@ export function Keyboard() {
     checkLanguageAnswer,
   });
 
+  const keyDefsByIdRef = useRef(new Map<string, KeyDef>());
+  const keyDefsById = new Map<string, KeyDef>();
+  for (let ri = 0; ri < rows.length; ri++) {
+    const row = rows[ri]!;
+    for (let ci = 0; ci < row.length; ci++) {
+      const k = row[ci]!;
+      keyDefsById.set(`${ri}-${k.key}-${ci}`, k);
+    }
+  }
+  keyDefsByIdRef.current = keyDefsById;
+
+  const handleKeyRef = useRef(handleKey);
+  handleKeyRef.current = handleKey;
+
+  const onPressKey = useCallback(
+    (keyId: string, meta?: KeyRepeatFireMeta) => {
+      const keyDef = keyDefsByIdRef.current.get(keyId);
+      if (!keyDef) return;
+      if (keyDef.key === "backspace") {
+        const runInject = inject(
+          (kd, opts) => handleKeyRef.current(kd, opts),
+          keyDef,
+        );
+        if (meta?.repeat) {
+          backspaceInjectGate.coalesce(runInject);
+        } else {
+          backspaceInjectGate.enqueue(runInject);
+        }
+        return;
+      }
+      void handleKeyRef.current(keyDef);
+    },
+    [backspaceInjectGate],
+  );
+
+  const onHoldEndKey = useCallback(
+    (keyId: string) => {
+      const keyDef = keyDefsByIdRef.current.get(keyId);
+      if (keyDef?.key !== "backspace") return;
+      void backspaceInjectGate.whenIdle().then(() => loadSuggestions());
+    },
+    [backspaceInjectGate, loadSuggestions],
+  );
+
   const dictateBgColor = transparent
     ? settings.keyboardKeyColor ?? "#ffffff"
     : listening
@@ -237,6 +322,48 @@ export function Keyboard() {
     : dictateDisabled
       ? "#94a3b8"
       : "#2563eb";
+  const keyBgColor = settings.keyboardKeyColor ?? "#ffffff";
+
+  // Stable label elements so memo(KeyboardKey)/memo(KeyButton) can skip keys
+  // whose only change would otherwise be a new JSX `label` every render.
+  const specialLabels = useMemo(() => {
+    const m = new Map<string, ReactNode>();
+    for (const row of rows) {
+      for (const k of row) {
+        if (isSpecialLabeledKey(k.key)) {
+          m.set(k.key, <SpecialKeyLabel keyName={k.key} fontSize={fontSize} />);
+        }
+      }
+    }
+    return m;
+  }, [rows, fontSize]);
+
+  const dictateLabel = useMemo(
+    () => (
+      <span className="relative flex h-full w-full items-center justify-center">
+        <MicrophoneIcon className="absolute h-5 w-5" />
+        {groqRemainingPercent !== null ? (
+          <span
+            className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] font-semibold leading-none tabular-nums"
+            aria-hidden
+          >
+            {groqRemainingPercent}%
+          </span>
+        ) : null}
+      </span>
+    ),
+    [groqRemainingPercent],
+  );
+
+  const langSwitchLabel = useMemo(
+    () => (
+      <LanguageSwitchLabel
+        currentLanguage={settings.typingLanguage}
+        fontSize={fontSize}
+      />
+    ),
+    [settings.typingLanguage, fontSize],
+  );
 
   return (
     <div
@@ -252,25 +379,15 @@ export function Keyboard() {
       {rows.map((row, ri) => (
         <div key={ri} className="flex w-full">
           {row.map((k, ci) => {
+            const keyId = `${ri}-${k.key}-${ci}`;
             const isLang = k.key === "langswitch";
             const isDictate = k.key === "dictate";
             if (isDictate) {
               return (
-                <KeyButton
-                  key={`${ri}-${k.key}-${k.label}-${ci}`}
-                  label={
-                    <span className="relative flex h-full w-full items-center justify-center">
-                      <MicrophoneIcon className="absolute h-5 w-5" />
-                      {groqRemainingPercent !== null ? (
-                        <span
-                          className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] font-semibold leading-none tabular-nums"
-                          aria-hidden
-                        >
-                          {groqRemainingPercent}%
-                        </span>
-                      ) : null}
-                    </span>
-                  }
+                <KeyboardKey
+                  key={keyId}
+                  keyId={keyId}
+                  label={dictateLabel}
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}
@@ -283,7 +400,7 @@ export function Keyboard() {
                   active={transparent ? listening : false}
                   disabled={dictateDisabled}
                   ariaLabel={dictateAriaLabel}
-                  onPress={() => handleKey(k)}
+                  onPressKey={onPressKey}
                 />
               );
             }
@@ -291,60 +408,40 @@ export function Keyboard() {
               const specialKey = isSpecialLabeledKey(k.key);
               const isBackspace = k.key === "backspace";
               return (
-                <KeyButton
-                  key={`${ri}-${k.key}-${k.label}-${ci}`}
+                <KeyboardKey
+                  key={keyId}
+                  keyId={keyId}
                   label={
-                    specialKey ? (
-                      <SpecialKeyLabel keyName={k.key} fontSize={fontSize} />
-                    ) : (
-                      displayLabel(
-                        k,
-                        physicalKeyState.capsLock,
-                        shiftActive,
-                        fnActive,
-                        typingLocale,
-                      )
-                    )
+                    specialKey
+                      ? specialLabels.get(k.key)
+                      : displayLabel(
+                          k,
+                          physicalKeyState.capsLock,
+                          shiftActive,
+                          fnActive,
+                          typingLocale,
+                        )
                   }
                   ariaLabel={specialKey ? specialKeyAriaLabel(k.key) : undefined}
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}
                   fontSize={fontSize}
-                  bgColor={settings.keyboardKeyColor ?? "#ffffff"}
+                  bgColor={keyBgColor}
                   textColor={keyTextColor}
                   stretch
                   transparent={transparent}
                   outlineColor={settings.transparentKeyColor}
                   active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
                   repeatOnHold={isBackspace}
-                  onHoldEnd={
-                    isBackspace
-                      ? () => {
-                        void backspaceInjectGate
-                          .whenIdle()
-                          .then(() => loadSuggestions());
-                      }
-                      : undefined
-                  }
-                  onPress={(meta) => {
-                    if (isBackspace) {
-                      const runInject = inject(handleKey, k);
-                      if (meta?.repeat) {
-                        backspaceInjectGate.coalesce(runInject);
-                      } else {
-                        backspaceInjectGate.enqueue(runInject);
-                      }
-                      return;
-                    }
-                    void handleKey(k);
-                  }}
+                  onHoldEndKey={isBackspace ? onHoldEndKey : undefined}
+                  onPressKey={onPressKey}
                 />
               );
             }
             return (
               <div
-                key={`${ri}-${k.key}-${k.label}-${ci}`}
+                key={keyId}
                 ref={langKeyAnchorRef}
                 className="relative flex"
                 style={{
@@ -366,30 +463,26 @@ export function Keyboard() {
                     onClose={() => setLanguagePickerOpen(false)}
                     fontSize={fontSize}
                     textColor={keyTextColor}
-                    bgColor={settings.keyboardKeyColor ?? "#ffffff"}
+                    bgColor={keyBgColor}
                     mutedColor="#94a3b8"
                     languageSectionLabel={t("typingLanguage")}
                   />
                 ) : null}
                 <div className="flex h-full w-full">
-                  <KeyButton
-                    label={
-                      <LanguageSwitchLabel
-                        currentLanguage={settings.typingLanguage}
-                        fontSize={fontSize}
-                      />
-                    }
+                  <KeyboardKey
+                    keyId={keyId}
+                    label={langSwitchLabel}
                     width={1}
                     size={keyHeight}
                     spacing={0}
                     fontSize={fontSize}
-                    bgColor={settings.keyboardKeyColor ?? "#ffffff"}
+                    bgColor={keyBgColor}
                     textColor={keyTextColor}
                     stretch
                     transparent={transparent}
                     outlineColor={settings.transparentKeyColor}
                     active={languagePickerOpen}
-                    onPress={() => handleKey(k)}
+                    onPressKey={onPressKey}
                   />
                 </div>
               </div>

@@ -295,6 +295,16 @@ async fn animate_window_layout(
     focus_keyboard_height_ratio: f32,
     full_work_area: bool,
 ) -> Result<(), String> {
+    // Pause input-preview GDI capture for the whole animation (cleared on Drop; nested-safe).
+    struct AnimationPreviewPause;
+    impl Drop for AnimationPreviewPause {
+        fn drop(&mut self) {
+            input::input_preview::end_animation_pause();
+        }
+    }
+    input::input_preview::begin_animation_pause();
+    let _pause_preview = AnimationPreviewPause;
+
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
@@ -654,23 +664,13 @@ fn cmd_export_teaching_reach_pdf(
     teaching_pdf_reach::export_reach_pdf(&app, &source_path, from_page, to_page, &dest_path)
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TeachingPdfPayload {
-    path: String,
-    content_base64: String,
-}
-
 #[tauri::command]
 fn cmd_read_teaching_pdf(
     app: tauri::AppHandle,
     path: String,
-) -> Result<TeachingPdfPayload, String> {
+) -> Result<tauri::ipc::Response, String> {
     let bytes = teaching_pdf::read_teaching_pdf_bytes(&app, &path)?;
-    Ok(TeachingPdfPayload {
-        path,
-        content_base64: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes),
-    })
+    Ok(tauri::ipc::Response::new(bytes))
 }
 
 #[tauri::command]

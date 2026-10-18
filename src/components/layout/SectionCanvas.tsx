@@ -83,16 +83,16 @@ export function SectionCanvas({
 
   const updateSize = useCallback(() => {
     const element = containerRef.current;
-    if (!element) {
-      setContainerSize(fallbackCanvasSize());
-      return;
+    let next = fallbackCanvasSize();
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        next = { width: rect.width, height: rect.height };
+      }
     }
-    const rect = element.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      setContainerSize({ width: rect.width, height: rect.height });
-    } else {
-      setContainerSize(fallbackCanvasSize());
-    }
+    setContainerSize((prev) =>
+      prev.width === next.width && prev.height === next.height ? prev : next,
+    );
   }, [fallbackCanvasSize]);
 
   useEffect(() => {
@@ -102,7 +102,6 @@ export function SectionCanvas({
 
     const observer = new ResizeObserver(() => updateSize());
     observer.observe(element);
-    window.addEventListener("resize", updateSize);
 
     const rafId = requestAnimationFrame(updateSize);
     const timeoutId = window.setTimeout(updateSize, 50);
@@ -112,7 +111,6 @@ export function SectionCanvas({
       cancelAnimationFrame(rafId);
       window.clearTimeout(timeoutId);
       window.clearTimeout(timeoutId2);
-      window.removeEventListener("resize", updateSize);
       observer.disconnect();
     };
   }, [updateSize]);

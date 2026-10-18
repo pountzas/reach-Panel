@@ -123,6 +123,7 @@ export function DockedSection({
           ? `0 0 0 2px ${surface.panelButtonBg}`
           : undefined,
         zIndex: 10,
+        contain: "layout paint",
       }}
     >
       <div className="flex h-full flex-col overflow-hidden">
