@@ -37,6 +37,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Selecting or dragging a PDF text box with the pointer tool no longer restores a minimized Teaching keyboard (#292).
 - Bumped rustls to 0.23.46 for TLS advisories (#290).
 
+## 0.17.0 (2026-10-18)
+
+## What's Changed
+* feat: GPU-composited UI motion for Focus and overlays by @pountzas in https://github.com/pountzas/reach-Panel/pull/229
+* feat: add Settings slider for keyboard button font size by @pountzas in https://github.com/pountzas/reach-Panel/pull/230
+* fix: keep Normal/Focus height from grip without content snap by @pountzas in https://github.com/pountzas/reach-Panel/pull/231
+* chore: remove hidden v1 features and isolate teaching section by @pountzas in https://github.com/pountzas/reach-Panel/pull/232
+* Code health cleanup epic (#244) by @pountzas in https://github.com/pountzas/reach-Panel/pull/260
+* Follow-up #260: suggestion IPC errors + Rust CI by @pountzas in https://github.com/pountzas/reach-Panel/pull/261
+* feat(teaching): Free write PDF Slice 1 — single active document by @pountzas in https://github.com/pountzas/reach-Panel/pull/263
+* feat(teaching): Free write PDF ink/text (Slice 2) by @pountzas in https://github.com/pountzas/reach-Panel/pull/264
+* feat(teaching): Free write PDF export & appearances (Slice 3) by @pountzas in https://github.com/pountzas/reach-Panel/pull/265
+* Teaching mode: Settings toggle for input helpers (#262) by @pountzas in https://github.com/pountzas/reach-Panel/pull/266
+* feat(teaching): Free write PDF single document, ink, and export (#168) by @pountzas in https://github.com/pountzas/reach-Panel/pull/267
+* feat(teaching): Teaching mode polish epic — settings, helpers, layout, minimize, animations by @pountzas in https://github.com/pountzas/reach-Panel/pull/276
+* fix(teaching): stop annotation-doc copies on every ink move by @pountzas in https://github.com/pountzas/reach-Panel/pull/285
+* fix(layout): skip section-tree re-renders on resize frames (Part of #282, Fixes #279) by @pountzas in https://github.com/pountzas/reach-Panel/pull/283
+* perf(input-preview): skip unchanged frames and pause during animations by @pountzas in https://github.com/pountzas/reach-Panel/pull/284
+* fix(teaching): sharp Free Write PDF at display scale (Part of #282, Fixes #278) by @pountzas in https://github.com/pountzas/reach-Panel/pull/286
+* perf(keyboard): narrow settings subs and memo KeyButton (Part of #282, Fixes #281) by @pountzas in https://github.com/pountzas/reach-Panel/pull/287
+* perf: land epic-282-performance hotspots into dev (Part of #282) by @pountzas in https://github.com/pountzas/reach-Panel/pull/288
+* fix: harden Teaching PDF read path validation by @pountzas in https://github.com/pountzas/reach-Panel/pull/291
+* fix: keep keyboard minimized on PDF text box select by @pountzas in https://github.com/pountzas/reach-Panel/pull/293
+* dev → main: Focus mode, motion, Mic mode, v1 cleanup, and 0.17 prep by @pountzas in https://github.com/pountzas/reach-Panel/pull/235
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.16.0...v0.17.0
+
 ## 0.16.0 (2026-10-12)
 
 ## What's Changed
