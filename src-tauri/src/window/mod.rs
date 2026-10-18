@@ -740,6 +740,7 @@ mod tests {
     }
 }
 
+pub(crate) mod layout;
 mod taskbar;
 mod windows;
 
