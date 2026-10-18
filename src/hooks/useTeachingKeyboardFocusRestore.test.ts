@@ -156,6 +156,7 @@ describe("useTeachingKeyboardFocusRestore", () => {
     useAppStore.setState(
       teachingFreeWriteState({
         freeWriteFocus: "pdf",
+        freeWritePdfTool: "pointer",
         teachingKeyboardAutoFocus: true,
         teachingKeyboardMinimized: true,
       }),
@@ -187,6 +188,28 @@ describe("useTeachingKeyboardFocusRestore", () => {
 
     act(() => {
       useAppStore.getState().setFreeWriteFocus("pdfText");
+    });
+
+    expect(useAppStore.getState().teachingKeyboardMinimized).toBe(false);
+  });
+
+  it("restores on pointerdown on a PDF text box with the text tool while already editing", () => {
+    useAppStore.setState(
+      teachingFreeWriteState({
+        freeWriteFocus: "pdfText",
+        freeWritePdfTool: "text",
+        teachingKeyboardAutoFocus: true,
+        teachingKeyboardMinimized: true,
+      }),
+    );
+    renderHook(() => useTeachingKeyboardFocusRestore());
+
+    const box = document.createElement("div");
+    box.setAttribute("data-pdf-text-box", "");
+    document.body.appendChild(box);
+
+    act(() => {
+      box.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
     });
 
     expect(useAppStore.getState().teachingKeyboardMinimized).toBe(false);
