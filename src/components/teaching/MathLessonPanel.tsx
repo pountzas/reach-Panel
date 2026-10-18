@@ -3,9 +3,9 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 
 export function MathLessonPanel() {
-  const settings = useAppStore((s) => s.settings);
+  const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const { t } = useTranslation();
-  const surface = getSurfaceColors(settings.appBgColor);
+  const surface = getSurfaceColors(appBgColor);
 
   return (
     <div

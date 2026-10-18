@@ -35,7 +35,7 @@ export type KeyPressContext = {
     t: LayoutKeyTranslation,
     opts: ReturnType<typeof greekTranslateOptions>,
   ) => void;
-  settings: AppSettings;
+  settings: Pick<AppSettings, "fnKeyMode">;
   activeModifiers: string[];
   clearStickyExceptFn: () => void;
   clearSticky: () => void;

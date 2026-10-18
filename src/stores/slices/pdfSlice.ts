@@ -7,15 +7,17 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { notify } from "../../lib/notify";
 import {
+  applyPdfAnnotationChange,
   clearTeachingPdf,
-  clonePdfAnnotationDoc,
   createUndoStack,
   emptyPdfAnnotationDoc,
+  invertPdfAnnotationChange,
   migrateToSingleTeachingPdf,
   parsePdfAnnotationJson,
   replaceTeachingPdf,
   serializePdfAnnotationJson,
   suggestedExportFileName,
+  type PdfAnnotationChange,
 } from "../../lib/teaching";
 import type { TeachingPdfEntry } from "../../lib/teaching";
 import { t as translate } from "../../i18n";
@@ -27,6 +29,36 @@ let freeWriteAnnotationsPath: string | null = null;
 
 function resetFreeWriteUndo(): void {
   freeWriteUndoStack = createUndoStack(50);
+}
+
+function makeChangeUndoEntry(
+  get: () => AppStore,
+  set: (partial: Partial<AppStore>) => void,
+  change: PdfAnnotationChange,
+) {
+  return {
+    undo: () => {
+      const doc = get().freeWriteAnnotationDoc;
+      const next = applyPdfAnnotationChange(
+        doc,
+        invertPdfAnnotationChange(change),
+      );
+      set({
+        freeWriteAnnotationDoc: next,
+        freeWriteAnnotationDirty: true,
+      });
+      get().scheduleSaveFreeWriteAnnotations();
+    },
+    redo: () => {
+      const doc = get().freeWriteAnnotationDoc;
+      const next = applyPdfAnnotationChange(doc, change);
+      set({
+        freeWriteAnnotationDoc: next,
+        freeWriteAnnotationDirty: true,
+      });
+      get().scheduleSaveFreeWriteAnnotations();
+    },
+  };
 }
 
 export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
@@ -345,11 +377,17 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
   },
   applyFreeWriteAnnotationUpdater: (updater, options) => {
     const current = get().freeWriteAnnotationDoc;
-    const next = updater(clonePdfAnnotationDoc(current));
+    // Callers must return a structurally shared next doc — never mutate `current`.
+    const next = updater(current);
     const pushUndo = options?.pushUndo !== false;
-    if (pushUndo) {
-      const before = clonePdfAnnotationDoc(options?.undoFrom ?? current);
-      const after = clonePdfAnnotationDoc(next);
+    const change = options?.change;
+    if (pushUndo && change) {
+      freeWriteUndoStack.push(makeChangeUndoEntry(get, set, change));
+    } else if (pushUndo) {
+      // Compat for non-gesture callers (e.g. text-box delete): keep doc refs
+      // without cloning. Prefer passing `change` for per-gesture patches.
+      const before = options?.undoFrom ?? current;
+      const after = next;
       freeWriteUndoStack.push({
         undo: () => {
           set({

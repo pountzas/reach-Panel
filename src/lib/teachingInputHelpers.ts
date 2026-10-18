@@ -17,26 +17,28 @@ export type TeachingChromeVisibility = {
   dictationKeyVisible: boolean;
 };
 
-export function teachingInputHelpersEnabled(settings: AppSettings): boolean {
+export function teachingInputHelpersEnabled(
+  settings: Pick<AppSettings, "showTeachingInputHelpers">,
+): boolean {
   return settings.showTeachingInputHelpers !== false;
 }
 
 export function teachingHidesInputHelpers(
   teachingSessionActive: boolean,
-  settings: AppSettings,
+  settings: Pick<AppSettings, "showTeachingInputHelpers">,
 ): boolean {
   return teachingSessionActive && !teachingInputHelpersEnabled(settings);
 }
 
 export function shouldSuppressLanguageSuggestions(
   languageLessonActive: boolean,
-  settings: AppSettings,
+  settings: Pick<AppSettings, "showTeachingInputHelpers">,
 ): boolean {
   return languageLessonActive && !teachingInputHelpersEnabled(settings);
 }
 
 export function isDictationKeyVisible(
-  settings: AppSettings,
+  settings: Pick<AppSettings, "dictationVisible" | "showTeachingInputHelpers">,
   teachingSessionActive: boolean,
 ): boolean {
   if (!settings.dictationVisible) return false;

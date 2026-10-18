@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import {
@@ -12,17 +13,23 @@ const PREVIEW_HEIGHT_PX = 48;
 export function InputPreview() {
   const inputPreviewFrame = useAppStore((s) => s.inputPreviewFrame);
   const focused = useAppStore((s) => s.externalInputFocused);
-  const settings = useAppStore((s) => s.settings);
   const focusModeActive = useAppStore((s) => s.focusModeActive);
-  const { t } = useTranslation();
-  const transparent = isTransparentUiActive(settings, focusModeActive);
-  const transparentPalette = transparentKeyPalette(
-    settings.transparentKeyColor,
+  const { focusModeTransparent, transparentKeyColor } = useAppStore(
+    useShallow((s) => ({
+      focusModeTransparent: s.settings.focusModeTransparent,
+      transparentKeyColor: s.settings.transparentKeyColor,
+    })),
   );
+  const { t } = useTranslation();
+  const transparent = isTransparentUiActive(
+    { focusModeTransparent },
+    focusModeActive,
+  );
+  const transparentPalette = transparentKeyPalette(transparentKeyColor);
   const frameStyle = transparent
     ? transparentOutlineStyle({
         color: transparentPalette.text,
-        outlineColor: settings.transparentKeyColor,
+        outlineColor: transparentKeyColor,
       })
     : {
         borderColor: "#94a3b8",

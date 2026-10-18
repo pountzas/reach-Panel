@@ -1,5 +1,6 @@
 import { Activity, useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import type { SurfaceColors } from "../../lib/colorProfiles";
 import {
   normalizeExportPageRange,
@@ -121,7 +122,8 @@ export function FreeWritePdfExportDialog({
     onExport(result.from, result.to);
   };
 
-  return (
+  // Portal to body so section `contain: layout paint` cannot trap/clip the overlay.
+  return createPortal(
     <Activity mode={open ? "visible" : "hidden"}>
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
         <div
@@ -217,6 +219,7 @@ export function FreeWritePdfExportDialog({
           </div>
         </div>
       </div>
-    </Activity>
+    </Activity>,
+    document.body,
   );
 }
