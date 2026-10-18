@@ -83,11 +83,39 @@ fn load_allowlist_from_disk(teaching_dir: &Path) -> Result<HashSet<PathBuf>, Str
             continue;
         };
         let p = PathBuf::from(s);
-        if let Ok(canonical) = p.canonicalize() {
-            out.insert(canonical);
-        }
+        // Stored values are canonical already; keep them even if the file is temporarily unavailable.
+        out.insert(p.canonicalize().unwrap_or(p));
     }
     Ok(out)
+}
+
+/// Load the allowlist. On the first run after upgrade (no allowlist file yet), seed it once
+/// from the existing library so previously opened PDFs keep working.
+/// An unreadable allowlist file is treated as empty instead of blocking every read.
+fn load_or_migrate_allowlist(teaching_dir: &Path) -> Result<HashSet<PathBuf>, String> {
+    if allowlist_file(teaching_dir).exists() {
+        return Ok(load_allowlist_from_disk(teaching_dir).unwrap_or_else(|e| {
+            eprintln!("[teaching_pdf] ignoring unreadable allowlist: {e}");
+            HashSet::new()
+        }));
+    }
+    let mut paths = HashSet::new();
+    if let Ok(entries) = read_library(&library_path(teaching_dir)) {
+        for entry in entries {
+            let Some(stored) = entry.get("path").and_then(|v| v.as_str()) else {
+                continue;
+            };
+            let p = PathBuf::from(stored);
+            if !has_allowed_pdf_extension(&p) {
+                continue;
+            }
+            if let Ok(canonical) = p.canonicalize() {
+                paths.insert(canonical);
+            }
+        }
+    }
+    persist_allowlist(teaching_dir, &paths)?;
+    Ok(paths)
 }
 
 fn persist_allowlist(teaching_dir: &Path, paths: &HashSet<PathBuf>) -> Result<(), String> {
@@ -97,7 +125,10 @@ fn persist_allowlist(teaching_dir: &Path, paths: &HashSet<PathBuf>) -> Result<()
         .map(|p| Value::String(p.to_string_lossy().into_owned()))
         .collect();
     let text = serde_json::to_string_pretty(&list).map_err(|e| e.to_string())?;
-    fs::write(allowlist_file(teaching_dir), text).map_err(|e| e.to_string())
+    let dest = allowlist_file(teaching_dir);
+    let tmp = dest.with_extension("json.tmp");
+    fs::write(&tmp, text).map_err(|e| e.to_string())?;
+    fs::rename(&tmp, &dest).map_err(|e| e.to_string())
 }
 
 fn canonicalize_teaching_root(teaching_dir: &Path) -> Result<PathBuf, String> {
@@ -136,8 +167,10 @@ pub(crate) fn allow_path_in_dir(
     let canonical = path
         .canonicalize()
         .map_err(|e| format!("Teaching PDF path could not be recorded: {e}"))?;
-    allowlist.insert(canonical);
-    persist_allowlist(teaching_dir, allowlist)
+    if allowlist.insert(canonical) {
+        persist_allowlist(teaching_dir, allowlist)?;
+    }
+    Ok(())
 }
 
 fn filter_entries_for_save(
@@ -209,7 +242,7 @@ fn with_allowlist_mut<R>(
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     if !cache.loaded {
-        cache.paths = load_allowlist_from_disk(&dir)?;
+        cache.paths = load_or_migrate_allowlist(&dir)?;
         cache.loaded = true;
     }
     f(&dir, &mut cache.paths)
@@ -230,16 +263,18 @@ pub fn list_teaching_pdfs(app: &AppHandle) -> Result<Vec<Value>, String> {
 pub fn save_teaching_pdfs(app: &AppHandle, entries: Vec<Value>) -> Result<(), String> {
     with_allowlist_ref(app, |dir, allowlist| {
         let teaching_root = canonicalize_teaching_root(dir)?;
+        let requested = entries.len();
         let filtered = filter_entries_for_save(entries, &teaching_root, allowlist);
+        if filtered.len() != requested {
+            return Err("Teaching PDF path is not allowed".to_string());
+        }
         write_library(&library_path(dir), &filtered)
     })
 }
 
 /// Record a user-picked PDF path so a subsequent read is allowed (persisted on disk).
-pub fn allow_teaching_pdf_read_path(app: &AppHandle, path: &Path) {
-    let _ = with_allowlist_mut(app, |dir, allowlist| {
-        allow_path_in_dir(dir, allowlist, path)
-    });
+pub fn allow_teaching_pdf_read_path(app: &AppHandle, path: &Path) -> Result<(), String> {
+    with_allowlist_mut(app, |dir, allowlist| allow_path_in_dir(dir, allowlist, path))
 }
 
 pub(crate) fn path_is_allowed(
@@ -411,6 +446,90 @@ mod tests {
         )
         .expect_err("non-pdf must be rejected");
         assert!(err.contains("file type"), "unexpected error: {err}");
+
+        let _ = fs::remove_dir_all(&teaching);
+    }
+
+    #[test]
+    fn migrates_existing_library_entry_when_allowlist_missing() {
+        let teaching = temp_teaching_dir();
+        let legacy = teaching
+            .parent()
+            .expect("parent")
+            .join(format!(
+                "legacy-{}.pdf",
+                teaching.file_name().unwrap().to_string_lossy()
+            ));
+        write_pdf(&legacy, b"%PDF-legacy");
+        write_library(
+            &library_path(&teaching),
+            &[json!({
+                "id": "legacy",
+                "title": "legacy.pdf",
+                "path": legacy.to_string_lossy(),
+                "lastOpenedAt": "2026-01-01T00:00:00.000Z",
+            })],
+        )
+        .unwrap();
+
+        let allowlist = load_or_migrate_allowlist(&teaching).expect("migrate");
+        assert!(
+            allowlist_file(&teaching).exists(),
+            "migration must persist so it runs once"
+        );
+        let bytes = read_teaching_pdf_bytes_in_dir(
+            &teaching,
+            &allowlist,
+            &legacy.to_string_lossy(),
+        )
+        .expect("PDF opened before upgrade must still open");
+        assert_eq!(bytes, b"%PDF-legacy");
+
+        let _ = fs::remove_file(&legacy);
+        let _ = fs::remove_dir_all(&teaching);
+    }
+
+    #[test]
+    fn corrupt_allowlist_does_not_block_in_dir_reads() {
+        let teaching = temp_teaching_dir();
+        fs::write(allowlist_file(&teaching), b"{not json").unwrap();
+        let inside = teaching.join("lesson.pdf");
+        write_pdf(&inside, b"%PDF-inside");
+
+        let allowlist =
+            load_or_migrate_allowlist(&teaching).expect("corrupt file must not error");
+        let bytes = read_teaching_pdf_bytes_in_dir(
+            &teaching,
+            &allowlist,
+            &inside.to_string_lossy(),
+        )
+        .expect("in-dir PDF must still open");
+        assert_eq!(bytes, b"%PDF-inside");
+
+        let _ = fs::remove_dir_all(&teaching);
+    }
+
+    #[test]
+    fn keep_allowlist_entry_when_file_temporarily_missing() {
+        let teaching = temp_teaching_dir();
+        let picked = teaching
+            .parent()
+            .expect("parent")
+            .join(format!(
+                "missing-{}.pdf",
+                teaching.file_name().unwrap().to_string_lossy()
+            ));
+        write_pdf(&picked, b"%PDF-missing");
+        let mut allowlist = HashSet::new();
+        allow_path_in_dir(&teaching, &mut allowlist, &picked).expect("allow");
+        let canonical = picked.canonicalize().unwrap();
+        fs::remove_file(&picked).unwrap();
+
+        let reloaded = load_allowlist_from_disk(&teaching).expect("load");
+        assert!(
+            reloaded.contains(&canonical),
+            "temporarily missing files must stay on the allowlist"
+        );
 
         let _ = fs::remove_dir_all(&teaching);
     }

@@ -378,13 +378,13 @@ pub fn ensure_reach_pdf(app: &AppHandle, original_path: &str) -> Result<ReachPat
         // Read via allowlisted API (size checks).
         let bytes = teaching_pdf::read_teaching_pdf_bytes(app, &original.to_string_lossy())?;
         fs::write(&reach, &bytes).map_err(|e| format!("Failed to create reach PDF: {e}"))?;
-        allow_teaching_pdf_read_path(app, &reach);
+        allow_teaching_pdf_read_path(app, &reach)?;
 
         let mut doc = load_doc(&reach)?;
         upsert_embedded_json(&mut doc, EMPTY_ANNOTATION_JSON)?;
         save_doc(&mut doc, &reach)?;
     } else {
-        allow_teaching_pdf_read_path(app, &reach);
+        allow_teaching_pdf_read_path(app, &reach)?;
         // Ensure attachment exists.
         let mut doc = load_doc(&reach)?;
         if extract_embedded_json(&mut doc)?.is_none() {
@@ -416,7 +416,7 @@ pub fn read_reach_annotations(
             json: EMPTY_ANNOTATION_JSON.to_string(),
         });
     }
-    allow_teaching_pdf_read_path(app, &reach);
+    allow_teaching_pdf_read_path(app, &reach)?;
     let mut doc = load_doc(&reach)?;
     let json = extract_embedded_json(&mut doc)?.unwrap_or_else(|| EMPTY_ANNOTATION_JSON.to_string());
     Ok(ReachAnnotationsResult { json })
@@ -528,7 +528,7 @@ pub fn export_reach_pdf(
     let ann_json = {
         let reach = to_reach_pdf_path(&source);
         if reach.exists() {
-            allow_teaching_pdf_read_path(app, &reach);
+            allow_teaching_pdf_read_path(app, &reach)?;
             let mut reach_doc = load_doc(&reach)?;
             extract_embedded_json(&mut reach_doc)?.unwrap_or_else(|| EMPTY_ANNOTATION_JSON.to_string())
         } else {
@@ -566,7 +566,7 @@ pub fn export_reach_pdf(
         fs::create_dir_all(parent).map_err(|e| format!("Failed to create export folder: {e}"))?;
     }
     save_doc(&mut doc, &dest)?;
-    allow_teaching_pdf_read_path(app, &dest);
+    allow_teaching_pdf_read_path(app, &dest)?;
 
     Ok(ReachExportResult {
         dest_path: dest.to_string_lossy().into_owned(),
