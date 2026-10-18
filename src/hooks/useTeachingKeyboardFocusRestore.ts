@@ -115,9 +115,17 @@ export function useTeachingKeyboardFocusRestore(): void {
 
     // Selecting an in-app Teaching input restores, even when the store target
     // is unchanged (Free write opens with freeWriteFocus already "notepad").
+    // PDF text boxes: a pointer-tool tap is select/drag, not edit, so skip it
+    // (double-click restores via the freeWriteFocus → "pdfText" rising edge).
+    // With the text tool the tap edits the box, so restore even when focus is
+    // already "pdfText" (no rising edge after a manual Minimize).
     const onSelectInput = (event: Event) => {
       if (!(event.target instanceof Element)) return;
-      if (!event.target.closest("[data-teaching-input]")) return;
+      if (event.target.closest("[data-pdf-text-box]")) {
+        if (useAppStore.getState().freeWritePdfTool !== "text") return;
+      } else if (!event.target.closest("[data-teaching-input]")) {
+        return;
+      }
       const state = useAppStore.getState();
       if (state.teachingKeyboardMinimized) state.setTeachingKeyboardMinimized(false);
     };
