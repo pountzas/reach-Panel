@@ -593,10 +593,13 @@ fn pick_teaching_pdf(app: &tauri::AppHandle) -> Result<Option<String>, String> {
         .set_parent(&window)
         .pick_file();
 
-    Ok(file.map(|p| {
-        teaching_pdf::allow_teaching_pdf_read_path(&p);
-        p.to_string_lossy().into_owned()
-    }))
+    match file {
+        Some(p) => {
+            teaching_pdf::allow_teaching_pdf_read_path(app, &p)?;
+            Ok(Some(p.to_string_lossy().into_owned()))
+        }
+        None => Ok(None),
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -637,10 +640,7 @@ fn pick_teaching_reach_export_path(
         .set_parent(&window)
         .save_file();
 
-    Ok(file.map(|p| {
-        teaching_pdf::allow_teaching_pdf_read_path(&p);
-        p.to_string_lossy().into_owned()
-    }))
+    Ok(file.map(|p| p.to_string_lossy().into_owned()))
 }
 
 #[tauri::command]
