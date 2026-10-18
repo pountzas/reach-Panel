@@ -185,7 +185,9 @@ fn filter_entries_for_save(
                 return false;
             };
             let Ok(canonical) = PathBuf::from(stored).canonicalize() else {
-                return false;
+                // Missing/offline file: keep the entry. It grants nothing (reads still need
+                // canonicalize + allowlist), and dropping it would fail the whole save.
+                return true;
             };
             path_allowed(&canonical, teaching_root, allowlist)
         })
@@ -376,6 +378,44 @@ mod tests {
         assert!(err.contains("not allowed"), "unexpected error: {err}");
 
         let _ = fs::remove_file(&outside);
+        let _ = fs::remove_dir_all(&teaching);
+    }
+
+    #[test]
+    fn missing_library_path_is_kept_on_save_but_still_unreadable() {
+        let teaching = temp_teaching_dir();
+        let missing = teaching
+            .parent()
+            .expect("parent")
+            .join(format!(
+                "missing-save-{}.pdf",
+                teaching.file_name().unwrap().to_string_lossy()
+            ));
+        assert!(!missing.exists());
+
+        let entries = vec![json!({
+            "id": "missing",
+            "title": "missing.pdf",
+            "path": missing.to_string_lossy(),
+            "lastOpenedAt": "2026-01-01T00:00:00.000Z",
+        })];
+        let allowlist = HashSet::new();
+        let teaching_root = canonicalize_teaching_root(&teaching).unwrap();
+        let filtered = filter_entries_for_save(entries, &teaching_root, &allowlist);
+        assert_eq!(filtered.len(), 1, "missing files must stay in the library");
+        assert_eq!(filtered[0]["id"], "missing");
+
+        let err = read_teaching_pdf_bytes_in_dir(
+            &teaching,
+            &allowlist,
+            &missing.to_string_lossy(),
+        )
+        .expect_err("missing path must still fail to read");
+        assert!(
+            err.contains("not found") || err.contains("not allowed"),
+            "unexpected error: {err}"
+        );
+
         let _ = fs::remove_dir_all(&teaching);
     }
 

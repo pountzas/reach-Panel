@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Text-field detection: number inputs (spinbutton) count as text, select-only comboboxes (Chromium `<select>`, Base UI/shadcn Select buttons) and read-only custom text no longer do, and contenteditable iframe editors (TinyMCE, CKEditor 4) are detected.
 - Dictation no longer gets stuck as "already active" after a WinRT silence timeout; timeouts and pauses no longer show an error.
 - Teaching no longer keeps native live-input capture running while the preview is hidden (#269).
+- Free write PDF: drawing, erasing and dragging text no longer copy the whole annotation document on every pen move; pages render sharp at Windows display scaling; window animations skip unchanged section resizes; the live input preview skips unchanged frames and pauses during window animations; keyboard keys re-render less on settings changes (#282).
+- Teaching PDFs are read only from files picked in the app or stored in the Teaching folder; PDFs opened before this update keep working (#291).
+- Selecting or dragging a PDF text box with the pointer tool no longer restores a minimized Teaching keyboard (#292).
+- Bumped rustls to 0.23.46 for TLS advisories (#290).
 
 ## 0.16.0 (2026-10-12)
 
