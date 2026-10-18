@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct TeachingPdfEntry {
     pub id: String,
+    #[serde(default)]
     pub title: String,
     pub path: String,
+    #[serde(default)]
     pub last_opened_at: String,
 }
 
@@ -30,16 +32,26 @@ pub fn cmd_read_teaching_pdf(
     Ok(tauri::ipc::Response::new(bytes))
 }
 
-#[tauri::command]
-pub fn cmd_list_teaching_pdfs(app: tauri::AppHandle) -> Result<Vec<TeachingPdfEntry>, String> {
-    let values = crate::teaching_pdf::list_teaching_pdfs(&app)?;
+/// Parse stored library values, skipping entries that don't match the schema
+/// (matches the frontend's previous tolerant filter instead of failing the whole list).
+fn entries_from_values(values: Vec<serde_json::Value>) -> Vec<TeachingPdfEntry> {
     values
         .into_iter()
-        .map(|v| {
-            serde_json::from_value(v)
-                .map_err(|e| format!("Teaching PDF library entry is invalid: {e}"))
+        .filter_map(|v| match serde_json::from_value::<TeachingPdfEntry>(v) {
+            Ok(entry) => Some(entry),
+            Err(e) => {
+                eprintln!("Skipping invalid Teaching PDF library entry: {e}");
+                None
+            }
         })
         .collect()
+}
+
+#[tauri::command]
+pub fn cmd_list_teaching_pdfs(app: tauri::AppHandle) -> Result<Vec<TeachingPdfEntry>, String> {
+    Ok(entries_from_values(crate::teaching_pdf::list_teaching_pdfs(
+        &app,
+    )?))
 }
 
 #[tauri::command]
@@ -86,4 +98,37 @@ pub fn cmd_delete_teaching_reach_pdf(
     path: String,
 ) -> Result<crate::teaching_pdf_reach::ReachDeleteResult, String> {
     crate::teaching_pdf_reach::delete_reach_pdf(&app, &path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{entries_from_values, TeachingPdfEntry};
+    use serde_json::json;
+
+    #[test]
+    fn teaching_pdf_entry_round_trips_camel_case_json() {
+        let on_disk = json!({
+            "id": "a",
+            "title": "a.pdf",
+            "path": "C:\\docs\\a.pdf",
+            "lastOpenedAt": "2026-01-01T00:00:00.000Z"
+        });
+        let entry: TeachingPdfEntry = serde_json::from_value(on_disk.clone()).unwrap();
+        assert_eq!(entry.last_opened_at, "2026-01-01T00:00:00.000Z");
+        assert_eq!(serde_json::to_value(&entry).unwrap(), on_disk);
+    }
+
+    #[test]
+    fn invalid_entries_are_skipped_not_fatal() {
+        let values = vec![
+            json!({ "id": "ok", "title": "ok.pdf", "path": "C:\\ok.pdf", "lastOpenedAt": "x" }),
+            json!({ "id": "partial", "path": "C:\\partial.pdf" }),
+            json!({ "title": "no-id-or-path.pdf" }),
+            json!("not an object"),
+        ];
+        let entries = entries_from_values(values);
+        let ids: Vec<_> = entries.iter().map(|e| e.id.as_str()).collect();
+        assert_eq!(ids, vec!["ok", "partial"]);
+        assert_eq!(entries[1].title, "");
+    }
 }
