@@ -1,6 +1,6 @@
 //! Live thumbnail of the focused external input field for the keyboard UI.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Condvar, Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
@@ -42,9 +42,9 @@ static DIRTY: AtomicBool = AtomicBool::new(false);
 static WORKER_LOCK: Mutex<()> = Mutex::new(());
 static WORKER_CV: Condvar = Condvar::new();
 static PREVIEW_ENABLED: AtomicBool = AtomicBool::new(true);
-/// Set by `animate_window_layout` for the animation duration; preview skips GDI captures.
-static PAUSE_FOR_ANIMATION: AtomicBool = AtomicBool::new(false);
-/// Cleared by the worker; set on enable/disable, clear, companion connect, animation end.
+/// Nested animation pause count from `animate_window_layout`; preview skips GDI while > 0.
+static ANIMATIONS_ACTIVE: AtomicUsize = AtomicUsize::new(0);
+/// Cleared by the worker; set on enable/disable, clear, companion connect/disconnect, animation end.
 static FORCE_FRESH_FRAME: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Clone, Serialize)]
@@ -83,13 +83,25 @@ pub fn set_enabled(enabled: bool) {
     notify_worker();
 }
 
-/// Pause GDI capture while the main window layout is animating.
-pub fn set_pause_for_animation(paused: bool) {
-    PAUSE_FOR_ANIMATION.store(paused, Ordering::Release);
-    if !paused {
+/// Begin skipping GDI capture for a window-layout animation (supports nesting).
+pub fn begin_animation_pause() {
+    ANIMATIONS_ACTIVE.fetch_add(1, Ordering::AcqRel);
+}
+
+/// End one animation pause; request a fresh frame when the last nested pause clears.
+pub fn end_animation_pause() {
+    let prev = ANIMATIONS_ACTIVE.load(Ordering::Acquire);
+    if prev == 0 {
+        return;
+    }
+    if ANIMATIONS_ACTIVE.fetch_sub(1, Ordering::AcqRel) == 1 {
         request_fresh_frame(FrameSkipReset::AnimationEnded);
         notify_worker();
     }
+}
+
+fn animation_paused() -> bool {
+    ANIMATIONS_ACTIVE.load(Ordering::Acquire) > 0
 }
 
 pub fn notify_bounds_changed() {
@@ -132,15 +144,24 @@ fn preview_loop() {
         }
 
         // Skip GDI while the main window is animating; one fresh frame after it clears.
-        if PAUSE_FOR_ANIMATION.load(Ordering::Acquire) {
+        if animation_paused() {
             continue;
         }
 
         let companion_live = companion_session_live();
-        if companion_live && !was_companion_live {
-            // Clear desktop strip once when the tablet takes over; keep capturing.
-            last_frame = reset_last_frame(FrameSkipReset::CompanionConnected);
-            emit_cleared();
+        let (reset_frame, clear_desktop) =
+            companion_transition(was_companion_live, companion_live);
+        if reset_frame {
+            // Routing changed (tablet took over or left): next capture must emit.
+            last_frame = reset_last_frame(if companion_live {
+                FrameSkipReset::CompanionConnected
+            } else {
+                FrameSkipReset::CompanionDisconnected
+            });
+            if clear_desktop {
+                // Clear desktop strip once when the tablet takes over; keep capturing.
+                emit_cleared();
+            }
         }
         was_companion_live = companion_live;
 
@@ -694,7 +715,17 @@ pub(crate) enum FrameSkipReset {
     TargetChanged,
     EnabledChanged,
     CompanionConnected,
+    CompanionDisconnected,
     AnimationEnded,
+}
+
+/// Pure companion-routing transition: `(reset_last_frame, clear_desktop_strip)`.
+pub(crate) fn companion_transition(was_live: bool, now_live: bool) -> (bool, bool) {
+    if was_live == now_live {
+        return (false, false);
+    }
+    // Connect: reset + clear desktop. Disconnect: reset only (keep capturing for desktop).
+    (true, now_live)
 }
 
 /// After a reset event, forget the last frame (fresh emit required).
@@ -935,10 +966,44 @@ mod tests {
             FrameSkipReset::TargetChanged,
             FrameSkipReset::EnabledChanged,
             FrameSkipReset::CompanionConnected,
+            FrameSkipReset::CompanionDisconnected,
             FrameSkipReset::AnimationEnded,
         ];
         for event in events {
             assert_eq!(reset_last_frame(event), None);
         }
+    }
+
+    #[test]
+    fn companion_transition_connect_resets_and_clears_desktop() {
+        assert_eq!(companion_transition(false, true), (true, true));
+    }
+
+    #[test]
+    fn companion_transition_disconnect_resets_without_clearing_desktop() {
+        assert_eq!(companion_transition(true, false), (true, false));
+    }
+
+    #[test]
+    fn companion_transition_steady_states_are_noops() {
+        assert_eq!(companion_transition(false, false), (false, false));
+        assert_eq!(companion_transition(true, true), (false, false));
+    }
+
+    #[test]
+    fn animation_pause_counter_nests_and_clears() {
+        // Reset in case other tests left a count (tests share the process static).
+        while animation_paused() {
+            end_animation_pause();
+        }
+        begin_animation_pause();
+        begin_animation_pause();
+        end_animation_pause();
+        assert!(animation_paused());
+        end_animation_pause();
+        assert!(!animation_paused());
+        // Extra end is a no-op (no underflow).
+        end_animation_pause();
+        assert!(!animation_paused());
     }
 }

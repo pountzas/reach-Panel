@@ -1,9 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import * as pdfAnnotations from "./pdfAnnotations";
 import {
   addStrokeToPage,
-  clonePdfAnnotationDoc,
   emptyPdfAnnotationDoc,
-  ensurePage,
   type PdfPoint,
   type PdfStroke,
 } from "./pdfAnnotations";
@@ -24,14 +23,15 @@ function makeDocWithPoints(pointCount: number) {
   return doc;
 }
 
-/** Simulates pre-#277 pen move: full JSON clone of the doc on every move. */
-function oldPathGestureMs(basePoints: number, moveCount: number): number {
+/** Pre-#277 pen move: full JSON clone of the doc on every move. */
+function oldPathGestureCloneCount(basePoints: number, moveCount: number): number {
   let doc = makeDocWithPoints(basePoints);
   const id = "live";
-  const t0 = performance.now();
+  let clones = 0;
   for (let i = 0; i < moveCount; i += 1) {
-    const next = clonePdfAnnotationDoc(doc);
-    const page = ensurePage(next, "1");
+    const next = pdfAnnotations.clonePdfAnnotationDoc(doc);
+    clones += 1;
+    const page = pdfAnnotations.ensurePage(next, "1");
     let stroke = page.strokes.find((s) => s.id === id);
     if (!stroke) {
       stroke = {
@@ -45,14 +45,14 @@ function oldPathGestureMs(basePoints: number, moveCount: number): number {
     stroke.points = [...stroke.points, [i / moveCount, 0.5]];
     doc = next;
   }
-  return performance.now() - t0;
+  return clones;
 }
 
 /** Post-#277: append in a local array; one structural commit at gesture end. */
-function newPathGestureMs(basePoints: number, moveCount: number): number {
+function newPathGestureCloneCount(basePoints: number, moveCount: number): number {
+  const cloneSpy = vi.spyOn(pdfAnnotations, "clonePdfAnnotationDoc");
   const doc = makeDocWithPoints(basePoints);
   const points: PdfPoint[] = [[0, 0]];
-  const t0 = performance.now();
   for (let i = 0; i < moveCount; i += 1) {
     points.push([i / moveCount, 0.5]);
   }
@@ -63,26 +63,18 @@ function newPathGestureMs(basePoints: number, moveCount: number): number {
     points,
   };
   addStrokeToPage(doc, "1", stroke);
-  return performance.now() - t0;
+  const calls = cloneSpy.mock.calls.length;
+  cloneSpy.mockRestore();
+  return calls;
 }
 
 describe("ink gesture copy cost (~50k points on page)", () => {
-  it(
-    "new path is far cheaper than full-doc clone-per-move",
-    () => {
-      const basePoints = 50_000;
-      // Fewer moves than a real stroke keeps CI under ~5s while still showing
-      // clone-per-move cost on a ~50k-point page. Full 120-move run locally:
-      // before≈13979ms, after≈0.3ms (2026-10-17).
-      const moveCount = 24;
-      const oldMs = oldPathGestureMs(basePoints, moveCount);
-      const newMs = newPathGestureMs(basePoints, moveCount);
-      console.log(
-        `[issue-277 perf] ~${basePoints} pts page, ${moveCount} moves: before(clone/move)=${oldMs.toFixed(1)}ms after(commit-once)=${newMs.toFixed(1)}ms`,
-      );
-      expect(newMs).toBeLessThan(oldMs);
-      expect(newMs).toBeLessThan(16);
-    },
-    30_000,
-  );
+  it("new path clones the doc 0 times during a gesture; old path clones once per move", () => {
+    const basePoints = 50_000;
+    const moveCount = 24;
+    const oldClones = oldPathGestureCloneCount(basePoints, moveCount);
+    const newClones = newPathGestureCloneCount(basePoints, moveCount);
+    expect(oldClones).toBe(moveCount);
+    expect(newClones).toBe(0);
+  });
 });

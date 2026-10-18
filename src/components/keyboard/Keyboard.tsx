@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useShallow } from "zustand/react/shallow";
 import { isTeachingSessionActive } from "../../lib/appModeLayout";
@@ -37,6 +37,25 @@ import { useStickyModifiers } from "../../hooks/useStickyModifiers";
 import { useKeyboardKeyPress } from "./useKeyboardKeyPress";
 import type { KeyRepeatFireMeta } from "../../hooks/useKeyRepeat";
 
+/** Settings fields Keyboard (and its key-press helpers) actually read. */
+type KeyboardSettingsSlice = Pick<
+  AppSettings,
+  | "typingLanguage"
+  | "keyboardSectionMode"
+  | "keyboardFontSize"
+  | "keyboardKeyColor"
+  | "keyTextColor"
+  | "transparentKeyColor"
+  | "keyboardBgColor"
+  | "opacity"
+  | "groqApiKey"
+  | "languageLessonLanguage"
+  | "dictationVisible"
+  | "showTeachingInputHelpers"
+  | "focusModeTransparent"
+  | "fnKeyMode"
+>;
+
 export function Keyboard() {
   const settingsSlice = useAppStore(
     useShallow((s) => ({
@@ -56,8 +75,8 @@ export function Keyboard() {
       fnKeyMode: s.settings.fnKeyMode,
     })),
   );
-  // Helpers still typed as AppSettings; slice lists every field they read.
-  const settings = settingsSlice as AppSettings;
+  // Helpers take Pick<AppSettings, ...>; a missing field is a type error.
+  const settings: KeyboardSettingsSlice = settingsSlice;
   const focusModeActive = useAppStore((s) => s.focusModeActive);
   const keyboardLayout = useAppStore((s) => s.keyboardLayout);
   const {
@@ -305,6 +324,47 @@ export function Keyboard() {
       : "#2563eb";
   const keyBgColor = settings.keyboardKeyColor ?? "#ffffff";
 
+  // Stable label elements so memo(KeyboardKey)/memo(KeyButton) can skip keys
+  // whose only change would otherwise be a new JSX `label` every render.
+  const specialLabels = useMemo(() => {
+    const m = new Map<string, ReactNode>();
+    for (const row of rows) {
+      for (const k of row) {
+        if (isSpecialLabeledKey(k.key)) {
+          m.set(k.key, <SpecialKeyLabel keyName={k.key} fontSize={fontSize} />);
+        }
+      }
+    }
+    return m;
+  }, [rows, fontSize]);
+
+  const dictateLabel = useMemo(
+    () => (
+      <span className="relative flex h-full w-full items-center justify-center">
+        <MicrophoneIcon className="absolute h-5 w-5" />
+        {groqRemainingPercent !== null ? (
+          <span
+            className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] font-semibold leading-none tabular-nums"
+            aria-hidden
+          >
+            {groqRemainingPercent}%
+          </span>
+        ) : null}
+      </span>
+    ),
+    [groqRemainingPercent],
+  );
+
+  const langSwitchLabel = useMemo(
+    () => (
+      <LanguageSwitchLabel
+        currentLanguage={settings.typingLanguage}
+        fontSize={fontSize}
+      />
+    ),
+    [settings.typingLanguage, fontSize],
+  );
+
   return (
     <div
       ref={ref}
@@ -327,19 +387,7 @@ export function Keyboard() {
                 <KeyboardKey
                   key={keyId}
                   keyId={keyId}
-                  label={
-                    <span className="relative flex h-full w-full items-center justify-center">
-                      <MicrophoneIcon className="absolute h-5 w-5" />
-                      {groqRemainingPercent !== null ? (
-                        <span
-                          className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] font-semibold leading-none tabular-nums"
-                          aria-hidden
-                        >
-                          {groqRemainingPercent}%
-                        </span>
-                      ) : null}
-                    </span>
-                  }
+                  label={dictateLabel}
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}
@@ -364,17 +412,15 @@ export function Keyboard() {
                   key={keyId}
                   keyId={keyId}
                   label={
-                    specialKey ? (
-                      <SpecialKeyLabel keyName={k.key} fontSize={fontSize} />
-                    ) : (
-                      displayLabel(
-                        k,
-                        physicalKeyState.capsLock,
-                        shiftActive,
-                        fnActive,
-                        typingLocale,
-                      )
-                    )
+                    specialKey
+                      ? specialLabels.get(k.key)
+                      : displayLabel(
+                          k,
+                          physicalKeyState.capsLock,
+                          shiftActive,
+                          fnActive,
+                          typingLocale,
+                        )
                   }
                   ariaLabel={specialKey ? specialKeyAriaLabel(k.key) : undefined}
                   width={k.width}
@@ -425,12 +471,7 @@ export function Keyboard() {
                 <div className="flex h-full w-full">
                   <KeyboardKey
                     keyId={keyId}
-                    label={
-                      <LanguageSwitchLabel
-                        currentLanguage={settings.typingLanguage}
-                        fontSize={fontSize}
-                      />
-                    }
+                    label={langSwitchLabel}
                     width={1}
                     size={keyHeight}
                     spacing={0}

@@ -111,7 +111,6 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
   const livePolylineRef = useRef<SVGPolylineElement | null>(null);
   const eraserBeforeRef = useRef<PdfStroke[] | null>(null);
   const eraserLiveRef = useRef<PdfStroke[] | null>(null);
-  const eraserRafRef = useRef<number | null>(null);
   const dragRef = useRef<{
     id: string;
     start: PdfPoint;
@@ -139,20 +138,6 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
 
   const pageAnn = doc.pages[pageKey(page)] ?? { strokes: [], texts: [] };
   const displayStrokes = eraserPreview ?? pageAnn.strokes;
-
-  const flushEraserFrame = () => {
-    eraserRafRef.current = null;
-    const live = eraserLiveRef.current;
-    if (!live) return;
-    applyUpdater((d) => replacePageStrokes(d, pageKey(page), live), {
-      pushUndo: false,
-    });
-  };
-
-  const scheduleEraserCommit = () => {
-    if (eraserRafRef.current != null) return;
-    eraserRafRef.current = requestAnimationFrame(flushEraserFrame);
-  };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -190,7 +175,6 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
         const next = eraseStrokesWithBrush(before, pt, ERASER_RADIUS);
         eraserLiveRef.current = next;
         setEraserPreview(next);
-        scheduleEraserCommit();
         return;
       }
       case "text": {
@@ -239,9 +223,9 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
         pt,
         ERASER_RADIUS,
       );
+      if (next === eraserLiveRef.current) return;
       eraserLiveRef.current = next;
       setEraserPreview(next);
-      scheduleEraserCommit();
     }
   };
 
@@ -271,10 +255,6 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     }
 
     if (tool === "eraser" && eraserBeforeRef.current) {
-      if (eraserRafRef.current != null) {
-        cancelAnimationFrame(eraserRafRef.current);
-        eraserRafRef.current = null;
-      }
       const before = eraserBeforeRef.current;
       const after = eraserLiveRef.current ?? before;
       eraserBeforeRef.current = null;
@@ -465,6 +445,7 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
             onPointerDown={(ev) => startTextDrag(ev, box)}
             onPointerMove={(ev) => moveTextDrag(ev, box.id)}
             onPointerUp={(ev) => endTextDrag(ev, box.id)}
+            onPointerCancel={(ev) => endTextDrag(ev, box.id)}
           >
             {box.body || "\u00a0"}
           </div>

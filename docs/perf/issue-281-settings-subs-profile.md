@@ -4,7 +4,8 @@ Measured with React `Profiler` in Vitest (jsdom) on `epic-282-performance` @ `0a
 
 Harnesses:
 
-- `src/components/keyboard/KeyButton.perf.test.tsx` — 80 keys, sticky Shift, 20 strokes
+- `src/components/keyboard/KeyButton.perf.test.tsx` — 80-key synthetic harness, sticky Shift, 20 strokes
+- `src/components/keyboard/Keyboard.perf.test.tsx` — real `<Keyboard />` with memoized special/dictate/lang labels
 - `src/components/settings/settingsSubscription.perf.test.tsx` — one unrelated `mouseSpeed` write
 
 ## Scenario A — type ~20 chars with sticky Shift
@@ -15,7 +16,9 @@ Harnesses:
 | `KeyButton` renders | **1600** (80 × 20) | **39** (active-key transitions only) |
 | Total `actualDuration` | **405 ms** (~20.3 ms/stroke) | **~118–138 ms** (~6–7 ms/stroke) |
 
-Kept: `memo` on `KeyButton`, `KeyboardKey` with ref-stable `onPress`/`onHoldEnd`, narrow `useShallow` settings slice in `Keyboard`.
+Kept: `memo` on `KeyButton`, `KeyboardKey` with ref-stable `onPress`/`onHoldEnd`, narrow `useShallow` settings slice in `Keyboard`, memoized special/dictate/lang label elements.
+
+Real `<Keyboard />` (same sticky Shift + 20 letter presses): `KeyButton` renders stay well under a full-tree 1600 (asserted `< 400` in `Keyboard.perf.test.tsx`; measured on the PR branch after label memoization).
 
 ## Scenario B — one unrelated settings change (`mouseSpeed`)
 

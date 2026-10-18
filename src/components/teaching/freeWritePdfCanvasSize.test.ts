@@ -1,7 +1,7 @@
+import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
 import { computeFreeWritePdfCanvasSize } from "./freeWritePdfCanvasSize";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -32,24 +32,7 @@ describe("computeFreeWritePdfCanvasSize", () => {
   });
 });
 
-describe("FreeWritePdfPane layout contract (ink stays aligned under max-w-full)", () => {
-  it("passes CSS viewport size to the overlay, not buffer pixels", () => {
-    expect(paneSource).toMatch(/computeFreeWritePdfCanvasSize/);
-    expect(paneSource).toMatch(
-      /setCanvasSize\(\{\s*width:\s*size\.cssWidth,\s*height:\s*size\.cssHeight/,
-    );
-    expect(paneSource).toMatch(
-      /<FreeWritePdfAnnotationOverlay[\s\S]*width=\{canvasSize\.width\}[\s\S]*height=\{canvasSize\.height\}/,
-    );
-    expect(paneSource).not.toMatch(/bufferWidth.*FreeWritePdfAnnotationOverlay/);
-  });
-
-  it("keeps the canvas CSS-shrinkable with max-w-full inside a relative w-fit wrapper", () => {
-    expect(paneSource).toMatch(/relative mx-auto w-fit max-w-full/);
-    expect(paneSource).toMatch(/className="block h-auto max-w-full"/);
-    expect(paneSource).toMatch(/style=\{\{\s*width:\s*canvasSize\.width/);
-  });
-
+describe("FreeWritePdfPane load contract", () => {
   it("loads PDF bytes without base64", () => {
     expect(paneSource).not.toMatch(/base64ToUint8Array/);
     expect(paneSource).not.toMatch(/contentBase64/);

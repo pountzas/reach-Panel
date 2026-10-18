@@ -295,14 +295,14 @@ async fn animate_window_layout(
     focus_keyboard_height_ratio: f32,
     full_work_area: bool,
 ) -> Result<(), String> {
-    // Pause input-preview GDI capture for the whole animation (cleared on Drop).
+    // Pause input-preview GDI capture for the whole animation (cleared on Drop; nested-safe).
     struct AnimationPreviewPause;
     impl Drop for AnimationPreviewPause {
         fn drop(&mut self) {
-            input::input_preview::set_pause_for_animation(false);
+            input::input_preview::end_animation_pause();
         }
     }
-    input::input_preview::set_pause_for_animation(true);
+    input::input_preview::begin_animation_pause();
     let _pause_preview = AnimationPreviewPause;
 
     let window = app
