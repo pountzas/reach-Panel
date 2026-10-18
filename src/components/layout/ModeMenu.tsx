@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   APP_MODE_OPTIONS,
   isTeachingSessionActive,
@@ -40,7 +41,21 @@ function CheckMark() {
 export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
   const { t } = useTranslation();
   const companionTabletEnabled = useCompanionTabletEnabled();
-  const settings = useAppStore((s) => s.settings);
+  const {
+    keyboardSectionMode,
+    focusModeOverride,
+    micMode,
+    headerBgColor,
+    headerTextColor,
+  } = useAppStore(
+    useShallow((s) => ({
+      keyboardSectionMode: s.settings.keyboardSectionMode,
+      focusModeOverride: s.settings.focusModeOverride,
+      micMode: s.settings.micMode,
+      headerBgColor: s.settings.headerBgColor,
+      headerTextColor: s.settings.headerTextColor,
+    })),
+  );
   const companionModeActive = useAppStore((s) => s.companionModeActive);
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const setAppMode = useAppStore((s) => s.setAppMode);
@@ -51,18 +66,17 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
 
   const teachingActive = isTeachingSessionActive(
     musicTeachingEnabled,
-    settings.keyboardSectionMode,
+    keyboardSectionMode,
   );
   const selected = resolveSelectedAppMode({
     companionModeActive,
     teachingActive,
-    focusModeOverride:
-      settings.focusModeOverride === true ? true : undefined,
-    micMode: settings.micMode === true,
+    focusModeOverride: focusModeOverride === true ? true : undefined,
+    micMode: micMode === true,
   });
 
-  const bgColor = settings.headerBgColor ?? "#1e293b";
-  const textColor = settings.headerTextColor ?? "#ffffff";
+  const bgColor = headerBgColor ?? "#1e293b";
+  const textColor = headerTextColor ?? "#ffffff";
   const reduce = prefersReducedMotion();
   const show = entered || reduce;
   const [promoteLayer, setPromoteLayer] = useState(false);

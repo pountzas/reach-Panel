@@ -92,4 +92,24 @@ describe("ConfirmDialog", () => {
     expect(dialog.style.backgroundColor).toBe("rgb(248, 250, 252)");
     expect(dialog.style.color).toBe("rgb(15, 23, 42)");
   });
+
+  it("portals the fixed overlay to document.body (escapes section contain)", () => {
+    const section = document.createElement("section");
+    section.style.contain = "layout paint";
+    document.body.appendChild(section);
+
+    render(
+      <ConfirmDialog open {...baseProps} onConfirm={() => {}} onCancel={() => {}} />,
+      { container: section },
+    );
+
+    const dialog = screen.getByRole("dialog");
+    const overlay = dialog.parentElement;
+    expect(overlay).toBeTruthy();
+    expect(overlay!.className).toContain("fixed");
+    expect(overlay!.parentElement).toBe(document.body);
+    expect(section.contains(overlay)).toBe(false);
+
+    section.remove();
+  });
 });

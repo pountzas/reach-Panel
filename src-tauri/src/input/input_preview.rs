@@ -1,6 +1,6 @@
 //! Live thumbnail of the focused external input field for the keyboard UI.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Condvar, Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
@@ -42,6 +42,10 @@ static DIRTY: AtomicBool = AtomicBool::new(false);
 static WORKER_LOCK: Mutex<()> = Mutex::new(());
 static WORKER_CV: Condvar = Condvar::new();
 static PREVIEW_ENABLED: AtomicBool = AtomicBool::new(true);
+/// Nested animation pause count from `animate_window_layout`; preview skips GDI while > 0.
+static ANIMATIONS_ACTIVE: AtomicUsize = AtomicUsize::new(0);
+/// Cleared by the worker; set on enable/disable, clear, companion connect/disconnect, animation end.
+static FORCE_FRESH_FRAME: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Clone, Serialize)]
 struct InputPreviewFramePayload {
@@ -72,14 +76,40 @@ pub fn exclude_window_from_capture(hwnd: isize) -> Result<(), String> {
 
 pub fn set_enabled(enabled: bool) {
     PREVIEW_ENABLED.store(enabled, Ordering::Release);
+    request_fresh_frame(FrameSkipReset::EnabledChanged);
     if !enabled {
         emit_cleared();
     }
     notify_worker();
 }
 
+/// Begin skipping GDI capture for a window-layout animation (supports nesting).
+pub fn begin_animation_pause() {
+    ANIMATIONS_ACTIVE.fetch_add(1, Ordering::AcqRel);
+}
+
+/// End one animation pause; request a fresh frame when the last nested pause clears.
+pub fn end_animation_pause() {
+    let prev = ANIMATIONS_ACTIVE.load(Ordering::Acquire);
+    if prev == 0 {
+        return;
+    }
+    if ANIMATIONS_ACTIVE.fetch_sub(1, Ordering::AcqRel) == 1 {
+        request_fresh_frame(FrameSkipReset::AnimationEnded);
+        notify_worker();
+    }
+}
+
+fn animation_paused() -> bool {
+    ANIMATIONS_ACTIVE.load(Ordering::Acquire) > 0
+}
+
 pub fn notify_bounds_changed() {
     notify_worker();
+}
+
+fn request_fresh_frame(_event: FrameSkipReset) {
+    FORCE_FRESH_FRAME.store(true, Ordering::Release);
 }
 
 fn notify_worker() {
@@ -99,6 +129,7 @@ fn ensure_worker() {
 
 fn preview_loop() {
     let mut was_companion_live = false;
+    let mut last_frame: Option<FrameSkipKey> = None;
     loop {
         {
             let guard = WORKER_LOCK.lock().unwrap_or_else(|e| e.into_inner());
@@ -108,10 +139,29 @@ fn preview_loop() {
         }
         DIRTY.store(false, Ordering::Release);
 
+        if FORCE_FRESH_FRAME.swap(false, Ordering::AcqRel) {
+            last_frame = None;
+        }
+
+        // Skip GDI while the main window is animating; one fresh frame after it clears.
+        if animation_paused() {
+            continue;
+        }
+
         let companion_live = companion_session_live();
-        if companion_live && !was_companion_live {
-            // Clear desktop strip once when the tablet takes over; keep capturing.
-            emit_cleared();
+        let (reset_frame, clear_desktop) =
+            companion_transition(was_companion_live, companion_live);
+        if reset_frame {
+            // Routing changed (tablet took over or left): next capture must emit.
+            last_frame = reset_last_frame(if companion_live {
+                FrameSkipReset::CompanionConnected
+            } else {
+                FrameSkipReset::CompanionDisconnected
+            });
+            if clear_desktop {
+                // Clear desktop strip once when the tablet takes over; keep capturing.
+                emit_cleared();
+            }
         }
         was_companion_live = companion_live;
 
@@ -126,32 +176,48 @@ fn preview_loop() {
             get_input_target_bounds(),
         ) {
             PreviewFrameAction::Clear => {
+                last_frame = reset_last_frame(FrameSkipReset::Cleared);
                 route_cleared(companion_live);
             }
             PreviewFrameAction::KeepLastFrame => {
                 // Transient UIA/bounds miss while the target HWND remains — do not flicker.
             }
-            PreviewFrameAction::Capture(bounds) => match capture_region_jpeg(&bounds) {
-                Ok((jpeg, width, height)) => {
-                    let b64 = STANDARD.encode(jpeg);
-                    let data_url = format!("data:image/jpeg;base64,{b64}");
-                    if companion_live {
-                        push_frame_to_companion(data_url, width, height);
-                    } else if let Some(app) = APP_HANDLE.get() {
-                        let _ = app.emit(
-                            "input-preview-frame",
-                            InputPreviewFramePayload {
-                                data_url,
-                                width,
-                                height,
-                            },
-                        );
+            PreviewFrameAction::Capture(bounds) => {
+                let hwnd = get_effective_input_hwnd()
+                    .map(|h| h.0 as isize)
+                    .unwrap_or(0);
+                if last_frame.is_some_and(|k| k.target_hwnd != hwnd) {
+                    last_frame = reset_last_frame(FrameSkipReset::TargetChanged);
+                }
+                match capture_and_maybe_encode(&bounds, last_frame) {
+                    Ok(CaptureOutcome::Skipped) => {}
+                    Ok(CaptureOutcome::Encoded {
+                        jpeg,
+                        width,
+                        height,
+                        key,
+                    }) => {
+                        last_frame = Some(key);
+                        let b64 = STANDARD.encode(jpeg);
+                        let data_url = format!("data:image/jpeg;base64,{b64}");
+                        if companion_live {
+                            push_frame_to_companion(data_url, width, height);
+                        } else if let Some(app) = APP_HANDLE.get() {
+                            let _ = app.emit(
+                                "input-preview-frame",
+                                InputPreviewFramePayload {
+                                    data_url,
+                                    width,
+                                    height,
+                                },
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("input preview capture failed: {e}");
                     }
                 }
-                Err(e) => {
-                    eprintln!("input preview capture failed: {e}");
-                }
-            },
+            }
         }
     }
 }
@@ -199,25 +265,66 @@ fn emit_cleared() {
     }
 }
 
-fn capture_region_jpeg(bounds: &ScreenRect) -> Result<(Vec<u8>, u32, u32), String> {
+enum CaptureOutcome {
+    Skipped,
+    Encoded {
+        jpeg: Vec<u8>,
+        width: u32,
+        height: u32,
+        key: FrameSkipKey,
+    },
+}
+
+/// Capture BGRA, skip JPEG/base64 when unchanged; otherwise encode.
+fn capture_and_maybe_encode(
+    bounds: &ScreenRect,
+    last: Option<FrameSkipKey>,
+) -> Result<CaptureOutcome, String> {
     let rect = padded_clamped_rect(bounds);
     if rect.width <= 0 || rect.height <= 0 {
         return Err("empty capture rect".into());
     }
 
     let (src_w, src_h) = (rect.width, rect.height);
-    let (dest_w, dest_h) = scale_to_max(src_w, src_h, MAX_CAPTURE_WIDTH, MAX_CAPTURE_HEIGHT);
+    let target_hwnd = get_effective_input_hwnd()
+        .map(|hwnd| hwnd.0 as isize)
+        .unwrap_or(0);
 
     // Prefer PrintWindow of the target HWND so ReachPanel chrome cannot occlude the strip.
     // Desktop BitBlt is only a last resort (WDA exclusion is unreliable on some Win11 builds).
-    let rgba = match get_effective_input_hwnd() {
+    let bgra = match get_effective_input_hwnd() {
         Some(hwnd) => capture_window_region_bgra(hwnd, &rect).or_else(|e| {
             eprintln!("input preview window capture failed ({e}); falling back to screen");
             capture_screen_bgra(rect.left, rect.top, src_w, src_h)
         })?,
         None => capture_screen_bgra(rect.left, rect.top, src_w, src_h)?,
     };
-    let rgb = bgra_to_rgb(&rgba, src_w as u32, src_h as u32);
+
+    let key = frame_skip_key(
+        target_hwnd,
+        rect.left,
+        rect.top,
+        rect.width,
+        rect.height,
+        &bgra,
+    );
+    match decide_frame_emit(last, key) {
+        FrameEmitDecision::Skip => Ok(CaptureOutcome::Skipped),
+        FrameEmitDecision::Emit(key) => {
+            let (jpeg, width, height) = encode_bgra_jpeg(&bgra, src_w, src_h)?;
+            Ok(CaptureOutcome::Encoded {
+                jpeg,
+                width,
+                height,
+                key,
+            })
+        }
+    }
+}
+
+fn encode_bgra_jpeg(bgra: &[u8], src_w: i32, src_h: i32) -> Result<(Vec<u8>, u32, u32), String> {
+    let (dest_w, dest_h) = scale_to_max(src_w, src_h, MAX_CAPTURE_WIDTH, MAX_CAPTURE_HEIGHT);
+    let rgb = bgra_to_rgb(bgra, src_w as u32, src_h as u32);
 
     let img = if dest_w == src_w && dest_h == src_h {
         rgb
@@ -542,6 +649,90 @@ pub(crate) enum PreviewFrameAction {
     Clear,
 }
 
+/// Identity of a captured strip used to skip unchanged JPEG encode/emit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct FrameSkipKey {
+    target_hwnd: isize,
+    left: i32,
+    top: i32,
+    width: i32,
+    height: i32,
+    pixel_hash: u64,
+}
+
+/// Whether to encode/emit after a capture, given the last sent key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FrameEmitDecision {
+    Skip,
+    Emit(FrameSkipKey),
+}
+
+/// Fast non-crypto hash of raw BGRA pixels plus dimensions (bounds folded in by caller).
+pub(crate) fn hash_frame_pixels(bgra: &[u8], width: i32, height: i32) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    width.hash(&mut hasher);
+    height.hash(&mut hasher);
+    bgra.hash(&mut hasher);
+    hasher.finish()
+}
+
+/// Build a skip key from target, screen bounds, and pixel buffer.
+pub(crate) fn frame_skip_key(
+    target_hwnd: isize,
+    left: i32,
+    top: i32,
+    width: i32,
+    height: i32,
+    bgra: &[u8],
+) -> FrameSkipKey {
+    FrameSkipKey {
+        target_hwnd,
+        left,
+        top,
+        width,
+        height,
+        pixel_hash: hash_frame_pixels(bgra, width, height),
+    }
+}
+
+/// Skip encode/emit when this capture matches the last sent frame for the same target.
+pub(crate) fn decide_frame_emit(
+    last: Option<FrameSkipKey>,
+    current: FrameSkipKey,
+) -> FrameEmitDecision {
+    if last == Some(current) {
+        FrameEmitDecision::Skip
+    } else {
+        FrameEmitDecision::Emit(current)
+    }
+}
+
+/// Events that must clear the last-sent key so the next capture always emits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FrameSkipReset {
+    Cleared,
+    TargetChanged,
+    EnabledChanged,
+    CompanionConnected,
+    CompanionDisconnected,
+    AnimationEnded,
+}
+
+/// Pure companion-routing transition: `(reset_last_frame, clear_desktop_strip)`.
+pub(crate) fn companion_transition(was_live: bool, now_live: bool) -> (bool, bool) {
+    if was_live == now_live {
+        return (false, false);
+    }
+    // Connect: reset + clear desktop. Disconnect: reset only (keep capturing for desktop).
+    (true, now_live)
+}
+
+/// After a reset event, forget the last frame (fresh emit required).
+pub(crate) fn reset_last_frame(_event: FrameSkipReset) -> Option<FrameSkipKey> {
+    None
+}
+
 /// Decide whether to capture, hold, or clear. Pure — unit-tested without Win32.
 ///
 /// While a target HWND is remembered, a brief `None` from UIA (window drag / scroll)
@@ -692,5 +883,127 @@ mod tests {
         assert_eq!(out.len(), 2 * 1 * 4);
         assert_eq!(out[0], 1);
         assert_eq!(out[4], 2);
+    }
+
+    fn sample_bgra(fill: u8) -> Vec<u8> {
+        vec![fill; 4 * 2 * 4]
+    }
+
+    #[test]
+    fn hash_frame_pixels_stable_for_identical_buffer() {
+        let a = sample_bgra(10);
+        let b = sample_bgra(10);
+        assert_eq!(hash_frame_pixels(&a, 4, 2), hash_frame_pixels(&b, 4, 2));
+    }
+
+    #[test]
+    fn hash_frame_pixels_differs_when_pixels_change() {
+        let a = sample_bgra(10);
+        let b = sample_bgra(11);
+        assert_ne!(hash_frame_pixels(&a, 4, 2), hash_frame_pixels(&b, 4, 2));
+    }
+
+    #[test]
+    fn hash_frame_pixels_differs_when_dimensions_change() {
+        let pixels = sample_bgra(10);
+        assert_ne!(hash_frame_pixels(&pixels, 4, 2), hash_frame_pixels(&pixels, 2, 4));
+    }
+
+    #[test]
+    fn decide_frame_emit_skips_unchanged_frame() {
+        let key = frame_skip_key(42, 1, 2, 4, 2, &sample_bgra(7));
+        assert_eq!(
+            decide_frame_emit(Some(key), key),
+            FrameEmitDecision::Skip
+        );
+    }
+
+    #[test]
+    fn decide_frame_emit_emits_first_frame() {
+        let key = frame_skip_key(42, 1, 2, 4, 2, &sample_bgra(7));
+        assert_eq!(
+            decide_frame_emit(None, key),
+            FrameEmitDecision::Emit(key)
+        );
+    }
+
+    #[test]
+    fn decide_frame_emit_emits_when_pixels_change() {
+        let last = frame_skip_key(42, 1, 2, 4, 2, &sample_bgra(7));
+        let next = frame_skip_key(42, 1, 2, 4, 2, &sample_bgra(8));
+        assert_eq!(
+            decide_frame_emit(Some(last), next),
+            FrameEmitDecision::Emit(next)
+        );
+    }
+
+    #[test]
+    fn decide_frame_emit_emits_when_target_changes() {
+        let pixels = sample_bgra(7);
+        let last = frame_skip_key(42, 1, 2, 4, 2, &pixels);
+        let next = frame_skip_key(99, 1, 2, 4, 2, &pixels);
+        assert_eq!(
+            decide_frame_emit(Some(last), next),
+            FrameEmitDecision::Emit(next)
+        );
+    }
+
+    #[test]
+    fn decide_frame_emit_emits_when_bounds_change() {
+        let pixels = sample_bgra(7);
+        let last = frame_skip_key(42, 1, 2, 4, 2, &pixels);
+        let next = frame_skip_key(42, 10, 2, 4, 2, &pixels);
+        assert_eq!(
+            decide_frame_emit(Some(last), next),
+            FrameEmitDecision::Emit(next)
+        );
+    }
+
+    #[test]
+    fn reset_last_frame_clears_for_all_reset_events() {
+        let events = [
+            FrameSkipReset::Cleared,
+            FrameSkipReset::TargetChanged,
+            FrameSkipReset::EnabledChanged,
+            FrameSkipReset::CompanionConnected,
+            FrameSkipReset::CompanionDisconnected,
+            FrameSkipReset::AnimationEnded,
+        ];
+        for event in events {
+            assert_eq!(reset_last_frame(event), None);
+        }
+    }
+
+    #[test]
+    fn companion_transition_connect_resets_and_clears_desktop() {
+        assert_eq!(companion_transition(false, true), (true, true));
+    }
+
+    #[test]
+    fn companion_transition_disconnect_resets_without_clearing_desktop() {
+        assert_eq!(companion_transition(true, false), (true, false));
+    }
+
+    #[test]
+    fn companion_transition_steady_states_are_noops() {
+        assert_eq!(companion_transition(false, false), (false, false));
+        assert_eq!(companion_transition(true, true), (false, false));
+    }
+
+    #[test]
+    fn animation_pause_counter_nests_and_clears() {
+        // Reset in case other tests left a count (tests share the process static).
+        while animation_paused() {
+            end_animation_pause();
+        }
+        begin_animation_pause();
+        begin_animation_pause();
+        end_animation_pause();
+        assert!(animation_paused());
+        end_animation_pause();
+        assert!(!animation_paused());
+        // Extra end is a no-op (no underflow).
+        end_animation_pause();
+        assert!(!animation_paused());
     }
 }
