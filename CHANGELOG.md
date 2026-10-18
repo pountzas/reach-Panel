@@ -7,18 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.17.0 (2026-10-18)
+
 ### Changed
 
-- **Mini Mode** is now called **Focus** (mode tablet) / **Focus mode** in settings and related UI copy across all locales.
-- Internal identifiers renamed to Focus (`focusMode*`, app mode `"focus"`, Rust `focus_mode`); persisted `miniMode*` settings keys migrate on load.
-- **Mode menu:** the collapsed **R** button now opens a mode menu (Show keyboard, Normal, Focus, Mic, Teaching, Companion) instead of expanding directly.
-- Live input preview and suggestion chips now share one centered row with show/hide animation (#201); the preview only captures while a text field is focused.
 - **Teaching polish (#275):** "Show input helpers in Teaching mode" moved to **Settings → Visible sections**; description is suggestions + mic only (live preview is never shown in Teaching). Language Spelling / Free write use a left vertical tab rail; Free write notepad/PDF toolbar buttons are smaller. Music octave controls sit closer under the keyboard header. Docked minimize and FAB mode transitions use GPU-composited transform/opacity motion.
 
 ### Added
 
-- **Mic mode:** Focus-mode internals with a mic FAB and no keyboard auto-show; the mic arms only when a text field is focused.
-- Floating dictation overlay (visualizer + Stop) shown while dictation is active, excluded from screen capture.
 - **Teaching keyboard Minimize / Focus** (Language and Mathematics): header controls hide keys while keeping the window size; Focus auto-minimizes until an in-app input (or physical typing) restores the keyboard. States are not persisted (#272).
 - Teaching Spelling and Free write (notepad / PDF text) produce and apply suggestion chips when helpers and suggestions are on (#270).
 
@@ -29,15 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Text-field detection: number inputs (spinbutton) count as text, select-only comboboxes (Chromium `<select>`, Base UI/shadcn Select buttons) and read-only custom text no longer do, and contenteditable iframe editors (TinyMCE, CKEditor 4) are detected.
-- Dictation no longer gets stuck as "already active" after a WinRT silence timeout; timeouts and pauses no longer show an error.
+- Text-field detection: number inputs (spinbutton) count as text, read-only custom text no longer does, and contenteditable iframe editors (TinyMCE, CKEditor 4) are detected.
 - Teaching no longer keeps native live-input capture running while the preview is hidden (#269).
 - Free write PDF: drawing, erasing and dragging text no longer copy the whole annotation document on every pen move; pages render sharp at Windows display scaling; window animations skip unchanged section resizes; the live input preview skips unchanged frames and pauses during window animations; keyboard keys re-render less on settings changes (#282).
 - Teaching PDFs are read only from files picked in the app or stored in the Teaching folder; PDFs opened before this update keep working (#291).
 - Selecting or dragging a PDF text box with the pointer tool no longer restores a minimized Teaching keyboard (#292).
 - Bumped rustls to 0.23.46 for TLS advisories (#290).
-
-## 0.17.0 (2026-10-18)
 
 ## What's Changed
 * feat: GPU-composited UI motion for Focus and overlays by @pountzas in https://github.com/pountzas/reach-Panel/pull/229
