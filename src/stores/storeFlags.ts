@@ -26,4 +26,6 @@ export const storeFlags = {
   /** profile slice — coalesce rapid touch↔mouse pointerdowns. */
   pendingPointerInputKind: null as PointerInputKind | null,
   pointerInputKindDebounceTimer: null as ReturnType<typeof setTimeout> | null,
+  /** profile slice — last touch/pen pointerdown (ms) for mouse-guard. */
+  lastTouchPointerAtMs: null as number | null,
 };

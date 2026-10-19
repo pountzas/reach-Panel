@@ -381,6 +381,10 @@ export const createProfileSlice: StateCreator<
     }
   },
   setPointerInputKind: async (kind) => {
+    // Settings/tool windows must not persist pointer-kind layout swaps (#299).
+    if (WebviewWindow.getCurrent().label !== "main") {
+      return;
+    }
     const { pointerInputKind, settings, profileHydrated } = get();
     if (kind === pointerInputKind) {
       return;
@@ -391,20 +395,29 @@ export const createProfileSlice: StateCreator<
     if (profileHydrated) {
       await persistSettingsIfCurrent(get, epoch, next);
     }
-    if (WebviewWindow.getCurrent().label === "main") {
-      if (get().focusModeActive) {
-        void syncFocusModeWindowLayout(get, set, true);
-      } else {
-        void syncWindowLayoutFromSettings(
-          next,
-          true,
-          get().musicTeachingEnabled,
-        );
-      }
+    if (get().focusModeActive) {
+      void syncFocusModeWindowLayout(get, set, true);
+    } else {
+      void syncWindowLayoutFromSettings(
+        next,
+        true,
+        get().musicTeachingEnabled,
+      );
     }
   },
-  handlePointerInputEvent: (pointerType) => {
-    const kind = pointerKindFromEvent(pointerType);
+  handlePointerInputEvent: (input) => {
+    // Only the main keyboard window owns pointer-kind tracking (#299).
+    if (WebviewWindow.getCurrent().label !== "main") {
+      return;
+    }
+    const nowMs = performance.now();
+    const kind = pointerKindFromEvent(input, {
+      lastTouchAtMs: storeFlags.lastTouchPointerAtMs,
+      nowMs,
+    });
+    if (kind === "touch") {
+      storeFlags.lastTouchPointerAtMs = nowMs;
+    }
     if (kind === get().pointerInputKind) {
       // Alternating back to the current kind cancels a pending switch.
       if (storeFlags.pointerInputKindDebounceTimer !== null) {

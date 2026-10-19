@@ -1,10 +1,24 @@
 import type { AppSettings, LayoutSnapshot, PointerInputKind } from "./types";
 
+/** Fields swapped between touchLayout / mouseLayout. Height is shared (#224 / #299). */
 const LAYOUT_PARTIAL_KEYS = [
   "sectionStack",
   "inputRowRightRatio",
-  "windowHeightRatio",
 ] as const satisfies ReadonlyArray<keyof AppSettings>;
+
+/** Ignore synthetic mouse events for this long after a real touch/pen. */
+export const POINTER_MOUSE_GUARD_MS = 500;
+
+export type PointerKindEventInput = {
+  pointerType: string;
+  isPrimary: boolean;
+  button: number;
+};
+
+export type PointerKindContext = {
+  lastTouchAtMs?: number | null;
+  nowMs?: number;
+};
 
 export function snapshotFromSettings(settings: AppSettings): LayoutSnapshot {
   // Build via Object.assign so union-keyed indexed writes stay assignable.
@@ -140,8 +154,32 @@ export function switchPointerInputKindLayout(
   return resolveActiveLayout(withOutgoing, toKind);
 }
 
+/**
+ * Classify pointer input for touch↔mouse layout swap.
+ * Mouse only when primary left-button mouse and no touch/pen in the guard window.
+ * Pen counts as touch.
+ */
 export function pointerKindFromEvent(
-  pointerType: string,
+  input: PointerKindEventInput,
+  context: PointerKindContext = {},
 ): PointerInputKind {
-  return pointerType === "touch" ? "touch" : "mouse";
+  const pointerType = input.pointerType.toLowerCase();
+  if (pointerType === "touch" || pointerType === "pen") {
+    return "touch";
+  }
+  if (pointerType !== "mouse") {
+    return "touch";
+  }
+  if (!input.isPrimary || input.button !== 0) {
+    return "touch";
+  }
+  const nowMs = context.nowMs ?? 0;
+  const lastTouchAtMs = context.lastTouchAtMs;
+  if (
+    lastTouchAtMs != null &&
+    nowMs - lastTouchAtMs < POINTER_MOUSE_GUARD_MS
+  ) {
+    return "touch";
+  }
+  return "mouse";
 }

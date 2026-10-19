@@ -51,6 +51,23 @@ fn special_vk(key: &str) -> Option<VIRTUAL_KEY> {
     }
 }
 
+trait KeySender {
+    fn send_vk(&mut self, vk: VIRTUAL_KEY, key_up: bool) -> Result<()>;
+    fn send_unicode(&mut self, ch: char) -> Result<()>;
+}
+
+struct OsKeySender;
+
+impl KeySender for OsKeySender {
+    fn send_vk(&mut self, vk: VIRTUAL_KEY, key_up: bool) -> Result<()> {
+        send_vk(vk, key_up)
+    }
+
+    fn send_unicode(&mut self, ch: char) -> Result<()> {
+        send_unicode(ch)
+    }
+}
+
 fn send_vk(vk: VIRTUAL_KEY, key_up: bool) -> Result<()> {
     let flags = if key_up {
         KEYEVENTF_KEYUP
@@ -71,7 +88,9 @@ fn send_vk(vk: VIRTUAL_KEY, key_up: bool) -> Result<()> {
     };
     let sent = unsafe { SendInput(&[input], std::mem::size_of::<INPUT>() as i32) };
     if sent == 0 {
-        return Err(anyhow!("SendInput failed for virtual key"));
+        let err = anyhow!("SendInput failed for virtual key");
+        eprintln!("{err}");
+        return Err(err);
     }
     Ok(())
 }
@@ -104,7 +123,9 @@ fn send_unicode(ch: char) -> Result<()> {
     };
     let sent = unsafe { SendInput(&[down, up], std::mem::size_of::<INPUT>() as i32) };
     if sent == 0 {
-        return Err(anyhow!("SendInput failed for unicode"));
+        let err = anyhow!("SendInput failed for unicode");
+        eprintln!("{err}");
+        return Err(err);
     }
     Ok(())
 }
@@ -133,89 +154,94 @@ fn char_to_vk(ch: char) -> Option<VIRTUAL_KEY> {
     }
 }
 
-pub fn press_key(request: KeyPressRequest) -> Result<()> {
-    with_target_focus(|| press_key_impl(request))
+fn release_modifiers(sender: &mut dyn KeySender, pressed: &[VIRTUAL_KEY]) {
+    for vk in pressed.iter().rev() {
+        if let Err(err) = sender.send_vk(*vk, true) {
+            eprintln!("SendInput failed releasing modifier: {err}");
+        }
+    }
 }
 
-fn press_key_impl(request: KeyPressRequest) -> Result<()> {
+pub fn press_key(request: KeyPressRequest) -> Result<()> {
+    with_target_focus(|| press_key_with_sender(request, &mut OsKeySender))
+}
+
+fn press_key_with_sender(request: KeyPressRequest, sender: &mut dyn KeySender) -> Result<()> {
     let key = request.key.trim();
     if key.is_empty() {
         return Err(anyhow!("Empty key"));
     }
 
-    for modifier in &request.modifiers {
-        if let Some(vk) = modifier_vk(modifier) {
-            send_vk(vk, false)?;
-        }
-    }
-
-    if key.len() == 1 {
-        let Some(ch) = key.chars().next() else {
-            return Err(anyhow!("Empty key"));
-        };
-        // Greek EL maps ";" to the Q slot — char_to_vk(';') hits tonos (VK 0xBA) instead.
-        if ch.is_ascii() {
-            if let Some(pk) = request.physical_key.as_deref() {
-                if let Some(vk) = qwerty_key_to_vk(pk) {
-                    send_vk(VIRTUAL_KEY(vk), false)?;
-                    send_vk(VIRTUAL_KEY(vk), true)?;
-                    for modifier in request.modifiers.iter().rev() {
-                        if let Some(vk) = modifier_vk(modifier) {
-                            send_vk(vk, true)?;
-                        }
-                    }
-                    return Ok(());
-                }
+    let mut pressed_modifiers: Vec<VIRTUAL_KEY> = Vec::new();
+    let result = (|| -> Result<()> {
+        for modifier in &request.modifiers {
+            if let Some(vk) = modifier_vk(modifier) {
+                sender.send_vk(vk, false)?;
+                pressed_modifiers.push(vk);
             }
-            if let Some(vk) = char_to_vk(ch) {
-                let needs_shift = ch.is_ascii_uppercase()
-                    || matches!(
-                        ch,
-                        '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*' | '(' | ')'
-                    );
-                if needs_shift
-                    && !request
-                        .modifiers
-                        .iter()
-                        .any(|m| m.eq_ignore_ascii_case("shift"))
-                {
-                    send_vk(VK_SHIFT, false)?;
-                    send_vk(vk, false)?;
-                    send_vk(vk, true)?;
-                    send_vk(VK_SHIFT, true)?;
+        }
+
+        if key.len() == 1 {
+            let Some(ch) = key.chars().next() else {
+                return Err(anyhow!("Empty key"));
+            };
+            // Greek EL maps ";" to the Q slot — char_to_vk(';') hits tonos (VK 0xBA) instead.
+            if ch.is_ascii() {
+                if let Some(pk) = request.physical_key.as_deref() {
+                    if let Some(vk) = qwerty_key_to_vk(pk) {
+                        sender.send_vk(VIRTUAL_KEY(vk), false)?;
+                        sender.send_vk(VIRTUAL_KEY(vk), true)?;
+                        return Ok(());
+                    }
+                }
+                if let Some(vk) = char_to_vk(ch) {
+                    let needs_shift = ch.is_ascii_uppercase()
+                        || matches!(
+                            ch,
+                            '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*' | '(' | ')'
+                        );
+                    if needs_shift
+                        && !request
+                            .modifiers
+                            .iter()
+                            .any(|m| m.eq_ignore_ascii_case("shift"))
+                    {
+                        sender.send_vk(VK_SHIFT, false)?;
+                        pressed_modifiers.push(VK_SHIFT);
+                        sender.send_vk(vk, false)?;
+                        sender.send_vk(vk, true)?;
+                    } else {
+                        sender.send_vk(vk, false)?;
+                        sender.send_vk(vk, true)?;
+                    }
                 } else {
-                    send_vk(vk, false)?;
-                    send_vk(vk, true)?;
+                    sender.send_unicode(ch)?;
                 }
             } else {
-                send_unicode(ch)?;
+                sender.send_unicode(ch)?;
+            }
+        } else if let Some(vk) = special_vk(key) {
+            sender.send_vk(vk, false)?;
+            sender.send_vk(vk, true)?;
+        } else if key.starts_with("F") && key.len() <= 3 {
+            if let Ok(num) = key[1..].parse::<u16>() {
+                if (1..=24).contains(&num) {
+                    sender.send_vk(VIRTUAL_KEY(0x70 + num - 1), false)?;
+                    sender.send_vk(VIRTUAL_KEY(0x70 + num - 1), true)?;
+                }
             }
         } else {
-            send_unicode(ch)?;
-        }
-    } else if let Some(vk) = special_vk(key) {
-        send_vk(vk, false)?;
-        send_vk(vk, true)?;
-    } else if key.starts_with("F") && key.len() <= 3 {
-        if let Ok(num) = key[1..].parse::<u16>() {
-            if (1..=24).contains(&num) {
-                send_vk(VIRTUAL_KEY(0x70 + num - 1), false)?;
-                send_vk(VIRTUAL_KEY(0x70 + num - 1), true)?;
+            for ch in key.chars() {
+                sender.send_unicode(ch)?;
             }
         }
-    } else {
-        for ch in key.chars() {
-            send_unicode(ch)?;
-        }
-    }
 
-    for modifier in request.modifiers.iter().rev() {
-        if let Some(vk) = modifier_vk(modifier) {
-            send_vk(vk, true)?;
-        }
-    }
+        Ok(())
+    })();
 
-    Ok(())
+    // Always release modifiers that were pressed, even when SendInput fails mid-way (#299).
+    release_modifiers(sender, &pressed_modifiers);
+    result
 }
 
 pub fn type_text(text: &str) -> Result<()> {
@@ -267,12 +293,74 @@ fn press_combo_impl(keys: Vec<String>) -> Result<()> {
             }
         }
     }
-    for vk in &vks {
-        send_vk(*vk, false)?;
-    }
-    for vk in vks.iter().rev() {
-        send_vk(*vk, true)?;
-    }
-    Ok(())
+    let mut pressed: Vec<VIRTUAL_KEY> = Vec::new();
+    let result = (|| -> Result<()> {
+        for vk in &vks {
+            send_vk(*vk, false)?;
+            pressed.push(*vk);
+        }
+        Ok(())
+    })();
+    release_modifiers(&mut OsKeySender, &pressed);
+    result
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cell::RefCell;
+
+    struct MockSender {
+        /// Fail on the Nth send_vk call (1-based). None = never fail.
+        fail_on_call: Option<usize>,
+        calls: RefCell<Vec<(u16, bool)>>,
+    }
+
+    impl MockSender {
+        fn new(fail_on_call: Option<usize>) -> Self {
+            Self {
+                fail_on_call,
+                calls: RefCell::new(Vec::new()),
+            }
+        }
+
+        fn calls(&self) -> Vec<(u16, bool)> {
+            self.calls.borrow().clone()
+        }
+    }
+
+    impl KeySender for MockSender {
+        fn send_vk(&mut self, vk: VIRTUAL_KEY, key_up: bool) -> Result<()> {
+            let mut calls = self.calls.borrow_mut();
+            calls.push((vk.0, key_up));
+            let n = calls.len();
+            if self.fail_on_call == Some(n) {
+                return Err(anyhow!("SendInput failed for virtual key"));
+            }
+            Ok(())
+        }
+
+        fn send_unicode(&mut self, _ch: char) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn releases_modifiers_when_main_key_send_fails() {
+        // Call 1: Ctrl down; call 2: main key down → fail; then Ctrl up must still run.
+        let mut sender = MockSender::new(Some(2));
+        let request = KeyPressRequest {
+            key: "a".into(),
+            modifiers: vec!["ctrl".into()],
+            physical_key: None,
+        };
+        let err = press_key_with_sender(request, &mut sender).expect_err("main key should fail");
+        assert!(err.to_string().contains("SendInput failed"));
+
+        let calls = sender.calls();
+        assert_eq!(calls.len(), 3);
+        assert_eq!(calls[0], (VK_CONTROL.0, false));
+        assert_eq!(calls[1].1, false); // main key down
+        assert_eq!(calls[2], (VK_CONTROL.0, true)); // always released
+    }
+}

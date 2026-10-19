@@ -41,6 +41,7 @@ import {
   TEACHING_SESSION_EVENT,
   type TeachingSessionPayload,
 } from "../lib/appModeLayout";
+import { stripFullscreenHeightFromLayoutSnapshots } from "../lib/layoutProfiles";
 import {
   commitSuggestionList,
   suggestionSuffixAfterPrefix,
@@ -590,13 +591,13 @@ export async function loadProfileData(
   const parsed = active
     ? parseSettings(active.settings_json)
     : DEFAULT_SETTINGS;
-  const settings = {
+  const settings = stripFullscreenHeightFromLayoutSnapshots({
     ...parsed,
     keyboardSectionMode: hydrateKeyboardSectionMode(
       parsed.keyboardSectionMode,
       get().musicTeachingEnabled,
     ),
-  };
+  });
   set({ settings, settingsEpoch: get().settingsEpoch + 1 });
   const isMainWindow = WebviewWindow.getCurrent().label === "main";
   if (isMainWindow) {

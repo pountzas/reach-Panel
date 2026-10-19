@@ -134,7 +134,21 @@ function MainApp() {
   useEffect(() => {
     // Touch↔mouse layout switch (store debounces rapid alternating pointerdowns).
     const onPointerDown = (event: PointerEvent) => {
-      useAppStore.getState().handlePointerInputEvent(event.pointerType);
+      if (import.meta.env.DEV) {
+        console.debug(
+          "pd",
+          event.pointerType,
+          event.pointerId,
+          event.isPrimary,
+          event.button,
+          Math.round(performance.now()),
+        );
+      }
+      useAppStore.getState().handlePointerInputEvent({
+        pointerType: event.pointerType,
+        isPrimary: event.isPrimary,
+        button: event.button,
+      });
     };
     window.addEventListener("pointerdown", onPointerDown, { capture: true });
     return () => {
