@@ -187,6 +187,18 @@ describe("settingsForPersist", () => {
     });
     expect(persisted.keyboardSectionMode).toBe("keyboard");
   });
+
+  it("strips fullscreen height ratios from both layout snapshots on every save", () => {
+    const persisted = settingsForPersist({
+      ...DEFAULT_SETTINGS,
+      touchLayout: { inputRowRightRatio: 0.4, windowHeightRatio: 1.0 },
+      mouseLayout: { inputRowRightRatio: 0.3, windowHeightRatio: 0.999 },
+    });
+    expect(persisted.touchLayout?.windowHeightRatio).toBeUndefined();
+    expect(persisted.touchLayout?.inputRowRightRatio).toBe(0.4);
+    expect(persisted.mouseLayout?.windowHeightRatio).toBeUndefined();
+    expect(persisted.mouseLayout?.inputRowRightRatio).toBe(0.3);
+  });
 });
 
 describe("shouldDelegateAppModeToMain", () => {

@@ -1,4 +1,5 @@
 import type { TranslationKey } from "../i18n";
+import { stripFullscreenHeightFromLayoutSnapshots } from "./layoutProfiles";
 import type { AppSettings, KeyboardSectionMode } from "./types";
 
 /** Captured before Teaching; `"unset"` means the ratio was previously undefined. */
@@ -59,12 +60,14 @@ export function hydrateKeyboardSectionMode(
   return coercePersistedKeyboardSectionMode(persistedMode, false);
 }
 
-/** Strip session Teaching chrome before writing settings JSON. */
+/** Strip session Teaching chrome and stale fullscreen heights before writing settings JSON. */
 export function settingsForPersist(settings: AppSettings): AppSettings {
-  if (settings.keyboardSectionMode !== "synthesizer") {
-    return settings;
+  const withoutFullscreenHeight =
+    stripFullscreenHeightFromLayoutSnapshots(settings);
+  if (withoutFullscreenHeight.keyboardSectionMode !== "synthesizer") {
+    return withoutFullscreenHeight;
   }
-  return { ...settings, keyboardSectionMode: "keyboard" };
+  return { ...withoutFullscreenHeight, keyboardSectionMode: "keyboard" };
 }
 
 /** Settings/tool windows must not own Teaching; the main webview hosts the lesson slot. */

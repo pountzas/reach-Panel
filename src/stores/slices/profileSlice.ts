@@ -22,6 +22,7 @@ import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { CommandResult, DEFAULT_SETTINGS, MonitorInfo, ProfileFileInfo } from "../../lib/types";
 import { isWidePianoOctaveCount, resolveSynthOctaveCount, resolveSynthStartOctave } from "../../lib/music/octaveCount";
+import { logLayoutIpc } from "../../lib/logIpc";
 import { notify } from "../../lib/notify";
 import { PROFILE_UPDATED_EVENT } from "../../lib/toolWindows";
 import { heightRatioAfterLeavingTeaching, shouldSyncNonFocusWindowLayout } from "../../lib/appModeLayout";
@@ -364,7 +365,7 @@ export const createProfileSlice: StateCreator<
         ) {
           storeFlags.liveHeightRatioPreview = null;
         }
-        await invoke("cmd_apply_window_layout", {
+        const layoutArgs = {
           monitorId: current.accessibilityMonitorId,
           collapsed: current.collapsed,
           collapsedDictation: false,
@@ -376,11 +377,17 @@ export const createProfileSlice: StateCreator<
             current,
             get().musicTeachingEnabled,
           ),
-        });
+        };
+        logLayoutIpc("cmd_apply_window_layout", layoutArgs);
+        await invoke("cmd_apply_window_layout", layoutArgs);
       }
     }
   },
   setPointerInputKind: async (kind) => {
+    // Settings/tool windows must not persist pointer-kind layout swaps (#299).
+    if (WebviewWindow.getCurrent().label !== "main") {
+      return;
+    }
     const { pointerInputKind, settings, profileHydrated } = get();
     if (kind === pointerInputKind) {
       return;
@@ -391,20 +398,32 @@ export const createProfileSlice: StateCreator<
     if (profileHydrated) {
       await persistSettingsIfCurrent(get, epoch, next);
     }
-    if (WebviewWindow.getCurrent().label === "main") {
-      if (get().focusModeActive) {
-        void syncFocusModeWindowLayout(get, set, true);
-      } else {
-        void syncWindowLayoutFromSettings(
-          next,
-          true,
-          get().musicTeachingEnabled,
-        );
-      }
+    if (get().focusModeActive) {
+      void syncFocusModeWindowLayout(get, set, true);
+    } else {
+      void syncWindowLayoutFromSettings(
+        next,
+        true,
+        get().musicTeachingEnabled,
+      );
     }
   },
-  handlePointerInputEvent: (pointerType) => {
-    const kind = pointerKindFromEvent(pointerType);
+  handlePointerInputEvent: (input) => {
+    // Only the main keyboard window owns pointer-kind tracking (#299).
+    if (WebviewWindow.getCurrent().label !== "main") {
+      return;
+    }
+    const nowMs = performance.now();
+    const kind = pointerKindFromEvent(input, {
+      lastTouchAtMs: storeFlags.lastTouchPointerAtMs,
+      nowMs,
+    });
+    if (kind === null) {
+      return;
+    }
+    if (kind === "touch") {
+      storeFlags.lastTouchPointerAtMs = nowMs;
+    }
     if (kind === get().pointerInputKind) {
       // Alternating back to the current kind cancels a pending switch.
       if (storeFlags.pointerInputKindDebounceTimer !== null) {

@@ -1,10 +1,24 @@
 import type { AppSettings, LayoutSnapshot, PointerInputKind } from "./types";
 
+/** Fields swapped between touchLayout / mouseLayout. Height is shared (#224 / #299). */
 const LAYOUT_PARTIAL_KEYS = [
   "sectionStack",
   "inputRowRightRatio",
-  "windowHeightRatio",
 ] as const satisfies ReadonlyArray<keyof AppSettings>;
+
+/** Ignore synthetic mouse events for this long after a real touch/pen. */
+export const POINTER_MOUSE_GUARD_MS = 500;
+
+export type PointerKindEventInput = {
+  pointerType: string;
+  isPrimary: boolean;
+  button: number;
+};
+
+export type PointerKindContext = {
+  lastTouchAtMs?: number | null;
+  nowMs?: number;
+};
 
 export function snapshotFromSettings(settings: AppSettings): LayoutSnapshot {
   // Build via Object.assign so union-keyed indexed writes stay assignable.
@@ -140,8 +154,51 @@ export function switchPointerInputKindLayout(
   return resolveActiveLayout(withOutgoing, toKind);
 }
 
+/**
+ * Classify pointer input for touch↔mouse layout swap.
+ * Mouse only when primary left-button mouse and no touch/pen in the guard window.
+ * Pen counts as touch. Unknown types / non-left / non-primary / guarded mouse → null (ignore).
+ */
 export function pointerKindFromEvent(
-  pointerType: string,
-): PointerInputKind {
-  return pointerType === "touch" ? "touch" : "mouse";
+  input: PointerKindEventInput,
+  context: PointerKindContext = {},
+): PointerInputKind | null {
+  const pointerType = input.pointerType.toLowerCase();
+  if (pointerType === "touch" || pointerType === "pen") {
+    return "touch";
+  }
+  // Unknown types and non-primary / non-left mouse buttons never swap layouts.
+  if (pointerType !== "mouse" || !input.isPrimary || input.button !== 0) {
+    return null;
+  }
+  const nowMs = context.nowMs ?? 0;
+  const lastTouchAtMs = context.lastTouchAtMs;
+  if (
+    lastTouchAtMs != null &&
+    nowMs - lastTouchAtMs < POINTER_MOUSE_GUARD_MS
+  ) {
+    // Synthetic mouse right after a touch/pen: ignore.
+    return null;
+  }
+  return "mouse";
+}
+
+/**
+ * #299: old pointer-kind swaps copied a stale ~1.0 snapshot height into the flat
+ * ratio and persisted it. Clear the flat value when that signature is present.
+ */
+export function repairStaleFullscreenFlatHeight(
+  settings: AppSettings,
+): { settings: AppSettings; repaired: boolean } {
+  const hadStaleSnapshotHeight =
+    (settings.touchLayout?.windowHeightRatio ?? 0) >= 0.999 ||
+    (settings.mouseLayout?.windowHeightRatio ?? 0) >= 0.999;
+  const repair =
+    hadStaleSnapshotHeight && (settings.windowHeightRatio ?? 0) >= 0.999;
+  if (!repair) {
+    return { settings, repaired: false };
+  }
+  const next = { ...settings };
+  delete next.windowHeightRatio;
+  return { settings: next, repaired: true };
 }
