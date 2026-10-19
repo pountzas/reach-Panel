@@ -22,6 +22,7 @@ import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { CommandResult, DEFAULT_SETTINGS, MonitorInfo, ProfileFileInfo } from "../../lib/types";
 import { isWidePianoOctaveCount, resolveSynthOctaveCount, resolveSynthStartOctave } from "../../lib/music/octaveCount";
+import { logLayoutIpc } from "../../lib/logIpc";
 import { notify } from "../../lib/notify";
 import { PROFILE_UPDATED_EVENT } from "../../lib/toolWindows";
 import { heightRatioAfterLeavingTeaching, shouldSyncNonFocusWindowLayout } from "../../lib/appModeLayout";
@@ -364,7 +365,7 @@ export const createProfileSlice: StateCreator<
         ) {
           storeFlags.liveHeightRatioPreview = null;
         }
-        await invoke("cmd_apply_window_layout", {
+        const layoutArgs = {
           monitorId: current.accessibilityMonitorId,
           collapsed: current.collapsed,
           collapsedDictation: false,
@@ -376,7 +377,9 @@ export const createProfileSlice: StateCreator<
             current,
             get().musicTeachingEnabled,
           ),
-        });
+        };
+        logLayoutIpc("cmd_apply_window_layout", layoutArgs);
+        await invoke("cmd_apply_window_layout", layoutArgs);
       }
     }
   },
@@ -415,6 +418,9 @@ export const createProfileSlice: StateCreator<
       lastTouchAtMs: storeFlags.lastTouchPointerAtMs,
       nowMs,
     });
+    if (kind === null) {
+      return;
+    }
     if (kind === "touch") {
       storeFlags.lastTouchPointerAtMs = nowMs;
     }

@@ -157,21 +157,19 @@ export function switchPointerInputKindLayout(
 /**
  * Classify pointer input for touch↔mouse layout swap.
  * Mouse only when primary left-button mouse and no touch/pen in the guard window.
- * Pen counts as touch.
+ * Pen counts as touch. Unknown types / non-left / non-primary / guarded mouse → null (ignore).
  */
 export function pointerKindFromEvent(
   input: PointerKindEventInput,
   context: PointerKindContext = {},
-): PointerInputKind {
+): PointerInputKind | null {
   const pointerType = input.pointerType.toLowerCase();
   if (pointerType === "touch" || pointerType === "pen") {
     return "touch";
   }
-  if (pointerType !== "mouse") {
-    return "touch";
-  }
-  if (!input.isPrimary || input.button !== 0) {
-    return "touch";
+  // Unknown types and non-primary / non-left mouse buttons never swap layouts.
+  if (pointerType !== "mouse" || !input.isPrimary || input.button !== 0) {
+    return null;
   }
   const nowMs = context.nowMs ?? 0;
   const lastTouchAtMs = context.lastTouchAtMs;
@@ -179,7 +177,28 @@ export function pointerKindFromEvent(
     lastTouchAtMs != null &&
     nowMs - lastTouchAtMs < POINTER_MOUSE_GUARD_MS
   ) {
-    return "touch";
+    // Synthetic mouse right after a touch/pen: ignore.
+    return null;
   }
   return "mouse";
+}
+
+/**
+ * #299: old pointer-kind swaps copied a stale ~1.0 snapshot height into the flat
+ * ratio and persisted it. Clear the flat value when that signature is present.
+ */
+export function repairStaleFullscreenFlatHeight(
+  settings: AppSettings,
+): { settings: AppSettings; repaired: boolean } {
+  const hadStaleSnapshotHeight =
+    (settings.touchLayout?.windowHeightRatio ?? 0) >= 0.999 ||
+    (settings.mouseLayout?.windowHeightRatio ?? 0) >= 0.999;
+  const repair =
+    hadStaleSnapshotHeight && (settings.windowHeightRatio ?? 0) >= 0.999;
+  if (!repair) {
+    return { settings, repaired: false };
+  }
+  const next = { ...settings };
+  delete next.windowHeightRatio;
+  return { settings: next, repaired: true };
 }

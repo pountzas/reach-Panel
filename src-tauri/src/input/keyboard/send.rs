@@ -154,11 +154,19 @@ fn char_to_vk(ch: char) -> Option<VIRTUAL_KEY> {
     }
 }
 
-fn release_modifiers(sender: &mut dyn KeySender, pressed: &[VIRTUAL_KEY]) {
+fn release_modifiers(sender: &mut dyn KeySender, pressed: &[VIRTUAL_KEY]) -> Result<()> {
+    let mut first_err: Option<anyhow::Error> = None;
     for vk in pressed.iter().rev() {
         if let Err(err) = sender.send_vk(*vk, true) {
             eprintln!("SendInput failed releasing modifier: {err}");
+            if first_err.is_none() {
+                first_err = Some(err);
+            }
         }
+    }
+    match first_err {
+        Some(err) => Err(err),
+        None => Ok(()),
     }
 }
 
@@ -240,35 +248,38 @@ fn press_key_with_sender(request: KeyPressRequest, sender: &mut dyn KeySender) -
     })();
 
     // Always release modifiers that were pressed, even when SendInput fails mid-way (#299).
-    release_modifiers(sender, &pressed_modifiers);
-    result
+    let released = release_modifiers(sender, &pressed_modifiers);
+    result.and(released)
 }
 
 pub fn type_text(text: &str) -> Result<()> {
-    with_target_focus(|| type_text_impl(text))
+    with_target_focus(|| type_text_with_sender(text, &mut OsKeySender))
 }
 
-fn type_text_impl(text: &str) -> Result<()> {
+fn type_text_with_sender(text: &str, sender: &mut dyn KeySender) -> Result<()> {
     for ch in text.chars() {
         if ch == '\n' {
-            send_vk(VK_RETURN, false)?;
-            send_vk(VK_RETURN, true)?;
+            sender.send_vk(VK_RETURN, false)?;
+            sender.send_vk(VK_RETURN, true)?;
         } else if ch.is_ascii() {
             if let Some(vk) = char_to_vk(ch) {
-                let needs_shift = ch.is_ascii_uppercase();
-                if needs_shift {
-                    send_vk(VK_SHIFT, false)?;
-                }
-                send_vk(vk, false)?;
-                send_vk(vk, true)?;
-                if needs_shift {
-                    send_vk(VK_SHIFT, true)?;
+                if ch.is_ascii_uppercase() {
+                    sender.send_vk(VK_SHIFT, false)?;
+                    let result = sender
+                        .send_vk(vk, false)
+                        .and_then(|_| sender.send_vk(vk, true));
+                    // Always release Shift, even if the main key failed (#299).
+                    let released = release_modifiers(sender, &[VK_SHIFT]);
+                    result.and(released)?;
+                } else {
+                    sender.send_vk(vk, false)?;
+                    sender.send_vk(vk, true)?;
                 }
             } else {
-                send_unicode(ch)?;
+                sender.send_unicode(ch)?;
             }
         } else {
-            send_unicode(ch)?;
+            sender.send_unicode(ch)?;
         }
     }
     Ok(())
@@ -301,8 +312,8 @@ fn press_combo_impl(keys: Vec<String>) -> Result<()> {
         }
         Ok(())
     })();
-    release_modifiers(&mut OsKeySender, &pressed);
-    result
+    let released = release_modifiers(&mut OsKeySender, &pressed);
+    result.and(released)
 }
 
 #[cfg(test)]
@@ -362,5 +373,19 @@ mod tests {
         assert_eq!(calls[0], (VK_CONTROL.0, false));
         assert_eq!(calls[1].1, false); // main key down
         assert_eq!(calls[2], (VK_CONTROL.0, true)); // always released
+    }
+
+    #[test]
+    fn type_text_releases_shift_when_uppercase_key_fails() {
+        // Call 1: Shift down; call 2: 'A' down → fail; Shift up must still run.
+        let mut sender = MockSender::new(Some(2));
+        let err = type_text_with_sender("A", &mut sender).expect_err("main key should fail");
+        assert!(err.to_string().contains("SendInput failed"));
+
+        let calls = sender.calls();
+        assert_eq!(calls.len(), 3);
+        assert_eq!(calls[0], (VK_SHIFT.0, false));
+        assert_eq!(calls[1].1, false);
+        assert_eq!(calls[2], (VK_SHIFT.0, true));
     }
 }

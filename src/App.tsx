@@ -34,7 +34,7 @@ import {
   type CompanionUiState,
 } from "./lib/companionSession";
 import { reconcileAutostartOnLoad } from "./lib/autostart";
-import { logIpc } from "./lib/logIpc";
+import { logIpc, logLayoutIpc } from "./lib/logIpc";
 import {
   isTeachingFullWorkArea,
 } from "./lib/v1HiddenFeatures";
@@ -77,7 +77,7 @@ function MainApp() {
             musicTeachingEnabled,
             keyboardSectionMode: settings.keyboardSectionMode,
           });
-          await invoke("cmd_apply_window_layout", {
+          const bootLayoutArgs = {
             monitorId: settings.accessibilityMonitorId,
             collapsed: settings.collapsed,
             collapsedDictation: false,
@@ -85,7 +85,9 @@ function MainApp() {
               teachingFullWorkArea: fullWorkArea,
             }),
             fullWorkArea,
-          });
+          };
+          logLayoutIpc("cmd_apply_window_layout", bootLayoutArgs);
+          await invoke("cmd_apply_window_layout", bootLayoutArgs);
         }
         await loadKeyboardLayout();
         await loadInputMethods();

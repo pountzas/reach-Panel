@@ -10,6 +10,7 @@ import {
   pointerKindFromEvent,
   resolveActiveLayout,
   snapshotFromSettings,
+  repairStaleFullscreenFlatHeight,
   stripFullscreenHeightFromLayoutSnapshots,
   switchPointerInputKindLayout,
 } from "./layoutProfiles";
@@ -229,14 +230,14 @@ describe("pointerKindFromEvent", () => {
     ).toBe("mouse");
   });
 
-  it("keeps touch when mouse arrives within the recent-touch guard", () => {
+  it("ignores mouse within the recent-touch guard", () => {
     const lastTouchAtMs = 5_000;
     expect(
       pointerKindFromEvent(
         { pointerType: "mouse", isPrimary: true, button: 0 },
         { lastTouchAtMs, nowMs: lastTouchAtMs + POINTER_MOUSE_GUARD_MS - 1 },
       ),
-    ).toBe("touch");
+    ).toBeNull();
     expect(
       pointerKindFromEvent(
         { pointerType: "mouse", isPrimary: true, button: 0 },
@@ -252,13 +253,46 @@ describe("pointerKindFromEvent", () => {
         isPrimary: false,
         button: 0,
       }),
-    ).toBe("touch");
+    ).toBeNull();
     expect(
       pointerKindFromEvent({
         pointerType: "mouse",
         isPrimary: true,
         button: 2,
       }),
-    ).toBe("touch");
+    ).toBeNull();
+  });
+
+  it("ignores unknown pointer types", () => {
+    expect(
+      pointerKindFromEvent({
+        pointerType: "",
+        isPrimary: true,
+        button: 0,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("repairStaleFullscreenFlatHeight", () => {
+  it("clears flat 1.0 when a snapshot also has stale fullscreen height", () => {
+    const { settings, repaired } = repairStaleFullscreenFlatHeight({
+      ...DEFAULT_SETTINGS,
+      windowHeightRatio: 1.0,
+      touchLayout: { windowHeightRatio: 1.0, inputRowRightRatio: 0.4 },
+    });
+    expect(repaired).toBe(true);
+    expect(settings.windowHeightRatio).toBeUndefined();
+    expect(settings.touchLayout?.windowHeightRatio).toBe(1.0);
+  });
+
+  it("leaves deliberate flat height alone when snapshots are not stale", () => {
+    const { settings, repaired } = repairStaleFullscreenFlatHeight({
+      ...DEFAULT_SETTINGS,
+      windowHeightRatio: 1.0,
+      touchLayout: { inputRowRightRatio: 0.4, windowHeightRatio: 0.5 },
+    });
+    expect(repaired).toBe(false);
+    expect(settings.windowHeightRatio).toBe(1.0);
   });
 });
