@@ -141,7 +141,7 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
     <div
       ref={menuRef}
       role="menu"
-      tabIndex={0}
+      tabIndex={-1}
       aria-label={t("modeMenuTitle")}
       className="flex shrink-0 flex-col rounded-lg shadow-lg"
       style={{
