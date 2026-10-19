@@ -19,7 +19,7 @@ export function suggestionSuffixAfterPrefix(
   let i = 0;
   let folded = "";
   while (i < word.length && folded.length < target.length) {
-    folded += word[i]!.toLowerCase();
+    folded += word[i].toLowerCase();
     i += 1;
   }
   if (folded === target || folded.startsWith(target)) {

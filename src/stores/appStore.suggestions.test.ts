@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "../lib/types";
 
-const pending: Array<(v: { word: string }[]) => void> = [];
+const pending: ((v: { word: string }[]) => void)[] = [];
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
@@ -55,9 +55,9 @@ describe("loadSuggestions stale-result guard", () => {
     const second = useAppStore.getState().loadSuggestions();
 
     expect(pending).toHaveLength(2);
-    pending[1]!([{ word: "hello" }]);
+    pending[1]([{ word: "hello" }]);
     await second;
-    pending[0]!([{ word: "hey" }]);
+    pending[0]([{ word: "hey" }]);
     await first;
 
     expect(useAppStore.getState().suggestions).toEqual(["hello"]);
@@ -71,7 +71,7 @@ describe("loadSuggestions stale-result guard", () => {
     useAppStore.getState().appendTyped(" ");
     expect(useAppStore.getState().suggestions).toEqual([]);
 
-    pending[0]!([{ word: "hey" }]);
+    pending[0]([{ word: "hey" }]);
     await inFlight;
 
     expect(useAppStore.getState().suggestions).toEqual([]);

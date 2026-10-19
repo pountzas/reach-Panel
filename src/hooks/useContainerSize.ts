@@ -16,7 +16,7 @@ export function useContainerSize<T extends HTMLElement>() {
     };
 
     updateSize();
-    const observer = new ResizeObserver(() => updateSize());
+    const observer = new ResizeObserver(() => { updateSize(); });
     observer.observe(element);
 
     const rafId = requestAnimationFrame(updateSize);

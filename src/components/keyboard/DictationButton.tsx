@@ -28,7 +28,7 @@ export function DictationButton({ transparentUi = false }: { transparentUi?: boo
   if (disabled) {
     if (!sttCapability?.online) {
       label = t("dictationUnavailableOffline");
-    } else if (sttCapability && !sttCapability.winrtSupported) {
+    } else if (!sttCapability.winrtSupported) {
       label = t("dictationUnavailableUnsupported");
     } else {
       label = t("dictationUnavailableOffline");

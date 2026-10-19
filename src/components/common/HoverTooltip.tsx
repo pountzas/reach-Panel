@@ -1,7 +1,7 @@
 export type HoverTooltipPlacement = "above" | "below";
 export type HoverTooltipAlign = "center" | "start" | "end";
 
-interface HoverTooltipProps {
+type HoverTooltipProps = {
   label: string;
   /** Default `above`. Use `below` for top-chrome controls so labels are not clipped. */
   placement?: HoverTooltipPlacement;

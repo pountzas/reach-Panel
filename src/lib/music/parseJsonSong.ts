@@ -90,11 +90,11 @@ export function parseJsonSongs(
   };
 
   if (Array.isArray(data)) {
-    data.forEach((item, index) => push(item, index));
+    data.forEach((item, index) => { push(item, index); });
   } else {
     const record = asRecord(data);
     if (record && Array.isArray(record.songs)) {
-      record.songs.forEach((item, index) => push(item, index));
+      record.songs.forEach((item, index) => { push(item, index); });
     } else {
       push(data, 0);
     }
@@ -107,5 +107,5 @@ export function parseJsonSongs(
 }
 
 export function isImportedMusicSong(song: MusicSong): song is ImportedMusicSong {
-  return (song as ImportedMusicSong).source === "imported";
+  return (song as { source?: string }).source === "imported";
 }

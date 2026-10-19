@@ -179,8 +179,8 @@ export function NewLanguageListForm({
           className="w-full rounded-md border px-2 py-1.5 text-sm"
           style={fieldStyle(authoringField === "title")}
           value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          onFocus={() => setLanguageListAuthoringField("title")}
+          onChange={(event) => { setTitle(event.target.value); }}
+          onFocus={() => { setLanguageListAuthoringField("title"); }}
           readOnly
           aria-readonly="true"
         />
@@ -195,7 +195,7 @@ export function NewLanguageListForm({
             setWordsText(event.target.value);
             setEmptyError(false);
           }}
-          onFocus={() => setLanguageListAuthoringField("words")}
+          onFocus={() => { setLanguageListAuthoringField("words"); }}
           readOnly
           aria-readonly="true"
         />

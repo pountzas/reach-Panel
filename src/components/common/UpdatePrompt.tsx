@@ -20,7 +20,7 @@ import { useAppStore } from "../../stores/appStore";
 
 type PromptState = "prompt" | "downloading";
 
-interface UpdatePromptProps {
+type UpdatePromptProps = {
   update: Update;
   onDismiss: () => void;
 }
@@ -85,8 +85,8 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
         panel.focus();
         return;
       }
-      const first = items[0]!;
-      const last = items[items.length - 1]!;
+      const first = items[0];
+      const last = items[items.length - 1];
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -99,7 +99,7 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
     window.addEventListener("keydown", onKeyDown, true);
     return () => {
       window.removeEventListener("keydown", onKeyDown, true);
-      previouslyFocused?.focus?.();
+      previouslyFocused?.focus();
     };
   }, [onDismiss, state]);
 

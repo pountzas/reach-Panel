@@ -11,13 +11,12 @@ type ProfileSectionProps = {
   surface: SurfaceColors;
   headerBg: string;
   headerText: string;
-};
+}
 
 export function ProfileSection({ surface, headerBg, headerText }: ProfileSectionProps) {
   const { t } = useTranslation();
   const [newProfileName, setNewProfileName] = useState<string>("");
   const {
-    settings,
     profileFiles,
     activeProfileFile,
     setProfileFile,
@@ -26,7 +25,6 @@ export function ProfileSection({ surface, headerBg, headerText }: ProfileSection
     saveActiveProfile,
   } = useAppStore(
     useShallow((s) => ({
-      settings: s.settings,
       profileFiles: s.profileFiles,
       activeProfileFile: s.activeProfileFile,
       setProfileFile: s.setProfileFile,
@@ -35,9 +33,6 @@ export function ProfileSection({ surface, headerBg, headerText }: ProfileSection
       saveActiveProfile: s.saveActiveProfile,
     })),
   );
-
-  if (!settings) return null;
-
   return (
     <SettingsSection title={t("profile")} surface={surface}>
       <ThemedSelect
@@ -77,7 +72,7 @@ export function ProfileSection({ surface, headerBg, headerText }: ProfileSection
           style={fieldStyle(surface)}
           placeholder={t("newProfileFileName")}
           value={newProfileName}
-          onChange={(e) => setNewProfileName(e.target.value)}
+          onChange={(e) => { setNewProfileName(e.target.value); }}
         />
         <button
           type="button"

@@ -20,7 +20,7 @@ export const createFocusModeSlice: StateCreator<
 > = (set, get) => ({
   focusModeActive: false,
   focusModeKeyboardVisible: false,
-  focusContentAnim: "idle" as "idle" | "enter" | "exit",
+  focusContentAnim: "idle",
   focusModeManualExpand: false,
   focusModeSuppressAutoShow: false,
   modeMenuOpen: false,
@@ -29,13 +29,16 @@ export const createFocusModeSlice: StateCreator<
       return;
     }
     set({ modeMenuOpen: true });
-    const pending = invoke<void>("cmd_expand_window_for_mode_menu", {
+    const pending = invoke("cmd_expand_window_for_mode_menu", {
       menuWidth: MODE_MENU_WIDTH,
       menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
-    }).catch((error: unknown) => {
-      console.error("cmd_expand_window_for_mode_menu failed", error);
-      set({ modeMenuOpen: false });
-    });
+    }).then(
+      () => undefined,
+      (error: unknown) => {
+        console.error("cmd_expand_window_for_mode_menu failed", error);
+        set({ modeMenuOpen: false });
+      },
+    );
     storeFlags.modeMenuExpandPending = pending;
     try {
       await pending;
@@ -97,7 +100,7 @@ export const createFocusModeSlice: StateCreator<
     }
     const animateContent = !prefersReducedMotion();
     if (animateContent) {
-      beginFocusContentAnimWait();
+      void beginFocusContentAnimWait();
     }
     // Same turn: hide + exit + animating so FAB does not flash on the full strip.
     set({

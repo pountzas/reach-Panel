@@ -1,7 +1,7 @@
 ﻿import type { ReactNode } from "react";
 import type { SurfaceColors } from "../../lib/colorProfiles";
 
-interface SettingsSectionProps {
+type SettingsSectionProps = {
   title: string;
   description?: string;
   surface: SurfaceColors;

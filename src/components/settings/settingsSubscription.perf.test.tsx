@@ -55,7 +55,7 @@ import { InputAreaViewButtons } from "../layout/InputAreaViewButtons";
 import { InputPreview } from "../keyboard/InputPreview";
 import { ModeMenu } from "../layout/ModeMenu";
 
-type Stats = { commits: number; totalActualMs: number };
+type Stats = { commits: number; totalActualMs: number }
 
 function makeOnRender(stats: Stats): ProfilerOnRenderCallback {
   return (_id, phase, actualDuration) => {
@@ -133,7 +133,7 @@ describe("settings subscription profiler (#281)", () => {
       previewStats.totalActualMs +
       menuStats.totalActualMs;
 
-    // eslint-disable-next-line no-console
+     
     console.log(
       JSON.stringify({
         scenario: "settings-mouseSpeed-change",

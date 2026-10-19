@@ -16,7 +16,7 @@ export type FreeWritePdfExportDialogProps = {
   surface: SurfaceColors;
   onCancel: () => void;
   onExport: (from: number, to: number) => void;
-};
+}
 
 /** From/To/All/Current export range dialog for Free write PDF. */
 export function FreeWritePdfExportDialog({
@@ -37,6 +37,7 @@ export function FreeWritePdfExportDialog({
   useEffect(() => {
     if (!open) return;
     const all = rangeForAllPages(Math.max(1, pageCount));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset range when dialog opens
     setFrom(all.from);
     setTo(all.to);
     setError(null);
@@ -61,7 +62,7 @@ export function FreeWritePdfExportDialog({
     window.addEventListener("keydown", onKeyDown, true);
     return () => {
       window.removeEventListener("keydown", onKeyDown, true);
-      previouslyFocused?.focus?.();
+      previouslyFocused?.focus();
     };
   }, [open, onCancel]);
 
@@ -153,7 +154,7 @@ export function FreeWritePdfExportDialog({
                 min={1}
                 max={pageCount || 1}
                 value={from}
-                onChange={(e) => setFrom(Number(e.target.value) || 1)}
+                onChange={(e) => { setFrom(Number(e.target.value) || 1); }}
                 className="min-h-11 rounded-lg border px-3 py-2"
                 style={fieldStyle}
               />
@@ -167,7 +168,7 @@ export function FreeWritePdfExportDialog({
                 min={1}
                 max={pageCount || 1}
                 value={to}
-                onChange={(e) => setTo(Number(e.target.value) || 1)}
+                onChange={(e) => { setTo(Number(e.target.value) || 1); }}
                 className="min-h-11 rounded-lg border px-3 py-2"
                 style={fieldStyle}
               />

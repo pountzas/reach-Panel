@@ -10,7 +10,7 @@ const { storeState } = vi.hoisted(() => ({
     musicTeachingEnabled: false,
     settings: {
       appBgColor: "#f1f5f9",
-    } as { appBgColor: string },
+    },
     teachingLesson: "spelling" as const,
   },
 }));

@@ -44,13 +44,13 @@ export type LanguageListAuthoringHandlers = {
     translation: LayoutKeyTranslation,
     options: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
   ) => void;
-};
+}
 
 export type TeachingLesson = "music" | "math" | "language";
 
 export type DictationState = "idle" | "listening" | "processing";
 
-export interface SttCapability {
+export type SttCapability = {
   engine: "winrt" | "groq" | null;
   groqConfigured: boolean;
   winrtSupported: boolean;
@@ -58,19 +58,19 @@ export interface SttCapability {
   canDictate: boolean;
 }
 
-export interface ErrorsSlice {
+export type ErrorsSlice = {
   lastError: string | null;
   setLastError: (error: string | null) => void;
 }
 
-export interface SuggestionsSlice {
+export type SuggestionsSlice = {
   suggestions: string[];
   loadSuggestions: () => Promise<void>;
   applySuggestion: (word: string) => Promise<void>;
   recordTypedWord: () => Promise<void>;
 }
 
-export interface DictationSlice {
+export type DictationSlice = {
   dictationState: DictationState;
   sttCapability: SttCapability | null;
   setDictationState: (state: DictationState) => void;
@@ -80,7 +80,7 @@ export interface DictationSlice {
   stopDictation: () => Promise<void>;
 }
 
-export interface CompanionSlice {
+export type CompanionSlice = {
   companionModeActive: boolean;
   companionSessionLive: boolean;
   inputPreviewFrame: string | null;
@@ -90,7 +90,7 @@ export interface CompanionSlice {
   stopCompanionByCaregiver: () => Promise<void>;
 }
 
-export interface TeachingSlice {
+export type TeachingSlice = {
   musicTeachingEnabled: boolean;
   teachingLesson: TeachingLesson;
   languageSubjectTab: LanguageSubjectTab;
@@ -112,7 +112,7 @@ export interface TeachingSlice {
   setFreeWriteFocus: (focus: FreeWriteFocus) => void;
 }
 
-export interface SpellingSlice {
+export type SpellingSlice = {
   languageTaskIndex: number;
   languageInputBuffer: string;
   languageAnswerIncorrect: boolean;
@@ -133,7 +133,7 @@ export interface SpellingSlice {
   checkLanguageAnswer: () => void;
 }
 
-export interface LanguagePacksSlice {
+export type LanguagePacksSlice = {
   customLanguagePacks: LanguagePack[];
   languagePackId: string | null;
   loadCustomLanguagePacks: () => Promise<void>;
@@ -142,7 +142,7 @@ export interface LanguagePacksSlice {
   setLanguagePackId: (id: string) => void;
 }
 
-export interface NotepadSlice {
+export type NotepadSlice = {
   freeWriteNotepadInput: (ch: string) => void;
   freeWriteNotepadBackspace: () => void;
   applyFreeWriteLayoutTranslation: (
@@ -160,7 +160,7 @@ export interface NotepadSlice {
   setFreeWriteNotepadLineNumbers: (on: boolean) => void;
 }
 
-export interface PdfSlice {
+export type PdfSlice = {
   teachingPdfLibrary: TeachingPdfEntry[];
   freeWriteActivePdfId: string | null;
   freeWritePdfTool: "pointer" | "pen" | "eraser" | "text";
@@ -184,11 +184,6 @@ export interface PdfSlice {
     updater: (doc: PdfAnnotationDoc) => PdfAnnotationDoc,
     options?: {
       pushUndo?: boolean;
-      /**
-       * @deprecated Prefer `change`. Kept for call-site compat; ignored when
-       * `change` is set. Never cloned into the undo stack.
-       */
-      undoFrom?: PdfAnnotationDoc;
       /** Per-gesture patch stored on the undo stack (not a full doc). */
       change?: PdfAnnotationChange;
     },
@@ -197,7 +192,7 @@ export interface PdfSlice {
   redoFreeWriteAnnotation: () => void;
 }
 
-export interface PianoSlice {
+export type PianoSlice = {
   musicNoteIndex: number;
   musicPlaybackActive: boolean;
   restartMusicLesson: () => void;
@@ -208,7 +203,7 @@ export interface PianoSlice {
   finishMusicPlayback: () => void;
 }
 
-export interface PartituresSlice {
+export type PartituresSlice = {
   musicSongId: string | null;
   importedSongs: ImportedMusicSong[];
   setMusicSongId: (songId: string) => Promise<void>;
@@ -217,11 +212,11 @@ export interface PartituresSlice {
   deleteImportedSong: (id: string) => Promise<void>;
 }
 
-export interface PianoRangeSlice {
+export type PianoRangeSlice = {
   fitPianoRangeForSong: (song: MusicSong) => Promise<void>;
 }
 
-export interface TypingSlice {
+export type TypingSlice = {
   typedBuffer: string;
   greekPendingAccent: GreekPendingAccent | null;
   stickyModifiers: string[];
@@ -264,7 +259,7 @@ export interface TypingSlice {
   loadKeyboardLayout: () => Promise<void>;
 }
 
-export interface WindowSlice {
+export type WindowSlice = {
   showSettings: boolean;
   isAnimatingWindow: boolean;
   pendingUpdate: Update | null;
@@ -278,7 +273,7 @@ export interface WindowSlice {
   checkForUpdates: () => Promise<void>;
 }
 
-export interface FocusModeSlice {
+export type FocusModeSlice = {
   focusModeActive: boolean;
   focusModeKeyboardVisible: boolean;
   focusContentAnim: "idle" | "enter" | "exit";
@@ -292,7 +287,7 @@ export interface FocusModeSlice {
   collapseFocusModeKeyboard: () => Promise<void>;
 }
 
-export interface ModeSlice {
+export type ModeSlice = {
   /** LIFO session snapshots for nested mode/mouse restores. */
   restoreStack: RestoreStackEntry[];
   pushRestore: (
@@ -308,7 +303,7 @@ export interface ModeSlice {
 }
 
 /** Profile, settings, monitors — everything not owned by a named domain slice. */
-export interface ProfileSlice {
+export type ProfileSlice = {
   profileFiles: ProfileFileInfo[];
   activeProfileFile: string | null;
   settings: AppSettings;

@@ -10,7 +10,6 @@ import {
   type KeyRepeatFireMeta,
 } from "../../hooks/useKeyRepeat";
 import { usePressableButton } from "../../hooks/usePressableButton";
-import type { TransparentKeyColor } from "../../lib/types";
 import { handleClick as handleKeyButtonClick } from "./keyButtonUtils";
 
 type KeyButtonProps = {
@@ -29,7 +28,7 @@ type KeyButtonProps = {
   gridRow?: string;
   /** Focus-mode transparent outlined key styling. */
   transparent?: boolean;
-  outlineColor?: TransparentKeyColor | string | null;
+  outlineColor?: string | null;
   /** Pin label to the bottom edge of the key (e.g. wide Space bar). */
   labelAlign?: "center" | "bottom";
   /**
@@ -40,7 +39,7 @@ type KeyButtonProps = {
   /** Called when a press-and-hold repeat ends (pointer up / leave / cancel). */
   onHoldEnd?: () => void;
   onPress: (meta?: KeyRepeatFireMeta) => void;
-};
+}
 
 export const KeyButton = memo(function KeyButton({
   label,
@@ -147,10 +146,9 @@ export const KeyButton = memo(function KeyButton({
       }
       disabled={disabled}
       aria-label={ariaLabel}
-      onClick={(event) =>
-        handleKeyButtonClick(event, repeatOnHold, onPress, onHoldEnd)
+      onClick={(event) => { handleKeyButtonClick(event, repeatOnHold, onPress, onHoldEnd); }
       }
-      onContextMenu={(e) => e.preventDefault()}
+      onContextMenu={(e) => { e.preventDefault(); }}
       {...pointerHandlers}
     >
       {label}

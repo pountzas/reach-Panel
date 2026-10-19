@@ -41,17 +41,19 @@ export function DictationOverlay() {
     });
 
     return () => {
-      void unlisten.then((stop) => stop());
+      void unlisten.then((stop) => { stop(); });
     };
   }, []);
 
   useEffect(() => {
     if (state === "idle") {
+      // Reset enter animation when overlay becomes idle.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync enter flag to idle/active transition
       setEntered(false);
       return;
     }
-    const id = window.requestAnimationFrame(() => setEntered(true));
-    return () => window.cancelAnimationFrame(id);
+    const id = window.requestAnimationFrame(() => { setEntered(true); });
+    return () => { window.cancelAnimationFrame(id); };
   }, [state]);
 
   const active = state !== "idle";

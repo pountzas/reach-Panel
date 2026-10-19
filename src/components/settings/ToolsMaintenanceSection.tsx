@@ -10,7 +10,7 @@ import { handleWipeProfile } from "./settingsPanelUtils";
 type ToolsMaintenanceSectionProps = {
   surface: SurfaceColors;
   secondaryButtonStyle: CSSProperties;
-};
+}
 
 export function ToolsMaintenanceSection({
   surface,

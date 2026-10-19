@@ -37,11 +37,12 @@ export function FocusModeShell() {
 
   useEffect(() => {
     if (focusContentAnim === "enter") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset slide before enter rAF
       setKeyboardSlideIn(false);
       // Double rAF so the off-screen frame paints before the slide-up.
       let raf2 = 0;
       const raf1 = requestAnimationFrame(() => {
-        raf2 = requestAnimationFrame(() => setKeyboardSlideIn(true));
+        raf2 = requestAnimationFrame(() => { setKeyboardSlideIn(true); });
       });
       return () => {
         cancelAnimationFrame(raf1);
@@ -102,7 +103,7 @@ export function FocusModeShell() {
           fillWindow
           showSettings
           showDictation={settings.micMode === true}
-          onSettings={() => void setShowSettings(true)}
+          onSettings={() => { setShowSettings(true); }}
           onExpand={() => void expandFocusModeKeyboard()}
         />
       </div>
@@ -117,7 +118,7 @@ export function FocusModeShell() {
             height: "100vh",
             backgroundColor: bg,
           }}
-          onContextMenu={(e) => e.preventDefault()}
+          onContextMenu={(e) => { e.preventDefault(); }}
         >
           <div className="min-h-0 flex-1">
             <KeyboardSection />

@@ -5,7 +5,7 @@ import {
 } from "../../hooks/useLongPressWindowDrag";
 import { useTranslation } from "../../hooks/useTranslation";
 
-interface ToolWindowHeaderProps {
+type ToolWindowHeaderProps = {
   title: ReactNode;
   actions: ReactNode;
   style?: CSSProperties;

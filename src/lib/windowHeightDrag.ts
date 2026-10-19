@@ -25,7 +25,7 @@ export type WindowHeightDragRegion = {
   bottom: number;
   /** Region height in the same units as `bottom` and `screenY`. */
   height: number;
-};
+}
 
 /**
  * Resolve the layout region in CSS/logical pixels so it matches `event.screenY`.

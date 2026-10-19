@@ -47,8 +47,8 @@ export const useFreeWritePhysicalKeyboard = (): void => {
     freeWriteFocus,
   });
 
-  useEffect((): (() => void) | void => {
-    if (!active) return;
+  useEffect((): (() => void) | undefined => {
+    if (!active) return undefined;
 
     void syncWindowFocusable();
     void WebviewWindow.getCurrent().setFocus().catch(() => {

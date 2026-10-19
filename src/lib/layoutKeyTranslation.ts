@@ -13,7 +13,7 @@ import {
 export type LayoutKeyTranslation = {
   text: string;
   dead: boolean;
-};
+}
 
 const SPACING_ACCENT = /^[\u00B4\u0384\u1FFD\u00A8]+/u;
 

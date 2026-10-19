@@ -15,14 +15,14 @@ import {
 
 export type { SectionId, StackableSectionId };
 
-export interface FloatRect {
+export type FloatRect = {
   xPct: number;
   yPct: number;
   wPct: number;
   hPct: number;
 }
 
-export interface SectionStackState {
+export type SectionStackState = {
   /** Docked order above the keyboard (extensible). */
   order: StackableSectionId[];
   weights: Partial<Record<SectionId, number>>;
@@ -32,11 +32,11 @@ export interface SectionStackState {
   undocked: Partial<Record<StackableSectionId, FloatRect>>;
 }
 
-export interface SectionVisibility {
+export type SectionVisibility = {
   teaching: boolean;
 }
 
-export interface DockedSlot {
+export type DockedSlot = {
   id: SectionId;
   y: number;
   height: number;
@@ -122,7 +122,7 @@ export function normalizeSectionStack(
     stack.undocked as Partial<Record<string, FloatRect>>,
   ) as SectionStackState["undocked"];
   return {
-    order: normalizeStackOrder(stack.order as unknown as string[]),
+    order: normalizeStackOrder(stack.order),
     weights,
     minimized,
     expandedWeights,
@@ -143,14 +143,7 @@ export function isSectionVisible(
 ): boolean {
   const def = getSectionDefinition(id);
   if (def.visibilityKey == null) return true;
-  switch (def.visibilityKey) {
-    case "teaching":
-      return visibility.teaching;
-    default: {
-      const _exhaustive: never = def.visibilityKey;
-      return _exhaustive;
-    }
-  }
+  return visibility[def.visibilityKey];
 }
 
 export function weightOf(stack: SectionStackState, id: SectionId): number {
@@ -182,7 +175,7 @@ export function visibleStackSlotIds(
 export type ResolveDockedSlotsOptions = {
   /** Ephemeral minimize (e.g. teaching keyboard) — does not mutate stack.minimized. */
   forceMinimized?: Partial<Record<SectionId, boolean>>;
-};
+}
 
 export function resolveDockedSlots(
   stack: SectionStackState,
@@ -204,7 +197,7 @@ export function resolveDockedSlots(
     fixedH: number;
     isHole: boolean;
     isMinimized: boolean;
-  };
+  }
 
   const plan: Plan[] = ids.map((id) => {
     const hole = isUndocked(stack, id);
@@ -295,7 +288,7 @@ export function resolveDockedSlots(
   const slots: DockedSlot[] = [];
   let y = 0;
   for (let i = 0; i < plan.length; i++) {
-    const item = plan[i]!;
+    const item = plan[i];
     const height = Math.max(0, heights.get(item.id) ?? 0);
     slots.push({
       id: item.id,
@@ -354,25 +347,30 @@ export function applySplitterDelta(
   return { ...stack, weights: nextWeights };
 }
 
+function omitSectionFlag<T extends Partial<Record<SectionId, unknown>>>(
+  record: T,
+  id: SectionId,
+): T {
+  return Object.fromEntries(
+    Object.entries(record).filter(([key]) => key !== id),
+  ) as T;
+}
+
 export function toggleStackMinimized(
   stack: SectionStackState,
   id: SectionId,
 ): SectionStackState {
   if (isUndocked(stack, id)) {
     // Minimized state for undocked panels is stored the same way; hole keeps weight.
-    const minimized = { ...stack.minimized };
-    if (minimized[id]) {
-      delete minimized[id];
-    } else {
-      minimized[id] = true;
+    if (stack.minimized[id]) {
+      return { ...stack, minimized: omitSectionFlag(stack.minimized, id) };
     }
-    return { ...stack, minimized };
+    return { ...stack, minimized: { ...stack.minimized, [id]: true } };
   }
 
-  const minimized = { ...stack.minimized };
   const expandedWeights = { ...stack.expandedWeights };
-  if (minimized[id]) {
-    delete minimized[id];
+  if (stack.minimized[id]) {
+    const minimized = omitSectionFlag(stack.minimized, id);
     const restored = expandedWeights[id];
     if (restored != null) {
       return {
@@ -386,8 +384,11 @@ export function toggleStackMinimized(
   }
 
   expandedWeights[id] = weightOf(stack, id);
-  minimized[id] = true;
-  return { ...stack, minimized, expandedWeights };
+  return {
+    ...stack,
+    minimized: { ...stack.minimized, [id]: true },
+    expandedWeights,
+  };
 }
 
 /** Expand a minimized docked section; no-op when already expanded. */
@@ -398,14 +399,11 @@ export function ensureSectionExpanded(
   if (!stack.minimized[id]) return stack;
 
   if (isUndocked(stack, id)) {
-    const minimized = { ...stack.minimized };
-    delete minimized[id];
-    return { ...stack, minimized };
+    return { ...stack, minimized: omitSectionFlag(stack.minimized, id) };
   }
 
-  const minimized = { ...stack.minimized };
+  const minimized = omitSectionFlag(stack.minimized, id);
   const expandedWeights = { ...stack.expandedWeights };
-  delete minimized[id];
   const restored = expandedWeights[id];
   if (restored != null) {
     return {
@@ -453,9 +451,12 @@ export function dockSection(
   id: StackableSectionId,
 ): SectionStackState {
   if (stack.undocked[id] == null) return stack;
-  const undocked = { ...stack.undocked };
-  delete undocked[id];
-  return { ...stack, undocked };
+  return {
+    ...stack,
+    undocked: Object.fromEntries(
+      Object.entries(stack.undocked).filter(([key]) => key !== id),
+    ),
+  };
 }
 
 export function updateFloatRect(

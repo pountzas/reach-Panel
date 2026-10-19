@@ -1,16 +1,16 @@
-export interface RectSize {
+export type RectSize = {
   width: number;
   height: number;
 }
 
-export interface AnchorRect {
+export type AnchorRect = {
   left: number;
   top: number;
   width: number;
   height: number;
 }
 
-export interface PopupPosition {
+export type PopupPosition = {
   left: number;
   top: number;
 }

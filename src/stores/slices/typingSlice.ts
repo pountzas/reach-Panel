@@ -143,12 +143,11 @@ export const createTypingSlice: StateCreator<
       commitSuggestionList(set, []);
     }
   },
-  toggleSticky: (modifier) =>
-    set((s) => ({
+  toggleSticky: (modifier) => { set((s) => ({
       stickyModifiers: s.stickyModifiers.includes(modifier)
         ? s.stickyModifiers.filter((m) => m !== modifier)
         : [...s.stickyModifiers, modifier],
-    })),
+    })); },
   pollKeyboardState: async () => {
     const epoch = get().settingsEpoch;
     const next = await invoke<PhysicalKeyState>("cmd_get_keyboard_state");
@@ -205,7 +204,7 @@ export const createTypingSlice: StateCreator<
     const inputMethods = await invoke<InputMethod[]>("cmd_get_input_methods");
     set({ inputMethods });
   },
-  setLanguagePickerOpen: (open) => set({ languagePickerOpen: open }),
+  setLanguagePickerOpen: (open) => { set({ languagePickerOpen: open }); },
   selectTypingInputMethod: async (method) => {
     const epoch = get().settingsEpoch;
     const previousTypingLanguage = get().settings.typingLanguage;
@@ -216,7 +215,9 @@ export const createTypingSlice: StateCreator<
         hkl: method.hkl,
       });
       if (!result.success) {
-        const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
+        const trimmedError = result.error?.trim() ?? "";
+        const message =
+          trimmedError.length > 0 ? trimmedError : LANGUAGE_CHANGE_FALLBACK;
         storeFlags.lastAnnouncedError = message;
         notify.error(message, { id: "typing-language-switch" });
         return;
@@ -250,11 +251,13 @@ export const createTypingSlice: StateCreator<
       }
       await get().refreshLayoutKeyLabels(method.hkl);
       await get().pollKeyboardState();
-    } catch (error) {
+    } catch (error: unknown) {
       const message =
         error instanceof Error
           ? error.message
-          : String(error || LANGUAGE_CHANGE_FALLBACK);
+          : typeof error === "string" && error.length > 0
+            ? error
+            : LANGUAGE_CHANGE_FALLBACK;
       storeFlags.lastAnnouncedError = message;
       notify.error(message, { id: "typing-language-switch" });
     } finally {
@@ -269,11 +272,10 @@ export const createTypingSlice: StateCreator<
     );
     set({ layoutKeyLabels });
   },
-  clearSticky: () => set({ stickyModifiers: [] }),
-  clearStickyExceptFn: () =>
-    set((s) => ({
+  clearSticky: () => { set({ stickyModifiers: [] }); },
+  clearStickyExceptFn: () => { set((s) => ({
       stickyModifiers: s.stickyModifiers.filter((m) => m === "fn"),
-    })),
+    })); },
   loadKeyboardLayout: async () => {
     const keyboardLayout = await invoke<string>("cmd_get_keyboard_layout");
     set({ keyboardLayout });

@@ -27,7 +27,7 @@ const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
 type AppearanceSectionProps = {
   surface: SurfaceColors;
   secondaryButtonStyle: CSSProperties;
-};
+}
 
 export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceSectionProps) {
   const { t } = useTranslation();
@@ -38,9 +38,6 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
       pickBackgroundImage: s.pickBackgroundImage,
     })),
   );
-
-  if (!settings) return null;
-
   const keyboardFontSizeMax = KEYBOARD_FONT_SIZE_MAX;
   const keyboardFontSizePx = clampKeyboardFontSize(settings.keyboardFontSize);
 
@@ -182,12 +179,16 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
         />
       </label>
 
-      <label className="mt-4 block text-sm" style={{ color: surface.panelText }}>
-        <span className="flex items-center justify-between gap-2">
+      <div className="mt-4 block text-sm" style={{ color: surface.panelText }}>
+        <label
+          htmlFor="settings-keyboard-font-size"
+          className="flex items-center justify-between gap-2"
+        >
           <span>{t("keyboardFontSize")}</span>
           <span className="tabular-nums opacity-80">{keyboardFontSizePx}px</span>
-        </span>
+        </label>
         <input
+          id="settings-keyboard-font-size"
           type="range"
           min={KEYBOARD_FONT_SIZE_MIN}
           max={keyboardFontSizeMax}
@@ -200,7 +201,7 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
           }
           className="mt-1 w-full"
         />
-      </label>
+      </div>
     </SettingsSection>
   );
 }

@@ -70,8 +70,8 @@ export const useLanguageLessonPhysicalKeyboard = (): void => {
     languageSubjectTab,
   });
 
-  useEffect((): (() => void) | void => {
-    if (!active) return;
+  useEffect((): (() => void) | undefined => {
+    if (!active) return undefined;
 
     void syncWindowFocusable();
     void WebviewWindow.getCurrent().setFocus().catch(() => {

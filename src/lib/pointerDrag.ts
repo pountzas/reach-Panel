@@ -7,7 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
-export interface PointerDragHandlers {
+export type PointerDragHandlers = {
   onPointerDown: (event: ReactPointerEvent) => void;
   onPointerMove: (event: ReactPointerEvent) => void;
   onPointerUp: (event: ReactPointerEvent) => void;
@@ -74,9 +74,15 @@ export function usePointerDrag(options: {
     optionsRef.current = options;
   });
 
+  const endDragRef = useRef<(event?: PointerEvent) => void>(() => {});
+
   const onWindowMove = useCallback((event: PointerEvent) => {
-    if (!activeRef.current || activeRef.current.pointerId !== event.pointerId) return;
+    if (activeRef.current?.pointerId !== event.pointerId) return;
     optionsRef.current.onMove(event);
+  }, []);
+
+  const pointerEndListener = useCallback((event: PointerEvent) => {
+    endDragRef.current(event);
   }, []);
 
   const endDrag = useCallback((event?: PointerEvent) => {
@@ -84,8 +90,8 @@ export function usePointerDrag(options: {
     if (!active) return;
     if (event && active.pointerId !== event.pointerId) return;
     window.removeEventListener("pointermove", onWindowMove);
-    window.removeEventListener("pointerup", endDrag);
-    window.removeEventListener("pointercancel", endDrag);
+    window.removeEventListener("pointerup", pointerEndListener);
+    window.removeEventListener("pointercancel", pointerEndListener);
     try {
       if (event) {
         active.captureEl?.releasePointerCapture(event.pointerId);
@@ -100,7 +106,11 @@ export function usePointerDrag(options: {
     if (event) {
       optionsRef.current.onEnd?.(event);
     }
-  }, [onWindowMove]);
+  }, [onWindowMove, pointerEndListener]);
+
+  useLayoutEffect(() => {
+    endDragRef.current = endDrag;
+  });
 
   useEffect(() => {
     return () => {
@@ -120,10 +130,10 @@ export function usePointerDrag(options: {
       activeRef.current = { pointerId: event.pointerId, captureEl: el };
       setPointerDragActive(true);
       window.addEventListener("pointermove", onWindowMove);
-      window.addEventListener("pointerup", endDrag);
-      window.addEventListener("pointercancel", endDrag);
+      window.addEventListener("pointerup", pointerEndListener);
+      window.addEventListener("pointercancel", pointerEndListener);
     },
-    [endDrag, onWindowMove],
+    [onWindowMove, pointerEndListener],
   );
 
   return {
@@ -131,6 +141,6 @@ export function usePointerDrag(options: {
     onPointerMove: () => {
       /* window listener handles move */
     },
-    onPointerUp: (event) => endDrag(event.nativeEvent),
+    onPointerUp: (event) => { endDrag(event.nativeEvent); },
   };
 }

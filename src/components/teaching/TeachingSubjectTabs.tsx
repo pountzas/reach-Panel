@@ -10,7 +10,7 @@ export type TeachingSubjectTabOption<T extends string = string> = {
   label: string;
   /** When set with vertical orientation, shown instead of the text label. */
   icon?: ReactNode;
-};
+}
 
 /**
  * Chrome-style subject tabs attached under the teaching section header.
@@ -42,7 +42,6 @@ export function TeachingSubjectTabs<T extends string>({
     if (index < 0) return;
     const nextIndex = (index + delta + tabs.length) % tabs.length;
     const next = tabs[nextIndex];
-    if (!next) return;
     onChange(next.id);
     tabRefs.current[nextIndex]?.focus();
   };
@@ -81,6 +80,7 @@ export function TeachingSubjectTabs<T extends string>({
           backgroundColor: surface.panelHeaderBg,
         }}
         role="tablist"
+        tabIndex={-1}
         aria-label="Teaching subject tabs"
         aria-orientation="vertical"
         onKeyDown={onKeyDown}
@@ -106,7 +106,7 @@ export function TeachingSubjectTabs<T extends string>({
                   : "transparent",
                 color: active ? "#ffffff" : surface.panelMutedText,
               }}
-              onClick={() => onChange(tab.id)}
+              onClick={() => { onChange(tab.id); }}
             >
               {tab.icon ?? tab.label}
               <HoverTooltip label={tab.label} placement="below" align="start" />
@@ -125,6 +125,7 @@ export function TeachingSubjectTabs<T extends string>({
         backgroundColor: surface.panelHeaderBg,
       }}
       role="tablist"
+      tabIndex={-1}
       aria-label="Teaching subject tabs"
       onKeyDown={onKeyDown}
     >
@@ -153,7 +154,7 @@ export function TeachingSubjectTabs<T extends string>({
               marginBottom: -1,
               zIndex: active ? 1 : 0,
             }}
-            onClick={() => onChange(tab.id)}
+            onClick={() => { onChange(tab.id); }}
           >
             {tab.label}
           </button>

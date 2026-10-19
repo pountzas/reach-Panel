@@ -11,7 +11,7 @@ import { parseMusicXmlSongs } from "./parseMusicXmlSong";
 export type MusicFilePayload = {
   path: string;
   contentBase64: string;
-};
+}
 
 /** Parse a picked song file into one or more imported songs (auto track pick for MIDI/MusicXML). */
 export async function parseMusicFilePayload(

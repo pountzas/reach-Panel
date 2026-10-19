@@ -4,7 +4,7 @@ import type { AppSettings, LayoutSnapshot, PointerInputKind } from "./types";
 const LAYOUT_PARTIAL_KEYS = [
   "sectionStack",
   "inputRowRightRatio",
-] as const satisfies ReadonlyArray<keyof AppSettings>;
+] as const satisfies readonly (keyof AppSettings)[];
 
 /** Ignore synthetic mouse events for this long after a real touch/pen. */
 export const POINTER_MOUSE_GUARD_MS = 500;

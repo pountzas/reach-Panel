@@ -162,7 +162,7 @@ describe("CollapsedFab mode menu", () => {
     storeState.modeMenuOpen = true;
     render(<CollapsedFab />);
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Focus" }));
-    await waitFor(() => expect(closeModeMenu).toHaveBeenCalled());
+    await waitFor(() => { expect(closeModeMenu).toHaveBeenCalled(); });
     expect(setAppMode).not.toHaveBeenCalled();
     expect(toggleCollapsed).not.toHaveBeenCalled();
   });
@@ -193,7 +193,7 @@ describe("CollapsedFab mode menu", () => {
     storeState.modeMenuOpen = true;
     render(<CollapsedFab />);
     expect(
-      (screen.getByRole("menuitemradio", { name: "Companion" }) as HTMLButtonElement)
+      screen.getByRole<HTMLButtonElement>("menuitemradio", { name: "Companion" })
         .disabled,
     ).toBe(true);
   });

@@ -50,17 +50,18 @@ function flattenToSharp(note: string): string | null {
 }
 
 function textContent(el: Element | null, name: string): string {
-  return el?.getElementsByTagName(name)[0]?.textContent?.trim() ?? "";
+  const node = el?.getElementsByTagName(name).item(0) ?? null;
+  return (node?.textContent ?? "").trim();
 }
 
 function parsePartNotes(part: Element): {
-  events: Array<{ onsetBeats: number; durationBeats: number; pitch: string }>;
+  events: { onsetBeats: number; durationBeats: number; pitch: string }[];
   tempoBpm: number | null;
 } {
   let divisions = 1;
   let onset = 0;
   let tempoBpm: number | null = null;
-  const events: Array<{ onsetBeats: number; durationBeats: number; pitch: string }> = [];
+  const events: { onsetBeats: number; durationBeats: number; pitch: string }[] = [];
 
   const measures = Array.from(part.getElementsByTagName("measure"));
   for (const measure of measures) {
@@ -103,7 +104,7 @@ function parsePartNotes(part: Element): {
         continue;
       }
 
-      const pitchEl = child.getElementsByTagName("pitch")[0];
+      const pitchEl = child.getElementsByTagName("pitch").item(0);
       if (!pitchEl) {
         if (!isChord) onset += durationBeats;
         continue;
@@ -138,23 +139,40 @@ function parseMusicXmlDocument(
     throw new Error("Invalid MusicXML document");
   }
 
+  const workTitleText = (
+    doc.getElementsByTagName("work-title").item(0)?.textContent ?? ""
+  ).trim();
+  const movementTitleText = (
+    doc.getElementsByTagName("movement-title").item(0)?.textContent ?? ""
+  ).trim();
   const workTitle =
-    doc.getElementsByTagName("work-title")[0]?.textContent?.trim() ||
-    doc.getElementsByTagName("movement-title")[0]?.textContent?.trim() ||
-    options.fallbackTitle;
+    workTitleText.length > 0
+      ? workTitleText
+      : movementTitleText.length > 0
+        ? movementTitleText
+        : options.fallbackTitle;
+  const composerFromTyped = (
+    doc.querySelector("creator[type='composer']")?.textContent ?? ""
+  ).trim();
+  const composerFromAny = (
+    doc.getElementsByTagName("creator").item(0)?.textContent ?? ""
+  ).trim();
   const composer =
-    doc.querySelector("creator[type='composer']")?.textContent?.trim() ||
-    doc.getElementsByTagName("creator")[0]?.textContent?.trim() ||
-    undefined;
+    composerFromTyped.length > 0
+      ? composerFromTyped
+      : composerFromAny.length > 0
+        ? composerFromAny
+        : undefined;
 
   const partList = Array.from(doc.getElementsByTagName("score-part"));
   const partNameById = new Map<string, string>();
   for (const part of partList) {
     const id = part.getAttribute("id") ?? "";
+    const partName = (
+      part.getElementsByTagName("part-name").item(0)?.textContent ?? ""
+    ).trim();
     const name =
-      part.getElementsByTagName("part-name")[0]?.textContent?.trim() ||
-      id ||
-      "Part";
+      partName.length > 0 ? partName : id.length > 0 ? id : "Part";
     if (id) partNameById.set(id, name);
   }
 
@@ -170,7 +188,7 @@ function parseMusicXmlDocument(
     if (partTempo) tempoBpm = partTempo;
     return {
       id,
-      label: partNameById.get(id) || `Part ${index + 1}`,
+      label: partNameById.get(id) ?? `Part ${index + 1}`,
       notes: onsetsToNoteEvents(events),
     };
   });
@@ -211,7 +229,11 @@ async function extractMusicXmlFromMxl(contentBase64: string): Promise<string> {
   if (!xmlEntry) {
     throw new Error("MXL archive did not contain MusicXML");
   }
-  return zip.file(xmlEntry)!.async("string");
+  const xmlFile = zip.file(xmlEntry);
+  if (!xmlFile) {
+    throw new Error("MXL archive did not contain MusicXML");
+  }
+  return xmlFile.async("string");
 }
 
 export async function parseMusicXmlSongs(

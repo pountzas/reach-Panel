@@ -38,7 +38,7 @@ export type PianoKey = {
   freq: number;
   isBlack: boolean;
   leftRatio?: number;
-};
+}
 
 export type PianoRangeFit = {
   startOctave: number;
@@ -46,12 +46,12 @@ export type PianoRangeFit = {
   fitsCompletely: boolean;
   songMinId: string;
   songMaxId: string;
-};
+}
 
 export function parseNoteId(noteId: string): { note: string; octave: number } | null {
   const match = /^([A-G]#?)(\d+)$/.exec(noteId);
   if (!match) return null;
-  const note = match[1]!;
+  const note = match[1];
   const octave = Number(match[2]);
   if (!(note in NOTE_SEMITONES) || Number.isNaN(octave)) return null;
   return { note, octave };
@@ -60,12 +60,12 @@ export function parseNoteId(noteId: string): { note: string; octave: number } | 
 export function noteIdToMidi(noteId: string): number | null {
   const parsed = parseNoteId(noteId);
   if (!parsed) return null;
-  return (parsed.octave + 1) * 12 + NOTE_SEMITONES[parsed.note]!;
+  return (parsed.octave + 1) * 12 + NOTE_SEMITONES[parsed.note];
 }
 
 export function midiToNoteId(midi: number): string {
   const rounded = Math.round(midi);
-  const name = NOTE_NAMES[((rounded % 12) + 12) % 12]!;
+  const name = NOTE_NAMES[((rounded % 12) + 12) % 12];
   const octave = Math.floor(rounded / 12) - 1;
   return `${name}${octave}`;
 }
@@ -75,11 +75,11 @@ export function midiToFreq(midi: number): number {
 }
 
 export function noteToMidi(note: string, octave: number): number {
-  return (octave + 1) * 12 + NOTE_SEMITONES[note]!;
+  return (octave + 1) * 12 + NOTE_SEMITONES[note];
 }
 
 export function buildPianoKeys(
-  octaveCountInput: number = 2,
+  octaveCountInput = 2,
   startOctaveInput?: number,
 ): { whiteKeys: PianoKey[]; blackKeys: PianoKey[] } {
   const octaveCount = resolveSynthOctaveCount(octaveCountInput);
@@ -89,7 +89,7 @@ export function buildPianoKeys(
 
   for (let octave = startOctave; octave < startOctave + octaveCount; octave++) {
     for (let i = 0; i < WHITE_NOTES.length; i++) {
-      const note = WHITE_NOTES[i]!;
+      const note = WHITE_NOTES[i];
       const id = `${note}${octave}`;
       whiteKeys.push({
         id,
@@ -124,6 +124,7 @@ export function buildPianoKeys(
 }
 
 export function windowMinMidi(startOctave: number, _octaveCount: SynthOctaveCount): number {
+  // Keep arity aligned with windowMaxMidi; min pitch is always C of startOctave.
   return noteToMidi("C", startOctave);
 }
 

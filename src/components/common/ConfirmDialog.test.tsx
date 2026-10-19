@@ -106,8 +106,9 @@ describe("ConfirmDialog", () => {
     const dialog = screen.getByRole("dialog");
     const overlay = dialog.parentElement;
     expect(overlay).toBeTruthy();
-    expect(overlay!.className).toContain("fixed");
-    expect(overlay!.parentElement).toBe(document.body);
+    if (!overlay) throw new Error("expected overlay");
+    expect(overlay.className).toContain("fixed");
+    expect(overlay.parentElement).toBe(document.body);
     expect(section.contains(overlay)).toBe(false);
 
     section.remove();

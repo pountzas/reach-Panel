@@ -39,6 +39,13 @@ vi.mock("../../lib/notify", () => ({
 import { useAppStore } from "../../stores/appStore";
 import { FreeWritePdfAnnotationOverlay } from "./FreeWritePdfAnnotationOverlay";
 
+function asHtmlElement(el: Element): HTMLElement {
+  if (!(el instanceof HTMLElement)) {
+    throw new Error("expected HTMLElement");
+  }
+  return el;
+}
+
 function mockRect(
   el: HTMLElement,
   rect: { left: number; top: number; width: number; height: number },
@@ -51,7 +58,7 @@ function mockRect(
       x: rect.left,
       y: rect.top,
       toJSON: () => ({}),
-    }) as DOMRect;
+    });
 }
 
 /** jsdom lacks pointer capture; mirror set/has/release for gesture handlers. */
@@ -59,11 +66,11 @@ function stubPointerCapture(el: HTMLElement) {
   const captured = new Set<number>();
   el.setPointerCapture = ((id: number) => {
     captured.add(id);
-  }) as HTMLElement["setPointerCapture"];
+  });
   el.releasePointerCapture = ((id: number) => {
     captured.delete(id);
-  }) as HTMLElement["releasePointerCapture"];
-  el.hasPointerCapture = ((id: number) => captured.has(id)) as HTMLElement["hasPointerCapture"];
+  });
+  el.hasPointerCapture = ((id: number) => captured.has(id));
 }
 
 describe("FreeWritePdfAnnotationOverlay gestures", () => {
@@ -86,11 +93,12 @@ describe("FreeWritePdfAnnotationOverlay gestures", () => {
         <FreeWritePdfAnnotationOverlay page={1} width={600} height={800} />
       </div>,
     );
-    const root = container.querySelector(".absolute.inset-0") as HTMLElement;
+    const root = container.querySelector(".absolute.inset-0");
     expect(root).toBeTruthy();
-    stubPointerCapture(root);
+    if (!root) throw new Error("expected overlay root");
+    stubPointerCapture(asHtmlElement(root));
     // CSS-shrunk page: layout width half of the logical overlay width.
-    mockRect(root, { left: 0, top: 0, width: 300, height: 400 });
+    mockRect(asHtmlElement(root), { left: 0, top: 0, width: 300, height: 400 });
 
     act(() => {
       fireEvent.pointerDown(root, {
@@ -111,11 +119,10 @@ describe("FreeWritePdfAnnotationOverlay gestures", () => {
       });
     });
 
-    const strokes =
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.strokes ?? [];
+    const strokes = useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes;
     expect(strokes).toHaveLength(1);
-    expect(strokes[0]!.points[0]![0]).toBeCloseTo(0.5, 5);
-    expect(strokes[0]!.points[0]![1]).toBeCloseTo(0.5, 5);
+    expect(strokes[0].points[0][0]).toBeCloseTo(0.5, 5);
+    expect(strokes[0].points[0][1]).toBeCloseTo(0.5, 5);
   });
 
   it("pen gesture commits exactly one addStroke updater call", () => {
@@ -129,9 +136,10 @@ describe("FreeWritePdfAnnotationOverlay gestures", () => {
     const { container } = render(
       <FreeWritePdfAnnotationOverlay page={1} width={600} height={800} />,
     );
-    const root = container.querySelector(".absolute.inset-0") as HTMLElement;
-    stubPointerCapture(root);
-    mockRect(root, { left: 0, top: 0, width: 600, height: 800 });
+    const root = container.querySelector(".absolute.inset-0");
+    if (!root) throw new Error("expected overlay root");
+    stubPointerCapture(asHtmlElement(root));
+    mockRect(asHtmlElement(root), { left: 0, top: 0, width: 600, height: 800 });
 
     act(() => {
       fireEvent.pointerDown(root, {
@@ -197,9 +205,10 @@ describe("FreeWritePdfAnnotationOverlay gestures", () => {
     const { container } = render(
       <FreeWritePdfAnnotationOverlay page={1} width={600} height={800} />,
     );
-    const root = container.querySelector(".absolute.inset-0") as HTMLElement;
-    stubPointerCapture(root);
-    mockRect(root, { left: 0, top: 0, width: 600, height: 800 });
+    const root = container.querySelector(".absolute.inset-0");
+    if (!root) throw new Error("expected overlay root");
+    stubPointerCapture(asHtmlElement(root));
+    mockRect(asHtmlElement(root), { left: 0, top: 0, width: 600, height: 800 });
 
     act(() => {
       fireEvent.pointerDown(root, {
@@ -225,9 +234,9 @@ describe("FreeWritePdfAnnotationOverlay gestures", () => {
     );
     expect(eraseCalls).toHaveLength(1);
     // Untouched stroke keeps identity in the committed doc.
-    const after =
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.strokes ?? [];
-    expect(after.some((s) => s === strokeB)).toBe(true);
+    const afterStrokes =
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes;
+    expect(afterStrokes.some((s) => s === strokeB)).toBe(true);
     useAppStore.setState({ applyFreeWriteAnnotationUpdater: original });
   });
 
@@ -253,14 +262,14 @@ describe("FreeWritePdfAnnotationOverlay gestures", () => {
     const { container } = render(
       <FreeWritePdfAnnotationOverlay page={1} width={600} height={800} />,
     );
-    const root = container.querySelector(".absolute.inset-0") as HTMLElement;
-    stubPointerCapture(root);
-    mockRect(root, { left: 0, top: 0, width: 600, height: 800 });
-    const textEl = container.querySelector(
-      "[data-pdf-text-box]",
-    ) as HTMLElement;
+    const root = container.querySelector(".absolute.inset-0");
+    if (!root) throw new Error("expected overlay root");
+    stubPointerCapture(asHtmlElement(root));
+    mockRect(asHtmlElement(root), { left: 0, top: 0, width: 600, height: 800 });
+    const textEl = container.querySelector("[data-pdf-text-box]");
     expect(textEl).toBeTruthy();
-    stubPointerCapture(textEl);
+    if (!textEl) throw new Error("expected text box");
+    stubPointerCapture(asHtmlElement(textEl));
 
     act(() => {
       fireEvent.pointerDown(textEl, {
@@ -287,7 +296,7 @@ describe("FreeWritePdfAnnotationOverlay gestures", () => {
       (c) => c[1]?.change?.kind === "moveText",
     );
     expect(moveCalls.length).toBeLessThanOrEqual(1);
-    expect(textEl.style.left).toBeTruthy();
+    expect(asHtmlElement(textEl).style.left).toBeTruthy();
     useAppStore.setState({ applyFreeWriteAnnotationUpdater: original });
   });
 });

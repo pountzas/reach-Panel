@@ -58,7 +58,7 @@ function LessonSelectField({
         style={selectStyle}
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => { onChange(event.target.value); }}
       >
         {children}
       </select>
@@ -153,7 +153,7 @@ export function LanguageLessonPanel() {
           void createCustomLanguagePack(nextPack);
           setCreatingList(false);
         }}
-        onCancel={() => setCreatingList(false)}
+        onCancel={() => { setCreatingList(false); }}
       />
     </TeachingLessonPane>
   ) : (
@@ -215,7 +215,7 @@ export function LanguageLessonPanel() {
           ) : null}
           <TeachingLessonToolbarButton
             label={t("restartLesson")}
-            onClick={() => restartLanguageLesson()}
+            onClick={() => { restartLanguageLesson(); }}
             disabled={languageLessonPlaying}
             borderColor={surface.panelBorder}
             backgroundColor={surface.panelBg}
@@ -273,7 +273,7 @@ export function LanguageLessonPanel() {
           }}
           value={pack?.id ?? ""}
           disabled={languageLessonPlaying}
-          onChange={(event) => setLanguagePackId(event.target.value)}
+          onChange={(event) => { setLanguagePackId(event.target.value); }}
         >
           <optgroup label={t("languagePackBuiltIn")}>
             {availablePacks.map((entry) => (
@@ -435,7 +435,7 @@ export function LanguageLessonPanel() {
               backgroundColor: surface.panelBg,
               color: surface.panelText,
             }}
-            onClick={() => checkLanguageAnswer()}
+            onClick={() => { checkLanguageAnswer(); }}
           >
             {t("languageCheck")}
           </button>

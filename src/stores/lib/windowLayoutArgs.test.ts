@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "../../lib/types";
 
-const invoke = vi.fn((_cmd?: string, _args?: unknown) =>
-  Promise.resolve(undefined),
-);
+const invoke = vi.fn((..._args: unknown[]) => Promise.resolve(undefined));
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
 }));

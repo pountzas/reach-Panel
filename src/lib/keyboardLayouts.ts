@@ -1,4 +1,4 @@
-export interface KeyDef {
+export type KeyDef = {
   label: string;
   key: string;
   /** QWERTY-position id before live layout labels are applied. */
@@ -23,7 +23,7 @@ export function isSpecialLabeledKey(key: string): boolean {
   return key in SPECIAL_KEY_LABELS;
 }
 
-export interface PhysicalKeyState {
+export type PhysicalKeyState = {
   capsLock: boolean;
   shift: boolean;
   ctrl: boolean;
@@ -37,7 +37,7 @@ export interface PhysicalKeyState {
   hasInputTarget: boolean;
 }
 
-export interface InputMethod {
+export type InputMethod = {
   hkl: number;
   langTag: string;
   displayName: string;
@@ -45,7 +45,7 @@ export interface InputMethod {
   klid: string;
 }
 
-export interface LayoutKeyLabel {
+export type LayoutKeyLabel = {
   key: string;
   label: string;
   shiftLabel?: string | null;
@@ -97,8 +97,11 @@ function keyNameToVk(key: string): number | null {
 
 /** Maps a layout key to its physical Windows VK using QWERTY key positions. */
 export function vkForLayoutKey(row: number, col: number): number | null {
-  const keyDef = QWERTY_ROWS[row]?.[col];
-  if (!keyDef || keyDef.key === "langswitch" || keyDef.key === "dictate") return null;
+  if (row < 0 || row >= QWERTY_ROWS.length) return null;
+  const rowKeys = QWERTY_ROWS[row];
+  if (col < 0 || col >= rowKeys.length) return null;
+  const keyDef = rowKeys[col];
+  if (keyDef.key === "langswitch" || keyDef.key === "dictate") return null;
   return keyNameToVk(keyDef.key);
 }
 
@@ -443,13 +446,16 @@ export function applyLayoutKeyLabels(
       if (!mapped) {
         return { ...k, physicalKey };
       }
+      const greek = greekPhysicalOutput(physicalKey, false);
       const unshifted =
-        mapped.label || greekPhysicalOutput(physicalKey, false) || k.key;
+        mapped.label !== "" ? mapped.label : (greek ?? k.key);
+      const label =
+        mapped.label !== "" ? mapped.label : (greek ?? k.label);
       return {
         ...k,
         physicalKey,
         key: unshifted,
-        label: mapped.label || greekPhysicalOutput(physicalKey, false) || k.label,
+        label,
         shiftLabel: mapped.shiftLabel ?? k.shiftLabel,
       };
     }),
@@ -464,8 +470,11 @@ export function attachPhysicalKeys(
   return rows.map((row, ri) =>
     row.map((k, ci) => {
       if (k.physicalKey || k.modifier || k.key.length > 1) return k;
-      const ref = template[ri]?.[ci];
-      if (!ref || ref.modifier || ref.key.length > 1) return k;
+      if (ri < 0 || ri >= template.length) return k;
+      const refRow = template[ri];
+      if (ci < 0 || ci >= refRow.length) return k;
+      const ref = refRow[ci];
+      if (ref.modifier || ref.key.length > 1) return k;
       return { ...k, physicalKey: ref.key };
     }),
   );
@@ -510,8 +519,9 @@ export function getLayoutRows(
           "-": { label: "ß", shiftLabel: "?" },
           "/": { label: "-", shiftLabel: "_" },
         };
-        const mapped = qwertzMap[k.key.toLowerCase()];
-        if (!mapped) return k;
+        const mapKey = k.key.toLowerCase();
+        if (!(mapKey in qwertzMap)) return k;
+        const mapped = qwertzMap[mapKey];
         return {
           ...k,
           key: mapped.label,

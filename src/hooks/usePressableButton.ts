@@ -7,9 +7,9 @@ export function usePressableButton(active = false) {
   return {
     pressed,
     pointerHandlers: {
-      onPointerDown: () => setLocalPressed(true),
-      onPointerUp: () => setLocalPressed(false),
-      onPointerLeave: () => setLocalPressed(false),
+      onPointerDown: () => { setLocalPressed(true); },
+      onPointerUp: () => { setLocalPressed(false); },
+      onPointerLeave: () => { setLocalPressed(false); },
     },
     pressedClass: pressed ? "key-pressed" : "",
   };

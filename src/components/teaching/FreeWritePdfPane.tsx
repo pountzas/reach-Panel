@@ -70,8 +70,7 @@ export function FreeWritePdfPane() {
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const active =
     teachingPdfLibrary.find((e) => e.id === freeWriteActivePdfId) ??
-    teachingPdfLibrary[0] ??
-    null;
+    (teachingPdfLibrary.length > 0 ? teachingPdfLibrary[0] : null);
   const activePath = active?.path ?? null;
 
   const [page, setPage] = useState(1);
@@ -88,6 +87,7 @@ export function FreeWritePdfPane() {
   const docRef = useRef<PDFDocumentProxy | null>(null);
   const renderTaskRef = useRef<RenderTask | null>(null);
   const missingLabelRef = useRef(t("freeWritePdfMissing"));
+  // eslint-disable-next-line react-hooks/refs -- sync i18n string for async error paths
   missingLabelRef.current = t("freeWritePdfMissing");
 
   const setCanvasNode = useCallback((el: HTMLCanvasElement | null) => {
@@ -100,6 +100,7 @@ export function FreeWritePdfPane() {
   }, [loadTeachingPdfLibrary]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- keep draft input in sync with page
     setPageDraft(String(page));
   }, [page]);
 
@@ -157,6 +158,8 @@ export function FreeWritePdfPane() {
         const data = new Uint8Array(buffer);
         // enableHWA left off: no measured win on low-end Windows without artefact risk.
         const doc = await pdfjs.getDocument({ data }).promise;
+        // Cleanup may set cancelled during the await; TS does not track that.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- race with effect cleanup
         if (cancelled) {
           void doc.loadingTask.destroy();
           return;
@@ -195,12 +198,15 @@ export function FreeWritePdfPane() {
 
     let cancelled = false;
 
+    const readyDoc = doc;
+    const readyCanvas = canvas;
+
     async function paint() {
       renderTaskRef.current?.cancel();
       renderTaskRef.current = null;
       try {
-        const pageNum = Math.min(Math.max(1, page), doc!.numPages);
-        const pdfPage = await doc!.getPage(pageNum);
+        const pageNum = Math.min(Math.max(1, page), readyDoc.numPages);
+        const pdfPage = await readyDoc.getPage(pageNum);
         if (cancelled) return;
         const viewport = pdfPage.getViewport({ scale: viewerZoom / 100 });
         const size = computeFreeWritePdfCanvasSize(
@@ -208,13 +214,13 @@ export function FreeWritePdfPane() {
           viewport.height,
           devicePixelRatio,
         );
-        const context = canvas!.getContext("2d");
+        const context = readyCanvas.getContext("2d");
         if (!context) return;
-        canvas!.width = size.bufferWidth;
-        canvas!.height = size.bufferHeight;
+        readyCanvas.width = size.bufferWidth;
+        readyCanvas.height = size.bufferHeight;
         // CSS size = viewport (not buffer). Apply immediately so the bitmap does not flash full-res.
         // max-w-full + h-auto may shrink display; overlay still gets CSS viewport size via state.
-        canvas!.style.width = `${size.cssWidth}px`;
+        readyCanvas.style.width = `${size.cssWidth}px`;
         setCanvasSize({ width: size.cssWidth, height: size.cssHeight });
         const transform =
           size.outputScale !== 1
@@ -223,7 +229,7 @@ export function FreeWritePdfPane() {
         const task = pdfPage.render({
           canvasContext: context,
           viewport,
-          canvas: canvas!,
+          canvas: readyCanvas,
           transform,
         });
         renderTaskRef.current = task;
@@ -255,7 +261,7 @@ export function FreeWritePdfPane() {
       key={id}
       label={label}
       size="sm"
-      onClick={() => setTool(id)}
+      onClick={() => { setTool(id); }}
       backgroundColor={tool === id ? surface.panelHeaderBg : surface.panelBg}
       borderColor={surface.panelBorder}
       color={tool === id ? "#2563eb" : surface.panelText}
@@ -315,7 +321,7 @@ export function FreeWritePdfPane() {
           <TeachingLessonToolbarButton
             label={t("freeWritePdfPrevPage")}
             size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => { setPage((p) => Math.max(1, p - 1)); }}
             disabled={page <= 1}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
@@ -339,8 +345,8 @@ export function FreeWritePdfPane() {
                   color: surface.panelText,
                 }}
                 value={pageDraft}
-                onChange={(e) => setPageDraft(e.target.value)}
-                onBlur={() => commitPageDraft()}
+                onChange={(e) => { setPageDraft(e.target.value); }}
+                onBlur={() => { commitPageDraft(); }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -359,7 +365,7 @@ export function FreeWritePdfPane() {
           <TeachingLessonToolbarButton
             label={t("freeWritePdfNextPage")}
             size="sm"
-            onClick={() => setPage((p) => Math.min(pageCount || 1, p + 1))}
+            onClick={() => { setPage((p) => Math.min(pageCount || 1, p + 1)); }}
             disabled={!pageCount || page >= pageCount}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
@@ -370,8 +376,7 @@ export function FreeWritePdfPane() {
           <TeachingLessonToolbarButton
             label={t("freeWriteZoomOut")}
             size="sm"
-            onClick={() =>
-              setViewerZoom((z) => clampFreeWritePdfZoom(z - FREE_WRITE_ZOOM_STEP))
+            onClick={() => { setViewerZoom((z) => clampFreeWritePdfZoom(z - FREE_WRITE_ZOOM_STEP)); }
             }
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
@@ -388,8 +393,7 @@ export function FreeWritePdfPane() {
           <TeachingLessonToolbarButton
             label={t("freeWriteZoomIn")}
             size="sm"
-            onClick={() =>
-              setViewerZoom((z) => clampFreeWritePdfZoom(z + FREE_WRITE_ZOOM_STEP))
+            onClick={() => { setViewerZoom((z) => clampFreeWritePdfZoom(z + FREE_WRITE_ZOOM_STEP)); }
             }
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
@@ -405,7 +409,7 @@ export function FreeWritePdfPane() {
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfUndo")}
                 size="sm"
-                onClick={() => undoAnnotation()}
+                onClick={() => { undoAnnotation(); }}
                 disabled={undoDepth <= 0}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
@@ -416,7 +420,7 @@ export function FreeWritePdfPane() {
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfRedo")}
                 size="sm"
-                onClick={() => redoAnnotation()}
+                onClick={() => { redoAnnotation(); }}
                 disabled={redoDepth <= 0}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
@@ -458,7 +462,7 @@ export function FreeWritePdfPane() {
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfClearAll")}
                 size="sm"
-                onClick={() => setClearConfirmOpen(true)}
+                onClick={() => { setClearConfirmOpen(true); }}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
                 color={surface.panelText}
@@ -485,7 +489,7 @@ export function FreeWritePdfPane() {
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfExport")}
                 size="sm"
-                onClick={() => setExportOpen(true)}
+                onClick={() => { setExportOpen(true); }}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
                 color={surface.panelText}
@@ -548,7 +552,7 @@ export function FreeWritePdfPane() {
         pageCount={pageCount}
         currentPage={page}
         surface={surface}
-        onCancel={() => setExportOpen(false)}
+        onCancel={() => { setExportOpen(false); }}
         onExport={(from, to) => {
           setExportOpen(false);
           void exportTeachingReachPdf(from, to);
@@ -564,7 +568,7 @@ export function FreeWritePdfPane() {
           setClearConfirmOpen(false);
           void clearAll();
         }}
-        onCancel={() => setClearConfirmOpen(false)}
+        onCancel={() => { setClearConfirmOpen(false); }}
         surface={surface}
       />
     </div>

@@ -29,9 +29,6 @@ export function SettingsPanel() {
     })),
   );
   const { t } = useTranslation();
-
-  if (!settings) return null;
-
   const surface = getSurfaceColors(settings.appBgColor);
   const headerBg = settings.headerBgColor ?? "#1e293b";
   const headerText = settings.headerTextColor ?? "#ffffff";
@@ -53,7 +50,7 @@ export function SettingsPanel() {
         actions={
           <IconActionButton
             label={t("close")}
-            onClick={() => setShowSettings(false)}
+            onClick={() => { setShowSettings(false); }}
             className="rounded bg-white/20 hover:bg-white/30"
             tooltipPlacement="below"
           >

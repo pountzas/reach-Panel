@@ -22,7 +22,7 @@ type Props = {
   page: number;
   width: number;
   height: number;
-};
+}
 
 function pageKey(page: number): string {
   return String(page);
@@ -46,7 +46,7 @@ function pointsAttr(
 ): string {
   let out = "";
   for (let i = 0; i < points.length; i += 1) {
-    const p = points[i]!;
+    const p = points[i];
     if (i > 0) out += " ";
     out += `${p[0] * width},${p[1] * height}`;
   }
@@ -202,7 +202,7 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const root = rootRef.current;
-    if (!root || !root.hasPointerCapture(e.pointerId)) return;
+    if (!root?.hasPointerCapture(e.pointerId)) return;
     const pt = clientToNormalized(root, e.clientX, e.clientY);
 
     if (tool === "pen" && drawingRef.current) {
@@ -262,12 +262,13 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
       setEraserPreview(null);
       const changed =
         before.length !== after.length ||
-        before.some(
-          (s, i) =>
-            !after[i] ||
-            s.id !== after[i]!.id ||
-            s.points.length !== after[i]!.points.length,
-        );
+        before.some((s, i) => {
+          const other = after[i];
+          return (
+            s.id !== other.id ||
+            s.points.length !== other.points.length
+          );
+        });
       if (!changed) return;
       applyUpdater((d) => replacePageStrokes(d, pageKey(page), after), {
         change: {
@@ -304,7 +305,7 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
   const moveTextDrag = (e: ReactPointerEvent, boxId: string) => {
     const root = rootRef.current;
     const drag = dragRef.current;
-    if (!root || !drag || drag.id !== boxId) return;
+    if (!root || drag?.id !== boxId) return;
     if (!(e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) return;
     const pt = clientToNormalized(root, e.clientX, e.clientY);
     const dx = pt[0] - drag.start[0];
@@ -326,7 +327,7 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     dragRef.current = null;
     dragPreviewRef.current = null;
     setDragPreview(null);
-    if (!drag || drag.id !== boxId) return;
+    if (drag?.id !== boxId) return;
 
     const nextX = preview?.id === boxId ? preview.x : drag.origin.x;
     const nextY = preview?.id === boxId ? preview.y : drag.origin.y;
@@ -359,11 +360,11 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     const point = root
       ? clientToNormalized(root, e.clientX, e.clientY)
       : drag.start;
+    // eslint-disable-next-line react-hooks/purity -- double-tap clock in pointer handler
     const now = Date.now();
     const prev = lastTapRef.current;
     const isDouble =
-      prev &&
-      prev.id === boxId &&
+      prev?.id === boxId &&
       now - prev.at <= DOUBLE_TAP_MS &&
       Math.hypot(point[0] - prev.point[0], point[1] - prev.point[1]) <=
         DOUBLE_TAP_MOVE;
@@ -419,8 +420,7 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
 
       {pageAnn.texts.map((box) => {
         const selected = box.id === selectedTextId;
-        const preview =
-          dragPreview && dragPreview.id === box.id ? dragPreview : null;
+        const preview = dragPreview?.id === box.id ? dragPreview : null;
         const x = preview?.x ?? box.x;
         const y = preview?.y ?? box.y;
         return (
@@ -441,10 +441,10 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
             }}
-            onPointerDown={(ev) => startTextDrag(ev, box)}
-            onPointerMove={(ev) => moveTextDrag(ev, box.id)}
-            onPointerUp={(ev) => endTextDrag(ev, box.id)}
-            onPointerCancel={(ev) => endTextDrag(ev, box.id)}
+            onPointerDown={(ev) => { startTextDrag(ev, box); }}
+            onPointerMove={(ev) => { moveTextDrag(ev, box.id); }}
+            onPointerUp={(ev) => { endTextDrag(ev, box.id); }}
+            onPointerCancel={(ev) => { endTextDrag(ev, box.id); }}
           >
             {box.body || "\u00a0"}
           </div>

@@ -26,7 +26,7 @@ const LEGACY_MOUSE_SPEED: Record<string, MouseSpeed> = {
 };
 
 export function resolveMouseSpeed(value: string | undefined): MouseSpeed {
-  if (value && LEGACY_MOUSE_SPEED[value]) {
+  if (value != null && Object.prototype.hasOwnProperty.call(LEGACY_MOUSE_SPEED, value)) {
     return LEGACY_MOUSE_SPEED[value];
   }
   return "medium";
@@ -37,7 +37,7 @@ export function mouseSpeedIndex(speed: MouseSpeed): number {
 }
 
 export function mouseSpeedFromIndex(index: number): MouseSpeed {
-  return MOUSE_SPEED_LEVELS[Math.min(MOUSE_SPEED_LEVELS.length - 1, Math.max(0, index))]!;
+  return MOUSE_SPEED_LEVELS[Math.min(MOUSE_SPEED_LEVELS.length - 1, Math.max(0, index))];
 }
 
 export const MOUSE_SPEED_LABEL_KEYS = {

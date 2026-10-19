@@ -6,7 +6,7 @@ import {
 
 export type IconActionButtonSize = "sm" | "lg";
 
-interface IconActionButtonProps {
+type IconActionButtonProps = {
   label: string;
   onClick: () => void;
   disabled?: boolean;

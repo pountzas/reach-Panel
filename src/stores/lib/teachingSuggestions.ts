@@ -19,7 +19,7 @@ export type TeachingSuggestionState = {
   languageSubjectTab: "spelling" | "freeWrite";
   languageLessonPlaying: boolean;
   languageListAuthoringActive: boolean;
-};
+}
 
 /** Body of the selected Free write PDF text box, or empty when none. */
 export function selectedPdfTextBoxBody(
@@ -68,10 +68,7 @@ export function syncTeachingSuggestions(args: {
   /** Prefer an explicit buffer when the caller just computed it. */
   buffer?: string;
 }): void {
-  const source =
-    args.buffer !== undefined
-      ? args.buffer
-      : teachingSuggestionSourceText(args.get());
+  const source = args.buffer ?? teachingSuggestionSourceText(args.get());
   if (source === null) return;
   args.set({ typedBuffer: source });
   void args.get().loadSuggestions();

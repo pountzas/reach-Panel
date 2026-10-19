@@ -11,11 +11,13 @@ export const createDictationSlice: StateCreator<
 > = (set, get) => ({
   dictationState: "idle",
   sttCapability: null,
-  setDictationState: (state) => set({ dictationState: state }),
-  setSttCapability: (capability) => set({ sttCapability: capability }),
+  setDictationState: (state) => { set({ dictationState: state }); },
+  setSttCapability: (capability) => { set({ sttCapability: capability }); },
   refreshSttCapability: async () => {
     try {
-      const settingsKey = get().settings.groqApiKey?.trim() || null;
+      const trimmedKey = get().settings.groqApiKey?.trim();
+      const settingsKey =
+        trimmedKey !== undefined && trimmedKey.length > 0 ? trimmedKey : null;
       const status = await invoke<{
         state: DictationState;
         engine: "winrt" | "groq" | null;
@@ -66,9 +68,14 @@ export const createDictationSlice: StateCreator<
       return;
     }
     try {
+      const trimmedGroqKey = settings.groqApiKey?.trim();
+      const groqApiKey =
+        trimmedGroqKey !== undefined && trimmedGroqKey.length > 0
+          ? trimmedGroqKey
+          : null;
       await invoke("cmd_start_dictation", {
         language: settings.typingLanguage,
-        groqApiKey: settings.groqApiKey?.trim() || null,
+        groqApiKey,
       });
       set({ dictationState: "listening" });
       await get().refreshSttCapability();

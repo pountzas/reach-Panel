@@ -6,11 +6,11 @@ type GreekTranslateOptions = {
   physicalKey: string | undefined;
   shift: boolean;
   fallbackOutput: string | undefined;
-};
+}
 
 type HandleKeyOptions = {
   deferSuggestions?: boolean;
-};
+}
 
 export const clearModifiersAfterKey = (
   fnKeyMode: FnKeyMode,
