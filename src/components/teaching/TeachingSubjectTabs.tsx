@@ -80,7 +80,7 @@ export function TeachingSubjectTabs<T extends string>({
           backgroundColor: surface.panelHeaderBg,
         }}
         role="tablist"
-        tabIndex={0}
+        tabIndex={-1}
         aria-label="Teaching subject tabs"
         aria-orientation="vertical"
         onKeyDown={onKeyDown}
