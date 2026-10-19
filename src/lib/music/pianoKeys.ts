@@ -127,7 +127,6 @@ export function windowMinMidi(startOctave: number, _octaveCount: SynthOctaveCoun
   // Keep arity aligned with windowMaxMidi; min pitch is always C of startOctave.
   return noteToMidi("C", startOctave);
 }
-}
 
 export function windowMaxMidi(startOctave: number, octaveCount: SynthOctaveCount): number {
   return noteToMidi("C", startOctave + octaveCount);

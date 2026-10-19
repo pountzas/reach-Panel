@@ -184,11 +184,6 @@ export type PdfSlice = {
     updater: (doc: PdfAnnotationDoc) => PdfAnnotationDoc,
     options?: {
       pushUndo?: boolean;
-      /**
-       * @deprecated Prefer `change`. Kept for call-site compat; ignored when
-       * `change` is set. Never cloned into the undo stack.
-       */
-      undoFrom?: PdfAnnotationDoc;
       /** Per-gesture patch stored on the undo stack (not a full doc). */
       change?: PdfAnnotationChange;
     },

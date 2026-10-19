@@ -100,8 +100,16 @@ export function FloatingSection({
   };
 
   const handleClose = () => {
-    if (musicTeachingEnabled) {
-      void setAppMode(lessonCloseAppMode(modeBeforeTeaching));
+    switch (id) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- exhaustive when StackableSectionId gains members
+      case "teaching":
+        if (musicTeachingEnabled) {
+          void setAppMode(lessonCloseAppMode(modeBeforeTeaching));
+        }
+        break;
+      default:
+        id satisfies never;
+        break;
     }
   };
 

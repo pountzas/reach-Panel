@@ -273,8 +273,8 @@ export function SectionCanvas({
     }
 
     const drag = dragRef.current;
-    // StackableSectionId is currently only "teaching"; id match is always true when drag exists.
-    if (!drag) return;
+    // Keep id match so a second StackableSectionId cannot apply another section's drag.
+    if (drag?.id !== id) return;
 
     const localY = clientY - bounds.top;
     const dx = clientX - drag.startClientX;
@@ -431,9 +431,15 @@ export function SectionCanvas({
 }
 
 function isSectionVisibleId(
-  _id: StackableSectionId,
+  id: StackableSectionId,
   visibility: SectionVisibility,
 ): boolean {
-  // StackableSectionId is currently only "teaching".
-  return visibility.teaching;
+  switch (id) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- exhaustive when StackableSectionId gains members
+    case "teaching":
+      return visibility.teaching;
+    default:
+      id satisfies never;
+      return false;
+  }
 }
