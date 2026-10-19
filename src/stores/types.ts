@@ -320,7 +320,11 @@ export type ProfileSlice = {
     options?: { syncToSystem?: boolean },
   ) => Promise<void>;
   setPointerInputKind: (kind: PointerInputKind) => Promise<void>;
-  handlePointerInputEvent: (pointerType: string) => void;
+  handlePointerInputEvent: (input: {
+    pointerType: string;
+    isPrimary: boolean;
+    button: number;
+  }) => void;
   resetSettingsToDefaults: () => Promise<void>;
   wipeActiveProfile: () => Promise<void>;
   loadMonitors: () => Promise<void>;

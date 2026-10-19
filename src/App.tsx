@@ -34,7 +34,7 @@ import {
   type CompanionUiState,
 } from "./lib/companionSession";
 import { reconcileAutostartOnLoad } from "./lib/autostart";
-import { logIpc } from "./lib/logIpc";
+import { logIpc, logLayoutIpc } from "./lib/logIpc";
 import {
   isTeachingFullWorkArea,
 } from "./lib/v1HiddenFeatures";
@@ -78,7 +78,7 @@ function MainApp() {
             musicTeachingEnabled,
             keyboardSectionMode: settings.keyboardSectionMode,
           });
-          await invoke("cmd_apply_window_layout", {
+          const bootLayoutArgs = {
             monitorId: settings.accessibilityMonitorId,
             collapsed: settings.collapsed,
             collapsedDictation: false,
@@ -86,7 +86,9 @@ function MainApp() {
               teachingFullWorkArea: fullWorkArea,
             }),
             fullWorkArea,
-          });
+          };
+          logLayoutIpc("cmd_apply_window_layout", bootLayoutArgs);
+          await invoke("cmd_apply_window_layout", bootLayoutArgs);
         }
         await loadKeyboardLayout();
         await loadInputMethods();
@@ -136,7 +138,21 @@ function MainApp() {
   useEffect(() => {
     // Touch↔mouse layout switch (store debounces rapid alternating pointerdowns).
     const onPointerDown = (event: PointerEvent) => {
-      useAppStore.getState().handlePointerInputEvent(event.pointerType);
+      if (import.meta.env.DEV) {
+        console.debug(
+          "pd",
+          event.pointerType,
+          event.pointerId,
+          event.isPrimary,
+          event.button,
+          Math.round(performance.now()),
+        );
+      }
+      useAppStore.getState().handlePointerInputEvent({
+        pointerType: event.pointerType,
+        isPrimary: event.isPrimary,
+        button: event.button,
+      });
     };
     window.addEventListener("pointerdown", onPointerDown, { capture: true });
     return () => {

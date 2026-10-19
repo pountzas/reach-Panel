@@ -60,6 +60,21 @@ pub fn mark_mirror_duplicates(monitors: &mut [MonitorInfo]) {
     }
 }
 
+/// Count distinct layout spaces: non-mirror monitors each count, and one slot
+/// for any mirror-overlap group. Pure mirrored pairs count as a single monitor.
+pub fn layout_monitor_count(monitors: &[MonitorInfo]) -> usize {
+    let independent = monitors.iter().filter(|m| !m.is_mirror_duplicate).count();
+    let has_mirror_group = monitors.iter().any(|m| m.is_mirror_duplicate);
+    if independent > 0 {
+        return independent + usize::from(has_mirror_group);
+    }
+    if monitors.is_empty() {
+        0
+    } else {
+        1
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WindowLayout {
     pub x: i32,
@@ -226,8 +241,9 @@ pub fn compute_window_layout(
     }
 
     // Teaching / full_work_area: entire rcWork even on one monitor.
-    // Otherwise: 2+ monitors = full work area; 1 monitor = bottom half.
-    let (mut x, mut y, mut w, mut h) = if full_work_area || monitors.len() >= 2 {
+    // Otherwise: 2+ distinct layout monitors = full work area; 1 = bottom half.
+    // Mirrored duplicates must not count as a second monitor (#299).
+    let (mut x, mut y, mut w, mut h) = if full_work_area || layout_monitor_count(monitors) >= 2 {
         (
             monitor.x,
             monitor.y,
@@ -306,6 +322,44 @@ mod tests {
         assert!(monitors[0].is_mirror_duplicate);
         assert!(monitors[1].is_mirror_duplicate);
         assert!(!monitors[2].is_mirror_duplicate);
+    }
+
+    #[test]
+    fn layout_monitor_count_treats_pure_mirror_pair_as_one() {
+        let mut monitors = vec![
+            sample_monitor(0, 0, 0, 1920, 1080),
+            sample_monitor(1, 0, 0, 1920, 1080),
+        ];
+        mark_mirror_duplicates(&mut monitors);
+        assert_eq!(layout_monitor_count(&monitors), 1);
+    }
+
+    #[test]
+    fn mirrored_only_displays_use_single_monitor_bottom_half() {
+        let mut monitors = vec![
+            sample_monitor(0, 0, 0, 1920, 1080),
+            sample_monitor(1, 0, 0, 1920, 1080),
+        ];
+        mark_mirror_duplicates(&mut monitors);
+        let layout = compute_window_layout(
+            &monitors,
+            0,
+            false,
+            false,
+            false,
+            1.0,
+            false,
+            false,
+            FOCUS_KEYBOARD_HEIGHT_RATIO,
+            1.0,
+            false,
+        )
+        .unwrap();
+
+        assert_eq!(layout.x, 0);
+        assert_eq!(layout.y, 540);
+        assert_eq!(layout.width, 1920);
+        assert_eq!(layout.height, 540);
     }
 
     #[test]

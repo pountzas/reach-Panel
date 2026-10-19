@@ -14,6 +14,7 @@ import {
 } from "../lib/music/octaveCount";
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { afterNextPaint, MOTION, prefersReducedMotion } from "../lib/motion";
+import { logLayoutIpc } from "../lib/logIpc";
 import { notify } from "../lib/notify";
 import { resolveSectionStack } from "../lib/sectionStack";
 import {
@@ -41,6 +42,10 @@ import {
   TEACHING_SESSION_EVENT,
   type TeachingSessionPayload,
 } from "../lib/appModeLayout";
+import {
+  repairStaleFullscreenFlatHeight,
+  stripFullscreenHeightFromLayoutSnapshots,
+} from "../lib/layoutProfiles";
 import {
   commitSuggestionList,
   suggestionSuffixAfterPrefix,
@@ -202,6 +207,7 @@ export async function syncFocusModeWindowLayout(
       if (get().focusModeKeyboardVisible !== visibleAtStart) {
         return; // finally re-syncs to the latest visibility
       }
+      logLayoutIpc("cmd_apply_window_layout", args);
       await invoke("cmd_apply_window_layout", args);
       if (animateContent) {
         const wait = beginFocusContentAnimWait();
@@ -236,6 +242,7 @@ export async function syncFocusModeWindowLayout(
       if (get().focusModeKeyboardVisible !== visibleAtStart) {
         return; // finally re-syncs to the latest visibility
       }
+      logLayoutIpc("cmd_apply_window_layout", args);
       await invoke("cmd_apply_window_layout", args);
     }
     if (get().dictationState !== "idle") {
@@ -584,13 +591,17 @@ export async function loadProfileData(
   const parsed = active
     ? parseSettings(active.settings_json)
     : DEFAULT_SETTINGS;
-  const settings = {
-    ...parsed,
+  // #299: old pointer-kind swap copied a stale ~1.0 snapshot height into the
+  // flat ratio and persisted it. Reset it to the mode default once.
+  const { settings: repairedParsed, repaired: repairStaleFlatHeight } =
+    repairStaleFullscreenFlatHeight(parsed);
+  const settings = stripFullscreenHeightFromLayoutSnapshots({
+    ...repairedParsed,
     keyboardSectionMode: hydrateKeyboardSectionMode(
       parsed.keyboardSectionMode,
       get().musicTeachingEnabled,
     ),
-  };
+  });
   set({ settings, settingsEpoch: get().settingsEpoch + 1 });
   const isMainWindow = WebviewWindow.getCurrent().label === "main";
   if (isMainWindow) {
@@ -600,7 +611,11 @@ export async function loadProfileData(
     await get().pollKeyboardState();
     await syncInputPreviewEnabled(get);
   }
-  if (migratedFocusAuto || migratedKeyboardSectionMode) {
+  if (
+    migratedFocusAuto ||
+    migratedKeyboardSectionMode ||
+    repairStaleFlatHeight
+  ) {
     const epoch = get().settingsEpoch;
     await persistSettingsIfCurrent(get, epoch, get().settings);
   }

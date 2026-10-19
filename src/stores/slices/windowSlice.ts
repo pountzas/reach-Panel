@@ -12,6 +12,7 @@ import {
   freeWriteModeFromState,
 } from "../storeShared";
 import { invoke } from "@tauri-apps/api/core";
+import { logLayoutIpc } from "../../lib/logIpc";
 import { checkForUpdate, formatUpdateCheckError } from "../../lib/updater";
 import { prefersReducedMotion } from "../../lib/motion";
 import { clampWindowHeightRatio } from "../../lib/sectionLayouts";
@@ -92,7 +93,7 @@ export const createWindowSlice: StateCreator<
     storeFlags.liveHeightRatioInFlight = true;
     try {
       const focus = latestState.focusModeActive;
-      await invoke("cmd_apply_window_layout", {
+      const liveArgs = {
         monitorId: latest.accessibilityMonitorId,
         collapsed: false,
         collapsedDictation: false,
@@ -101,7 +102,9 @@ export const createWindowSlice: StateCreator<
         focusKeyboardVisible: focus ? latestState.focusModeKeyboardVisible : false,
         focusKeyboardHeightRatio: focus ? pending : undefined,
         fullWorkArea: teachingFullWorkAreaActive(latest, musicTeachingEnabled),
-      });
+      };
+      logLayoutIpc("cmd_apply_window_layout", liveArgs);
+      await invoke("cmd_apply_window_layout", liveArgs);
     } catch {
       // Rejected ratio must not block near-equal retries.
       if (storeFlags.liveHeightRatioPreview === pending) {
@@ -161,12 +164,11 @@ export const createWindowSlice: StateCreator<
             get().musicTeachingEnabled,
           ),
         };
-        await invoke(
-          prefersReducedMotion()
-            ? "cmd_apply_window_layout"
-            : "cmd_animate_window_layout",
-          collapseArgs,
-        );
+        const collapseCmd = prefersReducedMotion()
+          ? "cmd_apply_window_layout"
+          : "cmd_animate_window_layout";
+        logLayoutIpc(collapseCmd, collapseArgs);
+        await invoke(collapseCmd, collapseArgs);
       } else {
         const expandArgs = {
           monitorId: settings.accessibilityMonitorId,
@@ -181,12 +183,11 @@ export const createWindowSlice: StateCreator<
             get().musicTeachingEnabled,
           ),
         };
-        await invoke(
-          prefersReducedMotion()
-            ? "cmd_apply_window_layout"
-            : "cmd_animate_window_layout",
-          expandArgs,
-        );
+        const expandCmd = prefersReducedMotion()
+          ? "cmd_apply_window_layout"
+          : "cmd_animate_window_layout";
+        logLayoutIpc(expandCmd, expandArgs);
+        await invoke(expandCmd, expandArgs);
         if (get().settingsEpoch !== epoch) {
           return;
         }
