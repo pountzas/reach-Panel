@@ -67,7 +67,8 @@ export function FloatingSection({
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const pointerDragActive = usePointerDragActive();
   const teachingLesson = useAppStore((s) => s.teachingLesson);
-  const showTeaching = musicTeachingEnabled;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- guard stays correct when StackableSectionId gains members
+  const showTeaching = id === "teaching" && musicTeachingEnabled;
   const sectionTitleKey: TranslationKey = showTeaching
     ? teachingLessonTitleKey(teachingLesson)
     : SECTION_TITLE_KEY[id];
