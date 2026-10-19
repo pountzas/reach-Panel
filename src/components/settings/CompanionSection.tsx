@@ -133,8 +133,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
       return;
     }
     let cancelled = false;
-    const qrPayload = { ...payload };
-    Reflect.deleteProperty(qrPayload, "candidateIps");
+    const { candidateIps: _candidateIps, ...qrPayload } = payload;
     void QRCode.toDataURL(JSON.stringify(qrPayload), {
       width: 400,
       margin: 2,
