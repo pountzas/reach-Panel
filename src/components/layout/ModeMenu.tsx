@@ -16,7 +16,7 @@ import { useCompanionTabletEnabled } from "../../hooks/useCompanionTabletEnabled
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 
-export interface ModeMenuProps {
+export type ModeMenuProps = {
   onShowKeyboard: () => void;
   entered?: boolean;
 }
@@ -83,6 +83,7 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
 
   useEffect(() => {
     if (reduce) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync layer promote to reduced motion
       setPromoteLayer(false);
       return;
     }
@@ -130,7 +131,7 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
       event.key === "ArrowDown"
         ? buttons[(idx + 1 + buttons.length) % buttons.length]
         : buttons[(idx - 1 + buttons.length) % buttons.length];
-    next?.focus();
+    next.focus();
   };
 
   const itemClass =
@@ -140,6 +141,7 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
     <div
       ref={menuRef}
       role="menu"
+      tabIndex={0}
       aria-label={t("modeMenuTitle")}
       className="flex shrink-0 flex-col rounded-lg shadow-lg"
       style={{

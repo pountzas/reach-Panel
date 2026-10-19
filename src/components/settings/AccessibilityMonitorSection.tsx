@@ -13,9 +13,6 @@ export function AccessibilityMonitorSection({ surface }: { surface: SurfaceColor
       monitors: s.monitors,
     })),
   );
-
-  if (!settings) return null;
-
   return (
     <SettingsSection title={t("accessibilityScreen")} surface={surface}>
       <ul
@@ -29,6 +26,8 @@ export function AccessibilityMonitorSection({ surface }: { surface: SurfaceColor
           const label = `${m.name} (${m.width}x${m.height})${m.is_primary ? ` [${t("primary")}]` : ""}`;
           return (
             <li key={m.id}>
+              {/* Themed hover uses mouse events on the label row. */}
+              {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- radio row hover */}
               <label
                 className="flex cursor-pointer items-start gap-2 rounded px-2 py-1.5"
                 style={{ color: surface.panelText }}

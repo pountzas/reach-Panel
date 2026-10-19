@@ -37,7 +37,8 @@ export function useFlipLayoutTransition(
 
     applyFlipInvert(el, invert);
     // Force style flush so the invert paints before the identity transition.
-    void el.offsetHeight;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- layout reflow
+    el.offsetHeight;
     const stop = playFlipToIdentity(el);
     return () => {
       stop();

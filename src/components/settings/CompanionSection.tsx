@@ -15,7 +15,7 @@ import {
 } from "../../lib/companionSession";
 import { useAppStore } from "../../stores/appStore";
 
-interface PairingPayload {
+type PairingPayload = {
   hostId: string;
   ip: string;
   port: number;
@@ -25,7 +25,7 @@ interface PairingPayload {
   candidateIps?: string[];
 }
 
-interface PairedDevice {
+type PairedDevice = {
   deviceId: string;
   deviceName: string;
   credentialHash: string;
@@ -113,6 +113,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial companion status fetch
     void refresh();
     const unlisten = listen<CompanionUiState>("companion-state", (event) => {
       setStatus(event.payload);
@@ -121,17 +122,19 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
         .catch(logIpc("cmd_companion_list_devices"));
     });
     return () => {
-      void unlisten.then((fn) => fn());
+      void unlisten.then((fn) => { fn(); });
     };
   }, [refresh]);
 
   useEffect(() => {
     if (!payload) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear QR when payload drops
       setQrDataUrl(null);
       return;
     }
     let cancelled = false;
-    const { candidateIps: _candidateIps, ...qrPayload } = payload;
+    const qrPayload = { ...payload };
+    Reflect.deleteProperty(qrPayload, "candidateIps");
     void QRCode.toDataURL(JSON.stringify(qrPayload), {
       width: 400,
       margin: 2,
@@ -241,7 +244,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
         type="button"
         className="rounded-lg border px-3 py-2 text-sm"
         style={secondaryButtonStyle}
-        onClick={() => openExternalLink(APP_INFO.links.downloads)}
+        onClick={() => { openExternalLink(APP_INFO.links.downloads); }}
       >
         {t("companionOpenDownloads")}
       </button>

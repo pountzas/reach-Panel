@@ -146,7 +146,7 @@ type SyncFocusLayoutOptions = {
    * shell does not paint a gap frame. Skip the re-entrancy early-return.
    */
   continueHeld?: boolean;
-};
+}
 
 /**
  * Show: resize once, then start content enter and wait for CSS. Hide: wait for exit, then resize.
@@ -380,20 +380,7 @@ export function parseSettings(json: string): AppSettings {
   try {
     const rawParsed = JSON.parse(json) as Record<string, unknown>;
     const migrated = migrateLegacyFocusModeSettingsKeys(rawParsed);
-    const {
-      theme,
-      mouseSide,
-      language: legacyLanguage,
-      onscreenLayout: _legacyOnscreenLayout,
-      // Removed v1 UI prefs — ignore so old profiles still load.
-      quickActionsVisible: _quickActionsVisible,
-      phrasesVisible: _phrasesVisible,
-      largeHeaders: _largeHeaders,
-      headTrackingEnabled: _headTrackingEnabled,
-      emergencyVisible: _emergencyVisible,
-      precisionMode: _precisionMode,
-      ...parsed
-    } = migrated as Partial<AppSettings> & {
+    const raw = migrated as Partial<AppSettings> & {
       theme?: unknown;
       mouseSide?: "left" | "right" | "floating";
       language?: string;
@@ -406,12 +393,16 @@ export function parseSettings(json: string): AppSettings {
       emergencyVisible?: unknown;
       precisionMode?: unknown;
     };
-    void _quickActionsVisible;
-    void _phrasesVisible;
-    void _largeHeaders;
-    void _headTrackingEnabled;
-    void _emergencyVisible;
-    void _precisionMode;
+    const { theme, mouseSide, language: legacyLanguage, ...rest } = raw;
+    const parsed: Partial<AppSettings> = { ...rest };
+    // Strip removed v1 keys so old profiles still load without leaking prefs.
+    delete (parsed as Record<string, unknown>).onscreenLayout;
+    delete (parsed as Record<string, unknown>).quickActionsVisible;
+    delete (parsed as Record<string, unknown>).phrasesVisible;
+    delete (parsed as Record<string, unknown>).largeHeaders;
+    delete (parsed as Record<string, unknown>).headTrackingEnabled;
+    delete (parsed as Record<string, unknown>).emergencyVisible;
+    delete (parsed as Record<string, unknown>).precisionMode;
     const colorProfile = resolveColorProfile({ ...parsed, theme });
     const mousePanelSide =
       parsed.mousePanelSide ??
@@ -479,7 +470,9 @@ export function buildDefaultSettings(
   monitors: MonitorInfo[],
   uiLanguage: string = DEFAULT_SETTINGS.uiLanguage,
 ): AppSettings {
-  const primary = monitors.find((m) => m.is_primary) ?? monitors[0];
+  const primary =
+    monitors.find((m) => m.is_primary) ??
+    (monitors.length > 0 ? monitors[0] : undefined);
   return {
     ...DEFAULT_SETTINGS,
     uiLanguage,
@@ -563,7 +556,8 @@ export async function loadProfileData(
   const profiles =
     await invoke<{ id: string; settings_json: string }[]>("cmd_get_profiles");
   const active =
-    profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ?? profiles[0];
+    profiles.find((p) => p.id === INTERNAL_PROFILE_ID) ??
+    (profiles.length > 0 ? profiles[0] : undefined);
   let migratedFocusAuto = false;
   let migratedKeyboardSectionMode = false;
   if (active) {

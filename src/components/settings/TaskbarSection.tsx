@@ -19,19 +19,15 @@ export function TaskbarSection({ surface }: { surface: SurfaceColors }) {
   );
 
   useEffect((): void => {
-    if (!settings) return;
     const monitorId = settings.accessibilityMonitorId;
     void invoke<TaskbarPosition | null>("cmd_get_taskbar_position", { monitorId }).then(
       (current) => {
         if (current && current !== (settings.taskbarPositionPreference ?? "bottom")) {
-          updateSettings({ taskbarPositionPreference: current });
+          void updateSettings({ taskbarPositionPreference: current });
         }
       },
     );
   }, [settings, updateSettings]);
-
-  if (!settings) return null;
-
   const taskbarPosition = settings.taskbarPositionPreference === "top" ? "top" : "bottom";
 
   return (
@@ -43,15 +39,17 @@ export function TaskbarSection({ surface }: { surface: SurfaceColors }) {
         {t("taskbarPosition")}
         <ThemedSelect
           value={taskbarPosition}
-          onChange={(v) =>
+          onChange={(v) => {
             void applyTaskbarPosition(
               v as TaskbarPosition,
               settings.taskbarPositionPreference,
               settings.accessibilityMonitorId,
-              updateSettings,
+              (patch) => {
+                void updateSettings(patch);
+              },
               t,
-            )
-          }
+            );
+          }}
           surface={surface}
         >
           <option value="bottom">{t("taskbarPositionBottom")}</option>

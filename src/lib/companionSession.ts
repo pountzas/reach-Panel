@@ -18,12 +18,12 @@ export type CompanionUiState = {
   lastRttMs: number | null;
   audioRouting: CompanionAudioRouting;
   pairedDeviceCount: number;
-};
+}
 
 /** `companion-session` event payload. */
 export type CompanionSessionEventPayload = {
   phase: Extract<CompanionSessionPhase, "active" | "idle">;
-};
+}
 
 export type CompanionLeaveReason = "sessionIdle" | "caregiverLeft";
 
@@ -31,7 +31,7 @@ export type CompanionLeavePlan = {
   stopBridge: boolean;
   keepArmed: boolean;
   restoreHostMode: boolean;
-};
+}
 
 /** Pure mapping from tablet session phase → host live flag / restore mode. */
 export type CompanionSessionPhaseMapping =

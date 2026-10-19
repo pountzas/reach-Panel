@@ -41,11 +41,9 @@ export function defaultLanguagePackId(
     if (match) return match.id;
   }
   const fallback = listBuiltInPacksForBand(DEFAULT_LANGUAGE_AGE_BAND);
-  return (
-    packs[0]?.id ??
-    fallback[0]?.id ??
-    BUILT_IN_LANGUAGE_PACKS[0]!.id
-  );
+  if (packs.length > 0) return packs[0].id;
+  if (fallback.length > 0) return fallback[0].id;
+  return BUILT_IN_LANGUAGE_PACKS[0].id;
 }
 
 export function isSpellTask(
@@ -59,7 +57,8 @@ export function currentSpellAnswer(
   taskIndex: number,
 ): string | null {
   if (!pack) return null;
+  if (taskIndex < 0 || taskIndex >= pack.tasks.length) return null;
   const task = pack.tasks[taskIndex];
-  if (!task || task.type !== "spell") return null;
+  if (task.type !== "spell") return null;
   return task.answer;
 }

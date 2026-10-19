@@ -29,7 +29,7 @@ export const createPartituresSlice: StateCreator<
       );
       set({
         importedSongs: Array.isArray(songs)
-          ? songs.filter((song) => song && typeof song.id === "string")
+          ? songs.filter((song) => typeof song.id === "string")
           : [],
       });
     } catch (error) {
@@ -49,13 +49,13 @@ export const createPartituresSlice: StateCreator<
         await invoke("cmd_upsert_imported_song", { song });
       }
       await get().loadImportedSongs();
-      const last = songs[songs.length - 1];
+      const last = songs.length > 0 ? songs[songs.length - 1] : undefined;
       if (last) {
         await get().setMusicSongId(last.id);
       }
       notify.success(
         songs.length === 1
-          ? `Imported “${songs[0]!.title}”`
+          ? `Imported “${songs[0].title}”`
           : `Imported ${songs.length} songs`,
       );
     } catch (error) {

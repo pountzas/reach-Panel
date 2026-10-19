@@ -4,7 +4,7 @@ const LAYOUT_PARTIAL_KEYS = [
   "sectionStack",
   "inputRowRightRatio",
   "windowHeightRatio",
-] as const satisfies ReadonlyArray<keyof AppSettings>;
+] as const satisfies readonly (keyof AppSettings)[];
 
 export function snapshotFromSettings(settings: AppSettings): LayoutSnapshot {
   // Build via Object.assign so union-keyed indexed writes stay assignable.

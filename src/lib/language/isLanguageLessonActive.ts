@@ -8,7 +8,7 @@ export type LanguageLessonModeInput = {
   languageListAuthoringActive?: boolean;
   /** When omitted, treated as `"spelling"` for back-compat. */
   languageSubjectTab?: LanguageSubjectTab;
-};
+}
 
 export function isLanguageLessonActive(input: LanguageLessonModeInput): boolean {
   const tab = input.languageSubjectTab ?? "spelling";

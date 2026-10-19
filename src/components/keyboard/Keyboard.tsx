@@ -210,7 +210,7 @@ export function Keyboard() {
   if (dictateDisabled) {
     if (!sttCapability?.online) {
       dictateAriaLabel = t("dictationUnavailableOffline");
-    } else if (sttCapability && !sttCapability.winrtSupported) {
+    } else if (!sttCapability.winrtSupported) {
       dictateAriaLabel = t("dictationUnavailableUnsupported");
     } else {
       dictateAriaLabel = t("dictationUnavailableOffline");
@@ -269,15 +269,18 @@ export function Keyboard() {
   const keyDefsByIdRef = useRef(new Map<string, KeyDef>());
   const keyDefsById = new Map<string, KeyDef>();
   for (let ri = 0; ri < rows.length; ri++) {
-    const row = rows[ri]!;
+    const row = rows[ri];
     for (let ci = 0; ci < row.length; ci++) {
-      const k = row[ci]!;
+      const k = row[ci];
       keyDefsById.set(`${ri}-${k.key}-${ci}`, k);
     }
   }
+  // Event handlers read latest defs/handler without rebinding every key.
+  // eslint-disable-next-line react-hooks/refs -- sync map for stable onPressKey
   keyDefsByIdRef.current = keyDefsById;
 
   const handleKeyRef = useRef(handleKey);
+  // eslint-disable-next-line react-hooks/refs -- sync handler for stable onPressKey
   handleKeyRef.current = handleKey;
 
   const onPressKey = useCallback(
@@ -336,6 +339,8 @@ export function Keyboard() {
       }
     }
     return m;
+    // fontSize is a number; compiler still flags it as potentially mutated via settings.
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization -- stable special labels for KeyButton memo
   }, [rows, fontSize]);
 
   const dictateLabel = useMemo(
@@ -362,6 +367,7 @@ export function Keyboard() {
         fontSize={fontSize}
       />
     ),
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization -- stable lang label for KeyButton memo
     [settings.typingLanguage, fontSize],
   );
 
@@ -460,7 +466,7 @@ export function Keyboard() {
                     onSelectLanguage={(method) => {
                       void selectTypingInputMethod(method);
                     }}
-                    onClose={() => setLanguagePickerOpen(false)}
+                    onClose={() => { setLanguagePickerOpen(false); }}
                     fontSize={fontSize}
                     textColor={keyTextColor}
                     bgColor={keyBgColor}

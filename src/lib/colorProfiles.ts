@@ -3,7 +3,7 @@ export const COLOR_PROFILE_IDS = ["light-grey", "dark-grey", "custom"] as const;
 export type ColorProfileId = (typeof COLOR_PROFILE_IDS)[number];
 
 /** Color fields driven by a color profile preset. */
-export interface ColorProfileColors {
+export type ColorProfileColors = {
   appBgColor: string;
   headerBgColor: string;
   headerTextColor: string;
@@ -130,7 +130,7 @@ function relativeLuminance(hex: string): number {
   return (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
 }
 
-export interface SynthBlackKeyColors {
+export type SynthBlackKeyColors = {
   base: string;
   pressed: string;
 }
@@ -157,7 +157,7 @@ export function getSynthBlackKeyColors(
 }
 
 /** Colors for generic panel/card surfaces (phrases, quick actions, section frames). */
-export interface SurfaceColors {
+export type SurfaceColors = {
   panelBg: string;
   panelHeaderBg: string;
   panelBorder: string;

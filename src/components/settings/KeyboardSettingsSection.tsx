@@ -11,7 +11,7 @@ import { ThemedSelect } from "./settingsControls";
 type KeyboardSettingsSectionProps = {
   surface: SurfaceColors;
   secondaryButtonStyle: CSSProperties;
-};
+}
 
 export function KeyboardSettingsSection({
   surface,
@@ -24,9 +24,6 @@ export function KeyboardSettingsSection({
       updateSettings: s.updateSettings,
     })),
   );
-
-  if (!settings) return null;
-
   return (
     <SettingsSection title={t("keyboard")} surface={surface}>
       <label className="block text-sm" style={{ color: surface.panelText }}>
@@ -68,7 +65,7 @@ export function KeyboardSettingsSection({
           type="button"
           className="mt-2 rounded-lg border px-3 py-2 text-sm"
           style={secondaryButtonStyle}
-          onClick={() => openExternalLink(GROQ_API_KEYS_URL)}
+          onClick={() => { openExternalLink(GROQ_API_KEYS_URL); }}
         >
           {t("groqApiKeyLink")}
         </button>

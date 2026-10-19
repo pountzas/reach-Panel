@@ -13,6 +13,8 @@ import { notify } from "../../lib/notify";
 import { useTranslation } from "../../hooks/useTranslation";
 import { AnimatedToggle } from "./AnimatedToggle";
 
+// Shared style helper colocated with settings form controls.
+// eslint-disable-next-line react-refresh/only-export-components -- style helper for settings fields
 export const fieldStyle = (surface: SurfaceColors): CSSProperties => ({
   backgroundColor: surface.insetBg,
   borderColor: surface.insetBorder,
@@ -24,7 +26,7 @@ type ColorFieldProps = {
   value: string;
   onChange: (value: string) => void;
   surface: SurfaceColors;
-};
+}
 
 export const ColorField = ({
   label,
@@ -39,14 +41,14 @@ export const ColorField = ({
         <input
           type="color"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="h-9 w-12 cursor-pointer rounded border"
           style={{ borderColor: surface.insetBorder }}
         />
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="min-w-0 flex-1 rounded border px-2 py-1 text-xs"
           style={fieldStyle(surface)}
         />
@@ -61,7 +63,7 @@ type ToggleRowProps = {
   onChange: (checked: boolean) => void;
   surface: SurfaceColors;
   disabled?: boolean;
-};
+}
 
 export const ToggleRow = ({
   label,
@@ -107,7 +109,7 @@ type ThemedSelectProps = {
   children: ReactNode;
   className?: string;
   disabled?: boolean;
-};
+}
 
 export const ThemedSelect = ({
   value,
@@ -123,7 +125,7 @@ export const ThemedSelect = ({
       style={fieldStyle(surface)}
       value={value}
       disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => { onChange(e.target.value); }}
     >
       {children}
     </select>
@@ -135,11 +137,11 @@ type WordPackInfo = {
   installed: boolean;
   version: number | null;
   bundled: boolean;
-};
+}
 
 type WordPackDictionariesProps = {
   surface: SurfaceColors;
-};
+}
 
 export const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JSX.Element => {
   const { t } = useTranslation();
@@ -156,7 +158,7 @@ export const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JS
       es: "languageSpanish",
       pt: "languagePortuguese",
     };
-    const key = keys[lang];
+    const key = (keys as Record<string, TranslationKey | undefined>)[lang];
     return key ? t(key) : lang;
   };
 
@@ -166,7 +168,8 @@ export const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JS
   };
 
   useEffect((): void => {
-    void refresh().catch((error) => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load word packs on mount
+    void refresh().catch((error: unknown) => {
       notify.error(error instanceof Error ? error.message : String(error));
     });
   }, []);

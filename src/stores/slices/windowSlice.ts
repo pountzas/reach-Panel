@@ -19,6 +19,13 @@ import { shouldApplyLiveWindowHeightRatio } from "../../lib/windowHeightDrag";
 import { isLanguageLessonCaptureActive } from "../../lib/language";
 import { isFreeWriteCaptureActive } from "../../lib/teaching";
 
+/** Read+clear queued live height; typed widen so post-await races stay checkable. */
+function takeLiveHeightRatioPending(): number | null {
+  const value: number | null = storeFlags.liveHeightRatioPending;
+  storeFlags.liveHeightRatioPending = null;
+  return value;
+}
+
 export const createWindowSlice: StateCreator<
   AppStore,
   [],
@@ -61,8 +68,7 @@ export const createWindowSlice: StateCreator<
       });
     });
 
-    const pending = storeFlags.liveHeightRatioPending;
-    storeFlags.liveHeightRatioPending = null;
+    const pending = takeLiveHeightRatioPending();
     if (pending === null) return;
     if (
       storeFlags.liveHeightRatioPreview !== null &&
@@ -104,9 +110,8 @@ export const createWindowSlice: StateCreator<
     } finally {
       storeFlags.liveHeightRatioInFlight = false;
       // Flush any ratio queued while the previous invoke was in flight.
-      if (storeFlags.liveHeightRatioPending !== null) {
-        const queued = storeFlags.liveHeightRatioPending;
-        storeFlags.liveHeightRatioPending = null;
+      const queued = takeLiveHeightRatioPending();
+      if (queued !== null) {
         void get().applyWindowHeightRatioLive(queued);
       }
     }

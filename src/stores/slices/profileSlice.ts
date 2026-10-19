@@ -220,15 +220,19 @@ export const createProfileSlice: StateCreator<
       await get().stopDictation();
     }
     if (syncToSystem && typingLanguageChanged) {
+      const typingLanguage = partial.typingLanguage;
+      if (typingLanguage === undefined) {
+        return;
+      }
       // Soft CommandResult — does not throw; must check success or the UI
       // optimistically flips language and never surfaces a toast.
       storeFlags.typingLanguageSwitchInFlight = true;
       try {
         const method = get().inputMethods.find(
-          (m) => m.langTag === partial.typingLanguage,
+          (m) => m.langTag === typingLanguage,
         );
         const result = await invoke<CommandResult>("cmd_set_system_language", {
-          language: partial.typingLanguage!,
+          language: typingLanguage,
           klid: method?.klid ?? null,
         });
         if (!result.success) {
@@ -240,14 +244,16 @@ export const createProfileSlice: StateCreator<
               },
             });
           }
-          const message = result.error?.trim() || LANGUAGE_CHANGE_FALLBACK;
+          const trimmedError = result.error?.trim() ?? "";
+          const message =
+            trimmedError.length > 0 ? trimmedError : LANGUAGE_CHANGE_FALLBACK;
           storeFlags.lastAnnouncedError = message;
           notify.error(message, { id: "typing-language-switch" });
           return;
         }
         storeFlags.lastAnnouncedError = null;
         await get().refreshLayoutKeyLabels();
-      } catch (error) {
+      } catch (error: unknown) {
         if (get().settingsEpoch === epoch) {
           set({
             settings: {
@@ -259,7 +265,9 @@ export const createProfileSlice: StateCreator<
         const message =
           error instanceof Error
             ? error.message
-            : String(error || LANGUAGE_CHANGE_FALLBACK);
+            : typeof error === "string" && error.length > 0
+              ? error
+              : LANGUAGE_CHANGE_FALLBACK;
         storeFlags.lastAnnouncedError = message;
         notify.error(message, { id: "typing-language-switch" });
         return;
@@ -355,7 +363,7 @@ export const createProfileSlice: StateCreator<
           await syncFocusModeWindowLayout(get, set, true);
         }
       } else if (
-        partial.accessibilityMonitorId !== undefined ||
+        // accessibilityMonitorId already handled in the first branch above
         partial.collapsed !== undefined ||
         Object.prototype.hasOwnProperty.call(partial, "windowHeightRatio")
       ) {

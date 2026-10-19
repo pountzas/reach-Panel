@@ -11,7 +11,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-interface ResizableSplitPaneProps {
+type ResizableSplitPaneProps = {
   left: ReactNode;
   right: ReactNode;
   /** Width fraction (0–1) of the pane on `ratioSide`. */
@@ -95,7 +95,7 @@ export function ResizableSplitPane({
     const container = containerRef.current;
     if (!container) return;
 
-    const observer = new ResizeObserver(() => clampToBounds());
+    const observer = new ResizeObserver(() => { clampToBounds(); });
     observer.observe(container);
     window.addEventListener("resize", clampToBounds);
 

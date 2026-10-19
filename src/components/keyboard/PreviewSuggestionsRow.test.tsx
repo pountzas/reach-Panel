@@ -30,14 +30,14 @@ vi.mock("../../stores/appStore", () => ({
 import { PreviewSuggestionsRow } from "./PreviewSuggestionsRow";
 
 function stubViewTransitionDom() {
-  const css = (
-    typeof CSS === "object" && CSS !== null ? CSS : {}
-  ) as typeof CSS & { escape?: (value: string) => string };
-  if (typeof css.escape !== "function") {
+  const css = globalThis.CSS as
+    | (typeof CSS & { escape?: (value: string) => string })
+    | undefined;
+  if (typeof css?.escape !== "function") {
     Object.defineProperty(globalThis, "CSS", {
       configurable: true,
       value: {
-        ...css,
+        ...(css ?? {}),
         escape(value: string) {
           return value.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
         },
@@ -80,10 +80,11 @@ describe("PreviewSuggestionsRow", () => {
     );
     const previewSlot = container.querySelector("[data-slot='preview']");
     expect(previewSlot).toBeTruthy();
-    const classes = previewSlot!.className.split(/\s+/);
+    if (!previewSlot) throw new Error("expected preview slot");
+    const classes = previewSlot.className.split(/\s+/);
     expect(classes.some((c) => c.startsWith("max-w-"))).toBe(false);
     expect(classes).toContain("w-0");
-    expect(previewSlot!.getAttribute("aria-hidden")).toBe("true");
+    expect(previewSlot.getAttribute("aria-hidden")).toBe("true");
   });
 
   it("adds ml-2 on the suggestions slot only when both are shown", () => {
@@ -92,7 +93,8 @@ describe("PreviewSuggestionsRow", () => {
       <PreviewSuggestionsRow showPreview={true} showSuggestions={true} />,
     );
     const bothSlot = both.container.querySelector("[data-slot='suggestions']");
-    expect(bothSlot!.className.split(/\s+/)).toContain("ml-2");
+    if (!bothSlot) throw new Error("expected suggestions slot");
+    expect(bothSlot.className.split(/\s+/)).toContain("ml-2");
     both.unmount();
 
     const chipsOnly = render(
@@ -101,7 +103,8 @@ describe("PreviewSuggestionsRow", () => {
     const chipsSlot = chipsOnly.container.querySelector(
       "[data-slot='suggestions']",
     );
-    expect(chipsSlot!.className.split(/\s+/)).not.toContain("ml-2");
+    if (!chipsSlot) throw new Error("expected suggestions slot");
+    expect(chipsSlot.className.split(/\s+/)).not.toContain("ml-2");
   });
 
   it("keeps both slots mounted when hidden", () => {
@@ -130,11 +133,8 @@ describe("PreviewSuggestionsRow", () => {
       screen.getByRole("button", { name: "beta", hidden: true }),
     ).toBeTruthy();
     await waitFor(() => {
-      expect(
-        container
-          .querySelector("[data-slot='suggestions']")!
-          .hasAttribute("inert"),
-      ).toBe(true);
+      const slot = container.querySelector("[data-slot='suggestions']");
+      expect(slot?.hasAttribute("inert")).toBe(true);
     });
   });
 
@@ -155,7 +155,7 @@ describe("PreviewSuggestionsRow", () => {
     );
     const previewSlot = container.querySelector("[data-slot='preview']");
     expect(previewSlot?.getAttribute("aria-hidden")).toBe("true");
-    expect(previewSlot!.hasAttribute("inert")).toBe(true);
+    expect(previewSlot?.hasAttribute("inert")).toBe(true);
   });
 
   it("defers slot visibility so ViewTransition can animate Zustand updates", () => {

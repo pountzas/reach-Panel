@@ -5,12 +5,12 @@ export type GroqDailyQuotaSnapshot = {
   date: string;
   remainingRequests: number;
   limitRequests: number;
-};
+}
 
 export type GroqQuotaEventPayload = {
   remainingRequests: number;
   limitRequests: number;
-};
+}
 
 /** Milliseconds until the next local calendar midnight (minimum 1ms). */
 export function msUntilNextLocalMidnight(now: Date = new Date()): number {
@@ -90,6 +90,6 @@ export function percentFromStoredQuota(
   storage: Pick<Storage, "getItem"> = sessionStorage,
 ): number | null {
   const snapshot = readStoredQuota(storage);
-  if (!shouldShowQuotaBadge(snapshot, today, engine)) return null;
-  return remainingPercent(snapshot!.remainingRequests, snapshot!.limitRequests);
+  if (!snapshot || !shouldShowQuotaBadge(snapshot, today, engine)) return null;
+  return remainingPercent(snapshot.remainingRequests, snapshot.limitRequests);
 }

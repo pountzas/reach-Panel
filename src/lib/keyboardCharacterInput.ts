@@ -9,7 +9,7 @@ export type CharacterInputResult = {
   pendingAccent: GreekPendingAccent | null;
   /** Text to inject into the target app; empty when nothing should be sent. */
   inject: string;
-};
+}
 
 export type GreekComposeContext = {
   typingLanguage?: string;
@@ -18,7 +18,7 @@ export type GreekComposeContext = {
   onscreenLayout?: string;
   languageLessonActive?: boolean;
   lessonLanguage?: LessonLanguage;
-};
+}
 
 /** True when the on-screen keyboard is operating as a Greek (EL) layout. */
 export function greekComposeEnabled(ctx: GreekComposeContext): boolean {

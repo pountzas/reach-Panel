@@ -9,7 +9,7 @@ import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { useTranslation } from "../../hooks/useTranslation";
 import type { TranslationKey } from "../../i18n";
 
-interface OctaveCountSwitchProps {
+type OctaveCountSwitchProps = {
   value: number | undefined;
   onChange: (count: SynthOctaveCount) => void;
 }
@@ -28,7 +28,7 @@ export function OctaveCountSwitch({ value, onChange }: OctaveCountSwitchProps) {
             active={count === level}
             position={modeToggleSegmentPosition(index, SYNTH_OCTAVE_COUNTS.length)}
             label={t(labelKey)}
-            onClick={() => onChange(level)}
+            onClick={() => { onChange(level); }}
           >
             <span className="text-xs font-semibold tabular-nums">{level}</span>
           </ModeToggleButton>

@@ -42,7 +42,7 @@ type ModeTabletButtonProps = {
   title?: string;
   surface: SurfaceColors;
   onSelect: (mode: AppModeTablet) => void;
-};
+}
 
 const ModeTabletButton = ({
   id,
@@ -126,9 +126,6 @@ export function ModesSection({ surface }: { surface: SurfaceColors }) {
       setLanguagePackId: s.setLanguagePackId,
     })),
   );
-
-  if (!settings) return null;
-
   const teachingActive = isTeachingSessionActive(
     musicTeachingEnabled,
     settings.keyboardSectionMode,
@@ -193,7 +190,7 @@ export function ModesSection({ surface }: { surface: SurfaceColors }) {
                   borderColor: pressed ? surface.panelText : surface.panelBorder,
                   color: surface.panelText,
                 }}
-                onClick={() => setTeachingLesson(lesson.id)}
+                onClick={() => { setTeachingLesson(lesson.id); }}
               >
                 <TeachingLessonIcon lesson={lesson.id} className="h-4 w-4" />
                 {lesson.label}

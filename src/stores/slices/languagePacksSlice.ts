@@ -25,7 +25,7 @@ export const createLanguagePacksSlice: StateCreator<
       );
       set({
         customLanguagePacks: Array.isArray(packs)
-          ? packs.filter((pack) => pack && typeof pack.id === "string")
+          ? packs.filter((pack) => typeof pack.id === "string")
           : [],
       });
     } catch (error) {

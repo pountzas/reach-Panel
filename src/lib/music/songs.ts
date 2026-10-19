@@ -1,4 +1,4 @@
-import { requiredOctaveCount, fitPianoRangeToPitches } from "./pianoKeys";
+import { fitPianoRangeToPitches } from "./pianoKeys";
 import type { SynthOctaveCount } from "./octaveCount";
 import type { PianoRangeFit } from "./pianoKeys";
 
@@ -11,7 +11,7 @@ export type MusicNoteEvent = {
   pitch: string;
   /** Duration in quarter-note beats (1 = quarter, 2 = half, 0.5 = eighth). */
   beats: number;
-};
+}
 
 export type MusicSong = {
   id: string;
@@ -20,7 +20,7 @@ export type MusicSong = {
   /** Tempo for demo playback (quarter notes per minute). */
   tempoBpm: number;
   notes: MusicNoteEvent[];
-};
+}
 
 function n(pitch: string, beats: number): MusicNoteEvent {
   return { pitch, beats };
@@ -1025,7 +1025,7 @@ export function songPitches(song: MusicSong): string[] {
 }
 
 export function songRequiredOctaveCount(song: MusicSong): SynthOctaveCount {
-  return requiredOctaveCount(songPitches(song)) ?? 5;
+  return fitPianoRangeToPitches(songPitches(song))?.octaveCount ?? 5;
 }
 
 export function songPianoRangeFit(song: MusicSong): PianoRangeFit | null {

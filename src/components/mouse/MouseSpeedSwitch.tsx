@@ -17,7 +17,7 @@ import {
   VerySlowSpeedIcon,
 } from "./MouseSpeedIcons";
 
-interface MouseSpeedSwitchProps {
+type MouseSpeedSwitchProps = {
   value: string | undefined;
   onChange: (speed: MouseSpeed) => void;
 }
@@ -44,7 +44,7 @@ export function MouseSpeedSwitch({ value, onChange }: MouseSpeedSwitchProps) {
             active={speed === level}
             position={modeToggleSegmentPosition(index, MOUSE_SPEED_LEVELS.length)}
             label={t(labelKey)}
-            onClick={() => onChange(level)}
+            onClick={() => { onChange(level); }}
           >
             {SPEED_ICONS[level]}
           </ModeToggleButton>

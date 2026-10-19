@@ -35,7 +35,7 @@ import { FloatingSection } from "./FloatingSection";
 import { useAppStore } from "../../stores/appStore";
 import { isTeachingKeyboardChromeVisible } from "../../lib/teaching/teachingKeyboardMinimize";
 
-interface SectionCanvasProps {
+type SectionCanvasProps = {
   teachingVisible: boolean;
   savedStack?: SectionStackState;
   onStackChange: (stack: SectionStackState) => void;
@@ -62,6 +62,7 @@ export function SectionCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState(fallbackCanvasSize);
   const onStackChangeRef = useRef(onStackChange);
+  // eslint-disable-next-line react-hooks/refs -- sync callback for resize/drag handlers
   onStackChangeRef.current = onStackChange;
 
   const dragRef = useRef<{
@@ -100,7 +101,7 @@ export function SectionCanvas({
     const element = containerRef.current;
     if (!element) return;
 
-    const observer = new ResizeObserver(() => updateSize());
+    const observer = new ResizeObserver(() => { updateSize(); });
     observer.observe(element);
 
     const rafId = requestAnimationFrame(updateSize);
@@ -128,9 +129,11 @@ export function SectionCanvas({
   );
   const [stack, setStack] = useState(stackFromSettings);
   const stackRef = useRef(stack);
+  // eslint-disable-next-line react-hooks/refs -- sync stack for drag handlers
   stackRef.current = stack;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror settings-derived stack into local state
     setStack(stackFromSettings);
   }, [stackFromSettings]);
 
@@ -270,7 +273,8 @@ export function SectionCanvas({
     }
 
     const drag = dragRef.current;
-    if (!drag || drag.id !== id) return;
+    // StackableSectionId is currently only "teaching"; id match is always true when drag exists.
+    if (!drag) return;
 
     const localY = clientY - bounds.top;
     const dx = clientX - drag.startClientX;
@@ -291,7 +295,7 @@ export function SectionCanvas({
       const stackableSlots = slots.filter((s) => isStackableSectionId(s.id));
       let nextIndex = stackableSlots.length;
       for (let i = 0; i < stackableSlots.length; i++) {
-        const s = stackableSlots[i]!;
+        const s = stackableSlots[i];
         if (localY < s.y + s.height / 2) {
           nextIndex = i;
           break;
@@ -382,7 +386,6 @@ export function SectionCanvas({
 
       {slots.slice(0, -1).map((slot, index) => {
         const lower = slots[index + 1];
-        if (!lower) return null;
         if (slot.isMinimized || lower.isMinimized) return null;
         const top = slot.y + slot.height;
         return (
@@ -395,7 +398,7 @@ export function SectionCanvas({
               height: SPLITTER_HIT_PX,
               touchAction: "none",
             }}
-            onPointerDown={(e) => onSplitterPointerDown(e, slot.id, lower.id)}
+            onPointerDown={(e) => { onSplitterPointerDown(e, slot.id, lower.id); }}
             onPointerMove={splitterDrag.onPointerMove}
             onPointerUp={splitterDrag.onPointerUp}
           />
@@ -415,7 +418,7 @@ export function SectionCanvas({
             containerHeight={containerSize.height}
             onRectChange={handleFloatRect}
             onDock={handleDock}
-            onToggleMinimize={(sectionId) => handleToggleMinimize(sectionId)}
+            onToggleMinimize={(sectionId) => { handleToggleMinimize(sectionId); }}
             onDropProbe={handleDropProbe}
             onDragStop={handleFloatDragStop}
           >
@@ -428,15 +431,9 @@ export function SectionCanvas({
 }
 
 function isSectionVisibleId(
-  id: StackableSectionId,
+  _id: StackableSectionId,
   visibility: SectionVisibility,
 ): boolean {
-  switch (id) {
-    case "teaching":
-      return visibility.teaching;
-    default: {
-      const _exhaustive: never = id;
-      return _exhaustive;
-    }
-  }
+  // StackableSectionId is currently only "teaching".
+  return visibility.teaching;
 }

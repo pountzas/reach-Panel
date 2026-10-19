@@ -2,7 +2,7 @@ import { MuteIcon, VolumeIcon } from "../common/SectionIcons";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { useTranslation } from "../../hooks/useTranslation";
 
-interface SynthVolumeControlProps {
+type SynthVolumeControlProps = {
   volume: number;
   muted: boolean;
   onVolumeChange: (volume: number) => void;
@@ -24,7 +24,7 @@ export function SynthVolumeControl({
           active={muted}
           position="only"
           label={muted ? t("unmute") : t("mute")}
-          onClick={() => onMutedChange(!muted)}
+          onClick={() => { onMutedChange(!muted); }}
         >
           {muted ? <MuteIcon className="h-4 w-4" /> : <VolumeIcon className="h-4 w-4" />}
         </ModeToggleButton>
@@ -40,7 +40,7 @@ export function SynthVolumeControl({
         max={100}
         step={1}
         value={volume}
-        onChange={(event) => onVolumeChange(Number(event.target.value))}
+        onChange={(event) => { onVolumeChange(Number(event.target.value)); }}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={volume}

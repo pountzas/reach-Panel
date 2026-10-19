@@ -7,7 +7,7 @@ export type FreeWriteModeInput = {
   settings: { keyboardSectionMode?: string };
   languageSubjectTab: LanguageSubjectTab;
   freeWriteFocus: FreeWriteFocus;
-};
+}
 
 export function isLanguageSubjectActive(input: FreeWriteModeInput): boolean {
   return (

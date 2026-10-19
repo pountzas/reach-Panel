@@ -7,7 +7,7 @@ const SKIPPED_VERSION_KEY = "skippedUpdateVersion";
 export type UpdateProgress = {
   downloaded: number;
   contentLength: number | null;
-};
+}
 
 export function getSkippedUpdateVersion(): string | null {
   return localStorage.getItem(SKIPPED_VERSION_KEY);

@@ -31,10 +31,9 @@ describe("DictationVisualizer", () => {
     vi.stubGlobal(
       "requestAnimationFrame",
       (cb: FrameRequestCallback) =>
-        window.setTimeout(() => cb(performance.now()), 16) as unknown as number,
+        window.setTimeout(() => { cb(performance.now()); }, 16),
     );
-    vi.stubGlobal("cancelAnimationFrame", (id: number) =>
-      window.clearTimeout(id),
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => { window.clearTimeout(id); },
     );
   });
   afterEach(() => {
@@ -80,7 +79,7 @@ describe("DictationVisualizer", () => {
       <DictationVisualizer active captureAudio={false} />,
     );
 
-    const bar = container.querySelector("span") as HTMLElement | null;
+    const bar = container.querySelector<HTMLElement>("span");
     expect(bar).toBeTruthy();
     expect(bar?.style.height).toBe("22px");
     expect(bar?.style.transform).toMatch(/scaleY\(0\.265/);
@@ -91,7 +90,9 @@ describe("DictationVisualizer", () => {
     const { container, rerender } = render(
       <DictationVisualizer active captureAudio={false} />,
     );
-    const graph = container.querySelector("[aria-hidden] > div") as HTMLElement;
+    const graph = container.querySelector<HTMLElement>("[aria-hidden] > div");
+    expect(graph).toBeTruthy();
+    if (!graph) throw new Error("expected graph");
     expect(graph.style.willChange).toBe("transform");
     rerender(<DictationVisualizer active={false} captureAudio={false} />);
     expect(container.querySelector("[aria-hidden]")).toBeNull();

@@ -41,7 +41,7 @@ function fabAppearStyle(
   };
 }
 
-export interface CollapsedFabProps {
+export type CollapsedFabProps = {
   /** Show Settings (gear) above Expand (Focus mode). */
   showSettings?: boolean;
   /** Show Mic FAB above Settings (Mic mode). */
@@ -88,32 +88,34 @@ export function CollapsedFab({
 
   useEffect(() => {
     if (prefersReducedMotion()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync enter animation to motion preference
       setStackEntered(true);
       setPromoteFabLayer(false);
       return;
     }
     setPromoteFabLayer(true);
     setStackEntered(false);
-    const id = requestAnimationFrame(() => setStackEntered(true));
-    return () => cancelAnimationFrame(id);
+    const id = requestAnimationFrame(() => { setStackEntered(true); });
+    return () => { cancelAnimationFrame(id); };
   }, []);
 
   useEffect(() => {
     if (!stackEntered || prefersReducedMotion()) return;
     // Last FAB stagger index is at most 2; clear layer promotion after settle.
     const id = window.setTimeout(
-      () => setPromoteFabLayer(false),
+      () => { setPromoteFabLayer(false); },
       MOTION.fast + FAB_STAGGER_MS * 2 + 40,
     );
-    return () => window.clearTimeout(id);
+    return () => { window.clearTimeout(id); };
   }, [stackEntered]);
 
   useEffect(() => {
     if (modeMenuOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount/enter menu for open animation
       setMenuMounted(true);
       setMenuEntered(false);
-      const id = requestAnimationFrame(() => setMenuEntered(true));
-      return () => cancelAnimationFrame(id);
+      const id = requestAnimationFrame(() => { setMenuEntered(true); });
+      return () => { cancelAnimationFrame(id); };
     }
     if (!menuMounted) return;
     if (prefersReducedMotion()) {
@@ -125,7 +127,7 @@ export function CollapsedFab({
     const timeoutId = window.setTimeout(() => {
       setMenuMounted(false);
     }, MOTION.fast);
-    return () => window.clearTimeout(timeoutId);
+    return () => { window.clearTimeout(timeoutId); };
   }, [modeMenuOpen, menuMounted]);
 
   const bgColor = headerBgColor ?? "#1e293b";

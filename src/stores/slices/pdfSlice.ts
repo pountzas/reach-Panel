@@ -80,14 +80,14 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
       );
       const filtered = Array.isArray(raw)
         ? raw.filter(
-            (e) => e && typeof e.id === "string" && typeof e.path === "string",
+            (e) => typeof e.id === "string" && typeof e.path === "string",
           )
         : [];
       const { entries, didMigrate } = migrateToSingleTeachingPdf(filtered);
       if (didMigrate) {
         await invoke("cmd_save_teaching_pdfs", { entries });
       }
-      const kept = entries[0] ?? null;
+      const kept = entries.length > 0 ? entries[0] : null;
       const lastId = get().settings.freeWriteLastPdfId ?? null;
       const freeWriteActivePdfId =
         kept == null
@@ -305,8 +305,9 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
     const state = get();
     const active =
       state.teachingPdfLibrary.find((e) => e.id === state.freeWriteActivePdfId) ??
-      state.teachingPdfLibrary[0] ??
-      null;
+      (state.teachingPdfLibrary.length > 0
+        ? state.teachingPdfLibrary[0]
+        : null);
     if (!active?.path) {
       notify.error(translate(state.settings.uiLanguage, "freeWritePdfEmpty"));
       return;
@@ -386,7 +387,7 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
     } else if (pushUndo) {
       // Compat for non-gesture callers (e.g. text-box delete): keep doc refs
       // without cloning. Prefer passing `change` for per-gesture patches.
-      const before = options?.undoFrom ?? current;
+      const before = current;
       const after = next;
       freeWriteUndoStack.push({
         undo: () => {

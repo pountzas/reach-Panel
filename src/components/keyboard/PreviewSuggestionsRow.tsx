@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useRef, ViewTransition } from "react";
+import { useDeferredValue, useState, ViewTransition } from "react";
 import { SuggestionsBar } from "../common/SuggestionsBar";
 import { useAppStore } from "../../stores/appStore";
 import { InputPreview } from "./InputPreview";
@@ -15,19 +15,18 @@ export function PreviewSuggestionsRow({
   const deferredPreview = useDeferredValue(showPreview);
   const deferredSuggestions = useDeferredValue(showSuggestions);
   const suggestions = useAppStore((s) => s.suggestions);
-  const lastSuggestionsRef = useRef<string[]>([]);
-  useEffect(() => {
-    if (suggestions.length > 0) {
-      lastSuggestionsRef.current = suggestions;
-    }
-  }, [suggestions]);
+  const [lastSuggestions, setLastSuggestions] = useState(suggestions);
+  // Adjust during render so exit transition keeps last chips (React-approved pattern).
+  if (suggestions.length > 0 && suggestions !== lastSuggestions) {
+    setLastSuggestions(suggestions);
+  }
   // While the slot is open, show live suggestions (empty → lightbulb only).
   // While hiding, keep the last chips for the exit transition.
   const displaySuggestions = deferredSuggestions
     ? suggestions
     : suggestions.length > 0
       ? suggestions
-      : lastSuggestionsRef.current;
+      : lastSuggestions;
 
   return (
     <div className="flex w-full min-w-0 items-center justify-center">

@@ -43,8 +43,7 @@ export function ErrorBanner() {
     case null:
       break;
     default: {
-      const _exhaustive: never = kind;
-      void _exhaustive;
+      kind satisfies never;
       break;
     }
   }
@@ -91,7 +90,7 @@ export function ErrorBanner() {
             <button
               type="button"
               className="rounded bg-red-700 px-2 py-0.5 font-semibold text-white"
-              onClick={() => setShowSettings(true)}
+              onClick={() => { setShowSettings(true); }}
             >
               {t("dictationOpenAppSettings")}
             </button>
@@ -99,7 +98,7 @@ export function ErrorBanner() {
           <button
             type="button"
             className="font-bold"
-            onClick={() => setLastError(null)}
+            onClick={() => { setLastError(null); }}
           >
             {t("dismiss")}
           </button>

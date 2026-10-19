@@ -14,13 +14,13 @@ export type LanguageSpellTask = {
   hint?: string;
   /** 0 = always show; default from age band in later phases. */
   showSeconds?: number;
-};
+}
 
 export type LanguageCopyTask = {
   type: "copy";
   answer: string;
   wordAtATime?: boolean;
-};
+}
 
 export type LanguageTask = LanguageSpellTask | LanguageCopyTask;
 
@@ -35,6 +35,6 @@ export type LanguagePack = {
   author?: string;
   source?: LanguagePackSource;
   tasks: LanguageTask[];
-};
+}
 
 export const DEFAULT_LANGUAGE_AGE_BAND: LanguageAgeBand = "primary";

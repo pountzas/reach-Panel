@@ -26,6 +26,8 @@ let keyButtonRenderCount = 0;
 type KeyButtonProps = React.ComponentProps<typeof KeyButton>;
 
 function CountingKeyButton(props: KeyButtonProps) {
+  // Profiler harness: count renders (intentional render side effect).
+  // eslint-disable-next-line react-hooks/globals -- test render counter
   keyButtonRenderCount += 1;
   return <KeyButton {...props} />;
 }
@@ -42,16 +44,17 @@ function StickyTypingHarness({
   onRender: ProfilerOnRenderCallback;
 }) {
   const [activeIndex, setActiveIndex] = useState(-1);
-  const shiftActive = true;
   const Button: ComponentType<KeyButtonProps> =
     mode === "memo-stable" ? MemoCountingKeyButton : CountingKeyButton;
 
   const pressRef = useRef<(index: number) => void>(() => undefined);
+  // Keep latest setter for stable onPressKey without re-creating all keys.
+  // eslint-disable-next-line react-hooks/refs -- sync callback ref for harness
   pressRef.current = (index: number) => {
     setActiveIndex(index);
   };
 
-  const onPressKey = useCallback((index: number, _meta?: KeyRepeatFireMeta) => {
+  const onPressKey = useCallback((index: number) => {
     pressRef.current(index);
   }, []);
 
@@ -71,9 +74,8 @@ function StickyTypingHarness({
           type
         </button>
         {Array.from({ length: KEY_COUNT }, (_, i) => {
-          const label = shiftActive
-            ? String.fromCharCode(65 + (i % 26))
-            : String.fromCharCode(97 + (i % 26));
+          // Sticky-Shift harness: uppercase labels
+          const label = String.fromCharCode(65 + (i % 26));
           if (mode === "memo-stable") {
             return (
               <StableKey
@@ -96,7 +98,7 @@ function StickyTypingHarness({
               bgColor="#ffffff"
               textColor="#1e293b"
               active={activeIndex === i}
-              onPress={() => setActiveIndex(i)}
+              onPress={() => { setActiveIndex(i); }}
             />
           );
         })}
@@ -119,9 +121,11 @@ function StableKey({
   Button: ComponentType<KeyButtonProps>;
 }) {
   const indexRef = useRef(index);
+  // Stable onPress must see the latest index without invalidating memo.
+  // eslint-disable-next-line react-hooks/refs -- sync index into callback ref
   indexRef.current = index;
   const onPress = useCallback(
-    (meta?: KeyRepeatFireMeta) => onPressKey(indexRef.current, meta),
+    (meta?: KeyRepeatFireMeta) => { onPressKey(indexRef.current, meta); },
     [onPressKey],
   );
   return (
@@ -168,7 +172,7 @@ describe("KeyButton sticky-typing profiler (#281)", () => {
     }
 
     const renders = keyButtonRenderCount;
-    // eslint-disable-next-line no-console
+     
     console.log(
       JSON.stringify({
         scenario: "sticky-typing-20",
@@ -212,7 +216,7 @@ describe("KeyButton sticky-typing profiler (#281)", () => {
     }
 
     const renders = keyButtonRenderCount;
-    // eslint-disable-next-line no-console
+     
     console.log(
       JSON.stringify({
         scenario: "sticky-typing-20",

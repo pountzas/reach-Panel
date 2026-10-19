@@ -30,7 +30,7 @@ const SECTION_TITLE_KEY: Record<SectionId, TranslationKey> = {
   "input-row": "keyboard",
 };
 
-interface DockedSectionProps {
+type DockedSectionProps = {
   slot: DockedSlot;
   width: number;
   children: ReactNode;
@@ -101,8 +101,7 @@ export function DockedSection({
       case "input-row":
         break;
       default: {
-        const _exhaustive: never = slot.id;
-        void _exhaustive;
+        slot.id satisfies never;
         break;
       }
     }
@@ -202,7 +201,7 @@ export function DockedSection({
                 )}
                 <IconActionButton
                   label={slot.isMinimized ? t("expand") : t("minimizeSection")}
-                  onClick={() => onToggleMinimize(slot.id)}
+                  onClick={() => { onToggleMinimize(slot.id); }}
                   size={iconSize}
                   tooltipPlacement="below"
                 >
@@ -234,7 +233,7 @@ export function DockedSection({
   );
 }
 
-interface HolePlaceholderProps {
+type HolePlaceholderProps = {
   slot: DockedSlot;
   width: number;
   highlight?: boolean;

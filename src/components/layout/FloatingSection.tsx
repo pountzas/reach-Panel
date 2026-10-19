@@ -31,7 +31,7 @@ const SECTION_TITLE_KEY: Record<StackableSectionId, TranslationKey> = {
   teaching: "modeTeaching",
 };
 
-interface FloatingSectionProps {
+type FloatingSectionProps = {
   id: StackableSectionId;
   rect: FloatRect;
   minimized: boolean;
@@ -67,7 +67,7 @@ export function FloatingSection({
   const appBgColor = useAppStore((s) => s.settings.appBgColor);
   const pointerDragActive = usePointerDragActive();
   const teachingLesson = useAppStore((s) => s.teachingLesson);
-  const showTeaching = id === "teaching" && musicTeachingEnabled;
+  const showTeaching = musicTeachingEnabled;
   const sectionTitleKey: TranslationKey = showTeaching
     ? teachingLessonTitleKey(teachingLesson)
     : SECTION_TITLE_KEY[id];
@@ -99,17 +99,8 @@ export function FloatingSection({
   };
 
   const handleClose = () => {
-    switch (id) {
-      case "teaching":
-        if (musicTeachingEnabled) {
-          void setAppMode(lessonCloseAppMode(modeBeforeTeaching));
-        }
-        break;
-      default: {
-        const _exhaustive: never = id;
-        void _exhaustive;
-        break;
-      }
+    if (musicTeachingEnabled) {
+      void setAppMode(lessonCloseAppMode(modeBeforeTeaching));
     }
   };
 
@@ -240,7 +231,7 @@ export function FloatingSection({
           <div className="section-no-drag ml-1 flex shrink-0 items-center justify-end gap-0.5">
             <IconActionButton
               label={t("dockSection")}
-              onClick={() => onDock(id)}
+              onClick={() => { onDock(id); }}
               size={iconSize}
               tooltipPlacement="below"
             >
@@ -248,7 +239,7 @@ export function FloatingSection({
             </IconActionButton>
             <IconActionButton
               label={minimized ? t("expand") : t("minimizeSection")}
-              onClick={() => onToggleMinimize(id)}
+              onClick={() => { onToggleMinimize(id); }}
               size={iconSize}
               tooltipPlacement="below"
             >

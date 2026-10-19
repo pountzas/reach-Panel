@@ -167,19 +167,13 @@ export function KeyboardSection() {
                     position="only"
                     label={t("transparentKeyColor")}
                     tooltipPlacement="below"
-                    style={
-                      transparentUi
-                        ? transparentOutlineStyle({
-                            color: transparentPalette.text,
-                            outlineColor: settings.transparentKeyColor,
-                          })
-                        : undefined
-                    }
-                    activeClassName={
-                      transparentUi ? "bg-transparent" : undefined
-                    }
+                    style={transparentOutlineStyle({
+                      color: transparentPalette.text,
+                      outlineColor: settings.transparentKeyColor,
+                    })}
+                    activeClassName="bg-transparent"
                     onClick={() =>
-                      updateSettings({
+                      void updateSettings({
                         transparentKeyColor: nextTransparentKeyColor(
                           settings.transparentKeyColor,
                         ),
@@ -241,7 +235,7 @@ export function KeyboardSection() {
                       const synthesizerStartOctave = Math.round(
                         center - synthesizerOctaveCount / 2,
                       );
-                      updateSettings({
+                      void updateSettings({
                         synthesizerOctaveCount,
                         synthesizerStartOctave,
                       });

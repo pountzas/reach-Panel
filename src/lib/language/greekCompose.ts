@@ -116,7 +116,7 @@ export function applyGreekKeystroke(
     };
   }
 
-  if (!output || output.length !== 1 || /\s/u.test(output)) {
+  if (output.length !== 1 || /\s/u.test(output)) {
     return { buffer, pending };
   }
 

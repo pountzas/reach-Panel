@@ -5,7 +5,7 @@ export type PdfStroke = {
   color: string;
   width: number;
   points: PdfPoint[];
-};
+}
 
 export type PdfTextBox = {
   id: string;
@@ -13,23 +13,23 @@ export type PdfTextBox = {
   y: number;
   w: number;
   body: string;
-};
+}
 
 export type PdfPageAnnotations = {
   strokes: PdfStroke[];
   texts: PdfTextBox[];
-};
+}
 
 export type PdfAnnotationDoc = {
   schemaVersion: 1;
   originalPathHint?: string;
   pages: Record<string, PdfPageAnnotations>;
-};
+}
 
 export type UndoEntry = {
   undo: () => void;
   redo: () => void;
-};
+}
 
 export type UndoStack = {
   push: (entry: UndoEntry) => void;
@@ -38,7 +38,7 @@ export type UndoStack = {
   clear: () => void;
   size: () => number;
   redoSize: () => number;
-};
+}
 
 const SCHEMA_VERSION = 1 as const;
 
@@ -70,13 +70,19 @@ export function parsePdfAnnotationJson(text: string): PdfAnnotationDoc {
       const page = value as Partial<Record<keyof PdfPageAnnotations, unknown>>;
       pages[key] = {
         strokes: Array.isArray(page.strokes)
-          ? (page.strokes as PdfStroke[]).filter(
-              (s) => s && Array.isArray(s.points),
+          ? page.strokes.filter(
+              (s): s is PdfStroke =>
+                typeof s === "object" &&
+                s != null &&
+                Array.isArray((s as PdfStroke).points),
             )
           : [],
         texts: Array.isArray(page.texts)
-          ? (page.texts as PdfTextBox[]).filter(
-              (t) => t && typeof t.body === "string",
+          ? page.texts.filter(
+              (t): t is PdfTextBox =>
+                typeof t === "object" &&
+                t != null &&
+                typeof (t as PdfTextBox).body === "string",
             )
           : [],
       };
@@ -134,11 +140,20 @@ export function createUndoStack(max = 50): UndoStack {
   };
 }
 
+function pageOf(
+  doc: PdfAnnotationDoc,
+  pageKey: string,
+): PdfPageAnnotations | undefined {
+  return Object.prototype.hasOwnProperty.call(doc.pages, pageKey)
+    ? doc.pages[pageKey]
+    : undefined;
+}
+
 export function ensurePage(
   doc: PdfAnnotationDoc,
   pageKey: string,
 ): PdfPageAnnotations {
-  const existing = doc.pages[pageKey];
+  const existing = pageOf(doc, pageKey);
   if (existing) return existing;
   const page: PdfPageAnnotations = { strokes: [], texts: [] };
   doc.pages[pageKey] = page;
@@ -206,7 +221,7 @@ export function removeStrokesFromPage(
   pageKey: string,
   strokeIds: ReadonlySet<string>,
 ): PdfAnnotationDoc {
-  const prev = doc.pages[pageKey];
+  const prev = pageOf(doc, pageKey);
   if (!prev) return doc;
   const strokes = prev.strokes.filter((s) => !strokeIds.has(s.id));
   if (strokes.length === prev.strokes.length) return doc;
@@ -241,16 +256,15 @@ export function moveTextOnPage(
   id: string,
   pos: { x: number; y: number },
 ): PdfAnnotationDoc {
-  const prev = doc.pages[pageKey];
+  const prev = pageOf(doc, pageKey);
   if (!prev) return doc;
-  let found = false;
+  const index = prev.texts.findIndex((t) => t.id === id);
+  if (index < 0) return doc;
   const texts = prev.texts.map((t) => {
     if (t.id !== id) return t;
-    found = true;
     if (t.x === pos.x && t.y === pos.y) return t;
     return { ...t, x: pos.x, y: pos.y };
   });
-  if (!found) return doc;
   return withPage(doc, pageKey, { ...prev, texts });
 }
 
@@ -276,7 +290,7 @@ export function removeTextFromPage(
   pageKey: string,
   id: string,
 ): PdfAnnotationDoc {
-  const prev = doc.pages[pageKey];
+  const prev = pageOf(doc, pageKey);
   if (!prev) return doc;
   const texts = prev.texts.filter((t) => t.id !== id);
   if (texts.length === prev.texts.length) return doc;

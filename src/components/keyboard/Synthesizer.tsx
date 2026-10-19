@@ -78,6 +78,7 @@ export function Synthesizer() {
     if (musicNoteIndex >= song.notes.length) return null;
     return song.notes[musicNoteIndex]?.pitch ?? null;
   }, [importedSongs, musicTeachingEnabled, musicSongId, musicNoteIndex]);
+  // eslint-disable-next-line react-hooks/refs -- sync teaching target for pointer handlers
   targetKeyIdRef.current = targetKeyId;
 
   const syncWrongKeys = useCallback((next: Set<string>) => {
@@ -140,6 +141,7 @@ export function Synthesizer() {
       window.clearTimeout(timer);
     }
     wrongKeyTimersRef.current.clear();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear wrong-key UI when teaching ends
     syncWrongKeys(new Set());
   }, [musicTeachingEnabled, syncWrongKeys]);
 
@@ -148,6 +150,7 @@ export function Synthesizer() {
     return (settings.synthesizerVolume ?? 70) / 100;
   }, [settings.synthesizerMuted, settings.synthesizerVolume]);
   const volumeLevelRef = useRef(volumeLevel);
+  // eslint-disable-next-line react-hooks/refs -- sync volume for audio callbacks
   volumeLevelRef.current = volumeLevel;
 
   const whiteKeyCount = octaveCount * 7 + 1;
@@ -167,6 +170,7 @@ export function Synthesizer() {
     return map;
   }, [whiteKeys, blackKeys]);
   const keyByIdRef = useRef(keyById);
+  // eslint-disable-next-line react-hooks/refs -- sync key map for pointer handlers
   keyByIdRef.current = keyById;
 
   const ensureAudio = useCallback(async () => {
@@ -280,6 +284,7 @@ export function Synthesizer() {
 
   useEffect(() => {
     if (!musicPlaybackActive || !musicTeachingEnabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- stop playback UI when inactive
       clearPlaybackSchedule();
       return;
     }
@@ -364,7 +369,7 @@ export function Synthesizer() {
         if (cancelled) return;
         const horizon = ctx.currentTime + PLAYBACK_LOOKAHEAD_SEC;
         while (noteIndex < song.notes.length && nextNoteCtxTime <= horizon) {
-          const note = song.notes[noteIndex]!;
+          const note = song.notes[noteIndex];
           const slotSec = Math.max(0.05, note.beats * beatSec);
           scheduleNote(ctx, note.pitch, noteIndex, nextNoteCtxTime, slotSec);
           nextNoteCtxTime += slotSec;

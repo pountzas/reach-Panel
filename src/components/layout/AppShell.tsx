@@ -91,7 +91,7 @@ const renderTeachingLessonPanel = (lesson: TeachingLesson): JSX.Element => {
 const InputRowPanel = (): JSX.Element => {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
-  const mouseSide = settings.mousePanelSide ?? "right";
+  const mouseSide = settings.mousePanelSide;
   const mouseRatio = settings.inputRowRightRatio ?? 0.28;
   const mouseVisible = effectiveMouseVisible(settings.mouseVisible);
 
@@ -177,7 +177,7 @@ export function AppShell() {
     <div
       className="relative flex min-h-0 flex-col"
       style={{ ...shellStyle, width: "100vw", height: "100vh" }}
-      onContextMenu={(e) => e.preventDefault()}
+      onContextMenu={(e) => { e.preventDefault(); }}
     >
       {settings.backgroundImagePath && (
         <div
@@ -227,7 +227,7 @@ export function AppShell() {
             </IconActionButton>
             <IconActionButton
               label={t("settings")}
-              onClick={() => setShowSettings(true)}
+              onClick={() => { setShowSettings(true); }}
               className="rounded bg-white/20 hover:bg-white/30"
               size={iconSize}
               tooltipPlacement="below"

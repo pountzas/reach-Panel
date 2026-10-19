@@ -18,13 +18,13 @@ export type PointerInputKind = "touch" | "mouse";
 /** Windows taskbar edge preference (top / bottom only). */
 export type TaskbarPosition = "bottom" | "top";
 
-export interface LayoutSnapshot {
+export type LayoutSnapshot = {
   sectionStack?: SectionStackState;
   inputRowRightRatio?: number;
   windowHeightRatio?: number;
 }
 
-export interface AppSettings {
+export type AppSettings = {
   colorProfile: ColorProfileId;
   opacity: number;
   uiLanguage: string;
@@ -121,21 +121,21 @@ export interface AppSettings {
   languageLessonIgnoreTones?: boolean;
 }
 
-export interface ProfileFileInfo {
+export type ProfileFileInfo = {
   filename: string;
   name: string;
 }
 
 export const INTERNAL_PROFILE_ID = "active";
 
-export interface Profile {
+export type Profile = {
   id: string;
   name: string;
   settings_json: string;
   created_at: string;
 }
 
-export interface MonitorInfo {
+export type MonitorInfo = {
   id: number;
   name: string;
   x: number;
@@ -149,7 +149,7 @@ export interface MonitorInfo {
   scale_factor?: number;
 }
 
-export interface CommandResult {
+export type CommandResult = {
   success: boolean;
   error?: string;
 }

@@ -38,7 +38,9 @@ export function isMicFabEnabled(input: {
  * Focus mode keyboard toolbar chrome. `pl-3` matches AppShell header `px-3`
  * so the height grip is not flush to the window edge.
  */
-export function focusModeToolbarClassName(_hasSuggestionChips: boolean): string {
+export function focusModeToolbarClassName(
+  _hasSuggestionChips: boolean,
+): string {
   return [
     "relative z-20 flex w-full shrink-0 flex-col overflow-visible",
     "pl-3 pr-1 py-0",
@@ -115,7 +117,7 @@ export function isMirroredSetup(monitors: MonitorInfo[]): boolean {
   }
   for (let i = 0; i < monitors.length; i++) {
     for (let j = i + 1; j < monitors.length; j++) {
-      if (monitorsOverlap(monitors[i]!, monitors[j]!)) return true;
+      if (monitorsOverlap(monitors[i], monitors[j])) return true;
     }
   }
   return false;
@@ -195,8 +197,7 @@ export function nextTransparentKeyColor(
 ): TransparentKeyColor {
   const resolved = resolveTransparentKeyColor(current);
   const idx = TRANSPARENT_KEY_COLORS.indexOf(resolved);
-  const next = TRANSPARENT_KEY_COLORS[(idx + 1) % TRANSPARENT_KEY_COLORS.length];
-  return next ?? "white";
+  return TRANSPARENT_KEY_COLORS[(idx + 1) % TRANSPARENT_KEY_COLORS.length];
 }
 
 /** High-contrast outlined control style for transparent focus mode. */
@@ -204,7 +205,7 @@ export function transparentOutlineStyle(
   options: {
     active?: boolean;
     color?: string;
-    outlineColor?: TransparentKeyColor | string | null;
+    outlineColor?: string | null;
   } = {},
 ): CSSProperties {
   const palette = transparentKeyPalette(options.outlineColor);

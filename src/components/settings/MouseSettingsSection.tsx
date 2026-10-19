@@ -13,9 +13,6 @@ export function MouseSettingsSection({ surface }: { surface: SurfaceColors }) {
       updateSettings: s.updateSettings,
     })),
   );
-
-  if (!settings) return null;
-
   return (
     <SettingsSection title={t("mouse")} surface={surface}>
       <ToggleRow

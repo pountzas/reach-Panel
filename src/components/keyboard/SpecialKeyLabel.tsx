@@ -1,5 +1,7 @@
 import { SPECIAL_KEY_LABELS } from "../../lib/keyboardLayouts";
 
+type SpecialKeySpec = (typeof SPECIAL_KEY_LABELS)[string];
+
 export function SpecialKeyLabel({
   keyName,
   fontSize,
@@ -7,7 +9,10 @@ export function SpecialKeyLabel({
   keyName: string;
   fontSize: number;
 }) {
-  const spec = SPECIAL_KEY_LABELS[keyName];
+  // Record<string, Spec> types every key as present; narrow for missing keys at runtime.
+  const spec = (SPECIAL_KEY_LABELS as Record<string, SpecialKeySpec | undefined>)[
+    keyName
+  ];
   if (!spec) return null;
 
   const wordSize = Math.max(8, Math.round(fontSize * 0.72));
@@ -65,6 +70,10 @@ export function SpecialKeyLabel({
   );
 }
 
+// Helper colocated with the label component for keyboard aria text.
+// eslint-disable-next-line react-refresh/only-export-components -- aria helper for Keyboard
 export function specialKeyAriaLabel(keyName: string): string | undefined {
-  return SPECIAL_KEY_LABELS[keyName]?.word;
+  return (SPECIAL_KEY_LABELS as Record<string, SpecialKeySpec | undefined>)[
+    keyName
+  ]?.word;
 }

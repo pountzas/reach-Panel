@@ -57,15 +57,15 @@ export type KeyPressContext = {
   typeCharacter: (
     ch: string,
     opts?: { physicalKey?: string },
-  ) => string | false | null | undefined | void;
+  ) => string | false | null | undefined;
   applyTypedLayoutTranslation: (
     t: LayoutKeyTranslation,
     opts: ReturnType<typeof greekTranslateOptions>,
-  ) => string | false | null | undefined | void;
+  ) => string | false | null | undefined;
   shiftActive: boolean;
   typingLocale: string;
   checkLanguageAnswer: () => void;
-};
+}
 
 export function useKeyboardKeyPress(ctx: KeyPressContext) {
   const setLastError = useAppStore((s) => s.setLastError);
@@ -118,12 +118,16 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
         if (ctx.languageListAuthoringActive && !authoringHandlers) {
           return;
         }
+        const authoring =
+          ctx.languageListAuthoringActive && authoringHandlers
+            ? authoringHandlers
+            : null;
         if (keyDef.modifier) {
           return;
         }
         if (key === "backspace") {
-          if (ctx.languageListAuthoringActive) {
-            authoringHandlers!.backspace();
+          if (authoring) {
+            authoring.backspace();
           } else {
             ctx.languageBackspace();
             if (ctx.greekKeyboardActive) {
@@ -135,16 +139,16 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
           return;
         }
         if (key === "enter") {
-          if (ctx.languageListAuthoringActive) {
-            authoringHandlers!.enter();
+          if (authoring) {
+            authoring.enter();
           } else {
             ctx.checkLanguageAnswer();
           }
           return;
         }
         if (key === "space") {
-          if (ctx.languageListAuthoringActive) {
-            authoringHandlers!.keyInput(" ");
+          if (authoring) {
+            authoring.keyInput(" ");
           }
           return;
         }
@@ -158,8 +162,8 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
             ctx.fnActive,
             ctx.typingLocale,
           );
-          if (ctx.languageListAuthoringActive) {
-            authoringHandlers!.layoutTranslation(translation, translateOptions);
+          if (authoring) {
+            authoring.layoutTranslation(translation, translateOptions);
           } else {
             ctx.applyLanguageLayoutTranslation(translation, translateOptions);
           }
@@ -180,8 +184,8 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
           ctx.typingLocale,
         );
         if (langOutput.length === 1 || keyDef.physicalKey) {
-          if (ctx.languageListAuthoringActive) {
-            authoringHandlers!.keyInput(langOutput, { physicalKey: keyDef.physicalKey });
+          if (authoring) {
+            authoring.keyInput(langOutput, { physicalKey: keyDef.physicalKey });
           } else {
             ctx.languageKeyInput(langOutput, { physicalKey: keyDef.physicalKey });
           }

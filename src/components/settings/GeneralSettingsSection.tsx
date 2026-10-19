@@ -57,9 +57,6 @@ export function GeneralSettingsSection({ surface }: { surface: SurfaceColors }) 
       cancelled = true;
     };
   }, []);
-
-  if (!settings) return null;
-
   const activeTypingValue = String(
     inputMethods.find((m) => m.hkl === physicalKeyState.systemHkl)?.hkl ??
       inputMethods.find((m) => m.langTag === settings.typingLanguage)?.hkl ??
@@ -77,12 +74,12 @@ export function GeneralSettingsSection({ surface }: { surface: SurfaceColors }) 
             setLaunchAtSignInBusy(true);
             setLaunchAtSignIn(checked);
             void setAutostartEnabled(checked)
-              .then((on) => setLaunchAtSignIn(on))
+              .then((on) => { setLaunchAtSignIn(on); })
               .catch(() => {
                 setLaunchAtSignIn(getCachedAutostartEnabled());
                 notify.error(t("launchAtWindowsSignInError"));
               })
-              .finally(() => setLaunchAtSignInBusy(false));
+              .finally(() => { setLaunchAtSignInBusy(false); });
           }}
           surface={surface}
         />

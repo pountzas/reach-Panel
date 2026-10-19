@@ -4,6 +4,14 @@ import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { monitorsOverlap } from "./focusMode";
 import type { MonitorInfo } from "./types";
 
+function tauriErrorMessage(payload: unknown, fallback: string): string {
+  if (typeof payload === "string") return payload;
+  if (typeof payload === "number" || typeof payload === "boolean") {
+    return String(payload);
+  }
+  return fallback;
+}
+
 export const TOOL_WINDOW_LABELS = ["settings"] as const;
 
 export type ToolWindowLabel = (typeof TOOL_WINDOW_LABELS)[number];
@@ -16,7 +24,7 @@ export const TOOL_WINDOW_REQUEST_EVENT = "tool-window-request";
 export type ToolWindowRequest = {
   label: ToolWindowLabel;
   show: boolean;
-};
+}
 
 export const TOOL_WINDOW_SIZE = { width: 900, height: 700 } as const;
 
@@ -76,7 +84,7 @@ export function resolveToolWindowMonitor(
   const primary = monitors.find((m) => m.is_primary);
   const candidate = preferred ?? primary ?? monitors[0];
 
-  if (!candidate?.is_mirror_duplicate) {
+  if (!candidate.is_mirror_duplicate) {
     return candidate;
   }
 
@@ -88,8 +96,7 @@ export function resolveToolWindowMonitor(
     overlapping.find((m) => m.is_primary) ??
     overlapping.reduce((best, m) =>
       m.width * m.height > best.width * best.height ? m : best,
-    ) ??
-    candidate
+    )
   );
 }
 
@@ -209,12 +216,12 @@ export async function openToolWindow(
   });
 
   await new Promise<void>((resolve, reject) => {
-    void webview.once("tauri://created", () => resolve());
+    void webview.once("tauri://created", () => { resolve(); });
     void webview.once("tauri://error", (event) => {
       reject(
         event.payload instanceof Error
           ? event.payload
-          : new Error(String(event.payload ?? "Failed to create tool window")),
+          : new Error(tauriErrorMessage(event.payload, "Failed to create tool window")),
       );
     });
   });
