@@ -123,9 +123,10 @@ export function buildPianoKeys(
   return { whiteKeys, blackKeys };
 }
 
-export function windowMinMidi(startOctave: number, octaveCount: SynthOctaveCount): number {
+export function windowMinMidi(startOctave: number, _octaveCount: SynthOctaveCount): number {
   // Keep arity aligned with windowMaxMidi; min pitch is always C of startOctave.
-  return noteToMidi("C", startOctave + octaveCount * 0);
+  return noteToMidi("C", startOctave);
+}
 }
 
 export function windowMaxMidi(startOctave: number, octaveCount: SynthOctaveCount): number {
