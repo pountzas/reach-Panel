@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.17.1 (2026-10-20)
+
+## What's Changed
+* refactor: split lib.rs Tauri commands into commands modules by @pountzas in https://github.com/pountzas/reach-Panel/pull/295
+* chore(deps): bump the cargo-minor-and-patch group across 1 directory with 5 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/259
+* chore(deps): bump the npm-minor-and-patch group with 2 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/257
+* chore(deps): bump the cargo-minor-and-patch group in /src-tauri with 4 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/300
+* fix: stop keyboard jumping to full screen on touch after mode switch by @pountzas in https://github.com/pountzas/reach-Panel/pull/307
+* chore: add strict ESLint for React and TypeScript by @pountzas in https://github.com/pountzas/reach-Panel/pull/306
+* chore: align plugin-updater npm with Rust 2.14.0 by @pountzas in https://github.com/pountzas/reach-Panel/pull/308
+* dev → main: fullscreen touch fix, ESLint, commands split, deps by @pountzas in https://github.com/pountzas/reach-Panel/pull/310
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.17.0...v0.17.1
+
 ## 0.17.0 (2026-10-18)
 
 ### Changed
