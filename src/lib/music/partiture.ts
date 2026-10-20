@@ -6,7 +6,7 @@ const TREBLE_TOP_DIATONIC = 5 * 7 + 3; // F5
 /** Bottom staff line is E4 → 8 steps below F5. */
 export const STAFF_STEP_COUNT = 8;
 
-const LETTER_INDEX: Record<string, number> = {
+const LETTER_INDEX: Partial<Record<string, number>> = {
   C: 0,
   D: 1,
   E: 2,
@@ -27,13 +27,13 @@ export type PartitureNoteLayout = {
   duration: PartitureDuration;
   /** Horizontal advance weight (relative). */
   advance: number;
-};
+}
 
 export type PartitureLayout = {
   /** Octave shift applied for display only (+1 = 8va, -1 = 8vb). */
   displayOctaveShift: number;
   notes: PartitureNoteLayout[];
-};
+}
 
 function letterFromNote(note: string): string {
   return note.endsWith("#") ? note.slice(0, -1) : note;
@@ -87,7 +87,7 @@ export function chooseDisplayOctaveShift(pitches: string[]): number {
     .filter((v): v is number => v != null);
   if (indices.length === 0) return 0;
 
-  const median = [...indices].sort((a, b) => a - b)[Math.floor(indices.length / 2)]!;
+  const median = [...indices].sort((a, b) => a - b)[Math.floor(indices.length / 2)];
   // Staff center ≈ B4 (diatonic 4*7+6 = 34)
   const staffCenter = 4 * 7 + 6;
   const delta = median - staffCenter;

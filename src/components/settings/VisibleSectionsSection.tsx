@@ -14,9 +14,6 @@ export function VisibleSectionsSection({ surface }: { surface: SurfaceColors }) 
       updateSettings: s.updateSettings,
     })),
   );
-
-  if (!settings) return null;
-
   return (
     <SettingsSection title={t("settingsVisibleSections")} surface={surface}>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

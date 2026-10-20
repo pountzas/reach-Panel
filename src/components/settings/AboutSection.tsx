@@ -18,7 +18,7 @@ const LINK_BUTTONS: { labelKey: AboutLinkLabelKey; url: string }[] = [
   { labelKey: "aboutEmail", url: APP_INFO.links.email },
 ];
 
-interface AboutSectionProps {
+type AboutSectionProps = {
   surface: SurfaceColors;
 }
 
@@ -29,7 +29,7 @@ export function AboutSection({ surface }: AboutSectionProps) {
   useEffect(() => {
     void getCurrentAppVersion()
       .then(setVersion)
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error("Failed to load app version:", error);
         setVersion("—");
       });
@@ -71,7 +71,7 @@ export function AboutSection({ surface }: AboutSectionProps) {
               type="button"
               className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm"
               style={secondaryButtonStyle}
-              onClick={() => openExternalLink(url)}
+              onClick={() => { openExternalLink(url); }}
             >
               <Icon className="h-4 w-4" />
               {t(labelKey)}

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { AppSettings } from "../../lib/types";
+import { logLayoutIpc } from "../../lib/logIpc";
 import { prefersReducedMotion } from "../../lib/motion";
 import { resolveWindowHeightRatio } from "../../lib/sectionLayouts";
 import { teachingFullWorkAreaActive } from "./teachingVisibility";
@@ -57,8 +58,10 @@ export async function syncWindowLayoutFromSettings(
 ) {
   const args = windowLayoutInvokeArgs(settings, musicTeachingEnabled);
   if (preferAnimate && !settings.collapsed && !prefersReducedMotion()) {
+    logLayoutIpc("cmd_animate_window_layout", args);
     await invoke("cmd_animate_window_layout", args);
   } else {
+    logLayoutIpc("cmd_apply_window_layout", args);
     await invoke("cmd_apply_window_layout", args);
   }
 }

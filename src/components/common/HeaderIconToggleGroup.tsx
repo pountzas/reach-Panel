@@ -5,7 +5,7 @@ export type HeaderIconToggleOption<T extends string = string> = {
   id: T;
   label: string;
   icon: (iconClass: string) => ReactNode;
-};
+}
 
 /**
  * Exclusive icon toggle group for section headers (keyboard view, teaching lesson, …).
@@ -31,7 +31,7 @@ export function HeaderIconToggleGroup<T extends string>({
         <IconActionButton
           key={option.id}
           label={option.label}
-          onClick={() => onChange(option.id)}
+          onClick={() => { onChange(option.id); }}
           pressed={value === option.id}
           size={iconSize}
           tooltipPlacement="below"

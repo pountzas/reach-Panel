@@ -57,7 +57,7 @@ describe("processCharacterInput", () => {
   });
 
   it("continues composing while pending even if greekCompose flag is false", () => {
-    let result = processCharacterInput("", "tonos", "\u03B9", {
+    const result = processCharacterInput("", "tonos", "\u03B9", {
       greekCompose: false,
     });
     expect(result.buffer).toBe("\u03AF");

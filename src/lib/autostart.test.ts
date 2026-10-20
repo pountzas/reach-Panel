@@ -14,10 +14,10 @@ function memoryStorage(): Storage {
     get length() {
       return map.size;
     },
-    clear: () => map.clear(),
-    getItem: (k) => (map.has(k) ? map.get(k)! : null),
+    clear: () => { map.clear(); },
+    getItem: (k) => map.get(k) ?? null,
     setItem: (k, v) => {
-      map.set(k, String(v));
+      map.set(k, v);
     },
     removeItem: (k) => {
       map.delete(k);

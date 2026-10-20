@@ -1,6 +1,5 @@
 import { memo, useCallback, useRef, type ReactNode } from "react";
 import type { KeyRepeatFireMeta } from "../../hooks/useKeyRepeat";
-import type { TransparentKeyColor } from "../../lib/types";
 import { KeyButton } from "./KeyButton";
 
 export type KeyboardKeyPressMeta = KeyRepeatFireMeta;
@@ -20,12 +19,12 @@ type KeyboardKeyProps = {
   ariaLabel?: string;
   stretch?: boolean;
   transparent: boolean;
-  outlineColor?: TransparentKeyColor | string | null;
+  outlineColor?: string | null;
   repeatOnHold?: boolean;
   /** Stable callback; receives keyId so the parent can look up KeyDef. */
   onPressKey: (keyId: string, meta?: KeyboardKeyPressMeta) => void;
   onHoldEndKey?: (keyId: string) => void;
-};
+}
 
 /**
  * Memoized key cell: keeps `onPress`/`onHoldEnd` referentially stable so

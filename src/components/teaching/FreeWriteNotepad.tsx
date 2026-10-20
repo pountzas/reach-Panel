@@ -47,7 +47,7 @@ export function FreeWriteNotepad() {
       gutter.scrollTop = body.scrollTop;
     };
     body.addEventListener("scroll", sync);
-    return () => body.removeEventListener("scroll", sync);
+    return () => { body.removeEventListener("scroll", sync); };
   }, [lineNumbers]);
 
   return (
@@ -59,7 +59,7 @@ export function FreeWriteNotepad() {
         <TeachingLessonToolbarButton
           label={t("freeWriteZoomOut")}
           size="sm"
-          onClick={() => setFreeWriteNotepadZoom(zoom - FREE_WRITE_ZOOM_STEP)}
+          onClick={() => { setFreeWriteNotepadZoom(zoom - FREE_WRITE_ZOOM_STEP); }}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
@@ -72,7 +72,7 @@ export function FreeWriteNotepad() {
         <TeachingLessonToolbarButton
           label={t("freeWriteZoomIn")}
           size="sm"
-          onClick={() => setFreeWriteNotepadZoom(zoom + FREE_WRITE_ZOOM_STEP)}
+          onClick={() => { setFreeWriteNotepadZoom(zoom + FREE_WRITE_ZOOM_STEP); }}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
@@ -82,7 +82,7 @@ export function FreeWriteNotepad() {
         <TeachingLessonToolbarButton
           label={t("freeWriteWordWrap")}
           size="sm"
-          onClick={() => setFreeWriteNotepadWrap(!wrap)}
+          onClick={() => { setFreeWriteNotepadWrap(!wrap); }}
           backgroundColor={wrap ? "#fde68a" : surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
@@ -92,7 +92,7 @@ export function FreeWriteNotepad() {
         <TeachingLessonToolbarButton
           label={t("freeWriteLineNumbers")}
           size="sm"
-          onClick={() => setFreeWriteNotepadLineNumbers(!lineNumbers)}
+          onClick={() => { setFreeWriteNotepadLineNumbers(!lineNumbers); }}
           backgroundColor={lineNumbers ? "#fde68a" : surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
@@ -102,7 +102,7 @@ export function FreeWriteNotepad() {
         <TeachingLessonToolbarButton
           label={t("freeWriteClearAll")}
           size="sm"
-          onClick={() => setClearConfirmOpen(true)}
+          onClick={() => { setClearConfirmOpen(true); }}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
           color={surface.panelText}
@@ -114,7 +114,7 @@ export function FreeWriteNotepad() {
       <div
         className="flex min-h-0 flex-1 overflow-hidden rounded-md border"
         style={{ borderColor: surface.panelBorder, backgroundColor: surface.insetBg }}
-        onPointerDown={() => setFreeWriteFocus("notepad")}
+        onPointerDown={() => { setFreeWriteFocus("notepad"); }}
       >
         {lineNumbers ? (
           <div
@@ -149,8 +149,8 @@ export function FreeWriteNotepad() {
           value={text}
           placeholder={t("freeWriteNotepadEmpty")}
           spellCheck={false}
-          onChange={(e) => setFreeWriteNotepadText(e.target.value)}
-          onFocus={() => setFreeWriteFocus("notepad")}
+          onChange={(e) => { setFreeWriteNotepadText(e.target.value); }}
+          onFocus={() => { setFreeWriteFocus("notepad"); }}
         />
       </div>
 
@@ -163,7 +163,7 @@ export function FreeWriteNotepad() {
           clearFreeWriteNotepad();
           setClearConfirmOpen(false);
         }}
-        onCancel={() => setClearConfirmOpen(false)}
+        onCancel={() => { setClearConfirmOpen(false); }}
         surface={surface}
       />
     </div>

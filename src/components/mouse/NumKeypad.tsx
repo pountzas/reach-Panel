@@ -14,7 +14,7 @@ type NumpadKeyDef = {
   key: string;
   gridColumn: string;
   gridRow: string;
-};
+}
 
 const NUMPAD_KEYS: NumpadKeyDef[] = [
   { label: "/", key: "/", gridColumn: "2", gridRow: "1" },

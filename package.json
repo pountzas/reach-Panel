@@ -14,16 +14,18 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "test": "vitest run",
     "test:blob": "node --test scripts/upload-to-blob.test.mjs scripts/merge-downloads-latest.test.mjs companion/scripts/upload-apk-to-blob.test.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
-    "@tauri-apps/api": "^2.12.2",
+    "@tauri-apps/api": "^2.12.3",
     "@tauri-apps/plugin-autostart": "^2.7.0",
     "@tauri-apps/plugin-opener": "^2.7.1",
     "@tauri-apps/plugin-process": "^2.4.0",
-    "@tauri-apps/plugin-updater": "^2.13.3",
+    "@tauri-apps/plugin-updater": "^2.14.0",
     "@tonejs/midi": "^2.0.28",
     "jszip": "^3.10.2",
     "pdfjs-dist": "^6.4.299",
@@ -38,7 +40,8 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.12.1",
+    "@eslint/js": "^9.39.5",
+    "@tauri-apps/cli": "^2.12.2",
     "@testing-library/react": "^16.3.3",
     "@types/jszip": "^3.4.1",
     "@types/qrcode": "^1.5.6",
@@ -46,8 +49,15 @@
     "@types/react-dom": "^19.3.0",
     "@vercel/blob": "^2.8.1",
     "@vitejs/plugin-react": "^6.1.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
     "jsdom": "^29.1.1",
     "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
     "vite": "^8.3.4",
     "vitest": "^4.1.11"
   }

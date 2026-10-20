@@ -6,7 +6,7 @@ export type StackableSectionId = Exclude<SectionId, "input-row">;
 
 export type SectionVisibilityKey = "teaching";
 
-export interface SectionDefinition {
+export type SectionDefinition = {
   id: SectionId;
   /** Relative height weight when expanded in the docked stack. */
   defaultWeight: number;

@@ -9,7 +9,7 @@ export type TeachingLessonSurface = {
   panelBg: string;
   panelText: string;
   panelMutedText: string;
-};
+}
 
 /** Outer bordered shell with a resizable left/right split for teaching lessons. */
 export function TeachingLessonPanel({

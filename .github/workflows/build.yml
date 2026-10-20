@@ -23,6 +23,9 @@ jobs:
       - name: Typecheck (including tests)
         run: npm run typecheck
 
+      - name: Lint (ESLint strict React/TS)
+        run: npm run lint
+
       - name: Unit tests (vitest)
         run: npm test
 

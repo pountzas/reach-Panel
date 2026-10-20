@@ -35,6 +35,11 @@ vi.mock("./CollapsedFab", () => ({
 
 import { FocusModeShell } from "./FocusModeShell";
 
+function requireEl<T extends Element>(el: T | null, label: string): T {
+  if (!el) throw new Error(`expected ${label}`);
+  return el;
+}
+
 describe("FocusModeShell", () => {
   beforeEach(() => {
     notifyFocusContentAnimDone.mockReset();
@@ -54,14 +59,19 @@ describe("FocusModeShell", () => {
     storeState.focusContentAnim = "idle";
     storeState.isAnimatingWindow = true;
     const { container } = render(<FocusModeShell />);
-    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    const fabLayer = requireEl(
+      container.querySelector("[data-fab-layer]"),
+      "fab layer",
+    );
     expect(fabLayer.classList.contains("hidden")).toBe(true);
     expect(fabLayer.getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByTestId("collapsed-fab")).toBeTruthy();
-    const layer = document.getElementById("focus-keyboard-layer");
-    expect(layer).toBeTruthy();
-    expect(layer!.className.split(/\s+/)).toContain("translate-y-full");
-    expect(layer!.className.split(/\s+/)).not.toContain("translate-y-0");
+    const layer = requireEl(
+      document.getElementById("focus-keyboard-layer"),
+      "keyboard layer",
+    );
+    expect(layer.className.split(/\s+/)).toContain("translate-y-full");
+    expect(layer.className.split(/\s+/)).not.toContain("translate-y-0");
   });
 
   it("keeps FAB mounted but hidden while the keyboard is entering", () => {
@@ -69,7 +79,10 @@ describe("FocusModeShell", () => {
     storeState.focusContentAnim = "enter";
     storeState.isAnimatingWindow = true;
     const { container } = render(<FocusModeShell />);
-    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    const fabLayer = requireEl(
+      container.querySelector("[data-fab-layer]"),
+      "fab layer",
+    );
     expect(fabLayer.classList.contains("hidden")).toBe(true);
     expect(document.getElementById("focus-keyboard-layer")).toBeTruthy();
     expect(screen.getByTestId("keyboard-section")).toBeTruthy();
@@ -80,11 +93,16 @@ describe("FocusModeShell", () => {
     storeState.focusContentAnim = "exit";
     storeState.isAnimatingWindow = true;
     const { container } = render(<FocusModeShell />);
-    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    const fabLayer = requireEl(
+      container.querySelector("[data-fab-layer]"),
+      "fab layer",
+    );
     expect(fabLayer.classList.contains("hidden")).toBe(true);
-    const layer = document.getElementById("focus-keyboard-layer");
-    expect(layer).toBeTruthy();
-    expect(layer!.className.split(/\s+/)).toContain("translate-y-full");
+    const layer = requireEl(
+      document.getElementById("focus-keyboard-layer"),
+      "keyboard layer",
+    );
+    expect(layer.className.split(/\s+/)).toContain("translate-y-full");
   });
 
   it("keeps FAB hidden after exit until the window finishes shrinking", () => {
@@ -92,7 +110,10 @@ describe("FocusModeShell", () => {
     storeState.focusContentAnim = "idle";
     storeState.isAnimatingWindow = true;
     const { container } = render(<FocusModeShell />);
-    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    const fabLayer = requireEl(
+      container.querySelector("[data-fab-layer]"),
+      "fab layer",
+    );
     expect(fabLayer.classList.contains("hidden")).toBe(true);
   });
 
@@ -101,7 +122,10 @@ describe("FocusModeShell", () => {
     storeState.focusContentAnim = "idle";
     storeState.isAnimatingWindow = false;
     const { container } = render(<FocusModeShell />);
-    const fabLayer = container.querySelector("[data-fab-layer]") as HTMLElement;
+    const fabLayer = requireEl(
+      container.querySelector("[data-fab-layer]"),
+      "fab layer",
+    );
     expect(fabLayer.classList.contains("hidden")).toBe(false);
     expect(fabLayer.classList.contains("absolute")).toBe(true);
     expect(screen.getByTestId("collapsed-fab")).toBeTruthy();
@@ -112,13 +136,15 @@ describe("FocusModeShell", () => {
     storeState.focusModeKeyboardVisible = true;
     storeState.focusContentAnim = "enter";
     render(<FocusModeShell />);
-    const layer = document.getElementById("focus-keyboard-layer");
-    expect(layer).toBeTruthy();
+    const layer = requireEl(
+      document.getElementById("focus-keyboard-layer"),
+      "keyboard layer",
+    );
     fireEvent.transitionEnd(screen.getByTestId("keyboard-section"), {
       propertyName: "transform",
     });
     expect(notifyFocusContentAnimDone).not.toHaveBeenCalled();
-    fireEvent.transitionEnd(layer!, { propertyName: "transform" });
+    fireEvent.transitionEnd(layer, { propertyName: "transform" });
     expect(notifyFocusContentAnimDone).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
@@ -128,11 +154,13 @@ describe("FocusModeShell", () => {
     storeState.focusModeKeyboardVisible = true;
     storeState.focusContentAnim = "enter";
     render(<FocusModeShell />);
-    const layer = document.getElementById("focus-keyboard-layer");
-    expect(layer).toBeTruthy();
-    fireEvent.transitionEnd(layer!, { propertyName: "opacity" });
-    fireEvent.transitionEnd(layer!, { propertyName: "transform" });
-    fireEvent.transitionEnd(layer!, { propertyName: "transform" });
+    const layer = requireEl(
+      document.getElementById("focus-keyboard-layer"),
+      "keyboard layer",
+    );
+    fireEvent.transitionEnd(layer, { propertyName: "opacity" });
+    fireEvent.transitionEnd(layer, { propertyName: "transform" });
+    fireEvent.transitionEnd(layer, { propertyName: "transform" });
     vi.advanceTimersByTime(MOTION.focusKeyboard + 80);
     expect(notifyFocusContentAnimDone).toHaveBeenCalledTimes(1);
     vi.useRealTimers();

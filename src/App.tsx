@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ReactElement } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -34,7 +34,7 @@ import {
   type CompanionUiState,
 } from "./lib/companionSession";
 import { reconcileAutostartOnLoad } from "./lib/autostart";
-import { logIpc } from "./lib/logIpc";
+import { logIpc, logLayoutIpc } from "./lib/logIpc";
 import {
   isTeachingFullWorkArea,
 } from "./lib/v1HiddenFeatures";
@@ -60,24 +60,25 @@ function MainApp() {
 
   useEffect(() => {
     let cancelled = false;
+    const isCancelled = () => cancelled;
     let pollId: number | null = null;
     const init = async () => {
       try {
         await loadProfileFiles();
-        if (cancelled) return;
+        if (isCancelled()) return;
         await loadImportedSongs();
         await loadCustomLanguagePacks();
         await loadMonitors();
-        if (cancelled) return;
+        if (isCancelled()) return;
         await useAppStore.getState().refreshFocusModeState({ animate: false });
-        if (cancelled) return;
+        if (isCancelled()) return;
         if (!useAppStore.getState().focusModeActive) {
           const { settings, musicTeachingEnabled } = useAppStore.getState();
           const fullWorkArea = isTeachingFullWorkArea({
             musicTeachingEnabled,
             keyboardSectionMode: settings.keyboardSectionMode,
           });
-          await invoke("cmd_apply_window_layout", {
+          const bootLayoutArgs = {
             monitorId: settings.accessibilityMonitorId,
             collapsed: settings.collapsed,
             collapsedDictation: false,
@@ -85,7 +86,9 @@ function MainApp() {
               teachingFullWorkArea: fullWorkArea,
             }),
             fullWorkArea,
-          });
+          };
+          logLayoutIpc("cmd_apply_window_layout", bootLayoutArgs);
+          await invoke("cmd_apply_window_layout", bootLayoutArgs);
         }
         await loadKeyboardLayout();
         await loadInputMethods();
@@ -94,22 +97,23 @@ function MainApp() {
         await invoke("cmd_set_always_on_top", { enabled: true });
         await invoke("cmd_set_window_focusable", { focusable: false });
         void checkForUpdates();
-        void reconcileAutostartOnLoad().catch((error) => {
+        void reconcileAutostartOnLoad().catch((error: unknown) => {
           console.warn("autostart reconcile failed", error);
         });
         await refreshSttCapability();
       } catch (error) {
-        if (!cancelled) {
+        if (!isCancelled()) {
           setLastError(error instanceof Error ? error.message : String(error));
         }
       } finally {
-        if (cancelled) return;
-        // Start polling even if earlier setup steps failed so keyboard state
-        // stays fresh; profile hydration errors are surfaced via setLastError.
-        pollId = window.setInterval(() => {
-          if (document.hidden) return;
-          void pollKeyboardState();
-        }, KEYBOARD_POLL_MS);
+        if (!isCancelled()) {
+          // Start polling even if earlier setup steps failed so keyboard state
+          // stays fresh; profile hydration errors are surfaced via setLastError.
+          pollId = window.setInterval(() => {
+            if (document.hidden) return;
+            void pollKeyboardState();
+          }, KEYBOARD_POLL_MS);
+        }
       }
     };
     void init();
@@ -134,7 +138,21 @@ function MainApp() {
   useEffect(() => {
     // Touch↔mouse layout switch (store debounces rapid alternating pointerdowns).
     const onPointerDown = (event: PointerEvent) => {
-      useAppStore.getState().handlePointerInputEvent(event.pointerType);
+      if (import.meta.env.DEV) {
+        console.debug(
+          "pd",
+          event.pointerType,
+          event.pointerId,
+          event.isPrimary,
+          event.button,
+          Math.round(performance.now()),
+        );
+      }
+      useAppStore.getState().handlePointerInputEvent({
+        pointerType: event.pointerType,
+        isPrimary: event.isPrimary,
+        button: event.button,
+      });
     };
     window.addEventListener("pointerdown", onPointerDown, { capture: true });
     return () => {
@@ -143,7 +161,7 @@ function MainApp() {
   }, []);
 
   useEffect(() => {
-    const unlisteners: Array<Promise<() => void>> = [];
+    const unlisteners: Promise<() => void>[] = [];
 
     unlisteners.push(
       listen<{ state: "idle" | "listening" | "processing" }>("stt-state", (event) => {
@@ -178,7 +196,7 @@ function MainApp() {
 
     unlisteners.push(
       listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
-        if (event.payload?.source === WebviewWindow.getCurrent().label) return;
+        if (event.payload.source === WebviewWindow.getCurrent().label) return;
         void useAppStore.getState().loadProfileFiles();
       }),
     );
@@ -223,15 +241,10 @@ function MainApp() {
       listen<ToolWindowRequest>(TOOL_WINDOW_REQUEST_EVENT, (event) => {
         const { label, show } = event.payload;
         const store = useAppStore.getState();
-        switch (label) {
-          case "settings":
-            store.setShowSettings(show);
-            break;
-          default: {
-            const _exhaustive: never = label;
-            return _exhaustive;
-          }
-        }
+        const applyShow: Record<ToolWindowLabel, (next: boolean) => void> = {
+          settings: (next) => { store.setShowSettings(next); },
+        };
+        applyShow[label](show);
       }),
     );
 
@@ -269,7 +282,7 @@ function MainApp() {
       {pendingUpdate && (
         <UpdatePrompt
           update={pendingUpdate}
-          onDismiss={() => setPendingUpdate(null)}
+          onDismiss={() => { setPendingUpdate(null); }}
         />
       )}
       <AppToaster />
@@ -296,7 +309,7 @@ function ToolApp({ label }: { label: ToolWindowLabel }) {
   useEffect(() => {
     const unlisteners = [
       listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
-        if (event.payload?.source === WebviewWindow.getCurrent().label) return;
+        if (event.payload.source === WebviewWindow.getCurrent().label) return;
         void useAppStore.getState().loadProfileFiles();
       }),
       listen<TeachingSessionPayload>(TEACHING_SESSION_EVENT, (event) => {
@@ -310,20 +323,13 @@ function ToolApp({ label }: { label: ToolWindowLabel }) {
     };
   }, []);
 
-  let panel;
-  switch (label) {
-    case "settings":
-      panel = <SettingsPanel />;
-      break;
-    default: {
-      const _exhaustive: never = label;
-      return _exhaustive;
-    }
-  }
+  const panels = {
+    settings: <SettingsPanel />,
+  } satisfies Record<ToolWindowLabel, ReactElement>;
 
   return (
     <>
-      {panel}
+      {panels[label]}
       <AppToaster />
     </>
   );

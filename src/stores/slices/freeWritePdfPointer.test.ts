@@ -157,7 +157,7 @@ describe("freeWrite PDF pointer tool", () => {
 
     const state = useAppStore.getState();
     expect(state.freeWriteActivePdfId).toBe("pdf-1");
-    expect(state.freeWriteAnnotationDoc.pages["1"]?.strokes[0]?.id).toBe("s1");
+    expect(state.freeWriteAnnotationDoc.pages["1"].strokes[0].id).toBe("s1");
     expect(state.freeWriteAnnotationDirty).toBe(true);
   });
 
@@ -190,7 +190,7 @@ describe("freeWrite PDF pointer tool", () => {
     useAppStore.getState().freeWriteNotepadInput("\u03B1");
 
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]!.texts[0]!.body,
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts[0].body,
     ).toBe("\u03AC");
     expect(useAppStore.getState().greekPendingAccent).toBeNull();
   });

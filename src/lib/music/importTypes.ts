@@ -11,14 +11,14 @@ export type MusicTrackCandidate = {
   id: string;
   label: string;
   notes: MusicNoteEvent[];
-};
+}
 
 export type ParsedMusicImport = {
   title: string;
   composer?: string;
   tempoBpm: number;
   tracks: MusicTrackCandidate[];
-};
+}
 
 const PITCH_RE = /^[A-G]#?\d+$/;
 
@@ -35,10 +35,10 @@ export function normalizeBeats(beats: number): number | null {
 /** Collapse simultaneous pitches to the highest one for monophonic teaching. */
 export function flattenChordToTop(pitches: string[]): string | null {
   if (pitches.length === 0) return null;
-  let best = pitches[0]!;
+  let best = pitches[0];
   let bestMidi = noteIdToMidi(best) ?? -1;
   for (let i = 1; i < pitches.length; i++) {
-    const pitch = pitches[i]!;
+    const pitch = pitches[i];
     const midi = noteIdToMidi(pitch);
     if (midi == null) continue;
     if (midi > bestMidi) {
@@ -54,38 +54,39 @@ export function flattenChordToTop(pitches: string[]): string | null {
  * Spacing until the next onset (including rests) becomes each note's `beats`.
  */
 export function onsetsToNoteEvents(
-  events: Array<{ onsetBeats: number; durationBeats: number; pitch: string }>,
+  events: { onsetBeats: number; durationBeats: number; pitch: string }[],
 ): MusicNoteEvent[] {
   if (events.length === 0) return [];
   const sorted = [...events].sort((a, b) => a.onsetBeats - b.onsetBeats);
 
-  const groups: Array<{ onset: number; pitches: string[]; duration: number }> = [];
+  const groups: { onset: number; pitches: string[]; duration: number }[] = [];
   for (const event of sorted) {
     if (!isValidPitch(event.pitch)) continue;
-    const last = groups[groups.length - 1];
-    if (last && Math.abs(last.onset - event.onsetBeats) < 1e-4) {
-      last.pitches.push(event.pitch);
-      last.duration = Math.max(last.duration, event.durationBeats);
-    } else {
-      groups.push({
-        onset: event.onsetBeats,
-        pitches: [event.pitch],
-        duration: event.durationBeats,
-      });
+    if (groups.length > 0) {
+      const last = groups[groups.length - 1];
+      if (Math.abs(last.onset - event.onsetBeats) < 1e-4) {
+        last.pitches.push(event.pitch);
+        last.duration = Math.max(last.duration, event.durationBeats);
+        continue;
+      }
     }
+    groups.push({
+      onset: event.onsetBeats,
+      pitches: [event.pitch],
+      duration: event.durationBeats,
+    });
   }
 
   const notes: MusicNoteEvent[] = [];
   for (let i = 0; i < groups.length; i++) {
-    const group = groups[i]!;
+    const group = groups[i];
     const pitch = flattenChordToTop(group.pitches);
     if (!pitch) continue;
-    const nextOnset = groups[i + 1]?.onset;
     // Keep onset-to-onset spacing so fast MIDI (e.g. allegro 16ths) retains
     // its tempo. Sound length is handled at playback time with a minimum.
     const slot =
-      nextOnset != null
-        ? Math.max(1e-4, nextOnset - group.onset)
+      i + 1 < groups.length
+        ? Math.max(1e-4, groups[i + 1].onset - group.onset)
         : Math.max(group.duration, 0.05);
     const beats = normalizeBeats(slot);
     if (beats == null) continue;
@@ -120,11 +121,14 @@ export function buildImportedSong(options: {
   sourcePath?: string;
 }): ImportedMusicSong {
   const id = `imported-${options.baseId}-${Date.now().toString(36)}`;
+  const title = options.title.trim();
+  const composer = options.composer?.trim();
+  const roundedTempo = Math.round(options.tempoBpm);
   return {
     id,
-    title: options.title.trim() || "Imported song",
-    composer: options.composer?.trim() || undefined,
-    tempoBpm: Math.max(30, Math.min(300, Math.round(options.tempoBpm) || 120)),
+    title: title.length > 0 ? title : "Imported song",
+    composer: composer != null && composer.length > 0 ? composer : undefined,
+    tempoBpm: Math.max(30, Math.min(300, roundedTempo > 0 ? roundedTempo : 120)),
     notes: options.notes,
     source: "imported",
     sourcePath: options.sourcePath,

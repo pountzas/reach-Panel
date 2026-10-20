@@ -11,7 +11,7 @@ import { modeToggleSegmentPosition } from "../../lib/buttonClasses";
 import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { useTranslation } from "../../hooks/useTranslation";
 
-interface PianoRangeControlProps {
+type PianoRangeControlProps = {
   octaveCount: number | undefined;
   startOctave: number | undefined;
   onOctaveCountChange: (count: SynthOctaveCount) => void;
@@ -41,7 +41,7 @@ export function PianoRangeControl({
           active={false}
           position="first"
           label={t("shiftPianoLower")}
-          onClick={() => onStartOctaveChange(startOctave - 1)}
+          onClick={() => { onStartOctaveChange(startOctave - 1); }}
           disabled={!canShiftDown}
         >
           <span className="text-xs font-semibold">◀</span>
@@ -65,7 +65,7 @@ export function PianoRangeControl({
           active={false}
           position="last"
           label={t("shiftPianoHigher")}
-          onClick={() => onStartOctaveChange(startOctave + 1)}
+          onClick={() => { onStartOctaveChange(startOctave + 1); }}
           disabled={!canShiftUp}
         >
           <span className="text-xs font-semibold">▶</span>
@@ -79,7 +79,7 @@ export function PianoRangeControl({
             active={octaveCount === level}
             position={modeToggleSegmentPosition(index, SYNTH_OCTAVE_COUNTS.length)}
             label={`${level} ${t("octavesShort")}`}
-            onClick={() => onOctaveCountChange(level)}
+            onClick={() => { onOctaveCountChange(level); }}
           >
             <span className="text-xs font-semibold tabular-nums">{level}</span>
           </ModeToggleButton>

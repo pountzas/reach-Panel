@@ -84,11 +84,11 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
 
     const afterAdd = useAppStore.getState().freeWriteAnnotationDoc;
     expect(afterAdd.pages["2"]).toBe(otherPage);
-    expect(afterAdd.pages["1"]?.strokes[0]?.id).toBe("s1");
+    expect(afterAdd.pages["1"].strokes[0].id).toBe("s1");
 
     useAppStore.getState().undoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.strokes ?? [],
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes,
     ).toEqual([]);
     expect(useAppStore.getState().freeWriteAnnotationDoc.pages["2"]).toBe(
       otherPage,
@@ -96,7 +96,7 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
 
     useAppStore.getState().redoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.strokes[0]?.id,
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes[0].id,
     ).toBe("s1");
   });
 
@@ -126,21 +126,21 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
       },
     );
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.strokes.map(
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes.map(
         (s) => s.id,
       ),
     ).toEqual(["b"]);
 
     useAppStore.getState().undoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.strokes.map(
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes.map(
         (s) => s.id,
       ),
     ).toEqual(["a", "b"]);
 
     useAppStore.getState().redoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.strokes.map(
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes.map(
         (s) => s.id,
       ),
     ).toEqual(["b"]);
@@ -159,7 +159,7 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
       { change: { kind: "addText", pageKey: "1", box } },
     );
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.texts[0]?.id,
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts[0].id,
     ).toBe("t1");
 
     useAppStore.getState().applyFreeWriteAnnotationUpdater(
@@ -175,23 +175,23 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
       },
     );
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.texts[0],
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts[0],
     ).toMatchObject({ x: 0.5, y: 0.6 });
 
     useAppStore.getState().undoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.texts[0],
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts[0],
     ).toMatchObject({ x: 0.1, y: 0.2 });
 
     useAppStore.getState().undoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.texts ?? [],
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts,
     ).toEqual([]);
 
     useAppStore.getState().redoFreeWriteAnnotation();
     useAppStore.getState().redoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.texts[0],
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts[0],
     ).toMatchObject({ id: "t1", x: 0.5, y: 0.6 });
   });
 
@@ -230,15 +230,15 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
     expect(useAppStore.getState().freeWriteUndoDepth).toBe(3);
     useAppStore.getState().undoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.texts ?? [],
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts,
     ).toEqual([]);
     useAppStore.getState().undoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.strokes[0]?.id,
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes[0].id,
     ).toBe("s1");
     useAppStore.getState().undoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]?.strokes ?? [],
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes,
     ).toEqual([]);
   });
 

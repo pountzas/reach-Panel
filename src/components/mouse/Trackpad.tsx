@@ -53,7 +53,7 @@ function computeButtonMetrics(containerWidth: number, compact: boolean) {
   return { iconSize, paddingY, gap };
 }
 
-interface TrackpadButtonProps {
+type TrackpadButtonProps = {
   label: string;
   icon: ComponentType<{ className?: string }>;
   iconSize: number;
@@ -125,7 +125,7 @@ export function Trackpad() {
   const surface = getSurfaceColors(settings.appBgColor);
 
   const speed =
-    (SPEED_MAP[resolveMouseSpeed(settings.mouseSpeed)] ?? 1) *
+    SPEED_MAP[resolveMouseSpeed(settings.mouseSpeed)] *
     (precision ? 0.4 : 1) *
     (settings.mouseCustomSpeed ?? 1);
 
@@ -225,7 +225,7 @@ export function Trackpad() {
         }
         gestureReady.current = true;
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         logIpc("cmd_trackpad_gesture_begin")(error);
         if (gestureGen.current === gen) {
           dragging.current = false;
@@ -257,9 +257,7 @@ export function Trackpad() {
     if (!gestureReady.current || (dx === 0 && dy === 0)) return;
     pendingDelta.current.dx += dx;
     pendingDelta.current.dy += dy;
-    if (rafId.current === null) {
-      rafId.current = requestAnimationFrame(flushPendingMove);
-    }
+    rafId.current ??= requestAnimationFrame(flushPendingMove);
   };
 
   const handleTap = () => {
@@ -309,7 +307,7 @@ export function Trackpad() {
             setLastError(failure);
           }
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           logIpc("cmd_trackpad_gesture_end")(error);
           setLastError(error instanceof Error ? error.message : String(error));
         })
@@ -418,14 +416,14 @@ export function Trackpad() {
               icon={DragLockIcon}
               {...buttonProps}
               active={dragLock}
-              onClick={() => setDragLock(!dragLock)}
+              onClick={() => { setDragLock(!dragLock); }}
             />
             <TrackpadButton
               label="Precision mode"
               icon={PrecisionIcon}
               {...buttonProps}
               active={precision}
-              onClick={() => setPrecision(!precision)}
+              onClick={() => { setPrecision(!precision); }}
             />
             <TrackpadButton
               label="Scroll"

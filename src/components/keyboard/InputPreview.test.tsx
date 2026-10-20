@@ -44,9 +44,7 @@ describe("InputPreview blank placeholder", () => {
 
   it("keeps a fixed frame size when unfocused so the layout does not shrink", () => {
     const { unmount } = render(<InputPreview />);
-    const blank = screen.getByLabelText(
-      "No text field selected",
-    ) as HTMLElement;
+    const blank = screen.getByLabelText("No text field selected");
     expect(blank.style.width).toBe("320px");
     expect(blank.style.height).toBe("48px");
     unmount();
@@ -54,7 +52,7 @@ describe("InputPreview blank placeholder", () => {
     storeState.externalInputFocused = true;
     storeState.inputPreviewFrame = "data:image/jpeg;base64,abc";
     render(<InputPreview />);
-    const live = screen.getByLabelText("Target input") as HTMLElement;
+    const live = screen.getByLabelText("Target input");
     expect(live.style.width).toBe("320px");
     expect(live.style.height).toBe("48px");
   });

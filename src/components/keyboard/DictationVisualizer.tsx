@@ -10,7 +10,7 @@ const GRAPH_WIDTH = 112;
 const MIN_BAR = 3;
 const MAX_BAR = 22;
 
-interface DictationVisualizerProps {
+type DictationVisualizerProps = {
   active: boolean;
   /** When false, animate idle bars only — do not open a second mic stream (needed for Groq/cpal). */
   captureAudio?: boolean;
@@ -69,7 +69,7 @@ export function DictationVisualizer({
         rafRef.current = null;
       }
       if (audioRef.current) {
-        audioRef.current.stream.getTracks().forEach((track) => track.stop());
+        audioRef.current.stream.getTracks().forEach((track) => { track.stop(); });
         void audioRef.current.context.close();
         audioRef.current = null;
       }
@@ -83,7 +83,7 @@ export function DictationVisualizer({
         rafRef.current = null;
       }
       if (audioRef.current) {
-        audioRef.current.stream.getTracks().forEach((track) => track.stop());
+        audioRef.current.stream.getTracks().forEach((track) => { track.stop(); });
         void audioRef.current.context.close();
         audioRef.current = null;
       }
@@ -127,7 +127,7 @@ export function DictationVisualizer({
           video: false,
         });
         if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
+          stream.getTracks().forEach((track) => { track.stop(); });
           return;
         }
 
@@ -149,8 +149,8 @@ export function DictationVisualizer({
           node.getByteFrequencyData(freq);
 
           let sum = 0;
-          for (let i = 0; i < time.length; i++) {
-            const v = (time[i] - 128) / 128;
+          for (const sample of time) {
+            const v = (sample - 128) / 128;
             sum += v * v;
           }
           const rms = Math.sqrt(sum / time.length);
@@ -198,7 +198,7 @@ export function DictationVisualizer({
         rafRef.current = null;
       }
       if (audioRef.current) {
-        audioRef.current.stream.getTracks().forEach((track) => track.stop());
+        audioRef.current.stream.getTracks().forEach((track) => { track.stop(); });
         void audioRef.current.context.close();
         audioRef.current = null;
       }

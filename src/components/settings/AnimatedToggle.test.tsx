@@ -62,7 +62,8 @@ describe("AnimatedToggle", () => {
     const darkThumb = darkSwitch.querySelector("span");
     expect(darkSwitch.style.backgroundColor).toBe(hexToRgb(dark.panelText));
     expect(darkThumb).not.toBeNull();
-    expect(darkThumb!.style.backgroundColor).toBe(hexToRgb(dark.panelBg));
+    if (!darkThumb) throw new Error("expected dark thumb");
+    expect(darkThumb.style.backgroundColor).toBe(hexToRgb(dark.panelBg));
 
     rerender(
       <AnimatedToggle
@@ -76,6 +77,7 @@ describe("AnimatedToggle", () => {
     const lightThumb = lightSwitch.querySelector("span");
     expect(lightSwitch.style.backgroundColor).toBe(hexToRgb(light.panelText));
     expect(lightThumb).not.toBeNull();
-    expect(lightThumb!.style.backgroundColor).toBe(hexToRgb(light.panelBg));
+    if (!lightThumb) throw new Error("expected light thumb");
+    expect(lightThumb.style.backgroundColor).toBe(hexToRgb(light.panelBg));
   });
 });

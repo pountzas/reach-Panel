@@ -23,9 +23,9 @@ export function subscribePrefersReducedMotion(
     return () => {};
   }
   const media = window.matchMedia(REDUCED_MOTION_QUERY);
-  const handler = () => onChange(media.matches);
+  const handler = () => { onChange(media.matches); };
   media.addEventListener("change", handler);
-  return () => media.removeEventListener("change", handler);
+  return () => { media.removeEventListener("change", handler); };
 }
 
 /**
@@ -39,7 +39,7 @@ export function afterNextPaint(): Promise<void> {
   }
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => resolve());
+      requestAnimationFrame(() => { resolve(); });
     });
   });
 }

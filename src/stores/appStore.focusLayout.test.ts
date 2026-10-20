@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS } from "../lib/types";
 
 const mockState = vi.hoisted(() => ({
   calls: [] as string[],
-  applyArgs: [] as Array<Record<string, unknown>>,
+  applyArgs: [] as Record<string, unknown>[],
   applyGate: null as Promise<void> | null,
   inputFocusHandler: null as
     | ((event: { payload: { focused: boolean } }) => void)
@@ -28,9 +28,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn((event: string, handler: (event: unknown) => void) => {
     if (event === "input-focus-changed") {
-      mockState.inputFocusHandler = handler as (event: {
-        payload: { focused: boolean };
-      }) => void;
+      mockState.inputFocusHandler = handler;
     }
     return Promise.resolve(() => {});
   }),
@@ -217,13 +215,17 @@ describe("focus mode window layout", () => {
       focusModeSuppressAutoShow: false,
     });
     // Focus-lost collapse (continueHeld) — not collapseFocusModeKeyboard (suppress).
-    mockState.inputFocusHandler!({ payload: { focused: false } });
+    const inputFocusHandler = mockState.inputFocusHandler;
+    if (inputFocusHandler == null) {
+      throw new Error("expected input-focus-changed handler");
+    }
+    inputFocusHandler({ payload: { focused: false } });
     await vi.waitFor(() => {
       expect(useAppStore.getState().focusContentAnim).toBe("exit");
     });
     expect(mockState.applyArgs).toHaveLength(0);
 
-    mockState.inputFocusHandler!({ payload: { focused: true } });
+    inputFocusHandler({ payload: { focused: true } });
     expect(useAppStore.getState().focusModeKeyboardVisible).toBe(true);
 
     notifyFocusContentAnimDone();

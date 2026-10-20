@@ -12,12 +12,20 @@ import {
   freeWriteModeFromState,
 } from "../storeShared";
 import { invoke } from "@tauri-apps/api/core";
+import { logLayoutIpc } from "../../lib/logIpc";
 import { checkForUpdate, formatUpdateCheckError } from "../../lib/updater";
 import { prefersReducedMotion } from "../../lib/motion";
 import { clampWindowHeightRatio } from "../../lib/sectionLayouts";
 import { shouldApplyLiveWindowHeightRatio } from "../../lib/windowHeightDrag";
 import { isLanguageLessonCaptureActive } from "../../lib/language";
 import { isFreeWriteCaptureActive } from "../../lib/teaching";
+
+/** Read+clear queued live height; typed widen so post-await races stay checkable. */
+function takeLiveHeightRatioPending(): number | null {
+  const value: number | null = storeFlags.liveHeightRatioPending;
+  storeFlags.liveHeightRatioPending = null;
+  return value;
+}
 
 export const createWindowSlice: StateCreator<
   AppStore,
@@ -61,8 +69,7 @@ export const createWindowSlice: StateCreator<
       });
     });
 
-    const pending = storeFlags.liveHeightRatioPending;
-    storeFlags.liveHeightRatioPending = null;
+    const pending = takeLiveHeightRatioPending();
     if (pending === null) return;
     if (
       storeFlags.liveHeightRatioPreview !== null &&
@@ -86,7 +93,7 @@ export const createWindowSlice: StateCreator<
     storeFlags.liveHeightRatioInFlight = true;
     try {
       const focus = latestState.focusModeActive;
-      await invoke("cmd_apply_window_layout", {
+      const liveArgs = {
         monitorId: latest.accessibilityMonitorId,
         collapsed: false,
         collapsedDictation: false,
@@ -95,7 +102,9 @@ export const createWindowSlice: StateCreator<
         focusKeyboardVisible: focus ? latestState.focusModeKeyboardVisible : false,
         focusKeyboardHeightRatio: focus ? pending : undefined,
         fullWorkArea: teachingFullWorkAreaActive(latest, musicTeachingEnabled),
-      });
+      };
+      logLayoutIpc("cmd_apply_window_layout", liveArgs);
+      await invoke("cmd_apply_window_layout", liveArgs);
     } catch {
       // Rejected ratio must not block near-equal retries.
       if (storeFlags.liveHeightRatioPreview === pending) {
@@ -104,9 +113,8 @@ export const createWindowSlice: StateCreator<
     } finally {
       storeFlags.liveHeightRatioInFlight = false;
       // Flush any ratio queued while the previous invoke was in flight.
-      if (storeFlags.liveHeightRatioPending !== null) {
-        const queued = storeFlags.liveHeightRatioPending;
-        storeFlags.liveHeightRatioPending = null;
+      const queued = takeLiveHeightRatioPending();
+      if (queued !== null) {
         void get().applyWindowHeightRatioLive(queued);
       }
     }
@@ -156,12 +164,11 @@ export const createWindowSlice: StateCreator<
             get().musicTeachingEnabled,
           ),
         };
-        await invoke(
-          prefersReducedMotion()
-            ? "cmd_apply_window_layout"
-            : "cmd_animate_window_layout",
-          collapseArgs,
-        );
+        const collapseCmd = prefersReducedMotion()
+          ? "cmd_apply_window_layout"
+          : "cmd_animate_window_layout";
+        logLayoutIpc(collapseCmd, collapseArgs);
+        await invoke(collapseCmd, collapseArgs);
       } else {
         const expandArgs = {
           monitorId: settings.accessibilityMonitorId,
@@ -176,12 +183,11 @@ export const createWindowSlice: StateCreator<
             get().musicTeachingEnabled,
           ),
         };
-        await invoke(
-          prefersReducedMotion()
-            ? "cmd_apply_window_layout"
-            : "cmd_animate_window_layout",
-          expandArgs,
-        );
+        const expandCmd = prefersReducedMotion()
+          ? "cmd_apply_window_layout"
+          : "cmd_animate_window_layout";
+        logLayoutIpc(expandCmd, expandArgs);
+        await invoke(expandCmd, expandArgs);
         if (get().settingsEpoch !== epoch) {
           return;
         }

@@ -9,13 +9,13 @@ export type TeachingChromeVisibilityInput = {
   companionSessionLive: boolean;
   languageLessonActive: boolean;
   focusModeActive: boolean;
-};
+}
 
 export type TeachingChromeVisibility = {
   showInputPreview: boolean;
   showSuggestions: boolean;
   dictationKeyVisible: boolean;
-};
+}
 
 export function teachingInputHelpersEnabled(
   settings: Pick<AppSettings, "showTeachingInputHelpers">,

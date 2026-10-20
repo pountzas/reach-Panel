@@ -46,8 +46,9 @@ export function filterAndRemapAnnotations(
     out.originalPathHint = doc.originalPathHint;
   }
   for (let p = from; p <= to; p += 1) {
-    const source = doc.pages[String(p)];
-    if (!source) continue;
+    const key = String(p);
+    if (!Object.prototype.hasOwnProperty.call(doc.pages, key)) continue;
+    const source = doc.pages[key];
     const remapped = clonePdfAnnotationDoc({
       schemaVersion: 1,
       pages: { "1": source },

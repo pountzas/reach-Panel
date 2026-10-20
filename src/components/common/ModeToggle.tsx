@@ -7,7 +7,7 @@ import {
 } from "../../lib/buttonClasses";
 import { HoverTooltip, type HoverTooltipAlign, type HoverTooltipPlacement } from "./HoverTooltip";
 
-interface ModeToggleButtonProps {
+type ModeToggleButtonProps = {
   active: boolean;
   position: ModeTogglePosition;
   label: string;
@@ -50,7 +50,7 @@ export function ModeToggleButton({
   );
 }
 
-interface ModeToggleGroupProps {
+type ModeToggleGroupProps = {
   children: ReactNode;
   transparentUi?: boolean;
   /** Outer frame color when transparentUi is on (defaults to white). */

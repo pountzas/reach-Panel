@@ -19,11 +19,11 @@ type WindowHeightDragRef = {
   scale: number;
   active: boolean;
   pointerType: string;
-};
+}
 
 type WindowHeightDragHandlers = {
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
-};
+}
 
 /**
  * Window-height drag for dedicated grip handles (full header + mini toolbar).
@@ -126,11 +126,11 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
     event.preventDefault();
     event.stopPropagation();
 
+    if (monitors.length === 0) return;
     const monitor =
       monitors.find((m) => m.id === settings.accessibilityMonitorId) ??
       monitors.find((m) => m.is_primary) ??
       monitors[0];
-    if (!monitor) return;
 
     stopPoll();
 

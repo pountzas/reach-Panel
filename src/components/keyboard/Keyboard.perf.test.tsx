@@ -129,17 +129,17 @@ describe("Keyboard sticky-typing profiler (#281)", () => {
     // Prefer letter keys that are not special-labeled.
     const letterButtons = screen
       .getAllByRole("button")
-      .filter((b) => /^[A-Za-z]$/.test(b.textContent?.trim() ?? ""));
+      .filter((b) => /^[A-Za-z]$/.test(b.textContent.trim()));
     expect(letterButtons.length).toBeGreaterThanOrEqual(STROKES);
 
     for (let i = 0; i < STROKES; i += 1) {
-      const btn = letterButtons[i % letterButtons.length]!;
+      const btn = letterButtons[i % letterButtons.length];
       await act(async () => {
         fireEvent.click(btn);
       });
     }
 
-    // eslint-disable-next-line no-console
+     
     console.log(
       JSON.stringify({
         scenario: "real-keyboard-sticky-typing-20",

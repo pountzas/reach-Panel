@@ -1,4 +1,5 @@
 import type { TranslationKey } from "../i18n";
+import { stripFullscreenHeightFromLayoutSnapshots } from "./layoutProfiles";
 import type { AppSettings, KeyboardSectionMode } from "./types";
 
 /** Captured before Teaching; `"unset"` means the ratio was previously undefined. */
@@ -59,12 +60,14 @@ export function hydrateKeyboardSectionMode(
   return coercePersistedKeyboardSectionMode(persistedMode, false);
 }
 
-/** Strip session Teaching chrome before writing settings JSON. */
+/** Strip session Teaching chrome and stale fullscreen heights before writing settings JSON. */
 export function settingsForPersist(settings: AppSettings): AppSettings {
-  if (settings.keyboardSectionMode !== "synthesizer") {
-    return settings;
+  const withoutFullscreenHeight =
+    stripFullscreenHeightFromLayoutSnapshots(settings);
+  if (withoutFullscreenHeight.keyboardSectionMode !== "synthesizer") {
+    return withoutFullscreenHeight;
   }
-  return { ...settings, keyboardSectionMode: "keyboard" };
+  return { ...withoutFullscreenHeight, keyboardSectionMode: "keyboard" };
 }
 
 /** Settings/tool windows must not own Teaching; the main webview hosts the lesson slot. */
@@ -87,16 +90,16 @@ export type AppModeRequest = {
   mode: "normal" | "focus" | "mic" | "teaching" | "companion";
   /** Idle restore already left companion; do not stop the bridge again. */
   skipCompanionBridgeStop?: boolean;
-};
+}
 export type AppModeTablet = "normal" | "focus" | "mic" | "teaching" | "companion";
 export type HostAppMode = "normal" | "focus" | "mic" | "teaching";
 export type CompanionSessionPhase = "idle" | "active" | "reconnecting";
-export type TeachingLessonRequest = { lesson: "music" | "math" | "language" };
+export type TeachingLessonRequest = { lesson: "music" | "math" | "language" }
 export type TeachingSessionPayload = {
   musicTeachingEnabled: boolean;
   teachingLesson: "music" | "math" | "language";
   keyboardSectionMode: KeyboardSectionMode;
-};
+}
 
 /** Shared mode tablet list for Settings and the collapsed FAB mode menu. */
 export const APP_MODE_OPTIONS = [

@@ -10,6 +10,14 @@ import {
 export const DICTATION_OVERLAY_LABEL = "dictation-overlay";
 export const DICTATION_OVERLAY_SIZE = { width: 300, height: 76 } as const;
 
+function tauriErrorMessage(payload: unknown, fallback: string): string {
+  if (typeof payload === "string") return payload;
+  if (typeof payload === "number" || typeof payload === "boolean") {
+    return String(payload);
+  }
+  return fallback;
+}
+
 /** Groq/cpal owns the mic; a second getUserMedia stream can silence capture. */
 export function overlayShouldCaptureMic(
   engine: string | null | undefined,
@@ -22,7 +30,7 @@ export type OverlayPlacement = {
   y: number;
   width: number;
   height: number;
-};
+}
 
 export type OverlayRect = OverlayPlacement;
 
@@ -150,14 +158,12 @@ async function createOverlay(
   });
 
   await new Promise<void>((resolve, reject) => {
-    void webview.once("tauri://created", () => resolve());
+    void webview.once("tauri://created", () => { resolve(); });
     void webview.once("tauri://error", (event) => {
       reject(
         event.payload instanceof Error
           ? event.payload
-          : new Error(
-              String(event.payload ?? "Failed to create dictation overlay"),
-            ),
+          : new Error(tauriErrorMessage(event.payload, "Failed to create dictation overlay")),
       );
     });
   });
@@ -181,6 +187,10 @@ async function createOverlay(
   return webview;
 }
 
+function isOverlayWanted(): boolean {
+  return overlayWanted;
+}
+
 export async function showDictationOverlay(): Promise<void> {
   overlayWanted = true;
   try {
@@ -198,8 +208,9 @@ export async function showDictationOverlay(): Promise<void> {
         console.error("Failed to reposition dictation overlay", error);
       }
     }
-    if (overlayWanted) await webview.show();
-    if (!overlayWanted) await webview.hide();
+    // Re-check after await: hide may have won the race while show() was pending.
+    if (isOverlayWanted()) await webview.show();
+    if (!isOverlayWanted()) await webview.hide();
   } catch (error) {
     console.error("Failed to show dictation overlay", error);
   }

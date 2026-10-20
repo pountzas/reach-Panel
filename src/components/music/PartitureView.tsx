@@ -31,7 +31,7 @@ type PartitureViewProps = {
   song: MusicSong | null;
   activeIndex: number;
   completed: boolean;
-};
+}
 
 function staffY(staffPos: number, padTop: number): number {
   return padTop + staffPos * STEP_PX;
@@ -247,7 +247,7 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(viewport);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); };
   }, [song?.id]);
 
   useLayoutEffect(() => {

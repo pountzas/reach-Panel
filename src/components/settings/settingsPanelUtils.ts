@@ -10,11 +10,11 @@ type TaskbarPositionResult = {
   message: string;
   current?: TaskbarPosition | null;
   open_taskbar_settings?: boolean;
-};
+}
 
 type TaskbarPositionPreferencePatch = {
   taskbarPositionPreference: TaskbarPosition;
-};
+}
 
 export const handleSaveProfile = async (
   saveActiveProfile: () => Promise<void>,
@@ -58,7 +58,7 @@ export const handleWipeProfile = async (
 
 export const applyTaskbarPosition = async (
   position: TaskbarPosition,
-  currentPreference: TaskbarPosition | string | null | undefined,
+  currentPreference: string | null | undefined,
   monitorId: number | null | undefined,
   updateSettings: (patch: TaskbarPositionPreferencePatch) => void,
   t: (key: TranslationKey) => string,

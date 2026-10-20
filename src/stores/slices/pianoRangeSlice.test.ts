@@ -47,7 +47,10 @@ describe("pianoRangeSlice", () => {
   it("fitPianoRangeForSong applies songPianoRangeFit via updateSettings", async () => {
     const song = getSongById("twinkle", []);
     expect(song).not.toBeNull();
-    await useAppStore.getState().fitPianoRangeForSong(song!);
+    if (song == null) {
+      throw new Error("expected twinkle song");
+    }
+    await useAppStore.getState().fitPianoRangeForSong(song);
     const { settings } = useAppStore.getState();
     expect(settings.synthesizerOctaveCount).toBeGreaterThanOrEqual(2);
     expect(typeof settings.synthesizerStartOctave).toBe("number");

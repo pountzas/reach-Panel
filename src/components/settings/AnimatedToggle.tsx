@@ -9,7 +9,7 @@ type AnimatedToggleProps = {
   id?: string;
   "aria-label"?: string;
   "aria-labelledby"?: string;
-};
+}
 
 export function AnimatedToggle({
   checked,

@@ -1,10 +1,10 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
-interface Props {
+type Props = {
   children: ReactNode;
 }
 
-interface State {
+type State = {
   error: Error | null;
 }
 

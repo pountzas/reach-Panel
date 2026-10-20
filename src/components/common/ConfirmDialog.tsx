@@ -18,7 +18,7 @@ export type ConfirmDialogProps = {
   surface: SurfaceColors;
   confirmBackgroundColor?: string;
   confirmTextColor?: string;
-};
+}
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -69,8 +69,8 @@ export function ConfirmDialog({
         panel.focus();
         return;
       }
-      const first = items[0]!;
-      const last = items[items.length - 1]!;
+      const first = items[0];
+      const last = items[items.length - 1];
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -83,7 +83,7 @@ export function ConfirmDialog({
     window.addEventListener("keydown", onKeyDown, true);
     return () => {
       window.removeEventListener("keydown", onKeyDown, true);
-      previouslyFocused?.focus?.();
+      previouslyFocused?.focus();
     };
   }, [open, onCancel]);
 

@@ -13,12 +13,12 @@ export type RestorePatch = {
   mode?: HostAppMode;
   windowHeightRatio?: WindowHeightRatioBeforeTeaching;
   mouseVisible?: boolean;
-};
+}
 
 export type RestoreStackEntry = {
   reason: RestoreReason;
   patch: RestorePatch;
-};
+}
 
 /**
  * Append a restore frame. When `reason` is already on the stack the existing
@@ -51,10 +51,10 @@ export function popRestoreEntry(
   reason: RestoreReason,
 ): { stack: RestoreStackEntry[]; patch: RestorePatch | null } {
   for (let i = stack.length - 1; i >= 0; i--) {
-    if (stack[i]!.reason === reason) {
+    if (stack[i].reason === reason) {
       return {
         stack: [...stack.slice(0, i), ...stack.slice(i + 1)],
-        patch: stack[i]!.patch,
+        patch: stack[i].patch,
       };
     }
   }
@@ -67,8 +67,8 @@ export function peekRestore(
   reason: RestoreReason,
 ): RestorePatch | null {
   for (let i = stack.length - 1; i >= 0; i--) {
-    if (stack[i]!.reason === reason) {
-      return stack[i]!.patch;
+    if (stack[i].reason === reason) {
+      return stack[i].patch;
     }
   }
   return null;

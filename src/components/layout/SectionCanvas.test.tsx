@@ -86,7 +86,7 @@ describe("SectionCanvas resize updates", () => {
           width: size.width,
           height: size.height,
           toJSON: () => ({}),
-        }) as DOMRect,
+        }),
     );
   });
 
@@ -120,8 +120,10 @@ describe("SectionCanvas resize updates", () => {
       commits: () => commitCount,
       fireResizeObserver: () => {
         expect(resizeCallback).toBeTypeOf("function");
+        const cb = resizeCallback;
+        if (!cb) throw new Error("expected resize callback");
         act(() => {
-          resizeCallback!();
+          cb();
         });
       },
     };

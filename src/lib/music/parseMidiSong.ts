@@ -13,7 +13,7 @@ function midiToPitch(midi: number): string | null {
   const rounded = Math.round(midi);
   if (rounded < 12 || rounded > 127) return null;
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const;
-  const name = names[rounded % 12]!;
+  const name = names[rounded % 12];
   const octave = Math.floor(rounded / 12) - 1;
   return `${name}${octave}`;
 }
@@ -38,9 +38,10 @@ export function parseMidiSongs(
       const durationBeats = Math.max(0.05, note.durationTicks / ppq);
       return { onsetBeats, durationBeats, pitch };
     });
+    const trackName = track.name.trim();
     return {
       id: `track-${index}`,
-      label: track.name?.trim() || `Track ${index + 1}`,
+      label: trackName.length > 0 ? trackName : `Track ${index + 1}`,
       notes: onsetsToNoteEvents(events),
     };
   });
@@ -50,9 +51,8 @@ export function parseMidiSongs(
     throw new Error("MIDI file contained no playable melody track");
   }
 
-  const title =
-    midi.name?.trim() ||
-    options.fallbackTitle;
+  const midiTitle = midi.name.trim();
+  const title = midiTitle.length > 0 ? midiTitle : options.fallbackTitle;
   return [
     buildImportedSong({
       baseId: "midi",

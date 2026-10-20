@@ -16,10 +16,14 @@ export function useGroqDailyQuota(
   const [percent, setPercent] = useState<number | null>(() =>
     percentFromStoredQuota(engine),
   );
+  const [trackedEngine, setTrackedEngine] = useState(engine);
 
-  useEffect(() => {
+  // Re-read sessionStorage when the STT engine identity changes (render-time
+  // adjust; avoids setState-in-effect cascading render).
+  if (trackedEngine !== engine) {
+    setTrackedEngine(engine);
     setPercent(percentFromStoredQuota(engine));
-  }, [engine]);
+  }
 
   useEffect(() => {
     if (engine !== "groq") return;
@@ -48,14 +52,14 @@ export function useGroqDailyQuota(
 
     return () => {
       cancelled = true;
-      void unlistenPromise.then((unlisten) => unlisten());
+      void unlistenPromise.then((unlisten) => { unlisten(); });
     };
   }, [engine]);
 
   useEffect(() => {
     if (engine !== "groq") return;
 
-    const refresh = () => setPercent(percentFromStoredQuota(engine));
+    const refresh = () => { setPercent(percentFromStoredQuota(engine)); };
 
     let timeoutId = 0;
     const scheduleMidnightRefresh = () => {
@@ -66,7 +70,7 @@ export function useGroqDailyQuota(
     };
     scheduleMidnightRefresh();
 
-    const onFocus = () => refresh();
+    const onFocus = () => { refresh(); };
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") refresh();
     };

@@ -11,9 +11,9 @@ describe("dictate key layout", () => {
       const bottom = rows[rows.length - 1];
       const last = bottom[bottom.length - 1];
       const before = bottom[bottom.length - 2];
-      expect(before?.key).toBe("ctrl");
-      expect(last?.key).toBe("dictate");
-      expect(last?.width).toBe(1.3);
+      expect(before.key).toBe("ctrl");
+      expect(last.key).toBe("dictate");
+      expect(last.width).toBe(1.3);
     }
   });
 

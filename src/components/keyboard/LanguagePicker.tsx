@@ -8,7 +8,7 @@ import {
 } from "../../lib/keyboardLayouts";
 import { computeLanguagePickerPosition } from "../../lib/languagePickerPosition";
 
-interface LanguagePickerProps {
+type LanguagePickerProps = {
   anchorRef: RefObject<HTMLElement | null>;
   methods: InputMethod[];
   activeHkl: number;

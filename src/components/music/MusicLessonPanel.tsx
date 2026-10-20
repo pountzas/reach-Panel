@@ -112,7 +112,7 @@ export function MusicLessonPanel() {
           </TeachingLessonToolbarButton>
           <TeachingLessonToolbarButton
             label={t("restartLesson")}
-            onClick={() => restartMusicLesson()}
+            onClick={() => { restartMusicLesson(); }}
             disabled={musicPlaybackActive}
             borderColor={surface.panelBorder}
             backgroundColor={surface.panelBg}

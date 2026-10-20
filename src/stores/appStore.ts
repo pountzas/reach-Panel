@@ -123,7 +123,7 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
     const animateContent =
       state.focusModeKeyboardVisible && !prefersReducedMotion();
     if (animateContent) {
-      beginFocusContentAnimWait();
+      void beginFocusContentAnimWait();
     }
     useAppStore.setState({
       modeMenuOpen: false,

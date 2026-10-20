@@ -230,7 +230,7 @@ describe("applySuggestion", () => {
       "notepad untouched",
     );
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]!.texts[0]!.body,
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts[0].body,
     ).toBe("hello ");
     expect(useAppStore.getState().typedBuffer).toBe("hello ");
   });
@@ -404,7 +404,7 @@ describe("Teaching suggestion production", () => {
     useAppStore.getState().freeWriteNotepadInput("e");
 
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"]!.texts[0]!.body,
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts[0].body,
     ).toBe("he");
     expect(useAppStore.getState().typedBuffer).toBe("he");
     await vi.waitFor(() => {
