@@ -1,3 +1,4 @@
+import { useLayoutEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -10,6 +11,13 @@ import {
 const PREVIEW_MAX_WIDTH = 320;
 const PREVIEW_HEIGHT_PX = 48;
 
+function jpegObjectUrl(bytes: Uint8Array): string {
+  // Fresh ArrayBuffer so BlobPart typing accepts the payload (no SharedArrayBuffer).
+  const ab = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(ab).set(bytes);
+  return URL.createObjectURL(new Blob([ab], { type: "image/jpeg" }));
+}
+
 export function InputPreview() {
   const inputPreviewFrame = useAppStore((s) => s.inputPreviewFrame);
   const focused = useAppStore((s) => s.externalInputFocused);
@@ -21,6 +29,24 @@ export function InputPreview() {
     })),
   );
   const { t } = useTranslation();
+
+  // Minimal bridge (#314): object URL from JPEG bytes. #315 may switch to ImageBitmap.
+  const frameSrc = useMemo(() => {
+    if (!inputPreviewFrame) {
+      return null;
+    }
+    return jpegObjectUrl(inputPreviewFrame.bytes);
+  }, [inputPreviewFrame]);
+
+  useLayoutEffect(() => {
+    if (!frameSrc) {
+      return;
+    }
+    return () => {
+      URL.revokeObjectURL(frameSrc);
+    };
+  }, [frameSrc]);
+
   const transparent = isTransparentUiActive(
     { focusModeTransparent },
     focusModeActive,
@@ -52,14 +78,14 @@ export function InputPreview() {
         aria-label={
           focused ? t("inputPreviewLabel") : t("inputPreviewNoInput")
         }>
-        {focused && inputPreviewFrame ? (
+        {focused && frameSrc ? (
           <img
-            src={inputPreviewFrame}
+            src={frameSrc}
             alt={t("inputPreviewLabel")}
             className="block h-full w-full object-contain object-center"
             draggable={false}
           />
-        ) : focused && !inputPreviewFrame ? (
+        ) : focused && !frameSrc ? (
           <span
             className={`px-3 text-xs ${transparent ? "" : "text-slate-400"}`}
             style={

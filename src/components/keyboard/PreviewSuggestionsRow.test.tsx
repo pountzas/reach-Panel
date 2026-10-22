@@ -16,7 +16,11 @@ const storeState = {
     uiLanguage: "en" as const,
   },
   focusModeActive: false,
-  inputPreviewFrame: null as string | null,
+  inputPreviewFrame: null as {
+    bytes: Uint8Array;
+    width: number;
+    height: number;
+  } | null,
   externalInputFocused: false,
   suggestions: [] as string[],
   applySuggestion: vi.fn(),

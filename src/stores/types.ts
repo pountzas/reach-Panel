@@ -28,6 +28,7 @@ import type {
   TeachingSessionPayload,
   WindowHeightRatioBeforeTeaching,
 } from "../lib/appModeLayout";
+import type { InputPreviewFrame } from "../lib/inputPreviewChannel";
 import type {
   RestorePatch,
   RestoreReason,
@@ -83,7 +84,8 @@ export type DictationSlice = {
 export type CompanionSlice = {
   companionModeActive: boolean;
   companionSessionLive: boolean;
-  inputPreviewFrame: string | null;
+  /** Binary JPEG frame from the desktop Channel; null when cleared. */
+  inputPreviewFrame: InputPreviewFrame | null;
   externalInputFocused: boolean;
   companionBridgeArmed: boolean;
   applyCompanionSessionPhase: (phase: CompanionSessionPhase) => Promise<void>;

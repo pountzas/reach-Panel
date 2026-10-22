@@ -82,7 +82,11 @@ describe("setAppMode", () => {
 
   it("setAppMode('teaching') clears preview frames and disables capture", async () => {
     useAppStore.setState({
-      inputPreviewFrame: "data:image/jpeg;base64,abc",
+      inputPreviewFrame: {
+        bytes: new Uint8Array([0xff, 0xd8]),
+        width: 2,
+        height: 1,
+      },
     });
     await useAppStore.getState().setAppMode("teaching");
     expect(useAppStore.getState().inputPreviewFrame).toBeNull();

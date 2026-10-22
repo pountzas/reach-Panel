@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { subscribeInputPreview } from "../lib/inputPreviewChannel";
 import { prefersReducedMotion } from "../lib/motion";
 import type { AppStore } from "./types";
 import {
@@ -59,8 +60,10 @@ export const useAppStore = create<AppStore>()((...a) => ({
 }));
 
 
-void listen<{ data_url: string }>("input-preview-frame", (event) => {
-  useAppStore.setState({ inputPreviewFrame: event.payload.data_url });
+void subscribeInputPreview((frame) => {
+  useAppStore.setState({ inputPreviewFrame: frame });
+}).catch(() => {
+  /* Tauri unavailable in unit tests / non-webview */
 });
 
 void listen("input-preview-cleared", () => {
