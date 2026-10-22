@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { subscribeInputPreview } from "../lib/inputPreviewChannel";
+import { clear as clearInputPreviewFrames, publish as publishInputPreviewFrame } from "../lib/inputPreviewFrames";
 import { prefersReducedMotion } from "../lib/motion";
 import type { AppStore } from "./types";
 import {
@@ -59,12 +62,22 @@ export const useAppStore = create<AppStore>()((...a) => ({
 }));
 
 
-void listen<{ data_url: string }>("input-preview-frame", (event) => {
-  useAppStore.setState({ inputPreviewFrame: event.payload.data_url });
-});
+// Only main renders InputPreview; tool windows share this bundle and must not
+// replace main's preview Channel (see cmd_subscribe_input_preview).
+try {
+  if (WebviewWindow.getCurrent().label === "main") {
+    void subscribeInputPreview((frame) => {
+      publishInputPreviewFrame(frame);
+    }).catch(() => {
+      /* Tauri invoke unavailable in unit tests */
+    });
+  }
+} catch {
+  /* WebviewWindow unavailable outside a Tauri webview */
+}
 
 void listen("input-preview-cleared", () => {
-  useAppStore.setState({ inputPreviewFrame: null });
+  clearInputPreviewFrames();
 });
 
 /**
@@ -74,8 +87,10 @@ void listen("input-preview-cleared", () => {
 void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   useAppStore.setState({
     externalInputFocused: event.payload.focused,
-    ...(event.payload.focused ? {} : { inputPreviewFrame: null }),
   });
+  if (!event.payload.focused) {
+    clearInputPreviewFrames();
+  }
   const state = useAppStore.getState();
   if (!state.focusModeActive) return;
   const focused = event.payload.focused;
@@ -147,8 +162,10 @@ void invoke<boolean>("cmd_get_input_focused")
   .then((focused) => {
     useAppStore.setState({
       externalInputFocused: focused,
-      ...(focused ? {} : { inputPreviewFrame: null }),
     });
+    if (!focused) {
+      clearInputPreviewFrames();
+    }
   })
   .catch(() => {
     /* keep false */

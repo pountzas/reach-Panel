@@ -91,6 +91,7 @@ pub fn run() {
             commands::keyboard::cmd_get_keyboard_layout,
             commands::keyboard::cmd_get_keyboard_state,
             commands::input_preview::cmd_set_input_preview_enabled,
+            commands::input_preview::cmd_subscribe_input_preview,
             commands::keyboard::cmd_get_input_focused,
             commands::keyboard::cmd_set_system_language,
             commands::keyboard::cmd_get_input_methods,

@@ -1,6 +1,12 @@
+import { useSyncExternalStore } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../../stores/appStore";
+import { useObjectUrl } from "../../hooks/useObjectUrl";
 import { useTranslation } from "../../hooks/useTranslation";
+import {
+  getLatest as getLatestInputPreviewFrame,
+  subscribe as subscribeInputPreviewFrames,
+} from "../../lib/inputPreviewFrames";
 import {
   isTransparentUiActive,
   transparentKeyPalette,
@@ -11,7 +17,11 @@ const PREVIEW_MAX_WIDTH = 320;
 const PREVIEW_HEIGHT_PX = 48;
 
 export function InputPreview() {
-  const inputPreviewFrame = useAppStore((s) => s.inputPreviewFrame);
+  const inputPreviewFrame = useSyncExternalStore(
+    subscribeInputPreviewFrames,
+    getLatestInputPreviewFrame,
+    () => null,
+  );
   const focused = useAppStore((s) => s.externalInputFocused);
   const focusModeActive = useAppStore((s) => s.focusModeActive);
   const { focusModeTransparent, transparentKeyColor } = useAppStore(
@@ -21,6 +31,8 @@ export function InputPreview() {
     })),
   );
   const { t } = useTranslation();
+  const frameSrc = useObjectUrl(inputPreviewFrame?.bytes ?? null);
+
   const transparent = isTransparentUiActive(
     { focusModeTransparent },
     focusModeActive,
@@ -52,14 +64,14 @@ export function InputPreview() {
         aria-label={
           focused ? t("inputPreviewLabel") : t("inputPreviewNoInput")
         }>
-        {focused && inputPreviewFrame ? (
+        {focused && frameSrc ? (
           <img
-            src={inputPreviewFrame}
+            src={frameSrc}
             alt={t("inputPreviewLabel")}
             className="block h-full w-full object-contain object-center"
             draggable={false}
           />
-        ) : focused && !inputPreviewFrame ? (
+        ) : focused && !frameSrc ? (
           <span
             className={`px-3 text-xs ${transparent ? "" : "text-slate-400"}`}
             style={

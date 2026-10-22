@@ -13,7 +13,6 @@ export const createCompanionSlice: StateCreator<
 > = (set, get) => ({
   companionModeActive: false,
   companionSessionLive: false,
-  inputPreviewFrame: null,
   externalInputFocused: false,
   companionBridgeArmed: false,
   applyCompanionSessionPhase: async (phase) => {
