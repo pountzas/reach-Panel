@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { subscribeInputPreview } from "../lib/inputPreviewChannel";
+import { clear as clearInputPreviewFrames, publish as publishInputPreviewFrame } from "../lib/inputPreviewFrames";
 import { prefersReducedMotion } from "../lib/motion";
 import type { AppStore } from "./types";
 import {
@@ -61,13 +62,13 @@ export const useAppStore = create<AppStore>()((...a) => ({
 
 
 void subscribeInputPreview((frame) => {
-  useAppStore.setState({ inputPreviewFrame: frame });
+  publishInputPreviewFrame(frame);
 }).catch(() => {
   /* Tauri unavailable in unit tests / non-webview */
 });
 
 void listen("input-preview-cleared", () => {
-  useAppStore.setState({ inputPreviewFrame: null });
+  clearInputPreviewFrames();
 });
 
 /**
@@ -77,8 +78,10 @@ void listen("input-preview-cleared", () => {
 void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   useAppStore.setState({
     externalInputFocused: event.payload.focused,
-    ...(event.payload.focused ? {} : { inputPreviewFrame: null }),
   });
+  if (!event.payload.focused) {
+    clearInputPreviewFrames();
+  }
   const state = useAppStore.getState();
   if (!state.focusModeActive) return;
   const focused = event.payload.focused;
@@ -150,8 +153,10 @@ void invoke<boolean>("cmd_get_input_focused")
   .then((focused) => {
     useAppStore.setState({
       externalInputFocused: focused,
-      ...(focused ? {} : { inputPreviewFrame: null }),
     });
+    if (!focused) {
+      clearInputPreviewFrames();
+    }
   })
   .catch(() => {
     /* keep false */

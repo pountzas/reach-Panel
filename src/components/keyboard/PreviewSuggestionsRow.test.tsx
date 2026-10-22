@@ -16,11 +16,6 @@ const storeState = {
     uiLanguage: "en" as const,
   },
   focusModeActive: false,
-  inputPreviewFrame: null as {
-    bytes: Uint8Array;
-    width: number;
-    height: number;
-  } | null,
   externalInputFocused: false,
   suggestions: [] as string[],
   applySuggestion: vi.fn(),
@@ -74,7 +69,6 @@ describe("PreviewSuggestionsRow", () => {
     stubViewTransitionDom();
     storeState.suggestions = [];
     storeState.externalInputFocused = false;
-    storeState.inputPreviewFrame = null;
     storeState.focusModeActive = false;
   });
 

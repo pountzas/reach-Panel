@@ -1,7 +1,12 @@
+import { useSyncExternalStore } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../../stores/appStore";
 import { useObjectUrl } from "../../hooks/useObjectUrl";
 import { useTranslation } from "../../hooks/useTranslation";
+import {
+  getLatest as getLatestInputPreviewFrame,
+  subscribe as subscribeInputPreviewFrames,
+} from "../../lib/inputPreviewFrames";
 import {
   isTransparentUiActive,
   transparentKeyPalette,
@@ -12,7 +17,11 @@ const PREVIEW_MAX_WIDTH = 320;
 const PREVIEW_HEIGHT_PX = 48;
 
 export function InputPreview() {
-  const inputPreviewFrame = useAppStore((s) => s.inputPreviewFrame);
+  const inputPreviewFrame = useSyncExternalStore(
+    subscribeInputPreviewFrames,
+    getLatestInputPreviewFrame,
+    () => null,
+  );
   const focused = useAppStore((s) => s.externalInputFocused);
   const focusModeActive = useAppStore((s) => s.focusModeActive);
   const { focusModeTransparent, transparentKeyColor } = useAppStore(

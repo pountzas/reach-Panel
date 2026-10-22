@@ -71,7 +71,6 @@ describe("settings subscription profiler (#281)", () => {
     useAppStore.setState({
       settings: { ...DEFAULT_SETTINGS },
       focusModeActive: false,
-      inputPreviewFrame: null,
       externalInputFocused: false,
       companionModeActive: false,
       musicTeachingEnabled: false,
