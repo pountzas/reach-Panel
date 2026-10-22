@@ -256,7 +256,6 @@ fn create_session(d3d: &D3dState, hwnd: HWND) -> Result<SessionState, String> {
             .CreateCaptureSession(&item)
             .map_err(|e| format!("CreateCaptureSession: {e}"))?;
         configure_session(&session)?;
-        request_borderless_access_once();
         session
             .StartCapture()
             .map_err(|e| format!("StartCapture: {e}"))?;
@@ -650,6 +649,9 @@ pub(crate) fn try_capture_strip(
         return Err("empty capture rect".into());
     }
 
+    // Must run before any session calls SetIsBorderRequired(false), and outside the
+    // RUNTIME lock so a slow RequestAccessAsync cannot stall close_session()/note_bounds_changed().
+    request_borderless_access_once();
     let mut rt = RUNTIME.lock().unwrap_or_else(|e| e.into_inner());
 
     match capture_once_inner(&mut rt, hwnd, screen) {
