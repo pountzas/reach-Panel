@@ -23,8 +23,6 @@ use windows::Win32::Graphics::Direct3D11::{
 use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_EXTENDED_FRAME_BOUNDS};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
 use windows::Win32::Graphics::Dxgi::IDXGIDevice;
-#[cfg(test)]
-use windows::Win32::Graphics::Dxgi::{DXGI_ERROR_DEVICE_REMOVED, DXGI_ERROR_DEVICE_RESET};
 use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
 use windows::Win32::System::WinRT::Direct3D11::{
     CreateDirect3D11DeviceFromDXGIDevice, IDirect3DDxgiInterfaceAccess,
@@ -58,6 +56,8 @@ struct SessionState {
     pool: Direct3D11CaptureFramePool,
     session: GraphicsCaptureSession,
     staging: Option<StagingStrip>,
+    /// Latest delivered frame; re-cropped when no newer frame is queued.
+    last_frame: Option<windows::Graphics::Capture::Direct3D11CaptureFrame>,
 }
 
 struct StagingStrip {
@@ -92,12 +92,6 @@ fn ensure_com() {
         let _ = RoInitialize(RO_INIT_MULTITHREADED);
         let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
     }
-}
-
-#[cfg(test)]
-fn is_device_lost(err: &windows::core::Error) -> bool {
-    let code = err.code();
-    code == DXGI_ERROR_DEVICE_REMOVED || code == DXGI_ERROR_DEVICE_RESET
 }
 
 fn property_present(type_name: &str, property: &str) -> bool {
@@ -174,9 +168,12 @@ fn configure_session(session: &GraphicsCaptureSession) -> Result<(), String> {
         "Windows.Graphics.Capture.GraphicsCaptureSession",
         "IsBorderRequired",
     ) {
-        session
-            .SetIsBorderRequired(false)
-            .map_err(|e| format!("SetIsBorderRequired: {e}"))?;
+        // Best effort: keep WGC (with border) rather than falling back to full-window PrintWindow.
+        if let Err(e) = session.SetIsBorderRequired(false) {
+            eprintln!(
+                "input preview: SetIsBorderRequired(false) failed ({e}); capture border may show"
+            );
+        }
     }
     Ok(())
 }
@@ -217,12 +214,16 @@ fn create_session(d3d: &D3dState, hwnd: HWND) -> Result<SessionState, String> {
             pool,
             session,
             staging: None,
+            last_frame: None,
         })
     }
 }
 
 fn close_session_inner(rt: &mut Runtime) {
-    if let Some(session) = rt.session.take() {
+    if let Some(mut session) = rt.session.take() {
+        if let Some(frame) = session.last_frame.take() {
+            let _ = frame.Close();
+        }
         let _ = session.session.Close();
         let _ = session.pool.Close();
     }
@@ -271,6 +272,9 @@ fn recreate_pool_for_size(
     session: &mut SessionState,
     size: SizeInt32,
 ) -> Result<(), String> {
+    if let Some(frame) = session.last_frame.take() {
+        let _ = frame.Close();
+    }
     session
         .pool
         .Recreate(
@@ -449,12 +453,12 @@ fn capture_once_inner(
             .session
             .as_ref()
             .ok_or_else(|| "WGC session missing".to_string())?;
-        session.content_w != item_size.Width
-            || session.content_h != item_size.Height
-            || rt.bounds_dirty
+        session.content_w != item_size.Width || session.content_h != item_size.Height
     };
+    // Field bounds moving inside the same window do not change the capture item size;
+    // recreating the pool here would drop the queued frame and leave a stale strip.
+    rt.bounds_dirty = false;
     if size_changed {
-        rt.bounds_dirty = false;
         let d3d = rt
             .d3d
             .as_ref()
@@ -469,9 +473,14 @@ fn capture_once_inner(
     let frame = {
         let session = rt
             .session
-            .as_ref()
+            .as_mut()
             .ok_or_else(|| "WGC session missing".to_string())?;
-        drain_latest_frame(&session.pool)
+        if let Some(newest) = drain_latest_frame(&session.pool) {
+            if let Some(old) = session.last_frame.replace(newest) {
+                let _ = old.Close();
+            }
+        }
+        session.last_frame.clone()
     };
     let Some(frame) = frame else {
         return Ok(StripCapture::NotReady);
@@ -585,31 +594,15 @@ pub(crate) fn try_capture_strip(
         }
         Err(msg) => {
             // Device-lost: rebuild once, then retry; otherwise surface the error for GDI fallback.
-            let lower = msg.to_lowercase();
-            let looks_lost = lower.contains("device")
-                && (lower.contains("removed") || lower.contains("reset") || lower.contains("lost"));
+            let looks_lost = rt
+                .d3d
+                .as_ref()
+                .is_some_and(|d3d| unsafe { d3d.device.GetDeviceRemovedReason() }.is_err());
             if looks_lost {
                 rebuild_device_once(&mut rt)?;
                 return capture_once_inner(&mut rt, hwnd, screen);
             }
             Err(msg)
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::is_device_lost;
-    use windows::core::{Error, HRESULT};
-    use windows::Win32::Graphics::Dxgi::{DXGI_ERROR_DEVICE_REMOVED, DXGI_ERROR_DEVICE_RESET};
-
-    #[test]
-    fn device_lost_detects_dxgi_codes() {
-        let removed = Error::from(HRESULT(DXGI_ERROR_DEVICE_REMOVED.0));
-        let reset = Error::from(HRESULT(DXGI_ERROR_DEVICE_RESET.0));
-        let other = Error::from(HRESULT(0x80004005u32 as i32)); // E_FAIL
-        assert!(is_device_lost(&removed));
-        assert!(is_device_lost(&reset));
-        assert!(!is_device_lost(&other));
     }
 }
