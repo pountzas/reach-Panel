@@ -10,6 +10,9 @@ import {
 } from "../lib/inputPreviewFrames";
 
 vi.mock("@tauri-apps/api/core", () => ({
+  Channel: class {
+    onmessage: ((message: ArrayBuffer) => void) | null = null;
+  },
   invoke: vi.fn((cmd: string) => {
     if (cmd === "cmd_get_input_focused") return Promise.resolve(false);
     return Promise.resolve(undefined);
@@ -41,6 +44,16 @@ import { useAppStore } from "./appStore";
 
 const invokeMock = vi.mocked(invoke);
 const listenMock = vi.mocked(listen);
+
+/** Captured at import time — `setAppMode` beforeEach clears invoke mock calls. */
+const previewChannel = (() => {
+  const entry = invokeMock.mock.calls.find(
+    ([cmd]) => cmd === "cmd_subscribe_input_preview",
+  );
+  if (!entry) throw new Error("cmd_subscribe_input_preview was not invoked");
+  return (entry[1] as { channel: { onmessage: (m: ArrayBuffer) => void } })
+    .channel;
+})();
 
 function lastPreviewEnableCall() {
   const calls = invokeMock.mock.calls.filter(
@@ -200,5 +213,21 @@ describe("input preview clear paths", () => {
     });
     expect(getLatestInputPreviewFrame()).not.toBeNull();
     expect(useAppStore.getState().externalInputFocused).toBe(true);
+  });
+
+  it("channel frames go to the module store without a Zustand setState", () => {
+    clearInputPreviewFrames();
+    const setStateSpy = vi.spyOn(useAppStore, "setState");
+    const buf = new ArrayBuffer(10);
+    const view = new DataView(buf);
+    view.setUint32(0, 4, true);
+    view.setUint32(4, 2, true);
+
+    previewChannel.onmessage(buf);
+    previewChannel.onmessage(buf);
+
+    expect(getLatestInputPreviewFrame()).toMatchObject({ width: 4, height: 2 });
+    expect(setStateSpy).not.toHaveBeenCalled();
+    setStateSpy.mockRestore();
   });
 });
