@@ -326,15 +326,13 @@ fn encode_bgra_jpeg(bgra: &[u8], src_w: i32, src_h: i32) -> Result<(Vec<u8>, u32
     let (dest_w, dest_h) = scale_to_max(src_w, src_h, MAX_CAPTURE_WIDTH, MAX_CAPTURE_HEIGHT);
 
     // Downscale on BGRA first so conversion/encode see fewer pixels.
+    // Box average handles any downscale ratio (buckets of 1..n px), so thin
+    // text strokes are averaged rather than dropped as with nearest-neighbour.
     let (work, w, h) = if dest_w == src_w && dest_h == src_h {
         (None, src_w as u32, src_h as u32)
     } else {
-        let scale = (dest_w as f64 / src_w as f64).min(dest_h as f64 / src_h as f64);
-        let resized = if scale <= 0.5 {
-            resize_bgra_box(bgra, src_w as u32, src_h as u32, dest_w as u32, dest_h as u32)?
-        } else {
-            resize_bgra_nearest(bgra, src_w as u32, src_h as u32, dest_w as u32, dest_h as u32)?
-        };
+        let resized =
+            resize_bgra_box(bgra, src_w as u32, src_h as u32, dest_w as u32, dest_h as u32)?;
         (Some(resized), dest_w as u32, dest_h as u32)
     };
     let pixels = work.as_deref().unwrap_or(bgra);
@@ -354,7 +352,7 @@ fn encode_bgra_jpeg(bgra: &[u8], src_w: i32, src_h: i32) -> Result<(Vec<u8>, u32
     Ok((jpeg, img.width(), img.height()))
 }
 
-/// Integer box average of BGRA pixels into `dest_w`×`dest_h` (used when scale ≤ 0.5).
+/// Integer box average of BGRA pixels into `dest_w`×`dest_h` (any downscale ratio).
 fn resize_bgra_box(
     src: &[u8],
     src_w: u32,
@@ -407,45 +405,6 @@ fn resize_bgra_box(
             out[o + 1] = (g_sum / n) as u8;
             out[o + 2] = (r_sum / n) as u8;
             out[o + 3] = (a_sum / n) as u8;
-        }
-    }
-    Ok(out)
-}
-
-/// Nearest-neighbor BGRA resize for mild downscales (scale close to 1).
-fn resize_bgra_nearest(
-    src: &[u8],
-    src_w: u32,
-    src_h: u32,
-    dest_w: u32,
-    dest_h: u32,
-) -> Result<Vec<u8>, String> {
-    let expected = (src_w as usize)
-        .saturating_mul(src_h as usize)
-        .saturating_mul(4);
-    if src.len() < expected {
-        return Err(format!(
-            "BGRA buffer too short for nearest resize: {} < {}",
-            src.len(),
-            expected
-        ));
-    }
-    if dest_w == 0 || dest_h == 0 {
-        return Err("empty nearest resize destination".into());
-    }
-
-    let mut out = vec![0u8; (dest_w as usize) * (dest_h as usize) * 4];
-    for dy in 0..dest_h {
-        let sy = ((dy as u64 * src_h as u64) / dest_h as u64) as u32;
-        let sy = sy.min(src_h - 1);
-        let src_row = (sy as usize) * (src_w as usize) * 4;
-        let dst_row = (dy as usize) * (dest_w as usize) * 4;
-        for dx in 0..dest_w {
-            let sx = ((dx as u64 * src_w as u64) / dest_w as u64) as u32;
-            let sx = sx.min(src_w - 1);
-            let si = src_row + (sx as usize) * 4;
-            let di = dst_row + (dx as usize) * 4;
-            out[di..di + 4].copy_from_slice(&src[si..si + 4]);
         }
     }
     Ok(out)
@@ -1178,6 +1137,32 @@ mod tests {
     }
 
     #[test]
+    fn resize_bgra_box_averages_each_bucket() {
+        // 4x2 -> 2x1: each dest pixel is the mean of one 2x2 block.
+        let src: Vec<u8> = vec![
+            0, 0, 0, 255, 100, 100, 100, 255, 10, 20, 30, 255, 10, 20, 30, 255,
+            200, 200, 200, 255, 100, 100, 100, 255, 30, 40, 50, 255, 30, 40, 50, 255,
+        ];
+        let out = resize_bgra_box(&src, 4, 2, 2, 1).expect("box");
+        assert_eq!(out, vec![100, 100, 100, 255, 20, 30, 40, 255]);
+    }
+
+    #[test]
+    fn resize_bgra_box_keeps_uniform_color_at_fractional_ratio() {
+        let (sw, sh, dw, dh) = (1000u32, 150u32, 640u32, 96u32);
+        let src: Vec<u8> = [12u8, 34, 56, 255].repeat((sw * sh) as usize);
+        let out = resize_bgra_box(&src, sw, sh, dw, dh).expect("box");
+        assert_eq!(out.len(), (dw * dh * 4) as usize);
+        assert!(out.chunks_exact(4).all(|p| p == [12, 34, 56, 255]));
+    }
+
+    #[test]
+    fn resize_bgra_box_rejects_short_buffer() {
+        let src = vec![0u8; 4 * 4 * 4 - 1];
+        assert!(resize_bgra_box(&src, 4, 4, 2, 2).is_err());
+    }
+
+    #[test]
     fn encode_bgra_jpeg_output_dims_match_scale_to_max() {
         let cases: &[(i32, i32)] = &[
             (640, 120),
@@ -1275,20 +1260,9 @@ mod tests {
             for _ in 0..iters {
                 let (work, ww, hh) = if needs_resize {
                     let tr = Instant::now();
-                    let scale = (dest_w as f64 / w as f64).min(dest_h as f64 / h as f64);
-                    let resized = if scale <= 0.5 {
+                    let resized =
                         resize_bgra_box(&bgra, w as u32, h as u32, dest_w as u32, dest_h as u32)
-                            .expect("box")
-                    } else {
-                        resize_bgra_nearest(
-                            &bgra,
-                            w as u32,
-                            h as u32,
-                            dest_w as u32,
-                            dest_h as u32,
-                        )
-                        .expect("nearest")
-                    };
+                            .expect("box");
                     resize_ns += tr.elapsed().as_nanos();
                     (resized, dest_w as u32, dest_h as u32)
                 } else {
