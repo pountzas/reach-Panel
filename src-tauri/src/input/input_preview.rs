@@ -26,6 +26,7 @@ use super::focus_target::{
     get_effective_input_hwnd, get_input_target_bounds, has_input_target, is_input_focused,
     ScreenRect,
 };
+use super::wgc_capture::{self, StripCapture};
 
 /// `PW_RENDERFULLCONTENT` — needed for Chromium/DWM-composited windows.
 const PRINT_FULL_CONTENT: PRINT_WINDOW_FLAGS = PRINT_WINDOW_FLAGS(2);
@@ -46,6 +47,8 @@ static PREVIEW_ENABLED: AtomicBool = AtomicBool::new(true);
 static ANIMATIONS_ACTIVE: AtomicUsize = AtomicUsize::new(0);
 /// Cleared by the worker; set on enable/disable, clear, companion connect/disconnect, animation end.
 static FORCE_FRESH_FRAME: AtomicBool = AtomicBool::new(false);
+/// Last logged capture backend (`wgc` / `printwindow` / `bitblt`) for change-only logging.
+static LAST_CAPTURE_PATH: Mutex<Option<&'static str>> = Mutex::new(None);
 
 #[derive(Debug, Clone, Serialize)]
 struct InputPreviewFramePayload {
@@ -78,6 +81,7 @@ pub fn set_enabled(enabled: bool) {
     PREVIEW_ENABLED.store(enabled, Ordering::Release);
     request_fresh_frame(FrameSkipReset::EnabledChanged);
     if !enabled {
+        wgc_capture::close_session();
         emit_cleared();
     }
     notify_worker();
@@ -105,6 +109,7 @@ fn animation_paused() -> bool {
 }
 
 pub fn notify_bounds_changed() {
+    wgc_capture::note_bounds_changed();
     notify_worker();
 }
 
@@ -176,6 +181,7 @@ fn preview_loop() {
             get_input_target_bounds(),
         ) {
             PreviewFrameAction::Clear => {
+                wgc_capture::close_session();
                 last_frame = reset_last_frame(FrameSkipReset::Cleared);
                 route_cleared(companion_live);
             }
@@ -275,7 +281,20 @@ enum CaptureOutcome {
     },
 }
 
+fn log_capture_path(path: &'static str) {
+    let mut guard = LAST_CAPTURE_PATH
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    if *guard == Some(path) {
+        return;
+    }
+    *guard = Some(path);
+    eprintln!("input preview capture path: {path}");
+}
+
 /// Capture BGRA, skip JPEG/base64 when unchanged; otherwise encode.
+///
+/// Order: Windows.Graphics.Capture field strip → PrintWindow crop → desktop BitBlt.
 fn capture_and_maybe_encode(
     bounds: &ScreenRect,
     last: Option<FrameSkipKey>,
@@ -290,14 +309,36 @@ fn capture_and_maybe_encode(
         .map(|hwnd| hwnd.0 as isize)
         .unwrap_or(0);
 
-    // Prefer PrintWindow of the target HWND so ReachPanel chrome cannot occlude the strip.
-    // Desktop BitBlt is only a last resort (WDA exclusion is unreliable on some Win11 builds).
     let bgra = match get_effective_input_hwnd() {
-        Some(hwnd) => capture_window_region_bgra(hwnd, &rect).or_else(|e| {
-            eprintln!("input preview window capture failed ({e}); falling back to screen");
-            capture_screen_bgra(rect.left, rect.top, src_w, src_h)
-        })?,
-        None => capture_screen_bgra(rect.left, rect.top, src_w, src_h)?,
+        Some(hwnd) => match wgc_capture::try_capture_strip(hwnd, &rect) {
+            Ok(StripCapture::Ready(pixels)) => {
+                log_capture_path("wgc");
+                pixels
+            }
+            Ok(StripCapture::NotReady) => {
+                // Session just started; keep the last frame instead of flickering via GDI.
+                return Ok(CaptureOutcome::Skipped);
+            }
+            Err(wgc_err) => match capture_window_region_bgra(hwnd, &rect) {
+                Ok(pixels) => {
+                    log_capture_path("printwindow");
+                    pixels
+                }
+                Err(pw_err) => {
+                    eprintln!(
+                        "input preview window capture failed (wgc: {wgc_err}; printwindow: {pw_err}); falling back to screen"
+                    );
+                    let pixels = capture_screen_bgra(rect.left, rect.top, src_w, src_h)?;
+                    log_capture_path("bitblt");
+                    pixels
+                }
+            },
+        },
+        None => {
+            let pixels = capture_screen_bgra(rect.left, rect.top, src_w, src_h)?;
+            log_capture_path("bitblt");
+            pixels
+        }
     };
 
     let key = frame_skip_key(
@@ -352,15 +393,15 @@ fn encode_bgra_jpeg(bgra: &[u8], src_w: i32, src_h: i32) -> Result<(Vec<u8>, u32
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct CaptureRect {
-    left: i32,
-    top: i32,
-    width: i32,
-    height: i32,
+pub(crate) struct CaptureRect {
+    pub left: i32,
+    pub top: i32,
+    pub width: i32,
+    pub height: i32,
 }
 
 /// Map a screen-space strip into coordinates relative to a window's screen rect, clipped.
-fn window_local_capture_rect(
+pub(crate) fn window_local_capture_rect(
     screen: CaptureRect,
     window_left: i32,
     window_top: i32,
@@ -394,7 +435,7 @@ fn window_local_capture_rect(
 }
 
 /// Crop a BGRA8 buffer (`src_w`×`src_h`) to `crop` (window-local).
-fn crop_bgra(src: &[u8], src_w: i32, src_h: i32, crop: CaptureRect) -> Option<Vec<u8>> {
+pub(crate) fn crop_bgra(src: &[u8], src_w: i32, src_h: i32, crop: CaptureRect) -> Option<Vec<u8>> {
     if src_w <= 0 || src_h <= 0 || crop.width <= 0 || crop.height <= 0 {
         return None;
     }
@@ -421,22 +462,25 @@ fn crop_bgra(src: &[u8], src_w: i32, src_h: i32, crop: CaptureRect) -> Option<Ve
     Some(out)
 }
 
-fn padded_clamped_rect(bounds: &ScreenRect) -> CaptureRect {
-    let vx = unsafe { GetSystemMetrics(SM_XVIRTUALSCREEN) };
-    let vy = unsafe { GetSystemMetrics(SM_YVIRTUALSCREEN) };
-    let vw = unsafe { GetSystemMetrics(SM_CXVIRTUALSCREEN) };
-    let vh = unsafe { GetSystemMetrics(SM_CYVIRTUALSCREEN) };
-
-    let mut left = bounds.left.saturating_sub(PADDING);
-    let mut top = bounds.top.saturating_sub(PADDING);
+/// Pad a field rect and clamp it to a virtual-screen rectangle (pure; unit-tested).
+pub(crate) fn clamp_padded_rect(
+    bounds: &ScreenRect,
+    padding: i32,
+    vx: i32,
+    vy: i32,
+    vw: i32,
+    vh: i32,
+) -> CaptureRect {
+    let mut left = bounds.left.saturating_sub(padding);
+    let mut top = bounds.top.saturating_sub(padding);
     let mut right = bounds
         .left
         .saturating_add(bounds.width)
-        .saturating_add(PADDING);
+        .saturating_add(padding);
     let mut bottom = bounds
         .top
         .saturating_add(bounds.height)
-        .saturating_add(PADDING);
+        .saturating_add(padding);
 
     left = left.max(vx);
     top = top.max(vy);
@@ -449,6 +493,52 @@ fn padded_clamped_rect(bounds: &ScreenRect) -> CaptureRect {
         width: (right - left).max(0),
         height: (bottom - top).max(0),
     }
+}
+
+fn padded_clamped_rect(bounds: &ScreenRect) -> CaptureRect {
+    let vx = unsafe { GetSystemMetrics(SM_XVIRTUALSCREEN) };
+    let vy = unsafe { GetSystemMetrics(SM_YVIRTUALSCREEN) };
+    let vw = unsafe { GetSystemMetrics(SM_CXVIRTUALSCREEN) };
+    let vh = unsafe { GetSystemMetrics(SM_CYVIRTUALSCREEN) };
+    clamp_padded_rect(bounds, PADDING, vx, vy, vw, vh)
+}
+
+/// Destination offset of a clipped local crop inside the requested screen strip.
+pub(crate) fn letterbox_dst_offset(
+    screen: CaptureRect,
+    window_left: i32,
+    window_top: i32,
+    local: CaptureRect,
+) -> (i32, i32) {
+    let dst_x = (local.left - (screen.left - window_left)).max(0);
+    let dst_y = (local.top - (screen.top - window_top)).max(0);
+    (dst_x, dst_y)
+}
+
+/// Place a clipped BGRA crop into a full requested strip (black letterbox elsewhere).
+pub(crate) fn letterbox_bgra(
+    cropped: &[u8],
+    local: CaptureRect,
+    screen: CaptureRect,
+    dst_x: i32,
+    dst_y: i32,
+) -> Vec<u8> {
+    let mut out = vec![0u8; (screen.width as usize).saturating_mul(screen.height as usize) * 4];
+    let dst_x = dst_x.max(0) as usize;
+    let dst_y = dst_y.max(0) as usize;
+    for row in 0..local.height as usize {
+        let src_off = row.saturating_mul(local.width as usize).saturating_mul(4);
+        let dst_off = (dst_y.saturating_add(row))
+            .saturating_mul(screen.width as usize)
+            .saturating_add(dst_x)
+            .saturating_mul(4);
+        let len = (local.width as usize).saturating_mul(4);
+        if dst_off.saturating_add(len) <= out.len() && src_off.saturating_add(len) <= cropped.len()
+        {
+            out[dst_off..dst_off + len].copy_from_slice(&cropped[src_off..src_off + len]);
+        }
+    }
+    out
 }
 
 fn scale_to_max(width: i32, height: i32, max_w: i32, max_h: i32) -> (i32, i32) {
@@ -511,7 +601,7 @@ fn capture_window_region_bgra(hwnd: HWND, screen_rect: &CaptureRect) -> Result<V
                 biHeight: -win_h,
                 biPlanes: 1,
                 biBitCount: 32,
-                biCompression: BI_RGB.0 as u32,
+                biCompression: BI_RGB.0,
                 ..Default::default()
             },
             bmiColors: [Default::default()],
@@ -547,19 +637,9 @@ fn capture_window_region_bgra(hwnd: HWND, screen_rect: &CaptureRect) -> Result<V
             return Ok(cropped);
         }
 
-        // Letterbox clipped local crop into the full requested strip size.
-        let mut out = vec![0u8; (screen_rect.width as usize) * (screen_rect.height as usize) * 4];
-        let dst_x = (local.left - (screen_rect.left - window_rect.left)).max(0) as usize;
-        let dst_y = (local.top - (screen_rect.top - window_rect.top)).max(0) as usize;
-        for row in 0..local.height as usize {
-            let src_off = row * local.width as usize * 4;
-            let dst_off = ((dst_y + row) * screen_rect.width as usize + dst_x) * 4;
-            let len = local.width as usize * 4;
-            if dst_off + len <= out.len() && src_off + len <= cropped.len() {
-                out[dst_off..dst_off + len].copy_from_slice(&cropped[src_off..src_off + len]);
-            }
-        }
-        Ok(out)
+        let (dst_x, dst_y) =
+            letterbox_dst_offset(*screen_rect, window_rect.left, window_rect.top, local);
+        Ok(letterbox_bgra(&cropped, local, *screen_rect, dst_x, dst_y))
     }
 }
 
@@ -594,7 +674,7 @@ fn capture_screen_bgra(x: i32, y: i32, width: i32, height: i32) -> Result<Vec<u8
                 biHeight: -height,
                 biPlanes: 1,
                 biBitCount: 32,
-                biCompression: BI_RGB.0 as u32,
+                biCompression: BI_RGB.0,
                 ..Default::default()
             },
             bmiColors: [Default::default()],
@@ -775,6 +855,82 @@ mod tests {
     }
 
     #[test]
+    fn clamp_padded_rect_clips_to_virtual_screen() {
+        let bounds = ScreenRect {
+            left: -20,
+            top: -10,
+            width: 100,
+            height: 50,
+        };
+        // Virtual screen at (-100,-50) size 200×100; padding 4.
+        let rect = clamp_padded_rect(&bounds, 4, -100, -50, 200, 100);
+        assert_eq!(rect.left, -24);
+        assert_eq!(rect.top, -14);
+        assert_eq!(rect.width, 108);
+        assert_eq!(rect.height, 58);
+
+        // Fully off the right/bottom edge → empty.
+        let empty = clamp_padded_rect(
+            &ScreenRect {
+                left: 500,
+                top: 500,
+                width: 40,
+                height: 20,
+            },
+            0,
+            0,
+            0,
+            100,
+            100,
+        );
+        assert_eq!(empty.width, 0);
+        assert_eq!(empty.height, 0);
+    }
+
+    #[test]
+    fn letterbox_dst_offset_places_clipped_crop() {
+        // Screen strip overhangs left of window: local.left=0, screen relative x=-10 → dst 10.
+        let screen = CaptureRect {
+            left: 90,
+            top: 200,
+            width: 100,
+            height: 40,
+        };
+        let local = CaptureRect {
+            left: 0,
+            top: 0,
+            width: 90,
+            height: 40,
+        };
+        let (dx, dy) = letterbox_dst_offset(screen, 100, 200, local);
+        assert_eq!((dx, dy), (10, 0));
+    }
+
+    #[test]
+    fn letterbox_bgra_pads_clipped_rows() {
+        let local = CaptureRect {
+            left: 0,
+            top: 0,
+            width: 2,
+            height: 1,
+        };
+        let screen = CaptureRect {
+            left: 0,
+            top: 0,
+            width: 4,
+            height: 1,
+        };
+        // Two BGRA pixels: B=1 and B=2.
+        let cropped = vec![1, 0, 0, 255, 2, 0, 0, 255];
+        let out = letterbox_bgra(&cropped, local, screen, 1, 0);
+        assert_eq!(out.len(), 16);
+        assert_eq!(&out[0..4], &[0, 0, 0, 0]); // letterbox left
+        assert_eq!(&out[4..8], &[1, 0, 0, 255]);
+        assert_eq!(&out[8..12], &[2, 0, 0, 255]);
+        assert_eq!(&out[12..16], &[0, 0, 0, 0]); // letterbox right
+    }
+
+    #[test]
     fn preview_keeps_last_frame_when_bounds_briefly_unavailable() {
         let action = next_preview_action(true, None);
         assert_eq!(action, PreviewFrameAction::KeepLastFrame);
@@ -880,7 +1036,7 @@ mod tests {
             height: 1,
         };
         let out = crop_bgra(&src, 4, 2, crop).expect("crop");
-        assert_eq!(out.len(), 2 * 1 * 4);
+        assert_eq!(out.len(), 8);
         assert_eq!(out[0], 1);
         assert_eq!(out[4], 2);
     }
