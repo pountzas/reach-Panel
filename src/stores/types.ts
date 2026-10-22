@@ -83,7 +83,6 @@ export type DictationSlice = {
 export type CompanionSlice = {
   companionModeActive: boolean;
   companionSessionLive: boolean;
-  inputPreviewFrame: string | null;
   externalInputFocused: boolean;
   companionBridgeArmed: boolean;
   applyCompanionSessionPhase: (phase: CompanionSessionPhase) => Promise<void>;
