@@ -83,11 +83,16 @@ pub fn set_enabled(enabled: bool) {
 }
 
 /// Replace the desktop preview Channel (newer subscriber wins; closed channels are dropped).
+/// A new subscriber (e.g. after a webview reload) has no frame yet, so bypass hash dedupe once.
 pub fn set_preview_channel(channel: Channel<InvokeResponseBody>) {
-    let mut guard = PREVIEW_CHANNEL
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
-    *guard = Some(channel);
+    {
+        let mut guard = PREVIEW_CHANNEL
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        *guard = Some(channel);
+    }
+    request_fresh_frame(FrameSkipReset::Resubscribed);
+    notify_worker();
 }
 
 /// Pack `u32` width + `u32` height (little-endian) then JPEG bytes.
@@ -284,15 +289,23 @@ fn send_frame_to_desktop(jpeg: Vec<u8>, width: u32, height: u32) {
 }
 
 fn send_raw_to_desktop(bytes: Vec<u8>) {
-    let mut guard = PREVIEW_CHANNEL
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
-    let Some(channel) = guard.as_ref() else {
-        return;
+    let channel = {
+        let guard = PREVIEW_CHANNEL
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        match guard.as_ref() {
+            Some(channel) => channel.clone(),
+            None => return,
+        }
     };
     if channel.send(InvokeResponseBody::Raw(bytes)).is_err() {
-        // Webview gone / channel closed — drop so the next subscribe can replace it.
-        *guard = None;
+        // Webview gone / channel closed: drop it unless a newer subscriber already replaced it.
+        let mut guard = PREVIEW_CHANNEL
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        if guard.as_ref().is_some_and(|c| c.id() == channel.id()) {
+            *guard = None;
+        }
     }
 }
 
@@ -888,6 +901,7 @@ pub(crate) enum FrameSkipReset {
     CompanionConnected,
     CompanionDisconnected,
     AnimationEnded,
+    Resubscribed,
 }
 
 /// Pure companion-routing transition: `(reset_last_frame, clear_desktop_strip)`.
@@ -1215,6 +1229,7 @@ mod tests {
             FrameSkipReset::CompanionConnected,
             FrameSkipReset::CompanionDisconnected,
             FrameSkipReset::AnimationEnded,
+            FrameSkipReset::Resubscribed,
         ];
         for event in events {
             assert_eq!(reset_last_frame(event), None);

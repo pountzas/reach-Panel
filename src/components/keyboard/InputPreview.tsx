@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -31,21 +31,21 @@ export function InputPreview() {
   const { t } = useTranslation();
 
   // Minimal bridge (#314): object URL from JPEG bytes. #315 may switch to ImageBitmap.
-  const frameSrc = useMemo(() => {
-    if (!inputPreviewFrame) {
-      return null;
-    }
-    return jpegObjectUrl(inputPreviewFrame.bytes);
-  }, [inputPreviewFrame]);
-
+  // Create/revoke in the same layout effect so StrictMode double-invoke cannot leak URLs
+  // (useMemo factory ran twice and orphaned the first blob URL).
+  const [frameSrc, setFrameSrc] = useState<string | null>(null);
   useLayoutEffect(() => {
-    if (!frameSrc) {
+    if (!inputPreviewFrame) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- review: create/revoke object URL in one effect
+      setFrameSrc(null);
       return;
     }
+    const url = jpegObjectUrl(inputPreviewFrame.bytes);
+    setFrameSrc(url);
     return () => {
-      URL.revokeObjectURL(frameSrc);
+      URL.revokeObjectURL(url);
     };
-  }, [frameSrc]);
+  }, [inputPreviewFrame]);
 
   const transparent = isTransparentUiActive(
     { focusModeTransparent },
