@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.17.2 (2026-10-22)
+
+## What's Changed
+* chore(deps): bump the npm-minor-and-patch group across 1 directory with 6 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/309
+* perf(input-preview): capture only the focused field strip via WGC by @pountzas in https://github.com/pountzas/reach-Panel/pull/319
+* perf(input-preview): slice BGRA-to-RGB and cheaper resize (#313) by @pountzas in https://github.com/pountzas/reach-Panel/pull/318
+* perf(input-preview): binary Channel frames instead of base64 JSON (#314) by @pountzas in https://github.com/pountzas/reach-Panel/pull/320
+* perf(input-preview): Blob object URL decode for InputPreview by @pountzas in https://github.com/pountzas/reach-Panel/pull/321
+* perf(input-preview): keep preview frames out of Zustand by @pountzas in https://github.com/pountzas/reach-Panel/pull/322
+* perf(input-preview): pipeline performance epic (#317) by @pountzas in https://github.com/pountzas/reach-Panel/pull/323
+* perf(input-preview): ship input preview pipeline performance epic by @pountzas in https://github.com/pountzas/reach-Panel/pull/324
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.17.1...v0.17.2
+
 ## 0.17.1 (2026-10-20)
 
 ## What's Changed
