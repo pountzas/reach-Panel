@@ -5,6 +5,8 @@ import { StrictMode } from "react";
 import { useObjectUrl } from "./useObjectUrl";
 
 describe("useObjectUrl", () => {
+  const originalCreateObjectURL = URL.createObjectURL.bind(URL);
+  const originalRevokeObjectURL = URL.revokeObjectURL.bind(URL);
   let createObjectURL: ReturnType<typeof vi.fn>;
   let revokeObjectURL: ReturnType<typeof vi.fn>;
   let nextId: number;
@@ -13,15 +15,13 @@ describe("useObjectUrl", () => {
     nextId = 0;
     createObjectURL = vi.fn(() => `blob:mock-${++nextId}`);
     revokeObjectURL = vi.fn();
-    vi.stubGlobal("URL", {
-      ...URL,
-      createObjectURL,
-      revokeObjectURL,
-    });
+    URL.createObjectURL = createObjectURL as unknown as typeof URL.createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL as unknown as typeof URL.revokeObjectURL;
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
   });
 
   it("returns null when bytes are null", () => {
@@ -60,10 +60,12 @@ describe("useObjectUrl", () => {
   });
 
   it("revokes on clear (bytes become null)", () => {
-    const bytes = new Uint8Array([1]);
+    const initialProps: { bytes: Uint8Array | null } = {
+      bytes: new Uint8Array([1]),
+    };
     const { result, rerender } = renderHook(
       ({ bytes: b }: { bytes: Uint8Array | null }) => useObjectUrl(b),
-      { initialProps: { bytes } },
+      { initialProps },
     );
 
     expect(result.current).toBe("blob:mock-1");
@@ -90,12 +92,16 @@ describe("useObjectUrl", () => {
       wrapper: StrictMode,
     });
 
-    // StrictMode mounts, cleans up, remounts — first URL must be revoked.
-    expect(createObjectURL.mock.calls.length).toBeGreaterThanOrEqual(2);
-    expect(revokeObjectURL).toHaveBeenCalled();
-    expect(result.current).toMatch(/^blob:mock-/);
-
+    // StrictMode mounts, cleans up, remounts — every URL except the live one must be revoked.
+    const created = createObjectURL.mock.results.map((r) => r.value as string);
+    expect(created.length).toBeGreaterThanOrEqual(2);
     const liveUrl = result.current;
+    expect(liveUrl).toBe(created[created.length - 1]);
+    for (const url of created.slice(0, -1)) {
+      expect(revokeObjectURL).toHaveBeenCalledWith(url);
+    }
+    expect(revokeObjectURL).not.toHaveBeenCalledWith(liveUrl);
+
     unmount();
     expect(revokeObjectURL).toHaveBeenCalledWith(liveUrl);
   });

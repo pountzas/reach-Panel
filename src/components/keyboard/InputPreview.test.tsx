@@ -74,6 +74,8 @@ describe("InputPreview blank placeholder", () => {
 });
 
 describe("InputPreview object URL lifecycle", () => {
+  const originalCreateObjectURL = URL.createObjectURL.bind(URL);
+  const originalRevokeObjectURL = URL.revokeObjectURL.bind(URL);
   let createObjectURL: ReturnType<typeof vi.fn>;
   let revokeObjectURL: ReturnType<typeof vi.fn>;
   let nextId: number;
@@ -94,15 +96,13 @@ describe("InputPreview object URL lifecycle", () => {
     nextId = 0;
     createObjectURL = vi.fn(() => `blob:preview-${++nextId}`);
     revokeObjectURL = vi.fn();
-    vi.stubGlobal("URL", {
-      ...URL,
-      createObjectURL,
-      revokeObjectURL,
-    });
+    URL.createObjectURL = createObjectURL as unknown as typeof URL.createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL as unknown as typeof URL.revokeObjectURL;
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
   });
 
   it("creates one object URL per frame and uses it as img src (no data URL)", () => {
