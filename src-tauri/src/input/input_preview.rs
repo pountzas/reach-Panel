@@ -365,18 +365,19 @@ fn capture_and_maybe_encode(
 
 fn encode_bgra_jpeg(bgra: &[u8], src_w: i32, src_h: i32) -> Result<(Vec<u8>, u32, u32), String> {
     let (dest_w, dest_h) = scale_to_max(src_w, src_h, MAX_CAPTURE_WIDTH, MAX_CAPTURE_HEIGHT);
-    let rgb = bgra_to_rgb(bgra, src_w as u32, src_h as u32);
 
-    let img = if dest_w == src_w && dest_h == src_h {
-        rgb
+    // Downscale on BGRA first so conversion/encode see fewer pixels.
+    // Box average handles any downscale ratio (buckets of 1..n px), so thin
+    // text strokes are averaged rather than dropped as with nearest-neighbour.
+    let (work, w, h) = if dest_w == src_w && dest_h == src_h {
+        (None, src_w as u32, src_h as u32)
     } else {
-        image::imageops::resize(
-            &rgb,
-            dest_w as u32,
-            dest_h as u32,
-            image::imageops::FilterType::Triangle,
-        )
+        let resized =
+            resize_bgra_box(bgra, src_w as u32, src_h as u32, dest_w as u32, dest_h as u32)?;
+        (Some(resized), dest_w as u32, dest_h as u32)
     };
+    let pixels = work.as_deref().unwrap_or(bgra);
+    let img = bgra_to_rgb(pixels, w, h)?;
 
     let mut jpeg = Vec::new();
     let encoder = JpegEncoder::new_with_quality(&mut jpeg, JPEG_QUALITY);
@@ -390,6 +391,64 @@ fn encode_bgra_jpeg(bgra: &[u8], src_w: i32, src_h: i32) -> Result<(Vec<u8>, u32
         .map_err(|e| e.to_string())?;
 
     Ok((jpeg, img.width(), img.height()))
+}
+
+/// Integer box average of BGRA pixels into `dest_w`×`dest_h` (any downscale ratio).
+fn resize_bgra_box(
+    src: &[u8],
+    src_w: u32,
+    src_h: u32,
+    dest_w: u32,
+    dest_h: u32,
+) -> Result<Vec<u8>, String> {
+    let expected = (src_w as usize)
+        .saturating_mul(src_h as usize)
+        .saturating_mul(4);
+    if src.len() < expected {
+        return Err(format!(
+            "BGRA buffer too short for box resize: {} < {}",
+            src.len(),
+            expected
+        ));
+    }
+    if dest_w == 0 || dest_h == 0 {
+        return Err("empty box resize destination".into());
+    }
+
+    let mut out = vec![0u8; (dest_w as usize) * (dest_h as usize) * 4];
+    for dy in 0..dest_h {
+        let y0 = (dy as u64 * src_h as u64 / dest_h as u64) as u32;
+        let y1 = (((dy as u64 + 1) * src_h as u64) / dest_h as u64) as u32;
+        let y1 = y1.max(y0 + 1).min(src_h);
+        for dx in 0..dest_w {
+            let x0 = (dx as u64 * src_w as u64 / dest_w as u64) as u32;
+            let x1 = (((dx as u64 + 1) * src_w as u64) / dest_w as u64) as u32;
+            let x1 = x1.max(x0 + 1).min(src_w);
+
+            let mut b_sum = 0u32;
+            let mut g_sum = 0u32;
+            let mut r_sum = 0u32;
+            let mut a_sum = 0u32;
+            let mut n = 0u32;
+            for y in y0..y1 {
+                let row = (y as usize) * (src_w as usize) * 4;
+                for x in x0..x1 {
+                    let i = row + (x as usize) * 4;
+                    b_sum += src[i] as u32;
+                    g_sum += src[i + 1] as u32;
+                    r_sum += src[i + 2] as u32;
+                    a_sum += src[i + 3] as u32;
+                    n += 1;
+                }
+            }
+            let o = ((dy as usize) * (dest_w as usize) + (dx as usize)) * 4;
+            out[o] = (b_sum / n) as u8;
+            out[o + 1] = (g_sum / n) as u8;
+            out[o + 2] = (r_sum / n) as u8;
+            out[o + 3] = (a_sum / n) as u8;
+        }
+    }
+    Ok(out)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -704,18 +763,25 @@ fn capture_screen_bgra(x: i32, y: i32, width: i32, height: i32) -> Result<Vec<u8
     }
 }
 
-fn bgra_to_rgb(bgra: &[u8], width: u32, height: u32) -> RgbImage {
-    let mut rgb = RgbImage::new(width, height);
-    for y in 0..height {
-        for x in 0..width {
-            let i = ((y * width + x) * 4) as usize;
-            if i + 2 >= bgra.len() {
-                continue;
-            }
-            rgb.put_pixel(x, y, image::Rgb([bgra[i + 2], bgra[i + 1], bgra[i]]));
-        }
+/// Convert packed BGRA8 to an `RgbImage` via a single slice pass (no `put_pixel`).
+fn bgra_to_rgb(bgra: &[u8], width: u32, height: u32) -> Result<RgbImage, String> {
+    let expected = (width as usize)
+        .saturating_mul(height as usize)
+        .saturating_mul(4);
+    if bgra.len() < expected {
+        return Err(format!(
+            "BGRA buffer too short: {} < {}",
+            bgra.len(),
+            expected
+        ));
     }
-    rgb
+    let pixel_count = (width as usize).saturating_mul(height as usize);
+    let mut buf = Vec::with_capacity(pixel_count.saturating_mul(3));
+    for px in bgra[..expected].chunks_exact(4) {
+        buf.extend_from_slice(&[px[2], px[1], px[0]]);
+    }
+    RgbImage::from_raw(width, height, buf)
+        .ok_or_else(|| "RgbImage::from_raw rejected buffer".into())
 }
 
 /// What the preview worker should do for one tick.
@@ -1161,5 +1227,306 @@ mod tests {
         // Extra end is a no-op (no underflow).
         end_animation_pause();
         assert!(!animation_paused());
+    }
+
+    fn make_gradient_bgra(w: u32, h: u32) -> Vec<u8> {
+        let mut buf = vec![0u8; (w * h * 4) as usize];
+        for y in 0..h {
+            for x in 0..w {
+                let i = ((y * w + x) * 4) as usize;
+                buf[i] = (x % 256) as u8; // B
+                buf[i + 1] = (y % 256) as u8; // G
+                buf[i + 2] = ((x + y) % 256) as u8; // R
+                buf[i + 3] = 255;
+            }
+        }
+        buf
+    }
+
+    /// Old put_pixel conversion kept only as the identity oracle for the slice rewrite.
+    #[cfg(test)]
+    fn bgra_to_rgb_reference(bgra: &[u8], width: u32, height: u32) -> RgbImage {
+        let mut rgb = RgbImage::new(width, height);
+        for y in 0..height {
+            for x in 0..width {
+                let i = ((y * width + x) * 4) as usize;
+                if i + 2 >= bgra.len() {
+                    continue;
+                }
+                rgb.put_pixel(x, y, image::Rgb([bgra[i + 2], bgra[i + 1], bgra[i]]));
+            }
+        }
+        rgb
+    }
+
+    #[test]
+    fn bgra_to_rgb_matches_reference_on_edge_and_random_sizes() {
+        let cases: &[(u32, u32)] = &[(1, 1), (3, 5), (640, 120), (1200, 400)];
+        for &(w, h) in cases {
+            let bgra = make_gradient_bgra(w, h);
+            let expected = bgra_to_rgb_reference(&bgra, w, h);
+            let actual = bgra_to_rgb(&bgra, w, h).expect("convert");
+            assert_eq!(
+                actual.as_raw(),
+                expected.as_raw(),
+                "RGB mismatch for {w}x{h}"
+            );
+        }
+
+        // Pseudo-random buffer (deterministic LCG) at odd width.
+        let (w, h) = (17u32, 9u32);
+        let mut bgra = vec![0u8; (w * h * 4) as usize];
+        let mut state = 0xC0FFEE_u32;
+        for byte in &mut bgra {
+            state = state.wrapping_mul(1664525).wrapping_add(1013904223);
+            *byte = (state >> 24) as u8;
+        }
+        let expected = bgra_to_rgb_reference(&bgra, w, h);
+        let actual = bgra_to_rgb(&bgra, w, h).expect("convert");
+        assert_eq!(actual.as_raw(), expected.as_raw());
+    }
+
+    #[test]
+    fn bgra_to_rgb_rejects_short_buffer() {
+        let bgra = vec![0u8; 3]; // not enough for 1x1
+        assert!(bgra_to_rgb(&bgra, 1, 1).is_err());
+    }
+
+    #[test]
+    fn resize_bgra_box_averages_each_bucket() {
+        // 4x2 -> 2x1: each dest pixel is the mean of one 2x2 block.
+        let src: Vec<u8> = vec![
+            0, 0, 0, 255, 100, 100, 100, 255, 10, 20, 30, 255, 10, 20, 30, 255,
+            200, 200, 200, 255, 100, 100, 100, 255, 30, 40, 50, 255, 30, 40, 50, 255,
+        ];
+        let out = resize_bgra_box(&src, 4, 2, 2, 1).expect("box");
+        assert_eq!(out, vec![100, 100, 100, 255, 20, 30, 40, 255]);
+    }
+
+    #[test]
+    fn resize_bgra_box_keeps_uniform_color_at_fractional_ratio() {
+        let (sw, sh, dw, dh) = (1000u32, 150u32, 640u32, 96u32);
+        let src: Vec<u8> = [12u8, 34, 56, 255].repeat((sw * sh) as usize);
+        let out = resize_bgra_box(&src, sw, sh, dw, dh).expect("box");
+        assert_eq!(out.len(), (dw * dh * 4) as usize);
+        assert!(out.chunks_exact(4).all(|p| p == [12, 34, 56, 255]));
+    }
+
+    #[test]
+    fn resize_bgra_box_rejects_short_buffer() {
+        let src = vec![0u8; 4 * 4 * 4 - 1];
+        assert!(resize_bgra_box(&src, 4, 4, 2, 2).is_err());
+    }
+
+    #[test]
+    fn encode_bgra_jpeg_output_dims_match_scale_to_max() {
+        let cases: &[(i32, i32)] = &[
+            (640, 120),
+            (320, 60),
+            (1280, 200),
+            (1200, 400),
+            (800, 100),
+            (100, 200),
+        ];
+        for &(src_w, src_h) in cases {
+            let bgra = make_gradient_bgra(src_w as u32, src_h as u32);
+            let (jpeg, out_w, out_h) = encode_bgra_jpeg(&bgra, src_w, src_h).expect("encode");
+            let (expect_w, expect_h) =
+                scale_to_max(src_w, src_h, MAX_CAPTURE_WIDTH, MAX_CAPTURE_HEIGHT);
+            assert_eq!(out_w, expect_w as u32, "width for {src_w}x{src_h}");
+            assert_eq!(out_h, expect_h as u32, "height for {src_w}x{src_h}");
+            assert!(!jpeg.is_empty());
+        }
+    }
+
+    /// Release microbench for PR timings. Run with:
+    /// `cargo test -p reach-panel --release --locked bench_encode_stages_release -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn bench_encode_stages_release() {
+        use std::time::Instant;
+
+        fn avg_ms(total_ns: u128, iters: u32) -> f64 {
+            (total_ns as f64 / iters as f64) / 1e6
+        }
+
+        fn time_old(label: &str, w: i32, h: i32, iters: u32) {
+            let bgra = make_gradient_bgra(w as u32, h as u32);
+            let (dest_w, dest_h) = scale_to_max(w, h, MAX_CAPTURE_WIDTH, MAX_CAPTURE_HEIGHT);
+            let needs_resize = dest_w != w || dest_h != h;
+            let _ = bgra_to_rgb_reference(&bgra, w as u32, h as u32);
+
+            let mut convert_ns = 0u128;
+            let mut resize_ns = 0u128;
+            let mut encode_ns = 0u128;
+
+            for _ in 0..iters {
+                let tc = Instant::now();
+                let rgb = bgra_to_rgb_reference(&bgra, w as u32, h as u32);
+                convert_ns += tc.elapsed().as_nanos();
+
+                let img = if needs_resize {
+                    let tr = Instant::now();
+                    let resized = image::imageops::resize(
+                        &rgb,
+                        dest_w as u32,
+                        dest_h as u32,
+                        image::imageops::FilterType::Triangle,
+                    );
+                    resize_ns += tr.elapsed().as_nanos();
+                    resized
+                } else {
+                    rgb
+                };
+
+                let te = Instant::now();
+                let mut jpeg = Vec::new();
+                let encoder = JpegEncoder::new_with_quality(&mut jpeg, JPEG_QUALITY);
+                encoder
+                    .write_image(
+                        img.as_raw(),
+                        img.width(),
+                        img.height(),
+                        ExtendedColorType::Rgb8,
+                    )
+                    .expect("jpeg");
+                encode_ns += te.elapsed().as_nanos();
+            }
+
+            eprintln!(
+                "BEFORE {label}: convert={:.3}ms resize={:.3}ms encode={:.3}ms (avg over {iters}, dest {}x{})",
+                avg_ms(convert_ns, iters),
+                avg_ms(resize_ns, iters),
+                avg_ms(encode_ns, iters),
+                dest_w,
+                dest_h,
+            );
+        }
+
+        fn time_new(label: &str, w: i32, h: i32, iters: u32) {
+            let bgra = make_gradient_bgra(w as u32, h as u32);
+            let (dest_w, dest_h) = scale_to_max(w, h, MAX_CAPTURE_WIDTH, MAX_CAPTURE_HEIGHT);
+            let needs_resize = dest_w != w || dest_h != h;
+            let _ = encode_bgra_jpeg(&bgra, w, h);
+
+            let mut convert_ns = 0u128;
+            let mut resize_ns = 0u128;
+            let mut encode_ns = 0u128;
+
+            for _ in 0..iters {
+                let (work, ww, hh) = if needs_resize {
+                    let tr = Instant::now();
+                    let resized =
+                        resize_bgra_box(&bgra, w as u32, h as u32, dest_w as u32, dest_h as u32)
+                            .expect("box");
+                    resize_ns += tr.elapsed().as_nanos();
+                    (resized, dest_w as u32, dest_h as u32)
+                } else {
+                    (bgra.clone(), w as u32, h as u32)
+                };
+
+                let tc = Instant::now();
+                let rgb = bgra_to_rgb(&work, ww, hh).expect("rgb");
+                convert_ns += tc.elapsed().as_nanos();
+
+                let te = Instant::now();
+                let mut jpeg = Vec::new();
+                let encoder = JpegEncoder::new_with_quality(&mut jpeg, JPEG_QUALITY);
+                encoder
+                    .write_image(
+                        rgb.as_raw(),
+                        rgb.width(),
+                        rgb.height(),
+                        ExtendedColorType::Rgb8,
+                    )
+                    .expect("jpeg");
+                encode_ns += te.elapsed().as_nanos();
+            }
+
+            eprintln!(
+                "AFTER  {label}: convert={:.3}ms resize={:.3}ms encode={:.3}ms (avg over {iters}, dest {}x{})",
+                avg_ms(convert_ns, iters),
+                avg_ms(resize_ns, iters),
+                avg_ms(encode_ns, iters),
+                dest_w,
+                dest_h,
+            );
+        }
+
+        time_old("640x120", 640, 120, 80);
+        time_new("640x120", 640, 120, 80);
+        time_old("1200x400", 1200, 400, 40);
+        time_new("1200x400", 1200, 400, 40);
+    }
+
+    /// Writes before/after JPEG samples for visual parity notes (synthetic gradient + stripes).
+    #[test]
+    #[ignore]
+    fn write_visual_parity_samples() {
+        use std::fs;
+        use std::path::PathBuf;
+
+        fn encode_old(bgra: &[u8], w: i32, h: i32) -> Vec<u8> {
+            let (dest_w, dest_h) = scale_to_max(w, h, MAX_CAPTURE_WIDTH, MAX_CAPTURE_HEIGHT);
+            let rgb = bgra_to_rgb_reference(bgra, w as u32, h as u32);
+            let img = if dest_w == w && dest_h == h {
+                rgb
+            } else {
+                image::imageops::resize(
+                    &rgb,
+                    dest_w as u32,
+                    dest_h as u32,
+                    image::imageops::FilterType::Triangle,
+                )
+            };
+            let mut jpeg = Vec::new();
+            let encoder = JpegEncoder::new_with_quality(&mut jpeg, JPEG_QUALITY);
+            encoder
+                .write_image(
+                    img.as_raw(),
+                    img.width(),
+                    img.height(),
+                    ExtendedColorType::Rgb8,
+                )
+                .expect("jpeg");
+            jpeg
+        }
+
+        fn striped_textish(w: u32, h: u32) -> Vec<u8> {
+            let mut buf = vec![255u8; (w * h * 4) as usize];
+            // Dark horizontal "text lines" every 8px to mimic field content.
+            for y in 0..h {
+                let on_line = (y % 8) < 2;
+                for x in 0..w {
+                    let i = ((y * w + x) * 4) as usize;
+                    if on_line && (x / 4) % 3 != 0 {
+                        buf[i] = 40;
+                        buf[i + 1] = 40;
+                        buf[i + 2] = 40;
+                    }
+                    buf[i + 3] = 255;
+                }
+            }
+            buf
+        }
+
+        let out_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("docs")
+            .join("perf")
+            .join("issue-313-visual");
+        fs::create_dir_all(&out_dir).expect("mkdir");
+
+        for &(w, h, name) in &[
+            (640i32, 120i32, "640x120"),
+            (1200i32, 400i32, "1200x400"),
+        ] {
+            let bgra = striped_textish(w as u32, h as u32);
+            let before = encode_old(&bgra, w, h);
+            let (after, _, _) = encode_bgra_jpeg(&bgra, w, h).expect("new");
+            fs::write(out_dir.join(format!("{name}-before.jpg")), &before).expect("write before");
+            fs::write(out_dir.join(format!("{name}-after.jpg")), &after).expect("write after");
+        }
+        eprintln!("wrote samples to {}", out_dir.display());
     }
 }
