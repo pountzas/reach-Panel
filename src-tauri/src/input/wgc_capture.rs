@@ -3,13 +3,16 @@
 //! Primary input-preview capture backend (#312). Falls back to PrintWindow/BitBlt in
 //! `input_preview` when WGC is unsupported or fails.
 
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 use windows::core::{Interface, HSTRING};
 use windows::Foundation::Metadata::ApiInformation;
 use windows::Graphics::Capture::{
-    Direct3D11CaptureFramePool, GraphicsCaptureItem, GraphicsCaptureSession,
+    Direct3D11CaptureFramePool, GraphicsCaptureAccess, GraphicsCaptureAccessKind,
+    GraphicsCaptureItem, GraphicsCaptureSession,
 };
+use windows::Security::Authorization::AppCapabilityAccess::AppCapabilityAccessStatus;
 use windows::Graphics::DirectX::Direct3D11::IDirect3DDevice;
 use windows::Graphics::DirectX::DirectXPixelFormat;
 use windows::Graphics::SizeInt32;
@@ -34,11 +37,15 @@ use super::input_preview::{
     letterbox_bgra, letterbox_dst_offset, window_local_capture_rect, CaptureRect,
 };
 
+/// How long to wait for the first WGC frame before falling back to PrintWindow/BitBlt.
+const WGC_FIRST_FRAME_TIMEOUT: Duration = Duration::from_millis(500);
+
 /// Result of a WGC strip attempt.
 pub(crate) enum StripCapture {
     /// Tight BGRA buffer matching the requested screen strip size.
     Ready(Vec<u8>),
-    /// Session exists but no frame yet — caller should keep the last frame (no GDI fallback).
+    /// Session exists but no frame yet — caller should keep the last JPEG (no GDI this tick).
+    /// After [`WGC_FIRST_FRAME_TIMEOUT`] the capture path returns `Err` so GDI can serve.
     NotReady,
 }
 
@@ -58,6 +65,8 @@ struct SessionState {
     staging: Option<StagingStrip>,
     /// Latest delivered frame; re-cropped when no newer frame is queued.
     last_frame: Option<windows::Graphics::Capture::Direct3D11CaptureFrame>,
+    /// When `last_frame` was cleared / session started; drives GDI fallback timeout.
+    waiting_since: Instant,
 }
 
 struct StagingStrip {
@@ -100,8 +109,53 @@ fn property_present(type_name: &str, property: &str) -> bool {
 }
 
 fn wgc_supported() -> bool {
-    ensure_com();
-    GraphicsCaptureSession::IsSupported().unwrap_or(false)
+    use std::cell::Cell;
+    thread_local! {
+        static COM_READY: Cell<bool> = const { Cell::new(false) };
+    }
+    COM_READY.with(|ready| {
+        if !ready.get() {
+            ensure_com();
+            ready.set(true);
+        }
+    });
+    static SUPPORTED: OnceLock<bool> = OnceLock::new();
+    *SUPPORTED.get_or_init(|| GraphicsCaptureSession::IsSupported().unwrap_or(false))
+}
+
+/// One-time borderless capture access request (#312). Cached for the process lifetime.
+fn request_borderless_access_once() {
+    static DONE: OnceLock<()> = OnceLock::new();
+    let _ = DONE.get_or_init(|| {
+        ensure_com();
+        let present = ApiInformation::IsTypePresent(&HSTRING::from(
+            "Windows.Graphics.Capture.GraphicsCaptureAccess",
+        ))
+        .unwrap_or(false);
+        if !present {
+            eprintln!(
+                "input preview: GraphicsCaptureAccess unavailable (older Windows); capture border may show"
+            );
+            return;
+        }
+        match GraphicsCaptureAccess::RequestAccessAsync(GraphicsCaptureAccessKind::Borderless)
+            .and_then(|op| op.get())
+        {
+            Ok(status) if status == AppCapabilityAccessStatus::Allowed => {
+                eprintln!("input preview: borderless capture access granted");
+            }
+            Ok(status) => {
+                eprintln!(
+                    "input preview: borderless capture access not granted ({status:?}); capture border may show"
+                );
+            }
+            Err(e) => {
+                eprintln!(
+                    "input preview: RequestAccessAsync(Borderless) failed ({e}); capture border may show"
+                );
+            }
+        }
+    });
 }
 
 fn create_d3d() -> Result<D3dState, String> {
@@ -202,6 +256,7 @@ fn create_session(d3d: &D3dState, hwnd: HWND) -> Result<SessionState, String> {
             .CreateCaptureSession(&item)
             .map_err(|e| format!("CreateCaptureSession: {e}"))?;
         configure_session(&session)?;
+        request_borderless_access_once();
         session
             .StartCapture()
             .map_err(|e| format!("StartCapture: {e}"))?;
@@ -215,6 +270,7 @@ fn create_session(d3d: &D3dState, hwnd: HWND) -> Result<SessionState, String> {
             session,
             staging: None,
             last_frame: None,
+            waiting_since: Instant::now(),
         })
     }
 }
@@ -287,6 +343,7 @@ fn recreate_pool_for_size(
     session.content_w = size.Width;
     session.content_h = size.Height;
     session.staging = None;
+    session.waiting_since = Instant::now();
     Ok(())
 }
 
@@ -483,6 +540,16 @@ fn capture_once_inner(
         session.last_frame.clone()
     };
     let Some(frame) = frame else {
+        let waited = rt
+            .session
+            .as_ref()
+            .map(|s| s.waiting_since.elapsed())
+            .unwrap_or_default();
+        if waited >= WGC_FIRST_FRAME_TIMEOUT {
+            // Minimized/cloaked/occluded targets may never deliver a first frame.
+            // Keep the session (a frame may still arrive) but let PrintWindow/BitBlt serve this tick.
+            return Err(format!("no WGC frame after {} ms", waited.as_millis()));
+        }
         return Ok(StripCapture::NotReady);
     };
 

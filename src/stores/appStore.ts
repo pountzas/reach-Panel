@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { subscribeInputPreview } from "../lib/inputPreviewChannel";
 import { clear as clearInputPreviewFrames, publish as publishInputPreviewFrame } from "../lib/inputPreviewFrames";
 import { prefersReducedMotion } from "../lib/motion";
@@ -61,11 +62,19 @@ export const useAppStore = create<AppStore>()((...a) => ({
 }));
 
 
-void subscribeInputPreview((frame) => {
-  publishInputPreviewFrame(frame);
-}).catch(() => {
-  /* Tauri unavailable in unit tests / non-webview */
-});
+// Only main renders InputPreview; tool windows share this bundle and must not
+// replace main's preview Channel (see cmd_subscribe_input_preview).
+try {
+  if (WebviewWindow.getCurrent().label === "main") {
+    void subscribeInputPreview((frame) => {
+      publishInputPreviewFrame(frame);
+    }).catch(() => {
+      /* Tauri invoke unavailable in unit tests */
+    });
+  }
+} catch {
+  /* WebviewWindow unavailable outside a Tauri webview */
+}
 
 void listen("input-preview-cleared", () => {
   clearInputPreviewFrames();

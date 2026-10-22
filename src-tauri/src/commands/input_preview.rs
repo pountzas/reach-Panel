@@ -7,7 +7,16 @@ pub fn cmd_set_input_preview_enabled(enabled: bool) {
 }
 
 #[tauri::command]
-pub fn cmd_subscribe_input_preview(channel: Channel<InvokeResponseBody>) {
+pub fn cmd_subscribe_input_preview(
+    webview: tauri::Webview,
+    channel: Channel<InvokeResponseBody>,
+) {
+    // Settings and the dictation overlay load the same bundle (App.tsx → appStore.ts
+    // subscribes at module load). Only main renders InputPreview, so a tool window must
+    // never replace main's channel.
+    if webview.label() != "main" {
+        return;
+    }
     crate::input::input_preview::set_preview_channel(channel);
 }
 
