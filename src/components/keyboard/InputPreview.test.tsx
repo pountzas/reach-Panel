@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { DEFAULT_SETTINGS } from "../../lib/types";
+import {
+  clear as clearInputPreviewFrames,
+  publish as publishInputPreviewFrame,
+} from "../../lib/inputPreviewFrames";
 
 const sampleFrame = {
   bytes: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
@@ -15,7 +19,6 @@ const storeState = {
     uiLanguage: "en" as const,
   },
   focusModeActive: false,
-  inputPreviewFrame: sampleFrame as typeof sampleFrame | null,
   externalInputFocused: false,
 };
 
@@ -33,8 +36,12 @@ describe("InputPreview blank placeholder", () => {
       uiLanguage: "en",
     };
     storeState.focusModeActive = false;
-    storeState.inputPreviewFrame = sampleFrame;
     storeState.externalInputFocused = false;
+    publishInputPreviewFrame(sampleFrame);
+  });
+
+  afterEach(() => {
+    clearInputPreviewFrames();
   });
 
   it("renders an empty frame when no text field is focused, even if a stale frame exists", () => {
@@ -56,7 +63,7 @@ describe("InputPreview blank placeholder", () => {
     unmount();
 
     storeState.externalInputFocused = true;
-    storeState.inputPreviewFrame = sampleFrame;
+    publishInputPreviewFrame(sampleFrame);
     render(<InputPreview />);
     const live = screen.getByLabelText("Target input");
     expect(live.style.width).toBe("320px");
@@ -65,7 +72,7 @@ describe("InputPreview blank placeholder", () => {
 
   it("shows waiting text when focused and no frame has arrived", () => {
     storeState.externalInputFocused = true;
-    storeState.inputPreviewFrame = null;
+    clearInputPreviewFrames();
     render(<InputPreview />);
 
     expect(screen.queryByRole("img")).toBeNull();
@@ -86,12 +93,12 @@ describe("InputPreview object URL lifecycle", () => {
       uiLanguage: "en",
     };
     storeState.focusModeActive = false;
-    storeState.inputPreviewFrame = {
+    storeState.externalInputFocused = true;
+    publishInputPreviewFrame({
       bytes: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
       width: 4,
       height: 2,
-    };
-    storeState.externalInputFocused = true;
+    });
 
     nextId = 0;
     createObjectURL = vi.fn(() => `blob:preview-${++nextId}`);
@@ -103,6 +110,7 @@ describe("InputPreview object URL lifecycle", () => {
   afterEach(() => {
     URL.createObjectURL = originalCreateObjectURL;
     URL.revokeObjectURL = originalRevokeObjectURL;
+    clearInputPreviewFrames();
   });
 
   it("creates one object URL per frame and uses it as img src (no data URL)", () => {
@@ -121,15 +129,16 @@ describe("InputPreview object URL lifecycle", () => {
   });
 
   it("revokes the previous URL when a new frame arrives", () => {
-    const { rerender } = render(<InputPreview />);
+    render(<InputPreview />);
     expect(createObjectURL).toHaveBeenCalledTimes(1);
 
-    storeState.inputPreviewFrame = {
-      bytes: new Uint8Array([0xff, 0xd8, 0x00, 0xd9]),
-      width: 4,
-      height: 2,
-    };
-    rerender(<InputPreview />);
+    act(() => {
+      publishInputPreviewFrame({
+        bytes: new Uint8Array([0xff, 0xd8, 0x00, 0xd9]),
+        width: 4,
+        height: 2,
+      });
+    });
 
     expect(createObjectURL).toHaveBeenCalledTimes(2);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:preview-1");
@@ -137,11 +146,12 @@ describe("InputPreview object URL lifecycle", () => {
   });
 
   it("revokes on clear when the frame is cleared", () => {
-    const { rerender } = render(<InputPreview />);
+    render(<InputPreview />);
     expect(screen.getByRole("img")).toBeTruthy();
 
-    storeState.inputPreviewFrame = null;
-    rerender(<InputPreview />);
+    act(() => {
+      clearInputPreviewFrames();
+    });
 
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:preview-1");
     expect(screen.queryByRole("img")).toBeNull();

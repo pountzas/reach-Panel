@@ -16,6 +16,7 @@ import { shouldStopCompanionBridgeOnHostMode } from "../../lib/companionSession"
 import { captureWindowHeightRatioBeforeTeaching, heightRatioAfterLeavingTeaching, shouldDelegateAppModeToMain, APP_MODE_REQUEST_EVENT } from "../../lib/appModeLayout";
 import type { AppModeRequest } from "../../lib/appModeLayout";
 import { popRestoreEntry, pushRestoreEntry } from "../lib/restoreStack";
+import { clear as clearInputPreviewFrames } from "../../lib/inputPreviewFrames";
 
 export const createModeSlice: StateCreator<
   AppStore,
@@ -291,7 +292,8 @@ export const createModeSlice: StateCreator<
           },
           { replace: true },
         );
-        set({ teachingLesson: "language", inputPreviewFrame: null });
+        set({ teachingLesson: "language" });
+        clearInputPreviewFrames();
         // Flags on before synthesizer patch so first layout sync sees Teaching.
         await get().enableMusicTeaching();
         const sectionStack = ensureSectionExpanded(

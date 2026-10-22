@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "../lib/types";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import {
+  clear as clearInputPreviewFrames,
+  getLatest as getLatestInputPreviewFrame,
+  publish as publishInputPreviewFrame,
+} from "../lib/inputPreviewFrames";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
@@ -34,6 +40,7 @@ vi.mock("../lib/motion", () => ({
 import { useAppStore } from "./appStore";
 
 const invokeMock = vi.mocked(invoke);
+const listenMock = vi.mocked(listen);
 
 function lastPreviewEnableCall() {
   const calls = invokeMock.mock.calls.filter(
@@ -42,9 +49,20 @@ function lastPreviewEnableCall() {
   return calls[calls.length - 1];
 }
 
+function listenHandler(
+  eventName: string,
+): (event: { payload: unknown }) => void {
+  const entry = listenMock.mock.calls.find(([name]) => name === eventName);
+  if (!entry) {
+    throw new Error(`listen was not registered for ${eventName}`);
+  }
+  return entry[1] as (event: { payload: unknown }) => void;
+}
+
 describe("setAppMode", () => {
   beforeEach(() => {
     invokeMock.mockClear();
+    clearInputPreviewFrames();
     useAppStore.setState({
       settings: {
         ...DEFAULT_SETTINGS,
@@ -62,8 +80,11 @@ describe("setAppMode", () => {
       focusModeActive: false,
       isAnimatingWindow: false,
       monitors: [],
-      inputPreviewFrame: null,
     });
+  });
+
+  afterEach(() => {
+    clearInputPreviewFrames();
   });
 
   it("setAppMode('teaching') enables teaching and synthesizer section", async () => {
@@ -81,15 +102,13 @@ describe("setAppMode", () => {
   });
 
   it("setAppMode('teaching') clears preview frames and disables capture", async () => {
-    useAppStore.setState({
-      inputPreviewFrame: {
-        bytes: new Uint8Array([0xff, 0xd8]),
-        width: 2,
-        height: 1,
-      },
+    publishInputPreviewFrame({
+      bytes: new Uint8Array([0xff, 0xd8]),
+      width: 2,
+      height: 1,
     });
     await useAppStore.getState().setAppMode("teaching");
-    expect(useAppStore.getState().inputPreviewFrame).toBeNull();
+    expect(getLatestInputPreviewFrame()).toBeNull();
     expect(lastPreviewEnableCall()).toEqual([
       "cmd_set_input_preview_enabled",
       { enabled: false },
@@ -145,5 +164,41 @@ describe("setAppMode", () => {
       "cmd_set_input_preview_enabled",
       { enabled: true },
     ]);
+  });
+});
+
+describe("input preview clear paths", () => {
+  beforeEach(() => {
+    clearInputPreviewFrames();
+    publishInputPreviewFrame({
+      bytes: new Uint8Array([0xff, 0xd8]),
+      width: 2,
+      height: 1,
+    });
+  });
+
+  afterEach(() => {
+    clearInputPreviewFrames();
+  });
+
+  it("input-preview-cleared clears the module frame store", () => {
+    listenHandler("input-preview-cleared")({ payload: undefined });
+    expect(getLatestInputPreviewFrame()).toBeNull();
+  });
+
+  it("input-focus-changed unfocused clears the module frame store", () => {
+    listenHandler("input-focus-changed")({
+      payload: { focused: false },
+    });
+    expect(getLatestInputPreviewFrame()).toBeNull();
+    expect(useAppStore.getState().externalInputFocused).toBe(false);
+  });
+
+  it("input-focus-changed focused keeps the module frame store", () => {
+    listenHandler("input-focus-changed")({
+      payload: { focused: true },
+    });
+    expect(getLatestInputPreviewFrame()).not.toBeNull();
+    expect(useAppStore.getState().externalInputFocused).toBe(true);
   });
 });
