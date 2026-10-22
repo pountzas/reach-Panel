@@ -1,8 +1,14 @@
+use tauri::ipc::{Channel, InvokeResponseBody};
 use tauri::Manager;
 
 #[tauri::command]
 pub fn cmd_set_input_preview_enabled(enabled: bool) {
     crate::input::input_preview::set_enabled(enabled);
+}
+
+#[tauri::command]
+pub fn cmd_subscribe_input_preview(channel: Channel<InvokeResponseBody>) {
+    crate::input::input_preview::set_preview_channel(channel);
 }
 
 #[tauri::command]

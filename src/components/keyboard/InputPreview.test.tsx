@@ -3,13 +3,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { DEFAULT_SETTINGS } from "../../lib/types";
 
+const sampleFrame = {
+  bytes: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+  width: 4,
+  height: 2,
+};
+
 const storeState = {
   settings: {
     ...DEFAULT_SETTINGS,
     uiLanguage: "en" as const,
   },
   focusModeActive: false,
-  inputPreviewFrame: "data:image/jpeg;base64,abc" as string | null,
+  inputPreviewFrame: sampleFrame as typeof sampleFrame | null,
   externalInputFocused: false,
 };
 
@@ -27,7 +33,7 @@ describe("InputPreview blank placeholder", () => {
       uiLanguage: "en",
     };
     storeState.focusModeActive = false;
-    storeState.inputPreviewFrame = "data:image/jpeg;base64,abc";
+    storeState.inputPreviewFrame = sampleFrame;
     storeState.externalInputFocused = false;
   });
 
@@ -50,7 +56,7 @@ describe("InputPreview blank placeholder", () => {
     unmount();
 
     storeState.externalInputFocused = true;
-    storeState.inputPreviewFrame = "data:image/jpeg;base64,abc";
+    storeState.inputPreviewFrame = sampleFrame;
     render(<InputPreview />);
     const live = screen.getByLabelText("Target input");
     expect(live.style.width).toBe("320px");

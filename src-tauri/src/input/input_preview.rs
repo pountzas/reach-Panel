@@ -8,7 +8,7 @@ use std::time::Duration;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use image::codecs::jpeg::JpegEncoder;
 use image::{ExtendedColorType, ImageEncoder, RgbImage};
-use serde::Serialize;
+use tauri::ipc::{Channel, InvokeResponseBody};
 use tauri::{AppHandle, Emitter, Manager};
 use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::Graphics::Gdi::{
@@ -49,13 +49,8 @@ static ANIMATIONS_ACTIVE: AtomicUsize = AtomicUsize::new(0);
 static FORCE_FRESH_FRAME: AtomicBool = AtomicBool::new(false);
 /// Last logged capture backend (`wgc` / `printwindow` / `bitblt`) for change-only logging.
 static LAST_CAPTURE_PATH: Mutex<Option<&'static str>> = Mutex::new(None);
-
-#[derive(Debug, Clone, Serialize)]
-struct InputPreviewFramePayload {
-    data_url: String,
-    width: u32,
-    height: u32,
-}
+/// Desktop subscriber for binary preview frames (`InvokeResponseBody::Raw`).
+static PREVIEW_CHANNEL: Mutex<Option<Channel<InvokeResponseBody>>> = Mutex::new(None);
 
 pub fn init(app: AppHandle) {
     let _ = APP_HANDLE.set(app);
@@ -85,6 +80,28 @@ pub fn set_enabled(enabled: bool) {
         emit_cleared();
     }
     notify_worker();
+}
+
+/// Replace the desktop preview Channel (newer subscriber wins; closed channels are dropped).
+/// A new subscriber (e.g. after a webview reload) has no frame yet, so bypass hash dedupe once.
+pub fn set_preview_channel(channel: Channel<InvokeResponseBody>) {
+    {
+        let mut guard = PREVIEW_CHANNEL
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        *guard = Some(channel);
+    }
+    request_fresh_frame(FrameSkipReset::Resubscribed);
+    notify_worker();
+}
+
+/// Pack `u32` width + `u32` height (little-endian) then JPEG bytes.
+pub(crate) fn encode_preview_frame_bytes(jpeg: &[u8], width: u32, height: u32) -> Vec<u8> {
+    let mut out = Vec::with_capacity(8 + jpeg.len());
+    out.extend_from_slice(&width.to_le_bytes());
+    out.extend_from_slice(&height.to_le_bytes());
+    out.extend_from_slice(jpeg);
+    out
 }
 
 /// Begin skipping GDI capture for a window-layout animation (supports nesting).
@@ -204,19 +221,13 @@ fn preview_loop() {
                         key,
                     }) => {
                         last_frame = Some(key);
-                        let b64 = STANDARD.encode(jpeg);
-                        let data_url = format!("data:image/jpeg;base64,{b64}");
                         if companion_live {
+                            // Companion/Android still expects a data URL; build only on this path.
+                            let b64 = STANDARD.encode(&jpeg);
+                            let data_url = format!("data:image/jpeg;base64,{b64}");
                             push_frame_to_companion(data_url, width, height);
-                        } else if let Some(app) = APP_HANDLE.get() {
-                            let _ = app.emit(
-                                "input-preview-frame",
-                                InputPreviewFramePayload {
-                                    data_url,
-                                    width,
-                                    height,
-                                },
-                            );
+                        } else {
+                            send_frame_to_desktop(jpeg, width, height);
                         }
                     }
                     Err(e) => {
@@ -268,6 +279,33 @@ fn push_cleared_to_companion() {
 fn emit_cleared() {
     if let Some(app) = APP_HANDLE.get() {
         let _ = app.emit("input-preview-cleared", ());
+    }
+    // Also nudge the channel with a zero-length message when a subscriber is live.
+    send_raw_to_desktop(Vec::new());
+}
+
+fn send_frame_to_desktop(jpeg: Vec<u8>, width: u32, height: u32) {
+    send_raw_to_desktop(encode_preview_frame_bytes(&jpeg, width, height));
+}
+
+fn send_raw_to_desktop(bytes: Vec<u8>) {
+    let channel = {
+        let guard = PREVIEW_CHANNEL
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        match guard.as_ref() {
+            Some(channel) => channel.clone(),
+            None => return,
+        }
+    };
+    if channel.send(InvokeResponseBody::Raw(bytes)).is_err() {
+        // Webview gone / channel closed: drop it unless a newer subscriber already replaced it.
+        let mut guard = PREVIEW_CHANNEL
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        if guard.as_ref().is_some_and(|c| c.id() == channel.id()) {
+            *guard = None;
+        }
     }
 }
 
@@ -863,6 +901,7 @@ pub(crate) enum FrameSkipReset {
     CompanionConnected,
     CompanionDisconnected,
     AnimationEnded,
+    Resubscribed,
 }
 
 /// Pure companion-routing transition: `(reset_last_frame, clear_desktop_strip)`.
@@ -1190,6 +1229,7 @@ mod tests {
             FrameSkipReset::CompanionConnected,
             FrameSkipReset::CompanionDisconnected,
             FrameSkipReset::AnimationEnded,
+            FrameSkipReset::Resubscribed,
         ];
         for event in events {
             assert_eq!(reset_last_frame(event), None);
@@ -1316,6 +1356,16 @@ mod tests {
     fn resize_bgra_box_rejects_short_buffer() {
         let src = vec![0u8; 4 * 4 * 4 - 1];
         assert!(resize_bgra_box(&src, 4, 4, 2, 2).is_err());
+    }
+
+    #[test]
+    fn encode_preview_frame_bytes_le_header_then_jpeg() {
+        let jpeg = [0xffu8, 0xd8, 0xff, 0xd9];
+        let packed = encode_preview_frame_bytes(&jpeg, 640, 120);
+        assert_eq!(packed.len(), 12);
+        assert_eq!(&packed[0..4], &640u32.to_le_bytes());
+        assert_eq!(&packed[4..8], &120u32.to_le_bytes());
+        assert_eq!(&packed[8..], &jpeg);
     }
 
     #[test]
