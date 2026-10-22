@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { DEFAULT_SETTINGS } from "../../lib/types";
 
@@ -70,5 +70,89 @@ describe("InputPreview blank placeholder", () => {
 
     expect(screen.queryByRole("img")).toBeNull();
     expect(screen.getByText("Waiting for preview…")).toBeTruthy();
+  });
+});
+
+describe("InputPreview object URL lifecycle", () => {
+  let createObjectURL: ReturnType<typeof vi.fn>;
+  let revokeObjectURL: ReturnType<typeof vi.fn>;
+  let nextId: number;
+
+  beforeEach(() => {
+    storeState.settings = {
+      ...DEFAULT_SETTINGS,
+      uiLanguage: "en",
+    };
+    storeState.focusModeActive = false;
+    storeState.inputPreviewFrame = {
+      bytes: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+      width: 4,
+      height: 2,
+    };
+    storeState.externalInputFocused = true;
+
+    nextId = 0;
+    createObjectURL = vi.fn(() => `blob:preview-${++nextId}`);
+    revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL,
+      revokeObjectURL,
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("creates one object URL per frame and uses it as img src (no data URL)", () => {
+    render(<InputPreview />);
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blob.type).toBe("image/jpeg");
+
+    const img = screen.getByRole("img", { name: "Target input" });
+    expect(img.getAttribute("src")).toBe("blob:preview-1");
+    expect(img.getAttribute("src")?.startsWith("data:")).toBe(false);
+    expect(img.className).toContain("object-contain");
+    expect(img.className).toContain("object-center");
+    expect(img.getAttribute("draggable")).toBe("false");
+  });
+
+  it("revokes the previous URL when a new frame arrives", () => {
+    const { rerender } = render(<InputPreview />);
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+
+    storeState.inputPreviewFrame = {
+      bytes: new Uint8Array([0xff, 0xd8, 0x00, 0xd9]),
+      width: 4,
+      height: 2,
+    };
+    rerender(<InputPreview />);
+
+    expect(createObjectURL).toHaveBeenCalledTimes(2);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:preview-1");
+    expect(screen.getByRole("img").getAttribute("src")).toBe("blob:preview-2");
+  });
+
+  it("revokes on clear when the frame is cleared", () => {
+    const { rerender } = render(<InputPreview />);
+    expect(screen.getByRole("img")).toBeTruthy();
+
+    storeState.inputPreviewFrame = null;
+    rerender(<InputPreview />);
+
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:preview-1");
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByText("Waiting for preview…")).toBeTruthy();
+  });
+
+  it("revokes on unmount", () => {
+    const { unmount } = render(<InputPreview />);
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+
+    unmount();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:preview-1");
   });
 });
