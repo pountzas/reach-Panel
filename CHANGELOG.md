@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.17.3 (2026-10-23)
+
+## What's Changed
+* fix(input-preview): fall back to GDI when WGC has no first frame by @pountzas in https://github.com/pountzas/reach-Panel/pull/327
+* Replace default Tauri icon with ReachPanel branding by @pountzas in https://github.com/pountzas/reach-Panel/pull/328
+* test(confirm-dialog): regression test for panel tabIndex by @pountzas in https://github.com/pountzas/reach-Panel/pull/331
+* fix(windows): ReachPanel icon on taskbar button by @pountzas in https://github.com/pountzas/reach-Panel/pull/332
+* fix(windows): taskbar icon after WebView2 ready by @pountzas in https://github.com/pountzas/reach-Panel/pull/333
+* dev → main: branding icons, input-preview GDI fallback by @pountzas in https://github.com/pountzas/reach-Panel/pull/329
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.17.2...v0.17.3
+
 ## 0.17.2 (2026-10-22)
 
 ## What's Changed
