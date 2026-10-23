@@ -1,34 +1,31 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Dimensions, Platform, StyleSheet, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Dimensions, Platform, StyleSheet, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import {
   NavigationBar,
   setStyle as setNavigationBarStyle,
-} from 'expo-navigation-bar';
-import * as ScreenOrientation from 'expo-screen-orientation';
+} from "expo-navigation-bar";
+import * as ScreenOrientation from "expo-screen-orientation";
 import {
   SafeAreaProvider,
   initialWindowMetrics,
   useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-import {
-  CompanionClient,
-  type ConnectionStatus,
-} from './src/companionClient';
-import type { PairingPayload } from './src/protocol';
-import { evaluateTabletGate } from './src/tabletGate';
-import { clearCredential, loadCredential, saveCredential } from './src/storage';
-import { ConnectedScreen } from './src/screens/ConnectedScreen';
-import { PairScreen } from './src/screens/PairScreen';
-import { PhoneBlockedScreen } from './src/screens/PhoneBlockedScreen';
+} from "react-native-safe-area-context";
+import { CompanionClient, type ConnectionStatus } from "./src/companionClient";
+import type { PairingPayload } from "./src/protocol";
+import { evaluateTabletGate } from "./src/tabletGate";
+import { clearCredential, loadCredential, saveCredential } from "./src/storage";
+import { ConnectedScreen } from "./src/screens/ConnectedScreen";
+import { PairScreen } from "./src/screens/PairScreen";
+import { PhoneBlockedScreen } from "./src/screens/PhoneBlockedScreen";
 
-type AppPhase = 'gate' | 'pair' | 'connected';
+type AppPhase = "gate" | "pair" | "connected";
 
 export default function App() {
   const client = useMemo(() => new CompanionClient(), []);
-  const [phase, setPhase] = useState<AppPhase>('gate');
+  const [phase, setPhase] = useState<AppPhase>("gate");
   const [gateReason, setGateReason] = useState<string | null>(null);
-  const [status, setStatus] = useState<ConnectionStatus>('disconnected');
+  const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [statusDetail, setStatusDetail] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,21 +38,21 @@ export default function App() {
       /* tablets / emulators may ignore */
     });
 
-    const { width, height } = Dimensions.get('window');
+    const { width, height } = Dimensions.get("window");
     const gate = evaluateTabletGate(width, height);
     if (!gate.allowed) {
       setGateReason(gate.reason);
-      setPhase('gate');
+      setPhase("gate");
       return;
     }
 
-    setPhase('pair');
+    setPhase("pair");
 
     const unsub = client.onStatus((next, detail) => {
       setStatus(next);
       setStatusDetail(detail);
-      if (next === 'connected') {
-        setPhase('connected');
+      if (next === "connected") {
+        setPhase("connected");
       }
     });
 
@@ -70,10 +67,10 @@ export default function App() {
         setError(null);
         try {
           await client.connectWithCredential(cred);
-          setPhase('connected');
+          setPhase("connected");
         } catch (e) {
-          setError(e instanceof Error ? e.message : 'Reconnect failed');
-          setPhase('pair');
+          setError(e instanceof Error ? e.message : "Reconnect failed");
+          setPhase("pair");
         } finally {
           setBusy(false);
         }
@@ -100,15 +97,15 @@ export default function App() {
         };
         await saveCredential(updated);
         await client.connectWithCredential(updated);
-        setPhase('connected');
+        setPhase("connected");
         return;
       }
       const cred = await client.pair(payload);
       await saveCredential(cred);
-      setPhase('connected');
+      setPhase("connected");
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Pairing failed');
-      setPhase('pair');
+      setError(e instanceof Error ? e.message : "Pairing failed");
+      setPhase("pair");
     } finally {
       setBusy(false);
     }
@@ -117,14 +114,14 @@ export default function App() {
   const onForget = async () => {
     client.disconnect();
     await clearCredential();
-    setPhase('pair');
+    setPhase("pair");
     setError(null);
   };
 
   let content: ReactNode;
-  if (phase === 'gate' && gateReason) {
+  if (phase === "gate" && gateReason) {
     content = <PhoneBlockedScreen reason={gateReason} />;
-  } else if (phase === 'connected' || status === 'reconnecting') {
+  } else if (phase === "connected" || status === "reconnecting") {
     content = (
       <ConnectedScreen
         client={client}
@@ -158,10 +155,10 @@ function AppChrome({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    if (Platform.OS !== 'android') {
+    if (Platform.OS !== "android") {
       return;
     }
-    setNavigationBarStyle('light');
+    setNavigationBarStyle("light");
     // Keep soft keys hidden while ReachPanel Companion is open.
     NavigationBar.setHidden(true);
   }, []);
@@ -175,11 +172,10 @@ function AppChrome({ children }: { children: ReactNode }) {
           paddingLeft: insets.left,
           paddingRight: insets.right,
         },
-      ]}
-    >
+      ]}>
       <View style={styles.root}>{children}</View>
       <StatusBar style="light" />
-      {Platform.OS === 'android' ? (
+      {Platform.OS === "android" ? (
         <NavigationBar style="light" hidden />
       ) : null}
     </View>
@@ -189,7 +185,7 @@ function AppChrome({ children }: { children: ReactNode }) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#121820',
+    backgroundColor: "#121820",
   },
   root: {
     flex: 1,

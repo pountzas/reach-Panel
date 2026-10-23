@@ -28,7 +28,12 @@ describe("ToggleRow", () => {
   it("toggles exactly once when the switch is clicked", () => {
     const onChange = vi.fn();
     render(
-      <ToggleRow label="Row" checked={false} onChange={onChange} surface={surface} />,
+      <ToggleRow
+        label="Row"
+        checked={false}
+        onChange={onChange}
+        surface={surface}
+      />,
     );
     fireEvent.click(screen.getByRole("switch", { name: "Row" }));
     expect(onChange).toHaveBeenCalledTimes(1);

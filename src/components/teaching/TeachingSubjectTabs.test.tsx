@@ -11,15 +11,24 @@ const storeState = {
 };
 
 vi.mock("../../stores/appStore", () => ({
-  useAppStore: (selector: (s: typeof storeState) => unknown) => selector(storeState),
+  useAppStore: (selector: (s: typeof storeState) => unknown) =>
+    selector(storeState),
 }));
 
 import { TeachingLessonToolbarButton } from "./TeachingLessonPanel";
 import { TeachingSubjectShell } from "./TeachingSubjectShell";
 
 const tabs = [
-  { id: "spelling" as const, label: "Spelling", icon: <span data-testid="icon-spelling">S</span> },
-  { id: "freeWrite" as const, label: "Free write", icon: <span data-testid="icon-free">F</span> },
+  {
+    id: "spelling" as const,
+    label: "Spelling",
+    icon: <span data-testid="icon-spelling">S</span>,
+  },
+  {
+    id: "freeWrite" as const,
+    label: "Free write",
+    icon: <span data-testid="icon-free">F</span>,
+  },
 ];
 
 describe("TeachingSubjectShell vertical rail", () => {
@@ -37,13 +46,14 @@ describe("TeachingSubjectShell vertical rail", () => {
         orientation="vertical"
         tabs={tabs}
         activeId="spelling"
-        onChange={onChange}
-      >
+        onChange={onChange}>
         <div>Body</div>
       </TeachingSubjectShell>,
     );
 
-    const tablist = screen.getByRole("tablist", { name: "Teaching subject tabs" });
+    const tablist = screen.getByRole("tablist", {
+      name: "Teaching subject tabs",
+    });
     expect(tablist.getAttribute("aria-orientation")).toBe("vertical");
 
     const spelling = screen.getByRole("tab", { name: "Spelling" });
@@ -51,7 +61,9 @@ describe("TeachingSubjectShell vertical rail", () => {
     expect(spelling.getAttribute("aria-label")).toBe("Spelling");
     expect(freeWrite.getAttribute("aria-label")).toBe("Free write");
     // Icon is the control face; label lives in aria-label + hover tooltip.
-    expect(spelling.querySelector("[data-testid='icon-spelling']")).toBeTruthy();
+    expect(
+      spelling.querySelector("[data-testid='icon-spelling']"),
+    ).toBeTruthy();
     expect(freeWrite.querySelector("[data-testid='icon-free']")).toBeTruthy();
   });
 
@@ -62,8 +74,7 @@ describe("TeachingSubjectShell vertical rail", () => {
         orientation="vertical"
         tabs={tabs}
         activeId="spelling"
-        onChange={onChange}
-      >
+        onChange={onChange}>
         <div>Body</div>
       </TeachingSubjectShell>,
     );
@@ -81,8 +92,7 @@ describe("TeachingSubjectShell vertical rail", () => {
         orientation="vertical"
         tabs={tabs}
         activeId="spelling"
-        onChange={vi.fn()}
-      >
+        onChange={vi.fn()}>
         <div>Body</div>
       </TeachingSubjectShell>,
     );
@@ -98,8 +108,7 @@ describe("TeachingSubjectShell vertical rail", () => {
         orientation="vertical"
         tabs={tabs}
         activeId="freeWrite"
-        onChange={onChange}
-      >
+        onChange={onChange}>
         <div>Body</div>
       </TeachingSubjectShell>,
     );
@@ -117,7 +126,9 @@ describe("TeachingSubjectShell vertical rail", () => {
 
     const tablist = screen.getByRole("tablist");
     expect(tablist.getAttribute("aria-orientation")).not.toBe("vertical");
-    expect(screen.getByRole("tab", { name: "Spelling" }).textContent).toContain("Spelling");
+    expect(screen.getByRole("tab", { name: "Spelling" }).textContent).toContain(
+      "Spelling",
+    );
   });
 });
 
@@ -130,8 +141,7 @@ describe("TeachingLessonToolbarButton size", () => {
         onClick={() => undefined}
         backgroundColor="#fff"
         borderColor="#ccc"
-        color="#111"
-      >
+        color="#111">
         <span>−</span>
       </TeachingLessonToolbarButton>,
     );

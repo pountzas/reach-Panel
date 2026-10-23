@@ -1,7 +1,14 @@
 import type { StateCreator } from "zustand";
 import type { AppStore, CompanionSlice } from "../types";
-import { mapCompanionSessionPhase, shouldIgnoreCompanionIdle } from "../../lib/companionSession";
-import { captureModeBeforeCompanion, resolveSelectedAppMode, restoreModeAfterCompanion } from "../../lib/appModeLayout";
+import {
+  mapCompanionSessionPhase,
+  shouldIgnoreCompanionIdle,
+} from "../../lib/companionSession";
+import {
+  captureModeBeforeCompanion,
+  resolveSelectedAppMode,
+  restoreModeAfterCompanion,
+} from "../../lib/appModeLayout";
 import type { HostAppMode } from "../../lib/appModeLayout";
 import { peekRestore } from "../lib/restoreStack";
 

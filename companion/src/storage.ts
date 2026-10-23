@@ -1,7 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { StoredCredential } from './protocol';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { StoredCredential } from "./protocol";
 
-const CREDENTIAL_KEY = 'reachpanel.companion.credential';
+const CREDENTIAL_KEY = "reachpanel.companion.credential";
 
 export async function loadCredential(): Promise<StoredCredential | null> {
   const raw = await AsyncStorage.getItem(CREDENTIAL_KEY);

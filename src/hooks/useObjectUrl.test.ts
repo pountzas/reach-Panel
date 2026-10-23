@@ -15,8 +15,10 @@ describe("useObjectUrl", () => {
     nextId = 0;
     createObjectURL = vi.fn(() => `blob:mock-${++nextId}`);
     revokeObjectURL = vi.fn();
-    URL.createObjectURL = createObjectURL as unknown as typeof URL.createObjectURL;
-    URL.revokeObjectURL = revokeObjectURL as unknown as typeof URL.revokeObjectURL;
+    URL.createObjectURL =
+      createObjectURL as unknown as typeof URL.createObjectURL;
+    URL.revokeObjectURL =
+      revokeObjectURL as unknown as typeof URL.revokeObjectURL;
   });
 
   afterEach(() => {

@@ -5,10 +5,7 @@
  * counts update commits when an unrelated field (`mouseSpeed`) changes.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  Profiler,
-  type ProfilerOnRenderCallback,
-} from "react";
+import { Profiler, type ProfilerOnRenderCallback } from "react";
 import { act, render } from "@testing-library/react";
 import { DEFAULT_SETTINGS } from "../../lib/types";
 
@@ -55,7 +52,7 @@ import { InputAreaViewButtons } from "../layout/InputAreaViewButtons";
 import { InputPreview } from "../keyboard/InputPreview";
 import { ModeMenu } from "../layout/ModeMenu";
 
-type Stats = { commits: number; totalActualMs: number }
+type Stats = { commits: number; totalActualMs: number };
 
 function makeOnRender(stats: Stats): ProfilerOnRenderCallback {
   return (_id, phase, actualDuration) => {
@@ -132,7 +129,6 @@ describe("settings subscription profiler (#281)", () => {
       previewStats.totalActualMs +
       menuStats.totalActualMs;
 
-     
     console.log(
       JSON.stringify({
         scenario: "settings-mouseSpeed-change",

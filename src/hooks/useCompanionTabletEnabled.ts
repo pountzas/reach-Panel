@@ -36,7 +36,9 @@ export function useCompanionTabletEnabled(): boolean {
     });
     return () => {
       cancelled = true;
-      void unlisten.then((fn) => { fn(); });
+      void unlisten.then((fn) => {
+        fn();
+      });
     };
   }, []);
 

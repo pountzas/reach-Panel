@@ -2,11 +2,11 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
-}
+};
 
 type State = {
   error: Error | null;
-}
+};
 
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
@@ -29,9 +29,10 @@ export class ErrorBoundary extends Component<Props, State> {
             color: "#991b1b",
             background: "#fef2f2",
             height: "100vh",
-          }}
-        >
-          <h1 style={{ fontSize: 18, marginBottom: 8 }}>Something went wrong</h1>
+          }}>
+          <h1 style={{ fontSize: 18, marginBottom: 8 }}>
+            Something went wrong
+          </h1>
           <pre style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>
             {this.state.error.message}
           </pre>

@@ -4,12 +4,12 @@ import {
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
   type AudioRecorder,
-} from 'expo-audio';
-import { File } from 'expo-file-system';
+} from "expo-audio";
+import { File } from "expo-file-system";
 
 export type RecordedAudio = {
   base64: string;
-  format: 'm4a';
+  format: "m4a";
   mimeType: string;
   filename: string;
 };
@@ -28,7 +28,7 @@ export async function startTabletRecording(): Promise<void> {
   await stopTabletRecordingDiscard();
   const permission = await requestRecordingPermissionsAsync();
   if (!permission.granted) {
-    throw new Error('Microphone permission is required for dictation.');
+    throw new Error("Microphone permission is required for dictation.");
   }
   await setAudioModeAsync({
     allowsRecording: true,
@@ -66,9 +66,9 @@ export async function stopTabletRecording(): Promise<RecordedAudio | null> {
     }
     return {
       base64,
-      format: 'm4a',
-      mimeType: 'audio/mp4',
-      filename: 'dictation.m4a',
+      format: "m4a",
+      mimeType: "audio/mp4",
+      filename: "dictation.m4a",
     };
   } finally {
     releaseRecorder(current);

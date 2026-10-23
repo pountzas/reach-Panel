@@ -5,13 +5,19 @@ import {
   type SectionId,
   type StackableSectionId,
 } from "../../lib/sectionStack";
-import { getSectionDefinition, isStackableSectionId } from "../../lib/sectionRegistry";
+import {
+  getSectionDefinition,
+  isStackableSectionId,
+} from "../../lib/sectionRegistry";
 import { useFlipLayoutTransition } from "../../hooks/useFlipLayoutTransition";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { peekTeachingRestoreMode } from "../../stores/lib/restoreStack";
 import { getSurfaceColors } from "../../lib/colorProfiles";
-import { lessonCloseAppMode, teachingLessonTitleKey } from "../../lib/appModeLayout";
+import {
+  lessonCloseAppMode,
+  teachingLessonTitleKey,
+} from "../../lib/appModeLayout";
 import type { TranslationKey } from "../../i18n";
 import {
   CloseIcon,
@@ -43,7 +49,7 @@ type DockedSectionProps = {
     phase: "start" | "move" | "end",
   ) => void;
   dockHighlight?: boolean;
-}
+};
 
 export function DockedSection({
   slot,
@@ -117,14 +123,15 @@ export function DockedSection({
         width,
         height: slot.height,
         backgroundColor: surface.panelBg,
-        borderColor: dockHighlight ? surface.panelButtonBg : surface.panelBorder,
+        borderColor: dockHighlight
+          ? surface.panelButtonBg
+          : surface.panelBorder,
         boxShadow: dockHighlight
           ? `0 0 0 2px ${surface.panelButtonBg}`
           : undefined,
         zIndex: 10,
         contain: "layout paint",
-      }}
-    >
+      }}>
       <div className="flex h-full flex-col overflow-hidden">
         <div
           className={`flex shrink-0 cursor-grab items-center border-b px-2 active:cursor-grabbing ${
@@ -139,7 +146,8 @@ export function DockedSection({
           }}
           onPointerDown={(event) => {
             if (!isStackableSectionId(slot.id)) return;
-            if ((event.target as HTMLElement).closest(".section-no-drag")) return;
+            if ((event.target as HTMLElement).closest(".section-no-drag"))
+              return;
             event.currentTarget.setPointerCapture(event.pointerId);
             onReorderDrag(slot.id, event.clientX, event.clientY, "start");
           }}
@@ -160,12 +168,10 @@ export function DockedSection({
           onPointerCancel={(event) => {
             if (!isStackableSectionId(slot.id)) return;
             onReorderDrag(slot.id, event.clientX, event.clientY, "end");
-          }}
-        >
+          }}>
           <span
             className="min-w-0 truncate text-xs font-medium"
-            style={{ color: surface.panelMutedText }}
-          >
+            style={{ color: surface.panelMutedText }}>
             {t(sectionTitleKey)}
           </span>
           {showTeaching ? (
@@ -180,8 +186,7 @@ export function DockedSection({
                 showKeyboardChrome
                   ? "section-no-drag flex items-center justify-end"
                   : undefined
-              }
-            >
+              }>
               <InputAreaViewButtons />
             </div>
           ) : (
@@ -194,17 +199,17 @@ export function DockedSection({
                       if (isStackableSectionId(slot.id)) onUndock(slot.id);
                     }}
                     size={iconSize}
-                    tooltipPlacement="below"
-                  >
+                    tooltipPlacement="below">
                     <PinIcon className={iconClass} />
                   </IconActionButton>
                 )}
                 <IconActionButton
                   label={slot.isMinimized ? t("expand") : t("minimizeSection")}
-                  onClick={() => { onToggleMinimize(slot.id); }}
+                  onClick={() => {
+                    onToggleMinimize(slot.id);
+                  }}
                   size={iconSize}
-                  tooltipPlacement="below"
-                >
+                  tooltipPlacement="below">
                   {slot.isMinimized ? (
                     <ExpandIcon className={iconClass} />
                   ) : (
@@ -215,8 +220,7 @@ export function DockedSection({
                   label={t("close")}
                   onClick={handleClose}
                   size={iconSize}
-                  tooltipPlacement="below"
-                >
+                  tooltipPlacement="below">
                   <CloseIcon className={iconClass} />
                 </IconActionButton>
               </div>
@@ -237,7 +241,7 @@ type HolePlaceholderProps = {
   slot: DockedSlot;
   width: number;
   highlight?: boolean;
-}
+};
 
 export function HolePlaceholder({
   slot,

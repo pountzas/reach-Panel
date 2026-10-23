@@ -7,7 +7,7 @@ type SynthVolumeControlProps = {
   muted: boolean;
   onVolumeChange: (volume: number) => void;
   onMutedChange: (muted: boolean) => void;
-}
+};
 
 export function SynthVolumeControl({
   volume,
@@ -24,9 +24,14 @@ export function SynthVolumeControl({
           active={muted}
           position="only"
           label={muted ? t("unmute") : t("mute")}
-          onClick={() => { onMutedChange(!muted); }}
-        >
-          {muted ? <MuteIcon className="h-4 w-4" /> : <VolumeIcon className="h-4 w-4" />}
+          onClick={() => {
+            onMutedChange(!muted);
+          }}>
+          {muted ? (
+            <MuteIcon className="h-4 w-4" />
+          ) : (
+            <VolumeIcon className="h-4 w-4" />
+          )}
         </ModeToggleButton>
       </ModeToggleGroup>
       <label className="sr-only" htmlFor="synthesizer-volume-slider">
@@ -35,12 +40,14 @@ export function SynthVolumeControl({
       <input
         id="synthesizer-volume-slider"
         type="range"
-        className="mouse-speed-slider min-w-0 w-full max-w-[100px]"
+        className="mouse-speed-slider min-w-0 w-full max-w-25"
         min={0}
         max={100}
         step={1}
         value={volume}
-        onChange={(event) => { onVolumeChange(Number(event.target.value)); }}
+        onChange={(event) => {
+          onVolumeChange(Number(event.target.value));
+        }}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={volume}

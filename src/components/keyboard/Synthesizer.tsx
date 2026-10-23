@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "../../stores/appStore";
 import { useContainerSize } from "../../hooks/useContainerSize";
 import { getSynthBlackKeyColors } from "../../lib/colorProfiles";
-import { resolveSynthOctaveCount, resolveSynthStartOctave } from "../../lib/music/octaveCount";
+import {
+  resolveSynthOctaveCount,
+  resolveSynthStartOctave,
+} from "../../lib/music/octaveCount";
 import {
   buildPianoKeys,
   midiToFreq,
@@ -50,7 +53,9 @@ export function Synthesizer() {
   const musicNoteIndex = useAppStore((s) => s.musicNoteIndex);
   const importedSongs = useAppStore((s) => s.importedSongs);
   const reportMusicKeyPlayed = useAppStore((s) => s.reportMusicKeyPlayed);
-  const setMusicPlaybackNoteIndex = useAppStore((s) => s.setMusicPlaybackNoteIndex);
+  const setMusicPlaybackNoteIndex = useAppStore(
+    (s) => s.setMusicPlaybackNoteIndex,
+  );
   const finishMusicPlayback = useAppStore((s) => s.finishMusicPlayback);
   const { ref, height } = useContainerSize<HTMLDivElement>();
   const pianoRef = useRef<HTMLDivElement>(null);
@@ -323,10 +328,13 @@ export function Synthesizer() {
         }, delayMs),
       );
       playbackTimersRef.current.push(
-        window.setTimeout(() => {
-          if (cancelled) return;
-          setPlaybackKeyId((current) => (current === pitch ? null : current));
-        }, delayMs + soundSec * 1000),
+        window.setTimeout(
+          () => {
+            if (cancelled) return;
+            setPlaybackKeyId((current) => (current === pitch ? null : current));
+          },
+          delayMs + soundSec * 1000,
+        ),
       );
 
       const freq = frequencyForPitch(pitch, keyByIdRef.current);
@@ -414,10 +422,8 @@ export function Synthesizer() {
   const whiteKeyColor = settings.keyboardKeyColor ?? "#fafafa";
   const pressedWhiteColor = "#e2e8f0";
   const highlightWhiteColor = "#fde68a";
-  const { base: blackKeyColor, pressed: pressedBlackColor } = getSynthBlackKeyColors(
-    settings.colorProfile,
-    settings.keyTextColor,
-  );
+  const { base: blackKeyColor, pressed: pressedBlackColor } =
+    getSynthBlackKeyColors(settings.colorProfile, settings.keyTextColor);
   const highlightBlackColor = "#d97706";
 
   const renderWhiteKey = (key: PianoKey) => {
@@ -447,8 +453,7 @@ export function Synthesizer() {
           fontSize: 18,
           color: settings.keyTextColor ?? "#475569",
           backgroundColor,
-        }}
-      >
+        }}>
         <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2">
           {key.label}
         </span>
@@ -498,8 +503,7 @@ export function Synthesizer() {
       style={{
         backgroundColor: settings.keyboardBgColor ?? "#e8edf2",
         opacity: settings.opacity,
-      }}
-    >
+      }}>
       <div className="relative flex min-h-0 w-full flex-1">
         <div
           ref={pianoRef}
@@ -508,8 +512,7 @@ export function Synthesizer() {
           onPointerMove={onPianoPointerMove}
           onPointerUp={onPianoPointerUp}
           onPointerCancel={onPianoPointerUp}
-          onLostPointerCapture={onPianoLostPointerCapture}
-        >
+          onLostPointerCapture={onPianoLostPointerCapture}>
           {whiteKeys.map(renderWhiteKey)}
           {blackKeys.map(renderBlackKey)}
         </div>

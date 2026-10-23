@@ -5,20 +5,20 @@ import {
   KEY_REPEAT_INTERVAL_MS,
 } from "../lib/keyRepeat";
 
-export type KeyRepeatFireMeta = { repeat: boolean }
+export type KeyRepeatFireMeta = { repeat: boolean };
 
 export type UseKeyRepeatOptions = {
   enabled?: boolean;
   onFire: (meta: KeyRepeatFireMeta) => void;
   onStop?: () => void;
-}
+};
 
 export type KeyRepeatPointerHandlers = {
   onPointerDown?: (event?: ReactPointerEvent) => void;
   onPointerUp?: (event?: ReactPointerEvent) => void;
   onPointerLeave?: (event?: ReactPointerEvent) => void;
   onPointerCancel?: (event?: ReactPointerEvent) => void;
-}
+};
 
 export const useKeyRepeat = ({
   enabled = false,
@@ -81,14 +81,27 @@ export const useKeyRepeat = ({
     }
   }, [enabled, stop]);
 
-  useEffect((): (() => void) => () => { clearTimers(); }, [clearTimers]);
+  useEffect(
+    (): (() => void) => () => {
+      clearTimers();
+    },
+    [clearTimers],
+  );
 
   return {
     pointerHandlers: {
-      onPointerDown: () => { start(); },
-      onPointerUp: () => { stop(); },
-      onPointerLeave: () => { stop(); },
-      onPointerCancel: () => { stop(); },
+      onPointerDown: () => {
+        start();
+      },
+      onPointerUp: () => {
+        stop();
+      },
+      onPointerLeave: () => {
+        stop();
+      },
+      onPointerCancel: () => {
+        stop();
+      },
     },
   };
 };

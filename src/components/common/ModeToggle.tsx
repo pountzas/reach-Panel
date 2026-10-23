@@ -5,7 +5,11 @@ import {
   modeToggleRadiusClass,
   type ModeTogglePosition,
 } from "../../lib/buttonClasses";
-import { HoverTooltip, type HoverTooltipAlign, type HoverTooltipPlacement } from "./HoverTooltip";
+import {
+  HoverTooltip,
+  type HoverTooltipAlign,
+  type HoverTooltipPlacement,
+} from "./HoverTooltip";
 
 type ModeToggleButtonProps = {
   active: boolean;
@@ -20,7 +24,7 @@ type ModeToggleButtonProps = {
   tooltipPlacement?: HoverTooltipPlacement;
   /** Default `center`. Use `end` on right-edge toolbar buttons. */
   tooltipAlign?: HoverTooltipAlign;
-}
+};
 
 export function ModeToggleButton({
   active,
@@ -42,10 +46,13 @@ export function ModeToggleButton({
       aria-pressed={active}
       aria-label={label}
       disabled={disabled}
-      style={style}
-    >
+      style={style}>
       {children}
-      <HoverTooltip label={label} placement={tooltipPlacement} align={tooltipAlign} />
+      <HoverTooltip
+        label={label}
+        placement={tooltipPlacement}
+        align={tooltipAlign}
+      />
     </button>
   );
 }
@@ -55,7 +62,7 @@ type ModeToggleGroupProps = {
   transparentUi?: boolean;
   /** Outer frame color when transparentUi is on (defaults to white). */
   transparentBorderColor?: string;
-}
+};
 
 export function ModeToggleGroup({
   children,
@@ -69,8 +76,7 @@ export function ModeToggleGroup({
         transparentUi
           ? { borderColor: transparentBorderColor ?? "rgba(255,255,255,0.8)" }
           : undefined
-      }
-    >
+      }>
       {children}
     </div>
   );

@@ -64,7 +64,12 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
 
   it("undo/redo a stroke keeps other page identity", () => {
     const otherPage = {
-      strokes: [stroke("keep", [[0, 0], [1, 1]])],
+      strokes: [
+        stroke("keep", [
+          [0, 0],
+          [1, 1],
+        ]),
+      ],
       texts: [] as PdfTextBox[],
     };
     const base = emptyPdfAnnotationDoc();
@@ -75,12 +80,14 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
       [0.1, 0.1],
       [0.2, 0.2],
     ]);
-    useAppStore.getState().applyFreeWriteAnnotationUpdater(
-      (doc) => addStrokeToPage(doc, "1", added),
-      {
-        change: { kind: "addStroke", pageKey: "1", stroke: added },
-      },
-    );
+    useAppStore
+      .getState()
+      .applyFreeWriteAnnotationUpdater(
+        (doc) => addStrokeToPage(doc, "1", added),
+        {
+          change: { kind: "addStroke", pageKey: "1", stroke: added },
+        },
+      );
 
     const afterAdd = useAppStore.getState().freeWriteAnnotationDoc;
     expect(afterAdd.pages["2"]).toBe(otherPage);
@@ -114,35 +121,37 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
     useAppStore.setState({ freeWriteAnnotationDoc: doc });
 
     const after = [b];
-    useAppStore.getState().applyFreeWriteAnnotationUpdater(
-      (d) => replacePageStrokes(d, "1", after),
-      {
-        change: {
-          kind: "replaceStrokes",
-          pageKey: "1",
-          before: [a, b],
-          after,
+    useAppStore
+      .getState()
+      .applyFreeWriteAnnotationUpdater(
+        (d) => replacePageStrokes(d, "1", after),
+        {
+          change: {
+            kind: "replaceStrokes",
+            pageKey: "1",
+            before: [a, b],
+            after,
+          },
         },
-      },
-    );
+      );
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes.map(
-        (s) => s.id,
-      ),
+      useAppStore
+        .getState()
+        .freeWriteAnnotationDoc.pages["1"].strokes.map((s) => s.id),
     ).toEqual(["b"]);
 
     useAppStore.getState().undoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes.map(
-        (s) => s.id,
-      ),
+      useAppStore
+        .getState()
+        .freeWriteAnnotationDoc.pages["1"].strokes.map((s) => s.id),
     ).toEqual(["a", "b"]);
 
     useAppStore.getState().redoFreeWriteAnnotation();
     expect(
-      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes.map(
-        (s) => s.id,
-      ),
+      useAppStore
+        .getState()
+        .freeWriteAnnotationDoc.pages["1"].strokes.map((s) => s.id),
     ).toEqual(["b"]);
   });
 
@@ -154,26 +163,29 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
       w: 0.3,
       body: "",
     };
-    useAppStore.getState().applyFreeWriteAnnotationUpdater(
-      (doc) => addTextToPage(doc, "1", box),
-      { change: { kind: "addText", pageKey: "1", box } },
-    );
+    useAppStore
+      .getState()
+      .applyFreeWriteAnnotationUpdater((doc) => addTextToPage(doc, "1", box), {
+        change: { kind: "addText", pageKey: "1", box },
+      });
     expect(
       useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts[0].id,
     ).toBe("t1");
 
-    useAppStore.getState().applyFreeWriteAnnotationUpdater(
-      (doc) => moveTextOnPage(doc, "1", "t1", { x: 0.5, y: 0.6 }),
-      {
-        change: {
-          kind: "moveText",
-          pageKey: "1",
-          id: "t1",
-          from: { x: 0.1, y: 0.2 },
-          to: { x: 0.5, y: 0.6 },
+    useAppStore
+      .getState()
+      .applyFreeWriteAnnotationUpdater(
+        (doc) => moveTextOnPage(doc, "1", "t1", { x: 0.5, y: 0.6 }),
+        {
+          change: {
+            kind: "moveText",
+            pageKey: "1",
+            id: "t1",
+            from: { x: 0.1, y: 0.2 },
+            to: { x: 0.5, y: 0.6 },
+          },
         },
-      },
-    );
+      );
     expect(
       useAppStore.getState().freeWriteAnnotationDoc.pages["1"].texts[0],
     ).toMatchObject({ x: 0.5, y: 0.6 });
@@ -200,21 +212,24 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
       [0.1, 0.1],
       [0.2, 0.2],
     ]);
-    useAppStore.getState().applyFreeWriteAnnotationUpdater(
-      (doc) => addStrokeToPage(doc, "1", s1),
-      { change: { kind: "addStroke", pageKey: "1", stroke: s1 } },
-    );
-    useAppStore.getState().applyFreeWriteAnnotationUpdater(
-      (doc) => replacePageStrokes(doc, "1", []),
-      {
-        change: {
-          kind: "replaceStrokes",
-          pageKey: "1",
-          before: [s1],
-          after: [],
+    useAppStore
+      .getState()
+      .applyFreeWriteAnnotationUpdater((doc) => addStrokeToPage(doc, "1", s1), {
+        change: { kind: "addStroke", pageKey: "1", stroke: s1 },
+      });
+    useAppStore
+      .getState()
+      .applyFreeWriteAnnotationUpdater(
+        (doc) => replacePageStrokes(doc, "1", []),
+        {
+          change: {
+            kind: "replaceStrokes",
+            pageKey: "1",
+            before: [s1],
+            after: [],
+          },
         },
-      },
-    );
+      );
     const box: PdfTextBox = {
       id: "t1",
       x: 0.4,
@@ -222,10 +237,11 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
       w: 0.2,
       body: "x",
     };
-    useAppStore.getState().applyFreeWriteAnnotationUpdater(
-      (doc) => addTextToPage(doc, "1", box),
-      { change: { kind: "addText", pageKey: "1", box } },
-    );
+    useAppStore
+      .getState()
+      .applyFreeWriteAnnotationUpdater((doc) => addTextToPage(doc, "1", box), {
+        change: { kind: "addText", pageKey: "1", box },
+      });
 
     expect(useAppStore.getState().freeWriteUndoDepth).toBe(3);
     useAppStore.getState().undoFreeWriteAnnotation();
@@ -248,10 +264,12 @@ describe("freeWrite annotation undo/redo (per-gesture changes)", () => {
         [0, 0],
         [0.1, 0.1],
       ]);
-      useAppStore.getState().applyFreeWriteAnnotationUpdater(
-        (doc) => addStrokeToPage(doc, "1", s),
-        { change: { kind: "addStroke", pageKey: "1", stroke: s } },
-      );
+      useAppStore
+        .getState()
+        .applyFreeWriteAnnotationUpdater(
+          (doc) => addStrokeToPage(doc, "1", s),
+          { change: { kind: "addStroke", pageKey: "1", stroke: s } },
+        );
     }
     expect(useAppStore.getState().freeWriteUndoDepth).toBe(50);
   });

@@ -6,11 +6,11 @@ type GreekTranslateOptions = {
   physicalKey: string | undefined;
   shift: boolean;
   fallbackOutput: string | undefined;
-}
+};
 
 type HandleKeyOptions = {
   deferSuggestions?: boolean;
-}
+};
 
 export const clearModifiersAfterKey = (
   fnKeyMode: FnKeyMode,
@@ -52,7 +52,7 @@ export const inject = (
     options?: HandleKeyOptions,
   ) => void | Promise<void>,
   keyDef: KeyDef,
-): () => void | Promise<void> => {
+): (() => void | Promise<void>) => {
   return () => handleKey(keyDef, { deferSuggestions: true });
 };
 

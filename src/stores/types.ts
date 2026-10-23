@@ -44,7 +44,7 @@ export type LanguageListAuthoringHandlers = {
     translation: LayoutKeyTranslation,
     options: { physicalKey?: string; shift?: boolean; fallbackOutput?: string },
   ) => void;
-}
+};
 
 export type TeachingLesson = "music" | "math" | "language";
 
@@ -56,19 +56,19 @@ export type SttCapability = {
   winrtSupported: boolean;
   online: boolean;
   canDictate: boolean;
-}
+};
 
 export type ErrorsSlice = {
   lastError: string | null;
   setLastError: (error: string | null) => void;
-}
+};
 
 export type SuggestionsSlice = {
   suggestions: string[];
   loadSuggestions: () => Promise<void>;
   applySuggestion: (word: string) => Promise<void>;
   recordTypedWord: () => Promise<void>;
-}
+};
 
 export type DictationSlice = {
   dictationState: DictationState;
@@ -78,7 +78,7 @@ export type DictationSlice = {
   refreshSttCapability: () => Promise<void>;
   toggleDictation: () => Promise<void>;
   stopDictation: () => Promise<void>;
-}
+};
 
 export type CompanionSlice = {
   companionModeActive: boolean;
@@ -87,7 +87,7 @@ export type CompanionSlice = {
   companionBridgeArmed: boolean;
   applyCompanionSessionPhase: (phase: CompanionSessionPhase) => Promise<void>;
   stopCompanionByCaregiver: () => Promise<void>;
-}
+};
 
 export type TeachingSlice = {
   musicTeachingEnabled: boolean;
@@ -109,7 +109,7 @@ export type TeachingSlice = {
   broadcastTeachingSession: () => Promise<void>;
   setLanguageSubjectTab: (tab: LanguageSubjectTab) => void;
   setFreeWriteFocus: (focus: FreeWriteFocus) => void;
-}
+};
 
 export type SpellingSlice = {
   languageTaskIndex: number;
@@ -130,7 +130,7 @@ export type SpellingSlice = {
   languageKeyInput: (ch: string, options?: { physicalKey?: string }) => void;
   languageBackspace: () => void;
   checkLanguageAnswer: () => void;
-}
+};
 
 export type LanguagePacksSlice = {
   customLanguagePacks: LanguagePack[];
@@ -139,7 +139,7 @@ export type LanguagePacksSlice = {
   createCustomLanguagePack: (pack: LanguagePack) => Promise<void>;
   deleteCustomLanguagePack: (id: string) => Promise<void>;
   setLanguagePackId: (id: string) => void;
-}
+};
 
 export type NotepadSlice = {
   freeWriteNotepadInput: (ch: string) => void;
@@ -157,7 +157,7 @@ export type NotepadSlice = {
   setFreeWriteNotepadZoom: (zoom: number) => void;
   setFreeWriteNotepadWrap: (wrap: boolean) => void;
   setFreeWriteNotepadLineNumbers: (on: boolean) => void;
-}
+};
 
 export type PdfSlice = {
   teachingPdfLibrary: TeachingPdfEntry[];
@@ -189,7 +189,7 @@ export type PdfSlice = {
   ) => void;
   undoFreeWriteAnnotation: () => void;
   redoFreeWriteAnnotation: () => void;
-}
+};
 
 export type PianoSlice = {
   musicNoteIndex: number;
@@ -200,7 +200,7 @@ export type PianoSlice = {
   stopMusicPlayback: () => void;
   setMusicPlaybackNoteIndex: (index: number) => void;
   finishMusicPlayback: () => void;
-}
+};
 
 export type PartituresSlice = {
   musicSongId: string | null;
@@ -209,11 +209,11 @@ export type PartituresSlice = {
   loadImportedSongs: () => Promise<void>;
   importMusicSongsFromFile: () => Promise<void>;
   deleteImportedSong: (id: string) => Promise<void>;
-}
+};
 
 export type PianoRangeSlice = {
   fitPianoRangeForSong: (song: MusicSong) => Promise<void>;
-}
+};
 
 export type TypingSlice = {
   typedBuffer: string;
@@ -256,7 +256,7 @@ export type TypingSlice = {
   clearSticky: () => void;
   clearStickyExceptFn: () => void;
   loadKeyboardLayout: () => Promise<void>;
-}
+};
 
 export type WindowSlice = {
   showSettings: boolean;
@@ -270,7 +270,7 @@ export type WindowSlice = {
   toggleCollapsed: () => Promise<void>;
   setPendingUpdate: (update: Update | null) => void;
   checkForUpdates: () => Promise<void>;
-}
+};
 
 export type FocusModeSlice = {
   focusModeActive: boolean;
@@ -284,7 +284,7 @@ export type FocusModeSlice = {
   refreshFocusModeState: (options?: { animate?: boolean }) => Promise<void>;
   expandFocusModeKeyboard: () => Promise<void>;
   collapseFocusModeKeyboard: () => Promise<void>;
-}
+};
 
 export type ModeSlice = {
   /** LIFO session snapshots for nested mode/mouse restores. */
@@ -299,7 +299,7 @@ export type ModeSlice = {
     mode: AppModeTablet,
     options?: { skipCompanionBridgeStop?: boolean },
   ) => Promise<void>;
-}
+};
 
 /** Profile, settings, monitors — everything not owned by a named domain slice. */
 export type ProfileSlice = {
@@ -329,7 +329,7 @@ export type ProfileSlice = {
   loadMonitors: () => Promise<void>;
   saveActiveProfile: () => Promise<void>;
   pickBackgroundImage: () => Promise<void>;
-}
+};
 
 export type AppStore = ErrorsSlice &
   SuggestionsSlice &

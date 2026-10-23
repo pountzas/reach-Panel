@@ -1,4 +1,4 @@
-import { Flag } from 'svg-flags';
+import { Flag } from "svg-flags";
 
 type Props = {
   country: string;

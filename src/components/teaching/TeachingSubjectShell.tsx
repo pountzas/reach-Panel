@@ -1,1 +1,4 @@
-export { TeachingSubjectShell, TeachingSubjectTabs } from "./TeachingSubjectTabs";
+export {
+  TeachingSubjectShell,
+  TeachingSubjectTabs,
+} from "./TeachingSubjectTabs";

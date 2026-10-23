@@ -26,7 +26,7 @@ type ColorFieldProps = {
   value: string;
   onChange: (value: string) => void;
   surface: SurfaceColors;
-}
+};
 
 export const ColorField = ({
   label,
@@ -41,14 +41,18 @@ export const ColorField = ({
         <input
           type="color"
           value={value}
-          onChange={(e) => { onChange(e.target.value); }}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
           className="h-9 w-12 cursor-pointer rounded border"
           style={{ borderColor: surface.insetBorder }}
         />
         <input
           type="text"
           value={value}
-          onChange={(e) => { onChange(e.target.value); }}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
           className="min-w-0 flex-1 rounded border px-2 py-1 text-xs"
           style={fieldStyle(surface)}
         />
@@ -63,7 +67,7 @@ type ToggleRowProps = {
   onChange: (checked: boolean) => void;
   surface: SurfaceColors;
   disabled?: boolean;
-}
+};
 
 export const ToggleRow = ({
   label,
@@ -82,13 +86,11 @@ export const ToggleRow = ({
       onClick={() => {
         if (disabled) return;
         onChange(!checked);
-      }}
-    >
+      }}>
       <span
         id={labelId}
         className="text-sm"
-        style={{ color: surface.panelText }}
-      >
+        style={{ color: surface.panelText }}>
         {label}
       </span>
       <AnimatedToggle
@@ -109,7 +111,7 @@ type ThemedSelectProps = {
   children: ReactNode;
   className?: string;
   disabled?: boolean;
-}
+};
 
 export const ThemedSelect = ({
   value,
@@ -125,8 +127,9 @@ export const ThemedSelect = ({
       style={fieldStyle(surface)}
       value={value}
       disabled={disabled}
-      onChange={(e) => { onChange(e.target.value); }}
-    >
+      onChange={(e) => {
+        onChange(e.target.value);
+      }}>
       {children}
     </select>
   );
@@ -137,13 +140,15 @@ type WordPackInfo = {
   installed: boolean;
   version: number | null;
   bundled: boolean;
-}
+};
 
 type WordPackDictionariesProps = {
   surface: SurfaceColors;
-}
+};
 
-export const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JSX.Element => {
+export const WordPackDictionaries = ({
+  surface,
+}: WordPackDictionariesProps): JSX.Element => {
   const { t } = useTranslation();
   const [packs, setPacks] = useState<WordPackInfo[]>([]);
   const [busyLang, setBusyLang] = useState<string | null>(null);
@@ -177,7 +182,9 @@ export const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JS
   const install = async (language: string) => {
     setBusyLang(language);
     try {
-      const list = await invoke<WordPackInfo[]>("cmd_install_word_pack", { language });
+      const list = await invoke<WordPackInfo[]>("cmd_install_word_pack", {
+        language,
+      });
       setPacks(list);
     } catch (error) {
       notify.error(
@@ -191,7 +198,9 @@ export const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JS
   const uninstall = async (language: string) => {
     setBusyLang(language);
     try {
-      const list = await invoke<WordPackInfo[]>("cmd_uninstall_word_pack", { language });
+      const list = await invoke<WordPackInfo[]>("cmd_uninstall_word_pack", {
+        language,
+      });
       setPacks(list);
     } catch (error) {
       notify.error(
@@ -207,7 +216,9 @@ export const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JS
       <div className="text-sm font-medium" style={{ color: surface.panelText }}>
         {t("predictionDictionaries")}
       </div>
-      <p className="mt-1 text-xs opacity-80" style={{ color: surface.panelText }}>
+      <p
+        className="mt-1 text-xs opacity-80"
+        style={{ color: surface.panelText }}>
         {t("predictionDictionariesHint")}
       </p>
       <ul className="mt-2 space-y-2">
@@ -221,10 +232,11 @@ export const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JS
                 borderColor: surface.panelBorder,
                 backgroundColor: surface.panelButtonBg,
                 color: surface.panelText,
-              }}
-            >
+              }}>
               <div className="min-w-0">
-                <div className="font-medium">{languageLabel(pack.language)}</div>
+                <div className="font-medium">
+                  {languageLabel(pack.language)}
+                </div>
                 <div className="text-xs opacity-75">
                   {pack.installed
                     ? pack.bundled
@@ -237,20 +249,24 @@ export const WordPackDictionaries = ({ surface }: WordPackDictionariesProps): JS
                 <button
                   type="button"
                   className="shrink-0 rounded border px-2 py-1 text-xs"
-                  style={{ borderColor: surface.panelBorder, color: surface.panelText }}
+                  style={{
+                    borderColor: surface.panelBorder,
+                    color: surface.panelText,
+                  }}
                   disabled={busy}
-                  onClick={() => void uninstall(pack.language)}
-                >
+                  onClick={() => void uninstall(pack.language)}>
                   {busy ? t("wordPackUninstalling") : t("wordPackUninstall")}
                 </button>
               ) : (
                 <button
                   type="button"
                   className="shrink-0 rounded border px-2 py-1 text-xs"
-                  style={{ borderColor: surface.panelBorder, color: surface.panelText }}
+                  style={{
+                    borderColor: surface.panelBorder,
+                    color: surface.panelText,
+                  }}
                   disabled={busy}
-                  onClick={() => void install(pack.language)}
-                >
+                  onClick={() => void install(pack.language)}>
                   {busy ? t("wordPackInstalling") : t("wordPackInstall")}
                 </button>
               )}

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from "react-native";
 
 type Props = {
   reason: string;
@@ -17,29 +17,29 @@ export function PhoneBlockedScreen({ reason }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121820',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#121820",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 32,
   },
   brand: {
-    color: '#7eb6ff',
+    color: "#7eb6ff",
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 0.5,
     marginBottom: 16,
   },
   title: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   body: {
-    color: '#b0bac8',
+    color: "#b0bac8",
     fontSize: 17,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
 });

@@ -41,7 +41,9 @@ export function DictationOverlay() {
     });
 
     return () => {
-      void unlisten.then((stop) => { stop(); });
+      void unlisten.then((stop) => {
+        stop();
+      });
     };
   }, []);
 
@@ -52,8 +54,12 @@ export function DictationOverlay() {
       setEntered(false);
       return;
     }
-    const id = window.requestAnimationFrame(() => { setEntered(true); });
-    return () => { window.cancelAnimationFrame(id); };
+    const id = window.requestAnimationFrame(() => {
+      setEntered(true);
+    });
+    return () => {
+      window.cancelAnimationFrame(id);
+    };
   }, [state]);
 
   const active = state !== "idle";
@@ -67,8 +73,7 @@ export function DictationOverlay() {
         style={{
           transitionDuration: "var(--rp-dur-base)",
           transitionTimingFunction: "var(--rp-ease-out)",
-        }}
-      >
+        }}>
         <DictationVisualizer active={active} captureAudio={captureAudio} />
         <span className="whitespace-nowrap text-sm font-medium text-slate-100">
           {t("dictationListening")}
@@ -77,8 +82,7 @@ export function DictationOverlay() {
           type="button"
           aria-label={t("dictationStop")}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
-          onClick={() => void invoke("cmd_stop_dictation")}
-        >
+          onClick={() => void invoke("cmd_stop_dictation")}>
           <StopIcon className="h-4 w-4" />
         </button>
       </div>

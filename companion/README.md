@@ -87,6 +87,23 @@ npx expo run:android
 
 Caregivers get Windows installers and the tablet APK from the same downloads page: **https://reachpanel-companion.vercel.app/** (see root [README - Install & connect the Android companion](../README.md#install--connect-the-android-companion)). The APK button and QR stay on that page even if the latest version list is briefly missing Android.
 
+## Regenerating launcher icons
+
+Brand art lives in the repo root at [`design/reachpanel-logo.svg`](../design/reachpanel-logo.svg). From the **repo root** (not `companion/`):
+
+```bash
+npm run generate:brand-icons
+```
+
+That refreshes:
+
+- `assets/icon.png` — 1024×1024 logo on `#121820`
+- `assets/android-icon-foreground.png` — transparent, logo in the central 66% safe zone
+- `assets/android-icon-background.png` — flat `#121820` (keep in sync with `app.config.ts` → `android.adaptiveIcon.backgroundColor`)
+- `assets/android-icon-monochrome.png` — white-on-transparent silhouette for Android 13+ themed icons
+
+`favicon.png` and `splash-icon.png` are separate; this script does not touch them. After changing icons, rebuild a native install (`npx expo run:android` or EAS) so the launcher picks up the new assets.
+
 ## Troubleshooting: `ExponentAV` / native module errors
 
 SDK 57 removed `expo-av`. This app uses `expo-audio` instead. If you still see `cannot find native module ExponentAV`:

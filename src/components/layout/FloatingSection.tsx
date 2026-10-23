@@ -11,7 +11,10 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { peekTeachingRestoreMode } from "../../stores/lib/restoreStack";
 import { getSurfaceColors } from "../../lib/colorProfiles";
-import { lessonCloseAppMode, teachingLessonTitleKey } from "../../lib/appModeLayout";
+import {
+  lessonCloseAppMode,
+  teachingLessonTitleKey,
+} from "../../lib/appModeLayout";
 import { usePointerDragActive } from "../../lib/pointerDrag";
 import type { TranslationKey } from "../../i18n";
 import {
@@ -41,9 +44,13 @@ type FloatingSectionProps = {
   onRectChange: (id: StackableSectionId, rect: FloatRect) => void;
   onDock: (id: StackableSectionId) => void;
   onToggleMinimize: (id: StackableSectionId) => void;
-  onDropProbe: (id: StackableSectionId, clientX: number, clientY: number) => void;
+  onDropProbe: (
+    id: StackableSectionId,
+    clientX: number,
+    clientY: number,
+  ) => void;
   onDragStop: (id: StackableSectionId) => void;
-}
+};
 
 export function FloatingSection({
   id,
@@ -113,8 +120,7 @@ export function FloatingSection({
     }
   };
 
-  const resizingEnabled =
-    !pointerDragActive &&
+  const resizingEnabled = !pointerDragActive &&
     !minimized && {
       top: true,
       right: true,
@@ -205,31 +211,29 @@ export function FloatingSection({
         setPosition({ x: next.x, y: next.y });
         setSize({ width: next.width, height: next.height });
         persist(next.x, next.y, next.width, next.height);
-      }}
-    >
+      }}>
       <div
         className="flex h-full flex-col overflow-hidden rounded-md border shadow-lg"
         style={{
           backgroundColor: surface.panelBg,
           borderColor: surface.panelBorder,
           contain: "layout paint",
-        }}
-      >
+        }}>
         <div
           className={`section-drag-handle flex shrink-0 cursor-grab items-center border-b px-2 active:cursor-grabbing ${
-            showTeaching ? "grid grid-cols-[1fr_auto_1fr] gap-2" : "justify-between"
+            showTeaching
+              ? "grid grid-cols-[1fr_auto_1fr] gap-2"
+              : "justify-between"
           }`}
           style={{
             height: headerHeight,
             backgroundColor: surface.panelHeaderBg,
             borderColor: surface.panelBorder,
             touchAction: "none",
-          }}
-        >
+          }}>
           <span
             className="min-w-0 truncate text-xs font-medium"
-            style={{ color: surface.panelMutedText }}
-          >
+            style={{ color: surface.panelMutedText }}>
             {t(sectionTitleKey)}
           </span>
           {showTeaching ? (
@@ -240,18 +244,20 @@ export function FloatingSection({
           <div className="section-no-drag ml-1 flex shrink-0 items-center justify-end gap-0.5">
             <IconActionButton
               label={t("dockSection")}
-              onClick={() => { onDock(id); }}
+              onClick={() => {
+                onDock(id);
+              }}
               size={iconSize}
-              tooltipPlacement="below"
-            >
+              tooltipPlacement="below">
               <PinIcon className={iconClass} />
             </IconActionButton>
             <IconActionButton
               label={minimized ? t("expand") : t("minimizeSection")}
-              onClick={() => { onToggleMinimize(id); }}
+              onClick={() => {
+                onToggleMinimize(id);
+              }}
               size={iconSize}
-              tooltipPlacement="below"
-            >
+              tooltipPlacement="below">
               {minimized ? (
                 <ExpandIcon className={iconClass} />
               ) : (
@@ -262,8 +268,7 @@ export function FloatingSection({
               label={t("close")}
               onClick={handleClose}
               size={iconSize}
-              tooltipPlacement="below"
-            >
+              tooltipPlacement="below">
               <CloseIcon className={iconClass} />
             </IconActionButton>
           </div>

@@ -62,9 +62,9 @@ describe("appStore restoreStack", () => {
       mode: "focus",
       windowHeightRatio: 0.65,
     });
-    expect(peekRestore(useAppStore.getState().restoreStack, "focusMode")).toEqual(
-      { mouseVisible: true },
-    );
+    expect(
+      peekRestore(useAppStore.getState().restoreStack, "focusMode"),
+    ).toEqual({ mouseVisible: true });
     expect(popRestore("focusMode")).toEqual({ mouseVisible: true });
     expect(useAppStore.getState().restoreStack).toEqual([]);
   });
@@ -105,7 +105,9 @@ describe("appStore restoreStack", () => {
       });
 
       await useAppStore.getState().setAppMode("teaching");
-      const closeMode = peekTeachingRestoreMode(useAppStore.getState().restoreStack);
+      const closeMode = peekTeachingRestoreMode(
+        useAppStore.getState().restoreStack,
+      );
       expect(closeMode).toBe("focus");
 
       await useAppStore.getState().setAppMode(lessonCloseAppMode(closeMode));
@@ -119,13 +121,21 @@ describe("appStore restoreStack", () => {
 
     it("a Companion session during wide piano keeps the wide-piano mouse frame", async () => {
       useAppStore.setState({
-        settings: { ...DEFAULT_SETTINGS, mouseVisible: true, synthesizerOctaveCount: 2 },
+        settings: {
+          ...DEFAULT_SETTINGS,
+          mouseVisible: true,
+          synthesizerOctaveCount: 2,
+        },
       });
-      await useAppStore.getState().updateSettings({ synthesizerOctaveCount: 5 });
+      await useAppStore
+        .getState()
+        .updateSettings({ synthesizerOctaveCount: 5 });
       expect(useAppStore.getState().settings.mouseVisible).toBe(false);
 
       await useAppStore.getState().applyCompanionSessionPhase("active");
-      expect(peekRestore(useAppStore.getState().restoreStack, "companion")).toEqual({
+      expect(
+        peekRestore(useAppStore.getState().restoreStack, "companion"),
+      ).toEqual({
         mode: "normal",
       });
 
@@ -134,7 +144,9 @@ describe("appStore restoreStack", () => {
         "widePiano",
       ]);
 
-      await useAppStore.getState().updateSettings({ synthesizerOctaveCount: 2 });
+      await useAppStore
+        .getState()
+        .updateSettings({ synthesizerOctaveCount: 2 });
       expect(useAppStore.getState().settings.mouseVisible).toBe(true);
       expect(useAppStore.getState().restoreStack).toEqual([]);
     });

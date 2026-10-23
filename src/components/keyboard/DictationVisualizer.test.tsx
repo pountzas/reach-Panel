@@ -7,12 +7,14 @@ const motionMocks = vi.hoisted(() => {
   let listener: ((reduced: boolean) => void) | null = null;
   return {
     prefersReducedMotion: vi.fn(() => false),
-    subscribePrefersReducedMotion: vi.fn((onChange: (reduced: boolean) => void) => {
-      listener = onChange;
-      return () => {
-        if (listener === onChange) listener = null;
-      };
-    }),
+    subscribePrefersReducedMotion: vi.fn(
+      (onChange: (reduced: boolean) => void) => {
+        listener = onChange;
+        return () => {
+          if (listener === onChange) listener = null;
+        };
+      },
+    ),
     emitReducedMotion: (reduced: boolean) => {
       listener?.(reduced);
     },
@@ -28,13 +30,14 @@ vi.mock("../../lib/motion", () => ({
 describe("DictationVisualizer", () => {
   beforeEach(() => {
     motionMocks.prefersReducedMotion.mockReturnValue(false);
-    vi.stubGlobal(
-      "requestAnimationFrame",
-      (cb: FrameRequestCallback) =>
-        window.setTimeout(() => { cb(performance.now()); }, 16),
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) =>
+      window.setTimeout(() => {
+        cb(performance.now());
+      }, 16),
     );
-    vi.stubGlobal("cancelAnimationFrame", (id: number) => { window.clearTimeout(id); },
-    );
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => {
+      window.clearTimeout(id);
+    });
   });
   afterEach(() => {
     vi.unstubAllGlobals();

@@ -31,7 +31,7 @@ type PartitureViewProps = {
   song: MusicSong | null;
   activeIndex: number;
   completed: boolean;
-}
+};
 
 function staffY(staffPos: number, padTop: number): number {
   return padTop + staffPos * STEP_PX;
@@ -66,7 +66,10 @@ function computeStaffVerticalPads(notes: PartitureNoteLayout[]): {
   }
 
   const staffBlock = STAFF_STEP_COUNT * STEP_PX;
-  const padTop = Math.max(STAFF_PAD_TOP, VERTICAL_CLEARANCE_PX - minStaff * STEP_PX);
+  const padTop = Math.max(
+    STAFF_PAD_TOP,
+    VERTICAL_CLEARANCE_PX - minStaff * STEP_PX,
+  );
   const padBottom = Math.max(
     STAFF_PAD_BOTTOM,
     maxStaff * STEP_PX + VERTICAL_CLEARANCE_PX - staffBlock,
@@ -78,7 +81,11 @@ function computeStaffVerticalPads(notes: PartitureNoteLayout[]): {
   };
 }
 
-function scrollDurationMs(song: MusicSong, activeIndex: number, indexDelta: number): number {
+function scrollDurationMs(
+  song: MusicSong,
+  activeIndex: number,
+  indexDelta: number,
+): number {
   if (indexDelta === 0) return SCROLL_MS_MIN;
   if (Math.abs(indexDelta) > 1) return SCROLL_MS_JUMP;
 
@@ -118,8 +125,7 @@ function NoteGlyph({
     <g
       className={`partiture-note${active ? " partiture-note-active" : ""}`}
       style={{ opacity, color }}
-      data-active={active ? "true" : undefined}
-    >
+      data-active={active ? "true" : undefined}>
       {ledgers.map((pos) => (
         <line
           key={`ledger-${pos}`}
@@ -138,8 +144,7 @@ function NoteGlyph({
           fill="currentColor"
           fontSize={14}
           fontFamily="serif"
-          textAnchor="middle"
-        >
+          textAnchor="middle">
           ♯
         </text>
       )}
@@ -191,7 +196,11 @@ function NoteGlyph({
   );
 }
 
-export function PartitureView({ song, activeIndex, completed }: PartitureViewProps) {
+export function PartitureView({
+  song,
+  activeIndex,
+  completed,
+}: PartitureViewProps) {
   const settings = useAppStore((s) => s.settings);
   const surface = getSurfaceColors(settings.appBgColor);
   const { t } = useTranslation();
@@ -224,7 +233,8 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
         : {
             padTop: STAFF_PAD_TOP,
             padBottom: STAFF_PAD_BOTTOM,
-            contentHeight: STAFF_PAD_TOP + STAFF_STEP_COUNT * STEP_PX + STAFF_PAD_BOTTOM,
+            contentHeight:
+              STAFF_PAD_TOP + STAFF_STEP_COUNT * STEP_PX + STAFF_PAD_BOTTOM,
           },
     [layout],
   );
@@ -247,7 +257,9 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(viewport);
-    return () => { observer.disconnect(); };
+    return () => {
+      observer.disconnect();
+    };
   }, [song?.id]);
 
   useLayoutEffect(() => {
@@ -277,8 +289,7 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
         backgroundColor: surface.panelBg,
         borderColor: surface.panelBorder,
         color: surface.panelText,
-      }}
-    >
+      }}>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm font-semibold">{t("partiture")}</span>
         {octaveMark && (
@@ -290,30 +301,26 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
       {!song || !layout || layout.notes.length === 0 ? (
         <div
           className="flex flex-1 items-center justify-center text-xs"
-          style={{ color: surface.panelMutedText }}
-        >
+          style={{ color: surface.panelMutedText }}>
           —
         </div>
       ) : (
         <div
           ref={viewportRef}
-          className="partiture-viewport relative min-h-0 flex-1 overflow-hidden"
-        >
+          className="partiture-viewport relative min-h-0 flex-1 overflow-hidden">
           <div
             className="partiture-track absolute inset-y-0 left-0"
             style={{
               width: svgWidth,
               transform: `translate3d(${trackOffsetPx}px, 0, 0)`,
               transitionDuration: `${transitionMs}ms`,
-            }}
-          >
+            }}>
             <svg
               width={svgWidth}
               height={svgHeight}
               viewBox={`0 0 ${svgWidth} ${svgHeight}`}
               role="img"
-              aria-label={t("partiture")}
-            >
+              aria-label={t("partiture")}>
               {Array.from({ length: 5 }, (_, i) => {
                 const y = staffY(i * 2, padTop);
                 return (
@@ -334,8 +341,7 @@ export function PartitureView({ song, activeIndex, completed }: PartitureViewPro
                 y={staffY(6, padTop) + 2}
                 fill={surface.panelText}
                 fontSize={36}
-                fontFamily="serif"
-              >
+                fontFamily="serif">
                 𝄞
               </text>
               {layout.notes.map((note, index) => {

@@ -6,7 +6,11 @@ import { useAppStore } from "../../stores/appStore";
 import { SettingsSection } from "./SettingsSection";
 import { ToggleRow, WordPackDictionaries } from "./settingsControls";
 
-export function VisibleSectionsSection({ surface }: { surface: SurfaceColors }) {
+export function VisibleSectionsSection({
+  surface,
+}: {
+  surface: SurfaceColors;
+}) {
   const { t } = useTranslation();
   const { settings, updateSettings } = useAppStore(
     useShallow((s) => ({
@@ -45,7 +49,9 @@ export function VisibleSectionsSection({ surface }: { surface: SurfaceColors }) 
         <ToggleRow
           label={t("showInputPreview")}
           checked={settings.inputPreviewVisible !== false}
-          onChange={(checked) => updateSettings({ inputPreviewVisible: checked })}
+          onChange={(checked) =>
+            updateSettings({ inputPreviewVisible: checked })
+          }
           surface={surface}
         />
       </div>
@@ -60,8 +66,7 @@ export function VisibleSectionsSection({ surface }: { surface: SurfaceColors }) 
         />
         <p
           className="mt-1 px-1 text-xs"
-          style={{ color: surface.panelMutedText }}
-        >
+          style={{ color: surface.panelMutedText }}>
           {t("showTeachingInputHelpersDescription")}
         </p>
       </div>

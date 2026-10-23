@@ -23,7 +23,7 @@ type PairingPayload = {
   protocolVersion: number;
   pubkey: string;
   candidateIps?: string[];
-}
+};
 
 type PairedDevice = {
   deviceId: string;
@@ -32,7 +32,7 @@ type PairedDevice = {
   createdAt: string;
   lastSeenAt: string;
   revoked: boolean;
-}
+};
 
 function fieldStyle(surface: SurfaceColors): CSSProperties {
   return {
@@ -79,7 +79,9 @@ function audioLabel(
 export function CompanionSection({ surface }: { surface: SurfaceColors }) {
   const { t } = useTranslation();
   const setAppMode = useAppStore((s) => s.setAppMode);
-  const stopCompanionByCaregiver = useAppStore((s) => s.stopCompanionByCaregiver);
+  const stopCompanionByCaregiver = useAppStore(
+    (s) => s.stopCompanionByCaregiver,
+  );
   const [status, setStatus] = useState<CompanionUiState | null>(null);
   const [payload, setPayload] = useState<PairingPayload | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -100,7 +102,9 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
       const list = await invoke<PairedDevice[]>("cmd_companion_list_devices");
       setDevices(list);
       if (next.running) {
-        const pair = await invoke<PairingPayload>("cmd_companion_pairing_payload");
+        const pair = await invoke<PairingPayload>(
+          "cmd_companion_pairing_payload",
+        );
         setPayload(pair);
       } else {
         setPayload(null);
@@ -122,7 +126,9 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
         .catch(logIpc("cmd_companion_list_devices"));
     });
     return () => {
-      void unlisten.then((fn) => { fn(); });
+      void unlisten.then((fn) => {
+        fn();
+      });
     };
   }, [refresh]);
 
@@ -166,7 +172,9 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
         });
       }
       if (next.running) {
-        const pair = await invoke<PairingPayload>("cmd_companion_pairing_payload");
+        const pair = await invoke<PairingPayload>(
+          "cmd_companion_pairing_payload",
+        );
         setPayload(pair);
       }
       await refresh();
@@ -194,7 +202,9 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
   const refreshQr = async () => {
     setBusy(true);
     try {
-      const pair = await invoke<PairingPayload>("cmd_companion_refresh_pairing");
+      const pair = await invoke<PairingPayload>(
+        "cmd_companion_refresh_pairing",
+      );
       setPayload(pair);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -243,15 +253,15 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
         type="button"
         className="rounded-lg border px-3 py-2 text-sm"
         style={secondaryButtonStyle}
-        onClick={() => { openExternalLink(APP_INFO.links.downloads); }}
-      >
+        onClick={() => {
+          openExternalLink(APP_INFO.links.downloads);
+        }}>
         {t("companionOpenDownloads")}
       </button>
 
       <div
         className="flex flex-wrap items-center gap-3 rounded-lg px-3 py-2.5 text-sm"
-        style={{ backgroundColor: surface.insetBg, color: surface.panelText }}
-      >
+        style={{ backgroundColor: surface.insetBg, color: surface.panelText }}>
         <span className="font-semibold">
           {running ? t("companionBridgeRunning") : t("companionBridgeStopped")}
         </span>
@@ -283,8 +293,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
             className="rounded-lg border px-3 py-2 text-sm"
             style={secondaryButtonStyle}
             disabled={busy}
-            onClick={() => void stopBridge()}
-          >
+            onClick={() => void stopBridge()}>
             {t("companionStop")}
           </button>
         ) : (
@@ -293,8 +302,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
             className="rounded-lg border px-3 py-2 text-sm"
             style={secondaryButtonStyle}
             disabled={busy}
-            onClick={() => void startBridge()}
-          >
+            onClick={() => void startBridge()}>
             {t("companionStart")}
           </button>
         )}
@@ -305,8 +313,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
               className="rounded-lg border px-3 py-2 text-sm"
               style={secondaryButtonStyle}
               disabled={busy}
-              onClick={() => void refreshQr()}
-            >
+              onClick={() => void refreshQr()}>
               {t("companionRefreshQr")}
             </button>
             <button
@@ -314,8 +321,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
               className="rounded-lg border px-3 py-2 text-sm"
               style={secondaryButtonStyle}
               disabled={busy || !payload}
-              onClick={() => void copyPayload()}
-            >
+              onClick={() => void copyPayload()}>
               {t("companionCopyPayload")}
             </button>
           </>
@@ -329,8 +335,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
             style={{
               backgroundColor: "#ffffff",
               borderColor: surface.insetBorder,
-            }}
-          >
+            }}>
             {qrDataUrl ? (
               <img
                 src={qrDataUrl}
@@ -341,15 +346,18 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
               />
             ) : (
               <div
-                className="flex h-[400px] w-[400px] items-center justify-center text-sm"
-                style={{ color: "#64748b" }}
-              >
+                className="flex h-100 w-100 items-center justify-center text-sm"
+                style={{ color: "#64748b" }}>
                 …
               </div>
             )}
           </div>
-          <div className="min-w-0 flex-1 space-y-2 text-sm" style={{ color: surface.panelText }}>
-            <p style={{ color: surface.panelMutedText }}>{t("companionQrHint")}</p>
+          <div
+            className="min-w-0 flex-1 space-y-2 text-sm"
+            style={{ color: surface.panelText }}>
+            <p style={{ color: surface.panelMutedText }}>
+              {t("companionQrHint")}
+            </p>
             {payload?.candidateIps && payload.candidateIps.length > 0 && (
               <p style={{ color: surface.panelMutedText }}>
                 {t("companionCandidateIps")}: {payload.candidateIps.join(", ")}
@@ -358,8 +366,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
             {payload && (
               <pre
                 className="max-h-40 overflow-auto rounded-lg border p-2 text-xs break-all whitespace-pre-wrap"
-                style={fieldStyle(surface)}
-              >
+                style={fieldStyle(surface)}>
                 {JSON.stringify(payload, null, 2)}
               </pre>
             )}
@@ -369,10 +376,11 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
 
       <div
         className="space-y-2 rounded-lg px-3 py-3 text-sm"
-        style={{ backgroundColor: surface.insetBg, color: surface.panelText }}
-      >
+        style={{ backgroundColor: surface.insetBg, color: surface.panelText }}>
         <h4 className="font-semibold">{t("companionUsbTitle")}</h4>
-        <ol className="list-decimal space-y-1.5 pl-5" style={{ color: surface.panelMutedText }}>
+        <ol
+          className="list-decimal space-y-1.5 pl-5"
+          style={{ color: surface.panelMutedText }}>
           <li>{t("companionUsbStep1")}</li>
           <li>{t("companionUsbStep2")}</li>
           <li>{t("companionUsbStep3")}</li>
@@ -384,8 +392,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
       <div>
         <h4
           className="mb-2 text-sm font-semibold"
-          style={{ color: surface.panelText }}
-        >
+          style={{ color: surface.panelText }}>
           {t("companionPairedDevices")}
         </h4>
         {devices.length === 0 ? (
@@ -398,21 +405,23 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
               <li
                 key={device.deviceId}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2.5"
-                style={{ backgroundColor: surface.insetBg }}
-              >
-                <div className="min-w-0 text-sm" style={{ color: surface.panelText }}>
+                style={{ backgroundColor: surface.insetBg }}>
+                <div
+                  className="min-w-0 text-sm"
+                  style={{ color: surface.panelText }}>
                   <div className="font-medium">
                     {device.deviceName}
                     {device.revoked && (
                       <span
                         className="ml-2 text-xs font-normal"
-                        style={{ color: surface.panelMutedText }}
-                      >
+                        style={{ color: surface.panelMutedText }}>
                         ({t("companionDeviceRevokedBadge")})
                       </span>
                     )}
                   </div>
-                  <div className="text-xs" style={{ color: surface.panelMutedText }}>
+                  <div
+                    className="text-xs"
+                    style={{ color: surface.panelMutedText }}>
                     {t("companionLastSeen")}: {device.lastSeenAt}
                   </div>
                 </div>
@@ -422,8 +431,7 @@ export function CompanionSection({ surface }: { surface: SurfaceColors }) {
                     className="rounded-lg border px-3 py-1.5 text-sm"
                     style={secondaryButtonStyle}
                     disabled={busy}
-                    onClick={() => void revoke(device.deviceId)}
-                  >
+                    onClick={() => void revoke(device.deviceId)}>
                     {t("companionRevoke")}
                   </button>
                 )}

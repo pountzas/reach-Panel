@@ -2,10 +2,7 @@ import type { StateCreator } from "zustand";
 import type { AppStore, LanguagePacksSlice } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { notify } from "../../lib/notify";
-import {
-  defaultLanguagePackId,
-  getLanguagePackById,
-} from "../../lib/language";
+import { defaultLanguagePackId, getLanguagePackById } from "../../lib/language";
 import type { LanguagePack } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
 import { clearGreekPendingAccent } from "../storeShared";

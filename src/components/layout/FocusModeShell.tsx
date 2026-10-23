@@ -13,7 +13,9 @@ import { MOTION } from "../../lib/motion";
  * collapsed window. The native window is resized once by the store (after paint).
  */
 export function FocusModeShell() {
-  const focusModeKeyboardVisible = useAppStore((s) => s.focusModeKeyboardVisible);
+  const focusModeKeyboardVisible = useAppStore(
+    (s) => s.focusModeKeyboardVisible,
+  );
   const focusContentAnim = useAppStore((s) => s.focusContentAnim);
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
   const settings = useAppStore((s) => s.settings);
@@ -21,7 +23,9 @@ export function FocusModeShell() {
   const expandFocusModeKeyboard = useAppStore((s) => s.expandFocusModeKeyboard);
 
   const showApplying =
-    isAnimatingWindow && focusModeKeyboardVisible && focusContentAnim === "idle";
+    isAnimatingWindow &&
+    focusModeKeyboardVisible &&
+    focusContentAnim === "idle";
   const showKeyboardLayer =
     focusModeKeyboardVisible || focusContentAnim === "exit";
   // Keep CollapsedFab mounted (display:none when idle) so expand/collapse does
@@ -32,7 +36,9 @@ export function FocusModeShell() {
     !isAnimatingWindow;
 
   const [keyboardSlideIn, setKeyboardSlideIn] = useState(
-    focusModeKeyboardVisible && focusContentAnim === "idle" && !isAnimatingWindow,
+    focusModeKeyboardVisible &&
+      focusContentAnim === "idle" &&
+      !isAnimatingWindow,
   );
 
   useEffect(() => {
@@ -42,7 +48,9 @@ export function FocusModeShell() {
       // Double rAF so the off-screen frame paints before the slide-up.
       let raf2 = 0;
       const raf1 = requestAnimationFrame(() => {
-        raf2 = requestAnimationFrame(() => { setKeyboardSlideIn(true); });
+        raf2 = requestAnimationFrame(() => {
+          setKeyboardSlideIn(true);
+        });
       });
       return () => {
         cancelAnimationFrame(raf1);
@@ -75,10 +83,7 @@ export function FocusModeShell() {
       finish();
     };
     root?.addEventListener("transitionend", onEnd);
-    const fallback = window.setTimeout(
-      finish,
-      MOTION.focusKeyboard + 80,
-    );
+    const fallback = window.setTimeout(finish, MOTION.focusKeyboard + 80);
     return () => {
       root?.removeEventListener("transitionend", onEnd);
       window.clearTimeout(fallback);
@@ -93,17 +98,20 @@ export function FocusModeShell() {
     "transition-transform [transition-duration:var(--rp-dur-focus-keyboard)] [transition-timing-function:var(--rp-ease-focus-keyboard)] motion-reduce:transition-none";
 
   return (
-    <div className="relative h-full w-full" style={{ background: "transparent" }}>
+    <div
+      className="relative h-full w-full"
+      style={{ background: "transparent" }}>
       <div
         data-fab-layer
         className={fabInteractive ? "absolute inset-0" : "hidden"}
-        aria-hidden={!fabInteractive}
-      >
+        aria-hidden={!fabInteractive}>
         <CollapsedFab
           fillWindow
           showSettings
           showDictation={settings.micMode === true}
-          onSettings={() => { setShowSettings(true); }}
+          onSettings={() => {
+            setShowSettings(true);
+          }}
           onExpand={() => void expandFocusModeKeyboard()}
         />
       </div>
@@ -118,8 +126,9 @@ export function FocusModeShell() {
             height: "100vh",
             backgroundColor: bg,
           }}
-          onContextMenu={(e) => { e.preventDefault(); }}
-        >
+          onContextMenu={(e) => {
+            e.preventDefault();
+          }}>
           <div className="min-h-0 flex-1">
             <KeyboardSection />
           </div>

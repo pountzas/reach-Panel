@@ -151,7 +151,7 @@ type SyncFocusLayoutOptions = {
    * shell does not paint a gap frame. Skip the re-entrancy early-return.
    */
   continueHeld?: boolean;
-}
+};
 
 /**
  * Show: resize once, then start content enter and wait for CSS. Hide: wait for exit, then resize.
@@ -170,7 +170,10 @@ export async function syncFocusModeWindowLayout(
   }
   // continueHeld bypasses isAnimatingWindow so callers can set it same-turn as
   // visibility; in-flight still serializes so parallel syncs cannot squash layout.
-  if (storeFlags.focusLayoutSyncInFlight || (state.isAnimatingWindow && !options?.continueHeld)) {
+  if (
+    storeFlags.focusLayoutSyncInFlight ||
+    (state.isAnimatingWindow && !options?.continueHeld)
+  ) {
     storeFlags.pendingFocusLayoutSync = preferAnimate;
     return;
   }
@@ -376,12 +379,7 @@ export async function refreshFocusModeStateHelper(
   await syncInputPreviewEnabled(get);
 }
 
-export const LANGUAGE_CHANGE_FALLBACK =
-  "Could not switch keyboard language.";
-
-
-
-
+export const LANGUAGE_CHANGE_FALLBACK = "Could not switch keyboard language.";
 
 export function parseSettings(json: string): AppSettings {
   try {
@@ -539,7 +537,9 @@ export async function setToolWindowVisible(
   void get().syncWindowFocusable();
 }
 
-export async function syncInputPreviewEnabled(get: () => AppStore): Promise<void> {
+export async function syncInputPreviewEnabled(
+  get: () => AppStore,
+): Promise<void> {
   if (WebviewWindow.getCurrent().label !== "main") {
     return;
   }

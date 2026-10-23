@@ -22,7 +22,7 @@ type Props = {
   page: number;
   width: number;
   height: number;
-}
+};
 
 function pageKey(page: number): string {
   return String(page);
@@ -53,9 +53,7 @@ function pointsAttr(
   return out;
 }
 
-function cursorForTool(
-  tool: "pointer" | "pen" | "eraser" | "text",
-): string {
+function cursorForTool(tool: "pointer" | "pen" | "eraser" | "text"): string {
   switch (tool) {
     case "pointer":
       return "default";
@@ -264,10 +262,7 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
         before.length !== after.length ||
         before.some((s, i) => {
           const other = after[i];
-          return (
-            s.id !== other.id ||
-            s.points.length !== other.points.length
-          );
+          return s.id !== other.id || s.points.length !== other.points.length;
         });
       if (!changed) return;
       applyUpdater((d) => replacePageStrokes(d, pageKey(page), after), {
@@ -306,7 +301,8 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
     const root = rootRef.current;
     const drag = dragRef.current;
     if (!root || drag?.id !== boxId) return;
-    if (!(e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) return;
+    if (!(e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId))
+      return;
     const pt = clientToNormalized(root, e.clientX, e.clientY);
     const dx = pt[0] - drag.start[0];
     const dy = pt[1] - drag.start[1];
@@ -321,7 +317,8 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
 
   const endTextDrag = (e: ReactPointerEvent, boxId: string) => {
     const el = e.currentTarget as HTMLElement;
-    if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    if (el.hasPointerCapture(e.pointerId))
+      el.releasePointerCapture(e.pointerId);
     const drag = dragRef.current;
     const preview = dragPreviewRef.current;
     dragRef.current = null;
@@ -386,14 +383,12 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-    >
+      onPointerCancel={onPointerUp}>
       <svg
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
         className="pointer-events-none absolute inset-0 h-full w-full"
-        aria-hidden
-      >
+        aria-hidden>
         {displayStrokes.map((stroke) => (
           <FinishedStrokePolyline
             key={stroke.id}
@@ -408,10 +403,7 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
             points={pointsAttr(liveStroke.points, width, height)}
             fill="none"
             stroke={PEN_COLOR}
-            strokeWidth={Math.max(
-              1.5,
-              PEN_WIDTH * Math.min(width, height),
-            )}
+            strokeWidth={Math.max(1.5, PEN_WIDTH * Math.min(width, height))}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -441,11 +433,18 @@ export function FreeWritePdfAnnotationOverlay({ page, width, height }: Props) {
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
             }}
-            onPointerDown={(ev) => { startTextDrag(ev, box); }}
-            onPointerMove={(ev) => { moveTextDrag(ev, box.id); }}
-            onPointerUp={(ev) => { endTextDrag(ev, box.id); }}
-            onPointerCancel={(ev) => { endTextDrag(ev, box.id); }}
-          >
+            onPointerDown={(ev) => {
+              startTextDrag(ev, box);
+            }}
+            onPointerMove={(ev) => {
+              moveTextDrag(ev, box.id);
+            }}
+            onPointerUp={(ev) => {
+              endTextDrag(ev, box.id);
+            }}
+            onPointerCancel={(ev) => {
+              endTextDrag(ev, box.id);
+            }}>
             {box.body || "\u00a0"}
           </div>
         );

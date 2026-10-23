@@ -5,12 +5,9 @@ import { storeFlags } from "../storeFlags";
 import { notify } from "../../lib/notify";
 import { isStickySpeechError } from "../../lib/speechPrivacy";
 
-export const createErrorsSlice: StateCreator<
-  AppStore,
-  [],
-  [],
-  ErrorsSlice
-> = (set) => ({
+export const createErrorsSlice: StateCreator<AppStore, [], [], ErrorsSlice> = (
+  set,
+) => ({
   lastError: null,
   setLastError: (error) => {
     if (!error) {

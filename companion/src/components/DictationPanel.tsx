@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { CompanionClient } from '../companionClient';
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import type { CompanionClient } from "../companionClient";
 import {
   startTabletRecording,
   stopTabletRecording,
   stopTabletRecordingDiscard,
-} from '../dictationRecorder';
+} from "../dictationRecorder";
 
 type Props = {
   client: CompanionClient;
@@ -13,26 +19,26 @@ type Props = {
   enabled: boolean;
 };
 
-type Phase = 'idle' | 'starting' | 'listening' | 'processing';
+type Phase = "idle" | "starting" | "listening" | "processing";
 
 export function DictationPanel({ client, language, enabled }: Props) {
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [partial, setPartial] = useState('');
-  const [finalText, setFinalText] = useState('');
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [partial, setPartial] = useState("");
+  const [finalText, setFinalText] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     return client.onMessage((env) => {
-      if (env.type === 'dictation.partial') {
+      if (env.type === "dictation.partial") {
         const text =
-          typeof env.payload?.text === 'string' ? env.payload.text : '';
+          typeof env.payload?.text === "string" ? env.payload.text : "";
         if (text) {
           setPartial((prev) => (prev ? `${prev} ${text}` : text));
         }
       }
-      if (env.type === 'dictation.final') {
+      if (env.type === "dictation.final") {
         const text =
-          typeof env.payload?.text === 'string' ? env.payload.text : '';
+          typeof env.payload?.text === "string" ? env.payload.text : "";
         if (text) {
           setFinalText(text);
         }
@@ -41,15 +47,15 @@ export function DictationPanel({ client, language, enabled }: Props) {
   }, [client]);
 
   useEffect(() => {
-    if (!enabled && phase === 'listening') {
+    if (!enabled && phase === "listening") {
       void (async () => {
         await stopTabletRecordingDiscard();
         try {
-          await client.send('dictation.stop', {});
+          await client.send("dictation.stop", {});
         } catch {
           /* ignore */
         }
-        setPhase('idle');
+        setPhase("idle");
       })();
     }
   }, [enabled, phase, client]);
@@ -59,76 +65,76 @@ export function DictationPanel({ client, language, enabled }: Props) {
       return;
     }
     setError(null);
-    setPartial('');
-    setFinalText('');
-    setPhase('starting');
+    setPartial("");
+    setFinalText("");
+    setPhase("starting");
     try {
-      const reply = await client.send('dictation.start', { language });
-      if (reply.type === 'error') {
+      const reply = await client.send("dictation.start", { language });
+      if (reply.type === "error") {
         throw new Error(
-          typeof reply.payload?.message === 'string'
+          typeof reply.payload?.message === "string"
             ? reply.payload.message
-            : 'Could not start dictation',
+            : "Could not start dictation",
         );
       }
       await startTabletRecording();
-      setPhase('listening');
+      setPhase("listening");
     } catch (e) {
       await stopTabletRecordingDiscard();
-      setPhase('idle');
-      setError(e instanceof Error ? e.message : 'Dictation failed');
+      setPhase("idle");
+      setError(e instanceof Error ? e.message : "Dictation failed");
     }
   };
 
   const stop = async () => {
-    setPhase('processing');
+    setPhase("processing");
     try {
       const audio = await stopTabletRecording();
       if (!audio) {
-        await client.send('dictation.stop', {});
-        setPhase('idle');
+        await client.send("dictation.stop", {});
+        setPhase("idle");
         return;
       }
-      const reply = await client.send('dictation.stop', {
+      const reply = await client.send("dictation.stop", {
         data: audio.base64,
         format: audio.format,
         mimeType: audio.mimeType,
         filename: audio.filename,
       });
-      if (reply.type === 'error') {
+      if (reply.type === "error") {
         throw new Error(
-          typeof reply.payload?.message === 'string'
+          typeof reply.payload?.message === "string"
             ? reply.payload.message
-            : 'Transcription failed',
+            : "Transcription failed",
         );
       }
-      if (reply.type === 'dictation.final') {
+      if (reply.type === "dictation.final") {
         const text =
-          typeof reply.payload?.text === 'string' ? reply.payload.text : '';
+          typeof reply.payload?.text === "string" ? reply.payload.text : "";
         if (text) {
           setFinalText(text);
         }
       }
-      setPhase('idle');
+      setPhase("idle");
     } catch (e) {
       await stopTabletRecordingDiscard();
-      setPhase('idle');
-      setError(e instanceof Error ? e.message : 'Dictation failed');
+      setPhase("idle");
+      setError(e instanceof Error ? e.message : "Dictation failed");
     }
   };
 
   const cancel = async () => {
     await stopTabletRecordingDiscard();
     try {
-      await client.send('dictation.stop', {});
+      await client.send("dictation.stop", {});
     } catch {
       /* ignore */
     }
-    setPhase('idle');
+    setPhase("idle");
   };
 
-  const busy = phase === 'starting' || phase === 'processing';
-  const listening = phase === 'listening';
+  const busy = phase === "starting" || phase === "processing";
+  const listening = phase === "listening";
 
   return (
     <View style={styles.wrap}>
@@ -153,13 +159,12 @@ export function DictationPanel({ client, language, enabled }: Props) {
           listening && styles.micBtnLive,
           (!enabled || busy) && styles.disabled,
           pressed && enabled && styles.pressed,
-        ]}
-      >
+        ]}>
         {busy ? (
           <ActivityIndicator color="#0b1220" />
         ) : (
           <Text style={styles.micLabel}>
-            {listening ? 'Stop & type' : 'Hold to talk — tap to start'}
+            {listening ? "Stop & type" : "Hold to talk — tap to start"}
           </Text>
         )}
       </Pressable>
@@ -193,12 +198,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   hint: {
-    color: '#9aa7bd',
+    color: "#9aa7bd",
     fontSize: 14,
     lineHeight: 20,
   },
@@ -206,19 +211,19 @@ const styles = StyleSheet.create({
     marginTop: 12,
     minHeight: 88,
     borderRadius: 16,
-    backgroundColor: '#7eb6ff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#7eb6ff",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 16,
   },
   micBtnLive: {
-    backgroundColor: '#e85d5d',
+    backgroundColor: "#e85d5d",
   },
   micLabel: {
-    color: '#0b1220',
+    color: "#0b1220",
     fontSize: 18,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
   },
   pressed: {
     opacity: 0.9,
@@ -227,30 +232,30 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   cancelBtn: {
-    alignSelf: 'center',
+    alignSelf: "center",
     padding: 12,
   },
   cancelText: {
-    color: '#b0bac8',
-    fontWeight: '600',
+    color: "#b0bac8",
+    fontWeight: "600",
   },
   resultBox: {
-    backgroundColor: '#1c2433',
+    backgroundColor: "#1c2433",
     borderRadius: 12,
     padding: 14,
     gap: 8,
   },
   partial: {
-    color: '#9aa7bd',
+    color: "#9aa7bd",
     fontSize: 15,
   },
   final: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   error: {
-    color: '#ff8f8f',
+    color: "#ff8f8f",
     fontSize: 14,
   },
 });
