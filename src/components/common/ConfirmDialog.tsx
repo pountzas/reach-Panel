@@ -1,17 +1,17 @@
+import type { SurfaceColors } from "../../lib/colorProfiles";
 import { Activity, useEffect, useId, useRef, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import type { SurfaceColors } from "../../lib/colorProfiles";
 
 export type ConfirmDialogProps = {
-  open: boolean;
-  message: string;
-  confirmLabel: string;
   cancelLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  surface: SurfaceColors;
   confirmBackgroundColor?: string;
+  confirmLabel: string;
   confirmTextColor?: string;
+  message: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+  open: boolean;
+  surface: SurfaceColors;
 };
 
 const FOCUSABLE_SELECTOR =
@@ -25,15 +25,15 @@ function focusableElements(root: HTMLElement): HTMLElement[] {
 
 /** Centered, themed confirmation overlay for destructive or irreversible actions. */
 export function ConfirmDialog({
-  open,
-  message,
-  confirmLabel,
   cancelLabel,
-  onConfirm,
-  onCancel,
-  surface,
   confirmBackgroundColor,
+  confirmLabel,
   confirmTextColor,
+  message,
+  onCancel,
+  onConfirm,
+  open,
+  surface,
 }: ConfirmDialogProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -108,13 +108,13 @@ export function ConfirmDialog({
     <Activity mode={open ? "visible" : "hidden"}>
       <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4">
         <div
+          aria-labelledby={titleId}
+          aria-modal="true"
+          className="w-full max-w-sm rounded-2xl p-5 outline-none"
           ref={panelRef}
           role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-          tabIndex={-1}
-          className="w-full max-w-sm rounded-2xl p-5 outline-none"
           style={panelStyle}>
+          tabIndex={-1}
           <p
             id={titleId}
             className="text-base font-medium"
