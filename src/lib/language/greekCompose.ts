@@ -53,7 +53,10 @@ function isGreekDialytikaMark(ch: string): boolean {
   return DIALYTIKA_MARKS.has(ch);
 }
 
-export function isGreekDeadKeyPress(output: string, physicalKey?: string): boolean {
+export function isGreekDeadKeyPress(
+  output: string,
+  physicalKey?: string,
+): boolean {
   return resolveGreekDeadAccent(output, physicalKey) !== null;
 }
 

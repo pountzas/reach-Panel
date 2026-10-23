@@ -88,7 +88,8 @@ export const es = {
   freeWritePdfExportCurrent: "Página actual",
   freeWritePdfExportSave: "Exportar…",
   freeWritePdfExportCancel: "Cancelar",
-  freeWritePdfExportInvalidRange: "Introduce un rango de páginas Desde/Hasta válido.",
+  freeWritePdfExportInvalidRange:
+    "Introduce un rango de páginas Desde/Hasta válido.",
   freeWritePdfExportSuccess: "PDF exportado.",
 
   comingSoon: "Próximamente",
@@ -149,7 +150,8 @@ export const es = {
 
   languageNewListEmpty: "Añade al menos una palabra",
   languagePressPlayToSpell: "Pulsa Reproducir para empezar a deletrear",
-  languageNewListKeyboardHint: "Usa el teclado para escribir el título y las palabras a la izquierda",
+  languageNewListKeyboardHint:
+    "Usa el teclado para escribir el título y las palabras a la izquierda",
 
   languagePackMyLists: "Mis listas",
 
@@ -253,12 +255,14 @@ export const es = {
 
   taskbarPositionTop: "Arriba",
 
-  taskbarPositionApplied: "Posición de la barra de tareas actualizada. Explorer se reinició.",
+  taskbarPositionApplied:
+    "Posición de la barra de tareas actualizada. Explorer se reinició.",
 
   taskbarPositionUnsupported:
     "Esa posición de la barra de tareas no es compatible con esta versión de Windows.",
 
-  taskbarPositionFailed: "No se pudo cambiar la posición de la barra de tareas.",
+  taskbarPositionFailed:
+    "No se pudo cambiar la posición de la barra de tareas.",
 
   opacity: "Opacidad",
   keyboardFontSize: "Tamaño de fuente del teclado",
@@ -268,7 +272,8 @@ export const es = {
   appLanguageHint: "Menús, frases y voz",
 
   launchAtWindowsSignIn: "Iniciar ReachPanel al iniciar sesión en Windows",
-  launchAtWindowsSignInHint: "Desactivar quita ReachPanel del inicio de Windows",
+  launchAtWindowsSignInHint:
+    "Desactivar quita ReachPanel del inicio de Windows",
   launchAtWindowsSignInError: "No se pudo actualizar el inicio de Windows",
 
   typingLanguage: "Idioma de escritura",
@@ -312,7 +317,8 @@ export const es = {
 
   deleteProfile: "Eliminar perfil",
 
-  deleteProfileConfirm: "¿Eliminar este perfil? Si está activo, se creará un perfil predeterminado nuevo.",
+  deleteProfileConfirm:
+    "¿Eliminar este perfil? Si está activo, se creará un perfil predeterminado nuevo.",
 
   profileDeleted: "Perfil eliminado.",
 
@@ -379,7 +385,8 @@ export const es = {
   dictationUnavailableUnsupported:
     "Dictado no disponible — añade una clave API Groq gratuita en Configuración para este idioma",
 
-  dictationUnavailableOffline: "Dictado no disponible — se requiere conexión a Internet",
+  dictationUnavailableOffline:
+    "Dictado no disponible — se requiere conexión a Internet",
 
   dictationGroqRemainingToday: "Solicitudes Groq restantes hoy",
 
@@ -571,5 +578,4 @@ export const es = {
   aboutDownloads: "Downloads",
 
   aboutEmail: "Correo",
-
 } satisfies Record<keyof typeof en, string>;

@@ -3,7 +3,7 @@ export type TeachingPdfEntry = {
   title: string;
   path: string;
   lastOpenedAt: string;
-}
+};
 
 export function sortTeachingPdfEntriesByRecent(
   entries: TeachingPdfEntry[],
@@ -27,7 +27,9 @@ export function migrateToSingleTeachingPdf(entries: TeachingPdfEntry[]): {
   return { entries: [sorted[0]], didMigrate: true };
 }
 
-export function replaceTeachingPdf(entry: TeachingPdfEntry): TeachingPdfEntry[] {
+export function replaceTeachingPdf(
+  entry: TeachingPdfEntry,
+): TeachingPdfEntry[] {
   return [entry];
 }
 

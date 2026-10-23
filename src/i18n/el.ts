@@ -1,7 +1,6 @@
 import { en } from "./en";
 
 export const el = {
-
   appTitle: "ReachPanel",
 
   collapse: "Σύμπτυξη",
@@ -152,7 +151,8 @@ export const el = {
 
   languageNewListEmpty: "Πρόσθεσε τουλάχιστον μία λέξη",
   languagePressPlayToSpell: "Πάτα Αναπαραγωγή για να ξεκινήσεις την ορθογραφία",
-  languageNewListKeyboardHint: "Χρησιμοποίησε το πληκτρολόγιο για τον τίτλο και τις λέξεις στα αριστερά",
+  languageNewListKeyboardHint:
+    "Χρησιμοποίησε το πληκτρολόγιο για τον τίτλο και τις λέξεις στα αριστερά",
 
   languagePackMyLists: "Οι λίστες μου",
 
@@ -245,7 +245,8 @@ export const el = {
 
   showInputPreview: "Ζωντανή προεπισκόπηση εισόδου",
 
-  showInputPreviewFocusMode: "Ζωντανή προεπισκόπηση εισόδου (λειτουργία εστίασης)",
+  showInputPreviewFocusMode:
+    "Ζωντανή προεπισκόπηση εισόδου (λειτουργία εστίασης)",
 
   taskbarPosition: "Θέση γραμμής εργασιών",
 
@@ -256,7 +257,8 @@ export const el = {
 
   taskbarPositionTop: "Πάνω",
 
-  taskbarPositionApplied: "Η θέση της γραμμής εργασιών ενημερώθηκε. Ο Explorer επανεκκινήθηκε.",
+  taskbarPositionApplied:
+    "Η θέση της γραμμής εργασιών ενημερώθηκε. Ο Explorer επανεκκινήθηκε.",
 
   taskbarPositionUnsupported:
     "Αυτή η θέση γραμμής εργασιών δεν υποστηρίζεται σε αυτή την έκδοση Windows.",
@@ -271,8 +273,10 @@ export const el = {
   appLanguageHint: "Μενού, φράσεις και ομιλία",
 
   launchAtWindowsSignIn: "Εκκίνηση του ReachPanel με την είσοδο στα Windows",
-  launchAtWindowsSignInHint: "Απενεργοποιήστε για αφαίρεση από την εκκίνηση των Windows",
-  launchAtWindowsSignInError: "Δεν ήταν δυνατή η ενημέρωση της εκκίνησης των Windows",
+  launchAtWindowsSignInHint:
+    "Απενεργοποιήστε για αφαίρεση από την εκκίνηση των Windows",
+  launchAtWindowsSignInError:
+    "Δεν ήταν δυνατή η ενημέρωση της εκκίνησης των Windows",
 
   typingLanguage: "Γλώσσα πληκτρολογίου",
 
@@ -431,7 +435,8 @@ export const el = {
 
   upcomingNotes: "Επόμενες νότες",
 
-  songNeedsOctaves: "Μετακινήστε το πιάνο στο {range} για να καλύψει το τραγούδι",
+  songNeedsOctaves:
+    "Μετακινήστε το πιάνο στο {range} για να καλύψει το τραγούδι",
 
   songWiderThanPiano:
     "Το τραγούδι είναι μεγαλύτερο από 5 οκτάβες — κάποιες νότες είναι εκτός. Χρησιμοποιήστε ◀ ▶ για μετατόπιση.",
@@ -534,7 +539,8 @@ export const el = {
   companionStart: "Έναρξη γέφυρας",
   companionStop: "Διακοπή γέφυρας",
   companionRefreshQr: "Νέος κωδικός σύζευξης",
-  companionQrHint: "Σαρώστε αυτό το QR με το ReachPanel Συνοδός στο tablet σας.",
+  companionQrHint:
+    "Σαρώστε αυτό το QR με το ReachPanel Συνοδός στο tablet σας.",
   companionQrAlt: "QR σύζευξης Συνοδού",
   companionCopyPayload: "Αντιγραφή JSON σύζευξης",
   companionCopied: "Το JSON σύζευξης αντιγράφηκε",
@@ -577,5 +583,4 @@ export const el = {
   aboutDownloads: "Downloads",
 
   aboutEmail: "Email",
-
 } satisfies Record<keyof typeof en, string>;

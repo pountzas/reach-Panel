@@ -160,7 +160,8 @@ export const it = {
   modeTabletsHint:
     "Normale e Focus sono tastiera. Insegnamento apre le lezioni; Musica mostra il sintetizzatore. Compagno resta non disponibile finché il bridge non è avviato o un tablet non è associato; selezionato mentre un tablet è connesso.",
 
-  showTeachingInputHelpers: "Mostra gli aiuti di input in modalità Insegnamento",
+  showTeachingInputHelpers:
+    "Mostra gli aiuti di input in modalità Insegnamento",
 
   showTeachingInputHelpersDescription:
     "Barra dei suggerimenti e microfono mentre l'insegnamento è attivo.",
@@ -268,7 +269,8 @@ export const it = {
   appLanguageHint: "Menu, frasi e parlato",
 
   launchAtWindowsSignIn: "Avvia ReachPanel all'accesso di Windows",
-  launchAtWindowsSignInHint: "Disattivare rimuove ReachPanel dall'avvio di Windows",
+  launchAtWindowsSignInHint:
+    "Disattivare rimuove ReachPanel dall'avvio di Windows",
   launchAtWindowsSignInError: "Impossibile aggiornare l'avvio di Windows",
 
   typingLanguage: "Lingua di digitazione",
@@ -380,7 +382,8 @@ export const it = {
   dictationUnavailableUnsupported:
     "Dettatura non disponibile — aggiungi una chiave API Groq gratuita nelle Impostazioni per questa lingua",
 
-  dictationUnavailableOffline: "Dettatura non disponibile — è richiesta una connessione Internet",
+  dictationUnavailableOffline:
+    "Dettatura non disponibile — è richiesta una connessione Internet",
 
   dictationGroqRemainingToday: "Richieste Groq rimanenti oggi",
 
@@ -572,5 +575,4 @@ export const it = {
   aboutDownloads: "Downloads",
 
   aboutEmail: "Email",
-
 } satisfies Record<keyof typeof en, string>;

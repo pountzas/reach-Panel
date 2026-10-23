@@ -13,7 +13,7 @@ export type SectionDefinition = {
   canUndock: boolean;
   /** Settings visibility flag; null means always present when the canvas is shown. */
   visibilityKey: SectionVisibilityKey | null;
-}
+};
 
 /**
  * Teaching section visibility for the docked stack and window height.

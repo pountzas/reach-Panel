@@ -25,7 +25,10 @@ export function normalizeExportPageRange(input: {
   return { from, to };
 }
 
-export function rangeForAllPages(pageCount: number): { from: number; to: number } {
+export function rangeForAllPages(pageCount: number): {
+  from: number;
+  to: number;
+} {
   return { from: 1, to: pageCount };
 }
 

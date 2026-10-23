@@ -30,7 +30,7 @@ export type OverlayPlacement = {
   y: number;
   width: number;
   height: number;
-}
+};
 
 export type OverlayRect = OverlayPlacement;
 
@@ -158,12 +158,19 @@ async function createOverlay(
   });
 
   await new Promise<void>((resolve, reject) => {
-    void webview.once("tauri://created", () => { resolve(); });
+    void webview.once("tauri://created", () => {
+      resolve();
+    });
     void webview.once("tauri://error", (event) => {
       reject(
         event.payload instanceof Error
           ? event.payload
-          : new Error(tauriErrorMessage(event.payload, "Failed to create dictation overlay")),
+          : new Error(
+              tauriErrorMessage(
+                event.payload,
+                "Failed to create dictation overlay",
+              ),
+            ),
       );
     });
   });

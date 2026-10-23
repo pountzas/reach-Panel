@@ -5,12 +5,12 @@ export type GroqDailyQuotaSnapshot = {
   date: string;
   remainingRequests: number;
   limitRequests: number;
-}
+};
 
 export type GroqQuotaEventPayload = {
   remainingRequests: number;
   limitRequests: number;
-}
+};
 
 /** Milliseconds until the next local calendar midnight (minimum 1ms). */
 export function msUntilNextLocalMidnight(now: Date = new Date()): number {

@@ -11,7 +11,7 @@ export type PointerDragHandlers = {
   onPointerDown: (event: ReactPointerEvent) => void;
   onPointerMove: (event: ReactPointerEvent) => void;
   onPointerUp: (event: ReactPointerEvent) => void;
-}
+};
 
 let activeDragCount = 0;
 const activeListeners = new Set<() => void>();
@@ -29,7 +29,7 @@ function setPointerDragActive(active: boolean) {
   } else {
     activeDragCount = Math.max(0, activeDragCount - 1);
   }
-  if ((activeDragCount > 0) !== wasActive) {
+  if (activeDragCount > 0 !== wasActive) {
     notifyPointerDragActive();
   }
 }
@@ -65,9 +65,10 @@ export function usePointerDrag(options: {
   onMove: (event: PointerEvent) => void;
   onEnd?: (event: PointerEvent) => void;
 }): PointerDragHandlers {
-  const activeRef = useRef<{ pointerId: number; captureEl: HTMLElement | null } | null>(
-    null,
-  );
+  const activeRef = useRef<{
+    pointerId: number;
+    captureEl: HTMLElement | null;
+  } | null>(null);
   const optionsRef = useRef(options);
 
   useLayoutEffect(() => {
@@ -85,28 +86,31 @@ export function usePointerDrag(options: {
     endDragRef.current(event);
   }, []);
 
-  const endDrag = useCallback((event?: PointerEvent) => {
-    const active = activeRef.current;
-    if (!active) return;
-    if (event && active.pointerId !== event.pointerId) return;
-    window.removeEventListener("pointermove", onWindowMove);
-    window.removeEventListener("pointerup", pointerEndListener);
-    window.removeEventListener("pointercancel", pointerEndListener);
-    try {
-      if (event) {
-        active.captureEl?.releasePointerCapture(event.pointerId);
-      } else {
-        active.captureEl?.releasePointerCapture(active.pointerId);
+  const endDrag = useCallback(
+    (event?: PointerEvent) => {
+      const active = activeRef.current;
+      if (!active) return;
+      if (event && active.pointerId !== event.pointerId) return;
+      window.removeEventListener("pointermove", onWindowMove);
+      window.removeEventListener("pointerup", pointerEndListener);
+      window.removeEventListener("pointercancel", pointerEndListener);
+      try {
+        if (event) {
+          active.captureEl?.releasePointerCapture(event.pointerId);
+        } else {
+          active.captureEl?.releasePointerCapture(active.pointerId);
+        }
+      } catch {
+        /* already released */
       }
-    } catch {
-      /* already released */
-    }
-    activeRef.current = null;
-    setPointerDragActive(false);
-    if (event) {
-      optionsRef.current.onEnd?.(event);
-    }
-  }, [onWindowMove, pointerEndListener]);
+      activeRef.current = null;
+      setPointerDragActive(false);
+      if (event) {
+        optionsRef.current.onEnd?.(event);
+      }
+    },
+    [onWindowMove, pointerEndListener],
+  );
 
   useLayoutEffect(() => {
     endDragRef.current = endDrag;
@@ -141,6 +145,8 @@ export function usePointerDrag(options: {
     onPointerMove: () => {
       /* window listener handles move */
     },
-    onPointerUp: (event) => { endDrag(event.nativeEvent); },
+    onPointerUp: (event) => {
+      endDrag(event.nativeEvent);
+    },
   };
 }

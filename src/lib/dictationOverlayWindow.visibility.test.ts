@@ -81,7 +81,9 @@ describe("dictation overlay visibility", () => {
 
   it("hides the overlay when dictation ends while show() is still pending", async () => {
     const showing = showDictationOverlay();
-    await vi.waitFor(() => { expect(overlayWindow.show).toHaveBeenCalled(); });
+    await vi.waitFor(() => {
+      expect(overlayWindow.show).toHaveBeenCalled();
+    });
 
     const hiding = hideDictationOverlay();
     overlayWindow.releaseShow();

@@ -26,6 +26,9 @@ jobs:
       - name: Lint (ESLint strict React/TS)
         run: npm run lint
 
+      - name: Format (Prettier)
+        run: npm run format:check
+
       - name: Unit tests (vitest)
         run: npm test
 

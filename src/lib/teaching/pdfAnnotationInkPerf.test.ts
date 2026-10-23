@@ -24,7 +24,10 @@ function makeDocWithPoints(pointCount: number) {
 }
 
 /** Pre-#277 pen move: full JSON clone of the doc on every move. */
-function oldPathGestureCloneCount(basePoints: number, moveCount: number): number {
+function oldPathGestureCloneCount(
+  basePoints: number,
+  moveCount: number,
+): number {
   let doc = makeDocWithPoints(basePoints);
   const id = "live";
   let clones = 0;
@@ -49,7 +52,10 @@ function oldPathGestureCloneCount(basePoints: number, moveCount: number): number
 }
 
 /** Post-#277: append in a local array; one structural commit at gesture end. */
-function newPathGestureCloneCount(basePoints: number, moveCount: number): number {
+function newPathGestureCloneCount(
+  basePoints: number,
+  moveCount: number,
+): number {
   const cloneSpy = vi.spyOn(pdfAnnotations, "clonePdfAnnotationDoc");
   const doc = makeDocWithPoints(basePoints);
   const points: PdfPoint[] = [[0, 0]];

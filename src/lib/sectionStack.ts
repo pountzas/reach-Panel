@@ -20,7 +20,7 @@ export type FloatRect = {
   yPct: number;
   wPct: number;
   hPct: number;
-}
+};
 
 export type SectionStackState = {
   /** Docked order above the keyboard (extensible). */
@@ -30,11 +30,11 @@ export type SectionStackState = {
   expandedWeights?: Partial<Record<SectionId, number>>;
   /** When present, section floats and leaves a reserved hole in the stack. */
   undocked: Partial<Record<StackableSectionId, FloatRect>>;
-}
+};
 
 export type SectionVisibility = {
   teaching: boolean;
-}
+};
 
 export type DockedSlot = {
   id: SectionId;
@@ -42,7 +42,7 @@ export type DockedSlot = {
   height: number;
   isHole: boolean;
   isMinimized: boolean;
-}
+};
 
 export const STACK_GAP_PX = 4;
 export const MIN_EXPANDED_SECTION_PX = 80;
@@ -175,7 +175,7 @@ export function visibleStackSlotIds(
 export type ResolveDockedSlotsOptions = {
   /** Ephemeral minimize (e.g. teaching keyboard) — does not mutate stack.minimized. */
   forceMinimized?: Partial<Record<SectionId, boolean>>;
-}
+};
 
 export function resolveDockedSlots(
   stack: SectionStackState,
@@ -197,13 +197,12 @@ export function resolveDockedSlots(
     fixedH: number;
     isHole: boolean;
     isMinimized: boolean;
-  }
+  };
 
   const plan: Plan[] = ids.map((id) => {
     const hole = isUndocked(stack, id);
     const minimized =
-      !hole &&
-      (Boolean(stack.minimized[id]) || Boolean(forceMinimized?.[id]));
+      !hole && (Boolean(stack.minimized[id]) || Boolean(forceMinimized?.[id]));
     if (minimized) {
       return {
         id,
@@ -268,7 +267,10 @@ export function resolveDockedSlots(
       );
       for (const id of donors) {
         const share = (weightOf(stack, id) / donorWeight) * deficit;
-        heights.set(id, Math.max(MIN_EXPANDED_SECTION_PX, (heights.get(id) ?? 0) - share));
+        heights.set(
+          id,
+          Math.max(MIN_EXPANDED_SECTION_PX, (heights.get(id) ?? 0) - share),
+        );
       }
     }
 

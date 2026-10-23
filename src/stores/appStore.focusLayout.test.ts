@@ -7,8 +7,7 @@ const mockState = vi.hoisted(() => ({
   applyArgs: [] as Record<string, unknown>[],
   applyGate: null as Promise<void> | null,
   inputFocusHandler: null as
-    | ((event: { payload: { focused: boolean } }) => void)
-    | null,
+    ((event: { payload: { focused: boolean } }) => void) | null,
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -71,9 +70,9 @@ describe("focus mode window layout", () => {
     await vi.waitFor(() => {
       expect(mockState.calls).toContain("cmd_apply_window_layout");
     });
-    expect(mockState.calls.filter((c) => c === "cmd_apply_window_layout")).toHaveLength(
-      1,
-    );
+    expect(
+      mockState.calls.filter((c) => c === "cmd_apply_window_layout"),
+    ).toHaveLength(1);
     expect(mockState.calls).not.toContain("cmd_animate_window_layout");
     notifyFocusContentAnimDone();
     await expand;
@@ -181,9 +180,9 @@ describe("focus mode window layout", () => {
     notifyFocusContentAnimDone();
     await collapse;
     expect(mockState.calls).toContain("cmd_apply_window_layout");
-    expect(mockState.calls.filter((c) => c === "cmd_apply_window_layout")).toHaveLength(
-      1,
-    );
+    expect(
+      mockState.calls.filter((c) => c === "cmd_apply_window_layout"),
+    ).toHaveLength(1);
     expect(mockState.calls).not.toContain("cmd_animate_window_layout");
     expect(useAppStore.getState().focusContentAnim).toBe("idle");
   });

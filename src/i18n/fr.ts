@@ -149,7 +149,8 @@ export const fr = {
 
   languageNewListEmpty: "Ajoutez au moins un mot",
   languagePressPlayToSpell: "Appuyez sur Lire pour commencer l'orthographe",
-  languageNewListKeyboardHint: "Utilisez le clavier pour saisir le titre et les mots à gauche",
+  languageNewListKeyboardHint:
+    "Utilisez le clavier pour saisir le titre et les mots à gauche",
 
   languagePackMyLists: "Mes listes",
 
@@ -160,7 +161,8 @@ export const fr = {
   modeTabletsHint:
     "Normal et Focus sont un clavier de saisie. Enseignement ouvre les leçons ; Musique affiche le synthétiseur. Compagnon reste indisponible tant que le pont n’est pas démarré ou qu’aucune tablette n’est appariée ; sélectionné quand une tablette est connectée.",
 
-  showTeachingInputHelpers: "Afficher les aides à la saisie en mode Enseignement",
+  showTeachingInputHelpers:
+    "Afficher les aides à la saisie en mode Enseignement",
 
   showTeachingInputHelpersDescription:
     "Barre de suggestions et micro pendant l’enseignement.",
@@ -253,12 +255,14 @@ export const fr = {
 
   taskbarPositionTop: "Haut",
 
-  taskbarPositionApplied: "Position de la barre des tâches mise à jour. Explorer a redémarré.",
+  taskbarPositionApplied:
+    "Position de la barre des tâches mise à jour. Explorer a redémarré.",
 
   taskbarPositionUnsupported:
     "Cette position de barre des tâches n'est pas prise en charge sur cette version de Windows.",
 
-  taskbarPositionFailed: "Impossible de modifier la position de la barre des tâches.",
+  taskbarPositionFailed:
+    "Impossible de modifier la position de la barre des tâches.",
 
   opacity: "Opacité",
   keyboardFontSize: "Taille de police du clavier",
@@ -268,8 +272,10 @@ export const fr = {
   appLanguageHint: "Menus, phrases et parole",
 
   launchAtWindowsSignIn: "Démarrer ReachPanel à la connexion Windows",
-  launchAtWindowsSignInHint: "Désactiver retire ReachPanel du démarrage Windows",
-  launchAtWindowsSignInError: "Impossible de mettre à jour le démarrage Windows",
+  launchAtWindowsSignInHint:
+    "Désactiver retire ReachPanel du démarrage Windows",
+  launchAtWindowsSignInError:
+    "Impossible de mettre à jour le démarrage Windows",
 
   typingLanguage: "Langue de saisie",
 
@@ -312,7 +318,8 @@ export const fr = {
 
   deleteProfile: "Supprimer le profil",
 
-  deleteProfileConfirm: "Supprimer ce profil ? S’il est actif, un nouveau profil par défaut sera créé.",
+  deleteProfileConfirm:
+    "Supprimer ce profil ? S’il est actif, un nouveau profil par défaut sera créé.",
 
   profileDeleted: "Profil supprimé.",
 
@@ -379,7 +386,8 @@ export const fr = {
   dictationUnavailableUnsupported:
     "Dictée indisponible — ajoutez une clé API Groq gratuite dans les Paramètres pour cette langue",
 
-  dictationUnavailableOffline: "Dictée indisponible — une connexion Internet est requise",
+  dictationUnavailableOffline:
+    "Dictée indisponible — une connexion Internet est requise",
 
   dictationGroqRemainingToday: "Requêtes Groq restantes aujourd'hui",
 
@@ -529,7 +537,8 @@ export const fr = {
   companionStart: "Démarrer le pont",
   companionStop: "Arrêter le pont",
   companionRefreshQr: "Nouveau code d’association",
-  companionQrHint: "Scannez ce QR avec ReachPanel Compagnon sur votre tablette.",
+  companionQrHint:
+    "Scannez ce QR avec ReachPanel Compagnon sur votre tablette.",
   companionQrAlt: "QR d’association Compagnon",
   companionCopyPayload: "Copier le JSON d’association",
   companionCopied: "JSON d’association copié",
@@ -571,5 +580,4 @@ export const fr = {
   aboutDownloads: "Downloads",
 
   aboutEmail: "E-mail",
-
 } satisfies Record<keyof typeof en, string>;

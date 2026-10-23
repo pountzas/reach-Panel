@@ -6,7 +6,7 @@ export type KeyDef = {
   width?: number;
   modifier?: boolean;
   shiftLabel?: string;
-}
+};
 
 /** Symbol + word labels for common action keys (rendered in Keyboard). */
 export const SPECIAL_KEY_LABELS: Record<
@@ -35,7 +35,7 @@ export type PhysicalKeyState = {
   systemKlid: string;
   systemHkl: number;
   hasInputTarget: boolean;
-}
+};
 
 export type InputMethod = {
   hkl: number;
@@ -43,13 +43,13 @@ export type InputMethod = {
   displayName: string;
   layoutName: string;
   klid: string;
-}
+};
 
 export type LayoutKeyLabel = {
   key: string;
   label: string;
   shiftLabel?: string | null;
-}
+};
 
 export const DEFAULT_PHYSICAL_KEY_STATE: PhysicalKeyState = {
   capsLock: false,
@@ -193,9 +193,7 @@ export function resolveLetterCase(
 ): string {
   if (!isLetterKey(key)) return key;
   const upper = capsLock !== shift;
-  return upper
-    ? key.toLocaleUpperCase(locale)
-    : key.toLocaleLowerCase(locale);
+  return upper ? key.toLocaleUpperCase(locale) : key.toLocaleLowerCase(locale);
 }
 
 /** Windows EL: QWERTY physical slot → unshifted glyph when ToUnicodeEx returns empty. */
@@ -420,7 +418,11 @@ export function resolveOnscreenLayout(
   windowsLayout: string,
   language: string,
 ): OnscreenLayoutName {
-  if (windowsLayout === "QWERTZ" || windowsLayout === "AZERTY" || windowsLayout === "Greek") {
+  if (
+    windowsLayout === "QWERTZ" ||
+    windowsLayout === "AZERTY" ||
+    windowsLayout === "Greek"
+  ) {
     return windowsLayout;
   }
   if (windowsLayout === "QWERTY") return "QWERTY";
@@ -447,10 +449,8 @@ export function applyLayoutKeyLabels(
         return { ...k, physicalKey };
       }
       const greek = greekPhysicalOutput(physicalKey, false);
-      const unshifted =
-        mapped.label !== "" ? mapped.label : (greek ?? k.key);
-      const label =
-        mapped.label !== "" ? mapped.label : (greek ?? k.label);
+      const unshifted = mapped.label !== "" ? mapped.label : (greek ?? k.key);
+      const label = mapped.label !== "" ? mapped.label : (greek ?? k.label);
       return {
         ...k,
         physicalKey,
@@ -509,7 +509,10 @@ export function getLayoutRows(
   if (layoutName === "QWERTZ") {
     return QWERTY_ROWS.map((row) =>
       row.map((k) => {
-        const qwertzMap: Record<string, { label: string; shiftLabel?: string }> = {
+        const qwertzMap: Record<
+          string,
+          { label: string; shiftLabel?: string }
+        > = {
           y: { label: "z" },
           z: { label: "y" },
           ";": { label: "ö" },

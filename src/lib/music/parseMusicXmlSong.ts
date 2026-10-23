@@ -15,8 +15,13 @@ const ALTER_TO_ACCIDENTAL: Record<number, string> = {
   1: "#",
 };
 
-function musicXmlPitch(step: string, alter: number, octave: number): string | null {
-  const accidental = ALTER_TO_ACCIDENTAL[alter] ?? (alter > 0 ? "#" : alter < 0 ? "b" : "");
+function musicXmlPitch(
+  step: string,
+  alter: number,
+  octave: number,
+): string | null {
+  const accidental =
+    ALTER_TO_ACCIDENTAL[alter] ?? (alter > 0 ? "#" : alter < 0 ? "b" : "");
   const flattened = flattenToSharp(`${step}${accidental}`);
   if (!flattened) return null;
   return `${flattened}${octave}`;
@@ -61,7 +66,8 @@ function parsePartNotes(part: Element): {
   let divisions = 1;
   let onset = 0;
   let tempoBpm: number | null = null;
-  const events: { onsetBeats: number; durationBeats: number; pitch: string }[] = [];
+  const events: { onsetBeats: number; durationBeats: number; pitch: string }[] =
+    [];
 
   const measures = Array.from(part.getElementsByTagName("measure"));
   for (const measure of measures) {
@@ -95,7 +101,10 @@ function parsePartNotes(part: Element): {
       if (tag !== "note") continue;
 
       const durationText = textContent(child, "duration");
-      const durationBeats = Math.max(0.05, (Number(durationText) || divisions) / divisions);
+      const durationBeats = Math.max(
+        0.05,
+        (Number(durationText) || divisions) / divisions,
+      );
       const isChord = child.getElementsByTagName("chord").length > 0;
       const isRest = child.getElementsByTagName("rest").length > 0;
 
@@ -171,8 +180,7 @@ function parseMusicXmlDocument(
     const partName = (
       part.getElementsByTagName("part-name").item(0)?.textContent ?? ""
     ).trim();
-    const name =
-      partName.length > 0 ? partName : id.length > 0 ? id : "Part";
+    const name = partName.length > 0 ? partName : id.length > 0 ? id : "Part";
     if (id) partNameById.set(id, name);
   }
 
@@ -216,8 +224,13 @@ async function extractMusicXmlFromMxl(contentBase64: string): Promise<string> {
   const container = zip.file("META-INF/container.xml");
   if (container) {
     const containerXml = await container.async("string");
-    const containerDoc = new DOMParser().parseFromString(containerXml, "application/xml");
-    const rootfile = containerDoc.querySelector("rootfile")?.getAttribute("full-path");
+    const containerDoc = new DOMParser().parseFromString(
+      containerXml,
+      "application/xml",
+    );
+    const rootfile = containerDoc
+      .querySelector("rootfile")
+      ?.getAttribute("full-path");
     if (rootfile) {
       const entry = zip.file(rootfile);
       if (entry) return entry.async("string");

@@ -20,7 +20,10 @@ export function appHeaderHeightPx(): number {
 }
 
 export function clampWindowHeightRatio(ratio: number): number {
-  return Math.max(WINDOW_HEIGHT_RATIO_MIN, Math.min(WINDOW_HEIGHT_RATIO_MAX, ratio));
+  return Math.max(
+    WINDOW_HEIGHT_RATIO_MIN,
+    Math.min(WINDOW_HEIGHT_RATIO_MAX, ratio),
+  );
 }
 
 /**

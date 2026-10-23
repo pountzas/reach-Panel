@@ -7,11 +7,11 @@
 export type FlipRect = {
   top: number;
   height: number;
-}
+};
 
 export type FlipInvert = {
   translateY: number;
-}
+};
 
 /** CSS transition using shared motion tokens (see index.css :root). */
 export const FLIP_TRANSFORM_TRANSITION =

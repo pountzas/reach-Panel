@@ -7,7 +7,7 @@ export type FreeWriteModeInput = {
   settings: { keyboardSectionMode?: string };
   languageSubjectTab: LanguageSubjectTab;
   freeWriteFocus: FreeWriteFocus;
-}
+};
 
 export function isLanguageSubjectActive(input: FreeWriteModeInput): boolean {
   return (
@@ -17,8 +17,12 @@ export function isLanguageSubjectActive(input: FreeWriteModeInput): boolean {
   );
 }
 
-export function isLanguageSpellingTabActive(input: FreeWriteModeInput): boolean {
-  return isLanguageSubjectActive(input) && input.languageSubjectTab === "spelling";
+export function isLanguageSpellingTabActive(
+  input: FreeWriteModeInput,
+): boolean {
+  return (
+    isLanguageSubjectActive(input) && input.languageSubjectTab === "spelling"
+  );
 }
 
 /** Capture for Free write notepad or PDF text box (OSK / physical keyboard). */

@@ -18,15 +18,17 @@ const visibleSettings: AppSettings = {
   showTeachingInputHelpers: true,
 };
 
-function chrome(overrides: {
-  teachingSessionActive?: boolean;
-  showSynth?: boolean;
-  compact?: boolean;
-  companionSessionLive?: boolean;
-  languageLessonActive?: boolean;
-  focusModeActive?: boolean;
-  settings?: AppSettings;
-} = {}) {
+function chrome(
+  overrides: {
+    teachingSessionActive?: boolean;
+    showSynth?: boolean;
+    compact?: boolean;
+    companionSessionLive?: boolean;
+    languageLessonActive?: boolean;
+    focusModeActive?: boolean;
+    settings?: AppSettings;
+  } = {},
+) {
   return computeTeachingChromeVisibility({
     teachingSessionActive: false,
     showSynth: false,
@@ -58,9 +60,9 @@ describe("teachingInputHelpers", () => {
   });
 
   it("does not suppress language suggestions when helpers are on", () => {
-    expect(
-      shouldSuppressLanguageSuggestions(true, DEFAULT_SETTINGS),
-    ).toBe(false);
+    expect(shouldSuppressLanguageSuggestions(true, DEFAULT_SETTINGS)).toBe(
+      false,
+    );
     expect(
       shouldSuppressLanguageSuggestions(true, {
         ...DEFAULT_SETTINGS,
@@ -140,9 +142,7 @@ describe("teachingInputHelpers", () => {
     });
 
     it("hides preview and suggestions for compact even when Teaching helpers are on", () => {
-      expect(
-        chrome({ teachingSessionActive: true, compact: true }),
-      ).toEqual({
+      expect(chrome({ teachingSessionActive: true, compact: true })).toEqual({
         showInputPreview: false,
         showSuggestions: false,
         dictationKeyVisible: true,
@@ -150,9 +150,7 @@ describe("teachingInputHelpers", () => {
     });
 
     it("hides preview and suggestions for synth even when Teaching helpers are on", () => {
-      expect(
-        chrome({ teachingSessionActive: true, showSynth: true }),
-      ).toEqual({
+      expect(chrome({ teachingSessionActive: true, showSynth: true })).toEqual({
         showInputPreview: false,
         showSuggestions: false,
         dictationKeyVisible: true,

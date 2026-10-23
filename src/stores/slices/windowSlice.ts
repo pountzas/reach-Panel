@@ -27,20 +27,22 @@ function takeLiveHeightRatioPending(): number | null {
   return value;
 }
 
-export const createWindowSlice: StateCreator<
-  AppStore,
-  [],
-  [],
-  WindowSlice
-> = (set, get) => ({
+export const createWindowSlice: StateCreator<AppStore, [], [], WindowSlice> = (
+  set,
+  get,
+) => ({
   showSettings: false,
   isAnimatingWindow: false,
   pendingUpdate: null,
   updateCheckStatus: "idle",
   updateCheckError: null,
   applyWindowHeightRatioLive: async (ratio) => {
-    const { settings, musicTeachingEnabled, focusModeActive, focusModeKeyboardVisible } =
-      get();
+    const {
+      settings,
+      musicTeachingEnabled,
+      focusModeActive,
+      focusModeKeyboardVisible,
+    } = get();
     if (
       !shouldApplyLiveWindowHeightRatio({
         collapsed: settings.collapsed,
@@ -60,7 +62,11 @@ export const createWindowSlice: StateCreator<
       return;
     }
     storeFlags.liveHeightRatioPending = heightRatio;
-    if (storeFlags.liveHeightRatioRaf !== null || storeFlags.liveHeightRatioInFlight) return;
+    if (
+      storeFlags.liveHeightRatioRaf !== null ||
+      storeFlags.liveHeightRatioInFlight
+    )
+      return;
 
     await new Promise<void>((resolve) => {
       storeFlags.liveHeightRatioRaf = requestAnimationFrame(() => {
@@ -99,7 +105,9 @@ export const createWindowSlice: StateCreator<
         collapsedDictation: false,
         heightRatio: pending,
         focusMode: focus,
-        focusKeyboardVisible: focus ? latestState.focusModeKeyboardVisible : false,
+        focusKeyboardVisible: focus
+          ? latestState.focusModeKeyboardVisible
+          : false,
         focusKeyboardHeightRatio: focus ? pending : undefined,
         fullWorkArea: teachingFullWorkAreaActive(latest, musicTeachingEnabled),
       };

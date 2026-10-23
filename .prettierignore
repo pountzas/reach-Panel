@@ -1,0 +1,11 @@
+dist
+node_modules
+src-tauri
+wordpacks-dist
+updater
+companion
+spikes
+docs
+scripts
+coverage
+*.md
