@@ -108,9 +108,12 @@ describe("CollapsedFab mode menu", () => {
     vi.useRealTimers();
   });
 
-  it("tapping R opens the mode menu", async () => {
+  it("tapping the mode FAB opens the mode menu", async () => {
     const { rerender } = render(<CollapsedFab />);
-    fireEvent.click(screen.getByRole("button", { name: "Choose mode" }));
+    const modeFab = screen.getByRole("button", { name: "Choose mode" });
+    expect(modeFab.querySelector("img[alt=\"\"][aria-hidden=\"true\"]")).toBeTruthy();
+    expect(modeFab.textContent).not.toContain("R");
+    fireEvent.click(modeFab);
     expect(openModeMenu).toHaveBeenCalledTimes(1);
     rerender(<CollapsedFab />);
     const menu = screen.getByRole("menu", { name: "Modes" });
@@ -228,7 +231,7 @@ describe("CollapsedFab mode menu", () => {
     expect(expand.style.transform).toBe("scale(1)");
   });
 
-  it("staggers FAB appear Mic then Settings then R at 40ms", () => {
+  it("staggers FAB appear Mic then Settings then mode logo at 40ms", () => {
     motionMocks.prefersReducedMotion.mockReturnValue(false);
     render(<CollapsedFab showDictation showSettings />);
     const [mic, settingsBtn, expand] = screen.getAllByRole("button");

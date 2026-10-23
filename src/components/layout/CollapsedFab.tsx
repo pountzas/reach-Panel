@@ -20,6 +20,9 @@ import {
 } from "../../lib/focusMode";
 import { MOTION, prefersReducedMotion } from "../../lib/motion";
 import { ModeMenu } from "./ModeMenu";
+import reachPanelLogo from "../../../design/reachpanel-logo.svg";
+
+const MODE_FAB_LOGO_SIZE = Math.round(COLLAPSED_FAB_SIZE * 0.7);
 
 const FAB_STAGGER_MS = 40;
 
@@ -259,13 +262,12 @@ export function CollapsedFab({
         )}
         <button
           type="button"
-          className="group flex items-center justify-center rounded-full font-bold shadow-lg disabled:opacity-50"
+          className="group flex items-center justify-center rounded-full shadow-lg disabled:opacity-50"
           style={{
             width: COLLAPSED_FAB_SIZE,
             height: COLLAPSED_FAB_SIZE,
             backgroundColor: bgColor,
             color: textColor,
-            fontSize: 22,
             ...fabAppearStyle(
               (showDictation ? 1 : 0) + (showSettings ? 1 : 0),
               stackEntered,
@@ -281,7 +283,14 @@ export function CollapsedFab({
           aria-label={t("modeMenuOpen")}
         >
           <span className="flex h-full w-full items-center justify-center transition-transform group-hover:scale-[1.03] group-active:scale-95">
-            R
+            <img
+              src={reachPanelLogo}
+              alt=""
+              aria-hidden="true"
+              width={MODE_FAB_LOGO_SIZE}
+              height={MODE_FAB_LOGO_SIZE}
+              draggable={false}
+            />
           </span>
         </button>
       </div>
