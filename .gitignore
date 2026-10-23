@@ -31,6 +31,10 @@ dist-ssr
 # Rust / Tauri
 src-tauri/target/
 src-tauri/.tauri/
+# tauri icon regenerates non-Windows sets we never ship (Windows-only: nsis/msi)
+src-tauri/icons/android/
+src-tauri/icons/ios/
+src-tauri/icons/icon.icns
 
 # Local patched tauri-mcp source (binary installed via cargo)
 .cursor/*
