@@ -1,0 +1,9 @@
+# https://docs.coderabbit.ai/reference/configuration#reviewspath_filters
+reviews:
+  path_filters:
+    - "!src-tauri/icons/**"
+    - "!**/*.png"
+    - "!**/*.ico"
+    - "!**/*.icns"
+    - "!package-lock.json"
+    - "!companion/assets/**"
