@@ -43,7 +43,7 @@ export function androidVersionCode(version) {
 export function readCurrentVersion(companionRoot) {
   const versioningPath = join(companionRoot, 'src/versioning.cjs');
   const source = readFileSync(versioningPath, 'utf8');
-  const versionMatch = /const VERSION = '([^']+)'/.exec(source);
+  const versionMatch = /const VERSION = ["']([^"']+)["']/.exec(source);
   if (!versionMatch) {
     throw new Error('Could not parse VERSION from src/versioning.cjs');
   }
@@ -54,8 +54,8 @@ export function writeVersion(companionRoot, version) {
   const { versioningPath } = readCurrentVersion(companionRoot);
   let source = readFileSync(versioningPath, 'utf8');
   source = source.replace(
-    /const VERSION = '[^']+'/,
-    `const VERSION = '${version}'`,
+    /const VERSION = ["'][^"']+["']/,
+    `const VERSION = "${version}"`,
   );
   writeFileSync(versioningPath, source);
 
