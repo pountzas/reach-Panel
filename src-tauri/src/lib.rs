@@ -73,7 +73,16 @@ pub fn run() {
                 let _ = window.set_shadow(false);
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
+                if let Some(icon) = app.default_window_icon().cloned() {
+                    let _ = window.set_icon(icon);
+                }
                 if let Ok(hwnd) = window.hwnd() {
+                    let hwnd = windows::Win32::Foundation::HWND(hwnd.0);
+                    if let Err(e) =
+                        window::taskbar_icon::set_taskbar_icon_from_embedded_resource(hwnd)
+                    {
+                        eprintln!("Failed to set Windows taskbar icon: {e}");
+                    }
                     if let Err(e) =
                         input::input_preview::exclude_window_from_capture(hwnd.0 as isize)
                     {
