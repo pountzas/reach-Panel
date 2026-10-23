@@ -11,7 +11,7 @@ export type MusicNoteEvent = {
   pitch: string;
   /** Duration in quarter-note beats (1 = quarter, 2 = half, 0.5 = eighth). */
   beats: number;
-}
+};
 
 export type MusicSong = {
   id: string;
@@ -20,7 +20,7 @@ export type MusicSong = {
   /** Tempo for demo playback (quarter notes per minute). */
   tempoBpm: number;
   notes: MusicNoteEvent[];
-}
+};
 
 function n(pitch: string, beats: number): MusicNoteEvent {
   return { pitch, beats };

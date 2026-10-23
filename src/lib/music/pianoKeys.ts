@@ -30,7 +30,20 @@ const NOTE_SEMITONES: Record<string, number> = {
   B: 11,
 };
 
-const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const;
+const NOTE_NAMES = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+] as const;
 
 export type PianoKey = {
   id: string;
@@ -38,7 +51,7 @@ export type PianoKey = {
   freq: number;
   isBlack: boolean;
   leftRatio?: number;
-}
+};
 
 export type PianoRangeFit = {
   startOctave: number;
@@ -46,9 +59,11 @@ export type PianoRangeFit = {
   fitsCompletely: boolean;
   songMinId: string;
   songMaxId: string;
-}
+};
 
-export function parseNoteId(noteId: string): { note: string; octave: number } | null {
+export function parseNoteId(
+  noteId: string,
+): { note: string; octave: number } | null {
   const match = /^([A-G]#?)(\d+)$/.exec(noteId);
   if (!match) return null;
   const note = match[1];
@@ -123,16 +138,24 @@ export function buildPianoKeys(
   return { whiteKeys, blackKeys };
 }
 
-export function windowMinMidi(startOctave: number, _octaveCount: SynthOctaveCount): number {
+export function windowMinMidi(
+  startOctave: number,
+  _octaveCount: SynthOctaveCount,
+): number {
   // Keep arity aligned with windowMaxMidi; min pitch is always C of startOctave.
   return noteToMidi("C", startOctave);
 }
 
-export function windowMaxMidi(startOctave: number, octaveCount: SynthOctaveCount): number {
+export function windowMaxMidi(
+  startOctave: number,
+  octaveCount: SynthOctaveCount,
+): number {
   return noteToMidi("C", startOctave + octaveCount);
 }
 
-function pitchBounds(noteIds: string[]): { minMidi: number; maxMidi: number } | null {
+function pitchBounds(
+  noteIds: string[],
+): { minMidi: number; maxMidi: number } | null {
   let minMidi = Number.POSITIVE_INFINITY;
   let maxMidi = Number.NEGATIVE_INFINITY;
   for (const id of noteIds) {
@@ -149,7 +172,9 @@ function pitchBounds(noteIds: string[]): { minMidi: number; maxMidi: number } | 
  * Choose the smallest 2–5 octave C-to-C window that covers the pitches.
  * If the song is wider than 5 octaves, use a centered 5-octave window.
  */
-export function fitPianoRangeToPitches(noteIds: string[]): PianoRangeFit | null {
+export function fitPianoRangeToPitches(
+  noteIds: string[],
+): PianoRangeFit | null {
   const bounds = pitchBounds(noteIds);
   if (!bounds) return null;
   const { minMidi, maxMidi } = bounds;
@@ -202,6 +227,8 @@ export function fitPianoRangeToPitches(noteIds: string[]): PianoRangeFit | null 
 }
 
 /** @deprecated Prefer fitPianoRangeToPitches — kept for call sites needing only count. */
-export function requiredOctaveCount(noteIds: string[]): SynthOctaveCount | null {
+export function requiredOctaveCount(
+  noteIds: string[],
+): SynthOctaveCount | null {
   return fitPianoRangeToPitches(noteIds)?.octaveCount ?? null;
 }

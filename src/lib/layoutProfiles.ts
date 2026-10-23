@@ -46,8 +46,7 @@ export function resolveActiveLayout(
   settings: AppSettings,
   kind: PointerInputKind,
 ): AppSettings {
-  const snap =
-    kind === "touch" ? settings.touchLayout : settings.mouseLayout;
+  const snap = kind === "touch" ? settings.touchLayout : settings.mouseLayout;
   if (!snap) {
     return settings;
   }
@@ -173,10 +172,7 @@ export function pointerKindFromEvent(
   }
   const nowMs = context.nowMs ?? 0;
   const lastTouchAtMs = context.lastTouchAtMs;
-  if (
-    lastTouchAtMs != null &&
-    nowMs - lastTouchAtMs < POINTER_MOUSE_GUARD_MS
-  ) {
+  if (lastTouchAtMs != null && nowMs - lastTouchAtMs < POINTER_MOUSE_GUARD_MS) {
     // Synthetic mouse right after a touch/pen: ignore.
     return null;
   }
@@ -187,9 +183,10 @@ export function pointerKindFromEvent(
  * #299: old pointer-kind swaps copied a stale ~1.0 snapshot height into the flat
  * ratio and persisted it. Clear the flat value when that signature is present.
  */
-export function repairStaleFullscreenFlatHeight(
-  settings: AppSettings,
-): { settings: AppSettings; repaired: boolean } {
+export function repairStaleFullscreenFlatHeight(settings: AppSettings): {
+  settings: AppSettings;
+  repaired: boolean;
+} {
   const hadStaleSnapshotHeight =
     (settings.touchLayout?.windowHeightRatio ?? 0) >= 0.999 ||
     (settings.mouseLayout?.windowHeightRatio ?? 0) >= 0.999;

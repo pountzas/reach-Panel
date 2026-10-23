@@ -37,7 +37,9 @@ export function defaultLanguagePackId(
 ): string {
   const packs = listBuiltInPacksForBand(band);
   if (preferredLanguage) {
-    const match = packs.find((pack) => pack.lessonLanguage === preferredLanguage);
+    const match = packs.find(
+      (pack) => pack.lessonLanguage === preferredLanguage,
+    );
     if (match) return match.id;
   }
   const fallback = listBuiltInPacksForBand(DEFAULT_LANGUAGE_AGE_BAND);

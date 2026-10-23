@@ -22,7 +22,7 @@ export type LayoutSnapshot = {
   sectionStack?: SectionStackState;
   inputRowRightRatio?: number;
   windowHeightRatio?: number;
-}
+};
 
 export type AppSettings = {
   colorProfile: ColorProfileId;
@@ -119,12 +119,12 @@ export type AppSettings = {
   languageLessonIgnoreCase?: boolean;
   /** Teaching → Language: ignore accent marks / tones when checking (default true). */
   languageLessonIgnoreTones?: boolean;
-}
+};
 
 export type ProfileFileInfo = {
   filename: string;
   name: string;
-}
+};
 
 export const INTERNAL_PROFILE_ID = "active";
 
@@ -133,7 +133,7 @@ export type Profile = {
   name: string;
   settings_json: string;
   created_at: string;
-}
+};
 
 export type MonitorInfo = {
   id: number;
@@ -147,12 +147,12 @@ export type MonitorInfo = {
   is_mirror_duplicate?: boolean;
   /** Effective DPI scale (96 DPI = 1.0). Physical work-area → logical for Tauri placement. */
   scale_factor?: number;
-}
+};
 
 export type CommandResult = {
   success: boolean;
   error?: string;
-}
+};
 
 export const DEFAULT_SETTINGS: AppSettings = {
   colorProfile: "dark-grey",

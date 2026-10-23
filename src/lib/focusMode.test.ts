@@ -49,16 +49,25 @@ describe("focusMode", () => {
   it("empty monitor list is not eligible", () => {
     expect(isFocusModeEligible([])).toBe(false);
     expect(
-      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: null }, []),
+      resolveFocusModeEnabled(
+        { ...DEFAULT_SETTINGS, focusModeOverride: null },
+        [],
+      ),
     ).toBe(false);
   });
 
   it("null override stays Normal even on single monitor (Auto dropped)", () => {
     expect(
-      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: null }, [a]),
+      resolveFocusModeEnabled(
+        { ...DEFAULT_SETTINGS, focusModeOverride: null },
+        [a],
+      ),
     ).toBe(false);
     expect(
-      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: undefined }, [a]),
+      resolveFocusModeEnabled(
+        { ...DEFAULT_SETTINGS, focusModeOverride: undefined },
+        [a],
+      ),
     ).toBe(false);
     expect(isFocusModeEligible([a])).toBe(true);
   });
@@ -66,16 +75,25 @@ describe("focusMode", () => {
   it("dual monitor default off unless override", () => {
     const monitors = [a, { ...b, x: 1920 }];
     expect(
-      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: null }, monitors),
+      resolveFocusModeEnabled(
+        { ...DEFAULT_SETTINGS, focusModeOverride: null },
+        monitors,
+      ),
     ).toBe(false);
     expect(
-      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: true }, monitors),
+      resolveFocusModeEnabled(
+        { ...DEFAULT_SETTINGS, focusModeOverride: true },
+        monitors,
+      ),
     ).toBe(true);
   });
 
   it("force off disables focus mode even on single monitor", () => {
     expect(
-      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: false }, [a]),
+      resolveFocusModeEnabled(
+        { ...DEFAULT_SETTINGS, focusModeOverride: false },
+        [a],
+      ),
     ).toBe(false);
   });
 
@@ -102,7 +120,10 @@ describe("focusMode", () => {
   it("null override stays Normal on mirrored dual setup (Auto dropped)", () => {
     expect(isFocusModeEligible([a, b])).toBe(true);
     expect(
-      resolveFocusModeEnabled({ ...DEFAULT_SETTINGS, focusModeOverride: null }, [a, b]),
+      resolveFocusModeEnabled(
+        { ...DEFAULT_SETTINGS, focusModeOverride: null },
+        [a, b],
+      ),
     ).toBe(false);
   });
 

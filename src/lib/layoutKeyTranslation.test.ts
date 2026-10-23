@@ -5,7 +5,11 @@ import {
   greekPhysicalTranslateFallback,
   isGreekTypingLanguage,
 } from "./layoutKeyTranslation";
-import { applyLayoutKeyLabels, greekPhysicalOutput, QWERTY_ROWS } from "./keyboardLayouts";
+import {
+  applyLayoutKeyLabels,
+  greekPhysicalOutput,
+  QWERTY_ROWS,
+} from "./keyboardLayouts";
 
 describe("isGreekTypingLanguage", () => {
   it("matches el and el-GR", () => {
@@ -17,39 +21,35 @@ describe("isGreekTypingLanguage", () => {
 
 describe("applyLayoutTranslation", () => {
   it("appends composed text from Windows translation", () => {
-    expect(
-      applyLayoutTranslation("", { text: "\u03AF", dead: false }),
-    ).toEqual({
-      buffer: "\u03AF",
-      inject: "\u03AF",
-    });
+    expect(applyLayoutTranslation("", { text: "\u03AF", dead: false })).toEqual(
+      {
+        buffer: "\u03AF",
+        inject: "\u03AF",
+      },
+    );
   });
 
   it("leaves buffer unchanged for dead keys", () => {
-    expect(
-      applyLayoutTranslation("abc", { text: "", dead: true }),
-    ).toEqual({
+    expect(applyLayoutTranslation("abc", { text: "", dead: true })).toEqual({
       buffer: "abc",
       inject: "",
     });
   });
 
   it("ignores spacing accent text when dead is true", () => {
-    expect(
-      applyLayoutTranslation("", { text: "\u0384", dead: true }),
-    ).toEqual({
+    expect(applyLayoutTranslation("", { text: "\u0384", dead: true })).toEqual({
       buffer: "",
       inject: "",
     });
   });
 
   it("treats spacing accent-only text as dead", () => {
-    expect(
-      applyLayoutTranslation("", { text: "\u0384", dead: false }),
-    ).toEqual({
-      buffer: "",
-      inject: "",
-    });
+    expect(applyLayoutTranslation("", { text: "\u0384", dead: false })).toEqual(
+      {
+        buffer: "",
+        inject: "",
+      },
+    );
   });
 
   it("strips a leading tonos when Windows returns tonos + vowel together", () => {
@@ -65,10 +65,15 @@ describe("applyLayoutTranslation", () => {
 describe("applyGreekLayoutTranslation", () => {
   it("stores tonos pending on dead key without changing buffer", () => {
     expect(
-      applyGreekLayoutTranslation("", null, { text: "", dead: true }, {
-        physicalKey: ";",
-        greekCompose: true,
-      }),
+      applyGreekLayoutTranslation(
+        "",
+        null,
+        { text: "", dead: true },
+        {
+          physicalKey: ";",
+          greekCompose: true,
+        },
+      ),
     ).toEqual({
       buffer: "",
       pending: "tonos",
@@ -78,9 +83,14 @@ describe("applyGreekLayoutTranslation", () => {
 
   it("composes tonos + vowel when Windows returns plain vowel", () => {
     expect(
-      applyGreekLayoutTranslation("", "tonos", { text: "\u03BF", dead: false }, {
-        greekCompose: true,
-      }),
+      applyGreekLayoutTranslation(
+        "",
+        "tonos",
+        { text: "\u03BF", dead: false },
+        {
+          greekCompose: true,
+        },
+      ),
     ).toEqual({
       buffer: "\u03CC",
       pending: null,
@@ -90,10 +100,15 @@ describe("applyGreekLayoutTranslation", () => {
 
   it("appends literal semicolon from Windows instead of treating it as tonos", () => {
     expect(
-      applyGreekLayoutTranslation("", null, { text: ";", dead: false }, {
-        physicalKey: ";",
-        greekCompose: true,
-      }),
+      applyGreekLayoutTranslation(
+        "",
+        null,
+        { text: ";", dead: false },
+        {
+          physicalKey: ";",
+          greekCompose: true,
+        },
+      ),
     ).toEqual({
       buffer: ";",
       pending: null,
@@ -103,11 +118,16 @@ describe("applyGreekLayoutTranslation", () => {
 
   it("uses label fallback when Windows mis-reports dead on the q slot (Greek ;)", () => {
     expect(
-      applyGreekLayoutTranslation("", null, { text: "", dead: true }, {
-        physicalKey: "q",
-        fallbackOutput: ";",
-        greekCompose: true,
-      }),
+      applyGreekLayoutTranslation(
+        "",
+        null,
+        { text: "", dead: true },
+        {
+          physicalKey: "q",
+          fallbackOutput: ";",
+          greekCompose: true,
+        },
+      ),
     ).toEqual({
       buffer: ";",
       pending: null,
@@ -117,10 +137,15 @@ describe("applyGreekLayoutTranslation", () => {
 
   it("maps q slot to ; when Windows returns the Latin letter", () => {
     expect(
-      applyGreekLayoutTranslation("", null, { text: "q", dead: false }, {
-        physicalKey: "q",
-        greekCompose: true,
-      }),
+      applyGreekLayoutTranslation(
+        "",
+        null,
+        { text: "q", dead: false },
+        {
+          physicalKey: "q",
+          greekCompose: true,
+        },
+      ),
     ).toEqual({
       buffer: ";",
       pending: null,
@@ -137,9 +162,7 @@ describe("applyGreekLayoutTranslation", () => {
 describe("greekPhysicalOutput / applyLayoutKeyLabels", () => {
   it("maps q slot to ; when Windows returns an empty label", () => {
     expect(greekPhysicalOutput("q", false)).toBe(";");
-    const rows = applyLayoutKeyLabels(QWERTY_ROWS, [
-      { key: "q", label: "" },
-    ]);
+    const rows = applyLayoutKeyLabels(QWERTY_ROWS, [{ key: "q", label: "" }]);
     const qKey = rows[1]?.find((k) => k.physicalKey === "q");
     expect(qKey?.key).toBe(";");
     expect(qKey?.label).toBe(";");

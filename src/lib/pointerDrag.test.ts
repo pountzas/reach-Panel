@@ -20,8 +20,14 @@ function stubPointerDown(pointerId = 1) {
     clientY: 10,
     bubbles: true,
   });
-  Object.defineProperty(down, "currentTarget", { value: el, configurable: true });
-  Object.defineProperty(down, "preventDefault", { value: vi.fn(), configurable: true });
+  Object.defineProperty(down, "currentTarget", {
+    value: el,
+    configurable: true,
+  });
+  Object.defineProperty(down, "preventDefault", {
+    value: vi.fn(),
+    configurable: true,
+  });
   return down;
 }
 

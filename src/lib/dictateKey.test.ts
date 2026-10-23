@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  GREEK_ROWS,
-  QWERTY_ROWS,
-  vkForLayoutKey,
-} from "./keyboardLayouts";
+import { GREEK_ROWS, QWERTY_ROWS, vkForLayoutKey } from "./keyboardLayouts";
 
 describe("dictate key layout", () => {
   it("places dictate after Right Ctrl on QWERTY and Greek bottom rows", () => {

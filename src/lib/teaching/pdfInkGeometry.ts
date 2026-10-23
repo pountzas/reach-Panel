@@ -26,9 +26,7 @@ export function eraseStrokesWithBrush(
       continue;
     }
     changed = true;
-    const points = stroke.points.filter(
-      (p) => distance(p, center) > radius,
-    );
+    const points = stroke.points.filter((p) => distance(p, center) > radius);
     if (points.length >= 2) {
       next.push({ ...stroke, points });
     }

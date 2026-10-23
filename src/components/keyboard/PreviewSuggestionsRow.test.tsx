@@ -30,8 +30,7 @@ import { PreviewSuggestionsRow } from "./PreviewSuggestionsRow";
 
 function stubViewTransitionDom() {
   const css = globalThis.CSS as
-    | (typeof CSS & { escape?: (value: string) => string })
-    | undefined;
+    (typeof CSS & { escape?: (value: string) => string }) | undefined;
   if (typeof css?.escape !== "function") {
     Object.defineProperty(globalThis, "CSS", {
       configurable: true,

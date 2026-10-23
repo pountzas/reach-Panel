@@ -13,7 +13,7 @@ import {
 export type LayoutKeyTranslation = {
   text: string;
   dead: boolean;
-}
+};
 
 const SPACING_ACCENT = /^[\u00B4\u0384\u1FFD\u00A8]+/u;
 
@@ -30,14 +30,11 @@ const CODE_TO_PHYSICAL: Record<string, string> = {
   Period: ".",
   Slash: "/",
   Space: " ",
+  ...Object.fromEntries("0123456789".split("").map((d) => [`Digit${d}`, d])),
   ...Object.fromEntries(
-    "0123456789".split("").map((d) => [`Digit${d}`, d]),
-  ),
-  ...Object.fromEntries(
-    "abcdefghijklmnopqrstuvwxyz".split("").map((l) => [
-      `Key${l.toUpperCase()}`,
-      l,
-    ]),
+    "abcdefghijklmnopqrstuvwxyz"
+      .split("")
+      .map((l) => [`Key${l.toUpperCase()}`, l]),
   ),
 };
 
@@ -152,7 +149,12 @@ export function applyGreekLayoutTranslation(
   const shift = options.shift ?? false;
 
   if (normalized.dead && isGreekDeadPhysicalKey(options.physicalKey)) {
-    const result = applyGreekKeystroke(buffer, pending, "", options.physicalKey);
+    const result = applyGreekKeystroke(
+      buffer,
+      pending,
+      "",
+      options.physicalKey,
+    );
     return { buffer: result.buffer, pending: result.pending, inject: "" };
   }
 
@@ -161,7 +163,12 @@ export function applyGreekLayoutTranslation(
     options.physicalKey &&
     isGreekDeadPhysicalKey(options.physicalKey)
   ) {
-    const result = applyGreekKeystroke(buffer, pending, "", options.physicalKey);
+    const result = applyGreekKeystroke(
+      buffer,
+      pending,
+      "",
+      options.physicalKey,
+    );
     return { buffer: result.buffer, pending: result.pending, inject: "" };
   }
 
@@ -185,7 +192,12 @@ export function applyGreekLayoutTranslation(
   }
 
   if (isGreekDeadKeyPress(output, options.physicalKey)) {
-    const result = applyGreekKeystroke(buffer, pending, "", options.physicalKey);
+    const result = applyGreekKeystroke(
+      buffer,
+      pending,
+      "",
+      options.physicalKey,
+    );
     return { buffer: result.buffer, pending: result.pending, inject: "" };
   }
 

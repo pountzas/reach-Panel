@@ -8,7 +8,9 @@ import {
 import { resolveMonitorScaleFactor } from "./toolWindows";
 import type { MonitorInfo } from "./types";
 
-function monitor(partial: Partial<MonitorInfo> & Pick<MonitorInfo, "id">): MonitorInfo {
+function monitor(
+  partial: Partial<MonitorInfo> & Pick<MonitorInfo, "id">,
+): MonitorInfo {
   return {
     name: `M${partial.id}`,
     x: 0,

@@ -37,7 +37,9 @@ describe("greekComposeEnabled", () => {
 describe("processCharacterInput", () => {
   it("composes Greek accents for the live input preview buffer", () => {
     let buffer = "";
-    let pending = null as ReturnType<typeof processCharacterInput>["pendingAccent"];
+    let pending = null as ReturnType<
+      typeof processCharacterInput
+    >["pendingAccent"];
 
     let result = processCharacterInput(buffer, pending, "\u0384", {
       greekCompose: true,
@@ -75,7 +77,9 @@ describe("processCharacterInput", () => {
   });
 
   it("appends plain characters when Greek compose is disabled", () => {
-    const result = processCharacterInput("", null, "a", { greekCompose: false });
+    const result = processCharacterInput("", null, "a", {
+      greekCompose: false,
+    });
     expect(result).toEqual({
       buffer: "a",
       pendingAccent: null,

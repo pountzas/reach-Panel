@@ -17,7 +17,8 @@ function parseNoteEvent(value: unknown): MusicNoteEvent | null {
   const record = asRecord(value);
   if (!record) return null;
   const pitch = typeof record.pitch === "string" ? record.pitch.trim() : "";
-  const beatsRaw = typeof record.beats === "number" ? record.beats : Number(record.beats);
+  const beatsRaw =
+    typeof record.beats === "number" ? record.beats : Number(record.beats);
   if (!isValidPitch(pitch)) return null;
   const beats = normalizeBeats(beatsRaw);
   if (beats == null) return null;
@@ -54,7 +55,10 @@ function parseSongObject(
       : Number(record.tempoBpm) || 120;
   const baseId =
     typeof record.id === "string" && record.id.trim()
-      ? record.id.trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40)
+      ? record.id
+          .trim()
+          .replace(/[^a-zA-Z0-9_-]/g, "")
+          .slice(0, 40)
       : "json";
 
   return buildImportedSong({
@@ -83,18 +87,24 @@ export function parseJsonSongs(
   const push = (value: unknown, index: number) => {
     const song = parseSongObject(
       value,
-      index > 0 ? `${options.fallbackTitle} ${index + 1}` : options.fallbackTitle,
+      index > 0
+        ? `${options.fallbackTitle} ${index + 1}`
+        : options.fallbackTitle,
       options.sourcePath,
     );
     if (song) out.push(song);
   };
 
   if (Array.isArray(data)) {
-    data.forEach((item, index) => { push(item, index); });
+    data.forEach((item, index) => {
+      push(item, index);
+    });
   } else {
     const record = asRecord(data);
     if (record && Array.isArray(record.songs)) {
-      record.songs.forEach((item, index) => { push(item, index); });
+      record.songs.forEach((item, index) => {
+        push(item, index);
+      });
     } else {
       push(data, 0);
     }
@@ -106,6 +116,8 @@ export function parseJsonSongs(
   return out;
 }
 
-export function isImportedMusicSong(song: MusicSong): song is ImportedMusicSong {
+export function isImportedMusicSong(
+  song: MusicSong,
+): song is ImportedMusicSong {
   return (song as { source?: string }).source === "imported";
 }

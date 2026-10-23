@@ -11,14 +11,14 @@ export type MusicTrackCandidate = {
   id: string;
   label: string;
   notes: MusicNoteEvent[];
-}
+};
 
 export type ParsedMusicImport = {
   title: string;
   composer?: string;
   tempoBpm: number;
   tracks: MusicTrackCandidate[];
-}
+};
 
 const PITCH_RE = /^[A-G]#?\d+$/;
 
@@ -128,7 +128,10 @@ export function buildImportedSong(options: {
     id,
     title: title.length > 0 ? title : "Imported song",
     composer: composer != null && composer.length > 0 ? composer : undefined,
-    tempoBpm: Math.max(30, Math.min(300, roundedTempo > 0 ? roundedTempo : 120)),
+    tempoBpm: Math.max(
+      30,
+      Math.min(300, roundedTempo > 0 ? roundedTempo : 120),
+    ),
     notes: options.notes,
     source: "imported",
     sourcePath: options.sourcePath,

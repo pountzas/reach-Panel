@@ -1,5 +1,9 @@
 import { getVersion } from "@tauri-apps/api/app";
-import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
+import {
+  check,
+  type DownloadEvent,
+  type Update,
+} from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 
 const SKIPPED_VERSION_KEY = "skippedUpdateVersion";
@@ -7,7 +11,7 @@ const SKIPPED_VERSION_KEY = "skippedUpdateVersion";
 export type UpdateProgress = {
   downloaded: number;
   contentLength: number | null;
-}
+};
 
 export function getSkippedUpdateVersion(): string | null {
   return localStorage.getItem(SKIPPED_VERSION_KEY);

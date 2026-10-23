@@ -1,5 +1,4 @@
 export const en = {
-
   appTitle: "ReachPanel",
 
   collapse: "Collapse",
@@ -182,7 +181,8 @@ export const en = {
 
   languageNewListEmpty: "Add at least one word",
   languagePressPlayToSpell: "Press Play to start spelling",
-  languageNewListKeyboardHint: "Use the keyboard to type in the title and word fields on the left",
+  languageNewListKeyboardHint:
+    "Use the keyboard to type in the title and word fields on the left",
 
   languagePackMyLists: "My lists",
 
@@ -303,7 +303,8 @@ export const en = {
 
   launchAtWindowsSignIn: "Start ReachPanel when Windows starts",
 
-  launchAtWindowsSignInHint: "Turn off to remove ReachPanel from Windows startup",
+  launchAtWindowsSignInHint:
+    "Turn off to remove ReachPanel from Windows startup",
 
   launchAtWindowsSignInError: "Could not update Windows startup",
 
@@ -336,8 +337,7 @@ export const en = {
 
   wipeProfile: "Wipe profile",
 
-  wipeProfileHint:
-    "Clears predictions and resets all settings to defaults.",
+  wipeProfileHint: "Clears predictions and resets all settings to defaults.",
 
   wipeProfileConfirm:
     "Wipe this profile? All predictions and settings will be reset.",
@@ -642,6 +642,4 @@ export const en = {
   aboutDownloads: "Downloads",
 
   aboutEmail: "Email",
-
 } as const;
-
