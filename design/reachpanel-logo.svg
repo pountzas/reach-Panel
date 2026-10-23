@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">ReachPanel logo</title>
+  <desc id="desc">A keyboard outline with luminous blue-to-teal gradients, a speech bubble with an audio waveform, and a floating mint dot. Transparent background.</desc>
+  <defs>
+    <linearGradient id="frameGradient" x1="130" y1="450" x2="900" y2="780" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#20A9F7"/>
+      <stop offset="0.52" stop-color="#16C9F0"/>
+      <stop offset="1" stop-color="#00E6D7"/>
+    </linearGradient>
+    <linearGradient id="bubbleGradient" x1="650" y1="340" x2="880" y2="590" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#20D9EF"/>
+      <stop offset="0.58" stop-color="#19E8E3"/>
+      <stop offset="1" stop-color="#61F5C9"/>
+    </linearGradient>
+    <linearGradient id="keyGradient" x1="250" y1="650" x2="800" y2="790" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D8F0FF"/>
+      <stop offset="0.55" stop-color="#A9DFFF"/>
+      <stop offset="1" stop-color="#37B8F7"/>
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="790" y1="150" x2="850" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A2FFD0"/>
+      <stop offset="1" stop-color="#48E8DC"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Open, rounded keyboard frame and reach arc -->
+  <path d="M748 218 C687 220 628 245 568 289 C517 325 476 344 426 344 H286 C213 344 164 393 164 466 V742 C164 816 214 856 286 856 H750 C827 856 876 809 876 736 V535"
+        stroke="url(#frameGradient)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M748 218 C687 220 628 245 568 289 C517 325 476 344 426 344"
+        stroke="url(#frameGradient)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Keyboard keys -->
+  <g fill="url(#keyGradient)">
+    <rect x="218" y="531" width="86" height="72" rx="16"/>
+    <rect x="323" y="531" width="82" height="72" rx="16"/>
+    <rect x="424" y="531" width="82" height="72" rx="16"/>
+    <rect x="525" y="531" width="82" height="72" rx="16" fill="#5ADCF0"/>
+    <rect x="626" y="531" width="85" height="72" rx="16" fill="#13DDE8"/>
+
+    <rect x="218" y="622" width="74" height="74" rx="16"/>
+    <rect x="309" y="622" width="77" height="74" rx="16"/>
+    <rect x="403" y="622" width="76" height="74" rx="16"/>
+    <rect x="496" y="622" width="75" height="74" rx="16"/>
+    <rect x="588" y="622" width="78" height="74" rx="16"/>
+    <rect x="682" y="622" width="112" height="74" rx="16" fill="#48BDF5"/>
+
+    <rect x="218" y="718" width="113" height="74" rx="17"/>
+    <rect x="349" y="718" width="316" height="74" rx="17"/>
+    <rect x="682" y="718" width="112" height="74" rx="17" fill="#48BDF5"/>
+  </g>
+
+  <!-- Speech bubble; its tail points down toward the keyboard -->
+  <path d="M648 223 H741 C790 223 829 262 829 311 V395 C829 443 793 480 747 480 H711 C694 480 680 489 670 504 L635 529 L637 497 C600 490 576 453 576 413 V311 C576 262 600 223 648 223 Z"
+        fill="url(#bubbleGradient)"/>
+  <!-- Waveform bars -->
+  <g fill="#071735">
+    <rect x="627" y="319" width="32" height="79" rx="16"/>
+    <rect x="680" y="273" width="32" height="160" rx="16"/>
+    <rect x="732" y="310" width="32" height="96" rx="16"/>
+    <rect x="779" y="333" width="32" height="53" rx="16"/>
+  </g>
+
+  <!-- Floating point -->
+  <circle cx="799" cy="174" r="41" fill="url(#accentGradient)"/>
+</svg>

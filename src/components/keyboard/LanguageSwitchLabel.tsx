@@ -1,10 +1,13 @@
 import { Flag } from "svg-flags";
-import { flagCodeForLanguage, languageDisplayCode } from "../../lib/keyboardLayouts";
+import {
+  flagCodeForLanguage,
+  languageDisplayCode,
+} from "../../lib/keyboardLayouts";
 
 type LanguageSwitchLabelProps = {
   currentLanguage: string;
   fontSize: number;
-}
+};
 
 export function LanguageSwitchLabel({
   currentLanguage,

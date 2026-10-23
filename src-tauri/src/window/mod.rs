@@ -795,7 +795,9 @@ mod tests {
 }
 
 pub(crate) mod layout;
+pub(crate) mod icon_sync;
 mod taskbar;
+pub(crate) mod taskbar_icon;
 mod windows;
 
 pub use taskbar::{

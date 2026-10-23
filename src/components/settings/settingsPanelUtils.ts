@@ -10,11 +10,11 @@ type TaskbarPositionResult = {
   message: string;
   current?: TaskbarPosition | null;
   open_taskbar_settings?: boolean;
-}
+};
 
 type TaskbarPositionPreferencePatch = {
   taskbarPositionPreference: TaskbarPosition;
-}
+};
 
 export const handleSaveProfile = async (
   saveActiveProfile: () => Promise<void>,
@@ -63,13 +63,17 @@ export const applyTaskbarPosition = async (
   updateSettings: (patch: TaskbarPositionPreferencePatch) => void,
   t: (key: TranslationKey) => string,
 ): Promise<void> => {
-  const previous: TaskbarPosition = currentPreference === "top" ? "top" : "bottom";
+  const previous: TaskbarPosition =
+    currentPreference === "top" ? "top" : "bottom";
   updateSettings({ taskbarPositionPreference: position });
   try {
-    const result = await invoke<TaskbarPositionResult>("cmd_set_taskbar_position", {
-      position,
-      monitorId,
-    });
+    const result = await invoke<TaskbarPositionResult>(
+      "cmd_set_taskbar_position",
+      {
+        position,
+        monitorId,
+      },
+    );
     if (result.success) {
       if (result.applied) {
         notify.success(t("taskbarPositionApplied"));

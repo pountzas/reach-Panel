@@ -10,9 +10,9 @@ export function SpecialKeyLabel({
   fontSize: number;
 }) {
   // Record<string, Spec> types every key as present; narrow for missing keys at runtime.
-  const spec = (SPECIAL_KEY_LABELS as Record<string, SpecialKeySpec | undefined>)[
-    keyName
-  ];
+  const spec = (
+    SPECIAL_KEY_LABELS as Record<string, SpecialKeySpec | undefined>
+  )[keyName];
   if (!spec) return null;
 
   const wordSize = Math.max(8, Math.round(fontSize * 0.72));
@@ -26,14 +26,12 @@ export function SpecialKeyLabel({
           <span
             className="shrink-0"
             style={{ fontSize: spaceSymbolSize, paddingBottom: "3px" }}
-            aria-hidden
-          >
+            aria-hidden>
             {spec.symbol}
           </span>
           <span
             className="min-w-0 truncate font-semibold"
-            style={{ fontSize: spaceWordSize }}
-          >
+            style={{ fontSize: spaceWordSize }}>
             {spec.word}
           </span>
         </span>
@@ -47,8 +45,7 @@ export function SpecialKeyLabel({
         </span>
         <span
           className="min-w-0 truncate font-semibold"
-          style={{ fontSize: wordSize }}
-        >
+          style={{ fontSize: wordSize }}>
           {spec.word}
         </span>
       </span>
@@ -62,8 +59,7 @@ export function SpecialKeyLabel({
       </span>
       <span
         className="mt-0.5 font-semibold"
-        style={{ fontSize: Math.max(8, Math.round(fontSize * 0.52)) }}
-      >
+        style={{ fontSize: Math.max(8, Math.round(fontSize * 0.52)) }}>
         {spec.word}
       </span>
     </span>

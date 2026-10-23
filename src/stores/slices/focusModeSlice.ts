@@ -43,7 +43,8 @@ export const createFocusModeSlice: StateCreator<
     try {
       await pending;
     } finally {
-      if (storeFlags.modeMenuExpandPending === pending) storeFlags.modeMenuExpandPending = null;
+      if (storeFlags.modeMenuExpandPending === pending)
+        storeFlags.modeMenuExpandPending = null;
     }
   },
   closeModeMenu: async () => {
@@ -52,7 +53,8 @@ export const createFocusModeSlice: StateCreator<
     }
     set({ modeMenuOpen: false });
     // Let an in-flight expand finish first so the collapsed restore always lands last.
-    if (storeFlags.modeMenuExpandPending) await storeFlags.modeMenuExpandPending;
+    if (storeFlags.modeMenuExpandPending)
+      await storeFlags.modeMenuExpandPending;
     if (!prefersReducedMotion()) {
       await new Promise<void>((r) => {
         setTimeout(r, MOTION.fast);

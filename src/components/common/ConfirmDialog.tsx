@@ -1,45 +1,39 @@
-import {
-  Activity,
-  useEffect,
-  useId,
-  useRef,
-  type CSSProperties,
-} from "react";
-import { createPortal } from "react-dom";
 import type { SurfaceColors } from "../../lib/colorProfiles";
+import { Activity, useEffect, useId, useRef, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 
 export type ConfirmDialogProps = {
-  open: boolean;
-  message: string;
-  confirmLabel: string;
   cancelLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  surface: SurfaceColors;
   confirmBackgroundColor?: string;
+  confirmLabel: string;
   confirmTextColor?: string;
-}
+  message: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+  open: boolean;
+  surface: SurfaceColors;
+};
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function focusableElements(root: HTMLElement): HTMLElement[] {
-  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-    (el) => el.getClientRects().length > 0,
-  );
+  return Array.from(
+    root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter((el) => el.getClientRects().length > 0);
 }
 
 /** Centered, themed confirmation overlay for destructive or irreversible actions. */
 export function ConfirmDialog({
-  open,
-  message,
-  confirmLabel,
   cancelLabel,
-  onConfirm,
-  onCancel,
-  surface,
   confirmBackgroundColor,
+  confirmLabel,
   confirmTextColor,
+  message,
+  onCancel,
+  onConfirm,
+  open,
+  surface,
 }: ConfirmDialogProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -50,7 +44,9 @@ export function ConfirmDialog({
     if (!panel) return;
 
     const previouslyFocused =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     const initial = focusableElements(panel)[0] ?? panel;
     initial.focus();
 
@@ -110,38 +106,34 @@ export function ConfirmDialog({
   // cannot trap or clip this fixed overlay.
   return createPortal(
     <Activity mode={open ? "visible" : "hidden"}>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+      <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4">
         <div
+          aria-labelledby={titleId}
+          aria-modal="true"
+          className="w-full max-w-sm rounded-2xl p-5 outline-none"
           ref={panelRef}
           role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-          tabIndex={-1}
-          className="w-full max-w-sm rounded-2xl p-5 outline-none"
           style={panelStyle}
-        >
+          tabIndex={-1}>
           <p
             id={titleId}
             className="text-base font-medium"
-            style={{ color: surface.panelText }}
-          >
+            style={{ color: surface.panelText }}>
             {message}
           </p>
           <div className="mt-5 flex flex-wrap justify-end gap-2">
             <button
               type="button"
-              className="min-h-11 min-w-[5.5rem] rounded-lg border px-4 py-2.5 text-sm font-medium"
+              className="min-h-11 min-w-22 rounded-lg border px-4 py-2.5 text-sm font-medium"
               style={cancelButtonStyle}
-              onClick={onCancel}
-            >
+              onClick={onCancel}>
               {cancelLabel}
             </button>
             <button
               type="button"
-              className="min-h-11 min-w-[5.5rem] rounded-lg border px-4 py-2.5 text-sm font-medium"
+              className="min-h-11 min-w-22 rounded-lg border px-4 py-2.5 text-sm font-medium"
               style={confirmButtonStyle}
-              onClick={onConfirm}
-            >
+              onClick={onConfirm}>
               {confirmLabel}
             </button>
           </div>

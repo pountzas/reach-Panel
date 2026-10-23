@@ -9,7 +9,10 @@ import {
   clonePdfAnnotationDoc,
   isFreeWriteCaptureActive,
 } from "../../lib/teaching";
-import { greekComposeEnabled, processCharacterInput } from "../../lib/keyboardCharacterInput";
+import {
+  greekComposeEnabled,
+  processCharacterInput,
+} from "../../lib/keyboardCharacterInput";
 import { applyGreekLayoutTranslation } from "../../lib/layoutKeyTranslation";
 import { syncTeachingSuggestions } from "../lib/teachingSuggestions";
 

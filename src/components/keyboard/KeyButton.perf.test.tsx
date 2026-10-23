@@ -69,8 +69,7 @@ function StickyTypingHarness({
               const next = (prev + 1 + KEY_COUNT) % KEY_COUNT;
               return next;
             });
-          }}
-        >
+          }}>
           type
         </button>
         {Array.from({ length: KEY_COUNT }, (_, i) => {
@@ -98,7 +97,9 @@ function StickyTypingHarness({
               bgColor="#ffffff"
               textColor="#1e293b"
               active={activeIndex === i}
-              onPress={() => { setActiveIndex(i); }}
+              onPress={() => {
+                setActiveIndex(i);
+              }}
             />
           );
         })}
@@ -125,7 +126,9 @@ function StableKey({
   // eslint-disable-next-line react-hooks/refs -- sync index into callback ref
   indexRef.current = index;
   const onPress = useCallback(
-    (meta?: KeyRepeatFireMeta) => { onPressKey(indexRef.current, meta); },
+    (meta?: KeyRepeatFireMeta) => {
+      onPressKey(indexRef.current, meta);
+    },
     [onPressKey],
   );
   return (
@@ -172,7 +175,7 @@ describe("KeyButton sticky-typing profiler (#281)", () => {
     }
 
     const renders = keyButtonRenderCount;
-     
+
     console.log(
       JSON.stringify({
         scenario: "sticky-typing-20",
@@ -216,7 +219,7 @@ describe("KeyButton sticky-typing profiler (#281)", () => {
     }
 
     const renders = keyButtonRenderCount;
-     
+
     console.log(
       JSON.stringify({
         scenario: "sticky-typing-20",

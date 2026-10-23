@@ -20,9 +20,9 @@ const baseState = {
 
 describe("greekComposeContextFromState", () => {
   it("sets languageLessonActive only when capture is active", () => {
-    expect(
-      greekComposeContextFromState(baseState).languageLessonActive,
-    ).toBe(false);
+    expect(greekComposeContextFromState(baseState).languageLessonActive).toBe(
+      false,
+    );
     expect(
       greekComposeContextFromState({
         ...baseState,
@@ -38,9 +38,7 @@ describe("greekComposeContextFromState", () => {
   });
 
   it("uses lessonLanguage from pack when available", () => {
-    expect(
-      greekComposeContextFromState(baseState).lessonLanguage,
-    ).toBe("el");
+    expect(greekComposeContextFromState(baseState).lessonLanguage).toBe("el");
   });
 
   it("falls back to settings.languageLessonLanguage without a pack", () => {

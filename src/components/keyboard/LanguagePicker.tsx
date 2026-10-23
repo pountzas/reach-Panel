@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 import { Flag } from "svg-flags";
 import type { InputMethod } from "../../lib/keyboardLayouts";
@@ -19,7 +26,7 @@ type LanguagePickerProps = {
   bgColor: string;
   mutedColor: string;
   languageSectionLabel: string;
-}
+};
 
 export function LanguagePicker({
   anchorRef,
@@ -34,7 +41,10 @@ export function LanguagePicker({
   languageSectionLabel,
 }: LanguagePickerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
 
   const reposition = useCallback(() => {
     const anchor = anchorRef.current;
@@ -96,7 +106,7 @@ export function LanguagePicker({
   const picker = (
     <div
       ref={rootRef}
-      className="fixed z-[80] max-h-72 min-w-[14rem] overflow-y-auto rounded-lg border shadow-lg"
+      className="fixed z-80 max-h-72 min-w-56 overflow-y-auto rounded-lg border shadow-lg"
       style={{
         left: position?.left ?? 0,
         top: position?.top ?? 0,
@@ -107,12 +117,10 @@ export function LanguagePicker({
         fontSize: Math.max(12, fontSize - 2),
       }}
       role="dialog"
-      aria-label="Keyboard language"
-    >
+      aria-label="Keyboard language">
       <div
         className="px-3 py-1.5 text-[0.75em] font-semibold uppercase tracking-wide"
-        style={{ color: mutedColor }}
-      >
+        style={{ color: mutedColor }}>
         {languageSectionLabel}
       </div>
       {methods.length === 0 ? (
@@ -134,8 +142,7 @@ export function LanguagePicker({
               onClick={() => {
                 onSelectLanguage(method);
                 onClose();
-              }}
-            >
+              }}>
               <Flag
                 country={flag}
                 width={Math.max(16, fontSize)}
@@ -159,11 +166,7 @@ export function LanguagePicker({
 
   return createPortal(
     <>
-      <div
-        className="fixed inset-0 z-[79]"
-        aria-hidden
-        onPointerDown={onClose}
-      />
+      <div className="fixed inset-0 z-79" aria-hidden onPointerDown={onClose} />
       {picker}
     </>,
     document.body,

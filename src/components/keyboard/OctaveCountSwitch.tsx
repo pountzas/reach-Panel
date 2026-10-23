@@ -12,7 +12,7 @@ import type { TranslationKey } from "../../i18n";
 type OctaveCountSwitchProps = {
   value: number | undefined;
   onChange: (count: SynthOctaveCount) => void;
-}
+};
 
 export function OctaveCountSwitch({ value, onChange }: OctaveCountSwitchProps) {
   const { t } = useTranslation();
@@ -26,10 +26,14 @@ export function OctaveCountSwitch({ value, onChange }: OctaveCountSwitchProps) {
           <ModeToggleButton
             key={level}
             active={count === level}
-            position={modeToggleSegmentPosition(index, SYNTH_OCTAVE_COUNTS.length)}
+            position={modeToggleSegmentPosition(
+              index,
+              SYNTH_OCTAVE_COUNTS.length,
+            )}
             label={t(labelKey)}
-            onClick={() => { onChange(level); }}
-          >
+            onClick={() => {
+              onChange(level);
+            }}>
             <span className="text-xs font-semibold tabular-nums">{level}</span>
           </ModeToggleButton>
         );

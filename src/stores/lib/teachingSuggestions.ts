@@ -19,7 +19,7 @@ export type TeachingSuggestionState = {
   languageSubjectTab: "spelling" | "freeWrite";
   languageLessonPlaying: boolean;
   languageListAuthoringActive: boolean;
-}
+};
 
 /** Body of the selected Free write PDF text box, or empty when none. */
 export function selectedPdfTextBoxBody(

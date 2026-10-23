@@ -40,8 +40,7 @@ export function PreviewSuggestionsRow({
               ? "w-[320px] opacity-100"
               : "pointer-events-none w-0 overflow-hidden opacity-0"
           }`}
-          style={deferredPreview ? { width: PREVIEW_WIDTH } : { width: 0 }}
-        >
+          style={deferredPreview ? { width: PREVIEW_WIDTH } : { width: 0 }}>
           <InputPreview />
         </div>
       </ViewTransition>
@@ -54,8 +53,7 @@ export function PreviewSuggestionsRow({
             deferredSuggestions
               ? "opacity-100"
               : "pointer-events-none w-0 overflow-hidden opacity-0"
-          } ${deferredPreview && deferredSuggestions ? "ml-2" : "ml-0"}`}
-        >
+          } ${deferredPreview && deferredSuggestions ? "ml-2" : "ml-0"}`}>
           <SuggestionsBar suggestions={displaySuggestions} />
         </div>
       </ViewTransition>

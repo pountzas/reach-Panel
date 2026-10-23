@@ -34,7 +34,9 @@ describe("ConfirmDialog", () => {
       />,
     );
 
-    const dialog = screen.getByRole("dialog", { name: "Clear the entire notepad draft?" });
+    const dialog = screen.getByRole("dialog", {
+      name: "Clear the entire notepad draft?",
+    });
     expect(dialog).toBeTruthy();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Clear all" })).toBeTruthy();
@@ -56,7 +58,12 @@ describe("ConfirmDialog", () => {
   it("calls onConfirm when the confirm button is pressed", () => {
     const onConfirm = vi.fn();
     render(
-      <ConfirmDialog open {...baseProps} onConfirm={onConfirm} onCancel={() => {}} />,
+      <ConfirmDialog
+        open
+        {...baseProps}
+        onConfirm={onConfirm}
+        onCancel={() => {}}
+      />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
@@ -66,7 +73,12 @@ describe("ConfirmDialog", () => {
   it("calls onCancel when the cancel button is pressed", () => {
     const onCancel = vi.fn();
     render(
-      <ConfirmDialog open {...baseProps} onConfirm={() => {}} onCancel={onCancel} />,
+      <ConfirmDialog
+        open
+        {...baseProps}
+        onConfirm={() => {}}
+        onCancel={onCancel}
+      />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
@@ -76,7 +88,12 @@ describe("ConfirmDialog", () => {
   it("calls onCancel when Escape is pressed", () => {
     const onCancel = vi.fn();
     render(
-      <ConfirmDialog open {...baseProps} onConfirm={() => {}} onCancel={onCancel} />,
+      <ConfirmDialog
+        open
+        {...baseProps}
+        onConfirm={() => {}}
+        onCancel={onCancel}
+      />,
     );
 
     fireEvent.keyDown(window, { key: "Escape" });
@@ -85,12 +102,32 @@ describe("ConfirmDialog", () => {
 
   it("uses surface theme colors on the dialog panel", () => {
     render(
-      <ConfirmDialog open {...baseProps} onConfirm={() => {}} onCancel={() => {}} />,
+      <ConfirmDialog
+        open
+        {...baseProps}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
     );
 
     const dialog = screen.getByRole("dialog");
     expect(dialog.style.backgroundColor).toBe("rgb(248, 250, 252)");
     expect(dialog.style.color).toBe("rgb(15, 23, 42)");
+  });
+
+  it("keeps tabIndex={-1} on the dialog panel, not as rendered text", () => {
+    render(
+      <ConfirmDialog
+        open
+        {...baseProps}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.getAttribute("tabindex")).toBe("-1");
+    expect(dialog.textContent).not.toContain("tabIndex");
   });
 
   it("portals the fixed overlay to document.body (escapes section contain)", () => {
@@ -99,7 +136,12 @@ describe("ConfirmDialog", () => {
     document.body.appendChild(section);
 
     render(
-      <ConfirmDialog open {...baseProps} onConfirm={() => {}} onCancel={() => {}} />,
+      <ConfirmDialog
+        open
+        {...baseProps}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
       { container: section },
     );
 

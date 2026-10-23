@@ -47,7 +47,10 @@ describe("teaching keyboard minimize (ephemeral)", () => {
     expect(state.teachingKeyboardMinimized).toBe(false);
     expect(state.teachingKeyboardAutoFocus).toBe(false);
     expect(
-      Object.prototype.hasOwnProperty.call(state.settings, "teachingKeyboardMinimized"),
+      Object.prototype.hasOwnProperty.call(
+        state.settings,
+        "teachingKeyboardMinimized",
+      ),
     ).toBe(false);
   });
 

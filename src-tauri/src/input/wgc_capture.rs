@@ -40,12 +40,16 @@ use super::input_preview::{
 /// How long to wait for the first WGC frame before falling back to PrintWindow/BitBlt.
 const WGC_FIRST_FRAME_TIMEOUT: Duration = Duration::from_millis(500);
 
+pub(crate) fn first_frame_timed_out(since: Instant, now: Instant) -> bool {
+    now.saturating_duration_since(since) >= WGC_FIRST_FRAME_TIMEOUT
+}
+
 /// Result of a WGC strip attempt.
 pub(crate) enum StripCapture {
     /// Tight BGRA buffer matching the requested screen strip size.
     Ready(Vec<u8>),
-    /// Session exists but no frame yet — caller should keep the last JPEG (no GDI this tick).
-    /// After [`WGC_FIRST_FRAME_TIMEOUT`] the capture path returns `Err` so GDI can serve.
+    /// Session exists but no usable frame yet. Within [`WGC_FIRST_FRAME_TIMEOUT`] of session
+    /// start / the last `Ready` strip; after that the capture path returns `Err` so GDI can serve.
     NotReady,
 }
 
@@ -65,7 +69,8 @@ struct SessionState {
     staging: Option<StagingStrip>,
     /// Latest delivered frame; re-cropped when no newer frame is queued.
     last_frame: Option<windows::Graphics::Capture::Direct3D11CaptureFrame>,
-    /// When `last_frame` was cleared / session started; drives GDI fallback timeout.
+    /// Session start or last `Ready` strip; drives GDI fallback timeout. Pool recreation must
+    /// not restart it, or item/content size thrash keeps the preview on `NotReady` forever.
     waiting_since: Instant,
 }
 
@@ -342,7 +347,6 @@ fn recreate_pool_for_size(
     session.content_w = size.Width;
     session.content_h = size.Height;
     session.staging = None;
-    session.waiting_since = Instant::now();
     Ok(())
 }
 
@@ -539,17 +543,8 @@ fn capture_once_inner(
         session.last_frame.clone()
     };
     let Some(frame) = frame else {
-        let waited = rt
-            .session
-            .as_ref()
-            .map(|s| s.waiting_since.elapsed())
-            .unwrap_or_default();
-        if waited >= WGC_FIRST_FRAME_TIMEOUT {
-            // Minimized/cloaked/occluded targets may never deliver a first frame.
-            // Keep the session (a frame may still arrive) but let PrintWindow/BitBlt serve this tick.
-            return Err(format!("no WGC frame after {} ms", waited.as_millis()));
-        }
-        return Ok(StripCapture::NotReady);
+        // Minimized/cloaked/occluded targets may never deliver a first frame.
+        return not_ready_or_timeout(rt);
     };
 
     let content = frame
@@ -570,7 +565,7 @@ fn capture_once_inner(
                 .as_mut()
                 .ok_or_else(|| "WGC session missing".to_string())?;
             recreate_pool_for_size(d3d, session, content)?;
-            return Ok(StripCapture::NotReady);
+            return not_ready_or_timeout(rt);
         }
     }
 
@@ -623,6 +618,24 @@ fn capture_once_inner(
     )))
 }
 
+/// Keep the session (a frame may still arrive) but let PrintWindow/BitBlt serve once the
+/// first-frame deadline has passed.
+fn not_ready_or_timeout(rt: &Runtime) -> Result<StripCapture, String> {
+    let since = rt
+        .session
+        .as_ref()
+        .map(|s| s.waiting_since)
+        .unwrap_or_else(Instant::now);
+    let now = Instant::now();
+    if first_frame_timed_out(since, now) {
+        return Err(format!(
+            "no WGC frame after {} ms",
+            now.saturating_duration_since(since).as_millis()
+        ));
+    }
+    Ok(StripCapture::NotReady)
+}
+
 fn rebuild_device_once(rt: &mut Runtime) -> Result<(), String> {
     close_session_inner(rt);
     rt.d3d = None;
@@ -658,6 +671,9 @@ pub(crate) fn try_capture_strip(
         Ok(result) => {
             if matches!(result, StripCapture::Ready(_)) {
                 rt.device_rebuilt_once = false;
+                if let Some(session) = rt.session.as_mut() {
+                    session.waiting_since = Instant::now();
+                }
             }
             Ok(result)
         }
@@ -673,5 +689,27 @@ pub(crate) fn try_capture_strip(
             }
             Err(msg)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn first_frame_wait_holds_before_deadline() {
+        let start = Instant::now();
+        let now = start + WGC_FIRST_FRAME_TIMEOUT - Duration::from_millis(1);
+        assert!(!first_frame_timed_out(start, now));
+    }
+
+    #[test]
+    fn first_frame_wait_falls_back_at_deadline() {
+        let start = Instant::now();
+        assert!(first_frame_timed_out(
+            start,
+            start + WGC_FIRST_FRAME_TIMEOUT
+        ));
+        assert!(first_frame_timed_out(start, start + Duration::from_secs(5)));
     }
 }

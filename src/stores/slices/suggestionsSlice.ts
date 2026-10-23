@@ -165,12 +165,14 @@ export const createSuggestionsSlice: StateCreator<
       }
     } else {
       let deleted = 0;
-      const rollback = () => { set({
+      const rollback = () => {
+        set({
           typedBuffer: previousTypedBuffer.slice(
             0,
             previousTypedBuffer.length - deleted,
           ),
-        }); };
+        });
+      };
       while (deleted < prefix.length) {
         const r = await invoke<CommandResult>("cmd_press_key", {
           request: { key: "backspace", modifiers: [] },

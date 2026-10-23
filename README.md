@@ -177,6 +177,10 @@ For Rust builds on Windows, ensure the MSVC environment is active. If `link.exe`
 
 Companion app: [companion/README.md](companion/README.md).
 
+### Branding / app icons
+
+Master logo: [`design/reachpanel-logo.svg`](design/reachpanel-logo.svg). See [`design/README.md`](design/README.md) to regenerate `design/app-icon.png`, `src-tauri/icons/`, and the companion launcher assets (`npm run generate:brand-icons`, then `npm run tauri -- icon design/app-icon.png`).
+
 ### Public install site (Vercel)
 
 [docs/install/index.html](docs/install/index.html) is the dual-platform downloads page (Windows + Android). It deploys to Vercel and loads versions and hrefs from public Blob `downloads/latest.json` (that pathname only, not Tauri `updater/latest.json`). If a platform is missing from that file, the page keeps the shipped fallback links and QR visible.

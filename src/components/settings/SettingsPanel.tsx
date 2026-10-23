@@ -41,8 +41,7 @@ export function SettingsPanel() {
   return (
     <div
       className="flex h-full w-full flex-col overflow-hidden"
-      style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}
-    >
+      style={{ backgroundColor: settings.appBgColor ?? "#f1f5f9" }}>
       <ToolWindowHeader
         className="flex shrink-0 items-center justify-between px-5 py-3"
         style={{ backgroundColor: headerBg, color: headerText }}
@@ -50,10 +49,11 @@ export function SettingsPanel() {
         actions={
           <IconActionButton
             label={t("close")}
-            onClick={() => { setShowSettings(false); }}
+            onClick={() => {
+              setShowSettings(false);
+            }}
             className="rounded bg-white/20 hover:bg-white/30"
-            tooltipPlacement="below"
-          >
+            tooltipPlacement="below">
             <CloseIcon />
           </IconActionButton>
         }
@@ -61,22 +61,36 @@ export function SettingsPanel() {
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
         <ModesSection surface={surface} />
-        <ProfileSection surface={surface} headerBg={headerBg} headerText={headerText} />
+        <ProfileSection
+          surface={surface}
+          headerBg={headerBg}
+          headerText={headerText}
+        />
         <AccessibilityMonitorSection surface={surface} />
         <TaskbarSection surface={surface} />
-        <AppearanceSection surface={surface} secondaryButtonStyle={secondaryButtonStyle} />
+        <AppearanceSection
+          surface={surface}
+          secondaryButtonStyle={secondaryButtonStyle}
+        />
         <VisibleSectionsSection surface={surface} />
-        <KeyboardSettingsSection surface={surface} secondaryButtonStyle={secondaryButtonStyle} />
-        {!isV1FeatureHidden("mouse") && <MouseSettingsSection surface={surface} />}
+        <KeyboardSettingsSection
+          surface={surface}
+          secondaryButtonStyle={secondaryButtonStyle}
+        />
+        {!isV1FeatureHidden("mouse") && (
+          <MouseSettingsSection surface={surface} />
+        )}
         <GeneralSettingsSection surface={surface} />
         <SettingsSection
           title={t("settingsCompanion")}
           description={t("companionDescription")}
-          surface={surface}
-        >
+          surface={surface}>
           <CompanionSection surface={surface} />
         </SettingsSection>
-        <ToolsMaintenanceSection surface={surface} secondaryButtonStyle={secondaryButtonStyle} />
+        <ToolsMaintenanceSection
+          surface={surface}
+          secondaryButtonStyle={secondaryButtonStyle}
+        />
         <SettingsSection title={t("settingsAbout")} surface={surface}>
           <AboutSection surface={surface} />
         </SettingsSection>

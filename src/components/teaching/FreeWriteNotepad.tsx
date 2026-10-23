@@ -24,7 +24,9 @@ export function FreeWriteNotepad() {
   const clearFreeWriteNotepad = useAppStore((s) => s.clearFreeWriteNotepad);
   const setFreeWriteNotepadZoom = useAppStore((s) => s.setFreeWriteNotepadZoom);
   const setFreeWriteNotepadWrap = useAppStore((s) => s.setFreeWriteNotepadWrap);
-  const setFreeWriteNotepadLineNumbers = useAppStore((s) => s.setFreeWriteNotepadLineNumbers);
+  const setFreeWriteNotepadLineNumbers = useAppStore(
+    (s) => s.setFreeWriteNotepadLineNumbers,
+  );
 
   const text = settings.freeWriteNotepadText ?? "";
   const zoom = clampFreeWriteZoom(settings.freeWriteNotepadZoom ?? 100);
@@ -47,75 +49,90 @@ export function FreeWriteNotepad() {
       gutter.scrollTop = body.scrollTop;
     };
     body.addEventListener("scroll", sync);
-    return () => { body.removeEventListener("scroll", sync); };
+    return () => {
+      body.removeEventListener("scroll", sync);
+    };
   }, [lineNumbers]);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
       <div className="flex shrink-0 flex-wrap items-center gap-1">
-        <span className="mr-auto text-sm font-medium" style={{ color: surface.panelText }}>
+        <span
+          className="mr-auto text-sm font-medium"
+          style={{ color: surface.panelText }}>
           {t("freeWriteNotepad")}
         </span>
         <TeachingLessonToolbarButton
           label={t("freeWriteZoomOut")}
           size="sm"
-          onClick={() => { setFreeWriteNotepadZoom(zoom - FREE_WRITE_ZOOM_STEP); }}
+          onClick={() => {
+            setFreeWriteNotepadZoom(zoom - FREE_WRITE_ZOOM_STEP);
+          }}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
+          color={surface.panelText}>
           <MdOutlineZoomOut className={TOOLBAR_ICON_CLASS} />
         </TeachingLessonToolbarButton>
-        <span className="min-w-[3.25rem] text-center text-xs tabular-nums" style={{ color: surface.panelMutedText }}>
+        <span
+          className="min-w-13 text-center text-xs tabular-nums"
+          style={{ color: surface.panelMutedText }}>
           {formatFreeWriteZoomPercent(zoom)}
         </span>
         <TeachingLessonToolbarButton
           label={t("freeWriteZoomIn")}
           size="sm"
-          onClick={() => { setFreeWriteNotepadZoom(zoom + FREE_WRITE_ZOOM_STEP); }}
+          onClick={() => {
+            setFreeWriteNotepadZoom(zoom + FREE_WRITE_ZOOM_STEP);
+          }}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
+          color={surface.panelText}>
           <MdOutlineZoomIn className={TOOLBAR_ICON_CLASS} />
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteWordWrap")}
           size="sm"
-          onClick={() => { setFreeWriteNotepadWrap(!wrap); }}
+          onClick={() => {
+            setFreeWriteNotepadWrap(!wrap);
+          }}
           backgroundColor={wrap ? "#fde68a" : surface.panelBg}
           borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
+          color={surface.panelText}>
           <span className="text-xs font-semibold">W</span>
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteLineNumbers")}
           size="sm"
-          onClick={() => { setFreeWriteNotepadLineNumbers(!lineNumbers); }}
+          onClick={() => {
+            setFreeWriteNotepadLineNumbers(!lineNumbers);
+          }}
           backgroundColor={lineNumbers ? "#fde68a" : surface.panelBg}
           borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
+          color={surface.panelText}>
           <span className="text-xs font-semibold">#</span>
         </TeachingLessonToolbarButton>
         <TeachingLessonToolbarButton
           label={t("freeWriteClearAll")}
           size="sm"
-          onClick={() => { setClearConfirmOpen(true); }}
+          onClick={() => {
+            setClearConfirmOpen(true);
+          }}
           backgroundColor={surface.panelBg}
           borderColor={surface.panelBorder}
-          color={surface.panelText}
-        >
+          color={surface.panelText}>
           <span className="text-xs font-semibold">⌫</span>
         </TeachingLessonToolbarButton>
       </div>
 
       <div
         className="flex min-h-0 flex-1 overflow-hidden rounded-md border"
-        style={{ borderColor: surface.panelBorder, backgroundColor: surface.insetBg }}
-        onPointerDown={() => { setFreeWriteFocus("notepad"); }}
-      >
+        style={{
+          borderColor: surface.panelBorder,
+          backgroundColor: surface.insetBg,
+        }}
+        onPointerDown={() => {
+          setFreeWriteFocus("notepad");
+        }}>
         {lineNumbers ? (
           <div
             ref={gutterRef}
@@ -127,8 +144,7 @@ export function FreeWriteNotepad() {
               lineHeight: 1.5,
               width: `${Math.max(2, String(lineCount).length) + 1}ch`,
             }}
-            aria-hidden
-          >
+            aria-hidden>
             {Array.from({ length: lineCount }, (_, i) => (
               <div key={i}>{i + 1}</div>
             ))}
@@ -149,8 +165,12 @@ export function FreeWriteNotepad() {
           value={text}
           placeholder={t("freeWriteNotepadEmpty")}
           spellCheck={false}
-          onChange={(e) => { setFreeWriteNotepadText(e.target.value); }}
-          onFocus={() => { setFreeWriteFocus("notepad"); }}
+          onChange={(e) => {
+            setFreeWriteNotepadText(e.target.value);
+          }}
+          onFocus={() => {
+            setFreeWriteFocus("notepad");
+          }}
         />
       </div>
 
@@ -163,7 +183,9 @@ export function FreeWriteNotepad() {
           clearFreeWriteNotepad();
           setClearConfirmOpen(false);
         }}
-        onCancel={() => { setClearConfirmOpen(false); }}
+        onCancel={() => {
+          setClearConfirmOpen(false);
+        }}
         surface={surface}
       />
     </div>

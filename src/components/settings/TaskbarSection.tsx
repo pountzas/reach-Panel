@@ -20,19 +20,25 @@ export function TaskbarSection({ surface }: { surface: SurfaceColors }) {
 
   useEffect((): void => {
     const monitorId = settings.accessibilityMonitorId;
-    void invoke<TaskbarPosition | null>("cmd_get_taskbar_position", { monitorId }).then(
-      (current) => {
-        if (current && current !== (settings.taskbarPositionPreference ?? "bottom")) {
-          void updateSettings({ taskbarPositionPreference: current });
-        }
-      },
-    );
+    void invoke<TaskbarPosition | null>("cmd_get_taskbar_position", {
+      monitorId,
+    }).then((current) => {
+      if (
+        current &&
+        current !== (settings.taskbarPositionPreference ?? "bottom")
+      ) {
+        void updateSettings({ taskbarPositionPreference: current });
+      }
+    });
   }, [settings, updateSettings]);
-  const taskbarPosition = settings.taskbarPositionPreference === "top" ? "top" : "bottom";
+  const taskbarPosition =
+    settings.taskbarPositionPreference === "top" ? "top" : "bottom";
 
   return (
     <SettingsSection title={t("taskbarPosition")} surface={surface}>
-      <p className="mb-2 px-1 text-xs" style={{ color: surface.panelMutedText }}>
+      <p
+        className="mb-2 px-1 text-xs"
+        style={{ color: surface.panelMutedText }}>
         {t("taskbarPositionHint")}
       </p>
       <label className="block text-sm" style={{ color: surface.panelText }}>
@@ -50,8 +56,7 @@ export function TaskbarSection({ surface }: { surface: SurfaceColors }) {
               t,
             );
           }}
-          surface={surface}
-        >
+          surface={surface}>
           <option value="bottom">{t("taskbarPositionBottom")}</option>
           <option value="top">{t("taskbarPositionTop")}</option>
         </ThemedSelect>

@@ -6,12 +6,13 @@ import {
   processCharacterInput,
 } from "../../lib/keyboardCharacterInput";
 import { applyGreekLayoutTranslation } from "../../lib/layoutKeyTranslation";
-import {
-  createCaregiverPack,
-  parseWordListLines,
-} from "../../lib/language";
+import { createCaregiverPack, parseWordListLines } from "../../lib/language";
 import type { GreekPendingAccent } from "../../lib/language/greekCompose";
-import type { LanguageAgeBand, LanguagePack, LessonLanguage } from "../../lib/language/types";
+import type {
+  LanguageAgeBand,
+  LanguagePack,
+  LessonLanguage,
+} from "../../lib/language/types";
 import { useAppStore } from "../../stores/appStore";
 
 export function NewLanguageListForm({
@@ -36,8 +37,12 @@ export function NewLanguageListForm({
   const settings = useAppStore((s) => s.settings);
   const keyboardLayout = useAppStore((s) => s.keyboardLayout);
   const authoringField = useAppStore((s) => s.languageListAuthoringField);
-  const setLanguageListAuthoringActive = useAppStore((s) => s.setLanguageListAuthoringActive);
-  const setLanguageListAuthoringField = useAppStore((s) => s.setLanguageListAuthoringField);
+  const setLanguageListAuthoringActive = useAppStore(
+    (s) => s.setLanguageListAuthoringActive,
+  );
+  const setLanguageListAuthoringField = useAppStore(
+    (s) => s.setLanguageListAuthoringField,
+  );
   const registerLanguageListAuthoringHandlers = useAppStore(
     (s) => s.registerLanguageListAuthoringHandlers,
   );
@@ -132,12 +137,17 @@ export function NewLanguageListForm({
       layoutTranslation: (translation, options) => {
         const field = useAppStore.getState().languageListAuthoringField;
         applyToField(field, (current, pending) => {
-          const result = applyGreekLayoutTranslation(current, pending, translation, {
-            physicalKey: options.physicalKey,
-            shift: options.shift,
-            fallbackOutput: options.fallbackOutput,
-            greekCompose: greek,
-          });
+          const result = applyGreekLayoutTranslation(
+            current,
+            pending,
+            translation,
+            {
+              physicalKey: options.physicalKey,
+              shift: options.shift,
+              fallbackOutput: options.fallbackOutput,
+              greekCompose: greek,
+            },
+          );
           return { buffer: result.buffer, pending: result.pending };
         });
       },
@@ -171,31 +181,40 @@ export function NewLanguageListForm({
       onSubmit={(event) => {
         event.preventDefault();
         saveList();
-      }}
-    >
-      <label className="flex min-w-0 flex-col gap-1 text-xs" style={{ color: surface.panelMutedText }}>
+      }}>
+      <label
+        className="flex min-w-0 flex-col gap-1 text-xs"
+        style={{ color: surface.panelMutedText }}>
         <span>{t("languageNewListTitle")}</span>
         <input
           className="w-full rounded-md border px-2 py-1.5 text-sm"
           style={fieldStyle(authoringField === "title")}
           value={title}
-          onChange={(event) => { setTitle(event.target.value); }}
-          onFocus={() => { setLanguageListAuthoringField("title"); }}
+          onChange={(event) => {
+            setTitle(event.target.value);
+          }}
+          onFocus={() => {
+            setLanguageListAuthoringField("title");
+          }}
           readOnly
           aria-readonly="true"
         />
       </label>
-      <label className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 text-xs" style={{ color: surface.panelMutedText }}>
+      <label
+        className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 text-xs"
+        style={{ color: surface.panelMutedText }}>
         <span>{t("languageNewListWords")}</span>
         <textarea
-          className="min-h-[8rem] w-full flex-1 resize-none rounded-md border px-2 py-1.5 text-sm"
+          className="min-h-32 w-full flex-1 resize-none rounded-md border px-2 py-1.5 text-sm"
           style={fieldStyle(authoringField === "words")}
           value={wordsText}
           onChange={(event) => {
             setWordsText(event.target.value);
             setEmptyError(false);
           }}
-          onFocus={() => { setLanguageListAuthoringField("words"); }}
+          onFocus={() => {
+            setLanguageListAuthoringField("words");
+          }}
           readOnly
           aria-readonly="true"
         />
@@ -211,8 +230,7 @@ export function NewLanguageListForm({
             borderColor: surface.panelBorder,
             backgroundColor: surface.panelBg,
             color: surface.panelText,
-          }}
-        >
+          }}>
           {t("languageNewListSave")}
         </button>
         <button
@@ -223,8 +241,7 @@ export function NewLanguageListForm({
             backgroundColor: surface.panelBg,
             color: surface.panelText,
           }}
-          onClick={onCancel}
-        >
+          onClick={onCancel}>
           {t("languageNewListCancel")}
         </button>
       </div>

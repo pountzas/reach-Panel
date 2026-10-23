@@ -27,9 +27,12 @@ const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
 type AppearanceSectionProps = {
   surface: SurfaceColors;
   secondaryButtonStyle: CSSProperties;
-}
+};
 
-export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceSectionProps) {
+export function AppearanceSection({
+  surface,
+  secondaryButtonStyle,
+}: AppearanceSectionProps) {
   const { t } = useTranslation();
   const { settings, updateSettings, pickBackgroundImage } = useAppStore(
     useShallow((s) => ({
@@ -44,7 +47,9 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
   return (
     <SettingsSection title={t("appearance")} surface={surface}>
       <fieldset className="mb-4">
-        <legend className="mb-2 text-sm font-medium" style={{ color: surface.panelText }}>
+        <legend
+          className="mb-2 text-sm font-medium"
+          style={{ color: surface.panelText }}>
           {t("colorProfile")}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -55,11 +60,14 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
                 key={id}
                 className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm"
                 style={{
-                  borderColor: selected ? surface.panelBorder : surface.insetBorder,
-                  backgroundColor: selected ? surface.panelHeaderBg : surface.insetBg,
+                  borderColor: selected
+                    ? surface.panelBorder
+                    : surface.insetBorder,
+                  backgroundColor: selected
+                    ? surface.panelHeaderBg
+                    : surface.insetBg,
                   color: surface.panelText,
-                }}
-              >
+                }}>
                 <input
                   type="radio"
                   name="colorProfile"
@@ -83,44 +91,58 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
           <ColorField
             label={t("appBackgroundColor")}
             value={settings.appBgColor ?? "#f1f5f9"}
-            onChange={(v) => updateSettings({ appBgColor: v, colorProfile: "custom" })}
+            onChange={(v) =>
+              updateSettings({ appBgColor: v, colorProfile: "custom" })
+            }
             surface={surface}
           />
           <ColorField
             label={t("headerColor")}
             value={settings.headerBgColor ?? "#1e293b"}
-            onChange={(v) => updateSettings({ headerBgColor: v, colorProfile: "custom" })}
+            onChange={(v) =>
+              updateSettings({ headerBgColor: v, colorProfile: "custom" })
+            }
             surface={surface}
           />
           <ColorField
             label={t("headerTextColor")}
             value={settings.headerTextColor ?? "#ffffff"}
-            onChange={(v) => updateSettings({ headerTextColor: v, colorProfile: "custom" })}
+            onChange={(v) =>
+              updateSettings({ headerTextColor: v, colorProfile: "custom" })
+            }
             surface={surface}
           />
           <ColorField
             label={t("keyboardBackgroundColor")}
             value={settings.keyboardBgColor ?? "#e8edf2"}
-            onChange={(v) => updateSettings({ keyboardBgColor: v, colorProfile: "custom" })}
+            onChange={(v) =>
+              updateSettings({ keyboardBgColor: v, colorProfile: "custom" })
+            }
             surface={surface}
           />
           <ColorField
             label={t("keyColor")}
             value={settings.keyboardKeyColor ?? "#ffffff"}
-            onChange={(v) => updateSettings({ keyboardKeyColor: v, colorProfile: "custom" })}
+            onChange={(v) =>
+              updateSettings({ keyboardKeyColor: v, colorProfile: "custom" })
+            }
             surface={surface}
           />
           <ColorField
             label={t("keyTextColor")}
             value={settings.keyTextColor ?? "#1e293b"}
-            onChange={(v) => updateSettings({ keyTextColor: v, colorProfile: "custom" })}
+            onChange={(v) =>
+              updateSettings({ keyTextColor: v, colorProfile: "custom" })
+            }
             surface={surface}
           />
           {!isV1FeatureHidden("mouse") && (
             <ColorField
               label={t("mousePanelColor")}
               value={settings.mousePanelBgColor ?? "#f8fafc"}
-              onChange={(v) => updateSettings({ mousePanelBgColor: v, colorProfile: "custom" })}
+              onChange={(v) =>
+                updateSettings({ mousePanelBgColor: v, colorProfile: "custom" })
+              }
               surface={surface}
             />
           )}
@@ -133,8 +155,7 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
             type="button"
             className="rounded-lg border px-3 py-1.5 text-sm"
             style={secondaryButtonStyle}
-            onClick={() => void pickBackgroundImage()}
-          >
+            onClick={() => void pickBackgroundImage()}>
             {t("chooseBackgroundImage")}
           </button>
           {settings.backgroundImagePath && (
@@ -142,8 +163,9 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
               type="button"
               className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700"
               style={{ backgroundColor: surface.insetBg }}
-              onClick={() => updateSettings({ backgroundImagePath: undefined })}
-            >
+              onClick={() =>
+                updateSettings({ backgroundImagePath: undefined })
+              }>
               {t("removeBackgroundImage")}
             </button>
           )}
@@ -158,7 +180,9 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
               step={0.05}
               value={settings.backgroundImageOpacity ?? 0.35}
               onChange={(e) =>
-                updateSettings({ backgroundImageOpacity: Number(e.target.value) })
+                updateSettings({
+                  backgroundImageOpacity: Number(e.target.value),
+                })
               }
               className="mt-1 w-full"
             />
@@ -182,10 +206,11 @@ export function AppearanceSection({ surface, secondaryButtonStyle }: AppearanceS
       <div className="mt-4 block text-sm" style={{ color: surface.panelText }}>
         <label
           htmlFor="settings-keyboard-font-size"
-          className="flex items-center justify-between gap-2"
-        >
+          className="flex items-center justify-between gap-2">
           <span>{t("keyboardFontSize")}</span>
-          <span className="tabular-nums opacity-80">{keyboardFontSizePx}px</span>
+          <span className="tabular-nums opacity-80">
+            {keyboardFontSizePx}px
+          </span>
         </label>
         <input
           id="settings-keyboard-font-size"

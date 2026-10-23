@@ -42,12 +42,15 @@ export function MusicLessonPanel() {
   const restartMusicLesson = useAppStore((s) => s.restartMusicLesson);
   const startMusicPlayback = useAppStore((s) => s.startMusicPlayback);
   const stopMusicPlayback = useAppStore((s) => s.stopMusicPlayback);
-  const importMusicSongsFromFile = useAppStore((s) => s.importMusicSongsFromFile);
+  const importMusicSongsFromFile = useAppStore(
+    (s) => s.importMusicSongsFromFile,
+  );
   const deleteImportedSong = useAppStore((s) => s.deleteImportedSong);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const { t } = useTranslation();
   const surface = getSurfaceColors(settings.appBgColor);
-  const leftRatio = settings.musicLessonLeftRatio ?? DEFAULT_TEACHING_LESSON_LEFT_RATIO;
+  const leftRatio =
+    settings.musicLessonLeftRatio ?? DEFAULT_TEACHING_LESSON_LEFT_RATIO;
 
   const song = getSongById(musicSongId, importedSongs);
   const selectedIsImported = song ? isImportedMusicSong(song) : false;
@@ -78,7 +81,9 @@ export function MusicLessonPanel() {
   const leftColumn = (
     <TeachingLessonPane>
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-        <span className="min-w-0 truncate text-sm font-semibold">{t("musicLesson")}</span>
+        <span className="min-w-0 truncate text-sm font-semibold">
+          {t("musicLesson")}
+        </span>
         <div className="flex shrink-0 flex-wrap items-center gap-1">
           <TeachingLessonToolbarButton
             label={t("loadSong")}
@@ -86,8 +91,7 @@ export function MusicLessonPanel() {
             disabled={musicPlaybackActive}
             borderColor={surface.panelBorder}
             backgroundColor={surface.panelBg}
-            color={surface.panelText}
-          >
+            color={surface.panelText}>
             <LoadSongIcon className={TOOLBAR_ICON_CLASS} />
           </TeachingLessonToolbarButton>
           <TeachingLessonToolbarButton
@@ -102,8 +106,7 @@ export function MusicLessonPanel() {
             disabled={!song || song.notes.length === 0}
             borderColor={surface.panelBorder}
             backgroundColor={musicPlaybackActive ? "#fde68a" : surface.panelBg}
-            color={surface.panelText}
-          >
+            color={surface.panelText}>
             {musicPlaybackActive ? (
               <StopIcon className={TOOLBAR_ICON_CLASS} />
             ) : (
@@ -112,12 +115,13 @@ export function MusicLessonPanel() {
           </TeachingLessonToolbarButton>
           <TeachingLessonToolbarButton
             label={t("restartLesson")}
-            onClick={() => { restartMusicLesson(); }}
+            onClick={() => {
+              restartMusicLesson();
+            }}
             disabled={musicPlaybackActive}
             borderColor={surface.panelBorder}
             backgroundColor={surface.panelBg}
-            color={surface.panelText}
-          >
+            color={surface.panelText}>
             <RestartIcon className={TOOLBAR_ICON_CLASS} />
           </TeachingLessonToolbarButton>
           {selectedIsImported ? (
@@ -135,8 +139,7 @@ export function MusicLessonPanel() {
               disabled={musicPlaybackActive}
               borderColor={surface.panelBorder}
               backgroundColor={surface.panelBg}
-              color={surface.panelText}
-            >
+              color={surface.panelText}>
               <TrashIcon className={TOOLBAR_ICON_CLASS} />
             </TeachingLessonToolbarButton>
           ) : null}
@@ -145,8 +148,7 @@ export function MusicLessonPanel() {
 
       <label
         className="flex min-w-0 flex-col gap-1 text-xs"
-        style={{ color: surface.panelMutedText }}
-      >
+        style={{ color: surface.panelMutedText }}>
         <span>{t("selectSong")}</span>
         <select
           className="min-w-0 w-full rounded-md border px-2 py-1.5 text-sm disabled:opacity-50"
@@ -159,8 +161,7 @@ export function MusicLessonPanel() {
           disabled={musicPlaybackActive}
           onChange={(event) => {
             void setMusicSongId(event.target.value);
-          }}
-        >
+          }}>
           <optgroup label={t("builtInSongs")}>
             {BUILT_IN_SONGS.map((entry) => (
               <option key={entry.id} value={entry.id}>
@@ -186,7 +187,9 @@ export function MusicLessonPanel() {
         <div className="flex min-w-0 flex-col gap-1 text-sm">
           <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
             <span className="min-w-0 truncate font-medium">{song.title}</span>
-            <span style={{ color: surface.panelMutedText }}>{progressLabel}</span>
+            <span style={{ color: surface.panelMutedText }}>
+              {progressLabel}
+            </span>
           </div>
           {song.composer ? (
             <span className="text-xs" style={{ color: surface.panelMutedText }}>
@@ -200,7 +203,8 @@ export function MusicLessonPanel() {
           ) : null}
           {songRangeLabel ? (
             <p className="text-xs" style={{ color: surface.panelMutedText }}>
-              {t("songRange")}: {songRangeLabel} · {t("pianoRange")}: {keyboardRange}
+              {t("songRange")}: {songRangeLabel} · {t("pianoRange")}:{" "}
+              {keyboardRange}
             </p>
           ) : null}
           {songFit && !songFit.fitsCompletely ? (
@@ -224,22 +228,24 @@ export function MusicLessonPanel() {
   const rightColumn = (
     <TeachingLessonPane scroll={false}>
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-        <PartitureView song={song} activeIndex={focusIndex} completed={completed} />
+        <PartitureView
+          song={song}
+          activeIndex={focusIndex}
+          completed={completed}
+        />
       </div>
       {song && song.notes.length > 0 ? (
         <div
           className="music-note-strip relative h-16 shrink-0 overflow-hidden rounded-md border"
           style={{ borderColor: surface.panelBorder }}
-          aria-label={t("upcomingNotes")}
-        >
+          aria-label={t("upcomingNotes")}>
           <div
             className="music-note-strip-track absolute inset-y-0 flex items-center"
             style={{
               left: "50%",
               gap: `${NOTE_GAP_REM}rem`,
               transform: `translateX(-${stripOffsetRem}rem)`,
-            }}
-          >
+            }}>
             {song.notes.map((note, index) => {
               const isActive = !completed && index === musicNoteIndex;
               const isPast = completed || index < musicNoteIndex;
@@ -254,8 +260,7 @@ export function MusicLessonPanel() {
                     color: surface.panelText,
                     opacity: isActive ? 1 : isPast ? 0.35 : 0.55,
                     backgroundColor: isActive ? "#fde68a" : "transparent",
-                  }}
-                >
+                  }}>
                   {note.pitch}
                 </span>
               );

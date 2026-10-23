@@ -1,4 +1,8 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../stores/appStore";
 import {
@@ -8,9 +12,7 @@ import {
   type WindowHeightDragRegion,
 } from "../lib/windowHeightDrag";
 import { resolveMonitorScaleFactor } from "../lib/toolWindows";
-import {
-  isTeachingFullWorkArea,
-} from "../lib/v1HiddenFeatures";
+import { isTeachingFullWorkArea } from "../lib/v1HiddenFeatures";
 
 type WindowHeightDragRef = {
   region: WindowHeightDragRegion;
@@ -19,11 +21,11 @@ type WindowHeightDragRef = {
   scale: number;
   active: boolean;
   pointerType: string;
-}
+};
 
 type WindowHeightDragHandlers = {
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
-}
+};
 
 /**
  * Window-height drag for dedicated grip handles (full header + mini toolbar).
@@ -37,7 +39,9 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const focusModeActive = useAppStore((s) => s.focusModeActive);
   const updateSettings = useAppStore((s) => s.updateSettings);
-  const applyWindowHeightRatioLive = useAppStore((s) => s.applyWindowHeightRatioLive);
+  const applyWindowHeightRatioLive = useAppStore(
+    (s) => s.applyWindowHeightRatioLive,
+  );
 
   const windowResizeRef = useRef<WindowHeightDragRef | null>(null);
   const pollRafRef = useRef<number | null>(null);
@@ -104,9 +108,14 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
             return;
           }
         }
-        const [, physicalY] = await invoke<[number, number]>("cmd_get_cursor_position");
+        const [, physicalY] = await invoke<[number, number]>(
+          "cmd_get_cursor_position",
+        );
         const screenY = physicalY / current.scale;
-        const nextRatio = nextWindowHeightRatioFromScreenY(screenY, current.region);
+        const nextRatio = nextWindowHeightRatioFromScreenY(
+          screenY,
+          current.region,
+        );
         current.latestRatio = nextRatio;
         void applyWindowHeightRatioLive(nextRatio);
       } catch {

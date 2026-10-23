@@ -23,8 +23,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 
 use super::focus_target::{
-    get_effective_input_hwnd, get_input_target_bounds, has_input_target, is_input_focused,
-    ScreenRect,
+    get_effective_capture_root, get_effective_input_hwnd, get_input_target_bounds,
+    has_input_target, is_input_focused, CaptureRoot, ScreenRect,
 };
 use super::wgc_capture::{self, StripCapture};
 
@@ -47,8 +47,11 @@ static PREVIEW_ENABLED: AtomicBool = AtomicBool::new(true);
 static ANIMATIONS_ACTIVE: AtomicUsize = AtomicUsize::new(0);
 /// Cleared by the worker; set on enable/disable, clear, companion connect/disconnect, animation end.
 static FORCE_FRESH_FRAME: AtomicBool = AtomicBool::new(false);
-/// Last logged capture backend (`wgc` / `printwindow` / `bitblt`) for change-only logging.
-static LAST_CAPTURE_PATH: Mutex<Option<&'static str>> = Mutex::new(None);
+/// Cleared by the worker; set when a reset also means the UI no longer shows a frame.
+static SHOWN_FRAME_LOST: AtomicBool = AtomicBool::new(false);
+/// Last logged capture backend (`wgc` / `printwindow` / `bitblt`) and capture HWND for
+/// change-only logging.
+static LAST_CAPTURE_PATH: Mutex<Option<(&'static str, isize)>> = Mutex::new(None);
 /// Desktop subscriber for binary preview frames (`InvokeResponseBody::Raw`).
 static PREVIEW_CHANNEL: Mutex<Option<Channel<InvokeResponseBody>>> = Mutex::new(None);
 
@@ -130,7 +133,10 @@ pub fn notify_bounds_changed() {
     notify_worker();
 }
 
-fn request_fresh_frame(_event: FrameSkipReset) {
+fn request_fresh_frame(event: FrameSkipReset) {
+    if reset_loses_shown_frame(event) {
+        SHOWN_FRAME_LOST.store(true, Ordering::Release);
+    }
     FORCE_FRESH_FRAME.store(true, Ordering::Release);
 }
 
@@ -152,6 +158,9 @@ fn ensure_worker() {
 fn preview_loop() {
     let mut was_companion_live = false;
     let mut last_frame: Option<FrameSkipKey> = None;
+    // Separate from the dedupe key: animation end forces a fresh emit while the strip still
+    // shows a frame, so WGC `NotReady` must keep it rather than paint one GDI frame.
+    let mut shown_for_hwnd: Option<isize> = None;
     loop {
         {
             let guard = WORKER_LOCK.lock().unwrap_or_else(|e| e.into_inner());
@@ -161,6 +170,9 @@ fn preview_loop() {
         }
         DIRTY.store(false, Ordering::Release);
 
+        if SHOWN_FRAME_LOST.swap(false, Ordering::AcqRel) {
+            shown_for_hwnd = None;
+        }
         if FORCE_FRESH_FRAME.swap(false, Ordering::AcqRel) {
             last_frame = None;
         }
@@ -175,11 +187,15 @@ fn preview_loop() {
             companion_transition(was_companion_live, companion_live);
         if reset_frame {
             // Routing changed (tablet took over or left): next capture must emit.
-            last_frame = reset_last_frame(if companion_live {
+            let event = if companion_live {
                 FrameSkipReset::CompanionConnected
             } else {
                 FrameSkipReset::CompanionDisconnected
-            });
+            };
+            last_frame = reset_last_frame(event);
+            if reset_loses_shown_frame(event) {
+                shown_for_hwnd = None;
+            }
             if clear_desktop {
                 // Clear desktop strip once when the tablet takes over; keep capturing.
                 emit_cleared();
@@ -200,6 +216,7 @@ fn preview_loop() {
             PreviewFrameAction::Clear => {
                 wgc_capture::close_session();
                 last_frame = reset_last_frame(FrameSkipReset::Cleared);
+                shown_for_hwnd = None;
                 route_cleared(companion_live);
             }
             PreviewFrameAction::KeepLastFrame => {
@@ -212,7 +229,7 @@ fn preview_loop() {
                 if last_frame.is_some_and(|k| k.target_hwnd != hwnd) {
                     last_frame = reset_last_frame(FrameSkipReset::TargetChanged);
                 }
-                match capture_and_maybe_encode(&bounds, last_frame) {
+                match capture_and_maybe_encode(&bounds, last_frame, shown_for_hwnd == Some(hwnd)) {
                     Ok(CaptureOutcome::Skipped) => {}
                     Ok(CaptureOutcome::Encoded {
                         jpeg,
@@ -221,6 +238,7 @@ fn preview_loop() {
                         key,
                     }) => {
                         last_frame = Some(key);
+                        shown_for_hwnd = Some(key.target_hwnd);
                         if companion_live {
                             // Companion/Android still expects a data URL; build only on this path.
                             let b64 = STANDARD.encode(&jpeg);
@@ -319,15 +337,45 @@ enum CaptureOutcome {
     },
 }
 
-fn log_capture_path(path: &'static str) {
+fn log_capture_path(path: &'static str, root: Option<CaptureRoot>) {
+    let hwnd = root.map(|r| r.hwnd.0 as isize).unwrap_or(0);
     let mut guard = LAST_CAPTURE_PATH
         .lock()
         .unwrap_or_else(|e| e.into_inner());
-    if *guard == Some(path) {
+    if *guard == Some((path, hwnd)) {
         return;
     }
-    *guard = Some(path);
-    eprintln!("input preview capture path: {path}");
+    *guard = Some((path, hwnd));
+    match root {
+        Some(root) => eprintln!(
+            "input preview capture path: {path} hwnd={hwnd:#x} class={} promoted={}",
+            root.class_name(),
+            root.promoted
+        ),
+        None => eprintln!("input preview capture path: {path} (no capture window)"),
+    }
+}
+
+/// PrintWindow of the top-level capture root, then desktop BitBlt of the strip.
+fn capture_gdi_bgra(
+    root: CaptureRoot,
+    rect: &CaptureRect,
+    wgc_reason: &str,
+) -> Result<Vec<u8>, String> {
+    match capture_window_region_bgra(root.hwnd, rect) {
+        Ok(pixels) => {
+            log_capture_path("printwindow", Some(root));
+            Ok(pixels)
+        }
+        Err(pw_err) => {
+            eprintln!(
+                "input preview window capture failed (wgc: {wgc_reason}; printwindow: {pw_err}); falling back to screen"
+            );
+            let pixels = capture_screen_bgra(rect.left, rect.top, rect.width, rect.height)?;
+            log_capture_path("bitblt", Some(root));
+            Ok(pixels)
+        }
+    }
 }
 
 /// Capture BGRA, skip JPEG/base64 when unchanged; otherwise encode.
@@ -336,6 +384,7 @@ fn log_capture_path(path: &'static str) {
 fn capture_and_maybe_encode(
     bounds: &ScreenRect,
     last: Option<FrameSkipKey>,
+    frame_on_screen: bool,
 ) -> Result<CaptureOutcome, String> {
     let rect = padded_clamped_rect(bounds);
     if rect.width <= 0 || rect.height <= 0 {
@@ -347,34 +396,23 @@ fn capture_and_maybe_encode(
         .map(|hwnd| hwnd.0 as isize)
         .unwrap_or(0);
 
-    let bgra = match get_effective_input_hwnd() {
-        Some(hwnd) => match wgc_capture::try_capture_strip(hwnd, &rect) {
+    let bgra = match get_effective_capture_root() {
+        Some(root) => match wgc_capture::try_capture_strip(root.hwnd, &rect) {
             Ok(StripCapture::Ready(pixels)) => {
-                log_capture_path("wgc");
+                log_capture_path("wgc", Some(root));
                 pixels
             }
-            Ok(StripCapture::NotReady) => {
-                // Session just started; keep the last frame instead of flickering via GDI.
-                return Ok(CaptureOutcome::Skipped);
-            }
-            Err(wgc_err) => match capture_window_region_bgra(hwnd, &rect) {
-                Ok(pixels) => {
-                    log_capture_path("printwindow");
-                    pixels
-                }
-                Err(pw_err) => {
-                    eprintln!(
-                        "input preview window capture failed (wgc: {wgc_err}; printwindow: {pw_err}); falling back to screen"
-                    );
-                    let pixels = capture_screen_bgra(rect.left, rect.top, src_w, src_h)?;
-                    log_capture_path("bitblt");
-                    pixels
+            Ok(StripCapture::NotReady) => match not_ready_action(frame_on_screen) {
+                NotReadyAction::KeepLastFrame => return Ok(CaptureOutcome::Skipped),
+                NotReadyAction::FallBackToGdi => {
+                    capture_gdi_bgra(root, &rect, "first frame not ready")?
                 }
             },
+            Err(wgc_err) => capture_gdi_bgra(root, &rect, &wgc_err)?,
         },
         None => {
             let pixels = capture_screen_bgra(rect.left, rect.top, src_w, src_h)?;
-            log_capture_path("bitblt");
+            log_capture_path("bitblt", None);
             pixels
         }
     };
@@ -892,6 +930,37 @@ pub(crate) fn decide_frame_emit(
     }
 }
 
+/// What to do when WGC has a session but no frame this tick.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum NotReadyAction {
+    KeepLastFrame,
+    FallBackToGdi,
+}
+
+/// Holding the last JPEG avoids WGC↔GDI flicker, but with nothing shown yet the strip would
+/// sit on "Waiting for preview…" until WGC delivers — let GDI paint the first frame instead.
+pub(crate) fn not_ready_action(frame_on_screen: bool) -> NotReadyAction {
+    if frame_on_screen {
+        NotReadyAction::KeepLastFrame
+    } else {
+        NotReadyAction::FallBackToGdi
+    }
+}
+
+/// Whether a reset also leaves the current route without a visible frame. Companion
+/// disconnect counts: the desktop strip was cleared when the tablet took over.
+pub(crate) fn reset_loses_shown_frame(event: FrameSkipReset) -> bool {
+    match event {
+        FrameSkipReset::AnimationEnded => false,
+        FrameSkipReset::Cleared
+        | FrameSkipReset::TargetChanged
+        | FrameSkipReset::EnabledChanged
+        | FrameSkipReset::CompanionConnected
+        | FrameSkipReset::CompanionDisconnected
+        | FrameSkipReset::Resubscribed => true,
+    }
+}
+
 /// Events that must clear the last-sent key so the next capture always emits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FrameSkipReset {
@@ -1033,6 +1102,31 @@ mod tests {
         assert_eq!(&out[4..8], &[1, 0, 0, 255]);
         assert_eq!(&out[8..12], &[2, 0, 0, 255]);
         assert_eq!(&out[12..16], &[0, 0, 0, 0]); // letterbox right
+    }
+
+    #[test]
+    fn wgc_not_ready_keeps_last_frame_once_one_is_shown() {
+        assert_eq!(not_ready_action(true), NotReadyAction::KeepLastFrame);
+    }
+
+    #[test]
+    fn wgc_not_ready_falls_back_to_gdi_when_nothing_shown() {
+        assert_eq!(not_ready_action(false), NotReadyAction::FallBackToGdi);
+    }
+
+    #[test]
+    fn animation_end_keeps_shown_frame_other_resets_lose_it() {
+        assert!(!reset_loses_shown_frame(FrameSkipReset::AnimationEnded));
+        for event in [
+            FrameSkipReset::Cleared,
+            FrameSkipReset::TargetChanged,
+            FrameSkipReset::EnabledChanged,
+            FrameSkipReset::CompanionConnected,
+            FrameSkipReset::CompanionDisconnected,
+            FrameSkipReset::Resubscribed,
+        ] {
+            assert!(reset_loses_shown_frame(event), "{event:?}");
+        }
     }
 
     #[test]

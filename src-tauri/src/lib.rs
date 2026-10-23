@@ -30,6 +30,9 @@ pub(crate) struct AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .on_page_load(|webview, payload| {
+            window::icon_sync::on_app_page_load(&webview, &payload);
+        })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
@@ -73,6 +76,7 @@ pub fn run() {
                 let _ = window.set_shadow(false);
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
+                window::icon_sync::register_main_window_icon_sync(window.clone());
                 if let Ok(hwnd) = window.hwnd() {
                     if let Err(e) =
                         input::input_preview::exclude_window_from_capture(hwnd.0 as isize)

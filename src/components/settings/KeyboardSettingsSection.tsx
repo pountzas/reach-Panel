@@ -11,7 +11,7 @@ import { ThemedSelect } from "./settingsControls";
 type KeyboardSettingsSectionProps = {
   surface: SurfaceColors;
   secondaryButtonStyle: CSSProperties;
-}
+};
 
 export function KeyboardSettingsSection({
   surface,
@@ -31,8 +31,7 @@ export function KeyboardSettingsSection({
         <ThemedSelect
           value={settings.fnKeyMode}
           onChange={(v) => updateSettings({ fnKeyMode: v as FnKeyMode })}
-          surface={surface}
-        >
+          surface={surface}>
           <option value="one-shot">{t("fnKeyModeOneShot")}</option>
           <option value="latched">{t("fnKeyModeLatched")}</option>
         </ThemedSelect>
@@ -41,8 +40,7 @@ export function KeyboardSettingsSection({
         <label
           className="block text-sm"
           htmlFor="settings-groq-api-key"
-          style={{ color: surface.panelText }}
-        >
+          style={{ color: surface.panelText }}>
           {t("groqApiKeyLabel")}
           <input
             id="settings-groq-api-key"
@@ -56,17 +54,22 @@ export function KeyboardSettingsSection({
               color: surface.panelText,
             }}
             value={settings.groqApiKey ?? ""}
-            onChange={(e) => void updateSettings({ groqApiKey: e.target.value })}
+            onChange={(e) =>
+              void updateSettings({ groqApiKey: e.target.value })
+            }
             placeholder="gsk_…"
           />
-          <span className="mt-1 block text-xs opacity-80">{t("groqApiKeyHint")}</span>
+          <span className="mt-1 block text-xs opacity-80">
+            {t("groqApiKeyHint")}
+          </span>
         </label>
         <button
           type="button"
           className="mt-2 rounded-lg border px-3 py-2 text-sm"
           style={secondaryButtonStyle}
-          onClick={() => { openExternalLink(GROQ_API_KEYS_URL); }}
-        >
+          onClick={() => {
+            openExternalLink(GROQ_API_KEYS_URL);
+          }}>
           {t("groqApiKeyLink")}
         </button>
       </div>

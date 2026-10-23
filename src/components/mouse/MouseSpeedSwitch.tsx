@@ -20,7 +20,7 @@ import {
 type MouseSpeedSwitchProps = {
   value: string | undefined;
   onChange: (speed: MouseSpeed) => void;
-}
+};
 
 const SPEED_ICONS: Record<MouseSpeed, ReactNode> = {
   verySlow: <VerySlowSpeedIcon className="h-4 w-4" />,
@@ -42,10 +42,14 @@ export function MouseSpeedSwitch({ value, onChange }: MouseSpeedSwitchProps) {
           <ModeToggleButton
             key={level}
             active={speed === level}
-            position={modeToggleSegmentPosition(index, MOUSE_SPEED_LEVELS.length)}
+            position={modeToggleSegmentPosition(
+              index,
+              MOUSE_SPEED_LEVELS.length,
+            )}
             label={t(labelKey)}
-            onClick={() => { onChange(level); }}
-          >
+            onClick={() => {
+              onChange(level);
+            }}>
             {SPEED_ICONS[level]}
           </ModeToggleButton>
         );

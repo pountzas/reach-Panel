@@ -18,7 +18,9 @@ export function MouseSettingsSection({ surface }: { surface: SurfaceColors }) {
       <ToggleRow
         label={t("showMouseBottomRow")}
         checked={settings.mouseBottomRowVisible}
-        onChange={(checked) => updateSettings({ mouseBottomRowVisible: checked })}
+        onChange={(checked) =>
+          updateSettings({ mouseBottomRowVisible: checked })
+        }
         surface={surface}
       />
     </SettingsSection>

@@ -1,4 +1,10 @@
-import { useCallback, useRef, useState, type PointerEvent, type RefObject } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type PointerEvent,
+  type RefObject,
+} from "react";
 import { useAppStore } from "../../stores/appStore";
 import { findKeyIdAtPoint } from "../../lib/synthHitTest";
 import type { PianoKey } from "../../lib/music/pianoKeys";
@@ -6,14 +12,16 @@ import type { PianoKey } from "../../lib/music/pianoKeys";
 type ActiveVoice = {
   oscillator: OscillatorNode;
   gain: GainNode;
-}
+};
 
 type ActivePointer = {
   keyId: string;
   voice: ActiveVoice;
-}
+};
 
-function pressedKeysFromPointers(activePointers: Map<number, ActivePointer>): Set<string> {
+function pressedKeysFromPointers(
+  activePointers: Map<number, ActivePointer>,
+): Set<string> {
   return new Set([...activePointers.values()].map((entry) => entry.keyId));
 }
 
@@ -27,7 +35,7 @@ type UseSynthKeyPressArgs = {
   clearWrongKeyFlash: (keyId: string) => void;
   flashWrongKeyOnRelease: (keyId: string) => void;
   reportMusicKeyPlayed: (keyId: string) => void;
-}
+};
 
 /** Pointer → piano key press/release for the synthesizer. */
 export function useSynthKeyPress({

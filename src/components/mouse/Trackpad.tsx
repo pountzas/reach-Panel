@@ -62,7 +62,7 @@ type TrackpadButtonProps = {
   textColor: string;
   active?: boolean;
   onClick: () => void | Promise<void>;
-}
+};
 
 function TrackpadButton({
   label,
@@ -89,9 +89,10 @@ function TrackpadButton({
         backgroundColor: bgColor,
       }}
       onClick={() => void onClick()}
-      {...pointerHandlers}
-    >
-      <span className="inline-flex shrink-0" style={{ width: iconSize, height: iconSize }}>
+      {...pointerHandlers}>
+      <span
+        className="inline-flex shrink-0"
+        style={{ width: iconSize, height: iconSize }}>
         <Icon className="h-full w-full" />
       </span>
       <HoverTooltip label={label} />
@@ -281,9 +282,10 @@ export function Trackpad() {
     // pointerup and lostpointercapture can both fire; end only once.
     if (!dragging.current) return;
     const start = pressStart.current;
-    const duration = start ? performance.now() - start.t : Number.POSITIVE_INFINITY;
-    const wasTap =
-      travelPx.current <= TAP_SLOP_PX && duration <= TAP_MAX_MS;
+    const duration = start
+      ? performance.now() - start.t
+      : Number.POSITIVE_INFINITY;
+    const wasTap = travelPx.current <= TAP_SLOP_PX && duration <= TAP_MAX_MS;
     const endedGen = ++gestureGen.current;
 
     dragging.current = false;
@@ -354,23 +356,29 @@ export function Trackpad() {
   const onLostPointerCapture = () => {
     endGesture();
   };
-  const buttonProps = { iconSize, paddingY, bgColor: keyBgColor, textColor: keyTextColor };
+  const buttonProps = {
+    iconSize,
+    paddingY,
+    bgColor: keyBgColor,
+    textColor: keyTextColor,
+  };
 
   return (
     <div ref={ref} className="flex h-full min-h-0 flex-col" style={{ gap }}>
       <div
         className="min-h-0 flex-1 rounded-xl border-2 border-dashed touch-none"
-        style={{ backgroundColor: surface.insetBg, borderColor: surface.insetBorder }}
+        style={{
+          backgroundColor: surface.insetBg,
+          borderColor: surface.insetBorder,
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onLostPointerCapture={onLostPointerCapture}
-      >
+        onLostPointerCapture={onLostPointerCapture}>
         <div
           className="flex h-full items-center justify-center"
-          style={{ color: surface.insetText }}
-        >
+          style={{ color: surface.insetText }}>
           Trackpad
         </div>
       </div>
@@ -392,7 +400,9 @@ export function Trackpad() {
           icon={DoubleClickIcon}
           {...buttonProps}
           onClick={async () => {
-            const result = await invoke<CommandResult>("cmd_mouse_double_click");
+            const result = await invoke<CommandResult>(
+              "cmd_mouse_double_click",
+            );
             const failure = commandFailure(result);
             if (failure) setLastError(failure);
           }}
@@ -416,14 +426,18 @@ export function Trackpad() {
               icon={DragLockIcon}
               {...buttonProps}
               active={dragLock}
-              onClick={() => { setDragLock(!dragLock); }}
+              onClick={() => {
+                setDragLock(!dragLock);
+              }}
             />
             <TrackpadButton
               label="Precision mode"
               icon={PrecisionIcon}
               {...buttonProps}
               active={precision}
-              onClick={() => { setPrecision(!precision); }}
+              onClick={() => {
+                setPrecision(!precision);
+              }}
             />
             <TrackpadButton
               label="Scroll"

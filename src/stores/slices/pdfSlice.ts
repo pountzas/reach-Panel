@@ -75,9 +75,7 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
   freeWriteRedoDepth: 0,
   loadTeachingPdfLibrary: async () => {
     try {
-      const raw = await invoke<TeachingPdfEntry[]>(
-        "cmd_list_teaching_pdfs",
-      );
+      const raw = await invoke<TeachingPdfEntry[]>("cmd_list_teaching_pdfs");
       const filtered = Array.isArray(raw)
         ? raw.filter(
             (e) => typeof e.id === "string" && typeof e.path === "string",
@@ -90,11 +88,7 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
       const kept = entries.length > 0 ? entries[0] : null;
       const lastId = get().settings.freeWriteLastPdfId ?? null;
       const freeWriteActivePdfId =
-        kept == null
-          ? null
-          : lastId === kept.id
-            ? lastId
-            : kept.id;
+        kept == null ? null : lastId === kept.id ? lastId : kept.id;
       set({ teachingPdfLibrary: entries, freeWriteActivePdfId });
       if (kept && lastId !== kept.id) {
         await get().updateSettings({ freeWriteLastPdfId: kept.id });
@@ -281,7 +275,8 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
       freeWriteSaveTimer = null;
     }
     const state = get();
-    if (!state.freeWriteAnnotationDirty || !freeWriteAnnotationsPath) return true;
+    if (!state.freeWriteAnnotationDirty || !freeWriteAnnotationsPath)
+      return true;
     try {
       const result = await invoke<{
         reachPath: string;
@@ -304,7 +299,9 @@ export const createPdfSlice: StateCreator<AppStore, [], [], PdfSlice> = (
   exportTeachingReachPdf: async (from, to) => {
     const state = get();
     const active =
-      state.teachingPdfLibrary.find((e) => e.id === state.freeWriteActivePdfId) ??
+      state.teachingPdfLibrary.find(
+        (e) => e.id === state.freeWriteActivePdfId,
+      ) ??
       (state.teachingPdfLibrary.length > 0
         ? state.teachingPdfLibrary[0]
         : null);

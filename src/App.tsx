@@ -35,9 +35,7 @@ import {
 } from "./lib/companionSession";
 import { reconcileAutostartOnLoad } from "./lib/autostart";
 import { logIpc, logLayoutIpc } from "./lib/logIpc";
-import {
-  isTeachingFullWorkArea,
-} from "./lib/v1HiddenFeatures";
+import { isTeachingFullWorkArea } from "./lib/v1HiddenFeatures";
 import { useAppStore } from "./stores/appStore";
 
 const KEYBOARD_POLL_MS = 100;
@@ -156,7 +154,9 @@ function MainApp() {
     };
     window.addEventListener("pointerdown", onPointerDown, { capture: true });
     return () => {
-      window.removeEventListener("pointerdown", onPointerDown, { capture: true });
+      window.removeEventListener("pointerdown", onPointerDown, {
+        capture: true,
+      });
     };
   }, []);
 
@@ -164,17 +164,20 @@ function MainApp() {
     const unlisteners: Promise<() => void>[] = [];
 
     unlisteners.push(
-      listen<{ state: "idle" | "listening" | "processing" }>("stt-state", (event) => {
-        // Ignore late listening/processing events after the user already stopped
-        // (Groq worker could still emit while winding down).
-        if (
-          event.payload.state !== "idle" &&
-          useAppStore.getState().dictationState === "idle"
-        ) {
-          return;
-        }
-        setDictationState(event.payload.state);
-      }),
+      listen<{ state: "idle" | "listening" | "processing" }>(
+        "stt-state",
+        (event) => {
+          // Ignore late listening/processing events after the user already stopped
+          // (Groq worker could still emit while winding down).
+          if (
+            event.payload.state !== "idle" &&
+            useAppStore.getState().dictationState === "idle"
+          ) {
+            return;
+          }
+          setDictationState(event.payload.state);
+        },
+      ),
     );
 
     unlisteners.push(
@@ -242,7 +245,9 @@ function MainApp() {
         const { label, show } = event.payload;
         const store = useAppStore.getState();
         const applyShow: Record<ToolWindowLabel, (next: boolean) => void> = {
-          settings: (next) => { store.setShowSettings(next); },
+          settings: (next) => {
+            store.setShowSettings(next);
+          },
         };
         applyShow[label](show);
       }),
@@ -282,7 +287,9 @@ function MainApp() {
       {pendingUpdate && (
         <UpdatePrompt
           update={pendingUpdate}
-          onDismiss={() => { setPendingUpdate(null); }}
+          onDismiss={() => {
+            setPendingUpdate(null);
+          }}
         />
       )}
       <AppToaster />

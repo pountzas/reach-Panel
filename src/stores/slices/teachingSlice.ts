@@ -9,7 +9,10 @@ import {
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getSongById } from "../../lib/music/songs";
-import { shouldDelegateAppModeToMain, TEACHING_LESSON_REQUEST_EVENT } from "../../lib/appModeLayout";
+import {
+  shouldDelegateAppModeToMain,
+  TEACHING_LESSON_REQUEST_EVENT,
+} from "../../lib/appModeLayout";
 import type { TeachingLessonRequest } from "../../lib/appModeLayout";
 import {
   isTeachingKeyboardChromeVisible,

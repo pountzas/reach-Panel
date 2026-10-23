@@ -1,20 +1,20 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export type ShellTab =
-  | 'keyboard'
-  | 'trackpad'
-  | 'numpad'
-  | 'dictation'
-  | 'profile'
-  | 'usb';
+  | "keyboard"
+  | "trackpad"
+  | "numpad"
+  | "dictation"
+  | "profile"
+  | "usb";
 
 const FAB_ITEMS: { tab: ShellTab; label: string }[] = [
-  { tab: 'keyboard', label: 'Keyboard' },
-  { tab: 'trackpad', label: 'Trackpad' },
-  { tab: 'numpad', label: 'Numpad' },
-  { tab: 'dictation', label: 'Dictation' },
-  { tab: 'profile', label: 'Profile' },
-  { tab: 'usb', label: 'USB help' },
+  { tab: "keyboard", label: "Keyboard" },
+  { tab: "trackpad", label: "Trackpad" },
+  { tab: "numpad", label: "Numpad" },
+  { tab: "dictation", label: "Dictation" },
+  { tab: "profile", label: "Profile" },
+  { tab: "usb", label: "USB help" },
 ];
 
 type Props = {
@@ -41,14 +41,12 @@ export function CollapsedFab({ open, activeTab, onToggle, onSelect }: Props) {
                 styles.menuItem,
                 activeTab === item.tab && styles.menuItemActive,
                 pressed && styles.menuItemPressed,
-              ]}
-            >
+              ]}>
               <Text
                 style={[
                   styles.menuLabel,
                   activeTab === item.tab && styles.menuLabelActive,
-                ]}
-              >
+                ]}>
                 {item.label}
               </Text>
             </Pressable>
@@ -57,11 +55,10 @@ export function CollapsedFab({ open, activeTab, onToggle, onSelect }: Props) {
       )}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={open ? 'Close menu' : 'Open menu'}
+        accessibilityLabel={open ? "Close menu" : "Open menu"}
         onPress={onToggle}
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-      >
-        <Text style={styles.fabText}>{open ? '✕' : '☰'}</Text>
+        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}>
+        <Text style={styles.fabText}>{open ? "✕" : "☰"}</Text>
       </Pressable>
     </View>
   );
@@ -69,56 +66,56 @@ export function CollapsedFab({ open, activeTab, onToggle, onSelect }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     bottom: 16,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
     gap: 10,
   },
   menu: {
-    backgroundColor: '#1c2433',
+    backgroundColor: "#1c2433",
     borderRadius: 16,
     padding: 8,
     gap: 4,
     minWidth: 160,
     borderWidth: 1,
-    borderColor: '#3a465c',
+    borderColor: "#3a465c",
   },
   menuItem: {
     minHeight: 48,
     borderRadius: 10,
     paddingHorizontal: 14,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   menuItemActive: {
-    backgroundColor: '#2f4f78',
+    backgroundColor: "#2f4f78",
   },
   menuItemPressed: {
-    backgroundColor: '#3d4a63',
+    backgroundColor: "#3d4a63",
   },
   menuLabel: {
-    color: '#b0bac8',
+    color: "#b0bac8",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   menuLabelActive: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
   },
   fab: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#7eb6ff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#7eb6ff",
+    alignItems: "center",
+    justifyContent: "center",
     elevation: 4,
   },
   fabPressed: {
-    backgroundColor: '#a8ceff',
+    backgroundColor: "#a8ceff",
   },
   fabText: {
-    color: '#0b1220',
+    color: "#0b1220",
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: "800",
   },
 });

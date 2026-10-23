@@ -138,7 +138,9 @@ describe("freeWrite PDF pointer tool", () => {
       },
     };
 
-    await useAppStore.getState().loadFreeWriteAnnotations("C:\\tmp\\lesson.pdf");
+    await useAppStore
+      .getState()
+      .loadFreeWriteAnnotations("C:\\tmp\\lesson.pdf");
     useAppStore.setState({
       freeWriteActivePdfId: "pdf-1",
       teachingPdfLibrary: [

@@ -1,4 +1,4 @@
-import * as Speech from 'expo-speech';
+import * as Speech from "expo-speech";
 
 /** Tablet-local Speak — never routes to the host PC while companion is connected. */
 export function speakOnTablet(text: string, language?: string): void {

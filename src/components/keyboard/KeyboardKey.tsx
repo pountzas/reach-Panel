@@ -24,7 +24,7 @@ type KeyboardKeyProps = {
   /** Stable callback; receives keyId so the parent can look up KeyDef. */
   onPressKey: (keyId: string, meta?: KeyboardKeyPressMeta) => void;
   onHoldEndKey?: (keyId: string) => void;
-}
+};
 
 /**
  * Memoized key cell: keeps `onPress`/`onHoldEnd` referentially stable so

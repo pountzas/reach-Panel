@@ -11,8 +11,12 @@ export const createDictationSlice: StateCreator<
 > = (set, get) => ({
   dictationState: "idle",
   sttCapability: null,
-  setDictationState: (state) => { set({ dictationState: state }); },
-  setSttCapability: (capability) => { set({ sttCapability: capability }); },
+  setDictationState: (state) => {
+    set({ dictationState: state });
+  },
+  setSttCapability: (capability) => {
+    set({ sttCapability: capability });
+  },
   refreshSttCapability: async () => {
     try {
       const trimmedKey = get().settings.groqApiKey?.trim();

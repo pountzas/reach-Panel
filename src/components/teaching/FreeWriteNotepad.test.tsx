@@ -26,7 +26,8 @@ const storeState = {
 };
 
 vi.mock("../../stores/appStore", () => ({
-  useAppStore: (selector: (s: typeof storeState) => unknown) => selector(storeState),
+  useAppStore: (selector: (s: typeof storeState) => unknown) =>
+    selector(storeState),
 }));
 
 import { FreeWriteNotepad } from "./FreeWriteNotepad";

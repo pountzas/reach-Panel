@@ -9,7 +9,7 @@ type AnimatedToggleProps = {
   id?: string;
   "aria-label"?: string;
   "aria-labelledby"?: string;
-}
+};
 
 export function AnimatedToggle({
   checked,
@@ -39,8 +39,7 @@ export function AnimatedToggle({
         e.stopPropagation();
         if (disabled) return;
         onChange(!checked);
-      }}
-    >
+      }}>
       <span
         aria-hidden
         className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full shadow transition-transform duration-200 ease-out motion-reduce:transition-none ${

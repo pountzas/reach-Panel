@@ -25,7 +25,9 @@ export function FreeWritePanel() {
     <TeachingLessonPanel
       surface={surface}
       leftRatio={leftRatio}
-      onLeftRatioChange={(freeWriteLeftRatio) => void updateSettings({ freeWriteLeftRatio })}
+      onLeftRatioChange={(freeWriteLeftRatio) =>
+        void updateSettings({ freeWriteLeftRatio })
+      }
       left={
         <TeachingLessonPane padded>
           <FreeWriteNotepad />

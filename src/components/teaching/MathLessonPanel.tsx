@@ -10,8 +10,7 @@ export function MathLessonPanel() {
   return (
     <div
       className="flex h-full min-h-0 flex-col gap-2 p-3"
-      style={{ color: surface.panelText }}
-    >
+      style={{ color: surface.panelText }}>
       <h2 className="text-base font-semibold">{t("mathLessonTitle")}</h2>
       <p className="text-sm" style={{ color: surface.panelMutedText }}>
         {t("comingSoon")}

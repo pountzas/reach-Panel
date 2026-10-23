@@ -65,7 +65,9 @@ describe("useTeachingKeyboardFocusRestore", () => {
   });
 
   it("keeps manual Minimize while Free write notepad capture stays active", () => {
-    renderHook(() => { useTeachingKeyboardFocusRestore(); });
+    renderHook(() => {
+      useTeachingKeyboardFocusRestore();
+    });
 
     act(() => {
       useAppStore.getState().toggleTeachingKeyboardMinimized();
@@ -82,7 +84,9 @@ describe("useTeachingKeyboardFocusRestore", () => {
         freeWriteFocus: "notepad",
       }),
     );
-    renderHook(() => { useTeachingKeyboardFocusRestore(); });
+    renderHook(() => {
+      useTeachingKeyboardFocusRestore();
+    });
 
     act(() => {
       useAppStore.getState().setFreeWriteFocus("pdf");
@@ -99,7 +103,9 @@ describe("useTeachingKeyboardFocusRestore", () => {
     useAppStore.setState(
       teachingFreeWriteState({ teachingKeyboardMinimized: true }),
     );
-    renderHook(() => { useTeachingKeyboardFocusRestore(); });
+    renderHook(() => {
+      useTeachingKeyboardFocusRestore();
+    });
 
     act(() => {
       window.dispatchEvent(
@@ -114,7 +120,9 @@ describe("useTeachingKeyboardFocusRestore", () => {
     useAppStore.setState(
       teachingFreeWriteState({ teachingKeyboardMinimized: true }),
     );
-    renderHook(() => { useTeachingKeyboardFocusRestore(); });
+    renderHook(() => {
+      useTeachingKeyboardFocusRestore();
+    });
 
     const button = document.createElement("button");
     document.body.appendChild(button);
@@ -137,7 +145,9 @@ describe("useTeachingKeyboardFocusRestore", () => {
         teachingKeyboardMinimized: true,
       }),
     );
-    renderHook(() => { useTeachingKeyboardFocusRestore(); });
+    renderHook(() => {
+      useTeachingKeyboardFocusRestore();
+    });
 
     const textarea = document.createElement("textarea");
     textarea.setAttribute("data-teaching-input", "");
@@ -161,7 +171,9 @@ describe("useTeachingKeyboardFocusRestore", () => {
         teachingKeyboardMinimized: true,
       }),
     );
-    renderHook(() => { useTeachingKeyboardFocusRestore(); });
+    renderHook(() => {
+      useTeachingKeyboardFocusRestore();
+    });
 
     // Overlay may still mark the box as a Teaching input; select is not edit.
     const box = document.createElement("div");
@@ -184,7 +196,9 @@ describe("useTeachingKeyboardFocusRestore", () => {
         teachingKeyboardMinimized: true,
       }),
     );
-    renderHook(() => { useTeachingKeyboardFocusRestore(); });
+    renderHook(() => {
+      useTeachingKeyboardFocusRestore();
+    });
 
     act(() => {
       useAppStore.getState().setFreeWriteFocus("pdfText");
@@ -202,7 +216,9 @@ describe("useTeachingKeyboardFocusRestore", () => {
         teachingKeyboardMinimized: true,
       }),
     );
-    renderHook(() => { useTeachingKeyboardFocusRestore(); });
+    renderHook(() => {
+      useTeachingKeyboardFocusRestore();
+    });
 
     const box = document.createElement("div");
     box.setAttribute("data-pdf-text-box", "");

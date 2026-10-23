@@ -11,12 +11,16 @@ export function useContainerSize<T extends HTMLElement>() {
     const updateSize = () => {
       const { width, height } = element.getBoundingClientRect();
       setSize((prev) =>
-        prev.width === width && prev.height === height ? prev : { width, height },
+        prev.width === width && prev.height === height
+          ? prev
+          : { width, height },
       );
     };
 
     updateSize();
-    const observer = new ResizeObserver(() => { updateSize(); });
+    const observer = new ResizeObserver(() => {
+      updateSize();
+    });
     observer.observe(element);
 
     const rafId = requestAnimationFrame(updateSize);

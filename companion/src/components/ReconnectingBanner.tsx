@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
-import type { ConnectionStatus } from '../companionClient';
+import { StyleSheet, Text, View } from "react-native";
+import type { ConnectionStatus } from "../companionClient";
 
 type Props = {
   status: ConnectionStatus;
@@ -7,14 +7,14 @@ type Props = {
 };
 
 export function ReconnectingBanner({ status, detail }: Props) {
-  if (status !== 'reconnecting' && status !== 'connecting') {
+  if (status !== "reconnecting" && status !== "connecting") {
     return null;
   }
 
   const label =
-    status === 'reconnecting'
-      ? detail ?? 'Reconnecting to ReachPanel…'
-      : 'Connecting…';
+    status === "reconnecting"
+      ? (detail ?? "Reconnecting to ReachPanel…")
+      : "Connecting…";
 
   return (
     <View style={styles.banner} accessibilityRole="alert">
@@ -25,14 +25,14 @@ export function ReconnectingBanner({ status, detail }: Props) {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#3d3420',
+    backgroundColor: "#3d3420",
     paddingVertical: 10,
     paddingHorizontal: 16,
   },
   text: {
-    color: '#f5e6c8',
+    color: "#f5e6c8",
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
 });

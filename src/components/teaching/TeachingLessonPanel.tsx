@@ -9,7 +9,7 @@ export type TeachingLessonSurface = {
   panelBg: string;
   panelText: string;
   panelMutedText: string;
-}
+};
 
 /** Outer bordered shell with a resizable left/right split for teaching lessons. */
 export function TeachingLessonPanel({
@@ -41,8 +41,7 @@ export function TeachingLessonPanel({
         backgroundColor: surface.panelBg,
         borderColor: surface.panelBorder,
         color: surface.panelText,
-      }}
-    >
+      }}>
       <div className="min-h-0 flex-1">
         <ResizableSplitPane
           ratioSide="left"
@@ -58,7 +57,13 @@ export function TeachingLessonPanel({
           right={right}
         />
       </div>
-      {footer ? <div className="shrink-0 border-t p-2" style={{ borderColor: surface.panelBorder }}>{footer}</div> : null}
+      {footer ? (
+        <div
+          className="shrink-0 border-t p-2"
+          style={{ borderColor: surface.panelBorder }}>
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -86,8 +91,7 @@ export function TeachingLessonPane({
   return (
     <div
       className={`flex h-full min-h-0 min-w-0 flex-col gap-2 ${overflowClass} ${padClass} ${className}`.trim()}
-      style={style}
-    >
+      style={style}>
       {children}
     </div>
   );
@@ -128,8 +132,7 @@ export function TeachingLessonToolbarButton({
       }}
       onClick={onClick}
       disabled={disabled}
-      aria-label={label}
-    >
+      aria-label={label}>
       {children}
       <HoverTooltip label={label} placement="below" align="end" />
     </button>

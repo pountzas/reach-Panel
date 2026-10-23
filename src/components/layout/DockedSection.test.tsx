@@ -66,8 +66,7 @@ describe("DockedSection paint containment", () => {
         width={400}
         onToggleMinimize={() => undefined}
         onUndock={() => undefined}
-        onReorderDrag={() => undefined}
-      >
+        onReorderDrag={() => undefined}>
         <div>content</div>
       </DockedSection>,
     );
