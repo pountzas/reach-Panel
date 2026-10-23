@@ -11,19 +11,25 @@ import {
 } from "../storeShared";
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { resolveSectionStack, ensureSectionExpanded } from "../../lib/sectionStack";
+import {
+  resolveSectionStack,
+  ensureSectionExpanded,
+} from "../../lib/sectionStack";
 import { shouldStopCompanionBridgeOnHostMode } from "../../lib/companionSession";
-import { captureWindowHeightRatioBeforeTeaching, heightRatioAfterLeavingTeaching, shouldDelegateAppModeToMain, APP_MODE_REQUEST_EVENT } from "../../lib/appModeLayout";
+import {
+  captureWindowHeightRatioBeforeTeaching,
+  heightRatioAfterLeavingTeaching,
+  shouldDelegateAppModeToMain,
+  APP_MODE_REQUEST_EVENT,
+} from "../../lib/appModeLayout";
 import type { AppModeRequest } from "../../lib/appModeLayout";
 import { popRestoreEntry, pushRestoreEntry } from "../lib/restoreStack";
 import { clear as clearInputPreviewFrames } from "../../lib/inputPreviewFrames";
 
-export const createModeSlice: StateCreator<
-  AppStore,
-  [],
-  [],
-  ModeSlice
-> = (set, get) => ({
+export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
+  set,
+  get,
+) => ({
   restoreStack: [],
   pushRestore: (reason, patch, options) => {
     const next = pushRestoreEntry(get().restoreStack, reason, patch, options);
@@ -174,9 +180,7 @@ export const createModeSlice: StateCreator<
       case "normal": {
         set({ companionModeActive: false });
         // Clear teaching first so leavingSynthesizer does not restore Focus.
-        const teachingPatch = inTeaching
-          ? get().popRestore("teaching")
-          : null;
+        const teachingPatch = inTeaching ? get().popRestore("teaching") : null;
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(
               teachingPatch?.windowHeightRatio ?? null,
@@ -211,9 +215,7 @@ export const createModeSlice: StateCreator<
           focusModeKeyboardVisible: false,
           focusModeManualExpand: false,
         });
-        const teachingPatch = inTeaching
-          ? get().popRestore("teaching")
-          : null;
+        const teachingPatch = inTeaching ? get().popRestore("teaching") : null;
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(
               teachingPatch?.windowHeightRatio ?? null,
@@ -242,9 +244,7 @@ export const createModeSlice: StateCreator<
       }
       case "focus": {
         set({ companionModeActive: false });
-        const teachingPatch = inTeaching
-          ? get().popRestore("teaching")
-          : null;
+        const teachingPatch = inTeaching ? get().popRestore("teaching") : null;
         const heightRestore = inTeaching
           ? heightRatioAfterLeavingTeaching(
               teachingPatch?.windowHeightRatio ?? null,

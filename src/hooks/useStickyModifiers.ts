@@ -11,7 +11,9 @@ export function useStickyModifiers() {
 
   const shiftActive = isShiftActive(physicalKeyState, stickyModifiers);
   const fnActive = isFnActive(stickyModifiers);
-  const activeModifiers = stickyModifiers.filter((m) => m !== "capslock" && m !== "fn");
+  const activeModifiers = stickyModifiers.filter(
+    (m) => m !== "capslock" && m !== "fn",
+  );
 
   return {
     stickyModifiers,

@@ -63,7 +63,8 @@ vi.mock("../../hooks/useGroqDailyQuota", () => ({
 }));
 
 vi.mock("./KeyButton", async () => {
-  const actual = await vi.importActual<typeof import("./KeyButton")>("./KeyButton");
+  const actual =
+    await vi.importActual<typeof import("./KeyButton")>("./KeyButton");
   const { memo: memoFn } = await import("react");
   function CountingKeyButton(props: ComponentProps<typeof actual.KeyButton>) {
     keyButtonRenderCount += 1;
@@ -139,7 +140,6 @@ describe("Keyboard sticky-typing profiler (#281)", () => {
       });
     }
 
-     
     console.log(
       JSON.stringify({
         scenario: "real-keyboard-sticky-typing-20",

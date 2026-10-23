@@ -65,8 +65,7 @@ describe("FloatingSection paint containment", () => {
         onDock={() => undefined}
         onToggleMinimize={() => undefined}
         onDropProbe={() => undefined}
-        onDragStop={() => undefined}
-      >
+        onDragStop={() => undefined}>
         <div>content</div>
       </FloatingSection>,
     );

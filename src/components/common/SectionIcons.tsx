@@ -1,6 +1,6 @@
 type IconProps = {
   className?: string;
-}
+};
 
 const iconClass = "h-4 w-4 shrink-0";
 
@@ -14,8 +14,7 @@ export function KeyboardIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="2" y="6" width="20" height="12" rx="2" />
       <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01" strokeWidth="2.5" />
       <path d="M8 14h8" />
@@ -33,8 +32,7 @@ export function SynthesizerIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M3 18V8l3 2 3-2 3 2 3-2 3 2 3-2v10" />
       <path d="M6 10v8M12 10v8M18 10v8" />
       <path d="M9 8V6M15 8V6" />
@@ -52,8 +50,7 @@ export function MouseIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M8 4.5A4.5 4.5 0 0 1 12.5 0H13a4 4 0 0 1 4 4v8.5a6.5 6.5 0 0 1-13 0V8a3.5 3.5 0 0 1 3.5-3.5Z" />
       <path d="M12.5 0v7.5" />
     </svg>
@@ -70,8 +67,7 @@ export function NumpadIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="4" y="4" width="16" height="16" rx="2" />
       <circle cx="8.5" cy="8.5" r="0.75" fill="currentColor" stroke="none" />
       <circle cx="12" cy="8.5" r="0.75" fill="currentColor" stroke="none" />
@@ -96,8 +92,7 @@ export function PanelLeftIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="3" y="5" width="6" height="14" rx="1.5" />
       <rect x="11" y="5" width="10" height="14" rx="1.5" />
       <path d="M13 10h.01M17 10h.01M13 14h6" strokeWidth="2.5" />
@@ -115,8 +110,7 @@ export function PanelRightIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="3" y="5" width="10" height="14" rx="1.5" />
       <rect x="15" y="5" width="6" height="14" rx="1.5" />
       <path d="M5 10h.01M9 10h.01M5 14h6" strokeWidth="2.5" />
@@ -134,8 +128,7 @@ export function MicrophoneIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
       <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
       <path d="M12 18v4" />
@@ -155,8 +148,7 @@ export function FocusIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <circle cx="12" cy="12" r="3" />
       <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
     </svg>
@@ -174,8 +166,7 @@ export function TabletIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="5" y="2" width="14" height="20" rx="2" />
       <path d="M12 18h.01" strokeWidth="2.5" />
     </svg>
@@ -192,8 +183,7 @@ export function VolumeIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M11 5 6 9H3v6h3l5 4V5Z" />
       <path d="M15.5 9.5a4 4 0 0 1 0 5" />
       <path d="M18 7a7 7 0 0 1 0 10" />
@@ -211,8 +201,7 @@ export function MuteIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M11 5 6 9H3v6h3l5 4V5Z" />
       <path d="m16 9 5 6" />
       <path d="m21 9-5 6" />
@@ -230,8 +219,7 @@ export function TeachIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M9 18V5l12-2v13" />
       <circle cx="6" cy="18" r="3" />
       <circle cx="18" cy="16" r="3" />
@@ -249,8 +237,7 @@ export function LanguageLessonIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M4 20V6a2 2 0 0 1 2-2h5v14H6a2 2 0 0 0-2 2Z" />
       <path d="M20 20V6a2 2 0 0 0-2-2h-5v14h5a2 2 0 0 1 2 2Z" />
       <path d="M12 4v14" />
@@ -272,11 +259,13 @@ export function MathLessonIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="4" y="3" width="16" height="18" rx="2" />
       <path d="M8 8h8" />
-      <path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01" strokeWidth="2.5" />
+      <path
+        d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01"
+        strokeWidth="2.5"
+      />
     </svg>
   );
 }
@@ -309,8 +298,7 @@ export function CollapseIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M4 14h16" />
       <path d="M10 10l2 2 2-2" />
     </svg>
@@ -327,8 +315,7 @@ export function ExpandIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M4 10h16" />
       <path d="M10 14l2-2 2 2" />
     </svg>
@@ -345,8 +332,7 @@ export function SettingsIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
     </svg>
@@ -363,8 +349,7 @@ export function MinimizeIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M5 12h14" />
     </svg>
   );
@@ -380,8 +365,7 @@ export function CloseIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M18 6 6 18" />
       <path d="m6 6 12 12" />
     </svg>
@@ -399,8 +383,7 @@ export function PinIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M12 17v5" />
       <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
     </svg>
@@ -418,8 +401,7 @@ export function CompactViewIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <rect x="8" y="8" width="8" height="8" rx="1" />
     </svg>
@@ -437,8 +419,7 @@ export function ExpandedViewIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <rect x="5" y="5" width="14" height="14" rx="1" />
     </svg>
@@ -455,8 +436,7 @@ export function LoadSongIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
       <path d="M12 11v6" />
       <path d="M9 14h6" />
@@ -471,8 +451,7 @@ export function PlayIcon({ className = iconClass }: IconProps) {
       fill="currentColor"
       stroke="none"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M8 5.5v13l11-6.5-11-6.5z" />
     </svg>
   );
@@ -488,8 +467,7 @@ export function StopIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="7" y="7" width="10" height="10" rx="1" />
     </svg>
   );
@@ -505,8 +483,7 @@ export function RestartIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
       <path d="M21 3v5h-5" />
       <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
@@ -525,8 +502,7 @@ export function PlusIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M12 5v14" />
       <path d="M5 12h14" />
     </svg>
@@ -543,8 +519,7 @@ export function TrashIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M3 6h18" />
       <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
@@ -564,8 +539,7 @@ export function GitHubIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
     </svg>
   );
@@ -581,8 +555,7 @@ export function SourceCodeIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="m16 18 6-6-6-6" />
       <path d="m8 6-6 6 6 6" />
     </svg>
@@ -599,8 +572,7 @@ export function XMarkIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M4 4l16 16" />
       <path d="M20 4 4 20" />
     </svg>
@@ -617,8 +589,7 @@ export function LinkedInIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="2" y="9" width="4" height="12" rx="1" />
       <circle cx="4" cy="5" r="2" />
       <path d="M10 9v12" />
@@ -637,8 +608,7 @@ export function GlobeIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <circle cx="12" cy="12" r="10" />
       <path d="M2 12h20" />
       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z" />
@@ -656,8 +626,7 @@ export function DownloadTrayIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <path d="M7 10l5 5 5-5" />
       <path d="M12 15V3" />
@@ -675,8 +644,7 @@ export function EnvelopeIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="2" y="4" width="20" height="16" rx="2" />
       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
     </svg>
@@ -694,8 +662,7 @@ export function HeightGripIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M5 9h14" />
       <path d="M5 15h14" />
       <path d="M8 6h8" />
@@ -715,8 +682,7 @@ export function TransparentKeyboardIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <rect x="2" y="6" width="20" height="12" rx="2" />
       <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" />
     </svg>
@@ -734,8 +700,7 @@ export function PdfFileIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
       <path d="M14 2v6h6" />
       <path d="M8 13h3.2a1.4 1.4 0 0 1 0 2.8H9.2V18" />
@@ -755,8 +720,7 @@ export function TextToolIcon({ className = iconClass }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M4 7V5h16v2" />
       <path d="M12 5v14" />
       <path d="M9 19h6" />
@@ -774,8 +738,7 @@ export function TextSlashIcon({ className = iconClass }: IconProps) {
       viewBox="0 0 640 512"
       fill="currentColor"
       className={className}
-      aria-hidden
-    >
+      aria-hidden>
       <path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L355.7 253.5 400.2 96H503L497 120.2c-4.3 17.1 6.1 34.5 23.3 38.8s34.5-6.1 38.8-23.3l16-64c2.4-9.6 .2-19.7-5.8-27.5S553.9 32 544 32H376.1h-.3H192c-14.7 0-27.5 10-31 24.2l-9.3 37.3L38.8 5.1zm168 131.7c.1-.3 .2-.7 .3-1L217 96H333.7L301.3 210.8l-94.5-74.1zM243.3 416H192c-17.7 0-32 14.3-32 32s14.3 32 32 32H352c17.7 0 32-14.3 32-32s-14.3-32-32-32H309.8l17.6-62.1L272.9 311 243.3 416z" />
     </svg>
   );

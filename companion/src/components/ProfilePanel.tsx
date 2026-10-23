@@ -1,5 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { ProfileSnapshot } from '../types';
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import type { ProfileSnapshot } from "../types";
 
 type Props = {
   snapshot: ProfileSnapshot | null;
@@ -9,11 +9,11 @@ type Props = {
 };
 
 function flag(value: unknown): string {
-  if (typeof value === 'boolean') {
-    return value ? 'On' : 'Off';
+  if (typeof value === "boolean") {
+    return value ? "On" : "Off";
   }
   if (value == null) {
-    return '—';
+    return "—";
   }
   return String(value);
 }
@@ -28,9 +28,8 @@ export function ProfilePanel({ snapshot, loading, error, onRefresh }: Props) {
         <Pressable
           accessibilityRole="button"
           onPress={onRefresh}
-          style={({ pressed }) => [styles.refresh, pressed && styles.pressed]}
-        >
-          <Text style={styles.refreshText}>{loading ? '…' : 'Refresh'}</Text>
+          style={({ pressed }) => [styles.refresh, pressed && styles.pressed]}>
+          <Text style={styles.refreshText}>{loading ? "…" : "Refresh"}</Text>
         </Pressable>
       </View>
 
@@ -44,12 +43,9 @@ export function ProfilePanel({ snapshot, loading, error, onRefresh }: Props) {
           <Row label="Profile id" value={snapshot.profile.id} />
           <Row
             label="Typing language"
-            value={flag(settings.typingLanguage ?? 'en')}
+            value={flag(settings.typingLanguage ?? "en")}
           />
-          <Row
-            label="Predictions"
-            value={flag(settings.predictionEnabled)}
-          />
+          <Row label="Predictions" value={flag(settings.predictionEnabled)} />
           <Row label="Mouse / trackpad" value={flag(settings.mouseVisible)} />
           <Text style={styles.note}>
             API keys never sync. Speak uses this tablet while connected.
@@ -75,59 +71,59 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   title: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   refresh: {
-    backgroundColor: '#2a3140',
+    backgroundColor: "#2a3140",
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   pressed: {
-    backgroundColor: '#3d4a63',
+    backgroundColor: "#3d4a63",
   },
   refreshText: {
-    color: '#f2f4f8',
-    fontWeight: '600',
+    color: "#f2f4f8",
+    fontWeight: "600",
   },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 12,
-    backgroundColor: '#1c2433',
+    backgroundColor: "#1c2433",
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   label: {
-    color: '#9aa7bd',
+    color: "#9aa7bd",
     fontSize: 15,
   },
   value: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     flexShrink: 1,
-    textAlign: 'right',
+    textAlign: "right",
   },
   muted: {
-    color: '#9aa7bd',
+    color: "#9aa7bd",
     fontSize: 16,
   },
   error: {
-    color: '#ff8f8f',
+    color: "#ff8f8f",
     fontSize: 14,
   },
   note: {
-    color: '#6b7585',
+    color: "#6b7585",
     fontSize: 13,
     marginTop: 8,
     lineHeight: 18,

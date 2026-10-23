@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
-import { IconActionButton, type IconActionButtonSize } from "./IconActionButton";
+import {
+  IconActionButton,
+  type IconActionButtonSize,
+} from "./IconActionButton";
 
 export type HeaderIconToggleOption<T extends string = string> = {
   id: T;
   label: string;
   icon: (iconClass: string) => ReactNode;
-}
+};
 
 /**
  * Exclusive icon toggle group for section headers (keyboard view, teaching lesson, …).
@@ -26,16 +29,18 @@ export function HeaderIconToggleGroup<T extends string>({
   const iconClass = "h-3.5 w-3.5";
 
   return (
-    <div className={`section-no-drag flex shrink-0 items-center gap-0.5 ${className}`.trim()}>
+    <div
+      className={`section-no-drag flex shrink-0 items-center gap-0.5 ${className}`.trim()}>
       {options.map((option) => (
         <IconActionButton
           key={option.id}
           label={option.label}
-          onClick={() => { onChange(option.id); }}
+          onClick={() => {
+            onChange(option.id);
+          }}
           pressed={value === option.id}
           size={iconSize}
-          tooltipPlacement="below"
-        >
+          tooltipPlacement="below">
           {option.icon(iconClass)}
         </IconActionButton>
       ))}

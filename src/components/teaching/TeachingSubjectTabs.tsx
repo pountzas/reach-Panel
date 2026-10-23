@@ -10,7 +10,7 @@ export type TeachingSubjectTabOption<T extends string = string> = {
   label: string;
   /** When set with vertical orientation, shown instead of the text label. */
   icon?: ReactNode;
-}
+};
 
 /**
  * Chrome-style subject tabs attached under the teaching section header.
@@ -83,8 +83,7 @@ export function TeachingSubjectTabs<T extends string>({
         tabIndex={-1}
         aria-label="Teaching subject tabs"
         aria-orientation="vertical"
-        onKeyDown={onKeyDown}
-      >
+        onKeyDown={onKeyDown}>
         {tabs.map((tab, i) => {
           const active = tab.id === activeId;
           return (
@@ -106,8 +105,9 @@ export function TeachingSubjectTabs<T extends string>({
                   : "transparent",
                 color: active ? "#ffffff" : surface.panelMutedText,
               }}
-              onClick={() => { onChange(tab.id); }}
-            >
+              onClick={() => {
+                onChange(tab.id);
+              }}>
               {tab.icon ?? tab.label}
               <HoverTooltip label={tab.label} placement="below" align="start" />
             </button>
@@ -127,8 +127,7 @@ export function TeachingSubjectTabs<T extends string>({
       role="tablist"
       tabIndex={-1}
       aria-label="Teaching subject tabs"
-      onKeyDown={onKeyDown}
-    >
+      onKeyDown={onKeyDown}>
       {tabs.map((tab, i) => {
         const active = tab.id === activeId;
         return (
@@ -141,7 +140,7 @@ export function TeachingSubjectTabs<T extends string>({
             role="tab"
             aria-selected={active}
             tabIndex={active ? 0 : -1}
-            className="relative h-9 min-w-[7.5rem] max-w-[12rem] truncate rounded-t-lg border px-3 text-sm font-medium"
+            className="relative h-9 min-w-30 max-w-48 truncate rounded-t-lg border px-3 text-sm font-medium"
             style={{
               borderColor: surface.panelBorder,
               borderBottomColor: active
@@ -154,8 +153,9 @@ export function TeachingSubjectTabs<T extends string>({
               marginBottom: -1,
               zIndex: active ? 1 : 0,
             }}
-            onClick={() => { onChange(tab.id); }}
-          >
+            onClick={() => {
+              onChange(tab.id);
+            }}>
             {tab.label}
           </button>
         );
@@ -185,8 +185,7 @@ export function TeachingSubjectShell<T extends string>({
         vertical
           ? "flex h-full min-h-0 flex-row"
           : "flex h-full min-h-0 flex-col"
-      }
-    >
+      }>
       <TeachingSubjectTabs
         tabs={tabs}
         activeId={activeId}

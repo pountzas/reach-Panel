@@ -33,12 +33,16 @@ const languageLessonModeFromStore = (
 const greekLessonComposeContext = (
   state: ReturnType<typeof useAppStore.getState>,
 ): GreekComposeContext => {
-  const pack = getLanguagePackById(state.languagePackId, state.customLanguagePacks);
+  const pack = getLanguagePackById(
+    state.languagePackId,
+    state.customLanguagePacks,
+  );
   return {
     typingLanguage: state.settings.typingLanguage,
     keyboardLayout: state.keyboardLayout,
     languageLessonActive: true as const,
-    lessonLanguage: pack?.lessonLanguage ?? state.settings.languageLessonLanguage,
+    lessonLanguage:
+      pack?.lessonLanguage ?? state.settings.languageLessonLanguage,
   };
 };
 
@@ -51,7 +55,9 @@ export const useLanguageLessonPhysicalKeyboard = (): void => {
   const teachingLesson = useAppStore((s) => s.teachingLesson);
   const settings = useAppStore((s) => s.settings);
   const languageLessonPlaying = useAppStore((s) => s.languageLessonPlaying);
-  const languageListAuthoringActive = useAppStore((s) => s.languageListAuthoringActive);
+  const languageListAuthoringActive = useAppStore(
+    (s) => s.languageListAuthoringActive,
+  );
   const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
   const languageKeyInput = useAppStore((s) => s.languageKeyInput);
   const languageBackspace = useAppStore((s) => s.languageBackspace);
@@ -74,9 +80,11 @@ export const useLanguageLessonPhysicalKeyboard = (): void => {
     if (!active) return undefined;
 
     void syncWindowFocusable();
-    void WebviewWindow.getCurrent().setFocus().catch(() => {
-      // Focus may fail if another app holds foreground; keydown still works when focused.
-    });
+    void WebviewWindow.getCurrent()
+      .setFocus()
+      .catch(() => {
+        // Focus may fail if another app holds foreground; keydown still works when focused.
+      });
 
     // Serialize layout translations so tonos + vowel cannot reorder across async IPC.
     let translateQueue = Promise.resolve();
@@ -103,7 +111,10 @@ export const useLanguageLessonPhysicalKeyboard = (): void => {
           fallbackOutput: greekPhysicalTranslateFallback(physicalKey, shift),
         };
         if (state.languageListAuthoringActive) {
-          state.languageListAuthoringHandlers?.layoutTranslation(translation, options);
+          state.languageListAuthoringHandlers?.layoutTranslation(
+            translation,
+            options,
+          );
           return;
         }
         applyLanguageLayoutTranslation(translation, options);
@@ -112,7 +123,8 @@ export const useLanguageLessonPhysicalKeyboard = (): void => {
 
     const onKeyDown = (event: KeyboardEvent) => {
       const state = useAppStore.getState();
-      if (!isLanguageLessonCaptureActive(languageLessonModeFromStore(state))) return;
+      if (!isLanguageLessonCaptureActive(languageLessonModeFromStore(state)))
+        return;
 
       const authoring = state.languageListAuthoringActive;
       const handlers = state.languageListAuthoringHandlers;
@@ -141,7 +153,9 @@ export const useLanguageLessonPhysicalKeyboard = (): void => {
         if (!event.repeat) {
           if (authoring) {
             handlers?.enter();
-          } else if (isLanguageLessonSpellingActive(languageLessonModeFromStore(state))) {
+          } else if (
+            isLanguageLessonSpellingActive(languageLessonModeFromStore(state))
+          ) {
             checkLanguageAnswer();
           }
         }
@@ -163,7 +177,10 @@ export const useLanguageLessonPhysicalKeyboard = (): void => {
 
       const greek = greekComposeEnabled(greekLessonComposeContext(state));
       const physicalKey = physicalKeyFromKeyboardCode(event.code);
-      const shift = isShiftActive(state.physicalKeyState, state.stickyModifiers);
+      const shift = isShiftActive(
+        state.physicalKeyState,
+        state.stickyModifiers,
+      );
       const capsLock = state.physicalKeyState.capsLock;
 
       if (event.key === "Dead") {

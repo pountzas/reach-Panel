@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  HoverTooltip,
-  type HoverTooltipPlacement,
-} from "./HoverTooltip";
+import { HoverTooltip, type HoverTooltipPlacement } from "./HoverTooltip";
 
 export type IconActionButtonSize = "sm" | "lg";
 
@@ -18,7 +15,7 @@ type IconActionButtonProps = {
   tooltipPlacement?: HoverTooltipPlacement;
   /** When true, marks the control as selected (light gray icon). */
   pressed?: boolean;
-}
+};
 
 export function IconActionButton({
   label,
@@ -40,8 +37,7 @@ export function IconActionButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      aria-pressed={pressed}
-    >
+      aria-pressed={pressed}>
       {children}
       <HoverTooltip label={label} placement={tooltipPlacement} />
     </button>

@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { CompanionClient, ConnectionStatus } from '../companionClient';
-import type { ProfileSnapshot } from '../types';
+import { useCallback, useEffect, useState } from "react";
+import type { CompanionClient, ConnectionStatus } from "../companionClient";
+import type { ProfileSnapshot } from "../types";
 
-const PROFILE_ID = 'active';
+const PROFILE_ID = "active";
 
 export function useProfileSnapshot(
   client: CompanionClient,
@@ -13,41 +13,41 @@ export function useProfileSnapshot(
   const [loading, setLoading] = useState(false);
 
   const language =
-    typeof snapshot?.settings.typingLanguage === 'string'
+    typeof snapshot?.settings.typingLanguage === "string"
       ? snapshot.settings.typingLanguage
-      : 'en';
+      : "en";
 
   const refresh = useCallback(async () => {
-    if (client.getStatus() !== 'connected') {
+    if (client.getStatus() !== "connected") {
       return;
     }
     setLoading(true);
     try {
-      const reply = await client.send('profile.snapshot', {
+      const reply = await client.send("profile.snapshot", {
         profileId: PROFILE_ID,
         language,
       });
-      if (reply.type === 'error') {
+      if (reply.type === "error") {
         throw new Error(
-          typeof reply.payload?.message === 'string'
+          typeof reply.payload?.message === "string"
             ? reply.payload.message
-            : 'Snapshot failed',
+            : "Snapshot failed",
         );
       }
-      if (reply.type !== 'profile.snapshot.ok' || !reply.payload) {
-        throw new Error('Unexpected snapshot response');
+      if (reply.type !== "profile.snapshot.ok" || !reply.payload) {
+        throw new Error("Unexpected snapshot response");
       }
       setSnapshot(reply.payload as unknown as ProfileSnapshot);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Snapshot failed');
+      setError(e instanceof Error ? e.message : "Snapshot failed");
     } finally {
       setLoading(false);
     }
   }, [client, language]);
 
   useEffect(() => {
-    if (status === 'connected') {
+    if (status === "connected") {
       void refresh();
     }
   }, [status, refresh]);

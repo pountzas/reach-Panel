@@ -75,18 +75,17 @@ describe("SectionCanvas resize updates", () => {
     addEventListenerSpy = vi.spyOn(window, "addEventListener");
 
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
-      () =>
-        ({
-          x: 0,
-          y: 0,
-          top: 0,
-          left: 0,
-          bottom: size.height,
-          right: size.width,
-          width: size.width,
-          height: size.height,
-          toJSON: () => ({}),
-        }),
+      () => ({
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        bottom: size.height,
+        right: size.width,
+        width: size.width,
+        height: size.height,
+        toJSON: () => ({}),
+      }),
     );
   });
 

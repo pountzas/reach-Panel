@@ -1,7 +1,11 @@
 import { FaRegLightbulb } from "react-icons/fa";
 import { useAppStore } from "../../stores/appStore";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
-import { isTransparentUiActive, transparentKeyPalette, transparentOutlineStyle } from "../../lib/focusMode";
+import {
+  isTransparentUiActive,
+  transparentKeyPalette,
+  transparentOutlineStyle,
+} from "../../lib/focusMode";
 import { useTranslation } from "../../hooks/useTranslation";
 
 const SUGGESTION_CHIP_BG = "#dbeafe";
@@ -19,7 +23,9 @@ export function SuggestionsBar({
   const focusModeActive = useAppStore((s) => s.focusModeActive);
   const applySuggestion = useAppStore((s) => s.applySuggestion);
   const transparent = isTransparentUiActive(settings, focusModeActive);
-  const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
+  const transparentPalette = transparentKeyPalette(
+    settings.transparentKeyColor,
+  );
   const transparentChipStyle = transparent
     ? transparentOutlineStyle({
         color: transparentPalette.text,
@@ -37,15 +43,15 @@ export function SuggestionsBar({
   return (
     <div
       className="flex min-w-0 items-center justify-center gap-1.5 overflow-x-auto py-0"
-      style={transparent ? { backgroundColor: "transparent" } : undefined}
-    >
+      style={transparent ? { backgroundColor: "transparent" } : undefined}>
       <span
         role="img"
         className="inline-flex shrink-0 items-center justify-center"
-        style={{ color: transparent ? transparentPalette.text : SUGGESTION_CHIP_TEXT }}
+        style={{
+          color: transparent ? transparentPalette.text : SUGGESTION_CHIP_TEXT,
+        }}
         aria-label={t("showSuggestionsBar")}
-        title={t("showSuggestionsBar")}
-      >
+        title={t("showSuggestionsBar")}>
         <FaRegLightbulb className="h-4 w-4" aria-hidden />
       </span>
       {suggestions.map((word) => (
@@ -58,8 +64,7 @@ export function SuggestionsBar({
               : `${PRESSABLE_BUTTON_CLASS} shrink-0 rounded-full px-3 py-0.5 text-sm font-medium`
           }
           style={transparent ? transparentChipStyle : themedChipStyle}
-          onClick={() => applySuggestion(word)}
-        >
+          onClick={() => applySuggestion(word)}>
           {word}
         </button>
       ))}

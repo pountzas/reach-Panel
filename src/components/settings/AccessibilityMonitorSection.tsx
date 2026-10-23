@@ -4,7 +4,11 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { SettingsSection } from "./SettingsSection";
 
-export function AccessibilityMonitorSection({ surface }: { surface: SurfaceColors }) {
+export function AccessibilityMonitorSection({
+  surface,
+}: {
+  surface: SurfaceColors;
+}) {
   const { t } = useTranslation();
   const { settings, updateSettings, monitors } = useAppStore(
     useShallow((s) => ({
@@ -20,8 +24,7 @@ export function AccessibilityMonitorSection({ surface }: { surface: SurfaceColor
         style={{
           backgroundColor: surface.insetBg,
           borderColor: surface.insetBorder,
-        }}
-      >
+        }}>
         {monitors.map((m) => {
           const label = `${m.name} (${m.width}x${m.height})${m.is_primary ? ` [${t("primary")}]` : ""}`;
           return (
@@ -36,16 +39,19 @@ export function AccessibilityMonitorSection({ surface }: { surface: SurfaceColor
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
-                }}
-              >
+                }}>
                 <input
                   type="radio"
                   name="accessibilityMonitor"
                   className="mt-1 shrink-0"
                   checked={settings.accessibilityMonitorId === m.id}
-                  onChange={() => updateSettings({ accessibilityMonitorId: m.id })}
+                  onChange={() =>
+                    updateSettings({ accessibilityMonitorId: m.id })
+                  }
                 />
-                <span className="min-w-0 break-all text-sm leading-snug">{label}</span>
+                <span className="min-w-0 break-all text-sm leading-snug">
+                  {label}
+                </span>
               </label>
             </li>
           );

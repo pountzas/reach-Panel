@@ -66,9 +66,12 @@ const LanguageTeachingBody = (): JSX.Element => {
       orientation="vertical"
       tabs={tabs}
       activeId={languageSubjectTab}
-      onChange={setLanguageSubjectTab}
-    >
-      {languageSubjectTab === "freeWrite" ? <FreeWritePanel /> : <LanguageLessonPanel />}
+      onChange={setLanguageSubjectTab}>
+      {languageSubjectTab === "freeWrite" ? (
+        <FreeWritePanel />
+      ) : (
+        <LanguageLessonPanel />
+      )}
     </TeachingSubjectShell>
   );
 };
@@ -177,8 +180,9 @@ export function AppShell() {
     <div
       className="relative flex min-h-0 flex-col"
       style={{ ...shellStyle, width: "100vw", height: "100vh" }}
-      onContextMenu={(e) => { e.preventDefault(); }}
-    >
+      onContextMenu={(e) => {
+        e.preventDefault();
+      }}>
       {settings.backgroundImagePath && (
         <div
           className="pointer-events-none absolute inset-0"
@@ -196,8 +200,7 @@ export function AppShell() {
             height: headerHeight,
             backgroundColor: settings.headerBgColor ?? "#1e293b",
             color: settings.headerTextColor ?? "#ffffff",
-          }}
-        >
+          }}>
           <div className="flex items-center justify-start">
             {shouldShowHeaderHeightGrip(teachingUiActive) ? (
               <button
@@ -205,8 +208,7 @@ export function AppShell() {
                 aria-label="Resize window height"
                 className="flex h-8 w-8 cursor-ns-resize items-center justify-center rounded bg-white/10 hover:bg-white/20"
                 style={{ touchAction: "none" }}
-                {...heightDrag}
-              >
+                {...heightDrag}>
                 <HeightGripIcon className={iconClass} />
               </button>
             ) : null}
@@ -221,17 +223,17 @@ export function AppShell() {
               disabled={isAnimatingWindow}
               className="rounded bg-white/20 hover:bg-white/30"
               size={iconSize}
-              tooltipPlacement="below"
-            >
+              tooltipPlacement="below">
               <CollapseIcon className={iconClass} />
             </IconActionButton>
             <IconActionButton
               label={t("settings")}
-              onClick={() => { setShowSettings(true); }}
+              onClick={() => {
+                setShowSettings(true);
+              }}
               className="rounded bg-white/20 hover:bg-white/30"
               size={iconSize}
-              tooltipPlacement="below"
-            >
+              tooltipPlacement="below">
               <SettingsIcon className={iconClass} />
             </IconActionButton>
             <IconActionButton
@@ -239,8 +241,7 @@ export function AppShell() {
               onClick={handleCloseApp}
               className="rounded bg-white/20 hover:bg-white/30"
               size={iconSize}
-              tooltipPlacement="below"
-            >
+              tooltipPlacement="below">
               <CloseIcon className={iconClass} />
             </IconActionButton>
           </div>

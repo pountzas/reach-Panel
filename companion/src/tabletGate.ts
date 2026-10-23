@@ -1,5 +1,5 @@
-import { PixelRatio, Platform } from 'react-native';
-import * as Device from 'expo-device';
+import { PixelRatio, Platform } from "react-native";
+import * as Device from "expo-device";
 
 /** Smallest physical screen edge (dp) below which we treat the device as a phone. */
 const MIN_TABLET_SHORTEST_SIDE_DP = 600;
@@ -15,7 +15,7 @@ export function evaluateTabletGate(
   windowWidth: number,
   windowHeight: number,
 ): TabletGateResult {
-  if (Platform.OS === 'web') {
+  if (Platform.OS === "web") {
     return { allowed: true };
   }
 
@@ -34,7 +34,7 @@ export function evaluateTabletGate(
   if (Device.deviceType === Device.DeviceType.PHONE) {
     return {
       allowed: false,
-      reason: 'ReachPanel Companion is designed for tablets only.',
+      reason: "ReachPanel Companion is designed for tablets only.",
     };
   }
 
@@ -42,7 +42,7 @@ export function evaluateTabletGate(
   if (shortestDp < MIN_TABLET_SHORTEST_SIDE_DP) {
     return {
       allowed: false,
-      reason: 'This screen is too small. Please use a tablet.',
+      reason: "This screen is too small. Please use a tablet.",
     };
   }
 

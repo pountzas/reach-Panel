@@ -41,7 +41,7 @@ type SectionCanvasProps = {
   onStackChange: (stack: SectionStackState) => void;
   teaching: ReactNode;
   inputRow: ReactNode;
-}
+};
 
 export function SectionCanvas({
   teachingVisible,
@@ -101,7 +101,9 @@ export function SectionCanvas({
     const element = containerRef.current;
     if (!element) return;
 
-    const observer = new ResizeObserver(() => { updateSize(); });
+    const observer = new ResizeObserver(() => {
+      updateSize();
+    });
     observer.observe(element);
 
     const rafId = requestAnimationFrame(updateSize);
@@ -239,7 +241,11 @@ export function SectionCanvas({
     setDropTargetId(id);
   };
 
-  const handleDropProbe = (id: StackableSectionId, canvasX: number, canvasY: number) => {
+  const handleDropProbe = (
+    id: StackableSectionId,
+    canvasX: number,
+    canvasY: number,
+  ) => {
     const hole = findHoleAt(canvasX, canvasY);
     setDropTarget(hole === id ? id : null);
   };
@@ -349,7 +355,9 @@ export function SectionCanvas({
     splitterDrag.onPointerDown(event);
   };
 
-  const floatingIds = (Object.keys(stack.undocked) as StackableSectionId[]).filter(
+  const floatingIds = (
+    Object.keys(stack.undocked) as StackableSectionId[]
+  ).filter(
     (id) => stack.undocked[id] != null && isSectionVisibleId(id, visibility),
   );
 
@@ -357,8 +365,7 @@ export function SectionCanvas({
     <div
       ref={containerRef}
       className="relative w-full flex-1 overflow-hidden p-1"
-      style={{ minHeight: 0, position: "relative" }}
-    >
+      style={{ minHeight: 0, position: "relative" }}>
       {slots.map((slot) => {
         if (slot.isHole && isStackableSectionId(slot.id)) {
           return (
@@ -377,8 +384,7 @@ export function SectionCanvas({
             width={containerSize.width}
             onToggleMinimize={handleToggleMinimize}
             onUndock={handleUndock}
-            onReorderDrag={handleReorderDrag}
-          >
+            onReorderDrag={handleReorderDrag}>
             {contentById[slot.id]}
           </DockedSection>
         );
@@ -398,7 +404,9 @@ export function SectionCanvas({
               height: SPLITTER_HIT_PX,
               touchAction: "none",
             }}
-            onPointerDown={(e) => { onSplitterPointerDown(e, slot.id, lower.id); }}
+            onPointerDown={(e) => {
+              onSplitterPointerDown(e, slot.id, lower.id);
+            }}
             onPointerMove={splitterDrag.onPointerMove}
             onPointerUp={splitterDrag.onPointerUp}
           />
@@ -418,10 +426,11 @@ export function SectionCanvas({
             containerHeight={containerSize.height}
             onRectChange={handleFloatRect}
             onDock={handleDock}
-            onToggleMinimize={(sectionId) => { handleToggleMinimize(sectionId); }}
+            onToggleMinimize={(sectionId) => {
+              handleToggleMinimize(sectionId);
+            }}
             onDropProbe={handleDropProbe}
-            onDragStop={handleFloatDragStop}
-          >
+            onDragStop={handleFloatDragStop}>
             {contentById[id]}
           </FloatingSection>
         );

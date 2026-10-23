@@ -14,7 +14,7 @@ type DictationVisualizerProps = {
   active: boolean;
   /** When false, animate idle bars only — do not open a second mic stream (needed for Groq/cpal). */
   captureAudio?: boolean;
-}
+};
 
 function paintBars(bars: (HTMLSpanElement | null)[], levels: number[]): void {
   for (let i = 0; i < BAR_COUNT; i++) {
@@ -69,7 +69,9 @@ export function DictationVisualizer({
         rafRef.current = null;
       }
       if (audioRef.current) {
-        audioRef.current.stream.getTracks().forEach((track) => { track.stop(); });
+        audioRef.current.stream.getTracks().forEach((track) => {
+          track.stop();
+        });
         void audioRef.current.context.close();
         audioRef.current = null;
       }
@@ -83,7 +85,9 @@ export function DictationVisualizer({
         rafRef.current = null;
       }
       if (audioRef.current) {
-        audioRef.current.stream.getTracks().forEach((track) => { track.stop(); });
+        audioRef.current.stream.getTracks().forEach((track) => {
+          track.stop();
+        });
         void audioRef.current.context.close();
         audioRef.current = null;
       }
@@ -127,7 +131,9 @@ export function DictationVisualizer({
           video: false,
         });
         if (cancelled) {
-          stream.getTracks().forEach((track) => { track.stop(); });
+          stream.getTracks().forEach((track) => {
+            track.stop();
+          });
           return;
         }
 
@@ -198,7 +204,9 @@ export function DictationVisualizer({
         rafRef.current = null;
       }
       if (audioRef.current) {
-        audioRef.current.stream.getTracks().forEach((track) => { track.stop(); });
+        audioRef.current.stream.getTracks().forEach((track) => {
+          track.stop();
+        });
         void audioRef.current.context.close();
         audioRef.current = null;
       }
@@ -215,7 +223,7 @@ export function DictationVisualizer({
       style={{ width: GRAPH_WIDTH }}
       aria-hidden>
       <div
-        className="flex h-full w-full items-center justify-center gap-[2px]"
+        className="flex h-full w-full items-center justify-center gap-0.5"
         style={{ willChange: "transform" }}>
         {Array.from({ length: BAR_COUNT }, (_, index) => (
           <span

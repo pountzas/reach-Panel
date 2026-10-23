@@ -1,17 +1,13 @@
-import { useRef } from 'react';
+import { useRef } from "react";
 import {
   GestureResponderEvent,
   Pressable,
   StyleSheet,
   Text,
   View,
-} from 'react-native';
-import type { CompanionClient } from '../companionClient';
-import {
-  DOUBLE_TAP_MS,
-  TAP_SLOP_PX,
-  isTapGesture,
-} from '../trackpadTap';
+} from "react-native";
+import type { CompanionClient } from "../companionClient";
+import { DOUBLE_TAP_MS, TAP_SLOP_PX, isTapGesture } from "../trackpadTap";
 
 type Props = {
   client: CompanionClient;
@@ -33,11 +29,11 @@ export function TrackpadPanel({ client, enabled }: Props) {
   };
 
   const fireLeftClick = () => {
-    void client.send('mouse.click', { button: 'left' });
+    void client.send("mouse.click", { button: "left" });
   };
 
   const fireDoubleClick = () => {
-    void client.send('mouse.doubleClick', {});
+    void client.send("mouse.doubleClick", {});
   };
 
   const handleTap = () => {
@@ -83,7 +79,7 @@ export function TrackpadPanel({ client, enabled }: Props) {
     if (rdx === 0 && rdy === 0) {
       return;
     }
-    client.sendFireAndForget('mouse.moveRel', { dx: rdx, dy: rdy });
+    client.sendFireAndForget("mouse.moveRel", { dx: rdx, dy: rdy });
   };
 
   const onTouchEnd = () => {
@@ -110,33 +106,32 @@ export function TrackpadPanel({ client, enabled }: Props) {
         onResponderMove={onTouchMove}
         onResponderRelease={onTouchEnd}
         onResponderTerminate={onTouchEnd}
-        accessibilityLabel="Trackpad"
-      >
+        accessibilityLabel="Trackpad">
         <Text style={styles.hint}>Drag to move · tap to click</Text>
       </View>
       <View style={styles.buttons}>
         <PadButton
           label="Left click"
           enabled={enabled}
-          onPress={() => void client.send('mouse.click', { button: 'left' })}
+          onPress={() => void client.send("mouse.click", { button: "left" })}
         />
         <PadButton
           label="Right click"
           enabled={enabled}
-          onPress={() => void client.send('mouse.click', { button: 'right' })}
+          onPress={() => void client.send("mouse.click", { button: "right" })}
         />
         <PadButton
           label="Scroll ↑"
           enabled={enabled}
           onPress={() =>
-            void client.send('mouse.scroll', { delta: 3, horizontal: false })
+            void client.send("mouse.scroll", { delta: 3, horizontal: false })
           }
         />
         <PadButton
           label="Scroll ↓"
           enabled={enabled}
           onPress={() =>
-            void client.send('mouse.scroll', { delta: -3, horizontal: false })
+            void client.send("mouse.scroll", { delta: -3, horizontal: false })
           }
         />
       </View>
@@ -162,8 +157,7 @@ function PadButton({
         styles.button,
         !enabled && styles.buttonDisabled,
         pressed && enabled && styles.buttonPressed,
-      ]}
-    >
+      ]}>
       <Text style={styles.buttonLabel}>{label}</Text>
     </Pressable>
   );
@@ -178,44 +172,44 @@ const styles = StyleSheet.create({
   pad: {
     flex: 1,
     minHeight: 220,
-    backgroundColor: '#1c2433',
+    backgroundColor: "#1c2433",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#3a465c',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#3a465c",
+    alignItems: "center",
+    justifyContent: "center",
   },
   padDisabled: {
     opacity: 0.45,
   },
   hint: {
-    color: '#9aa7bd',
+    color: "#9aa7bd",
     fontSize: 18,
   },
   buttons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   button: {
     flexGrow: 1,
-    minWidth: '45%',
+    minWidth: "45%",
     minHeight: 56,
-    backgroundColor: '#2a3140',
+    backgroundColor: "#2a3140",
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 12,
   },
   buttonPressed: {
-    backgroundColor: '#3d4a63',
+    backgroundColor: "#3d4a63",
   },
   buttonDisabled: {
     opacity: 0.45,
   },
   buttonLabel: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -20,7 +20,7 @@ const LINK_BUTTONS: { labelKey: AboutLinkLabelKey; url: string }[] = [
 
 type AboutSectionProps = {
   surface: SurfaceColors;
-}
+};
 
 export function AboutSection({ surface }: AboutSectionProps) {
   const { t } = useTranslation();
@@ -44,7 +44,9 @@ export function AboutSection({ surface }: AboutSectionProps) {
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-sm font-semibold" style={{ color: surface.panelText }}>
+        <p
+          className="text-sm font-semibold"
+          style={{ color: surface.panelText }}>
           {t("appTitle")}
         </p>
         <p className="mt-1 text-xs" style={{ color: surface.panelMutedText }}>
@@ -71,8 +73,9 @@ export function AboutSection({ surface }: AboutSectionProps) {
               type="button"
               className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm"
               style={secondaryButtonStyle}
-              onClick={() => { openExternalLink(url); }}
-            >
+              onClick={() => {
+                openExternalLink(url);
+              }}>
               <Icon className="h-4 w-4" />
               {t(labelKey)}
             </button>

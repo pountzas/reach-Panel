@@ -52,14 +52,18 @@ export function useGroqDailyQuota(
 
     return () => {
       cancelled = true;
-      void unlistenPromise.then((unlisten) => { unlisten(); });
+      void unlistenPromise.then((unlisten) => {
+        unlisten();
+      });
     };
   }, [engine]);
 
   useEffect(() => {
     if (engine !== "groq") return;
 
-    const refresh = () => { setPercent(percentFromStoredQuota(engine)); };
+    const refresh = () => {
+      setPercent(percentFromStoredQuota(engine));
+    };
 
     let timeoutId = 0;
     const scheduleMidnightRefresh = () => {
@@ -70,7 +74,9 @@ export function useGroqDailyQuota(
     };
     scheduleMidnightRefresh();
 
-    const onFocus = () => { refresh(); };
+    const onFocus = () => {
+      refresh();
+    };
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") refresh();
     };

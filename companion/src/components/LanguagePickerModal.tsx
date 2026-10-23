@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -7,11 +7,14 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native';
-import type { CompanionClient } from '../companionClient';
-import { flagCodeForLanguage, languageDisplayCode } from '../lib/flagCodeForLanguage';
-import type { InputMethod } from '../types';
-import { CountryFlag } from './CountryFlag';
+} from "react-native";
+import type { CompanionClient } from "../companionClient";
+import {
+  flagCodeForLanguage,
+  languageDisplayCode,
+} from "../lib/flagCodeForLanguage";
+import type { InputMethod } from "../types";
+import { CountryFlag } from "./CountryFlag";
 
 type Props = {
   visible: boolean;
@@ -27,17 +30,16 @@ function parseMethods(raw: unknown): InputMethod[] {
   }
   const out: InputMethod[] = [];
   for (const item of raw) {
-    if (!item || typeof item !== 'object') {
+    if (!item || typeof item !== "object") {
       continue;
     }
     const row = item as Record<string, unknown>;
-    const hkl = typeof row.hkl === 'number' ? row.hkl : Number(row.hkl);
-    const langTag = typeof row.langTag === 'string' ? row.langTag : '';
+    const hkl = typeof row.hkl === "number" ? row.hkl : Number(row.hkl);
+    const langTag = typeof row.langTag === "string" ? row.langTag : "";
     const displayName =
-      typeof row.displayName === 'string' ? row.displayName : '';
-    const layoutName =
-      typeof row.layoutName === 'string' ? row.layoutName : '';
-    const klid = typeof row.klid === 'string' ? row.klid : '';
+      typeof row.displayName === "string" ? row.displayName : "";
+    const layoutName = typeof row.layoutName === "string" ? row.layoutName : "";
+    const klid = typeof row.klid === "string" ? row.klid : "";
     if (!Number.isFinite(hkl) || !langTag) {
       continue;
     }
@@ -63,21 +65,21 @@ export function LanguagePickerModal({
     setLoading(true);
     setError(null);
     try {
-      const reply = await client.send('keyboard.languages', {});
-      if (reply.type === 'error') {
+      const reply = await client.send("keyboard.languages", {});
+      if (reply.type === "error") {
         throw new Error(
-          typeof reply.payload?.message === 'string'
+          typeof reply.payload?.message === "string"
             ? reply.payload.message
-            : 'Could not load languages',
+            : "Could not load languages",
         );
       }
-      if (reply.type !== 'keyboard.languages.ok') {
-        throw new Error('Unexpected languages response');
+      if (reply.type !== "keyboard.languages.ok") {
+        throw new Error("Unexpected languages response");
       }
       const list = parseMethods(reply.payload?.methods);
       setMethods(list);
       const hkl =
-        typeof reply.payload?.activeHkl === 'number'
+        typeof reply.payload?.activeHkl === "number"
           ? reply.payload.activeHkl
           : Number(reply.payload?.activeHkl);
       setListActiveHkl(Number.isFinite(hkl) ? hkl : activeHkl);
@@ -86,7 +88,7 @@ export function LanguagePickerModal({
       }
     } catch (e) {
       setMethods([]);
-      setError(e instanceof Error ? e.message : 'Could not load languages');
+      setError(e instanceof Error ? e.message : "Could not load languages");
     } finally {
       setLoading(false);
     }
@@ -106,24 +108,24 @@ export function LanguagePickerModal({
     setPicking(true);
     setError(null);
     try {
-      const reply = await client.send('keyboard.setLanguage', {
+      const reply = await client.send("keyboard.setLanguage", {
         hkl: method.hkl,
         langTag: method.langTag,
       });
-      if (reply.type === 'error') {
+      if (reply.type === "error") {
         throw new Error(
-          typeof reply.payload?.message === 'string'
+          typeof reply.payload?.message === "string"
             ? reply.payload.message
-            : 'Could not switch language',
+            : "Could not switch language",
         );
       }
-      if (reply.type !== 'keyboard.setLanguage.ok') {
-        throw new Error('Unexpected setLanguage response');
+      if (reply.type !== "keyboard.setLanguage.ok") {
+        throw new Error("Unexpected setLanguage response");
       }
       onPicked(method);
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not switch language');
+      setError(e instanceof Error ? e.message : "Could not switch language");
     } finally {
       setPicking(false);
     }
@@ -134,10 +136,13 @@ export function LanguagePickerModal({
       visible={visible}
       animationType="fade"
       transparent
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <Pressable style={styles.dismiss} onPress={onClose} accessibilityRole="button" />
+        <Pressable
+          style={styles.dismiss}
+          onPress={onClose}
+          accessibilityRole="button"
+        />
         <View style={styles.sheet} accessibilityLabel="Keyboard language">
           <View style={styles.header}>
             <Text style={styles.title}>Keyboard language</Text>
@@ -145,8 +150,7 @@ export function LanguagePickerModal({
               onPress={onClose}
               accessibilityRole="button"
               accessibilityLabel="Close"
-              style={styles.closeBtn}
-            >
+              style={styles.closeBtn}>
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
           </View>
@@ -160,7 +164,9 @@ export function LanguagePickerModal({
               data={methods}
               keyExtractor={(item) => `${item.hkl}-${item.klid}`}
               contentContainerStyle={
-                methods.length === 0 ? styles.emptyContainer : styles.listContent
+                methods.length === 0
+                  ? styles.emptyContainer
+                  : styles.listContent
               }
               ListHeaderComponent={
                 error ? <Text style={styles.error}>{error}</Text> : null
@@ -186,8 +192,7 @@ export function LanguagePickerModal({
                     ]}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
-                    accessibilityLabel={`${item.displayName} ${item.layoutName}`}
-                  >
+                    accessibilityLabel={`${item.displayName} ${item.layoutName}`}>
                     <CountryFlag
                       country={flagCodeForLanguage(item.langTag)}
                       size={22}
@@ -196,7 +201,7 @@ export function LanguagePickerModal({
                       <Text style={styles.displayName} numberOfLines={1}>
                         {item.displayName}
                         <Text style={styles.layoutName}>
-                          {' '}
+                          {" "}
                           ({item.layoutName})
                         </Text>
                       </Text>
@@ -218,48 +223,48 @@ export function LanguagePickerModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "flex-end",
   },
   dismiss: {
     flex: 1,
   },
   sheet: {
-    maxHeight: '70%',
-    backgroundColor: '#1a2230',
+    maxHeight: "70%",
+    backgroundColor: "#1a2230",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    borderColor: '#2a3140',
+    borderColor: "#2a3140",
     borderWidth: 1,
     paddingBottom: 12,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a3140',
+    borderBottomColor: "#2a3140",
   },
   title: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   closeBtn: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#2a3140',
+    backgroundColor: "#2a3140",
   },
   closeText: {
-    color: '#f2f4f8',
-    fontWeight: '600',
+    color: "#f2f4f8",
+    fontWeight: "600",
   },
   centered: {
     paddingVertical: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
   listContent: {
     paddingVertical: 8,
@@ -269,29 +274,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   empty: {
-    color: '#8b95a5',
-    textAlign: 'center',
+    color: "#8b95a5",
+    textAlign: "center",
     fontSize: 15,
   },
   error: {
-    color: '#f07178',
+    color: "#f07178",
     paddingHorizontal: 16,
     paddingVertical: 8,
     fontSize: 14,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     minHeight: 52,
   },
   rowSelected: {
-    backgroundColor: 'rgba(126, 182, 255, 0.16)',
+    backgroundColor: "rgba(126, 182, 255, 0.16)",
   },
   rowPressed: {
-    backgroundColor: '#243044',
+    backgroundColor: "#243044",
   },
   rowDisabled: {
     opacity: 0.55,
@@ -301,17 +306,17 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   displayName: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   layoutName: {
-    color: '#8b95a5',
-    fontWeight: '400',
+    color: "#8b95a5",
+    fontWeight: "400",
   },
   code: {
-    color: '#b0bac8',
+    color: "#b0bac8",
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

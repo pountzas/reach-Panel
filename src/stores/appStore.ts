@@ -3,7 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { subscribeInputPreview } from "../lib/inputPreviewChannel";
-import { clear as clearInputPreviewFrames, publish as publishInputPreviewFrame } from "../lib/inputPreviewFrames";
+import {
+  clear as clearInputPreviewFrames,
+  publish as publishInputPreviewFrame,
+} from "../lib/inputPreviewFrames";
 import { prefersReducedMotion } from "../lib/motion";
 import type { AppStore } from "./types";
 import {
@@ -60,7 +63,6 @@ export const useAppStore = create<AppStore>()((...a) => ({
   ...createFocusModeSlice(...a),
   ...createModeSlice(...a),
 }));
-
 
 // Only main renders InputPreview; tool windows share this bundle and must not
 // replace main's preview Channel (see cmd_subscribe_input_preview).
@@ -170,5 +172,3 @@ void invoke<boolean>("cmd_get_input_focused")
   .catch(() => {
     /* keep false */
   });
-
-

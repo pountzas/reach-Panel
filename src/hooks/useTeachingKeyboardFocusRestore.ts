@@ -14,11 +14,21 @@ function isTypingKeyEvent(event: KeyboardEvent): boolean {
   if (key === "Shift" || key === "Control" || key === "Alt" || key === "Meta") {
     return false;
   }
-  if (key === "Escape" || key === "Tab" || key === "CapsLock" || key === "ContextMenu") {
+  if (
+    key === "Escape" ||
+    key === "Tab" ||
+    key === "CapsLock" ||
+    key === "ContextMenu"
+  ) {
     return false;
   }
   // Printable, Backspace, Enter, Delete, and space restore the keyboard.
-  return key.length === 1 || key === "Backspace" || key === "Enter" || key === "Delete";
+  return (
+    key.length === 1 ||
+    key === "Backspace" ||
+    key === "Enter" ||
+    key === "Delete"
+  );
 }
 
 /**
@@ -79,13 +89,7 @@ export function useTeachingKeyboardFocusRestore(): void {
     if (autoFocus && wasActive && !typingTargetActive && !minimized) {
       setMinimized(true);
     }
-  }, [
-    chromeVisible,
-    typingTargetActive,
-    minimized,
-    autoFocus,
-    setMinimized,
-  ]);
+  }, [chromeVisible, typingTargetActive, minimized, autoFocus, setMinimized]);
 
   useEffect(() => {
     if (!chromeVisible || !minimized) return;
@@ -127,7 +131,8 @@ export function useTeachingKeyboardFocusRestore(): void {
         return;
       }
       const state = useAppStore.getState();
-      if (state.teachingKeyboardMinimized) state.setTeachingKeyboardMinimized(false);
+      if (state.teachingKeyboardMinimized)
+        state.setTeachingKeyboardMinimized(false);
     };
 
     window.addEventListener("keydown", onKeyDown, true);

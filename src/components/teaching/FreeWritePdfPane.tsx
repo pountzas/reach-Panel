@@ -2,7 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import * as pdfjs from "pdfjs-dist";
 import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { BiExport } from "react-icons/bi";
 import { IoIosRedo, IoIosUndo } from "react-icons/io";
 import { IoPencilOutline } from "react-icons/io5";
@@ -80,7 +86,8 @@ export function FreeWritePdfPane() {
   const [error, setError] = useState<string | null>(null);
   const [docReadyPath, setDocReadyPath] = useState<string | null>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-  const [devicePixelRatio, setDevicePixelRatio] = useState(readDevicePixelRatio);
+  const [devicePixelRatio, setDevicePixelRatio] =
+    useState(readDevicePixelRatio);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasMounted, setCanvasMounted] = useState(false);
@@ -192,7 +199,13 @@ export function FreeWritePdfPane() {
   useEffect(() => {
     const doc = docRef.current;
     const canvas = canvasRef.current;
-    if (!doc || !canvas || !canvasMounted || docReadyPath !== activePath || !activePath) {
+    if (
+      !doc ||
+      !canvas ||
+      !canvasMounted ||
+      docReadyPath !== activePath ||
+      !activePath
+    ) {
       return;
     }
 
@@ -237,7 +250,10 @@ export function FreeWritePdfPane() {
       } catch (err) {
         if (cancelled) return;
         // pdf.js throws on intentional cancel — ignore those.
-        const name = err && typeof err === "object" && "name" in err ? String(err.name) : "";
+        const name =
+          err && typeof err === "object" && "name" in err
+            ? String(err.name)
+            : "";
         if (name === "RenderingCancelledException") return;
         const message = err instanceof Error ? err.message : String(err);
         setError(message || missingLabelRef.current);
@@ -250,7 +266,14 @@ export function FreeWritePdfPane() {
       renderTaskRef.current?.cancel();
       renderTaskRef.current = null;
     };
-  }, [activePath, docReadyPath, page, viewerZoom, canvasMounted, devicePixelRatio]);
+  }, [
+    activePath,
+    docReadyPath,
+    page,
+    viewerZoom,
+    canvasMounted,
+    devicePixelRatio,
+  ]);
 
   const toolBtn = (
     id: "pointer" | "pen" | "eraser" | "text",
@@ -261,11 +284,12 @@ export function FreeWritePdfPane() {
       key={id}
       label={label}
       size="sm"
-      onClick={() => { setTool(id); }}
+      onClick={() => {
+        setTool(id);
+      }}
       backgroundColor={tool === id ? surface.panelHeaderBg : surface.panelBg}
       borderColor={surface.panelBorder}
-      color={tool === id ? "#2563eb" : surface.panelText}
-    >
+      color={tool === id ? "#2563eb" : surface.panelText}>
       {icon}
     </TeachingLessonToolbarButton>
   );
@@ -302,16 +326,14 @@ export function FreeWritePdfPane() {
           return;
         }
         setSelectedTextId(null);
-      }}
-    >
+      }}>
       <div className="flex w-full shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex min-w-0 max-w-[40%] items-center">
           {active ? (
             <span
               className="min-w-0 truncate text-xs"
               style={{ color: surface.panelText }}
-              title={active.path}
-            >
+              title={active.path}>
               {active.title}
             </span>
           ) : null}
@@ -321,16 +343,19 @@ export function FreeWritePdfPane() {
           <TeachingLessonToolbarButton
             label={t("freeWritePdfPrevPage")}
             size="sm"
-            onClick={() => { setPage((p) => Math.max(1, p - 1)); }}
+            onClick={() => {
+              setPage((p) => Math.max(1, p - 1));
+            }}
             disabled={page <= 1}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
-            color={surface.panelText}
-          >
+            color={surface.panelText}>
             <span className="text-sm">◀</span>
           </TeachingLessonToolbarButton>
           {pageCount > 0 ? (
-            <label className="flex items-center gap-1 text-xs tabular-nums" style={{ color: surface.panelMutedText }}>
+            <label
+              className="flex items-center gap-1 text-xs tabular-nums"
+              style={{ color: surface.panelMutedText }}>
               <span className="sr-only">{t("freeWritePdfGoToPage")}</span>
               <input
                 type="number"
@@ -345,8 +370,12 @@ export function FreeWritePdfPane() {
                   color: surface.panelText,
                 }}
                 value={pageDraft}
-                onChange={(e) => { setPageDraft(e.target.value); }}
-                onBlur={() => { commitPageDraft(); }}
+                onChange={(e) => {
+                  setPageDraft(e.target.value);
+                }}
+                onBlur={() => {
+                  commitPageDraft();
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -358,47 +387,53 @@ export function FreeWritePdfPane() {
               <span>/ {pageCount}</span>
             </label>
           ) : (
-            <span className="text-xs tabular-nums" style={{ color: surface.panelMutedText }}>
+            <span
+              className="text-xs tabular-nums"
+              style={{ color: surface.panelMutedText }}>
               —
             </span>
           )}
           <TeachingLessonToolbarButton
             label={t("freeWritePdfNextPage")}
             size="sm"
-            onClick={() => { setPage((p) => Math.min(pageCount || 1, p + 1)); }}
+            onClick={() => {
+              setPage((p) => Math.min(pageCount || 1, p + 1));
+            }}
             disabled={!pageCount || page >= pageCount}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
-            color={surface.panelText}
-          >
+            color={surface.panelText}>
             <span className="text-sm">▶</span>
           </TeachingLessonToolbarButton>
           <TeachingLessonToolbarButton
             label={t("freeWriteZoomOut")}
             size="sm"
-            onClick={() => { setViewerZoom((z) => clampFreeWritePdfZoom(z - FREE_WRITE_ZOOM_STEP)); }
-            }
+            onClick={() => {
+              setViewerZoom((z) =>
+                clampFreeWritePdfZoom(z - FREE_WRITE_ZOOM_STEP),
+              );
+            }}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
-            color={surface.panelText}
-          >
+            color={surface.panelText}>
             <MdOutlineZoomOut className={TOOLBAR_ICON_CLASS} />
           </TeachingLessonToolbarButton>
           <span
-            className="min-w-[3.25rem] text-center text-xs tabular-nums"
-            style={{ color: surface.panelMutedText }}
-          >
+            className="min-w-13 text-center text-xs tabular-nums"
+            style={{ color: surface.panelMutedText }}>
             {formatFreeWriteZoomPercent(viewerZoom)}
           </span>
           <TeachingLessonToolbarButton
             label={t("freeWriteZoomIn")}
             size="sm"
-            onClick={() => { setViewerZoom((z) => clampFreeWritePdfZoom(z + FREE_WRITE_ZOOM_STEP)); }
-            }
+            onClick={() => {
+              setViewerZoom((z) =>
+                clampFreeWritePdfZoom(z + FREE_WRITE_ZOOM_STEP),
+              );
+            }}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
-            color={surface.panelText}
-          >
+            color={surface.panelText}>
             <MdOutlineZoomIn className={TOOLBAR_ICON_CLASS} />
           </TeachingLessonToolbarButton>
 
@@ -409,23 +444,25 @@ export function FreeWritePdfPane() {
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfUndo")}
                 size="sm"
-                onClick={() => { undoAnnotation(); }}
+                onClick={() => {
+                  undoAnnotation();
+                }}
                 disabled={undoDepth <= 0}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
-                color={surface.panelText}
-              >
+                color={surface.panelText}>
                 <IoIosUndo className={TOOLBAR_ICON_CLASS} />
               </TeachingLessonToolbarButton>
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfRedo")}
                 size="sm"
-                onClick={() => { redoAnnotation(); }}
+                onClick={() => {
+                  redoAnnotation();
+                }}
                 disabled={redoDepth <= 0}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
-                color={surface.panelText}
-              >
+                color={surface.panelText}>
                 <IoIosRedo className={TOOLBAR_ICON_CLASS} />
               </TeachingLessonToolbarButton>
               {toolBtn(
@@ -455,18 +492,18 @@ export function FreeWritePdfPane() {
                 disabled={!selectedTextId}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
-                color={selectedTextId ? "#2563eb" : surface.panelText}
-              >
+                color={selectedTextId ? "#2563eb" : surface.panelText}>
                 <TextSlashIcon className={TOOLBAR_ICON_CLASS} />
               </TeachingLessonToolbarButton>
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfClearAll")}
                 size="sm"
-                onClick={() => { setClearConfirmOpen(true); }}
+                onClick={() => {
+                  setClearConfirmOpen(true);
+                }}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
-                color={surface.panelText}
-              >
+                color={surface.panelText}>
                 <span className="text-xs font-medium">CLR</span>
               </TeachingLessonToolbarButton>
             </>
@@ -480,8 +517,7 @@ export function FreeWritePdfPane() {
             onClick={() => void pickTeachingPdf()}
             backgroundColor={surface.panelBg}
             borderColor={surface.panelBorder}
-            color={surface.panelText}
-          >
+            color={surface.panelText}>
             <LoadSongIcon className={TOOLBAR_ICON_CLASS} />
           </TeachingLessonToolbarButton>
           {active ? (
@@ -489,11 +525,12 @@ export function FreeWritePdfPane() {
               <TeachingLessonToolbarButton
                 label={t("freeWritePdfExport")}
                 size="sm"
-                onClick={() => { setExportOpen(true); }}
+                onClick={() => {
+                  setExportOpen(true);
+                }}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
-                color={surface.panelText}
-              >
+                color={surface.panelText}>
                 <BiExport className={TOOLBAR_ICON_CLASS} />
               </TeachingLessonToolbarButton>
               <TeachingLessonToolbarButton
@@ -502,8 +539,7 @@ export function FreeWritePdfPane() {
                 onClick={() => void closeTeachingPdf()}
                 backgroundColor={surface.panelBg}
                 borderColor={surface.panelBorder}
-                color={surface.panelText}
-              >
+                color={surface.panelText}>
                 <CloseIcon className={TOOLBAR_ICON_CLASS} />
               </TeachingLessonToolbarButton>
             </>
@@ -513,10 +549,14 @@ export function FreeWritePdfPane() {
 
       <div
         className="min-h-0 flex-1 overflow-auto rounded-md border p-2"
-        style={{ borderColor: surface.panelBorder, backgroundColor: surface.insetBg }}
-      >
+        style={{
+          borderColor: surface.panelBorder,
+          backgroundColor: surface.insetBg,
+        }}>
         {error ? (
-          <div className="space-y-2 text-sm" style={{ color: surface.panelText }}>
+          <div
+            className="space-y-2 text-sm"
+            style={{ color: surface.panelText }}>
             <p>{t("freeWritePdfMissing")}</p>
             <p className="text-xs" style={{ color: surface.panelMutedText }}>
               {error}
@@ -527,10 +567,7 @@ export function FreeWritePdfPane() {
             {t("freeWritePdfEmpty")}
           </p>
         ) : (
-          <div
-            className="relative mx-auto w-fit max-w-full"
-            data-pdf-page
-          >
+          <div className="relative mx-auto w-fit max-w-full" data-pdf-page>
             <canvas
               ref={setCanvasNode}
               className="block h-auto max-w-full"
@@ -552,7 +589,9 @@ export function FreeWritePdfPane() {
         pageCount={pageCount}
         currentPage={page}
         surface={surface}
-        onCancel={() => { setExportOpen(false); }}
+        onCancel={() => {
+          setExportOpen(false);
+        }}
         onExport={(from, to) => {
           setExportOpen(false);
           void exportTeachingReachPdf(from, to);
@@ -568,7 +607,9 @@ export function FreeWritePdfPane() {
           setClearConfirmOpen(false);
           void clearAll();
         }}
-        onCancel={() => { setClearConfirmOpen(false); }}
+        onCancel={() => {
+          setClearConfirmOpen(false);
+        }}
         surface={surface}
       />
     </div>

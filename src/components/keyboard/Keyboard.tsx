@@ -30,7 +30,10 @@ import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
 import { effectiveKeyboardFontSize } from "../../lib/keyboardFontSize";
-import { isTransparentUiActive, transparentKeyPalette } from "../../lib/focusMode";
+import {
+  isTransparentUiActive,
+  transparentKeyPalette,
+} from "../../lib/focusMode";
 import type { AppSettings } from "../../lib/types";
 import { inject } from "./keyboardUtils";
 import { useStickyModifiers } from "../../hooks/useStickyModifiers";
@@ -105,7 +108,9 @@ export function Keyboard() {
   const toggleDictation = useAppStore((s) => s.toggleDictation);
   const sttCapability = useAppStore((s) => s.sttCapability);
   const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
-  const applyTypedLayoutTranslation = useAppStore((s) => s.applyTypedLayoutTranslation);
+  const applyTypedLayoutTranslation = useAppStore(
+    (s) => s.applyTypedLayoutTranslation,
+  );
   const applyLanguageLayoutTranslation = useAppStore(
     (s) => s.applyLanguageLayoutTranslation,
   );
@@ -113,13 +118,21 @@ export function Keyboard() {
   const languageBackspace = useAppStore((s) => s.languageBackspace);
   const checkLanguageAnswer = useAppStore((s) => s.checkLanguageAnswer);
   const languageLessonPlaying = useAppStore((s) => s.languageLessonPlaying);
-  const languageListAuthoringActive = useAppStore((s) => s.languageListAuthoringActive);
-  const languageListAuthoringHandlers = useAppStore((s) => s.languageListAuthoringHandlers);
+  const languageListAuthoringActive = useAppStore(
+    (s) => s.languageListAuthoringActive,
+  );
+  const languageListAuthoringHandlers = useAppStore(
+    (s) => s.languageListAuthoringHandlers,
+  );
   const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
   const freeWriteFocus = useAppStore((s) => s.freeWriteFocus);
   const freeWriteNotepadInput = useAppStore((s) => s.freeWriteNotepadInput);
-  const freeWriteNotepadBackspace = useAppStore((s) => s.freeWriteNotepadBackspace);
-  const applyFreeWriteLayoutTranslation = useAppStore((s) => s.applyFreeWriteLayoutTranslation);
+  const freeWriteNotepadBackspace = useAppStore(
+    (s) => s.freeWriteNotepadBackspace,
+  );
+  const applyFreeWriteLayoutTranslation = useAppStore(
+    (s) => s.applyFreeWriteLayoutTranslation,
+  );
   const musicTeachingEnabled = useAppStore((s) => s.musicTeachingEnabled);
   const teachingLesson = useAppStore((s) => s.teachingLesson);
 
@@ -191,12 +204,15 @@ export function Keyboard() {
     languageLessonActive: freeWriteCaptureActive,
   });
   const transparent = isTransparentUiActive(settings, focusModeActive);
-  const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
+  const transparentPalette = transparentKeyPalette(
+    settings.transparentKeyColor,
+  );
   const keyTextColor = transparent
     ? transparentPalette.text
     : (settings.keyTextColor ?? "#1e293b");
 
-  const listening = dictationState === "listening" || dictationState === "processing";
+  const listening =
+    dictationState === "listening" || dictationState === "processing";
   const canDictate = sttCapability?.canDictate ?? false;
   // Never disable while a session is active — stop must always be clickable.
   const dictateDisabled = !listening && !canDictate;
@@ -219,7 +235,9 @@ export function Keyboard() {
     dictateAriaLabel = `${dictateAriaLabel}. ${t("dictationGroqRemainingToday")} ${groqRemainingPercent}%`;
   }
 
-  const translateLayoutKey = async (physicalKey: string): Promise<LayoutKeyTranslation> =>
+  const translateLayoutKey = async (
+    physicalKey: string,
+  ): Promise<LayoutKeyTranslation> =>
     invoke<LayoutKeyTranslation>("cmd_translate_layout_key", {
       physicalKey,
       shift: shiftActive,
@@ -314,7 +332,7 @@ export function Keyboard() {
   );
 
   const dictateBgColor = transparent
-    ? settings.keyboardKeyColor ?? "#ffffff"
+    ? (settings.keyboardKeyColor ?? "#ffffff")
     : listening
       ? "#dc2626"
       : dictateDisabled
@@ -350,8 +368,7 @@ export function Keyboard() {
         {groqRemainingPercent !== null ? (
           <span
             className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] font-semibold leading-none tabular-nums"
-            aria-hidden
-          >
+            aria-hidden>
             {groqRemainingPercent}%
           </span>
         ) : null}
@@ -380,8 +397,7 @@ export function Keyboard() {
           ? "transparent"
           : (settings.keyboardBgColor ?? "#e8edf2"),
         opacity: transparent ? 1 : settings.opacity,
-      }}
-    >
+      }}>
       {rows.map((row, ri) => (
         <div key={ri} className="flex w-full">
           {row.map((k, ci) => {
@@ -428,7 +444,9 @@ export function Keyboard() {
                           typingLocale,
                         )
                   }
-                  ariaLabel={specialKey ? specialKeyAriaLabel(k.key) : undefined}
+                  ariaLabel={
+                    specialKey ? specialKeyAriaLabel(k.key) : undefined
+                  }
                   width={k.width}
                   size={keyHeight}
                   spacing={spacing}
@@ -438,7 +456,13 @@ export function Keyboard() {
                   stretch
                   transparent={transparent}
                   outlineColor={settings.transparentKeyColor}
-                  active={isKeyActive(k, ri, ci, physicalKeyState, stickyModifiers)}
+                  active={isKeyActive(
+                    k,
+                    ri,
+                    ci,
+                    physicalKeyState,
+                    stickyModifiers,
+                  )}
                   repeatOnHold={isBackspace}
                   onHoldEndKey={isBackspace ? onHoldEndKey : undefined}
                   onPressKey={onPressKey}
@@ -456,8 +480,7 @@ export function Keyboard() {
                   height: keyHeight,
                   marginRight: spacing,
                   marginBottom: spacing,
-                }}
-              >
+                }}>
                 {languagePickerOpen ? (
                   <LanguagePicker
                     anchorRef={langKeyAnchorRef}
@@ -466,7 +489,9 @@ export function Keyboard() {
                     onSelectLanguage={(method) => {
                       void selectTypingInputMethod(method);
                     }}
-                    onClose={() => { setLanguagePickerOpen(false); }}
+                    onClose={() => {
+                      setLanguagePickerOpen(false);
+                    }}
                     fontSize={fontSize}
                     textColor={keyTextColor}
                     bgColor={keyBgColor}

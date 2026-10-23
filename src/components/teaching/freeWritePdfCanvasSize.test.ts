@@ -36,6 +36,8 @@ describe("FreeWritePdfPane load contract", () => {
   it("loads PDF bytes without base64", () => {
     expect(paneSource).not.toMatch(/base64ToUint8Array/);
     expect(paneSource).not.toMatch(/contentBase64/);
-    expect(paneSource).toMatch(/invoke<ArrayBuffer>\(\s*"cmd_read_teaching_pdf"/);
+    expect(paneSource).toMatch(
+      /invoke<ArrayBuffer>\(\s*"cmd_read_teaching_pdf"/,
+    );
   });
 });

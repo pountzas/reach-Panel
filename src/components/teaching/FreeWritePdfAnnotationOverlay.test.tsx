@@ -50,27 +50,26 @@ function mockRect(
   el: HTMLElement,
   rect: { left: number; top: number; width: number; height: number },
 ) {
-  el.getBoundingClientRect = () =>
-    ({
-      ...rect,
-      right: rect.left + rect.width,
-      bottom: rect.top + rect.height,
-      x: rect.left,
-      y: rect.top,
-      toJSON: () => ({}),
-    });
+  el.getBoundingClientRect = () => ({
+    ...rect,
+    right: rect.left + rect.width,
+    bottom: rect.top + rect.height,
+    x: rect.left,
+    y: rect.top,
+    toJSON: () => ({}),
+  });
 }
 
 /** jsdom lacks pointer capture; mirror set/has/release for gesture handlers. */
 function stubPointerCapture(el: HTMLElement) {
   const captured = new Set<number>();
-  el.setPointerCapture = ((id: number) => {
+  el.setPointerCapture = (id: number) => {
     captured.add(id);
-  });
-  el.releasePointerCapture = ((id: number) => {
+  };
+  el.releasePointerCapture = (id: number) => {
     captured.delete(id);
-  });
-  el.hasPointerCapture = ((id: number) => captured.has(id));
+  };
+  el.hasPointerCapture = (id: number) => captured.has(id);
 }
 
 describe("FreeWritePdfAnnotationOverlay gestures", () => {
@@ -119,7 +118,8 @@ describe("FreeWritePdfAnnotationOverlay gestures", () => {
       });
     });
 
-    const strokes = useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes;
+    const strokes =
+      useAppStore.getState().freeWriteAnnotationDoc.pages["1"].strokes;
     expect(strokes).toHaveLength(1);
     expect(strokes[0].points[0][0]).toBeCloseTo(0.5, 5);
     expect(strokes[0].points[0][1]).toBeCloseTo(0.5, 5);

@@ -17,10 +17,11 @@ export function TeachingKeyboardHeaderControls() {
     <div className="section-no-drag flex items-center justify-center gap-0.5">
       <IconActionButton
         label={minimized ? t("expand") : t("minimizeSection")}
-        onClick={() => { toggleMinimized(); }}
+        onClick={() => {
+          toggleMinimized();
+        }}
         size={iconSize}
-        tooltipPlacement="below"
-      >
+        tooltipPlacement="below">
         {minimized ? (
           <ExpandIcon className={iconClass} />
         ) : (
@@ -29,11 +30,12 @@ export function TeachingKeyboardHeaderControls() {
       </IconActionButton>
       <IconActionButton
         label={t("teachingKeyboardFocus")}
-        onClick={() => { toggleAutoFocus(); }}
+        onClick={() => {
+          toggleAutoFocus();
+        }}
         pressed={autoFocus}
         size={iconSize}
-        tooltipPlacement="below"
-      >
+        tooltipPlacement="below">
         <FocusIcon className={iconClass} />
       </IconActionButton>
     </div>

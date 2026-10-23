@@ -10,7 +10,7 @@ export type FreeWritePdfCanvasSize = {
   cssHeight: number;
   /** Scale applied to the 2d context / pdf.js transform. */
   outputScale: number;
-}
+};
 
 /**
  * Size the page canvas for the current display scale.

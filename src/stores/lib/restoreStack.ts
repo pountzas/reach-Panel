@@ -13,12 +13,12 @@ export type RestorePatch = {
   mode?: HostAppMode;
   windowHeightRatio?: WindowHeightRatioBeforeTeaching;
   mouseVisible?: boolean;
-}
+};
 
 export type RestoreStackEntry = {
   reason: RestoreReason;
   patch: RestorePatch;
-}
+};
 
 /**
  * Append a restore frame. When `reason` is already on the stack the existing

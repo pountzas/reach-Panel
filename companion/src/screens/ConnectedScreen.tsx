@@ -1,22 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { CompanionClient, ConnectionStatus } from '../companionClient';
-import {
-  CollapsedFab,
-  type ShellTab,
-} from '../components/CollapsedFab';
-import { DictationPanel } from '../components/DictationPanel';
-import { InputPreview } from '../components/InputPreview';
-import { KeyboardPanel } from '../components/KeyboardPanel';
-import { NumpadPanel } from '../components/NumpadPanel';
-import { ProfilePanel } from '../components/ProfilePanel';
-import { ReconnectingBanner } from '../components/ReconnectingBanner';
-import { SuggestionsBar } from '../components/SuggestionsBar';
-import { TrackpadPanel } from '../components/TrackpadPanel';
-import { UsbChecklist } from '../components/UsbChecklist';
-import { useProfileSnapshot } from '../hooks/useProfileSnapshot';
-import { previewDataUrl } from '../lib/previewDataUrl';
-import type { PredictionEntry } from '../types';
+import { useCallback, useEffect, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import type { CompanionClient, ConnectionStatus } from "../companionClient";
+import { CollapsedFab, type ShellTab } from "../components/CollapsedFab";
+import { DictationPanel } from "../components/DictationPanel";
+import { InputPreview } from "../components/InputPreview";
+import { KeyboardPanel } from "../components/KeyboardPanel";
+import { NumpadPanel } from "../components/NumpadPanel";
+import { ProfilePanel } from "../components/ProfilePanel";
+import { ReconnectingBanner } from "../components/ReconnectingBanner";
+import { SuggestionsBar } from "../components/SuggestionsBar";
+import { TrackpadPanel } from "../components/TrackpadPanel";
+import { UsbChecklist } from "../components/UsbChecklist";
+import { useProfileSnapshot } from "../hooks/useProfileSnapshot";
+import { previewDataUrl } from "../lib/previewDataUrl";
+import type { PredictionEntry } from "../types";
 
 type Props = {
   client: CompanionClient;
@@ -31,31 +28,31 @@ export function ConnectedScreen({
   statusDetail,
   onForget,
 }: Props) {
-  const [tab, setTab] = useState<ShellTab>('keyboard');
+  const [tab, setTab] = useState<ShellTab>("keyboard");
   const [fabOpen, setFabOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [prefix, setPrefix] = useState('');
+  const [prefix, setPrefix] = useState("");
   const [suggestions, setSuggestions] = useState<PredictionEntry[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { snapshot, error, loading, refresh, language, profileId } =
     useProfileSnapshot(client, status);
 
-  const enabled = status === 'connected';
+  const enabled = status === "connected";
   const predictionEnabled = Boolean(snapshot?.settings.predictionEnabled);
 
   useEffect(() => {
     return client.onMessage((env) => {
-      if (env.type === 'input.preview.frame') {
+      if (env.type === "input.preview.frame") {
         setPreviewUrl(previewDataUrl(env.payload?.dataUrl));
-      } else if (env.type === 'input.preview.cleared') {
+      } else if (env.type === "input.preview.cleared") {
         setPreviewUrl(null);
       }
     });
   }, [client]);
 
   useEffect(() => {
-    if (status !== 'connected' && status !== 'reconnecting') {
+    if (status !== "connected" && status !== "reconnecting") {
       setPreviewUrl(null);
     }
   }, [status]);
@@ -68,14 +65,16 @@ export function ConnectedScreen({
         return;
       }
       try {
-        const reply = await client.send('predict.query', {
+        const reply = await client.send("predict.query", {
           profileId,
           prefix: nextPrefix,
           language,
         });
-        if (reply.type === 'predict.suggestions') {
+        if (reply.type === "predict.suggestions") {
           const list = reply.payload?.suggestions;
-          setSuggestions(Array.isArray(list) ? (list as PredictionEntry[]) : []);
+          setSuggestions(
+            Array.isArray(list) ? (list as PredictionEntry[]) : [],
+          );
         }
       } catch {
         setSuggestions([]);
@@ -86,7 +85,7 @@ export function ConnectedScreen({
 
   const onTypedChar = (char: string) => {
     if (/\s/.test(char)) {
-      void queryPredictions('');
+      void queryPredictions("");
       return;
     }
     void queryPredictions(prefix + char);
@@ -94,11 +93,11 @@ export function ConnectedScreen({
 
   const onSpecialKey = (key: string) => {
     switch (key) {
-      case 'space':
-      case 'enter':
-        void queryPredictions('');
+      case "space":
+      case "enter":
+        void queryPredictions("");
         break;
-      case 'backspace':
+      case "backspace":
         void queryPredictions(prefix.slice(0, -1));
         break;
       default:
@@ -110,22 +109,24 @@ export function ConnectedScreen({
     if (!enabled) {
       return;
     }
-    const remainder = word.startsWith(prefix) ? word.slice(prefix.length) : word;
+    const remainder = word.startsWith(prefix)
+      ? word.slice(prefix.length)
+      : word;
     if (remainder.length > 0) {
-      await client.send('text.type', { text: remainder });
+      await client.send("text.type", { text: remainder });
     }
-    await client.send('text.type', { text: ' ' });
-    void client.send('predict.record', {
+    await client.send("text.type", { text: " " });
+    void client.send("predict.record", {
       profileId,
       word,
       language,
     });
-    setPrefix('');
+    setPrefix("");
     setSuggestions([]);
   };
 
   const showSuggestions =
-    tab === 'keyboard' && (predictionEnabled || suggestions.length > 0);
+    tab === "keyboard" && (predictionEnabled || suggestions.length > 0);
 
   return (
     <View style={styles.container}>
@@ -134,18 +135,17 @@ export function ConnectedScreen({
         <View>
           <Text style={styles.brand}>ReachPanel</Text>
           <Text style={styles.status}>
-            {status === 'connected' ? 'Connected' : status}
-            {snapshot ? ` · ${snapshot.profile.name}` : ''}
+            {status === "connected" ? "Connected" : status}
+            {snapshot ? ` · ${snapshot.profile.name}` : ""}
           </Text>
         </View>
         <View style={styles.headerActions}>
           <Pressable
             style={styles.headerBtn}
             onPress={() => setCollapsed((v) => !v)}
-            accessibilityRole="button"
-          >
+            accessibilityRole="button">
             <Text style={styles.headerBtnText}>
-              {collapsed ? 'Expand' : 'FAB'}
+              {collapsed ? "Expand" : "FAB"}
             </Text>
           </Pressable>
           <Pressable style={styles.headerBtn} onPress={onForget}>
@@ -158,12 +158,12 @@ export function ConnectedScreen({
         <View style={styles.tabs}>
           {(
             [
-              ['keyboard', 'Keyboard'],
-              ['trackpad', 'Trackpad'],
-              ['numpad', 'Numpad'],
-              ['dictation', 'Dictation'],
-              ['profile', 'Profile'],
-              ['usb', 'USB'],
+              ["keyboard", "Keyboard"],
+              ["trackpad", "Trackpad"],
+              ["numpad", "Numpad"],
+              ["dictation", "Dictation"],
+              ["profile", "Profile"],
+              ["usb", "USB"],
             ] as const
           ).map(([id, label]) => (
             <TabButton
@@ -187,7 +187,7 @@ export function ConnectedScreen({
         />
       )}
 
-      {tab === 'keyboard' ? <InputPreview dataUrl={previewUrl} /> : null}
+      {tab === "keyboard" ? <InputPreview dataUrl={previewUrl} /> : null}
 
       <View style={styles.body}>
         {renderTab({
@@ -202,7 +202,7 @@ export function ConnectedScreen({
           onTypedChar,
           onSpecialKey,
           onLanguageChanged: (_langTag: string) => {
-            setPrefix('');
+            setPrefix("");
             setSuggestions([]);
             void refresh();
           },
@@ -225,7 +225,7 @@ function renderTab(args: {
   tab: ShellTab;
   client: CompanionClient;
   enabled: boolean;
-  snapshot: ReturnType<typeof useProfileSnapshot>['snapshot'];
+  snapshot: ReturnType<typeof useProfileSnapshot>["snapshot"];
   language: string;
   loading: boolean;
   error: string | null;
@@ -249,7 +249,7 @@ function renderTab(args: {
   } = args;
 
   switch (tab) {
-    case 'keyboard':
+    case "keyboard":
       return (
         <KeyboardPanel
           client={client}
@@ -260,19 +260,15 @@ function renderTab(args: {
           onSpecialKey={onSpecialKey}
         />
       );
-    case 'trackpad':
+    case "trackpad":
       return <TrackpadPanel client={client} enabled={enabled} />;
-    case 'numpad':
+    case "numpad":
       return <NumpadPanel client={client} enabled={enabled} />;
-    case 'dictation':
+    case "dictation":
       return (
-        <DictationPanel
-          client={client}
-          language={language}
-          enabled={enabled}
-        />
+        <DictationPanel client={client} language={language} enabled={enabled} />
       );
-    case 'profile':
+    case "profile":
       return (
         <ProfilePanel
           snapshot={snapshot}
@@ -283,7 +279,7 @@ function renderTab(args: {
           }}
         />
       );
-    case 'usb':
+    case "usb":
       return (
         <ScrollView contentContainerStyle={{ padding: 16 }}>
           <UsbChecklist />
@@ -310,8 +306,7 @@ function TabButton({
       onPress={onPress}
       style={[styles.tab, active && styles.tabActive]}
       accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-    >
+      accessibilityState={{ selected: active }}>
       <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
         {label}
       </Text>
@@ -322,44 +317,44 @@ function TabButton({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121820',
+    backgroundColor: "#121820",
   },
   header: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   brand: {
-    color: '#7eb6ff',
+    color: "#7eb6ff",
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   status: {
-    color: '#b0bac8',
+    color: "#b0bac8",
     fontSize: 14,
     marginTop: 2,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   headerBtn: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#2a3140',
+    backgroundColor: "#2a3140",
   },
   headerBtnText: {
-    color: '#f2f4f8',
-    fontWeight: '600',
+    color: "#f2f4f8",
+    fontWeight: "600",
   },
   tabs: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     paddingHorizontal: 16,
     paddingBottom: 8,
@@ -368,21 +363,21 @@ const styles = StyleSheet.create({
     minWidth: 96,
     minHeight: 44,
     borderRadius: 12,
-    backgroundColor: '#1c2433',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#1c2433",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 10,
   },
   tabActive: {
-    backgroundColor: '#2f4f78',
+    backgroundColor: "#2f4f78",
   },
   tabLabel: {
-    color: '#b0bac8',
+    color: "#b0bac8",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   tabLabelActive: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
   },
   body: {
     flex: 1,

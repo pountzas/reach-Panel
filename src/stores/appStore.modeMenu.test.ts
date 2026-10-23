@@ -190,8 +190,9 @@ describe("mode menu store actions", () => {
       payload: { focused: false },
     });
     expect(useAppStore.getState().modeMenuOpen).toBe(false);
-    await vi.waitFor(() => { expect(mockState.calls).toContain("cmd_apply_window_layout"); },
-    );
+    await vi.waitFor(() => {
+      expect(mockState.calls).toContain("cmd_apply_window_layout");
+    });
   });
 
   it("repositions the dictation overlay after a focus-mode layout sync", async () => {
@@ -205,7 +206,8 @@ describe("mode menu store actions", () => {
     mockState.focusHandlers.get("input-focus-changed")?.({
       payload: { focused: false },
     });
-    await vi.waitFor(() => { expect(mockState.showDictationOverlay).toHaveBeenCalled(); },
-    );
+    await vi.waitFor(() => {
+      expect(mockState.showDictationOverlay).toHaveBeenCalled();
+    });
   });
 });

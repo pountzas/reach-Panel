@@ -13,7 +13,11 @@ import { useAppStore } from "../../stores/appStore";
 import { SettingsSection } from "./SettingsSection";
 import { ThemedSelect, ToggleRow } from "./settingsControls";
 
-export function GeneralSettingsSection({ surface }: { surface: SurfaceColors }) {
+export function GeneralSettingsSection({
+  surface,
+}: {
+  surface: SurfaceColors;
+}) {
   const { t } = useTranslation();
   const [launchAtSignIn, setLaunchAtSignIn] = useState<boolean>(() =>
     getCachedAutostartEnabled(),
@@ -74,26 +78,33 @@ export function GeneralSettingsSection({ surface }: { surface: SurfaceColors }) 
             setLaunchAtSignInBusy(true);
             setLaunchAtSignIn(checked);
             void setAutostartEnabled(checked)
-              .then((on) => { setLaunchAtSignIn(on); })
+              .then((on) => {
+                setLaunchAtSignIn(on);
+              })
               .catch(() => {
                 setLaunchAtSignIn(getCachedAutostartEnabled());
                 notify.error(t("launchAtWindowsSignInError"));
               })
-              .finally(() => { setLaunchAtSignInBusy(false); });
+              .finally(() => {
+                setLaunchAtSignInBusy(false);
+              });
           }}
           surface={surface}
         />
-        <span className="mt-1 block px-3 text-xs" style={{ color: surface.panelMutedText }}>
+        <span
+          className="mt-1 block px-3 text-xs"
+          style={{ color: surface.panelMutedText }}>
           {t("launchAtWindowsSignInHint")}
         </span>
       </div>
-      <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
+      <label
+        className="mb-3 block text-sm"
+        style={{ color: surface.panelText }}>
         {t("appLanguage")}
         <ThemedSelect
           value={settings.uiLanguage}
           onChange={(v) => updateSettings({ uiLanguage: v })}
-          surface={surface}
-        >
+          surface={surface}>
           <option value="en">{t("languageEnglish")}</option>
           <option value="el">{t("languageGreek")}</option>
           <option value="de">{t("languageGerman")}</option>
@@ -102,11 +113,15 @@ export function GeneralSettingsSection({ surface }: { surface: SurfaceColors }) 
           <option value="es">{t("languageSpanish")}</option>
           <option value="pt">{t("languagePortuguese")}</option>
         </ThemedSelect>
-        <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
+        <span
+          className="mt-1 block text-xs"
+          style={{ color: surface.panelMutedText }}>
           {t("appLanguageHint")}
         </span>
       </label>
-      <label className="mb-3 block text-sm" style={{ color: surface.panelText }}>
+      <label
+        className="mb-3 block text-sm"
+        style={{ color: surface.panelText }}>
         {t("typingLanguage")}
         <ThemedSelect
           value={activeTypingValue}
@@ -116,8 +131,7 @@ export function GeneralSettingsSection({ surface }: { surface: SurfaceColors }) 
               void selectTypingInputMethod(method);
             }
           }}
-          surface={surface}
-        >
+          surface={surface}>
           {inputMethods.length === 0 ? (
             <option value="">{settings.typingLanguage.toUpperCase()}</option>
           ) : (
@@ -128,7 +142,9 @@ export function GeneralSettingsSection({ surface }: { surface: SurfaceColors }) 
             ))
           )}
         </ThemedSelect>
-        <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
+        <span
+          className="mt-1 block text-xs"
+          style={{ color: surface.panelMutedText }}>
           {t("typingLanguageHint")}
         </span>
       </label>
@@ -140,11 +156,12 @@ export function GeneralSettingsSection({ surface }: { surface: SurfaceColors }) 
             backgroundColor: surface.insetBg,
             borderColor: surface.insetBorder,
             color: surface.panelText,
-          }}
-        >
+          }}>
           {resolveOnscreenLayout(keyboardLayout, settings.typingLanguage)}
         </span>
-        <span className="mt-1 block text-xs" style={{ color: surface.panelMutedText }}>
+        <span
+          className="mt-1 block text-xs"
+          style={{ color: surface.panelMutedText }}>
           {t("onscreenLayoutHint")}
         </span>
       </div>

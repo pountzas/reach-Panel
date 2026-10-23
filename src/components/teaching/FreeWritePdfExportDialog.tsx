@@ -16,7 +16,7 @@ export type FreeWritePdfExportDialogProps = {
   surface: SurfaceColors;
   onCancel: () => void;
   onExport: (from: number, to: number) => void;
-}
+};
 
 /** From/To/All/Current export range dialog for Free write PDF. */
 export function FreeWritePdfExportDialog({
@@ -48,7 +48,9 @@ export function FreeWritePdfExportDialog({
     const panel = panelRef.current;
     if (!panel) return;
     const previouslyFocused =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     const firstInput = panel.querySelector<HTMLElement>("input, button");
     firstInput?.focus();
 
@@ -126,7 +128,7 @@ export function FreeWritePdfExportDialog({
   // Portal to body so section `contain: layout paint` cannot trap/clip the overlay.
   return createPortal(
     <Activity mode={open ? "visible" : "hidden"}>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+      <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4">
         <div
           ref={panelRef}
           role="dialog"
@@ -134,13 +136,11 @@ export function FreeWritePdfExportDialog({
           aria-labelledby={titleId}
           tabIndex={-1}
           className="w-full max-w-sm rounded-2xl p-5 outline-none"
-          style={panelStyle}
-        >
+          style={panelStyle}>
           <p
             id={titleId}
             className="text-base font-medium"
-            style={{ color: surface.panelText }}
-          >
+            style={{ color: surface.panelText }}>
             {t("freeWritePdfExport")}
           </p>
 
@@ -154,7 +154,9 @@ export function FreeWritePdfExportDialog({
                 min={1}
                 max={pageCount || 1}
                 value={from}
-                onChange={(e) => { setFrom(Number(e.target.value) || 1); }}
+                onChange={(e) => {
+                  setFrom(Number(e.target.value) || 1);
+                }}
                 className="min-h-11 rounded-lg border px-3 py-2"
                 style={fieldStyle}
               />
@@ -168,7 +170,9 @@ export function FreeWritePdfExportDialog({
                 min={1}
                 max={pageCount || 1}
                 value={to}
-                onChange={(e) => { setTo(Number(e.target.value) || 1); }}
+                onChange={(e) => {
+                  setTo(Number(e.target.value) || 1);
+                }}
                 className="min-h-11 rounded-lg border px-3 py-2"
                 style={fieldStyle}
               />
@@ -180,22 +184,23 @@ export function FreeWritePdfExportDialog({
               type="button"
               className="min-h-11 rounded-lg border px-3 py-2 text-sm font-medium"
               style={buttonStyle}
-              onClick={applyAll}
-            >
+              onClick={applyAll}>
               {t("freeWritePdfExportAll")}
             </button>
             <button
               type="button"
               className="min-h-11 rounded-lg border px-3 py-2 text-sm font-medium"
               style={buttonStyle}
-              onClick={applyCurrent}
-            >
+              onClick={applyCurrent}>
               {t("freeWritePdfExportCurrent")}
             </button>
           </div>
 
           {error ? (
-            <p className="mt-3 text-sm" style={{ color: "#b91c1c" }} role="alert">
+            <p
+              className="mt-3 text-sm"
+              style={{ color: "#b91c1c" }}
+              role="alert">
               {error}
             </p>
           ) : null}
@@ -203,18 +208,16 @@ export function FreeWritePdfExportDialog({
           <div className="mt-5 flex flex-wrap justify-end gap-2">
             <button
               type="button"
-              className="min-h-11 min-w-[5.5rem] rounded-lg border px-4 py-2.5 text-sm font-medium"
+              className="min-h-11 min-w-22 rounded-lg border px-4 py-2.5 text-sm font-medium"
               style={buttonStyle}
-              onClick={onCancel}
-            >
+              onClick={onCancel}>
               {t("freeWritePdfExportCancel")}
             </button>
             <button
               type="button"
-              className="min-h-11 min-w-[5.5rem] rounded-lg border px-4 py-2.5 text-sm font-medium"
+              className="min-h-11 min-w-22 rounded-lg border px-4 py-2.5 text-sm font-medium"
               style={primaryStyle}
-              onClick={submit}
-            >
+              onClick={submit}>
               {t("freeWritePdfExportSave")}
             </button>
           </div>

@@ -10,22 +10,26 @@ import { handleWipeProfile } from "./settingsPanelUtils";
 type ToolsMaintenanceSectionProps = {
   surface: SurfaceColors;
   secondaryButtonStyle: CSSProperties;
-}
+};
 
 export function ToolsMaintenanceSection({
   surface,
   secondaryButtonStyle,
 }: ToolsMaintenanceSectionProps) {
   const { t } = useTranslation();
-  const { resetSettingsToDefaults, wipeActiveProfile, checkForUpdates, updateCheckStatus } =
-    useAppStore(
-      useShallow((s) => ({
-        resetSettingsToDefaults: s.resetSettingsToDefaults,
-        wipeActiveProfile: s.wipeActiveProfile,
-        checkForUpdates: s.checkForUpdates,
-        updateCheckStatus: s.updateCheckStatus,
-      })),
-    );
+  const {
+    resetSettingsToDefaults,
+    wipeActiveProfile,
+    checkForUpdates,
+    updateCheckStatus,
+  } = useAppStore(
+    useShallow((s) => ({
+      resetSettingsToDefaults: s.resetSettingsToDefaults,
+      wipeActiveProfile: s.wipeActiveProfile,
+      checkForUpdates: s.checkForUpdates,
+      updateCheckStatus: s.updateCheckStatus,
+    })),
+  );
 
   return (
     <SettingsSection title={t("settingsToolsMaintenance")} surface={surface}>
@@ -44,13 +48,16 @@ export function ToolsMaintenanceSection({
               } else if (status === "error") {
                 const detail = useAppStore.getState().updateCheckError;
                 notify.error(
-                  detail ? `${t("updateCheckFailed")} ${detail}` : t("updateCheckFailed"),
+                  detail
+                    ? `${t("updateCheckFailed")} ${detail}`
+                    : t("updateCheckFailed"),
                 );
               }
             })();
-          }}
-        >
-          {updateCheckStatus === "checking" ? t("updatePreparing") : t("checkForUpdates")}
+          }}>
+          {updateCheckStatus === "checking"
+            ? t("updatePreparing")
+            : t("checkForUpdates")}
         </button>
       </div>
 
@@ -58,8 +65,7 @@ export function ToolsMaintenanceSection({
         type="button"
         className="w-full rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700"
         style={{ backgroundColor: surface.insetBg }}
-        onClick={() => void resetSettingsToDefaults()}
-      >
+        onClick={() => void resetSettingsToDefaults()}>
         {t("resetUi")}
       </button>
       <p className="mt-1 text-xs" style={{ color: surface.panelMutedText }}>
@@ -69,8 +75,7 @@ export function ToolsMaintenanceSection({
         type="button"
         className="mt-3 w-full rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700"
         style={{ backgroundColor: surface.insetBg }}
-        onClick={() => void handleWipeProfile(wipeActiveProfile, t)}
-      >
+        onClick={() => void handleWipeProfile(wipeActiveProfile, t)}>
         {t("wipeProfile")}
       </button>
       <p className="mt-1 text-xs" style={{ color: surface.panelMutedText }}>

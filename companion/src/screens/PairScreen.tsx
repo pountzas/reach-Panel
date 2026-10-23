@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,10 +7,10 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { UsbChecklist } from '../components/UsbChecklist';
-import { parsePairingPayload, type PairingPayload } from '../protocol';
+} from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { UsbChecklist } from "../components/UsbChecklist";
+import { parsePairingPayload, type PairingPayload } from "../protocol";
 
 type Props = {
   busy: boolean;
@@ -22,7 +22,7 @@ const SCAN_DEBOUNCE_MS = 1500;
 
 export function PairScreen({ busy, error, onPair }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [manual, setManual] = useState('');
+  const [manual, setManual] = useState("");
   const [scanEnabled, setScanEnabled] = useState(true);
   const [localError, setLocalError] = useState<string | null>(null);
   const [showUsb, setShowUsb] = useState(false);
@@ -41,7 +41,7 @@ export function PairScreen({ busy, error, onPair }: Props) {
       setScanEnabled(false);
       onPair(payload);
     } catch (e) {
-      setLocalError(e instanceof Error ? e.message : 'Invalid QR payload');
+      setLocalError(e instanceof Error ? e.message : "Invalid QR payload");
       setScanEnabled(true);
     }
   };
@@ -69,8 +69,8 @@ export function PairScreen({ busy, error, onPair }: Props) {
       <Text style={styles.brand}>ReachPanel</Text>
       <Text style={styles.title}>Pair with Windows PC</Text>
       <Text style={styles.subtitle}>
-        Scan the QR code from ReachPanel Companion settings, or paste the pairing
-        JSON. No Wi‑Fi? Use USB tether help below.
+        Scan the QR code from ReachPanel Companion settings, or paste the
+        pairing JSON. No Wi‑Fi? Use USB tether help below.
       </Text>
       <Pressable style={styles.secondaryBtn} onPress={() => setShowUsb(true)}>
         <Text style={styles.secondaryBtnText}>USB tether checklist</Text>
@@ -79,8 +79,12 @@ export function PairScreen({ busy, error, onPair }: Props) {
       <View style={styles.cameraBox}>
         {!permission?.granted ? (
           <View style={styles.permissionBox}>
-            <Text style={styles.permissionText}>Camera access is needed to scan the QR code.</Text>
-            <Pressable style={styles.secondaryBtn} onPress={() => void requestPermission()}>
+            <Text style={styles.permissionText}>
+              Camera access is needed to scan the QR code.
+            </Text>
+            <Pressable
+              style={styles.secondaryBtn}
+              onPress={() => void requestPermission()}>
               <Text style={styles.secondaryBtnText}>Allow camera</Text>
             </Pressable>
           </View>
@@ -88,7 +92,7 @@ export function PairScreen({ busy, error, onPair }: Props) {
           <CameraView
             style={styles.camera}
             facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
             onBarcodeScanned={
               scanEnabled && !busy
                 ? ({ data }) => {
@@ -113,8 +117,7 @@ export function PairScreen({ busy, error, onPair }: Props) {
       <Pressable
         style={[styles.primaryBtn, busy && styles.btnDisabled]}
         disabled={busy}
-        onPress={() => submitRaw(manual)}
-      >
+        onPress={() => submitRaw(manual)}>
         {busy ? (
           <ActivityIndicator color="#0b1220" />
         ) : (
@@ -132,23 +135,23 @@ export function PairScreen({ busy, error, onPair }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121820',
+    backgroundColor: "#121820",
     padding: 24,
     gap: 12,
   },
   brand: {
-    color: '#7eb6ff',
+    color: "#7eb6ff",
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: "800",
     marginTop: 8,
   },
   title: {
-    color: '#f2f4f8',
+    color: "#f2f4f8",
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   subtitle: {
-    color: '#b0bac8',
+    color: "#b0bac8",
     fontSize: 16,
     lineHeight: 22,
     marginBottom: 4,
@@ -156,62 +159,62 @@ const styles = StyleSheet.create({
   cameraBox: {
     height: 360,
     borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#1c2433',
+    overflow: "hidden",
+    backgroundColor: "#1c2433",
   },
   camera: {
     flex: 1,
   },
   permissionBox: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 16,
     gap: 12,
   },
   permissionText: {
-    color: '#b0bac8',
-    textAlign: 'center',
+    color: "#b0bac8",
+    textAlign: "center",
     fontSize: 16,
   },
   input: {
     minHeight: 88,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#3a465c',
-    backgroundColor: '#1c2433',
-    color: '#f2f4f8',
+    borderColor: "#3a465c",
+    backgroundColor: "#1c2433",
+    color: "#f2f4f8",
     padding: 12,
     fontSize: 14,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   primaryBtn: {
-    backgroundColor: '#7eb6ff',
+    backgroundColor: "#7eb6ff",
     borderRadius: 12,
     minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   primaryBtnText: {
-    color: '#0b1220',
+    color: "#0b1220",
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   secondaryBtn: {
-    backgroundColor: '#2a3140',
+    backgroundColor: "#2a3140",
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   secondaryBtnText: {
-    color: '#f2f4f8',
-    fontWeight: '600',
+    color: "#f2f4f8",
+    fontWeight: "600",
   },
   btnDisabled: {
     opacity: 0.6,
   },
   error: {
-    color: '#ff8f8f',
+    color: "#ff8f8f",
     fontSize: 15,
   },
 });

@@ -57,7 +57,7 @@ export type CollapsedFabProps = {
    * Focus window is full-strip but the FAB must stay at the collapsed corner).
    */
   fillWindow?: boolean;
-}
+};
 
 export function CollapsedFab({
   showSettings = false,
@@ -84,7 +84,9 @@ export function CollapsedFab({
   const { t } = useTranslation();
   const [menuMounted, setMenuMounted] = useState(false);
   const [menuEntered, setMenuEntered] = useState(false);
-  const [stackEntered, setStackEntered] = useState(() => prefersReducedMotion());
+  const [stackEntered, setStackEntered] = useState(() =>
+    prefersReducedMotion(),
+  );
   const [promoteFabLayer, setPromoteFabLayer] = useState(
     () => !prefersReducedMotion(),
   );
@@ -98,18 +100,26 @@ export function CollapsedFab({
     }
     setPromoteFabLayer(true);
     setStackEntered(false);
-    const id = requestAnimationFrame(() => { setStackEntered(true); });
-    return () => { cancelAnimationFrame(id); };
+    const id = requestAnimationFrame(() => {
+      setStackEntered(true);
+    });
+    return () => {
+      cancelAnimationFrame(id);
+    };
   }, []);
 
   useEffect(() => {
     if (!stackEntered || prefersReducedMotion()) return;
     // Last FAB stagger index is at most 2; clear layer promotion after settle.
     const id = window.setTimeout(
-      () => { setPromoteFabLayer(false); },
+      () => {
+        setPromoteFabLayer(false);
+      },
       MOTION.fast + FAB_STAGGER_MS * 2 + 40,
     );
-    return () => { window.clearTimeout(id); };
+    return () => {
+      window.clearTimeout(id);
+    };
   }, [stackEntered]);
 
   useEffect(() => {
@@ -117,8 +127,12 @@ export function CollapsedFab({
       // eslint-disable-next-line react-hooks/set-state-in-effect -- mount/enter menu for open animation
       setMenuMounted(true);
       setMenuEntered(false);
-      const id = requestAnimationFrame(() => { setMenuEntered(true); });
-      return () => { cancelAnimationFrame(id); };
+      const id = requestAnimationFrame(() => {
+        setMenuEntered(true);
+      });
+      return () => {
+        cancelAnimationFrame(id);
+      };
     }
     if (!menuMounted) return;
     if (prefersReducedMotion()) {
@@ -130,7 +144,9 @@ export function CollapsedFab({
     const timeoutId = window.setTimeout(() => {
       setMenuMounted(false);
     }, MOTION.fast);
-    return () => { window.clearTimeout(timeoutId); };
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [modeMenuOpen, menuMounted]);
 
   const bgColor = headerBgColor ?? "#1e293b";
@@ -196,8 +212,7 @@ export function CollapsedFab({
       }
       style={{ background: "transparent" }}
       onClick={handleRootClick}
-      onKeyDown={handleRootKeyDown}
-    >
+      onKeyDown={handleRootKeyDown}>
       {menuMounted ? (
         <ModeMenu onShowKeyboard={handleExpand} entered={menuEntered} />
       ) : null}
@@ -208,8 +223,7 @@ export function CollapsedFab({
           padding: COLLAPSED_FAB_PAD,
           minWidth: contentMin.minWidth,
           minHeight: contentMin.minHeight,
-        }}
-      >
+        }}>
         {showDictation && (
           <button
             type="button"
@@ -228,8 +242,7 @@ export function CollapsedFab({
             disabled={!micEnabled}
             aria-disabled={!micEnabled}
             onClick={() => void toggleDictation()}
-            aria-label={micAriaLabel}
-          >
+            aria-label={micAriaLabel}>
             <span className="flex h-full w-full items-center justify-center transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-95">
               <MicrophoneIcon className="h-6 w-6 transition-colors duration-200" />
             </span>
@@ -244,7 +257,11 @@ export function CollapsedFab({
               height: COLLAPSED_FAB_SIZE,
               backgroundColor: bgColor,
               color: textColor,
-              ...fabAppearStyle(showDictation ? 1 : 0, stackEntered, promoteFabLayer),
+              ...fabAppearStyle(
+                showDictation ? 1 : 0,
+                stackEntered,
+                promoteFabLayer,
+              ),
             }}
             onClick={() => {
               if (modeMenuOpen) {
@@ -253,8 +270,7 @@ export function CollapsedFab({
               }
               onSettings?.();
             }}
-            aria-label={t("settings")}
-          >
+            aria-label={t("settings")}>
             <span className="flex h-full w-full items-center justify-center transition-transform group-hover:scale-[1.03] group-active:scale-95">
               <SettingsIcon className="h-6 w-6" />
             </span>
@@ -274,14 +290,11 @@ export function CollapsedFab({
               promoteFabLayer,
             ),
           }}
-          onClick={() =>
-            void (modeMenuOpen ? closeModeMenu() : openModeMenu())
-          }
+          onClick={() => void (modeMenuOpen ? closeModeMenu() : openModeMenu())}
           disabled={isAnimatingWindow}
           aria-haspopup="menu"
           aria-expanded={modeMenuOpen}
-          aria-label={t("modeMenuOpen")}
-        >
+          aria-label={t("modeMenuOpen")}>
           <span className="flex h-full w-full items-center justify-center transition-transform group-hover:scale-[1.03] group-active:scale-95">
             <span
               className="flex items-center justify-center rounded-full"
@@ -289,8 +302,7 @@ export function CollapsedFab({
                 width: MODE_FAB_LOGO_SIZE,
                 height: MODE_FAB_LOGO_SIZE,
                 backgroundColor: "#121820",
-              }}
-            >
+              }}>
               <img
                 src={reachPanelLogo}
                 alt=""

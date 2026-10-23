@@ -23,7 +23,7 @@ type PromptState = "prompt" | "downloading";
 type UpdatePromptProps = {
   update: Update;
   onDismiss: () => void;
-}
+};
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -32,13 +32,16 @@ function formatProgress(progress: UpdateProgress): number {
   if (!progress.contentLength || progress.contentLength <= 0) {
     return 0;
   }
-  return Math.min(100, Math.round((progress.downloaded / progress.contentLength) * 100));
+  return Math.min(
+    100,
+    Math.round((progress.downloaded / progress.contentLength) * 100),
+  );
 }
 
 function focusableElements(root: HTMLElement): HTMLElement[] {
-  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-    (el) => el.getClientRects().length > 0,
-  );
+  return Array.from(
+    root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter((el) => el.getClientRects().length > 0);
 }
 
 export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
@@ -65,7 +68,9 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
     if (!panel) return;
 
     const previouslyFocused =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     const initial = focusableElements(panel)[0] ?? panel;
     initial.focus();
 
@@ -141,7 +146,7 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4">
       <div
         ref={panelRef}
         role="dialog"
@@ -149,21 +154,23 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
         aria-labelledby={titleId}
         tabIndex={-1}
         className="w-full max-w-md rounded-2xl p-5 outline-none"
-        style={panelStyle}
-      >
+        style={panelStyle}>
         <h2
           id={titleId}
           className="text-lg font-bold"
-          style={{ color: surface.panelText }}
-        >
+          style={{ color: surface.panelText }}>
           {t("updateAvailable")}
         </h2>
 
         {state === "prompt" && (
           <>
-            <p className="mt-2 text-sm" style={{ color: surface.panelMutedText }}>
+            <p
+              className="mt-2 text-sm"
+              style={{ color: surface.panelMutedText }}>
               {t("updateVersionInfo")}{" "}
-              <span className="font-medium" style={{ color: surface.panelText }}>
+              <span
+                className="font-medium"
+                style={{ color: surface.panelText }}>
                 {currentVersion || "…"} → {update.version}
               </span>
             </p>
@@ -174,8 +181,7 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
                   backgroundColor: surface.insetBg,
                   border: `1px solid ${surface.insetBorder}`,
                   color: surface.insetText,
-                }}
-              >
+                }}>
                 {update.body}
               </div>
             )}
@@ -184,24 +190,21 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
                 type="button"
                 className="rounded-lg border px-3 py-2 text-sm"
                 style={secondaryButtonStyle}
-                onClick={onDismiss}
-              >
+                onClick={onDismiss}>
                 {t("updateLater")}
               </button>
               <button
                 type="button"
                 className="rounded-lg border px-3 py-2 text-sm"
                 style={secondaryButtonStyle}
-                onClick={handleSkip}
-              >
+                onClick={handleSkip}>
                 {t("skipThisVersion")}
               </button>
               <button
                 type="button"
                 className="rounded-lg px-4 py-2 text-sm font-medium"
                 style={primaryButtonStyle}
-                onClick={() => void handleInstall()}
-              >
+                onClick={() => void handleInstall()}>
                 {t("updateNow")}
               </button>
             </div>
@@ -215,8 +218,7 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
             </p>
             <div
               className="mt-3 h-2 overflow-hidden rounded-full"
-              style={{ backgroundColor: surface.insetBg }}
-            >
+              style={{ backgroundColor: surface.insetBg }}>
               <div
                 className="h-full w-full origin-left rounded-full transition-transform duration-200"
                 style={{
@@ -225,8 +227,12 @@ export function UpdatePrompt({ update, onDismiss }: UpdatePromptProps) {
                 }}
               />
             </div>
-            <p className="mt-2 text-xs" style={{ color: surface.panelMutedText }}>
-              {progressPercent > 0 ? `${progressPercent}%` : t("updatePreparing")}
+            <p
+              className="mt-2 text-xs"
+              style={{ color: surface.panelMutedText }}>
+              {progressPercent > 0
+                ? `${progressPercent}%`
+                : t("updatePreparing")}
             </p>
           </div>
         )}

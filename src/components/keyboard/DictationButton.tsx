@@ -4,21 +4,31 @@ import { ModeToggleButton, ModeToggleGroup } from "../common/ModeToggle";
 import { useAppStore } from "../../stores/appStore";
 import { useTranslation } from "../../hooks/useTranslation";
 import { DictationVisualizer } from "./DictationVisualizer";
-import { transparentKeyPalette, transparentOutlineStyle } from "../../lib/focusMode";
+import {
+  transparentKeyPalette,
+  transparentOutlineStyle,
+} from "../../lib/focusMode";
 
-export function DictationButton({ transparentUi = false }: { transparentUi?: boolean }) {
+export function DictationButton({
+  transparentUi = false,
+}: {
+  transparentUi?: boolean;
+}) {
   const dictationState = useAppStore((s) => s.dictationState);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
   const sttCapability = useAppStore((s) => s.sttCapability);
   const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
   const settings = useAppStore((s) => s.settings);
   const { t } = useTranslation();
-  const listening = dictationState === "listening" || dictationState === "processing";
+  const listening =
+    dictationState === "listening" || dictationState === "processing";
   const canDictate = sttCapability?.canDictate ?? false;
   const captureAudio = sttCapability?.engine !== "groq";
   // Never disable while a session is active — stop must always be clickable.
   const disabled = !listening && !canDictate;
-  const transparentPalette = transparentKeyPalette(settings.transparentKeyColor);
+  const transparentPalette = transparentKeyPalette(
+    settings.transparentKeyColor,
+  );
 
   useEffect(() => {
     void refreshSttCapability();
@@ -40,8 +50,7 @@ export function DictationButton({ transparentUi = false }: { transparentUi?: boo
       <DictationVisualizer active={listening} captureAudio={captureAudio} />
       <ModeToggleGroup
         transparentUi={transparentUi}
-        transparentBorderColor={transparentPalette.border}
-      >
+        transparentBorderColor={transparentPalette.border}>
         <ModeToggleButton
           active={listening}
           position="only"
@@ -65,8 +74,7 @@ export function DictationButton({ transparentUi = false }: { transparentUi?: boo
                   ? "bg-slate-100 text-slate-400"
                   : "bg-white text-slate-700"
           }
-          onClick={() => void toggleDictation()}
-        >
+          onClick={() => void toggleDictation()}>
           <MicrophoneIcon className="h-4 w-4" />
         </ModeToggleButton>
       </ModeToggleGroup>

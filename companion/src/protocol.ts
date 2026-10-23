@@ -30,13 +30,13 @@ export type Envelope = {
 export function parsePairingPayload(raw: string): PairingPayload {
   const data = JSON.parse(raw) as Partial<PairingPayload>;
   if (
-    typeof data.hostId !== 'string' ||
-    typeof data.ip !== 'string' ||
-    typeof data.port !== 'number' ||
-    typeof data.pairingToken !== 'string' ||
-    typeof data.protocolVersion !== 'number'
+    typeof data.hostId !== "string" ||
+    typeof data.ip !== "string" ||
+    typeof data.port !== "number" ||
+    typeof data.pairingToken !== "string" ||
+    typeof data.protocolVersion !== "number"
   ) {
-    throw new Error('Invalid pairing payload');
+    throw new Error("Invalid pairing payload");
   }
   if (data.protocolVersion !== PROTOCOL_VERSION) {
     throw new Error(`Unsupported protocol version: ${data.protocolVersion}`);
@@ -47,9 +47,9 @@ export function parsePairingPayload(raw: string): PairingPayload {
     port: data.port,
     pairingToken: data.pairingToken,
     protocolVersion: data.protocolVersion,
-    pubkey: typeof data.pubkey === 'string' ? data.pubkey : '',
+    pubkey: typeof data.pubkey === "string" ? data.pubkey : "",
     candidateIps: Array.isArray(data.candidateIps)
-      ? data.candidateIps.filter((x): x is string => typeof x === 'string')
+      ? data.candidateIps.filter((x): x is string => typeof x === "string")
       : undefined,
   };
 }

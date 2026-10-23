@@ -5,10 +5,7 @@ import {
 } from "react";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 import { transparentOutlineStyle } from "../../lib/focusMode";
-import {
-  useKeyRepeat,
-  type KeyRepeatFireMeta,
-} from "../../hooks/useKeyRepeat";
+import { useKeyRepeat, type KeyRepeatFireMeta } from "../../hooks/useKeyRepeat";
 import { usePressableButton } from "../../hooks/usePressableButton";
 import { handleClick as handleKeyButtonClick } from "./keyButtonUtils";
 
@@ -39,7 +36,7 @@ type KeyButtonProps = {
   /** Called when a press-and-hold repeat ends (pointer up / leave / cancel). */
   onHoldEnd?: () => void;
   onPress: (meta?: KeyRepeatFireMeta) => void;
-}
+};
 
 export const KeyButton = memo(function KeyButton({
   label,
@@ -62,9 +59,8 @@ export const KeyButton = memo(function KeyButton({
   onHoldEnd,
   onPress,
 }: KeyButtonProps) {
-  const { pressedClass, pointerHandlers: pressableHandlers } = usePressableButton(
-    active ?? false,
-  );
+  const { pressedClass, pointerHandlers: pressableHandlers } =
+    usePressableButton(active ?? false);
   const { pointerHandlers: repeatHandlers } = useKeyRepeat({
     enabled: repeatOnHold && !disabled,
     onFire: onPress,
@@ -95,18 +91,18 @@ export const KeyButton = memo(function KeyButton({
 
   const sharedStyle = transparent
     ? {
-      ...transparentOutlineStyle({
-        active,
-        outlineColor,
-        color: textColor,
-      }),
-      fontSize,
-    }
+        ...transparentOutlineStyle({
+          active,
+          outlineColor,
+          color: textColor,
+        }),
+        fontSize,
+      }
     : {
-      fontSize,
-      color: textColor,
-      backgroundColor: bgColor,
-    };
+        fontSize,
+        color: textColor,
+        backgroundColor: bgColor,
+      };
 
   const buttonClass = transparent
     ? `ak-action-btn inline-flex ${alignBottom ? "items-end pb-1" : "items-center"} justify-center rounded-lg font-semibold transition active:scale-95 ${pressedClass}`
@@ -119,38 +115,40 @@ export const KeyButton = memo(function KeyButton({
       style={
         inGrid
           ? {
-            ...sharedStyle,
-            gridColumn,
-            gridRow,
-            minWidth: 0,
-            minHeight: 0,
-            alignSelf: "stretch",
-            justifySelf: "stretch",
-          }
+              ...sharedStyle,
+              gridColumn,
+              gridRow,
+              minWidth: 0,
+              minHeight: 0,
+              alignSelf: "stretch",
+              justifySelf: "stretch",
+            }
           : stretch
             ? {
-              ...sharedStyle,
-              flex: `${width} 1 0`,
-              minWidth: 0,
-              height: size,
-              marginRight: spacing,
-              marginBottom: spacing,
-            }
+                ...sharedStyle,
+                flex: `${width} 1 0`,
+                minWidth: 0,
+                height: size,
+                marginRight: spacing,
+                marginBottom: spacing,
+              }
             : {
-              ...sharedStyle,
-              width: size * width + spacing * (width - 1),
-              height: size,
-              marginRight: spacing,
-              marginBottom: spacing,
-            }
+                ...sharedStyle,
+                width: size * width + spacing * (width - 1),
+                height: size,
+                marginRight: spacing,
+                marginBottom: spacing,
+              }
       }
       disabled={disabled}
       aria-label={ariaLabel}
-      onClick={(event) => { handleKeyButtonClick(event, repeatOnHold, onPress, onHoldEnd); }
-      }
-      onContextMenu={(e) => { e.preventDefault(); }}
-      {...pointerHandlers}
-    >
+      onClick={(event) => {
+        handleKeyButtonClick(event, repeatOnHold, onPress, onHoldEnd);
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+      }}
+      {...pointerHandlers}>
       {label}
     </button>
   );

@@ -97,7 +97,9 @@ describe("useKeyRepeat", () => {
 
     act(() => {
       result.current.pointerHandlers.onPointerDown?.();
-      vi.advanceTimersByTime(KEY_REPEAT_INITIAL_DELAY_MS + KEY_REPEAT_INTERVAL_MS * 5);
+      vi.advanceTimersByTime(
+        KEY_REPEAT_INITIAL_DELAY_MS + KEY_REPEAT_INTERVAL_MS * 5,
+      );
     });
     expect(onFire).not.toHaveBeenCalled();
   });

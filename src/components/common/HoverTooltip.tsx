@@ -7,7 +7,7 @@ type HoverTooltipProps = {
   placement?: HoverTooltipPlacement;
   /** Default `center`. Use `end` for right-edge controls, `start` for left-edge. */
   align?: HoverTooltipAlign;
-}
+};
 
 function alignClass(align: HoverTooltipAlign): string {
   switch (align) {
@@ -31,14 +31,11 @@ export function HoverTooltip({
   align = "center",
 }: HoverTooltipProps) {
   const positionClass =
-    placement === "below"
-      ? "top-full mt-1"
-      : "bottom-full mb-1";
+    placement === "below" ? "top-full mt-1" : "bottom-full mb-1";
 
   return (
     <span
-      className={`ak-hover-tooltip pointer-events-none absolute z-50 whitespace-nowrap rounded bg-slate-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 ${positionClass} ${alignClass(align)}`}
-    >
+      className={`ak-hover-tooltip pointer-events-none absolute z-50 whitespace-nowrap rounded bg-slate-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 ${positionClass} ${alignClass(align)}`}>
       {label}
     </span>
   );

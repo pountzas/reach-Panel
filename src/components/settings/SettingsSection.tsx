@@ -6,7 +6,7 @@ type SettingsSectionProps = {
   description?: string;
   surface: SurfaceColors;
   children: ReactNode;
-}
+};
 
 export function SettingsSection({
   title,
@@ -20,26 +20,22 @@ export function SettingsSection({
       style={{
         backgroundColor: surface.panelBg,
         borderColor: surface.panelBorder,
-      }}
-    >
+      }}>
       <div
         className="border-b px-4 py-2.5"
         style={{
           backgroundColor: surface.panelHeaderBg,
           borderColor: surface.panelBorder,
-        }}
-      >
+        }}>
         <h3
           className="text-sm font-semibold"
-          style={{ color: surface.panelText }}
-        >
+          style={{ color: surface.panelText }}>
           {title}
         </h3>
         {description && (
           <p
             className="mt-0.5 text-xs"
-            style={{ color: surface.panelMutedText }}
-          >
+            style={{ color: surface.panelMutedText }}>
             {description}
           </p>
         )}

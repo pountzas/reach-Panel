@@ -3,14 +3,14 @@ import {
   type Envelope,
   type PairingPayload,
   type StoredCredential,
-} from './protocol';
+} from "./protocol";
 
 export type ConnectionStatus =
-  | 'disconnected'
-  | 'connecting'
-  | 'authenticating'
-  | 'connected'
-  | 'reconnecting';
+  | "disconnected"
+  | "connecting"
+  | "authenticating"
+  | "connected"
+  | "reconnecting";
 
 type StatusListener = (status: ConnectionStatus, detail?: string) => void;
 type MessageListener = (env: Envelope) => void;
@@ -21,7 +21,7 @@ const MAX_BACKOFF_MS = 12_000;
 
 export class CompanionClient {
   private ws: WebSocket | null = null;
-  private status: ConnectionStatus = 'disconnected';
+  private status: ConnectionStatus = "disconnected";
   private statusListeners = new Set<StatusListener>();
   private messageListeners = new Set<MessageListener>();
   private pending = new Map<
@@ -36,7 +36,7 @@ export class CompanionClient {
   private pairing: PairingPayload | null = null;
   private deviceName: string;
 
-  constructor(deviceName = 'ReachPanel Tablet') {
+  constructor(deviceName = "ReachPanel Tablet") {
     this.deviceName = deviceName;
   }
 
@@ -68,22 +68,22 @@ export class CompanionClient {
     await this.openSocket(payload.ip, payload.port);
     await this.hello();
     const auth = await this.request(
-      makeEnvelope('auth', {
+      makeEnvelope("auth", {
         pairingToken: payload.pairingToken,
         deviceName: this.deviceName,
       }),
     );
-    if (auth.type === 'auth.err') {
+    if (auth.type === "auth.err") {
       const message =
-        typeof auth.payload?.message === 'string'
+        typeof auth.payload?.message === "string"
           ? auth.payload.message
-          : 'Pairing failed';
+          : "Pairing failed";
       throw new Error(message);
     }
-    const deviceId = String(auth.payload?.deviceId ?? '');
-    const credential = String(auth.payload?.credential ?? '');
+    const deviceId = String(auth.payload?.deviceId ?? "");
+    const credential = String(auth.payload?.credential ?? "");
     if (!deviceId || !credential) {
-      throw new Error('Host did not return device credentials');
+      throw new Error("Host did not return device credentials");
     }
     const stored: StoredCredential = {
       hostId: payload.hostId,
@@ -96,7 +96,7 @@ export class CompanionClient {
     this.credential = stored;
     this.pairing = null;
     this.backoffMs = BASE_BACKOFF_MS;
-    this.setStatus('connected');
+    this.setStatus("connected");
     this.startPing();
     return stored;
   }
@@ -107,25 +107,28 @@ export class CompanionClient {
     await this.openSocket(cred.lastIp, cred.port);
     await this.hello();
     const auth = await this.request(
-      makeEnvelope('auth', {
+      makeEnvelope("auth", {
         deviceId: cred.deviceId,
         credential: cred.credential,
         deviceName: cred.deviceName || this.deviceName,
       }),
     );
-    if (auth.type === 'auth.err') {
+    if (auth.type === "auth.err") {
       const message =
-        typeof auth.payload?.message === 'string'
+        typeof auth.payload?.message === "string"
           ? auth.payload.message
-          : 'Auth failed';
+          : "Auth failed";
       throw new Error(message);
     }
     this.backoffMs = BASE_BACKOFF_MS;
-    this.setStatus('connected');
+    this.setStatus("connected");
     this.startPing();
   }
 
-  async send(type: string, payload: Record<string, unknown> = {}): Promise<Envelope> {
+  async send(
+    type: string,
+    payload: Record<string, unknown> = {},
+  ): Promise<Envelope> {
     return this.request(makeEnvelope(type, payload));
   }
 
@@ -146,7 +149,7 @@ export class CompanionClient {
       this.ws.close();
       this.ws = null;
     }
-    this.setStatus('disconnected');
+    this.setStatus("disconnected");
   }
 
   private async openSocket(ip: string, port: number): Promise<void> {
@@ -158,7 +161,7 @@ export class CompanionClient {
     }
     const url = `ws://${ip}:${port}`;
     this.setStatus(
-      this.credential && !this.pairing ? 'reconnecting' : 'connecting',
+      this.credential && !this.pairing ? "reconnecting" : "connecting",
     );
 
     await new Promise<void>((resolve, reject) => {
@@ -168,7 +171,7 @@ export class CompanionClient {
       ws.onopen = () => {
         settled = true;
         this.ws = ws;
-        this.setStatus('authenticating');
+        this.setStatus("authenticating");
         resolve();
       };
 
@@ -182,11 +185,11 @@ export class CompanionClient {
       ws.onclose = () => {
         this.ws = null;
         this.stopPing();
-        this.rejectAllPending(new Error('Connection closed'));
+        this.rejectAllPending(new Error("Connection closed"));
         if (!this.intentionalClose) {
           this.scheduleReconnect();
         } else {
-          this.setStatus('disconnected');
+          this.setStatus("disconnected");
         }
       };
 
@@ -198,21 +201,21 @@ export class CompanionClient {
 
   private async hello(): Promise<void> {
     const reply = await this.request(
-      makeEnvelope('hello', { deviceName: this.deviceName }),
+      makeEnvelope("hello", { deviceName: this.deviceName }),
     );
-    if (reply.type !== 'hello.ok') {
-      throw new Error('Unexpected hello response');
+    if (reply.type !== "hello.ok") {
+      throw new Error("Unexpected hello response");
     }
   }
 
   private request(env: Envelope): Promise<Envelope> {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-        reject(new Error('Not connected'));
+        reject(new Error("Not connected"));
         return;
       }
       if (!env.id) {
-        reject(new Error('Request requires id'));
+        reject(new Error("Request requires id"));
         return;
       }
       this.pending.set(env.id, { resolve, reject });
@@ -248,7 +251,7 @@ export class CompanionClient {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
         return;
       }
-      void this.send('ping', { t: Date.now() }).catch(() => {
+      void this.send("ping", { t: Date.now() }).catch(() => {
         /* reconnect path handles failures */
       });
     }, PING_INTERVAL_MS);
@@ -263,10 +266,13 @@ export class CompanionClient {
 
   private scheduleReconnect(): void {
     if (this.intentionalClose || !this.credential) {
-      this.setStatus('disconnected');
+      this.setStatus("disconnected");
       return;
     }
-    this.setStatus('reconnecting', `Retrying in ${Math.round(this.backoffMs / 1000)}s`);
+    this.setStatus(
+      "reconnecting",
+      `Retrying in ${Math.round(this.backoffMs / 1000)}s`,
+    );
     this.clearReconnect();
     const delay = this.backoffMs;
     this.backoffMs = Math.min(this.backoffMs * 2, MAX_BACKOFF_MS);

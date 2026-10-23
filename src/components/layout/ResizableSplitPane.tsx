@@ -32,7 +32,7 @@ type ResizableSplitPaneProps = {
    * either child — keeps React identity of the flex sibling stable.
    */
   sizedPaneCollapsed?: boolean;
-}
+};
 
 export function ResizableSplitPane({
   left,
@@ -50,9 +50,11 @@ export function ResizableSplitPane({
 }: ResizableSplitPaneProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
-  const dragStateRef = useRef<{ startX: number; startRatio: number; width: number } | null>(
-    null,
-  );
+  const dragStateRef = useRef<{
+    startX: number;
+    startRatio: number;
+    width: number;
+  } | null>(null);
 
   const sizedMinWidth = ratioSide === "left" ? minLeftWidth : minRightWidth;
   const otherMinWidth = ratioSide === "left" ? minRightWidth : minLeftWidth;
@@ -95,7 +97,9 @@ export function ResizableSplitPane({
     const container = containerRef.current;
     if (!container) return;
 
-    const observer = new ResizeObserver(() => { clampToBounds(); });
+    const observer = new ResizeObserver(() => {
+      clampToBounds();
+    });
     observer.observe(container);
     window.addEventListener("resize", clampToBounds);
 
@@ -114,7 +118,9 @@ export function ResizableSplitPane({
       const rawDelta = (drag.startX - event.clientX) / drag.width;
       const deltaRatio = ratioSide === "left" ? -rawDelta : rawDelta;
       const { minSized, maxSized } = ratioBounds(drag.width);
-      onRightRatioChange(clamp(drag.startRatio + deltaRatio, minSized, maxSized));
+      onRightRatioChange(
+        clamp(drag.startRatio + deltaRatio, minSized, maxSized),
+      );
     },
     onEnd: () => {
       dragStateRef.current = null;
@@ -157,7 +163,9 @@ export function ResizableSplitPane({
   const fullPaneStyle = { flex: "1 1 0%", minWidth: 0 };
 
   return (
-    <div ref={containerRef} className="flex h-full min-h-0 flex-1 items-stretch">
+    <div
+      ref={containerRef}
+      className="flex h-full min-h-0 flex-1 items-stretch">
       <div
         className="min-h-0 min-w-0"
         style={
@@ -167,8 +175,7 @@ export function ResizableSplitPane({
               ? fullPaneStyle
               : { flex: `${leftFlex} 1 0`, minWidth: minLeftWidth }
         }
-        aria-hidden={leftCollapsed || undefined}
-      >
+        aria-hidden={leftCollapsed || undefined}>
         {left}
       </div>
       {!sizedPaneCollapsed && (
@@ -183,8 +190,7 @@ export function ResizableSplitPane({
           style={{ width: SPLITTER_WIDTH, touchAction: "none" }}
           onPointerDown={onSplitterPointerDown}
           onPointerMove={splitterDrag.onPointerMove}
-          onPointerUp={splitterDrag.onPointerUp}
-        >
+          onPointerUp={splitterDrag.onPointerUp}>
           <div
             className={`mx-auto h-full self-stretch ${
               splitterColor
@@ -211,8 +217,7 @@ export function ResizableSplitPane({
               ? fullPaneStyle
               : { flex: `${rightFlex} 1 0`, minWidth: minRightWidth }
         }
-        aria-hidden={rightCollapsed || undefined}
-      >
+        aria-hidden={rightCollapsed || undefined}>
         {right}
       </div>
     </div>

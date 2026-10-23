@@ -10,7 +10,7 @@ type ToolWindowHeaderProps = {
   actions: ReactNode;
   style?: CSSProperties;
   className?: string;
-}
+};
 
 /** Undecorated tool-window chrome: drag header like a normal title bar. */
 export function ToolWindowHeader({
@@ -27,9 +27,10 @@ export function ToolWindowHeader({
       className={`${className} cursor-grab active:cursor-grabbing`}
       style={{ ...WINDOW_DRAG_TOUCH_STYLE, ...style }}
       title={t("dragToMove")}
-      {...dragHandlers}
-    >
-      <h2 className="pointer-events-none text-lg font-bold select-none">{title}</h2>
+      {...dragHandlers}>
+      <h2 className="pointer-events-none text-lg font-bold select-none">
+        {title}
+      </h2>
       <div className="section-no-drag flex shrink-0 cursor-default items-center gap-1">
         {actions}
       </div>

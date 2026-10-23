@@ -14,7 +14,7 @@ type NumpadKeyDef = {
   key: string;
   gridColumn: string;
   gridRow: string;
-}
+};
 
 const NUMPAD_KEYS: NumpadKeyDef[] = [
   { label: "/", key: "/", gridColumn: "2", gridRow: "1" },
@@ -56,16 +56,14 @@ export function NumKeypad() {
   return (
     <div
       ref={ref}
-      className="flex h-full min-h-0 w-full flex-col justify-center p-2"
-    >
+      className="flex h-full min-h-0 w-full flex-col justify-center p-2">
       <div
         className="grid w-full"
         style={{
           gridTemplateColumns: "repeat(4, 1fr)",
           gridTemplateRows: `repeat(${NUMPAD_ROW_COUNT}, ${keyHeight}px)`,
           gap: spacing,
-        }}
-      >
+        }}>
         {NUMPAD_KEYS.map((k) => (
           <KeyButton
             key={`${k.gridColumn}-${k.gridRow}-${k.key}`}

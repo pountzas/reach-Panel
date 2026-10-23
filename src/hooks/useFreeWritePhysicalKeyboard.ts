@@ -35,8 +35,12 @@ export const useFreeWritePhysicalKeyboard = (): void => {
   const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
   const freeWriteFocus = useAppStore((s) => s.freeWriteFocus);
   const freeWriteNotepadInput = useAppStore((s) => s.freeWriteNotepadInput);
-  const freeWriteNotepadBackspace = useAppStore((s) => s.freeWriteNotepadBackspace);
-  const applyFreeWriteLayoutTranslation = useAppStore((s) => s.applyFreeWriteLayoutTranslation);
+  const freeWriteNotepadBackspace = useAppStore(
+    (s) => s.freeWriteNotepadBackspace,
+  );
+  const applyFreeWriteLayoutTranslation = useAppStore(
+    (s) => s.applyFreeWriteLayoutTranslation,
+  );
   const syncWindowFocusable = useAppStore((s) => s.syncWindowFocusable);
 
   const active = isFreeWriteCaptureActive({
@@ -51,9 +55,11 @@ export const useFreeWritePhysicalKeyboard = (): void => {
     if (!active) return undefined;
 
     void syncWindowFocusable();
-    void WebviewWindow.getCurrent().setFocus().catch(() => {
-      // Focus may fail if another app holds foreground.
-    });
+    void WebviewWindow.getCurrent()
+      .setFocus()
+      .catch(() => {
+        // Focus may fail if another app holds foreground.
+      });
 
     let translateQueue = Promise.resolve();
 
@@ -115,7 +121,10 @@ export const useFreeWritePhysicalKeyboard = (): void => {
         languageLessonActive: false,
       });
       const physicalKey = physicalKeyFromKeyboardCode(event.code);
-      const shift = isShiftActive(state.physicalKeyState, state.stickyModifiers);
+      const shift = isShiftActive(
+        state.physicalKeyState,
+        state.stickyModifiers,
+      );
       const capsLock = state.physicalKeyState.capsLock;
 
       if (event.key === "Dead") {

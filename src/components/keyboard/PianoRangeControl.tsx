@@ -18,7 +18,7 @@ type PianoRangeControlProps = {
   onStartOctaveChange: (startOctave: number) => void;
   /** Optional song range label, e.g. "F1–C#6". */
   songRangeLabel?: string | null;
-}
+};
 
 export function PianoRangeControl({
   octaveCount: octaveCountValue,
@@ -41,9 +41,10 @@ export function PianoRangeControl({
           active={false}
           position="first"
           label={t("shiftPianoLower")}
-          onClick={() => { onStartOctaveChange(startOctave - 1); }}
-          disabled={!canShiftDown}
-        >
+          onClick={() => {
+            onStartOctaveChange(startOctave - 1);
+          }}
+          disabled={!canShiftDown}>
           <span className="text-xs font-semibold">◀</span>
         </ModeToggleButton>
         <ModeToggleButton
@@ -55,8 +56,7 @@ export function PianoRangeControl({
               : `${t("pianoRange")}: ${range}`
           }
           onClick={() => undefined}
-          disabled
-        >
+          disabled>
           <span className="px-0.5 text-[10px] font-semibold tabular-nums leading-none">
             {range}
           </span>
@@ -65,9 +65,10 @@ export function PianoRangeControl({
           active={false}
           position="last"
           label={t("shiftPianoHigher")}
-          onClick={() => { onStartOctaveChange(startOctave + 1); }}
-          disabled={!canShiftUp}
-        >
+          onClick={() => {
+            onStartOctaveChange(startOctave + 1);
+          }}
+          disabled={!canShiftUp}>
           <span className="text-xs font-semibold">▶</span>
         </ModeToggleButton>
       </ModeToggleGroup>
@@ -77,10 +78,14 @@ export function PianoRangeControl({
           <ModeToggleButton
             key={level}
             active={octaveCount === level}
-            position={modeToggleSegmentPosition(index, SYNTH_OCTAVE_COUNTS.length)}
+            position={modeToggleSegmentPosition(
+              index,
+              SYNTH_OCTAVE_COUNTS.length,
+            )}
             label={`${level} ${t("octavesShort")}`}
-            onClick={() => { onOctaveCountChange(level); }}
-          >
+            onClick={() => {
+              onOctaveCountChange(level);
+            }}>
             <span className="text-xs font-semibold tabular-nums">{level}</span>
           </ModeToggleButton>
         ))}

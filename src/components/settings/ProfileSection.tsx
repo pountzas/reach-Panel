@@ -11,9 +11,13 @@ type ProfileSectionProps = {
   surface: SurfaceColors;
   headerBg: string;
   headerText: string;
-}
+};
 
-export function ProfileSection({ surface, headerBg, headerText }: ProfileSectionProps) {
+export function ProfileSection({
+  surface,
+  headerBg,
+  headerText,
+}: ProfileSectionProps) {
   const { t } = useTranslation();
   const [newProfileName, setNewProfileName] = useState<string>("");
   const {
@@ -39,8 +43,7 @@ export function ProfileSection({ surface, headerBg, headerText }: ProfileSection
         value={activeProfileFile ?? ""}
         onChange={(v) => setProfileFile(v)}
         surface={surface}
-        className="w-full rounded border px-2 py-2 text-sm"
-      >
+        className="w-full rounded border px-2 py-2 text-sm">
         {profileFiles.map((p) => (
           <option key={p.filename} value={p.filename}>
             {p.name} ({p.filename})
@@ -52,17 +55,17 @@ export function ProfileSection({ surface, headerBg, headerText }: ProfileSection
           type="button"
           className="rounded-lg px-3 py-1.5 text-sm"
           style={{ backgroundColor: headerBg, color: headerText }}
-          onClick={() => void handleSaveProfile(saveActiveProfile, t)}
-        >
+          onClick={() => void handleSaveProfile(saveActiveProfile, t)}>
           {t("saveProfile")}
         </button>
         <button
           type="button"
           className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700"
           style={{ backgroundColor: surface.insetBg }}
-          onClick={() => void handleDeleteProfile(activeProfileFile, deleteProfileFile, t)}
-          disabled={!activeProfileFile}
-        >
+          onClick={() =>
+            void handleDeleteProfile(activeProfileFile, deleteProfileFile, t)
+          }
+          disabled={!activeProfileFile}>
           {t("deleteProfile")}
         </button>
       </div>
@@ -72,7 +75,9 @@ export function ProfileSection({ surface, headerBg, headerText }: ProfileSection
           style={fieldStyle(surface)}
           placeholder={t("newProfileFileName")}
           value={newProfileName}
-          onChange={(e) => { setNewProfileName(e.target.value); }}
+          onChange={(e) => {
+            setNewProfileName(e.target.value);
+          }}
         />
         <button
           type="button"
@@ -80,10 +85,12 @@ export function ProfileSection({ surface, headerBg, headerText }: ProfileSection
           style={{ backgroundColor: headerBg, color: headerText }}
           onClick={() => {
             if (!newProfileName.trim()) return;
-            void createProfileFile(newProfileName.trim(), newProfileName.trim());
+            void createProfileFile(
+              newProfileName.trim(),
+              newProfileName.trim(),
+            );
             setNewProfileName("");
-          }}
-        >
+          }}>
           {t("createProfile")}
         </button>
       </div>

@@ -1,8 +1,5 @@
 import type { AppSettings } from "../../lib/types";
-import {
-  defaultLanguagePackId,
-  getLanguagePackById,
-} from "../../lib/language";
+import { defaultLanguagePackId, getLanguagePackById } from "../../lib/language";
 import type { LanguagePack, LessonLanguage } from "../../lib/language/types";
 import { DEFAULT_LANGUAGE_AGE_BAND } from "../../lib/language/types";
 import type { GreekPendingAccent } from "../../lib/language/greekCompose";

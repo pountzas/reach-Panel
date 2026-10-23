@@ -14,21 +14,26 @@ import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { DEFAULT_PHYSICAL_KEY_STATE } from "../../lib/keyboardLayouts";
-import type { InputMethod, LayoutKeyLabel, PhysicalKeyState } from "../../lib/keyboardLayouts";
+import type {
+  InputMethod,
+  LayoutKeyLabel,
+  PhysicalKeyState,
+} from "../../lib/keyboardLayouts";
 import { CommandResult } from "../../lib/types";
 import { notify } from "../../lib/notify";
 import { shouldClearSuggestions } from "../../lib/suggestionPrefix";
 import { PROFILE_UPDATED_EVENT } from "../../lib/toolWindows";
 import { isLanguageLessonSpellingActive } from "../../lib/language";
-import { greekComposeEnabled, processCharacterInput } from "../../lib/keyboardCharacterInput";
+import {
+  greekComposeEnabled,
+  processCharacterInput,
+} from "../../lib/keyboardCharacterInput";
 import { applyGreekLayoutTranslation } from "../../lib/layoutKeyTranslation";
 
-export const createTypingSlice: StateCreator<
-  AppStore,
-  [],
-  [],
-  TypingSlice
-> = (set, get) => ({
+export const createTypingSlice: StateCreator<AppStore, [], [], TypingSlice> = (
+  set,
+  get,
+) => ({
   typedBuffer: "",
   greekPendingAccent: null,
   stickyModifiers: [],
@@ -143,11 +148,13 @@ export const createTypingSlice: StateCreator<
       commitSuggestionList(set, []);
     }
   },
-  toggleSticky: (modifier) => { set((s) => ({
+  toggleSticky: (modifier) => {
+    set((s) => ({
       stickyModifiers: s.stickyModifiers.includes(modifier)
         ? s.stickyModifiers.filter((m) => m !== modifier)
         : [...s.stickyModifiers, modifier],
-    })); },
+    }));
+  },
   pollKeyboardState: async () => {
     const epoch = get().settingsEpoch;
     const next = await invoke<PhysicalKeyState>("cmd_get_keyboard_state");
@@ -204,7 +211,9 @@ export const createTypingSlice: StateCreator<
     const inputMethods = await invoke<InputMethod[]>("cmd_get_input_methods");
     set({ inputMethods });
   },
-  setLanguagePickerOpen: (open) => { set({ languagePickerOpen: open }); },
+  setLanguagePickerOpen: (open) => {
+    set({ languagePickerOpen: open });
+  },
   selectTypingInputMethod: async (method) => {
     const epoch = get().settingsEpoch;
     const previousTypingLanguage = get().settings.typingLanguage;
@@ -272,10 +281,14 @@ export const createTypingSlice: StateCreator<
     );
     set({ layoutKeyLabels });
   },
-  clearSticky: () => { set({ stickyModifiers: [] }); },
-  clearStickyExceptFn: () => { set((s) => ({
+  clearSticky: () => {
+    set({ stickyModifiers: [] });
+  },
+  clearStickyExceptFn: () => {
+    set((s) => ({
       stickyModifiers: s.stickyModifiers.filter((m) => m === "fn"),
-    })); },
+    }));
+  },
   loadKeyboardLayout: async () => {
     const keyboardLayout = await invoke<string>("cmd_get_keyboard_layout");
     set({ keyboardLayout });

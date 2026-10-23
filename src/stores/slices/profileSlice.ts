@@ -20,13 +20,31 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { CommandResult, DEFAULT_SETTINGS, MonitorInfo, ProfileFileInfo } from "../../lib/types";
-import { isWidePianoOctaveCount, resolveSynthOctaveCount, resolveSynthStartOctave } from "../../lib/music/octaveCount";
+import {
+  CommandResult,
+  DEFAULT_SETTINGS,
+  MonitorInfo,
+  ProfileFileInfo,
+} from "../../lib/types";
+import {
+  isWidePianoOctaveCount,
+  resolveSynthOctaveCount,
+  resolveSynthStartOctave,
+} from "../../lib/music/octaveCount";
 import { logLayoutIpc } from "../../lib/logIpc";
 import { notify } from "../../lib/notify";
 import { PROFILE_UPDATED_EVENT } from "../../lib/toolWindows";
-import { heightRatioAfterLeavingTeaching, shouldSyncNonFocusWindowLayout } from "../../lib/appModeLayout";
-import { partialContainsLayoutFields, persistLayoutForKind, pointerKindFromEvent, stripFullscreenHeightFromLayoutSnapshots, switchPointerInputKindLayout } from "../../lib/layoutProfiles";
+import {
+  heightRatioAfterLeavingTeaching,
+  shouldSyncNonFocusWindowLayout,
+} from "../../lib/appModeLayout";
+import {
+  partialContainsLayoutFields,
+  persistLayoutForKind,
+  pointerKindFromEvent,
+  stripFullscreenHeightFromLayoutSnapshots,
+  switchPointerInputKindLayout,
+} from "../../lib/layoutProfiles";
 
 export const createProfileSlice: StateCreator<
   AppStore,
@@ -211,7 +229,6 @@ export const createProfileSlice: StateCreator<
     if (partialContainsLayoutFields(partial) || shouldStripFullscreenLayouts) {
       next = persistLayoutForKind(next, get().pointerInputKind);
     }
-
 
     if (get().settingsEpoch !== epoch) {
       return;
@@ -409,11 +426,7 @@ export const createProfileSlice: StateCreator<
     if (get().focusModeActive) {
       void syncFocusModeWindowLayout(get, set, true);
     } else {
-      void syncWindowLayoutFromSettings(
-        next,
-        true,
-        get().musicTeachingEnabled,
-      );
+      void syncWindowLayoutFromSettings(next, true, get().musicTeachingEnabled);
     }
   },
   handlePointerInputEvent: (input) => {

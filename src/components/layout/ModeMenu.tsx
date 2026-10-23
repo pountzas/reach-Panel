@@ -19,7 +19,7 @@ import { useAppStore } from "../../stores/appStore";
 export type ModeMenuProps = {
   onShowKeyboard: () => void;
   entered?: boolean;
-}
+};
 
 function CheckMark() {
   return (
@@ -31,8 +31,7 @@ function CheckMark() {
       stroke="currentColor"
       strokeWidth="2.5"
       strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+      strokeLinejoin="round">
       <path d="M4 10.5 8 14.5 16 5.5" />
     </svg>
   );
@@ -159,21 +158,22 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
       }}
       onTransitionEnd={(event) => {
         if (event.target !== event.currentTarget) return;
-        if (event.propertyName !== "opacity" && event.propertyName !== "transform") {
+        if (
+          event.propertyName !== "opacity" &&
+          event.propertyName !== "transform"
+        ) {
           return;
         }
         setPromoteLayer(false);
       }}
-      onKeyDown={onKeyDown}
-    >
+      onKeyDown={onKeyDown}>
       <button
         type="button"
         role="menuitem"
         className={itemClass}
         style={{ minHeight: MODE_MENU_ITEM_HEIGHT }}
         disabled={isAnimatingWindow}
-        onClick={() => void onShowKeyboardClick()}
-      >
+        onClick={() => void onShowKeyboardClick()}>
         {t("modeMenuShowKeyboard")}
       </button>
       <div
@@ -197,8 +197,7 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
             title={
               companionDisabled ? t("modeCompanionUnavailable") : undefined
             }
-            onClick={() => void onPick(m.id)}
-          >
+            onClick={() => void onPick(m.id)}>
             <span className="inline-flex w-4 shrink-0 justify-center">
               {checked ? <CheckMark /> : null}
             </span>
