@@ -23,8 +23,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 
 use super::focus_target::{
-    get_effective_input_hwnd, get_input_target_bounds, has_input_target, is_input_focused,
-    ScreenRect,
+    get_effective_capture_root, get_effective_input_hwnd, get_input_target_bounds,
+    has_input_target, is_input_focused, CaptureRoot, ScreenRect,
 };
 use super::wgc_capture::{self, StripCapture};
 
@@ -47,8 +47,9 @@ static PREVIEW_ENABLED: AtomicBool = AtomicBool::new(true);
 static ANIMATIONS_ACTIVE: AtomicUsize = AtomicUsize::new(0);
 /// Cleared by the worker; set on enable/disable, clear, companion connect/disconnect, animation end.
 static FORCE_FRESH_FRAME: AtomicBool = AtomicBool::new(false);
-/// Last logged capture backend (`wgc` / `printwindow` / `bitblt`) for change-only logging.
-static LAST_CAPTURE_PATH: Mutex<Option<&'static str>> = Mutex::new(None);
+/// Last logged capture backend (`wgc` / `printwindow` / `bitblt`) and capture HWND for
+/// change-only logging.
+static LAST_CAPTURE_PATH: Mutex<Option<(&'static str, isize)>> = Mutex::new(None);
 /// Desktop subscriber for binary preview frames (`InvokeResponseBody::Raw`).
 static PREVIEW_CHANNEL: Mutex<Option<Channel<InvokeResponseBody>>> = Mutex::new(None);
 
@@ -319,15 +320,45 @@ enum CaptureOutcome {
     },
 }
 
-fn log_capture_path(path: &'static str) {
+fn log_capture_path(path: &'static str, root: Option<CaptureRoot>) {
+    let hwnd = root.map(|r| r.hwnd.0 as isize).unwrap_or(0);
     let mut guard = LAST_CAPTURE_PATH
         .lock()
         .unwrap_or_else(|e| e.into_inner());
-    if *guard == Some(path) {
+    if *guard == Some((path, hwnd)) {
         return;
     }
-    *guard = Some(path);
-    eprintln!("input preview capture path: {path}");
+    *guard = Some((path, hwnd));
+    match root {
+        Some(root) => eprintln!(
+            "input preview capture path: {path} hwnd={hwnd:#x} class={} promoted={}",
+            root.class_name(),
+            root.promoted
+        ),
+        None => eprintln!("input preview capture path: {path} (no capture window)"),
+    }
+}
+
+/// PrintWindow of the top-level capture root, then desktop BitBlt of the strip.
+fn capture_gdi_bgra(
+    root: CaptureRoot,
+    rect: &CaptureRect,
+    wgc_reason: &str,
+) -> Result<Vec<u8>, String> {
+    match capture_window_region_bgra(root.hwnd, rect) {
+        Ok(pixels) => {
+            log_capture_path("printwindow", Some(root));
+            Ok(pixels)
+        }
+        Err(pw_err) => {
+            eprintln!(
+                "input preview window capture failed (wgc: {wgc_reason}; printwindow: {pw_err}); falling back to screen"
+            );
+            let pixels = capture_screen_bgra(rect.left, rect.top, rect.width, rect.height)?;
+            log_capture_path("bitblt", Some(root));
+            Ok(pixels)
+        }
+    }
 }
 
 /// Capture BGRA, skip JPEG/base64 when unchanged; otherwise encode.
@@ -347,34 +378,23 @@ fn capture_and_maybe_encode(
         .map(|hwnd| hwnd.0 as isize)
         .unwrap_or(0);
 
-    let bgra = match get_effective_input_hwnd() {
-        Some(hwnd) => match wgc_capture::try_capture_strip(hwnd, &rect) {
+    let bgra = match get_effective_capture_root() {
+        Some(root) => match wgc_capture::try_capture_strip(root.hwnd, &rect) {
             Ok(StripCapture::Ready(pixels)) => {
-                log_capture_path("wgc");
+                log_capture_path("wgc", Some(root));
                 pixels
             }
-            Ok(StripCapture::NotReady) => {
-                // Session just started; keep the last frame instead of flickering via GDI.
-                return Ok(CaptureOutcome::Skipped);
-            }
-            Err(wgc_err) => match capture_window_region_bgra(hwnd, &rect) {
-                Ok(pixels) => {
-                    log_capture_path("printwindow");
-                    pixels
-                }
-                Err(pw_err) => {
-                    eprintln!(
-                        "input preview window capture failed (wgc: {wgc_err}; printwindow: {pw_err}); falling back to screen"
-                    );
-                    let pixels = capture_screen_bgra(rect.left, rect.top, src_w, src_h)?;
-                    log_capture_path("bitblt");
-                    pixels
+            Ok(StripCapture::NotReady) => match not_ready_action(last) {
+                NotReadyAction::KeepLastFrame => return Ok(CaptureOutcome::Skipped),
+                NotReadyAction::FallBackToGdi => {
+                    capture_gdi_bgra(root, &rect, "first frame not ready")?
                 }
             },
+            Err(wgc_err) => capture_gdi_bgra(root, &rect, &wgc_err)?,
         },
         None => {
             let pixels = capture_screen_bgra(rect.left, rect.top, src_w, src_h)?;
-            log_capture_path("bitblt");
+            log_capture_path("bitblt", None);
             pixels
         }
     };
@@ -892,6 +912,22 @@ pub(crate) fn decide_frame_emit(
     }
 }
 
+/// What to do when WGC has a session but no frame this tick.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum NotReadyAction {
+    KeepLastFrame,
+    FallBackToGdi,
+}
+
+/// Holding the last JPEG avoids WGC↔GDI flicker, but with nothing shown yet the strip would
+/// sit on "Waiting for preview…" until WGC delivers — let GDI paint the first frame instead.
+pub(crate) fn not_ready_action(last: Option<FrameSkipKey>) -> NotReadyAction {
+    match last {
+        Some(_) => NotReadyAction::KeepLastFrame,
+        None => NotReadyAction::FallBackToGdi,
+    }
+}
+
 /// Events that must clear the last-sent key so the next capture always emits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FrameSkipReset {
@@ -1033,6 +1069,17 @@ mod tests {
         assert_eq!(&out[4..8], &[1, 0, 0, 255]);
         assert_eq!(&out[8..12], &[2, 0, 0, 255]);
         assert_eq!(&out[12..16], &[0, 0, 0, 0]); // letterbox right
+    }
+
+    #[test]
+    fn wgc_not_ready_keeps_last_frame_once_one_is_shown() {
+        let key = frame_skip_key(42, 1, 2, 4, 2, &sample_bgra(7));
+        assert_eq!(not_ready_action(Some(key)), NotReadyAction::KeepLastFrame);
+    }
+
+    #[test]
+    fn wgc_not_ready_falls_back_to_gdi_when_nothing_shown() {
+        assert_eq!(not_ready_action(None), NotReadyAction::FallBackToGdi);
     }
 
     #[test]
