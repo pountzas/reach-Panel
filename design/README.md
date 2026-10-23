@@ -23,6 +23,7 @@ Do not hand-edit individual sizes under `src-tauri/icons/` unless fixing a speci
 
 | Surface | Source |
 | --- | --- |
-| Windows exe / taskbar / Start / NSIS / MSI | `src-tauri/icons/` via `tauri.conf.json` → `bundle.icon` |
+| Windows exe / taskbar / Start / MSI | `src-tauri/icons/` via `tauri.conf.json` → `bundle.icon` |
+| NSIS installer (`setup.exe`) | `src-tauri/icons/icon.ico` via `tauri.conf.json` → `bundle.windows.nsis.installerIcon` |
 | Collapsed Mode-menu FAB | imports `design/reachpanel-logo.svg` in `src/components/layout/CollapsedFab.tsx` |
 | Android companion launcher | `companion/assets/icon.png` + adaptive icon PNGs |
