@@ -113,8 +113,8 @@ export function ConfirmDialog({
           className="w-full max-w-sm rounded-2xl p-5 outline-none"
           ref={panelRef}
           role="dialog"
-          style={panelStyle}>
-          tabIndex={-1}
+          style={panelStyle}
+          tabIndex={-1}>
           <p
             id={titleId}
             className="text-base font-medium"
