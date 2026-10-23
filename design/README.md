@@ -17,6 +17,8 @@ node scripts/generate-brand-icons.mjs
 npm run tauri -- icon design/app-icon.png
 ```
 
+After `tauri icon`, Android/iOS outputs and `icon.icns` are git-ignored; commit only the Windows sizes at the top level of `src-tauri/icons/`.
+
 Do not hand-edit individual sizes under `src-tauri/icons/` unless fixing a specific platform glitch. After a rebrand, replace `design/reachpanel-logo.svg`, re-run both commands, and commit the generated files.
 
 ## Surfaces
