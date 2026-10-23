@@ -115,6 +115,21 @@ describe("ConfirmDialog", () => {
     expect(dialog.style.color).toBe("rgb(15, 23, 42)");
   });
 
+  it("keeps tabIndex={-1} on the dialog panel, not as rendered text", () => {
+    render(
+      <ConfirmDialog
+        open
+        {...baseProps}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.getAttribute("tabindex")).toBe("-1");
+    expect(dialog.textContent).not.toContain("tabIndex");
+  });
+
   it("portals the fixed overlay to document.body (escapes section contain)", () => {
     const section = document.createElement("section");
     section.style.contain = "layout paint";
