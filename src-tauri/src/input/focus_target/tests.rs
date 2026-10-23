@@ -4,7 +4,10 @@ use super::uia::{
     uia_signals_are_autocomplete_satellite, AriaRoleKind, UiaTextInputSignals,
     LAST_REAL_TEXT_FOCUS_TTL,
 };
-use super::win32::{host_is_chromium, is_editable_class, is_shell_window_class};
+use super::win32::{
+    capture_root, host_is_chromium, is_editable_class, is_shell_window_class, usize_to_hwnd,
+    CaptureRoot,
+};
 use super::{
     line_strip_bounds, resolve_bounds_with_sticky, sticky_rect_for_target, ScreenRect,
     LINE_STRIP_HEIGHT, LINE_STRIP_WIDTH,
@@ -689,4 +692,64 @@ fn combo_box_accepts_text_requires_editable_text_pattern_on_chromium() {
         false,
         false,
     )));
+}
+const CHILD_EDIT: usize = 0x2001;
+const TOP_LEVEL: usize = 0x1001;
+
+fn root_of_child(hwnd: windows::Win32::Foundation::HWND) -> windows::Win32::Foundation::HWND {
+    if hwnd == usize_to_hwnd(CHILD_EDIT) {
+        usize_to_hwnd(TOP_LEVEL)
+    } else {
+        hwnd
+    }
+}
+
+#[test]
+fn capture_root_promotes_child_to_top_level() {
+    let root = capture_root(usize_to_hwnd(CHILD_EDIT), root_of_child, |_| false);
+    assert_eq!(
+        root,
+        Some(CaptureRoot {
+            hwnd: usize_to_hwnd(TOP_LEVEL),
+            promoted: true,
+        })
+    );
+}
+
+#[test]
+fn capture_root_keeps_top_level_unchanged() {
+    let root = capture_root(usize_to_hwnd(TOP_LEVEL), root_of_child, |_| false);
+    assert_eq!(
+        root,
+        Some(CaptureRoot {
+            hwnd: usize_to_hwnd(TOP_LEVEL),
+            promoted: false,
+        })
+    );
+}
+
+#[test]
+fn capture_root_rejects_null_and_rejected_roots() {
+    assert_eq!(
+        capture_root(usize_to_hwnd(0), root_of_child, |_| false),
+        None
+    );
+    // Child of our own window (or a shell root) must not be captured via its root.
+    let rejected_root = |hwnd| hwnd == usize_to_hwnd(TOP_LEVEL);
+    assert_eq!(
+        capture_root(usize_to_hwnd(CHILD_EDIT), root_of_child, rejected_root),
+        None
+    );
+}
+
+#[test]
+fn capture_root_falls_back_to_hwnd_when_ancestor_lookup_fails() {
+    let root = capture_root(usize_to_hwnd(TOP_LEVEL), |_| usize_to_hwnd(0), |_| false);
+    assert_eq!(
+        root,
+        Some(CaptureRoot {
+            hwnd: usize_to_hwnd(TOP_LEVEL),
+            promoted: false,
+        })
+    );
 }

@@ -6,7 +6,7 @@ mod win32;
 #[cfg(test)]
 mod tests;
 
-pub use win32::{host_is_chromium, is_editable_class, is_valid_typing_target};
+pub use win32::{host_is_chromium, is_editable_class, is_valid_typing_target, CaptureRoot};
 
 use uia::{
     clear_last_real_text_focus, note_text_focus, previously_text_focused,
@@ -18,7 +18,7 @@ use uia::{
     uia_signals_are_autocomplete_satellite, with_uia, UiaTextInputSignals,
 };
 use win32::{
-    bring_to_foreground, gui_thread_info, hwnd_or_ancestor_is_editable, hwnd_or_ancestor_is_shell,
+    bring_to_foreground, capture_root_for_hwnd, gui_thread_info, hwnd_or_ancestor_is_editable, hwnd_or_ancestor_is_shell,
     hwnd_to_usize, is_chromium_class, is_null, is_our_window, is_readonly_edit, usize_to_hwnd,
     win32_caret_point, window_class_name,
 };
@@ -582,7 +582,7 @@ unsafe extern "system" fn object_focus_hook(
             if is_null(current) {
                 break;
             }
-            let parent = unsafe { GetParent(current).unwrap_or(HWND::default()) };
+            let parent = unsafe { GetParent(current).unwrap_or_default() };
             if is_null(parent) {
                 break;
             }
@@ -612,6 +612,13 @@ pub fn get_effective_input_hwnd() -> Option<HWND> {
             None
         }
     }
+}
+
+/// Top-level window for live-preview capture. Injection and language switching keep the
+/// (possibly child) [`get_effective_input_hwnd`]; field bounds stay in screen space and are
+/// mapped against this root's `DWMWA_EXTENDED_FRAME_BOUNDS` / window rect.
+pub fn get_effective_capture_root() -> Option<CaptureRoot> {
+    get_effective_input_hwnd().and_then(capture_root_for_hwnd)
 }
 
 /// Same target used for typing — if keys can be injected, language can switch.

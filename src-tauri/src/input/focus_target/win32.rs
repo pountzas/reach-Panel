@@ -6,9 +6,10 @@ use windows::Win32::System::Threading::{
     AttachThreadInput, GetCurrentProcessId, GetCurrentThreadId,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, GetCaretPos, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo, GetParent,
-    GetWindowLongW, GetWindowThreadProcessId, IsWindow, IsWindowVisible, SetForegroundWindow,
-    ShowWindow, ES_READONLY, GUITHREADINFO, GWL_STYLE, SW_RESTORE,
+    BringWindowToTop, GetAncestor, GetCaretPos, GetClassNameW, GetForegroundWindow,
+    GetGUIThreadInfo, GetParent, GetWindowLongW, GetWindowThreadProcessId, IsWindow,
+    IsWindowVisible, SetForegroundWindow, ShowWindow, ES_READONLY, GA_ROOT, GUITHREADINFO,
+    GWL_STYLE, SW_RESTORE,
 };
 use anyhow::Result;
 
@@ -80,10 +81,53 @@ pub(super) fn hwnd_or_ancestor_is_shell(hwnd: HWND) -> bool {
             return true;
         }
         unsafe {
-            current = GetParent(current).unwrap_or(HWND::default());
+            current = GetParent(current).unwrap_or_default();
         }
     }
     false
+}
+
+/// Top-level window to hand to WGC / PrintWindow for a (possibly child) typing HWND.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CaptureRoot {
+    pub hwnd: HWND,
+    /// True when `hwnd` is an ancestor of the typing HWND rather than the HWND itself.
+    pub promoted: bool,
+}
+
+impl CaptureRoot {
+    pub fn class_name(&self) -> String {
+        window_class_name(self.hwnd)
+    }
+}
+
+pub(super) fn capture_root(
+    hwnd: HWND,
+    root_of: impl Fn(HWND) -> HWND,
+    is_rejected: impl Fn(HWND) -> bool,
+) -> Option<CaptureRoot> {
+    if is_null(hwnd) {
+        return None;
+    }
+    let root = root_of(hwnd);
+    let root = if is_null(root) { hwnd } else { root };
+    if is_rejected(root) {
+        return None;
+    }
+    Some(CaptureRoot {
+        hwnd: root,
+        promoted: root != hwnd,
+    })
+}
+
+/// `CreateForWindow` only accepts top-level windows; UIA / focus hooks often cache a child
+/// (Edit, RichEdit, `Chrome_RenderWidgetHostHWND`).
+pub(super) fn capture_root_for_hwnd(hwnd: HWND) -> Option<CaptureRoot> {
+    capture_root(
+        hwnd,
+        |h| unsafe { GetAncestor(h, GA_ROOT) },
+        |h| is_our_window(h) || is_shell_window(h),
+    )
 }
 
 pub fn is_valid_typing_target(hwnd: HWND) -> bool {
@@ -155,7 +199,7 @@ pub(super) fn hwnd_or_ancestor_is_editable(hwnd: HWND) -> bool {
             return !is_readonly_edit(current, &class);
         }
         unsafe {
-            current = GetParent(current).unwrap_or(HWND::default());
+            current = GetParent(current).unwrap_or_default();
         }
     }
     false
@@ -180,9 +224,7 @@ pub fn host_is_chromium(framework_id: &str, native_class: &str, foreground_class
 
 pub(super) fn win32_caret_point() -> Option<(i32, i32)> {
     unsafe {
-        let Some(info) = gui_thread_info() else {
-            return None;
-        };
+        let info = gui_thread_info()?;
         let caret_hwnd = if !is_null(info.hwndCaret) && !is_our_window(info.hwndCaret) {
             info.hwndCaret
         } else {
