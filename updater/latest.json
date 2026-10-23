@@ -1,15 +1,15 @@
 {
-  "version": "0.17.2",
+  "version": "0.17.3",
   "notes": "",
-  "pub_date": "2026-10-22T19:22:57.836Z",
+  "pub_date": "2026-10-23T20:45:32.311Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.17.2/ReachPanel_0.17.2_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc01KVnA2ZGlrNFpQc1BrNUlLSTl0VXJOaitxZHVWRmxEZHNuZE1EV3F5MDJ4bW1lUUczd2J2ZDBORWFEUEEvR0NlTWxyRTJ1cGduMzJ0eXlDSlpLeFFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNjk2ODcwCWZpbGU6UmVhY2hQYW5lbF8wLjE3LjJfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuMTcuMgpKYkRTNTVYWURHSUhwUG9ubWJKczR6eVlMK1J2MldkWGJDSUNzenNnQ3VONnR6dWFpMlVHVmhvKzN0Z3l2VEVaNHhzekttdlNHemk1WCtwdHZQeWlBQT09Cg=="
+      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.17.3/ReachPanel_0.17.3_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0JLcHEzdE5RSEFtbjJveFUrRzN4VTJ6R01wMW1sYS9zRmRaR0c1anJLdm1YcjRWcnZxL2dZbVlnM3FqcktKTk1Mb2kwMjNwRUQ2ZHBCRm5CMkg2U3dzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNzg4MjQwCWZpbGU6UmVhY2hQYW5lbF8wLjE3LjNfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuMTcuMwpjdVpSblNPUjdaTzM1SERoRWVBSlQwZ3FHcnRWVVowaGwwMHNEV25uN20wc011c3ZydWR5SFF3eDlESU8zNEV5UFQwejBLb1ZMdDBOOGRmRVEyMlFDZz09Cg=="
     },
     "windows-x86_64-nsis": {
-      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.17.2/ReachPanel_0.17.2_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc01KVnA2ZGlrNFpQc1BrNUlLSTl0VXJOaitxZHVWRmxEZHNuZE1EV3F5MDJ4bW1lUUczd2J2ZDBORWFEUEEvR0NlTWxyRTJ1cGduMzJ0eXlDSlpLeFFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNjk2ODcwCWZpbGU6UmVhY2hQYW5lbF8wLjE3LjJfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuMTcuMgpKYkRTNTVYWURHSUhwUG9ubWJKczR6eVlMK1J2MldkWGJDSUNzenNnQ3VONnR6dWFpMlVHVmhvKzN0Z3l2VEVaNHhzekttdlNHemk1WCtwdHZQeWlBQT09Cg=="
+      "url": "https://github.com/pountzas/reach-Panel/releases/download/v0.17.3/ReachPanel_0.17.3_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSTnlIRGdzUGFhc0JLcHEzdE5RSEFtbjJveFUrRzN4VTJ6R01wMW1sYS9zRmRaR0c1anJLdm1YcjRWcnZxL2dZbVlnM3FqcktKTk1Mb2kwMjNwRUQ2ZHBCRm5CMkg2U3dzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyNzg4MjQwCWZpbGU6UmVhY2hQYW5lbF8wLjE3LjNfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuMTcuMwpjdVpSblNPUjdaTzM1SERoRWVBSlQwZ3FHcnRWVVowaGwwMHNEV25uN20wc011c3ZydWR5SFF3eDlESU8zNEV5UFQwejBLb1ZMdDBOOGRmRVEyMlFDZz09Cg=="
     }
   }
 }
