@@ -79,7 +79,10 @@ test('writeVersion updates package.json and both lockfile root versions', () => 
     writeVersion(root, '0.3.0');
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
     const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
-    assert.equal(readFileSync(join(root, 'src/versioning.cjs'), 'utf8').includes("const VERSION = '0.3.0'"), true);
+    assert.equal(
+      readFileSync(join(root, 'src/versioning.cjs'), 'utf8').includes('const VERSION = "0.3.0"'),
+      true,
+    );
     assert.equal(pkg.version, '0.3.0');
     assert.equal(lock.version, '0.3.0');
     assert.equal(lock.packages[''].version, '0.3.0');
