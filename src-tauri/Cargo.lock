@@ -3656,7 +3656,7 @@ dependencies = [
 
 [[package]]
 name = "reach-panel"
-version = "0.17.3"
+version = "0.17.4"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
