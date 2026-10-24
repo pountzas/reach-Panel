@@ -20,7 +20,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
-    "test:blob": "node --test scripts/upload-to-blob.test.mjs scripts/merge-downloads-latest.test.mjs companion/scripts/upload-apk-to-blob.test.mjs"
+    "test:blob": "node --test scripts/upload-to-blob.test.mjs scripts/merge-downloads-latest.test.mjs companion/scripts/upload-apk-to-blob.test.mjs companion/scripts/bump-version.test.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

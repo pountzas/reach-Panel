@@ -14,5 +14,10 @@
 
 ## Companion (Android)
 
-- `release-android.yml` on pushes to `main` that touch `companion/**`.
+- `release-android.yml` runs on pushes to `main` when any of these paths change:
+  - `companion/**`
+  - `docs/install/**`
+  - `.github/workflows/release-android.yml`
+  - `.github/workflows/deploy-install-site.yml`
 - Version bumps use conventional commits under `companion/` since the last `companion-v*` tag.
+- Companion bump logic is covered by `companion/scripts/bump-version.test.mjs` via `npm run test:blob` in CI.
