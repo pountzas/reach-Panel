@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.17.4 (2026-10-24)
+
+## What's Changed
+* chore: codify Prettier for src/ (T6 go A) by @pountzas in https://github.com/pountzas/reach-Panel/pull/335
+* fix(companion): parse VERSION in versioning.cjs by @pountzas in https://github.com/pountzas/reach-Panel/pull/338
+* chore: promotion PR hygiene (template, CodeRabbit, release rules) by @pountzas in https://github.com/pountzas/reach-Panel/pull/337
+* chore(icons): prune non-Windows Tauri icon sets by @pountzas in https://github.com/pountzas/reach-Panel/pull/336
+* fix(companion): CodeRabbit follow-ups for promotion #339 by @pountzas in https://github.com/pountzas/reach-Panel/pull/340
+* dev → main: Prettier CI, icon prune, release hygiene, companion version parse by @pountzas in https://github.com/pountzas/reach-Panel/pull/339
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.17.3...v0.17.4
+
 ## 0.17.3 (2026-10-23)
 
 ## What's Changed
