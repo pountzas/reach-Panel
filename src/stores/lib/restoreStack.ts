@@ -4,10 +4,7 @@ import type {
 } from "../../lib/appModeLayout";
 
 export type RestoreReason =
-  | "teaching"
-  | "companion"
-  | "widePiano"
-  | "focusMode";
+  "teaching" | "companion" | "widePiano" | "focusMode";
 
 export type RestorePatch = {
   mode?: HostAppMode;

@@ -4,11 +4,7 @@ const GROQ_KEY_PREFIX = "GROQ_KEY:";
 const GROQ_API_PREFIX = "GROQ_API:";
 
 export type SpeechErrorKind =
-  | "privacy"
-  | "language"
-  | "groqKey"
-  | "groqApi"
-  | null;
+  "privacy" | "language" | "groqKey" | "groqApi" | null;
 
 /** Privacy toggle for online speech recognition. */
 export const SPEECH_PRIVACY_SETTINGS_URI = "ms-settings:privacy-speech";
@@ -44,10 +40,7 @@ export function parseSpeechError(lastError: string): {
     };
   }
   const lower = lastError.toLowerCase();
-  if (
-    lower.includes("0x80045509") ||
-    lower.includes("speech privacy policy")
-  ) {
+  if (lower.includes("0x80045509") || lower.includes("speech privacy policy")) {
     return { message: lastError, kind: "privacy" };
   }
   if (
@@ -73,7 +66,9 @@ export function isStickySpeechError(error: string | null | undefined): boolean {
 }
 
 /** @deprecated Prefer isStickySpeechError — privacy is one of several sticky kinds. */
-export function isSpeechPrivacyError(error: string | null | undefined): boolean {
+export function isSpeechPrivacyError(
+  error: string | null | undefined,
+): boolean {
   if (!error) return false;
   return parseSpeechError(error).kind === "privacy";
 }

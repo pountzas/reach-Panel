@@ -3,7 +3,9 @@ import { languageAnswersMatch, normalizeLessonText } from "./normalize";
 
 describe("normalizeLessonText", () => {
   it("strips trailing punctuation", () => {
-    expect(normalizeLessonText("λέξη.", "el", { ignoreTones: false })).toBe("λέξη");
+    expect(normalizeLessonText("λέξη.", "el", { ignoreTones: false })).toBe(
+      "λέξη",
+    );
     expect(normalizeLessonText("hello!", "en")).toBe("hello");
   });
 

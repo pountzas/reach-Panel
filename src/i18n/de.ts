@@ -149,8 +149,10 @@ export const de = {
   languageNewListCancel: "Abbrechen",
 
   languageNewListEmpty: "Mindestens ein Wort hinzufügen",
-  languagePressPlayToSpell: "Drücken Sie Abspielen, um mit dem Buchstabieren zu beginnen",
-  languageNewListKeyboardHint: "Titel und Wörter links mit der Tastatur eingeben",
+  languagePressPlayToSpell:
+    "Drücken Sie Abspielen, um mit dem Buchstabieren zu beginnen",
+  languageNewListKeyboardHint:
+    "Titel und Wörter links mit der Tastatur eingeben",
 
   languagePackMyLists: "Meine Listen",
 
@@ -254,7 +256,8 @@ export const de = {
 
   taskbarPositionTop: "Oben",
 
-  taskbarPositionApplied: "Taskleistenposition aktualisiert. Explorer wurde neu gestartet.",
+  taskbarPositionApplied:
+    "Taskleistenposition aktualisiert. Explorer wurde neu gestartet.",
 
   taskbarPositionUnsupported:
     "Diese Taskleistenposition wird von dieser Windows-Version nicht unterstützt.",
@@ -269,8 +272,10 @@ export const de = {
   appLanguageHint: "Menüs, Phrasen und Sprache",
 
   launchAtWindowsSignIn: "ReachPanel beim Windows-Anmelden starten",
-  launchAtWindowsSignInHint: "Deaktivieren entfernt ReachPanel aus dem Windows-Autostart",
-  launchAtWindowsSignInError: "Windows-Autostart konnte nicht aktualisiert werden",
+  launchAtWindowsSignInHint:
+    "Deaktivieren entfernt ReachPanel aus dem Windows-Autostart",
+  launchAtWindowsSignInError:
+    "Windows-Autostart konnte nicht aktualisiert werden",
 
   typingLanguage: "Eingabesprache",
 
@@ -381,7 +386,8 @@ export const de = {
   dictationUnavailableUnsupported:
     "Diktat nicht verfügbar — fügen Sie in den Einstellungen einen kostenlosen Groq-API-Schlüssel für diese Sprache hinzu",
 
-  dictationUnavailableOffline: "Diktat nicht verfügbar — eine Internetverbindung ist erforderlich",
+  dictationUnavailableOffline:
+    "Diktat nicht verfügbar — eine Internetverbindung ist erforderlich",
 
   dictationGroqRemainingToday: "Verbleibende Groq-Anfragen heute",
 
@@ -428,7 +434,8 @@ export const de = {
 
   upcomingNotes: "Kommende Noten",
 
-  songNeedsOctaves: "Verschieben Sie das Klavier auf {range}, um dieses Lied abzudecken",
+  songNeedsOctaves:
+    "Verschieben Sie das Klavier auf {range}, um dieses Lied abzudecken",
 
   songWiderThanPiano:
     "Dieses Lied ist breiter als 5 Oktaven — einige Noten liegen außerhalb. Mit ◀ ▶ verschieben.",
@@ -531,7 +538,8 @@ export const de = {
   companionStart: "Brücke starten",
   companionStop: "Brücke stoppen",
   companionRefreshQr: "Neuer Kopplungscode",
-  companionQrHint: "Scannen Sie diesen QR-Code mit ReachPanel Begleiter auf Ihrem Tablet.",
+  companionQrHint:
+    "Scannen Sie diesen QR-Code mit ReachPanel Begleiter auf Ihrem Tablet.",
   companionQrAlt: "QR-Code zur Begleiter-Kopplung",
   companionCopyPayload: "Kopplungs-JSON kopieren",
   companionCopied: "Kopplungs-JSON kopiert",
@@ -573,5 +581,4 @@ export const de = {
   aboutDownloads: "Downloads",
 
   aboutEmail: "E-Mail",
-
 } satisfies Record<keyof typeof en, string>;

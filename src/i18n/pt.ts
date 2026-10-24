@@ -149,7 +149,8 @@ export const pt = {
 
   languageNewListEmpty: "Adicione pelo menos uma palavra",
   languagePressPlayToSpell: "Prima Reproduzir para começar a soletrar",
-  languageNewListKeyboardHint: "Use o teclado para o título e as palavras à esquerda",
+  languageNewListKeyboardHint:
+    "Use o teclado para o título e as palavras à esquerda",
 
   languagePackMyLists: "As minhas listas",
 
@@ -253,12 +254,14 @@ export const pt = {
 
   taskbarPositionTop: "Em cima",
 
-  taskbarPositionApplied: "Posição da barra de tarefas atualizada. O Explorer foi reiniciado.",
+  taskbarPositionApplied:
+    "Posição da barra de tarefas atualizada. O Explorer foi reiniciado.",
 
   taskbarPositionUnsupported:
     "Essa posição da barra de tarefas não é suportada nesta versão do Windows.",
 
-  taskbarPositionFailed: "Não foi possível alterar a posição da barra de tarefas.",
+  taskbarPositionFailed:
+    "Não foi possível alterar a posição da barra de tarefas.",
 
   opacity: "Opacidade",
   keyboardFontSize: "Tamanho da fonte do teclado",
@@ -268,8 +271,10 @@ export const pt = {
   appLanguageHint: "Menus, frases e voz",
 
   launchAtWindowsSignIn: "Iniciar o ReachPanel no início de sessão do Windows",
-  launchAtWindowsSignInHint: "Desativar remove o ReachPanel do arranque do Windows",
-  launchAtWindowsSignInError: "Não foi possível atualizar o arranque do Windows",
+  launchAtWindowsSignInHint:
+    "Desativar remove o ReachPanel do arranque do Windows",
+  launchAtWindowsSignInError:
+    "Não foi possível atualizar o arranque do Windows",
 
   typingLanguage: "Idioma de escrita",
 
@@ -312,7 +317,8 @@ export const pt = {
 
   deleteProfile: "Eliminar perfil",
 
-  deleteProfileConfirm: "Eliminar este perfil? Se estiver ativo, será criado um novo perfil predefinido.",
+  deleteProfileConfirm:
+    "Eliminar este perfil? Se estiver ativo, será criado um novo perfil predefinido.",
 
   profileDeleted: "Perfil eliminado.",
 
@@ -379,7 +385,8 @@ export const pt = {
   dictationUnavailableUnsupported:
     "Ditado indisponível — adicione uma chave API Groq gratuita nas Definições para este idioma",
 
-  dictationUnavailableOffline: "Ditado indisponível — é necessária uma ligação à Internet",
+  dictationUnavailableOffline:
+    "Ditado indisponível — é necessária uma ligação à Internet",
 
   dictationGroqRemainingToday: "Pedidos Groq restantes hoje",
 
@@ -571,5 +578,4 @@ export const pt = {
   aboutDownloads: "Downloads",
 
   aboutEmail: "E-mail",
-
 } satisfies Record<keyof typeof en, string>;

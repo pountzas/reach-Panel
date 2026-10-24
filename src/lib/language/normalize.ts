@@ -4,7 +4,7 @@ export type NormalizeLessonTextOptions = {
   ignoreCase?: boolean;
   /** Strip accent marks (Greek tones, combining diacritics) before compare. */
   ignoreTones?: boolean;
-}
+};
 
 const TRAILING_PUNCT = /[.!?,;:]+$/u;
 

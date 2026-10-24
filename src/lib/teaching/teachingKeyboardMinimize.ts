@@ -1,7 +1,7 @@
 export type TeachingKeyboardChromeInput = {
   musicTeachingEnabled: boolean;
   teachingLesson: "music" | "math" | "language";
-}
+};
 
 /** Center Minimize/Focus chrome only in Teaching → Language or Mathematics. */
 export function isTeachingKeyboardChromeVisible(
@@ -19,7 +19,7 @@ export type TeachingKeyboardMinimizeAction =
 export type TeachingKeyboardMinimizeState = {
   teachingKeyboardMinimized: boolean;
   teachingKeyboardAutoFocus: boolean;
-}
+};
 
 export function nextTeachingKeyboardMinimizeState(input: {
   teachingKeyboardMinimized: boolean;

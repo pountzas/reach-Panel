@@ -14,7 +14,9 @@ function memoryStorage(): Storage {
     get length() {
       return map.size;
     },
-    clear: () => { map.clear(); },
+    clear: () => {
+      map.clear();
+    },
     getItem: (k) => map.get(k) ?? null,
     setItem: (k, v) => {
       map.set(k, v);
@@ -62,7 +64,9 @@ describe("reconcileAutostartOnLoad", () => {
         throw new Error("denied");
       }),
     });
-    await expect(reconcileAutostartOnLoad(api, storage)).rejects.toThrow("denied");
+    await expect(reconcileAutostartOnLoad(api, storage)).rejects.toThrow(
+      "denied",
+    );
     expect(storage.getItem(AUTOSTART_PREFERENCE_KNOWN_KEY)).toBeNull();
   });
 
@@ -117,7 +121,9 @@ describe("setAutostartEnabled", () => {
       }),
       isEnabled: vi.fn(async () => false),
     });
-    await expect(setAutostartEnabled(true, api, storage)).rejects.toThrow("fail");
+    await expect(setAutostartEnabled(true, api, storage)).rejects.toThrow(
+      "fail",
+    );
     expect(storage.getItem(AUTOSTART_ENABLED_CACHE_KEY)).toBe("0");
   });
 });

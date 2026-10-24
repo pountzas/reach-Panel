@@ -7,7 +7,9 @@ import {
 } from "./toolWindows";
 import type { MonitorInfo } from "./types";
 
-function monitor(partial: Partial<MonitorInfo> & Pick<MonitorInfo, "id">): MonitorInfo {
+function monitor(
+  partial: Partial<MonitorInfo> & Pick<MonitorInfo, "id">,
+): MonitorInfo {
   return {
     name: `M${partial.id}`,
     x: 0,
@@ -48,7 +50,11 @@ describe("centerOnMonitor", () => {
       height: 1800,
       scale_factor: 1.5,
     });
-    const placed = centerOnMonitor(m, TOOL_WINDOW_SIZE.width, TOOL_WINDOW_SIZE.height);
+    const placed = centerOnMonitor(
+      m,
+      TOOL_WINDOW_SIZE.width,
+      TOOL_WINDOW_SIZE.height,
+    );
     expect(resolveMonitorScaleFactor(m)).toBe(1.5);
     // logical work area 1920×1200
     expect(placed).toEqual({ x: 1280 + 510, y: 250, width: 900, height: 700 });

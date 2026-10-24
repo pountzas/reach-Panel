@@ -11,7 +11,7 @@ export type AutostartApi = {
   enable: () => Promise<void>;
   disable: () => Promise<void>;
   isEnabled: () => Promise<boolean>;
-}
+};
 
 const defaultApi: AutostartApi = {
   enable: () => pluginEnable(),

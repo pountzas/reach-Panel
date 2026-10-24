@@ -11,7 +11,7 @@ export type ColorProfileColors = {
   keyboardKeyColor: string;
   keyTextColor: string;
   mousePanelBgColor: string;
-}
+};
 
 export const COLOR_PROFILE_PRESETS: Record<
   Exclude<ColorProfileId, "custom">,
@@ -70,12 +70,17 @@ export function colorsMatchPreset(
  * the `colorProfile` field. Detects matching presets, otherwise falls back to
  * "custom" so existing user colors are preserved.
  */
-export function resolveColorProfile(settings: {
-  colorProfile?: unknown;
-  theme?: unknown;
-} & Partial<ColorProfileColors>): ColorProfileId {
+export function resolveColorProfile(
+  settings: {
+    colorProfile?: unknown;
+    theme?: unknown;
+  } & Partial<ColorProfileColors>,
+): ColorProfileId {
   const candidate = settings.colorProfile;
-  if (typeof candidate === "string" && COLOR_PROFILE_IDS.includes(candidate as ColorProfileId)) {
+  if (
+    typeof candidate === "string" &&
+    COLOR_PROFILE_IDS.includes(candidate as ColorProfileId)
+  ) {
     return candidate as ColorProfileId;
   }
 
@@ -110,7 +115,11 @@ function rgbToHex(r: number, g: number, b: number): string {
 function darkenHex(hex: string, amount: number): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
-  return rgbToHex(rgb.r * (1 - amount), rgb.g * (1 - amount), rgb.b * (1 - amount));
+  return rgbToHex(
+    rgb.r * (1 - amount),
+    rgb.g * (1 - amount),
+    rgb.b * (1 - amount),
+  );
 }
 
 function lightenHex(hex: string, amount: number): string {
@@ -133,7 +142,7 @@ function relativeLuminance(hex: string): number {
 export type SynthBlackKeyColors = {
   base: string;
   pressed: string;
-}
+};
 
 /**
  * Derives synthesizer black-key colors so they stay consistent with the active
@@ -168,14 +177,16 @@ export type SurfaceColors = {
   insetBg: string;
   insetBorder: string;
   insetText: string;
-}
+};
 
 /**
  * Derives harmonizing surface colors from the app background so panels and
  * section frames follow the active color profile (including custom colors)
  * instead of staying a fixed white.
  */
-export function getSurfaceColors(appBgColor: string | undefined): SurfaceColors {
+export function getSurfaceColors(
+  appBgColor: string | undefined,
+): SurfaceColors {
   const base = appBgColor ?? "#e5e7eb";
   const isDark = relativeLuminance(base) < 0.5;
 

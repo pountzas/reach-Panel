@@ -17,16 +17,18 @@ import {
 
 describe("partialContainsLayoutFields", () => {
   it("does not treat windowHeightRatio as a pointer-kind layout field", () => {
-    expect(
-      partialContainsLayoutFields({ windowHeightRatio: undefined }),
-    ).toBe(false);
+    expect(partialContainsLayoutFields({ windowHeightRatio: undefined })).toBe(
+      false,
+    );
     expect(partialContainsLayoutFields({ windowHeightRatio: 0.5 })).toBe(false);
   });
 
   it("detects section stack and input-row ratio", () => {
     expect(partialContainsLayoutFields({ inputRowRightRatio: 0.4 })).toBe(true);
     expect(
-      partialContainsLayoutFields({ sectionStack: createDefaultSectionStack() }),
+      partialContainsLayoutFields({
+        sectionStack: createDefaultSectionStack(),
+      }),
     ).toBe(true);
   });
 

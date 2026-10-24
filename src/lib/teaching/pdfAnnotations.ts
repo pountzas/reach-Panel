@@ -5,7 +5,7 @@ export type PdfStroke = {
   color: string;
   width: number;
   points: PdfPoint[];
-}
+};
 
 export type PdfTextBox = {
   id: string;
@@ -13,23 +13,23 @@ export type PdfTextBox = {
   y: number;
   w: number;
   body: string;
-}
+};
 
 export type PdfPageAnnotations = {
   strokes: PdfStroke[];
   texts: PdfTextBox[];
-}
+};
 
 export type PdfAnnotationDoc = {
   schemaVersion: 1;
   originalPathHint?: string;
   pages: Record<string, PdfPageAnnotations>;
-}
+};
 
 export type UndoEntry = {
   undo: () => void;
   redo: () => void;
-}
+};
 
 export type UndoStack = {
   push: (entry: UndoEntry) => void;
@@ -38,7 +38,7 @@ export type UndoStack = {
   clear: () => void;
   size: () => number;
   redoSize: () => number;
-}
+};
 
 const SCHEMA_VERSION = 1 as const;
 

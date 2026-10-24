@@ -13,7 +13,7 @@ export type SerialCoalesceGate = {
   coalesce: (fn: () => void | Promise<void>) => void;
   /** Resolves after work already queued or coalesced at call time finishes. */
   whenIdle: () => Promise<void>;
-}
+};
 
 export const createSerialCoalesceGate = (): SerialCoalesceGate => {
   let chain: Promise<void> = Promise.resolve();

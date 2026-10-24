@@ -24,7 +24,7 @@ export const TOOL_WINDOW_REQUEST_EVENT = "tool-window-request";
 export type ToolWindowRequest = {
   label: ToolWindowLabel;
   show: boolean;
-}
+};
 
 export const TOOL_WINDOW_SIZE = { width: 900, height: 700 } as const;
 
@@ -135,7 +135,7 @@ async function resolvePlacement(optionsMonitor?: MonitorInfo): Promise<{
 } | null> {
   const monitors = await getMonitors();
   const monitor = optionsMonitor
-    ? resolveToolWindowMonitor(monitors, optionsMonitor.id) ?? optionsMonitor
+    ? (resolveToolWindowMonitor(monitors, optionsMonitor.id) ?? optionsMonitor)
     : await resolveMainWindowMonitor(monitors);
   if (!monitor) return null;
   return centerOnMonitor(
@@ -201,9 +201,7 @@ export async function openToolWindow(
     title: options.title,
     width: placement?.width ?? TOOL_WINDOW_SIZE.width,
     height: placement?.height ?? TOOL_WINDOW_SIZE.height,
-    ...(placement
-      ? { x: placement.x, y: placement.y }
-      : { center: true }),
+    ...(placement ? { x: placement.x, y: placement.y } : { center: true }),
     // Owned by main: stays above main in z-order on Windows.
     parent: "main",
     decorations: false,
@@ -216,12 +214,16 @@ export async function openToolWindow(
   });
 
   await new Promise<void>((resolve, reject) => {
-    void webview.once("tauri://created", () => { resolve(); });
+    void webview.once("tauri://created", () => {
+      resolve();
+    });
     void webview.once("tauri://error", (event) => {
       reject(
         event.payload instanceof Error
           ? event.payload
-          : new Error(tauriErrorMessage(event.payload, "Failed to create tool window")),
+          : new Error(
+              tauriErrorMessage(event.payload, "Failed to create tool window"),
+            ),
       );
     });
   });

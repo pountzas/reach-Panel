@@ -16,7 +16,8 @@ const LETTER_INDEX: Partial<Record<string, number>> = {
   B: 6,
 };
 
-export type PartitureDuration = "whole" | "half" | "quarter" | "eighth" | "sixteenth";
+export type PartitureDuration =
+  "whole" | "half" | "quarter" | "eighth" | "sixteenth";
 
 export type PartitureNoteLayout = {
   pitch: string;
@@ -27,13 +28,13 @@ export type PartitureNoteLayout = {
   duration: PartitureDuration;
   /** Horizontal advance weight (relative). */
   advance: number;
-}
+};
 
 export type PartitureLayout = {
   /** Octave shift applied for display only (+1 = 8va, -1 = 8vb). */
   displayOctaveShift: number;
   notes: PartitureNoteLayout[];
-}
+};
 
 function letterFromNote(note: string): string {
   return note.endsWith("#") ? note.slice(0, -1) : note;
@@ -87,7 +88,9 @@ export function chooseDisplayOctaveShift(pitches: string[]): number {
     .filter((v): v is number => v != null);
   if (indices.length === 0) return 0;
 
-  const median = [...indices].sort((a, b) => a - b)[Math.floor(indices.length / 2)];
+  const median = [...indices].sort((a, b) => a - b)[
+    Math.floor(indices.length / 2)
+  ];
   // Staff center ≈ B4 (diatonic 4*7+6 = 34)
   const staffCenter = 4 * 7 + 6;
   const delta = median - staffCenter;
@@ -96,7 +99,10 @@ export function chooseDisplayOctaveShift(pitches: string[]): number {
   return 0;
 }
 
-export function pitchToStaffPos(pitch: string, displayOctaveShift: number): number | null {
+export function pitchToStaffPos(
+  pitch: string,
+  displayOctaveShift: number,
+): number | null {
   const idx = diatonicIndex(pitch);
   if (idx == null) return null;
   const shifted = idx + displayOctaveShift * 7;
@@ -125,12 +131,15 @@ export function ledgerLinePositions(staffPos: number): number[] {
 }
 
 export function layoutPartiture(notes: MusicNoteEvent[]): PartitureLayout {
-  const displayOctaveShift = chooseDisplayOctaveShift(notes.map((n) => n.pitch));
+  const displayOctaveShift = chooseDisplayOctaveShift(
+    notes.map((n) => n.pitch),
+  );
   const laidOut: PartitureNoteLayout[] = [];
 
   for (const note of notes) {
     // Keep 1:1 index alignment with song.notes for lesson highlight sync.
-    const staffPos = pitchToStaffPos(note.pitch, displayOctaveShift) ?? STAFF_STEP_COUNT / 2;
+    const staffPos =
+      pitchToStaffPos(note.pitch, displayOctaveShift) ?? STAFF_STEP_COUNT / 2;
     const duration = beatsToDuration(note.beats);
     laidOut.push({
       pitch: note.pitch,

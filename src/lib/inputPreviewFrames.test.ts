@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  clear,
-  getLatest,
-  publish,
-  subscribe,
-} from "./inputPreviewFrames";
+import { clear, getLatest, publish, subscribe } from "./inputPreviewFrames";
 import type { InputPreviewFrame } from "./inputPreviewChannel";
 
 const sample: InputPreviewFrame = {

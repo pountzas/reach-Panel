@@ -17,7 +17,9 @@ export const SYNTH_OCTAVE_COUNT_LABEL_KEYS = {
   5: "octaveCount5",
 } as const;
 
-export function resolveSynthOctaveCount(value: number | undefined): SynthOctaveCount {
+export function resolveSynthOctaveCount(
+  value: number | undefined,
+): SynthOctaveCount {
   if (value === 2 || value === 3 || value === 4 || value === 5) {
     return value;
   }
@@ -44,10 +46,16 @@ export function resolveSynthStartOctave(
 }
 
 /** Top C for a window starting at `startOctave` with `octaveCount` octaves. */
-export function topOctaveForWindow(startOctave: number, octaveCount: number): number {
+export function topOctaveForWindow(
+  startOctave: number,
+  octaveCount: number,
+): number {
   return startOctave + octaveCount;
 }
 
-export function pianoRangeLabel(startOctave: number, octaveCount: number): string {
+export function pianoRangeLabel(
+  startOctave: number,
+  octaveCount: number,
+): string {
   return `C${startOctave}–C${topOctaveForWindow(startOctave, octaveCount)}`;
 }

@@ -90,16 +90,17 @@ export type AppModeRequest = {
   mode: "normal" | "focus" | "mic" | "teaching" | "companion";
   /** Idle restore already left companion; do not stop the bridge again. */
   skipCompanionBridgeStop?: boolean;
-}
-export type AppModeTablet = "normal" | "focus" | "mic" | "teaching" | "companion";
+};
+export type AppModeTablet =
+  "normal" | "focus" | "mic" | "teaching" | "companion";
 export type HostAppMode = "normal" | "focus" | "mic" | "teaching";
 export type CompanionSessionPhase = "idle" | "active" | "reconnecting";
-export type TeachingLessonRequest = { lesson: "music" | "math" | "language" }
+export type TeachingLessonRequest = { lesson: "music" | "math" | "language" };
 export type TeachingSessionPayload = {
   musicTeachingEnabled: boolean;
   teachingLesson: "music" | "math" | "language";
   keyboardSectionMode: KeyboardSectionMode;
-}
+};
 
 /** Shared mode tablet list for Settings and the collapsed FAB mode menu. */
 export const APP_MODE_OPTIONS = [

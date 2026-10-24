@@ -63,8 +63,8 @@ describe("listCustomPacksForLanguage", () => {
     expect(el).not.toBeNull();
     expect(en).not.toBeNull();
     if (!el || !en) throw new Error("expected packs");
-    expect(listCustomPacksForLanguage([el, en], "el").map((p) => p.title)).toEqual([
-      "EL",
-    ]);
+    expect(
+      listCustomPacksForLanguage([el, en], "el").map((p) => p.title),
+    ).toEqual(["EL"]);
   });
 });

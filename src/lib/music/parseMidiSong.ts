@@ -12,7 +12,20 @@ function midiToPitch(midi: number): string | null {
   if (!Number.isFinite(midi)) return null;
   const rounded = Math.round(midi);
   if (rounded < 12 || rounded > 127) return null;
-  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const;
+  const names = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B",
+  ] as const;
   const name = names[rounded % 12];
   const octave = Math.floor(rounded / 12) - 1;
   return `${name}${octave}`;

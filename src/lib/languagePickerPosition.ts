@@ -1,19 +1,19 @@
 export type RectSize = {
   width: number;
   height: number;
-}
+};
 
 export type AnchorRect = {
   left: number;
   top: number;
   width: number;
   height: number;
-}
+};
 
 export type PopupPosition = {
   left: number;
   top: number;
-}
+};
 
 /** Gap between anchor top edge and popup bottom (matches Tailwind mb-1). */
 export const LANGUAGE_PICKER_GAP_PX = 4;

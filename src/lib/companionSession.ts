@@ -18,12 +18,12 @@ export type CompanionUiState = {
   lastRttMs: number | null;
   audioRouting: CompanionAudioRouting;
   pairedDeviceCount: number;
-}
+};
 
 /** `companion-session` event payload. */
 export type CompanionSessionEventPayload = {
   phase: Extract<CompanionSessionPhase, "active" | "idle">;
-}
+};
 
 export type CompanionLeaveReason = "sessionIdle" | "caregiverLeft";
 
@@ -31,12 +31,11 @@ export type CompanionLeavePlan = {
   stopBridge: boolean;
   keepArmed: boolean;
   restoreHostMode: boolean;
-}
+};
 
 /** Pure mapping from tablet session phase → host live flag / restore mode. */
 export type CompanionSessionPhaseMapping =
-  | { live: true }
-  | { live: false; restore: HostAppMode };
+  { live: true } | { live: false; restore: HostAppMode };
 
 export function mapCompanionSessionPhase(
   phase: CompanionSessionPhase,
@@ -84,7 +83,9 @@ export function planCompanionLeave(
 }
 
 /** Idle after a caregiver already switched modes must not clobber that mode. */
-export function shouldIgnoreCompanionIdle(companionModeActive: boolean): boolean {
+export function shouldIgnoreCompanionIdle(
+  companionModeActive: boolean,
+): boolean {
   return !companionModeActive;
 }
 

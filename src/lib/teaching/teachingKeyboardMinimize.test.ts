@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createDefaultSectionStack,
-  resolveDockedSlots,
-} from "../sectionStack";
+import { createDefaultSectionStack, resolveDockedSlots } from "../sectionStack";
 import { sectionHeaderHeightPx } from "../sectionLayouts";
 import {
   isTeachingKeyboardChromeVisible,
@@ -107,13 +104,9 @@ describe("resolveDockedSlots forceMinimized", () => {
   it("collapses input-row to header height without touching persisted stack.minimized", () => {
     const stack = createDefaultSectionStack();
     const headerH = sectionHeaderHeightPx();
-    const slots = resolveDockedSlots(
-      stack,
-      { teaching: true },
-      600,
-      4,
-      { forceMinimized: { "input-row": true } },
-    );
+    const slots = resolveDockedSlots(stack, { teaching: true }, 600, 4, {
+      forceMinimized: { "input-row": true },
+    });
     const input = slots.find((s) => s.id === "input-row");
     const teaching = slots.find((s) => s.id === "teaching");
     expect(input?.isMinimized).toBe(true);

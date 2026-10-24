@@ -25,7 +25,7 @@ export type WindowHeightDragRegion = {
   bottom: number;
   /** Region height in the same units as `bottom` and `screenY`. */
   height: number;
-}
+};
 
 /**
  * Resolve the layout region in CSS/logical pixels so it matches `event.screenY`.
@@ -43,7 +43,9 @@ export function resolveWindowHeightDragRegion(
   // Match Rust compute_window_layout: focus / full_work_area / 2+ monitors → full
   // work area; single non-teaching → bottom half.
   const useFull = opts.focusMode || opts.fullWorkArea || opts.multiMonitor;
-  const regionY = useFull ? monitor.y : monitor.y + Math.floor(monitor.height / 2);
+  const regionY = useFull
+    ? monitor.y
+    : monitor.y + Math.floor(monitor.height / 2);
   const regionH = useFull ? monitor.height : Math.floor(monitor.height / 2);
   return {
     bottom: (regionY + regionH) / scale,

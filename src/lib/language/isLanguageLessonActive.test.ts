@@ -42,7 +42,10 @@ describe("isLanguageLessonCaptureActive", () => {
       isLanguageLessonCaptureActive({ ...base, languageLessonPlaying: true }),
     ).toBe(true);
     expect(
-      isLanguageLessonCaptureActive({ ...base, languageListAuthoringActive: true }),
+      isLanguageLessonCaptureActive({
+        ...base,
+        languageListAuthoringActive: true,
+      }),
     ).toBe(true);
     expect(
       isLanguageLessonCaptureActive({

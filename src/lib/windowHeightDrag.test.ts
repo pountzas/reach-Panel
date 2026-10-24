@@ -6,10 +6,15 @@ import {
   resolveWindowHeightDragRegion,
   shouldApplyLiveWindowHeightRatio,
 } from "./windowHeightDrag";
-import { WINDOW_HEIGHT_RATIO_MAX, WINDOW_HEIGHT_RATIO_MIN } from "./sectionLayouts";
+import {
+  WINDOW_HEIGHT_RATIO_MAX,
+  WINDOW_HEIGHT_RATIO_MIN,
+} from "./sectionLayouts";
 import type { MonitorInfo } from "./types";
 
-const monitor = (partial: Partial<MonitorInfo> & Pick<MonitorInfo, "height">): MonitorInfo => ({
+const monitor = (
+  partial: Partial<MonitorInfo> & Pick<MonitorInfo, "height">,
+): MonitorInfo => ({
   id: 0,
   name: "Test",
   x: 0,
@@ -93,14 +98,20 @@ describe("nextWindowHeightRatioFromScreenY", () => {
   const region = { bottom: 1000, height: 500 };
 
   it("maps the region top to full height and midpoint to half", () => {
-    expect(nextWindowHeightRatioFromScreenY(500, region)).toBe(WINDOW_HEIGHT_RATIO_MAX);
+    expect(nextWindowHeightRatioFromScreenY(500, region)).toBe(
+      WINDOW_HEIGHT_RATIO_MAX,
+    );
     expect(nextWindowHeightRatioFromScreenY(750, region)).toBeCloseTo(0.5, 10);
   });
 
   it("clamps when the pointer is above or below the allowed band", () => {
-    expect(nextWindowHeightRatioFromScreenY(0, region)).toBe(WINDOW_HEIGHT_RATIO_MAX);
+    expect(nextWindowHeightRatioFromScreenY(0, region)).toBe(
+      WINDOW_HEIGHT_RATIO_MAX,
+    );
     // Below 25% of the region → min ratio
-    expect(nextWindowHeightRatioFromScreenY(950, region)).toBe(WINDOW_HEIGHT_RATIO_MIN);
+    expect(nextWindowHeightRatioFromScreenY(950, region)).toBe(
+      WINDOW_HEIGHT_RATIO_MIN,
+    );
     expect(WINDOW_HEIGHT_RATIO_MIN).toBe(0.25);
   });
 

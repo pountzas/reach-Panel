@@ -10,7 +10,9 @@ import { emptyPdfAnnotationDoc } from "./pdfAnnotations";
 
 describe("normalizeExportPageRange", () => {
   it("accepts inclusive in-range bounds", () => {
-    expect(normalizeExportPageRange({ from: 4, to: 12, pageCount: 50 })).toEqual({
+    expect(
+      normalizeExportPageRange({ from: 4, to: 12, pageCount: 50 }),
+    ).toEqual({
       from: 4,
       to: 12,
     });
