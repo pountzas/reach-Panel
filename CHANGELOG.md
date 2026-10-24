@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.17.5 (2026-10-24)
+
+## What's Changed
+* chore(deps): bump shell-quote from 1.10.0 to 1.12.0 in /companion by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/342
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.17.4...v0.17.5
+
 ## 0.17.4 (2026-10-24)
 
 ## What's Changed
