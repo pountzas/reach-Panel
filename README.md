@@ -177,6 +177,8 @@ For Rust builds on Windows, ensure the MSVC environment is active. If `link.exe`
 
 Companion app: [companion/README.md](companion/README.md).
 
+Logs, crash sidecars, and the privacy rule: [docs/logging.md](docs/logging.md). Settings → Tools & maintenance can open the logs folder or copy a diagnostics report.
+
 ### Branding / app icons
 
 Master logo: [`design/reachpanel-logo.svg`](design/reachpanel-logo.svg). See [`design/README.md`](design/README.md) to regenerate `design/app-icon.png`, `src-tauri/icons/`, and the companion launcher assets (`npm run generate:brand-icons`, then `npm run tauri -- icon design/app-icon.png`).
@@ -236,6 +238,7 @@ Windows installers are built in CI and published automatically when a [release-p
 | `src-tauri/resources/wordpacks/`     | Bundled English dictionary                                           |
 | `wordpacks-dist/`                    | Downloadable packs for GitHub `wordpacks-v1` release                 |
 | `docs/accessibility-requirements.md` | Target users and acceptance criteria                                 |
+| `docs/logging.md`                    | Log location, files, unclean-session reading, privacy rule           |
 
 ## Roadmap
 

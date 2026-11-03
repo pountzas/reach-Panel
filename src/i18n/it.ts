@@ -308,6 +308,12 @@ export const it = {
   wipeProfileConfirm:
     "Cancellare questo profilo? Tutte le azioni rapide, macro, frasi, previsioni e impostazioni verranno reimpostate.",
 
+  openLogsFolder: "Apri cartella dei log",
+
+  copyDiagnostics: "Copia diagnostica",
+
+  diagnosticsCopied: "Diagnostica copiata",
+
   saveProfile: "Salva profilo",
 
   profileSaved: "Profilo salvato.",

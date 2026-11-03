@@ -312,6 +312,12 @@ export const de = {
   wipeProfileConfirm:
     "Dieses Profil löschen? Alle Schnellaktionen, Makros, Phrasen, Vorhersagen und Einstellungen werden zurückgesetzt.",
 
+  openLogsFolder: "Protokollordner öffnen",
+
+  copyDiagnostics: "Diagnose kopieren",
+
+  diagnosticsCopied: "Diagnose kopiert",
+
   saveProfile: "Profil speichern",
 
   profileSaved: "Profil gespeichert.",

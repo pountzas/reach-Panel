@@ -311,6 +311,12 @@ export const pt = {
   wipeProfileConfirm:
     "Limpar este perfil? Todas as ações rápidas, macros, frases, previsões e definições serão repostas.",
 
+  openLogsFolder: "Abrir pasta de registos",
+
+  copyDiagnostics: "Copiar diagnóstico",
+
+  diagnosticsCopied: "Diagnóstico copiado",
+
   saveProfile: "Guardar perfil",
 
   profileSaved: "Perfil guardado.",

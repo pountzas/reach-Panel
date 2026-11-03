@@ -342,6 +342,12 @@ export const en = {
   wipeProfileConfirm:
     "Wipe this profile? All predictions and settings will be reset.",
 
+  openLogsFolder: "Open logs folder",
+
+  copyDiagnostics: "Copy diagnostics",
+
+  diagnosticsCopied: "Diagnostics copied",
+
   saveProfile: "Save profile",
 
   profileSaved: "Profile saved.",
