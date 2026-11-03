@@ -796,6 +796,7 @@ mod tests {
 
 pub(crate) mod layout;
 pub(crate) mod icon_sync;
+pub(crate) mod events;
 mod taskbar;
 pub(crate) mod taskbar_icon;
 mod windows;

@@ -1,5 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { commandFailure, logIpc } from "./logIpc";
+import { invoke } from "@tauri-apps/api/core";
+import {
+  commandFailure,
+  logIpc,
+  logLayoutIpc,
+  resetLayoutIpcRateLimit,
+} from "./logIpc";
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn(() => Promise.resolve()),
+}));
 
 describe("logIpc", () => {
   afterEach(() => {
@@ -24,6 +34,37 @@ describe("logIpc", () => {
     logIpc("cmd_trackpad_gesture_end")(new Error("gesture failed"));
 
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe("logLayoutIpc", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    resetLayoutIpcRateLimit();
+    vi.mocked(invoke).mockClear();
+  });
+
+  it("records a breadcrumb in all builds and rate-limits to once per second", () => {
+    vi.stubEnv("DEV", false);
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+
+    logLayoutIpc("cmd_apply_window_layout", { heightRatio: 0.5 });
+    logLayoutIpc("cmd_apply_window_layout", { heightRatio: 0.6 });
+
+    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledWith("cmd_record_breadcrumb", {
+      scope: "layout-ipc",
+      message: 'cmd_apply_window_layout {"heightRatio":0.5}',
+    });
+
+    vi.setSystemTime(2_000);
+    logLayoutIpc("cmd_animate_window_layout", { collapsed: true });
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenLastCalledWith("cmd_record_breadcrumb", {
+      scope: "layout-ipc",
+      message: 'cmd_animate_window_layout {"collapsed":true}',
+    });
   });
 });
 

@@ -1,4 +1,6 @@
+import { invoke } from "@tauri-apps/api/core";
 import type { CommandResult } from "./types";
+import type { LogFields } from "./log";
 
 /**
  * Dev-only IPC failure logger. Use as `.catch(logIpc("cmd_foo"))` so fire-and-forget
@@ -12,7 +14,21 @@ export function logIpc(label: string) {
   };
 }
 
-/** Dev-only: log window-layout IPC args (used to confirm #299 height jumps). */
+const LAYOUT_IPC_MIN_INTERVAL_MS = 1000;
+let lastLayoutIpcAt = 0;
+
+function layoutIpcFields(args: unknown): LogFields {
+  if (args !== null && typeof args === "object" && !Array.isArray(args)) {
+    const fields: LogFields = {};
+    for (const [key, value] of Object.entries(args)) {
+      fields[key] = value;
+    }
+    return fields;
+  }
+  return { args };
+}
+
+/** Layout IPC at debug in all builds, rate-limited so a grip drag cannot flood the log. */
 export function logLayoutIpc(
   cmd: "cmd_apply_window_layout" | "cmd_animate_window_layout",
   args: unknown,
@@ -20,6 +36,21 @@ export function logLayoutIpc(
   if (import.meta.env.DEV) {
     console.debug("[layout-ipc]", cmd, args);
   }
+  const now = Date.now();
+  if (now - lastLayoutIpcAt < LAYOUT_IPC_MIN_INTERVAL_MS) {
+    return;
+  }
+  lastLayoutIpcAt = now;
+  void Promise.resolve(
+    invoke("cmd_record_breadcrumb", {
+      scope: "layout-ipc",
+      message: `${cmd} ${JSON.stringify(layoutIpcFields(args))}`,
+    }),
+  ).catch(() => {});
+}
+
+export function resetLayoutIpcRateLimit(): void {
+  lastLayoutIpcAt = 0;
 }
 
 /** Message from a soft `CommandResult`, or null when the command succeeded. */

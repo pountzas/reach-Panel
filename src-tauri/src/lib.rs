@@ -1,6 +1,7 @@
 mod companion;
 mod commands;
 mod db;
+mod diagnostics;
 mod input;
 mod language;
 mod logging;
@@ -79,6 +80,7 @@ pub fn run() {
                 let _ = window.set_always_on_top(true);
                 let _ = window.set_focusable(false);
                 window::icon_sync::register_main_window_icon_sync(window.clone());
+                window::events::register_main_window_event_logs(window.clone());
                 if let Ok(hwnd) = window.hwnd() {
                     if let Err(e) =
                         input::input_preview::exclude_window_from_capture(hwnd.0 as isize)
@@ -90,6 +92,9 @@ pub fn run() {
                 input::input_preview::init(app.handle().clone());
             }
             crate::logging::log_session_start(app);
+            if let Ok(log_dir) = app.path().app_log_dir() {
+                crate::diagnostics::breadcrumbs::start(log_dir);
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -169,11 +174,20 @@ pub fn run() {
             companion::cmd_companion_refresh_pairing,
             companion::cmd_companion_list_devices,
             companion::cmd_companion_revoke_device,
+            crate::diagnostics::breadcrumbs::cmd_record_breadcrumb,
         ])
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
         .unwrap_or_else(|e| {
             // Process entry: no caller to return to; exit instead of panicking.
             log::error!("error while running tauri application: {e}");
             std::process::exit(1);
+        })
+        .run(|_app, event| {
+            if matches!(
+                event,
+                tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
+            ) {
+                crate::diagnostics::breadcrumbs::flush();
+            }
         });
 }

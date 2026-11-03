@@ -13,6 +13,11 @@ import {
 } from "../lib/windowHeightDrag";
 import { resolveMonitorScaleFactor } from "../lib/toolWindows";
 import { isTeachingFullWorkArea } from "../lib/v1HiddenFeatures";
+import { logInfo } from "../lib/log";
+import {
+  beginResizeDrag,
+  finishResizeDrag,
+} from "../lib/windowHeightDragSummary";
 
 type WindowHeightDragRef = {
   region: WindowHeightDragRegion;
@@ -86,6 +91,10 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
     stopPoll();
     clearPointerEndListeners();
     windowResizeRef.current = null;
+    const summary = finishResizeDrag(ratio);
+    if (summary) {
+      logInfo("resize", "drag end", summary);
+    }
     void updateSettings({ windowHeightRatio: ratio });
   };
 
@@ -150,6 +159,8 @@ export const useWindowHeightDrag = (): WindowHeightDragHandlers => {
       focusMode: focusModeActive,
     });
     const startRatio = nextWindowHeightRatioFromScreenY(event.screenY, region);
+    beginResizeDrag(startRatio);
+    logInfo("resize", "drag start", { startRatio });
     windowResizeRef.current = {
       region,
       latestRatio: startRatio,
