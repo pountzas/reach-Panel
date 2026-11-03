@@ -1,17 +1,59 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { CommandResult } from "./types";
-import type { LogFields } from "./log";
+import { logWarn, type LogFields } from "./log";
+
+const RATE_LIMIT_MS = 1000;
+
+const lastLoggedAt = new Map<string, number>();
+const suppressedCount = new Map<string, number>();
+const flushTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 /**
- * Dev-only IPC failure logger. Use as `.catch(logIpc("cmd_foo"))` so fire-and-forget
- * invokes still leave a console trail instead of swallowing errors silently.
+ * Fire-and-forget IPC failure logger. DEV still prints to the console; every
+ * build also writes a rate-limited `logWarn` (at most one line per second per
+ * label, plus a suppressed-count summary).
  */
 export function logIpc(label: string) {
   return (error: unknown) => {
     if (import.meta.env.DEV) {
       console.warn(`[ipc] ${label}`, error);
     }
+    logIpcFailure(label, error);
   };
+}
+
+function flushSuppressed(label: string): void {
+  const timer = flushTimers.get(label);
+  if (timer !== undefined) {
+    clearTimeout(timer);
+    flushTimers.delete(label);
+  }
+  const suppressed = suppressedCount.get(label) ?? 0;
+  if (suppressed > 0) {
+    logWarn("ipc", label, { suppressed });
+    suppressedCount.set(label, 0);
+  }
+}
+
+function logIpcFailure(label: string, error: unknown): void {
+  const now = Date.now();
+  const last = lastLoggedAt.get(label) ?? 0;
+  if (now - last < RATE_LIMIT_MS) {
+    suppressedCount.set(label, (suppressedCount.get(label) ?? 0) + 1);
+    if (!flushTimers.has(label)) {
+      flushTimers.set(
+        label,
+        setTimeout(() => {
+          flushTimers.delete(label);
+          flushSuppressed(label);
+        }, RATE_LIMIT_MS - (now - last)),
+      );
+    }
+    return;
+  }
+  flushSuppressed(label);
+  logWarn("ipc", label, { error });
+  lastLoggedAt.set(label, now);
 }
 
 const LAYOUT_IPC_MIN_INTERVAL_MS = 1000;

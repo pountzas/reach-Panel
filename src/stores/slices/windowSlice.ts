@@ -13,7 +13,7 @@ import {
 } from "../storeShared";
 import { invoke } from "@tauri-apps/api/core";
 import { logError } from "../../lib/log";
-import { logLayoutIpc } from "../../lib/logIpc";
+import { logIpc, logLayoutIpc } from "../../lib/logIpc";
 import { recordResizeDragInvoke } from "../../lib/windowHeightDragSummary";
 import { checkForUpdate, formatUpdateCheckError } from "../../lib/updater";
 import { prefersReducedMotion } from "../../lib/motion";
@@ -118,7 +118,8 @@ export const createWindowSlice: StateCreator<AppStore, [], [], WindowSlice> = (
       logLayoutIpc("cmd_apply_window_layout", liveArgs);
       await invoke("cmd_apply_window_layout", liveArgs);
       invokeOk = true;
-    } catch {
+    } catch (error) {
+      logIpc("cmd_apply_window_layout")(error);
       // Rejected ratio must not block near-equal retries.
       if (storeFlags.liveHeightRatioPreview === pending) {
         storeFlags.liveHeightRatioPreview = null;
