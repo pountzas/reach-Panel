@@ -42,12 +42,13 @@ pub fn cmd_open_log_dir() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn cmd_collect_diagnostics() -> String {
+pub async fn cmd_collect_diagnostics() -> String {
     let logs_dir = crate::diagnostics::logs_dir();
     let info = crate::diagnostics::DiagnosticsInfo {
         version: env!("CARGO_PKG_VERSION").into(),
         windows_build: crate::logging::windows_build_number().to_string(),
         webview2: tauri::webview_version().unwrap_or_else(|_| "unknown".into()),
+        previous_session: crate::diagnostics::previous_session_status().into(),
     };
     crate::diagnostics::collect_diagnostics_report(&logs_dir, &info)
 }

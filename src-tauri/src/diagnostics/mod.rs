@@ -8,6 +8,7 @@ pub(crate) mod session;
 mod webview;
 
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
 use tauri::{App, AppHandle, Manager, RunEvent, Runtime, WindowEvent};
 
 pub use crash::install_panic_hook;
@@ -16,6 +17,11 @@ pub use session::{begin_session, logs_dir, mark_clean_exit};
 pub use webview::register_process_failed;
 
 static CLEAN_SHUTDOWN_LOGGED: AtomicBool = AtomicBool::new(false);
+static PREVIOUS_SESSION: OnceLock<&'static str> = OnceLock::new();
+
+pub fn previous_session_status() -> &'static str {
+    PREVIOUS_SESSION.get().copied().unwrap_or("unknown")
+}
 
 pub fn log_setup_error(message: String) -> String {
     log::error!("{message}");
@@ -29,6 +35,7 @@ pub fn on_setup<R: Runtime>(app: &App<R>) {
         .unwrap_or_else(|_| session::default_logs_dir());
     let _ = session::LOGS_DIR.set(logs_dir.clone());
     crash::prune_crash_sidecars(&logs_dir);
+    let _ = PREVIOUS_SESSION.set(report::marker_status(&session::read_marker(&logs_dir)));
     let version = app.package_info().version.to_string();
     if let Some(previous) = begin_session(&logs_dir, &version, std::process::id()) {
         log::warn!(

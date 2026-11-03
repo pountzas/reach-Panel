@@ -317,6 +317,10 @@ export const pt = {
 
   diagnosticsCopied: "Diagnóstico copiado",
 
+  openLogsFolderFailed: "Não foi possível abrir a pasta de registos",
+
+  copyDiagnosticsFailed: "Não foi possível copiar o diagnóstico",
+
   saveProfile: "Guardar perfil",
 
   profileSaved: "Perfil guardado.",

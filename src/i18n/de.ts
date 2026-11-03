@@ -318,6 +318,10 @@ export const de = {
 
   diagnosticsCopied: "Diagnose kopiert",
 
+  openLogsFolderFailed: "Der Protokollordner konnte nicht geöffnet werden",
+
+  copyDiagnosticsFailed: "Diagnose konnte nicht kopiert werden",
+
   saveProfile: "Profil speichern",
 
   profileSaved: "Profil gespeichert.",

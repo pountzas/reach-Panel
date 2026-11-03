@@ -348,6 +348,10 @@ export const en = {
 
   diagnosticsCopied: "Diagnostics copied",
 
+  openLogsFolderFailed: "Couldn't open the logs folder",
+
+  copyDiagnosticsFailed: "Couldn't copy diagnostics",
+
   saveProfile: "Save profile",
 
   profileSaved: "Profile saved.",

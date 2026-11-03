@@ -113,4 +113,20 @@ describe("ToolsMaintenanceSection diagnostics", () => {
     });
     expect(mocks.notify.success).toHaveBeenCalledWith("diagnosticsCopied");
   });
+
+  it("toasts when copying diagnostics fails", async () => {
+    mocks.writeText.mockRejectedValueOnce(new Error("denied"));
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "copyDiagnostics" }));
+    await waitFor(() => {
+      expect(mocks.notify.error).toHaveBeenCalledWith("copyDiagnosticsFailed");
+    });
+    expect(mocks.notify.success).not.toHaveBeenCalled();
+  });
 });

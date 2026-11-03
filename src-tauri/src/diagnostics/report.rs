@@ -11,6 +11,7 @@ pub struct DiagnosticsInfo {
     pub version: String,
     pub windows_build: String,
     pub webview2: String,
+    pub previous_session: String,
 }
 
 pub fn collect_diagnostics_report(logs_dir: &Path, info: &DiagnosticsInfo) -> String {
@@ -19,7 +20,7 @@ pub fn collect_diagnostics_report(logs_dir: &Path, info: &DiagnosticsInfo) -> St
         format!("windows_build: {}", info.windows_build),
         format!("webview2: {}", info.webview2),
         format!("log_dir: {}", logs_dir.display()),
-        format!("previous_session: {}", previous_session_summary(logs_dir)),
+        format!("previous_session: {}", info.previous_session),
     ];
     let breadcrumb = last_breadcrumb(logs_dir);
     if !breadcrumb.is_empty() {
@@ -31,8 +32,8 @@ pub fn collect_diagnostics_report(logs_dir: &Path, info: &DiagnosticsInfo) -> St
     lines.join("\n")
 }
 
-fn previous_session_summary(logs_dir: &Path) -> &'static str {
-    match session::read_marker(logs_dir) {
+pub(crate) fn marker_status(read: &MarkerRead) -> &'static str {
+    match read {
         MarkerRead::Missing => "missing",
         MarkerRead::Corrupt => "corrupt",
         MarkerRead::Present(marker) if marker.clean_exit => "clean",
@@ -67,6 +68,7 @@ mod tests {
             version: "0.17.5".into(),
             windows_build: "22000".into(),
             webview2: "1.2.3.4".into(),
+            previous_session: "clean".into(),
         }
     }
 
@@ -111,6 +113,17 @@ mod tests {
         assert!(
             !report.contains("LOG_LINE_050"),
             "line 50 should be dropped by the 200-line cap:\n{report}"
+        );
+    }
+
+    #[test]
+    fn reports_previous_session_from_info_not_current_marker() {
+        let dir = temp_logs();
+        session::begin_session(&dir, "0.17.5", 1);
+        let report = collect_diagnostics_report(&dir, &sample_info());
+        assert!(
+            report.contains("previous_session: clean"),
+            "report must use captured previous_session, not the current unclean marker:\n{report}"
         );
     }
 }

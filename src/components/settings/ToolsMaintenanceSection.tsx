@@ -76,7 +76,10 @@ export function ToolsMaintenanceSection({
           className="rounded-lg border px-3 py-2 text-sm"
           style={secondaryButtonStyle}
           onClick={() => {
-            void invoke("cmd_open_log_dir").catch(logIpc("cmd_open_log_dir"));
+            void invoke("cmd_open_log_dir").catch((error: unknown) => {
+              logIpc("cmd_open_log_dir")(error);
+              notify.error(t("openLogsFolderFailed"));
+            });
           }}>
           {t("openLogsFolder")}
         </button>
@@ -92,6 +95,7 @@ export function ToolsMaintenanceSection({
                 notify.success(t("diagnosticsCopied"));
               } catch (error) {
                 logIpc("cmd_collect_diagnostics")(error);
+                notify.error(t("copyDiagnosticsFailed"));
               }
             })();
           }}>

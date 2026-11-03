@@ -319,6 +319,11 @@ export const el = {
 
   diagnosticsCopied: "Τα διαγνωστικά αντιγράφηκαν",
 
+  openLogsFolderFailed:
+    "Δεν ήταν δυνατό το άνοιγμα του φακέλου αρχείων καταγραφής",
+
+  copyDiagnosticsFailed: "Δεν ήταν δυνατή η αντιγραφή των διαγνωστικών",
+
   saveProfile: "Αποθήκευση προφίλ",
 
   profileSaved: "Το προφίλ αποθηκεύτηκε.",

@@ -314,6 +314,10 @@ export const it = {
 
   diagnosticsCopied: "Diagnostica copiata",
 
+  openLogsFolderFailed: "Impossibile aprire la cartella dei log",
+
+  copyDiagnosticsFailed: "Impossibile copiare la diagnostica",
+
   saveProfile: "Salva profilo",
 
   profileSaved: "Profilo salvato.",

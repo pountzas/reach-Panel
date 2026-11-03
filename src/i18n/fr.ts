@@ -318,6 +318,10 @@ export const fr = {
 
   diagnosticsCopied: "Diagnostic copié",
 
+  openLogsFolderFailed: "Impossible d’ouvrir le dossier des journaux",
+
+  copyDiagnosticsFailed: "Impossible de copier le diagnostic",
+
   saveProfile: "Enregistrer le profil",
 
   profileSaved: "Profil enregistré.",
