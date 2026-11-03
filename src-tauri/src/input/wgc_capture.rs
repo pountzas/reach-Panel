@@ -138,7 +138,7 @@ fn request_borderless_access_once() {
         ))
         .unwrap_or(false);
         if !present {
-            eprintln!(
+            log::warn!(
                 "input preview: GraphicsCaptureAccess unavailable (older Windows); capture border may show"
             );
             return;
@@ -147,15 +147,15 @@ fn request_borderless_access_once() {
             .and_then(|op| op.get())
         {
             Ok(status) if status == AppCapabilityAccessStatus::Allowed => {
-                eprintln!("input preview: borderless capture access granted");
+                log::info!("input preview: borderless capture access granted");
             }
             Ok(status) => {
-                eprintln!(
+                log::warn!(
                     "input preview: borderless capture access not granted ({status:?}); capture border may show"
                 );
             }
             Err(e) => {
-                eprintln!(
+                log::warn!(
                     "input preview: RequestAccessAsync(Borderless) failed ({e}); capture border may show"
                 );
             }
@@ -229,7 +229,7 @@ fn configure_session(session: &GraphicsCaptureSession) -> Result<(), String> {
     ) {
         // Best effort: keep WGC (with border) rather than falling back to full-window PrintWindow.
         if let Err(e) = session.SetIsBorderRequired(false) {
-            eprintln!(
+            log::warn!(
                 "input preview: SetIsBorderRequired(false) failed ({e}); capture border may show"
             );
         }

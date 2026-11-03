@@ -249,7 +249,7 @@ fn preview_loop() {
                         }
                     }
                     Err(e) => {
-                        eprintln!("input preview capture failed: {e}");
+                        log::warn!("input preview capture failed: {e}");
                     }
                 }
             }
@@ -347,12 +347,12 @@ fn log_capture_path(path: &'static str, root: Option<CaptureRoot>) {
     }
     *guard = Some((path, hwnd));
     match root {
-        Some(root) => eprintln!(
+        Some(root) => log::debug!(
             "input preview capture path: {path} hwnd={hwnd:#x} class={} promoted={}",
             root.class_name(),
             root.promoted
         ),
-        None => eprintln!("input preview capture path: {path} (no capture window)"),
+        None => log::debug!("input preview capture path: {path} (no capture window)"),
     }
 }
 
@@ -368,7 +368,7 @@ fn capture_gdi_bgra(
             Ok(pixels)
         }
         Err(pw_err) => {
-            eprintln!(
+            log::warn!(
                 "input preview window capture failed (wgc: {wgc_reason}; printwindow: {pw_err}); falling back to screen"
             );
             let pixels = capture_screen_bgra(rect.left, rect.top, rect.width, rect.height)?;

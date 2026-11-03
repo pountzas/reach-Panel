@@ -89,7 +89,7 @@ fn send_vk(vk: VIRTUAL_KEY, key_up: bool) -> Result<()> {
     let sent = unsafe { SendInput(&[input], std::mem::size_of::<INPUT>() as i32) };
     if sent == 0 {
         let err = anyhow!("SendInput failed for virtual key");
-        eprintln!("{err}");
+        log::error!("{err}");
         return Err(err);
     }
     Ok(())
@@ -124,7 +124,7 @@ fn send_unicode(ch: char) -> Result<()> {
     let sent = unsafe { SendInput(&[down, up], std::mem::size_of::<INPUT>() as i32) };
     if sent == 0 {
         let err = anyhow!("SendInput failed for unicode");
-        eprintln!("{err}");
+        log::error!("{err}");
         return Err(err);
     }
     Ok(())
@@ -158,7 +158,7 @@ fn release_modifiers(sender: &mut dyn KeySender, pressed: &[VIRTUAL_KEY]) -> Res
     let mut first_err: Option<anyhow::Error> = None;
     for vk in pressed.iter().rev() {
         if let Err(err) = sender.send_vk(*vk, true) {
-            eprintln!("SendInput failed releasing modifier: {err}");
+            log::error!("SendInput failed releasing modifier: {err}");
             if first_err.is_none() {
                 first_err = Some(err);
             }

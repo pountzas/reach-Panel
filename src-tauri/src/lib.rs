@@ -3,6 +3,7 @@ mod commands;
 mod db;
 mod input;
 mod language;
+mod logging;
 mod music;
 mod prediction;
 mod profiles;
@@ -33,6 +34,7 @@ pub fn run() {
         .on_page_load(|webview, payload| {
             window::icon_sync::on_app_page_load(&webview, &payload);
         })
+        .plugin(crate::logging::plugin())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
@@ -57,7 +59,7 @@ pub fn run() {
                     app.manage(bridge);
                 }
                 Err(e) => {
-                    eprintln!("Failed to initialize companion bridge: {e}");
+                    log::error!("Failed to initialize companion bridge: {e}");
                     return Err(e.into());
                 }
             }
@@ -65,7 +67,7 @@ pub fn run() {
             {
                 let state = app.state::<AppState>();
                 if let Err(e) = ensure_english_pack(app.handle(), &state.db) {
-                    eprintln!("Failed to install bundled English word pack: {e}");
+                    log::error!("Failed to install bundled English word pack: {e}");
                 }
             }
 
@@ -81,12 +83,13 @@ pub fn run() {
                     if let Err(e) =
                         input::input_preview::exclude_window_from_capture(hwnd.0 as isize)
                     {
-                        eprintln!("Failed to exclude main window from capture: {e}");
+                        log::error!("Failed to exclude main window from capture: {e}");
                     }
                 }
                 focus_target::init(app.handle().clone());
                 input::input_preview::init(app.handle().clone());
             }
+            crate::logging::log_session_start(app);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -170,7 +173,7 @@ pub fn run() {
         .run(tauri::generate_context!())
         .unwrap_or_else(|e| {
             // Process entry: no caller to return to; exit instead of panicking.
-            eprintln!("error while running tauri application: {e}");
+            log::error!("error while running tauri application: {e}");
             std::process::exit(1);
         });
 }
