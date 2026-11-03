@@ -3,9 +3,11 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { initLog } from "./lib/log";
+import { registerGlobalErrorHandlers } from "./lib/registerGlobalErrorHandlers";
 import "./index.css";
 
 initLog();
+registerGlobalErrorHandlers();
 
 const root = document.getElementById("root");
 if (!root) {

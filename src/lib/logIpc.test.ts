@@ -1,5 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
+
+const { logWarn } = vi.hoisted(() => ({
+  logWarn: vi.fn(),
+}));
+
+vi.mock("./log", () => ({
+  logWarn,
+}));
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn(() => Promise.resolve()),
+}));
+
 import {
   commandFailure,
   logIpc,
@@ -7,14 +20,12 @@ import {
   resetLayoutIpcRateLimit,
 } from "./logIpc";
 
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn(() => Promise.resolve()),
-}));
-
 describe("logIpc", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
+    logWarn.mockReset();
+    vi.useRealTimers();
   });
 
   it("returns a catch handler that console.warns the label and error in development", () => {
@@ -27,13 +38,52 @@ describe("logIpc", () => {
     expect(warn).toHaveBeenCalledWith("[ipc] cmd_trackpad_gesture_end", err);
   });
 
-  it("does not log outside development builds", () => {
+  it("does not console.warn outside development builds", () => {
     vi.stubEnv("DEV", false);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     logIpc("cmd_trackpad_gesture_end")(new Error("gesture failed"));
 
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("logs via logWarn in production builds", () => {
+    vi.stubEnv("DEV", false);
+    const err = new Error("layout failed");
+
+    logIpc("cmd_apply_window_layout")(err);
+
+    expect(logWarn).toHaveBeenCalledWith("ipc", "cmd_apply_window_layout", {
+      error: err,
+    });
+  });
+
+  it("logs at most one line per second per label and reports suppressed count", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    const handler = logIpc("cmd_move_cursor_relative");
+    const first = new Error("first");
+    const last = new Error("later");
+
+    handler(first);
+    handler(new Error("burst-1"));
+    handler(new Error("burst-2"));
+
+    expect(logWarn).toHaveBeenCalledTimes(1);
+    expect(logWarn).toHaveBeenCalledWith("ipc", "cmd_move_cursor_relative", {
+      error: first,
+    });
+
+    vi.advanceTimersByTime(1000);
+    handler(last);
+
+    expect(logWarn).toHaveBeenCalledWith("ipc", "cmd_move_cursor_relative", {
+      suppressed: 2,
+    });
+    expect(logWarn).toHaveBeenCalledWith("ipc", "cmd_move_cursor_relative", {
+      error: last,
+    });
   });
 });
 
