@@ -15,6 +15,7 @@ import {
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { afterNextPaint, MOTION, prefersReducedMotion } from "../lib/motion";
 import { logLayoutIpc } from "../lib/logIpc";
+import { logInfo } from "../lib/log";
 import { notify } from "../lib/notify";
 import { resolveSectionStack } from "../lib/sectionStack";
 import {
@@ -521,6 +522,7 @@ export async function setToolWindowVisible(
         },
       });
       set({ [flag]: true });
+      logInfo("settings", "open");
     } catch (error) {
       set({ [flag]: false });
       const message = error instanceof Error ? error.message : String(error);
@@ -531,6 +533,7 @@ export async function setToolWindowVisible(
     return;
   }
 
+  logInfo("settings", "close");
   set({ [flag]: false });
   await closeToolWindow(label);
   void syncMainForToolWindows();

@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { commandFailure, logIpc } from "./logIpc";
+import { debug as pluginDebug } from "@tauri-apps/plugin-log";
+import {
+  commandFailure,
+  logIpc,
+  logLayoutIpc,
+  resetLayoutIpcRateLimit,
+} from "./logIpc";
 
 describe("logIpc", () => {
   afterEach(() => {
@@ -24,6 +30,33 @@ describe("logIpc", () => {
     logIpc("cmd_trackpad_gesture_end")(new Error("gesture failed"));
 
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe("logLayoutIpc", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    resetLayoutIpcRateLimit();
+    vi.mocked(pluginDebug).mockClear();
+  });
+
+  it("sends a debug line in all builds and rate-limits to once per second", () => {
+    vi.stubEnv("DEV", false);
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    const debug = vi.mocked(pluginDebug);
+
+    logLayoutIpc("cmd_apply_window_layout", { heightRatio: 0.5 });
+    logLayoutIpc("cmd_apply_window_layout", { heightRatio: 0.6 });
+
+    expect(debug).toHaveBeenCalledTimes(1);
+    expect(debug.mock.calls[0]?.[0]).toContain("cmd_apply_window_layout");
+    expect(debug.mock.calls[0]?.[0]).toContain("heightRatio=0.5");
+
+    vi.setSystemTime(2_000);
+    logLayoutIpc("cmd_animate_window_layout", { collapsed: true });
+    expect(debug).toHaveBeenCalledTimes(2);
+    expect(debug.mock.calls[1]?.[0]).toContain("cmd_animate_window_layout");
   });
 });
 
