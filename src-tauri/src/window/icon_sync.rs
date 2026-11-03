@@ -1,11 +1,11 @@
 //! Re-apply Windows HWND icons when WebView2 creates or reparents child windows.
 
 use tauri::webview::{PageLoadEvent, PageLoadPayload};
-use tauri::{Manager, Webview, WebviewWindow, WindowEvent};
+use tauri::{Manager, Runtime, Webview, WebviewWindow, WindowEvent};
 
 use super::taskbar_icon;
 
-pub(crate) fn try_apply_embedded_window_icons(window: &WebviewWindow) {
+pub(crate) fn try_apply_embedded_window_icons<R: Runtime>(window: &WebviewWindow<R>) {
     let Ok(hwnd) = window.hwnd() else {
         return;
     };
@@ -25,7 +25,7 @@ pub(crate) fn on_app_page_load(webview: &Webview, payload: &PageLoadPayload<'_>)
     }
 }
 
-pub(crate) fn register_main_window_icon_sync(window: WebviewWindow) {
+pub(crate) fn register_main_window_icon_sync<R: Runtime>(window: WebviewWindow<R>) {
     let window_for_events = window.clone();
     window.on_window_event(move |event| {
         match event {

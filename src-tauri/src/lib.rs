@@ -31,9 +31,13 @@ pub(crate) struct AppState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    crate::diagnostics::install_panic_hook();
     tauri::Builder::default()
         .on_page_load(|webview, payload| {
             window::icon_sync::on_app_page_load(&webview, &payload);
+            if let Some(window) = webview.app_handle().get_webview_window(webview.label()) {
+                crate::diagnostics::register_process_failed(&window);
+            }
         })
         .plugin(crate::logging::plugin())
         .plugin(tauri_plugin_opener::init())
@@ -41,17 +45,23 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .setup(|app| {
-            let app_data_dir = app
-                .path()
-                .app_data_dir()
-                .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
-            let db = Database::new(app_data_dir.clone())
-                .map_err(|e| format!("failed to initialize database: {e}"))?;
-            let profiles = ProfileStore::new(&app_data_dir)
-                .map_err(|e| format!("failed to initialize profile store: {e}"))?;
-            profiles
-                .ensure_default_profile_file(&db)
-                .map_err(|e| format!("failed to load default profile file: {e}"))?;
+            crate::diagnostics::on_setup(app);
+            let app_data_dir = app.path().app_data_dir().map_err(|e| {
+                crate::diagnostics::log_setup_error(format!("failed to resolve app data dir: {e}"))
+            })?;
+            let db = Database::new(app_data_dir.clone()).map_err(|e| {
+                crate::diagnostics::log_setup_error(format!("failed to initialize database: {e}"))
+            })?;
+            let profiles = ProfileStore::new(&app_data_dir).map_err(|e| {
+                crate::diagnostics::log_setup_error(format!(
+                    "failed to initialize profile store: {e}"
+                ))
+            })?;
+            profiles.ensure_default_profile_file(&db).map_err(|e| {
+                crate::diagnostics::log_setup_error(format!(
+                    "failed to load default profile file: {e}"
+                ))
+            })?;
             app.manage(AppState { db, profiles });
 
             match companion::CompanionBridge::new(&app_data_dir) {
@@ -60,7 +70,9 @@ pub fn run() {
                     app.manage(bridge);
                 }
                 Err(e) => {
-                    log::error!("Failed to initialize companion bridge: {e}");
+                    crate::diagnostics::log_setup_error(format!(
+                        "Failed to initialize companion bridge: {e}"
+                    ));
                     return Err(e.into());
                 }
             }
@@ -75,21 +87,11 @@ pub fn run() {
             stt::init(&app_data_dir, app.handle().clone());
 
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_decorations(false);
-                let _ = window.set_shadow(false);
-                let _ = window.set_always_on_top(true);
-                let _ = window.set_focusable(false);
-                window::icon_sync::register_main_window_icon_sync(window.clone());
+                window::configure_main_window(&window);
                 window::events::register_main_window_event_logs(window.clone());
-                if let Ok(hwnd) = window.hwnd() {
-                    if let Err(e) =
-                        input::input_preview::exclude_window_from_capture(hwnd.0 as isize)
-                    {
-                        log::error!("Failed to exclude main window from capture: {e}");
-                    }
-                }
                 focus_target::init(app.handle().clone());
                 input::input_preview::init(app.handle().clone());
+                crate::diagnostics::register_process_failed(&window);
             }
             crate::logging::log_session_start(app);
             if let Ok(log_dir) = app.path().app_log_dir() {
@@ -175,6 +177,8 @@ pub fn run() {
             companion::cmd_companion_list_devices,
             companion::cmd_companion_revoke_device,
             crate::diagnostics::breadcrumbs::cmd_record_breadcrumb,
+            #[cfg(debug_assertions)]
+            crate::diagnostics::cmd_debug_panic,
         ])
         .build(tauri::generate_context!())
         .unwrap_or_else(|e| {
@@ -182,12 +186,13 @@ pub fn run() {
             log::error!("error while running tauri application: {e}");
             std::process::exit(1);
         })
-        .run(|_app, event| {
+        .run(|app, event| {
             if matches!(
                 event,
                 tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
             ) {
                 crate::diagnostics::breadcrumbs::flush();
             }
+            crate::diagnostics::on_run_event(app, &event);
         });
 }

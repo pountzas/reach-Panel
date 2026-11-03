@@ -9,6 +9,7 @@ import {
 } from "./toolWindows";
 
 export const DICTATION_OVERLAY_LABEL = "dictation-overlay";
+/** Keep in sync with the dictation-overlay branch of `recreate_window` in `src-tauri/src/diagnostics/webview.rs`. */
 export const DICTATION_OVERLAY_SIZE = { width: 300, height: 76 } as const;
 
 function tauriErrorMessage(payload: unknown, fallback: string): string {
