@@ -25,6 +25,7 @@ pub fn on_setup<R: Runtime>(app: &App<R>) {
         .path()
         .app_log_dir()
         .unwrap_or_else(|_| session::default_logs_dir());
+    let _ = session::LOGS_DIR.set(logs_dir.clone());
     let version = app.package_info().version.to_string();
     if let Some(previous) = begin_session(&logs_dir, &version, std::process::id()) {
         log::warn!(
@@ -38,15 +39,16 @@ pub fn on_setup<R: Runtime>(app: &App<R>) {
 
 pub fn on_run_event<R: Runtime>(app: &AppHandle<R>, event: &RunEvent) {
     match event {
-        RunEvent::ExitRequested { .. } | RunEvent::Exit => {
-            note_clean_shutdown(app);
+        RunEvent::ExitRequested { code: None, api, .. } if webview::has_pending_recreate() => {
+            api.prevent_exit();
         }
+        RunEvent::ExitRequested { .. } | RunEvent::Exit => note_clean_shutdown(app),
         RunEvent::WindowEvent {
             label,
             event: WindowEvent::Destroyed,
             ..
         } => {
-            webview::unregister(label);
+            webview::on_window_destroyed(app, label);
         }
         _ => {}
     }

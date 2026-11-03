@@ -27,6 +27,7 @@ export type ToolWindowRequest = {
   show: boolean;
 };
 
+/** Keep in sync with the settings branch of `recreate_window` in `src-tauri/src/diagnostics/webview.rs`. */
 export const TOOL_WINDOW_SIZE = { width: 900, height: 700 } as const;
 
 export const TOOL_WINDOW_TITLES: Record<ToolWindowLabel, string> = {

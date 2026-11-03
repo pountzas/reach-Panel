@@ -1,6 +1,6 @@
 //! Panic hook and crash sidecar next to rotating logs.
 
-use super::session::{default_logs_dir, mark_panic};
+use super::session::mark_panic;
 use std::backtrace::Backtrace;
 use std::fs;
 use std::panic::PanicHookInfo;
@@ -8,10 +8,9 @@ use std::path::Path;
 use std::thread;
 
 pub fn install_panic_hook() {
-    let logs_dir = default_logs_dir();
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
-        report_panic(info, &logs_dir);
+        report_panic(info, &super::session::logs_dir());
         previous(info);
     }));
 }

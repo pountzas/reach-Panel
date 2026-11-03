@@ -3,6 +3,13 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
+
+pub static LOGS_DIR: OnceLock<PathBuf> = OnceLock::new();
+
+pub fn logs_dir() -> PathBuf {
+    LOGS_DIR.get().cloned().unwrap_or_else(default_logs_dir)
+}
 
 pub const MARKER_FILE: &str = "session.json";
 pub const BREADCRUMBS_FILE: &str = "breadcrumbs.log";

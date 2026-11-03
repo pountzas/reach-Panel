@@ -795,6 +795,25 @@ mod tests {
 }
 
 pub(crate) mod layout;
+/// Per-window setup for the on-screen keyboard. Also used when WebView2
+/// recovery rebuilds `main`, so a new HWND stays non-focusable and excluded
+/// from capture. `focus_target::init` and `input_preview::init` stay in
+/// `setup`: they store the app handle and do not cache this window's HWND.
+pub fn configure_main_window<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>) {
+    let _ = window.set_decorations(false);
+    let _ = window.set_shadow(false);
+    let _ = window.set_always_on_top(true);
+    let _ = window.set_focusable(false);
+    icon_sync::register_main_window_icon_sync(window.clone());
+    if let Ok(hwnd) = window.hwnd() {
+        if let Err(e) =
+            crate::input::input_preview::exclude_window_from_capture(hwnd.0 as isize)
+        {
+            log::error!("Failed to exclude main window from capture: {e}");
+        }
+    }
+}
+
 pub(crate) mod icon_sync;
 pub(crate) mod events;
 mod taskbar;

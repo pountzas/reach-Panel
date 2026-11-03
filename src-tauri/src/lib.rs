@@ -87,19 +87,8 @@ pub fn run() {
             stt::init(&app_data_dir, app.handle().clone());
 
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_decorations(false);
-                let _ = window.set_shadow(false);
-                let _ = window.set_always_on_top(true);
-                let _ = window.set_focusable(false);
-                window::icon_sync::register_main_window_icon_sync(window.clone());
+                window::configure_main_window(&window);
                 window::events::register_main_window_event_logs(window.clone());
-                if let Ok(hwnd) = window.hwnd() {
-                    if let Err(e) =
-                        input::input_preview::exclude_window_from_capture(hwnd.0 as isize)
-                    {
-                        log::error!("Failed to exclude main window from capture: {e}");
-                    }
-                }
                 focus_target::init(app.handle().clone());
                 input::input_preview::init(app.handle().clone());
                 crate::diagnostics::register_process_failed(&window);
