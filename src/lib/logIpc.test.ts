@@ -85,6 +85,24 @@ describe("logIpc", () => {
       error: last,
     });
   });
+
+  it("flushes the suppressed count when a burst ends with no further failure", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.useFakeTimers();
+    const handler = logIpc("cmd_burst_then_quiet");
+
+    handler(new Error("first"));
+    handler(new Error("burst-1"));
+    handler(new Error("burst-2"));
+    expect(logWarn).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1000);
+
+    expect(logWarn).toHaveBeenCalledTimes(2);
+    expect(logWarn).toHaveBeenLastCalledWith("ipc", "cmd_burst_then_quiet", {
+      suppressed: 2,
+    });
+  });
 });
 
 describe("logLayoutIpc", () => {

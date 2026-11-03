@@ -14,7 +14,11 @@ if (!root) {
   throw new Error("Missing #root element");
 }
 
-ReactDOM.createRoot(root).render(
+ReactDOM.createRoot(root, {
+  // ErrorBoundary.componentDidCatch already logs caught render errors.
+  // React's default handler would console.error them again, and initLog forwards that.
+  onCaughtError: import.meta.env.DEV ? undefined : () => {},
+}).render(
   <React.StrictMode>
     <ErrorBoundary>
       <App />
