@@ -28,7 +28,7 @@
     "@tauri-apps/plugin-autostart": "^2.7.0",
     "@tauri-apps/plugin-opener": "^2.7.2",
     "@tauri-apps/plugin-process": "^2.4.0",
-    "@tauri-apps/plugin-updater": "^2.14.0",
+    "@tauri-apps/plugin-updater": "^2.14.1",
     "@tonejs/midi": "^2.0.28",
     "jszip": "^3.10.2",
     "pdfjs-dist": "^6.4.299",
@@ -40,11 +40,11 @@
     "react-rnd": "^10.5.3",
     "svg-flags": "^1.1.1",
     "tailwindcss": "^4.3.0",
-    "zustand": "^5.0.15"
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "@tauri-apps/cli": "^2.12.3",
+    "@tauri-apps/cli": "^2.12.4",
     "@testing-library/react": "^16.3.3",
     "@types/jszip": "^3.4.1",
     "@types/qrcode": "^1.5.6",
@@ -62,8 +62,8 @@
     "prettier": "^3.9.10",
     "sharp": "^0.35.5",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.2",
-    "vite": "^8.3.4",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5",
     "vitest": "^4.1.11"
   }
 }
