@@ -1,5 +1,6 @@
+import { invoke } from "@tauri-apps/api/core";
 import type { CommandResult } from "./types";
-import { logDebug, type LogFields } from "./log";
+import type { LogFields } from "./log";
 
 /**
  * Dev-only IPC failure logger. Use as `.catch(logIpc("cmd_foo"))` so fire-and-forget
@@ -40,7 +41,12 @@ export function logLayoutIpc(
     return;
   }
   lastLayoutIpcAt = now;
-  logDebug("layout-ipc", cmd, layoutIpcFields(args));
+  void Promise.resolve(
+    invoke("cmd_record_breadcrumb", {
+      scope: "layout-ipc",
+      message: `${cmd} ${JSON.stringify(layoutIpcFields(args))}`,
+    }),
+  ).catch(() => {});
 }
 
 export function resetLayoutIpcRateLimit(): void {

@@ -174,6 +174,7 @@ pub fn run() {
             companion::cmd_companion_refresh_pairing,
             companion::cmd_companion_list_devices,
             companion::cmd_companion_revoke_device,
+            crate::diagnostics::breadcrumbs::cmd_record_breadcrumb,
         ])
         .build(tauri::generate_context!())
         .unwrap_or_else(|e| {

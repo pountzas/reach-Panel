@@ -37,16 +37,27 @@ impl BreadcrumbRing {
         self.entries.iter().cloned().collect()
     }
 
-    pub fn flush_to(&self, path: &Path) -> std::io::Result<()> {
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
+    fn render(&self) -> String {
         let mut text = self.entries.iter().cloned().collect::<Vec<_>>().join("\n");
         if !text.is_empty() {
             text.push('\n');
         }
-        std::fs::write(path, text)
+        text
     }
+
+    pub fn flush_to(&self, path: &Path) -> std::io::Result<()> {
+        write_atomic(path, &self.render())
+    }
+}
+
+/// Write to `<path>.tmp` then rename over `path`, so a kill mid-write never leaves a truncated log.
+fn write_atomic(path: &Path, text: &str) -> std::io::Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let tmp = path.with_extension("log.tmp");
+    std::fs::write(&tmp, text)?;
+    std::fs::rename(&tmp, path)
 }
 
 static RING: Mutex<BreadcrumbRing> = Mutex::new(BreadcrumbRing {
@@ -55,6 +66,7 @@ static RING: Mutex<BreadcrumbRing> = Mutex::new(BreadcrumbRing {
 });
 static FLUSH_PATH: Mutex<Option<PathBuf>> = Mutex::new(None);
 static START: Once = Once::new();
+static FLUSH_IO: Mutex<()> = Mutex::new(());
 
 fn lock_ring() -> std::sync::MutexGuard<'static, BreadcrumbRing> {
     RING.lock().unwrap_or_else(|e| e.into_inner())
@@ -85,6 +97,14 @@ pub fn debug(target: &'static str, message: impl AsRef<str>) {
     emit(log::Level::Debug, target, message);
 }
 
+/// Frontend breadcrumb into the ring only (rotating log stays Info). Never pass typed/dictated text.
+#[tauri::command]
+pub fn cmd_record_breadcrumb(scope: String, message: String) {
+    let scope: String = scope.chars().take(32).collect();
+    let message: String = message.chars().take(512).collect();
+    debug("webview", format!("{scope}: {message}"));
+}
+
 pub fn info(target: &'static str, message: impl AsRef<str>) {
     emit(log::Level::Info, target, message);
 }
@@ -94,11 +114,12 @@ pub fn warn(target: &'static str, message: impl AsRef<str>) {
 }
 
 pub fn flush() {
-    let path = lock_path().clone();
-    let Some(path) = path else {
+    let Some(path) = lock_path().clone() else {
         return;
     };
-    let _ = lock_ring().flush_to(&path);
+    let text = lock_ring().render();
+    let _io = FLUSH_IO.lock().unwrap_or_else(|e| e.into_inner());
+    let _ = write_atomic(&path, &text);
 }
 
 pub fn start(log_dir: PathBuf) {
@@ -157,6 +178,7 @@ mod tests {
         fs::create_dir_all(&dir).expect("temp dir");
         let path = dir.join("breadcrumbs.log");
         ring.flush_to(&path).expect("flush");
+        assert!(!dir.join("breadcrumbs.log.tmp").exists());
         let text = fs::read_to_string(&path).expect("read");
         assert_eq!(text, "first\nsecond\n");
 

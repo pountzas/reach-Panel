@@ -516,6 +516,7 @@ export async function setToolWindowVisible(
         title: TOOL_WINDOW_TITLES[label],
         monitor: preferred,
         onDestroyed: () => {
+          if (get()[flag]) logInfo("settings", "close");
           set({ [flag]: false });
           void syncMainForToolWindows();
           void get().syncWindowFocusable();
@@ -533,7 +534,7 @@ export async function setToolWindowVisible(
     return;
   }
 
-  logInfo("settings", "close");
+  if (get()[flag]) logInfo("settings", "close");
   set({ [flag]: false });
   await closeToolWindow(label);
   void syncMainForToolWindows();

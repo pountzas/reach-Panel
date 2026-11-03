@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { debug as pluginDebug } from "@tauri-apps/plugin-log";
+import { invoke } from "@tauri-apps/api/core";
 import {
   commandFailure,
   logIpc,
   logLayoutIpc,
   resetLayoutIpcRateLimit,
 } from "./logIpc";
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn(() => Promise.resolve()),
+}));
 
 describe("logIpc", () => {
   afterEach(() => {
@@ -37,26 +41,30 @@ describe("logLayoutIpc", () => {
   afterEach(() => {
     vi.useRealTimers();
     resetLayoutIpcRateLimit();
-    vi.mocked(pluginDebug).mockClear();
+    vi.mocked(invoke).mockClear();
   });
 
-  it("sends a debug line in all builds and rate-limits to once per second", () => {
+  it("records a breadcrumb in all builds and rate-limits to once per second", () => {
     vi.stubEnv("DEV", false);
     vi.useFakeTimers();
     vi.setSystemTime(1_000);
-    const debug = vi.mocked(pluginDebug);
 
     logLayoutIpc("cmd_apply_window_layout", { heightRatio: 0.5 });
     logLayoutIpc("cmd_apply_window_layout", { heightRatio: 0.6 });
 
-    expect(debug).toHaveBeenCalledTimes(1);
-    expect(debug.mock.calls[0]?.[0]).toContain("cmd_apply_window_layout");
-    expect(debug.mock.calls[0]?.[0]).toContain("heightRatio=0.5");
+    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledWith("cmd_record_breadcrumb", {
+      scope: "layout-ipc",
+      message: 'cmd_apply_window_layout {"heightRatio":0.5}',
+    });
 
     vi.setSystemTime(2_000);
     logLayoutIpc("cmd_animate_window_layout", { collapsed: true });
-    expect(debug).toHaveBeenCalledTimes(2);
-    expect(debug.mock.calls[1]?.[0]).toContain("cmd_animate_window_layout");
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenLastCalledWith("cmd_record_breadcrumb", {
+      scope: "layout-ipc",
+      message: 'cmd_animate_window_layout {"collapsed":true}',
+    });
   });
 });
 
