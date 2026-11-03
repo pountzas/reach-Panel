@@ -12,6 +12,7 @@ import {
   freeWriteModeFromState,
 } from "../storeShared";
 import { invoke } from "@tauri-apps/api/core";
+import { logError } from "../../lib/log";
 import { logLayoutIpc } from "../../lib/logIpc";
 import { checkForUpdate, formatUpdateCheckError } from "../../lib/updater";
 import { prefersReducedMotion } from "../../lib/motion";
@@ -238,7 +239,7 @@ export const createWindowSlice: StateCreator<AppStore, [], [], WindowSlice> = (
         });
       }
     } catch (error) {
-      console.error("Update check failed", error);
+      logError("updater", "Update check failed", { error });
       set({
         pendingUpdate: null,
         updateCheckStatus: "error",

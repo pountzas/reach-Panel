@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { logError } from "./log";
 import type { MonitorInfo } from "./types";
 import {
   resolveMainWindowMonitor,
@@ -179,7 +180,9 @@ async function createOverlay(
     try {
       await applyOverlayPlacement(webview, placement);
     } catch (error) {
-      console.error("Failed to place dictation overlay", error);
+      logError("dictationOverlay", "Failed to place dictation overlay", {
+        error,
+      });
     }
   }
 
@@ -188,7 +191,11 @@ async function createOverlay(
       label: DICTATION_OVERLAY_LABEL,
     });
   } catch (error) {
-    console.error("Failed to exclude dictation overlay from capture", error);
+    logError(
+      "dictationOverlay",
+      "Failed to exclude dictation overlay from capture",
+      { error },
+    );
   }
 
   return webview;
@@ -212,14 +219,16 @@ export async function showDictationOverlay(): Promise<void> {
       try {
         await applyOverlayPlacement(webview, placement);
       } catch (error) {
-        console.error("Failed to reposition dictation overlay", error);
+        logError("dictationOverlay", "Failed to reposition dictation overlay", {
+          error,
+        });
       }
     }
     // Re-check after await: hide may have won the race while show() was pending.
     if (isOverlayWanted()) await webview.show();
     if (!isOverlayWanted()) await webview.hide();
   } catch (error) {
-    console.error("Failed to show dictation overlay", error);
+    logError("dictationOverlay", "Failed to show dictation overlay", { error });
   }
 }
 
@@ -229,6 +238,6 @@ export async function hideDictationOverlay(): Promise<void> {
     const existing = await WebviewWindow.getByLabel(DICTATION_OVERLAY_LABEL);
     await existing?.hide();
   } catch (error) {
-    console.error("Failed to hide dictation overlay", error);
+    logError("dictationOverlay", "Failed to hide dictation overlay", { error });
   }
 }

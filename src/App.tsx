@@ -34,6 +34,7 @@ import {
   type CompanionUiState,
 } from "./lib/companionSession";
 import { reconcileAutostartOnLoad } from "./lib/autostart";
+import { logWarn } from "./lib/log";
 import { logIpc, logLayoutIpc } from "./lib/logIpc";
 import { isTeachingFullWorkArea } from "./lib/v1HiddenFeatures";
 import { useAppStore } from "./stores/appStore";
@@ -96,7 +97,7 @@ function MainApp() {
         await invoke("cmd_set_window_focusable", { focusable: false });
         void checkForUpdates();
         void reconcileAutostartOnLoad().catch((error: unknown) => {
-          console.warn("autostart reconcile failed", error);
+          logWarn("autostart", "autostart reconcile failed", { error });
         });
         await refreshSttCapability();
       } catch (error) {

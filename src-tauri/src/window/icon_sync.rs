@@ -11,7 +11,7 @@ pub(crate) fn try_apply_embedded_window_icons(window: &WebviewWindow) {
     };
     let hwnd = windows::Win32::Foundation::HWND(hwnd.0);
     if let Err(e) = taskbar_icon::apply_embedded_icons_to_window_tree(hwnd) {
-        eprintln!("Failed to apply embedded window icons: {e}");
+        log::error!("Failed to apply embedded window icons: {e}");
     }
 }
 

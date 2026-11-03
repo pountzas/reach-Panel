@@ -5,6 +5,7 @@ import {
   type AboutLinkLabelKey,
 } from "../../lib/aboutLinkIcon";
 import { APP_INFO, openExternalLink } from "../../lib/appInfo";
+import { logError } from "../../lib/log";
 import type { SurfaceColors } from "../../lib/colorProfiles";
 import { getCurrentAppVersion } from "../../lib/updater";
 
@@ -30,7 +31,7 @@ export function AboutSection({ surface }: AboutSectionProps) {
     void getCurrentAppVersion()
       .then(setVersion)
       .catch((error: unknown) => {
-        console.error("Failed to load app version:", error);
+        logError("about", "Failed to load app version", { error });
         setVersion("—");
       });
   }, []);
