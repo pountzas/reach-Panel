@@ -103,10 +103,6 @@ export async function handleSubmitDiagnostics(
       return jsonError(413, "too_large");
     }
   }
-  const body = await readCapped(req, MAX_ZIP_BYTES);
-  if (body === null) {
-    return jsonError(413, "too_large");
-  }
   const installHash = req.headers.get("x-install-id")?.trim().toLowerCase() ?? "";
   if (!/^[0-9a-f]{64}$/.test(installHash)) {
     return jsonError(400, "invalid_install_id");
