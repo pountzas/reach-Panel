@@ -72,6 +72,10 @@ export function SendLogsDialog({
 }: SendLogsDialogProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCancelRef = useRef(onCancel);
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+  }, [onCancel]);
 
   useEffect(() => {
     if (!open) return;
@@ -89,7 +93,7 @@ export function SendLogsDialog({
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
-        onCancel();
+        onCancelRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -116,7 +120,7 @@ export function SendLogsDialog({
       window.removeEventListener("keydown", onKeyDown, true);
       previouslyFocused?.focus();
     };
-  }, [open, onCancel]);
+  }, [open]);
 
   const panelStyle: CSSProperties = {
     backgroundColor: surface.panelBg,

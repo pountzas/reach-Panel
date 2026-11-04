@@ -43,10 +43,13 @@ function logIpcFailure(label: string, error: unknown): void {
     if (!flushTimers.has(label)) {
       flushTimers.set(
         label,
-        setTimeout(() => {
-          flushTimers.delete(label);
-          flushSuppressed(label);
-        }, RATE_LIMIT_MS - (now - last)),
+        setTimeout(
+          () => {
+            flushTimers.delete(label);
+            flushSuppressed(label);
+          },
+          RATE_LIMIT_MS - (now - last),
+        ),
       );
     }
     return;

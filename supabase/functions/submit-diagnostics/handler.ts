@@ -48,6 +48,30 @@ function contentTypeIsZip(value: string | null): boolean {
   return media === "application/zip";
 }
 
+async function readCapped(req: Request, max: number): Promise<Uint8Array | null> {
+  if (!req.body) return new Uint8Array();
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
+}
+
 function hasZipMagic(bytes: Uint8Array): boolean {
   return (
     bytes.length >= 4 &&
@@ -79,6 +103,10 @@ export async function handleSubmitDiagnostics(
       return jsonError(413, "too_large");
     }
   }
+  const body = await readCapped(req, MAX_ZIP_BYTES);
+  if (body === null) {
+    return jsonError(413, "too_large");
+  }
   const installHash = req.headers.get("x-install-id")?.trim().toLowerCase() ?? "";
   if (!/^[0-9a-f]{64}$/.test(installHash)) {
     return jsonError(400, "invalid_install_id");
@@ -97,10 +125,6 @@ export async function handleSubmitDiagnostics(
     return jsonError(429, "rate_limited");
   }
 
-  const body = new Uint8Array(await req.arrayBuffer());
-  if (body.byteLength > MAX_ZIP_BYTES) {
-    return jsonError(413, "too_large");
-  }
   if (!hasZipMagic(body)) {
     return jsonError(400, "invalid_zip");
   }

@@ -103,6 +103,37 @@ Deno.test("rejects payloads over 5 MB via content-length", async () => {
   assertEquals(store.uploads.length, 0);
 });
 
+Deno.test("rejects a chunked body over 5 MB without reading it all", async () => {
+  const store = deps();
+  const chunk = new Uint8Array(1024 * 1024);
+  let reads = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      reads += 1;
+      if (reads > 8) {
+        controller.close();
+        return;
+      }
+      controller.enqueue(chunk);
+    },
+  });
+  const response = await handleSubmitDiagnostics(
+    new Request("https://example.test/functions/v1/submit-diagnostics", {
+      method: "POST",
+      headers: {
+        "content-type": "application/zip",
+        "x-install-id": INSTALL_HASH,
+      },
+      body: stream,
+    }),
+    store,
+  );
+  assertEquals(response.status, 413);
+  assertEquals(await response.json(), { error: "too_large" });
+  assertEquals(reads <= 6, true);
+  assertEquals(store.uploads.length, 0);
+});
+
 Deno.test("rejects payloads over 5 MB via bytes read", async () => {
   const store = deps();
   const tooBig = new Uint8Array(5 * 1024 * 1024 + 1);

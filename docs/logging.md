@@ -20,12 +20,12 @@ Consent lists the files and sizes, then an optional note (max 1000 characters). 
 
 ### Bundle
 
-The zip is capped at **5 MB** (oldest rotated `reach-panel.log.*` dropped first, then remaining logs truncated from the start). `diagnostics.txt` records anything dropped. Every text file is run through `redact()` again, and Windows user names are stripped from paths (`C:\Users\<name>\`, forward slashes, `%USERPROFILE%` forms, and the bare user name).
+The zip is capped at **5 MB** (oldest rotated `reach-panel_<YYYY-MM-DD_HH-MM-SS>.log` dropped first, then remaining logs truncated from the start). `diagnostics.txt` records anything dropped. Every text file is run through `redact()` again, and Windows user names are stripped from paths (`C:\Users\<name>\`, forward slashes, `%USERPROFILE%` forms, and the bare user name).
 
 | Zip entry | Source |
 | --- | --- |
 | `diagnostics.txt` | The copy-diagnostics report plus size-cap notes |
-| `reach-panel.log*` | Current and rotated logs that still fit |
+| `reach-panel.log` and `reach-panel_<timestamp>.log` | Current log and rotated logs that still fit |
 | `breadcrumbs.log` | Layout/window ring |
 | `crash-*.txt` | Newest 10 panic sidecars |
 | `session.json` | Current-session marker |
@@ -46,7 +46,7 @@ Reports are kept 30 days. See `supabase/README.md` and `docs/privacy-diagnostics
 
 | File | What it is |
 | --- | --- |
-| `reach-panel.log*` | Rotating app log. Up to **5** files, **2 MB** each (`RotationStrategy::KeepSome(5)`, `max_file_size` 2_000_000). |
+| `reach-panel.log` and `reach-panel_<YYYY-MM-DD_HH-MM-SS>.log` | Rotating app log. Up to **5** files, **2 MB** each (`RotationStrategy::KeepSome(5)`, `max_file_size` 2_000_000). The plugin renames a full file to the timestamp form. |
 | `breadcrumbs.log` | Last 200 layout/window breadcrumbs (atomic rewrite). |
 | `crash-*.txt` | Panic sidecars (`crash-YYYYMMDDTHHMMSS.sssZ.txt`). **Not** rotated with the log. Startup keeps the newest **10** and leaves log / breadcrumb / session files alone. |
 | `session.json` | Current-session marker (`pid`, `started_at`, `version`, `clean_exit`, optional `reason`). |

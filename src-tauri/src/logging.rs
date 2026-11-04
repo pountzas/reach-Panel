@@ -29,6 +29,10 @@ pub fn redact(value: &str) -> String {
     out
 }
 
+pub(crate) fn keep_log_target(level: log::Level, target: &str) -> bool {
+    level < log::Level::Trace || !(target.starts_with("tao") || target.starts_with("wry"))
+}
+
 pub fn plugin<R: Runtime>() -> TauriPlugin<R> {
     let builder = tauri_plugin_log::Builder::new()
         .clear_targets()
@@ -42,11 +46,7 @@ pub fn plugin<R: Runtime>() -> TauriPlugin<R> {
         .rotation_strategy(RotationStrategy::KeepSome(KEEP_LOG_FILES))
         .timezone_strategy(TimezoneStrategy::UseLocal)
         .level(log::LevelFilter::Info)
-        .filter(|metadata| {
-            let target = metadata.target();
-            metadata.level() > log::Level::Trace
-                || !(target.starts_with("tao") || target.starts_with("wry"))
-        });
+        .filter(|metadata| keep_log_target(metadata.level(), metadata.target()));
 
     #[cfg(debug_assertions)]
     let builder = builder
@@ -130,7 +130,14 @@ pub(crate) fn windows_build_number() -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{active_mode_from_settings, redact};
+    use super::{active_mode_from_settings, keep_log_target, redact};
+
+    #[test]
+    fn wry_errors_pass_the_log_filter() {
+        assert!(keep_log_target(log::Level::Error, "wry::webview"));
+        assert!(!keep_log_target(log::Level::Trace, "tao::event"));
+        assert!(keep_log_target(log::Level::Info, "reach_panel_lib"));
+    }
 
     #[test]
     fn redacts_groq_api_key_to_gsk_stars() {

@@ -118,9 +118,9 @@ fn push_if_present(
 fn push_rotated_logs(files: &mut Vec<PendingFile>, opts: &BundleOptions<'_>) -> Result<(), String> {
     let mut rotated = list_dir_files(opts.logs_dir)?
         .into_iter()
-        .filter(|name| rotated_log_index(name).is_some())
+        .filter(|name| rotated_log_stamp(name).is_some())
         .collect::<Vec<_>>();
-    rotated.sort_by_key(|name| rotated_log_index(name).unwrap_or(0));
+    rotated.sort_by(|a, b| rotated_log_stamp(b).cmp(&rotated_log_stamp(a)));
     for name in rotated {
         let path = opts.logs_dir.join(&name);
         files.push(PendingFile {
@@ -284,21 +284,18 @@ fn write_zip(files: &[PendingFile]) -> Result<Vec<u8>, String> {
     Ok(buf.into_inner())
 }
 
-fn rotated_log_index(name: &str) -> Option<u32> {
-    let suffix = name.strip_prefix("reach-panel.log.")?;
-    if suffix.chars().all(|c| c.is_ascii_digit()) {
-        suffix.parse().ok()
-    } else {
-        None
-    }
+/// tauri-plugin-log KeepSome names rotated files `reach-panel_<YYYY-MM-DD_HH-MM-SS>.log`.
+fn rotated_log_stamp(name: &str) -> Option<&str> {
+    let stamp = name.strip_prefix("reach-panel_")?.strip_suffix(".log")?;
+    (stamp.len() == 19).then_some(stamp)
 }
 
 fn oldest_rotated_index(files: &[PendingFile]) -> Option<usize> {
     files
         .iter()
         .enumerate()
-        .filter_map(|(index, file)| rotated_log_index(&file.name).map(|n| (index, n)))
-        .max_by_key(|(_, n)| *n)
+        .filter_map(|(index, file)| rotated_log_stamp(&file.name).map(|stamp| (index, stamp)))
+        .min_by(|a, b| a.1.cmp(b.1))
         .map(|(index, _)| index)
 }
 
@@ -306,7 +303,9 @@ fn truncate_largest_log(files: &mut Vec<PendingFile>, drops: &mut Vec<String>) -
     let Some(index) = files
         .iter()
         .enumerate()
-        .filter(|(_, file)| file.name.starts_with("reach-panel.log"))
+        .filter(|(_, file)| {
+            file.name == "reach-panel.log" || rotated_log_stamp(&file.name).is_some()
+        })
         .max_by_key(|(_, file)| file.body.len())
         .map(|(index, _)| index)
     else {
@@ -480,8 +479,16 @@ mod tests {
     fn five_mb_cap_drops_oldest_rotated_logs_and_records_it() {
         let dir = temp_logs();
         fs::write(dir.join(LOG_FILE), "current-log-tail\n").expect("current log");
-        fs::write(dir.join("reach-panel.log.1"), incompressible(3_200_000)).expect("rotated 1");
-        fs::write(dir.join("reach-panel.log.2"), incompressible(3_200_000)).expect("rotated 2");
+        fs::write(
+            dir.join("reach-panel_2026-11-02_10-00-00.log"),
+            incompressible(3_200_000),
+        )
+        .expect("newer rotated");
+        fs::write(
+            dir.join("reach-panel_2026-11-01_10-00-00.log"),
+            incompressible(3_200_000),
+        )
+        .expect("older rotated");
         fs::write(dir.join(BREADCRUMBS_FILE), "layout ratio=0.5\n").expect("breadcrumbs");
         fs::write(dir.join(MARKER_FILE), "{\"clean_exit\":true}\n").expect("session");
 
@@ -494,7 +501,9 @@ mod tests {
 
         let names: Vec<String> = bundle.files.iter().map(|f| f.name.clone()).collect();
         assert!(
-            !names.iter().any(|n| n == "reach-panel.log.2"),
+            !names
+                .iter()
+                .any(|n| n == "reach-panel_2026-11-01_10-00-00.log"),
             "oldest rotated log should be dropped: {names:?}"
         );
 
@@ -505,7 +514,7 @@ mod tests {
             .map(|(_, body)| body.as_str())
             .expect("diagnostics.txt");
         assert!(
-            diagnostics.contains("reach-panel.log.2"),
+            diagnostics.contains("reach-panel_2026-11-01_10-00-00.log"),
             "dropped file must be listed in diagnostics.txt:\n{diagnostics}"
         );
         assert!(

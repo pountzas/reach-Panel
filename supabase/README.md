@@ -59,6 +59,8 @@ select cron.schedule(
 
 Retention is 30 days.
 
+The per-install limits use the client-supplied `x-install-id` hash. A script that rotates that header can spend the project-wide 100 reports/day cap and then block real uploads until the next day. The cap is the backstop; it is not proof of one install.
+
 ## 5. GitHub secrets for the app (anon only)
 
 In the GitHub repo: Settings → Secrets and variables → Actions. Add:

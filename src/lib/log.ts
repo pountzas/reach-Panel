@@ -73,12 +73,18 @@ function formatConsoleLine(args: unknown[]): string {
   return redact(args.map(formatValue).join(" "));
 }
 
+function emit(fn: (message: string) => Promise<void>, message: string): void {
+  fn(message).catch(() => {
+    /* logging must never throw or re-enter the global error handlers */
+  });
+}
+
 export function logError(
   scope: string,
   message: string,
   fields?: LogFields,
 ): void {
-  void error(formatRecord(scope, message, fields));
+  emit(error, formatRecord(scope, message, fields));
 }
 
 export function logWarn(
@@ -86,7 +92,7 @@ export function logWarn(
   message: string,
   fields?: LogFields,
 ): void {
-  void warn(formatRecord(scope, message, fields));
+  emit(warn, formatRecord(scope, message, fields));
 }
 
 export function logInfo(
@@ -94,7 +100,7 @@ export function logInfo(
   message: string,
   fields?: LogFields,
 ): void {
-  void info(formatRecord(scope, message, fields));
+  emit(info, formatRecord(scope, message, fields));
 }
 
 export function logDebug(
@@ -102,7 +108,7 @@ export function logDebug(
   message: string,
   fields?: LogFields,
 ): void {
-  void debug(formatRecord(scope, message, fields));
+  emit(debug, formatRecord(scope, message, fields));
 }
 
 /** Forward `console.error` / `console.warn` into rotating log files. */
@@ -111,10 +117,10 @@ export function initLog(): void {
   const originalWarn = console.warn.bind(console);
   console.error = (...args: unknown[]) => {
     originalError(...args);
-    void error(formatConsoleLine(args));
+    emit(error, formatConsoleLine(args));
   };
   console.warn = (...args: unknown[]) => {
     originalWarn(...args);
-    void warn(formatConsoleLine(args));
+    emit(warn, formatConsoleLine(args));
   };
 }

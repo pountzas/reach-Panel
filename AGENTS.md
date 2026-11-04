@@ -2,7 +2,7 @@
 
 ## Debugging / logs
 
-Logs live in `%LOCALAPPDATA%\com.nik.reach-panel\logs\` (`reach-panel.log*`, `breadcrumbs.log`, `crash-*.txt`, `session.json`). Details: [docs/logging.md](docs/logging.md).
+Logs live in `%LOCALAPPDATA%\com.nik.reach-panel\logs\` (`reach-panel.log`, rotated `reach-panel_<YYYY-MM-DD_HH-MM-SS>.log`, `breadcrumbs.log`, `crash-*.txt`, `session.json`). Details: [docs/logging.md](docs/logging.md).
 
 ```powershell
 Get-Content "$env:LOCALAPPDATA\com.nik.reach-panel\logs\reach-panel.log" -Tail 300

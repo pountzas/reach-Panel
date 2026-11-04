@@ -74,14 +74,18 @@ fn recovery_allowed(label: &str) -> bool {
 /// Called from `RunEvent::WindowEvent { event: Destroyed }`.
 pub fn on_window_destroyed<R: Runtime>(app: &AppHandle<R>, label: &str) {
     unregister(label);
-    if !take_pending_recreate(label) {
+    if !is_pending_recreate(label) {
         return;
     }
     let app_for_main = app.clone();
     let label = label.to_string();
-    let _ = app.run_on_main_thread(move || match recreate_window(&app_for_main, &label) {
-        Ok(()) => log::error!("ProcessFailed: recreated webview window label={label}"),
-        Err(e) => log::error!("ProcessFailed: failed to recreate window label={label}: {e}"),
+    let _ = app.run_on_main_thread(move || {
+        let result = recreate_window(&app_for_main, &label);
+        take_pending_recreate(&label);
+        match result {
+            Ok(()) => log::warn!("ProcessFailed: recreated webview window label={label}"),
+            Err(e) => log::error!("ProcessFailed: failed to recreate window label={label}: {e}"),
+        }
     });
 }
 
@@ -328,6 +332,24 @@ mod tests {
         assert!(take_pending_recreate("unit-main"));
         assert!(!has_pending_recreate());
         assert!(!take_pending_recreate("unit-main"));
+    }
+
+    #[test]
+    fn pending_recreate_stays_set_until_the_recreate_closure_takes_it() {
+        let label = "unit-destroy-order";
+        {
+            let mut guard = pending_recreate();
+            if let Some(set) = guard.as_mut() {
+                set.remove(label);
+            }
+        }
+        pending_recreate()
+            .get_or_insert_with(HashSet::new)
+            .insert(label.into());
+        assert!(is_pending_recreate(label));
+        assert!(has_pending_recreate());
+        take_pending_recreate(label);
+        assert!(!is_pending_recreate(label));
     }
 
     #[test]
