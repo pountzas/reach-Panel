@@ -102,7 +102,7 @@ fn active_mode_from_settings(settings: &serde_json::Value) -> &'static str {
 }
 
 /// True OS build via `RtlGetVersion` (avoids GetVersionExW compatibility lies).
-fn windows_build_number() -> u32 {
+pub(crate) fn windows_build_number() -> u32 {
     #[repr(C)]
     struct OsVersionInfoW {
         dw_os_version_info_size: u32,

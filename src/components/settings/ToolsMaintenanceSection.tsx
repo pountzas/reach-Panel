@@ -1,6 +1,8 @@
-import { type CSSProperties } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useShallow } from "zustand/react/shallow";
 import type { SurfaceColors } from "../../lib/colorProfiles";
+import { logIpc } from "../../lib/logIpc";
 import { notify } from "../../lib/notify";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
@@ -17,6 +19,7 @@ export function ToolsMaintenanceSection({
   secondaryButtonStyle,
 }: ToolsMaintenanceSectionProps) {
   const { t } = useTranslation();
+  const [logDir, setLogDir] = useState("");
   const {
     resetSettingsToDefaults,
     wipeActiveProfile,
@@ -30,6 +33,12 @@ export function ToolsMaintenanceSection({
       updateCheckStatus: s.updateCheckStatus,
     })),
   );
+
+  useEffect(() => {
+    void invoke<string>("cmd_get_log_dir")
+      .then(setLogDir)
+      .catch(logIpc("cmd_get_log_dir"));
+  }, []);
 
   return (
     <SettingsSection title={t("settingsToolsMaintenance")} surface={surface}>
@@ -60,6 +69,44 @@ export function ToolsMaintenanceSection({
             : t("checkForUpdates")}
         </button>
       </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="rounded-lg border px-3 py-2 text-sm"
+          style={secondaryButtonStyle}
+          onClick={() => {
+            void invoke("cmd_open_log_dir").catch((error: unknown) => {
+              logIpc("cmd_open_log_dir")(error);
+              notify.error(t("openLogsFolderFailed"));
+            });
+          }}>
+          {t("openLogsFolder")}
+        </button>
+        <button
+          type="button"
+          className="rounded-lg border px-3 py-2 text-sm"
+          style={secondaryButtonStyle}
+          onClick={() => {
+            void (async () => {
+              try {
+                const report = await invoke<string>("cmd_collect_diagnostics");
+                await navigator.clipboard.writeText(report);
+                notify.success(t("diagnosticsCopied"));
+              } catch (error) {
+                logIpc("cmd_collect_diagnostics")(error);
+                notify.error(t("copyDiagnosticsFailed"));
+              }
+            })();
+          }}>
+          {t("copyDiagnostics")}
+        </button>
+      </div>
+      {logDir ? (
+        <p className="mb-4 text-xs" style={{ color: surface.panelMutedText }}>
+          {logDir}
+        </p>
+      ) : null}
 
       <button
         type="button"

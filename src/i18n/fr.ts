@@ -312,6 +312,16 @@ export const fr = {
   wipeProfileConfirm:
     "Effacer ce profil ? Toutes les actions rapides, macros, phrases, prédictions et paramètres seront réinitialisés.",
 
+  openLogsFolder: "Ouvrir le dossier des journaux",
+
+  copyDiagnostics: "Copier le diagnostic",
+
+  diagnosticsCopied: "Diagnostic copié",
+
+  openLogsFolderFailed: "Impossible d’ouvrir le dossier des journaux",
+
+  copyDiagnosticsFailed: "Impossible de copier le diagnostic",
+
   saveProfile: "Enregistrer le profil",
 
   profileSaved: "Profil enregistré.",
