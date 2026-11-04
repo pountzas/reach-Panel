@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { logError } from "../../lib/log";
 
 type Props = {
   children: ReactNode;
@@ -16,7 +17,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("App render error:", error, info);
+    logError("react", "Render error", {
+      error,
+      componentStack: info.componentStack ?? "",
+    });
   }
 
   render() {
@@ -36,6 +40,13 @@ export class ErrorBoundary extends Component<Props, State> {
           <pre style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>
             {this.state.error.message}
           </pre>
+          <button
+            type="button"
+            onClick={() => {
+              location.reload();
+            }}>
+            Reload
+          </button>
         </div>
       );
     }

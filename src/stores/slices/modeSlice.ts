@@ -25,6 +25,7 @@ import {
 import type { AppModeRequest } from "../../lib/appModeLayout";
 import { popRestoreEntry, pushRestoreEntry } from "../lib/restoreStack";
 import { clear as clearInputPreviewFrames } from "../../lib/inputPreviewFrames";
+import { logInfo } from "../../lib/log";
 
 export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
   set,
@@ -46,6 +47,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
   },
   setAppMode: async (mode, options) => {
     const skipCompanionBridgeStop = options?.skipCompanionBridgeStop === true;
+    logInfo("mode", "switch", { mode });
 
     if (shouldDelegateAppModeToMain(WebviewWindow.getCurrent().label)) {
       const current = get().settings;

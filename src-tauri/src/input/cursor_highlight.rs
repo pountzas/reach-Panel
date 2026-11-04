@@ -69,7 +69,7 @@ fn ensure_thread() {
         .name("reach-cursor-highlight".into())
         .spawn(move || run_loop(rx))
     {
-        eprintln!("Failed to spawn cursor highlight thread: {e}");
+        log::error!("Failed to spawn cursor highlight thread: {e}");
     }
 }
 

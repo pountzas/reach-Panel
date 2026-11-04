@@ -35,14 +35,14 @@ pub async fn run_bridge(
     let listener = match TcpListener::bind(addr).await {
         Ok(l) => l,
         Err(e) => {
-            eprintln!("[companion] failed to bind {addr}: {e}");
+            log::error!("[companion] failed to bind {addr}: {e}");
             running.store(false, Ordering::SeqCst);
             emit_ui_state(&app, &auth, &session, false, port);
             return;
         }
     };
     running.store(true, Ordering::SeqCst);
-    println!("[companion] listening on {addr}");
+    log::info!("[companion] listening on {addr}");
     emit_ui_state(&app, &auth, &session, true, port);
 
     loop {
@@ -65,12 +65,12 @@ pub async fn run_bridge(
                             )
                             .await
                             {
-                                eprintln!("[companion] connection {peer}: {e}");
+                                log::error!("[companion] connection {peer}: {e}");
                             }
                         });
                     }
                     Err(e) => {
-                        eprintln!("[companion] accept error: {e}");
+                        log::error!("[companion] accept error: {e}");
                     }
                 }
             }
@@ -80,7 +80,7 @@ pub async fn run_bridge(
     running.store(false, Ordering::SeqCst);
     session.clear();
     emit_ui_state(&app, &auth, &session, false, port);
-    println!("[companion] stopped");
+    log::info!("[companion] stopped");
 }
 
 async fn handle_connection(
@@ -273,7 +273,7 @@ async fn handle_connection(
     }
 
     if authenticated && session.epoch_matches(connection_epoch) {
-        eprintln!("[companion] session ended from {peer}");
+        log::info!("[companion] session ended from {peer}");
         session.set_reconnecting();
         session.clear();
         on_session_inactive(&app);

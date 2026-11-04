@@ -40,7 +40,7 @@ fn entries_from_values(values: Vec<serde_json::Value>) -> Vec<TeachingPdfEntry> 
         .filter_map(|v| match serde_json::from_value::<TeachingPdfEntry>(v) {
             Ok(entry) => Some(entry),
             Err(e) => {
-                eprintln!("Skipping invalid Teaching PDF library entry: {e}");
+                log::warn!("Skipping invalid Teaching PDF library entry: {e}");
                 None
             }
         })

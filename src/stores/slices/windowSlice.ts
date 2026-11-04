@@ -12,7 +12,9 @@ import {
   freeWriteModeFromState,
 } from "../storeShared";
 import { invoke } from "@tauri-apps/api/core";
-import { logLayoutIpc } from "../../lib/logIpc";
+import { logError } from "../../lib/log";
+import { logIpc, logLayoutIpc } from "../../lib/logIpc";
+import { recordResizeDragInvoke } from "../../lib/windowHeightDragSummary";
 import { checkForUpdate, formatUpdateCheckError } from "../../lib/updater";
 import { prefersReducedMotion } from "../../lib/motion";
 import { clampWindowHeightRatio } from "../../lib/sectionLayouts";
@@ -97,6 +99,8 @@ export const createWindowSlice: StateCreator<AppStore, [], [], WindowSlice> = (
     }
     storeFlags.liveHeightRatioPreview = pending;
     storeFlags.liveHeightRatioInFlight = true;
+    const invokeStarted = performance.now();
+    let invokeOk = false;
     try {
       const focus = latestState.focusModeActive;
       const liveArgs = {
@@ -113,12 +117,15 @@ export const createWindowSlice: StateCreator<AppStore, [], [], WindowSlice> = (
       };
       logLayoutIpc("cmd_apply_window_layout", liveArgs);
       await invoke("cmd_apply_window_layout", liveArgs);
-    } catch {
+      invokeOk = true;
+    } catch (error) {
+      logIpc("cmd_apply_window_layout")(error);
       // Rejected ratio must not block near-equal retries.
       if (storeFlags.liveHeightRatioPreview === pending) {
         storeFlags.liveHeightRatioPreview = null;
       }
     } finally {
+      recordResizeDragInvoke(performance.now() - invokeStarted, invokeOk);
       storeFlags.liveHeightRatioInFlight = false;
       // Flush any ratio queued while the previous invoke was in flight.
       const queued = takeLiveHeightRatioPending();
@@ -238,7 +245,7 @@ export const createWindowSlice: StateCreator<AppStore, [], [], WindowSlice> = (
         });
       }
     } catch (error) {
-      console.error("Update check failed", error);
+      logError("updater", "Update check failed", { error });
       set({
         pendingUpdate: null,
         updateCheckStatus: "error",

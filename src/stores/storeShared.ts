@@ -15,6 +15,7 @@ import {
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { afterNextPaint, MOTION, prefersReducedMotion } from "../lib/motion";
 import { logLayoutIpc } from "../lib/logIpc";
+import { logInfo } from "../lib/log";
 import { notify } from "../lib/notify";
 import { resolveSectionStack } from "../lib/sectionStack";
 import {
@@ -515,12 +516,14 @@ export async function setToolWindowVisible(
         title: TOOL_WINDOW_TITLES[label],
         monitor: preferred,
         onDestroyed: () => {
+          if (get()[flag]) logInfo("settings", "close");
           set({ [flag]: false });
           void syncMainForToolWindows();
           void get().syncWindowFocusable();
         },
       });
       set({ [flag]: true });
+      logInfo("settings", "open");
     } catch (error) {
       set({ [flag]: false });
       const message = error instanceof Error ? error.message : String(error);
@@ -531,6 +534,7 @@ export async function setToolWindowVisible(
     return;
   }
 
+  if (get()[flag]) logInfo("settings", "close");
   set({ [flag]: false });
   await closeToolWindow(label);
   void syncMainForToolWindows();

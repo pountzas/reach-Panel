@@ -311,6 +311,47 @@ export const pt = {
   wipeProfileConfirm:
     "Limpar este perfil? Todas as ações rápidas, macros, frases, previsões e definições serão repostas.",
 
+  openLogsFolder: "Abrir pasta de registos",
+
+  copyDiagnostics: "Copiar diagnóstico",
+
+  diagnosticsCopied: "Diagnóstico copiado",
+
+  openLogsFolderFailed: "Não foi possível abrir a pasta de registos",
+
+  copyDiagnosticsFailed: "Não foi possível copiar o diagnóstico",
+
+  sendLogs: "Enviar registos",
+
+  sendLogsConsentTitle: "Enviar este diagnóstico?",
+
+  sendLogsPrivacyTyped: "O texto escrito ou ditado nunca é registado.",
+
+  sendLogsPrivacyUsername:
+    "O seu nome de utilizador do Windows é removido dos caminhos.",
+
+  sendLogsDestination:
+    "Enviado para o alojamento de diagnóstico do ReachPanel na UE (Supabase) e guardado 30 dias.",
+
+  sendLogsNoteLabel: "Nota opcional",
+
+  sendLogsNoteHint:
+    "Não inclua nomes, moradas nem outras informações pessoais.",
+
+  sendLogsSend: "Enviar",
+
+  sendLogsSending: "A enviar…",
+
+  sendLogsSuccessTitle: "Registos enviados",
+
+  sendLogsCopyId: "Copiar",
+
+  sendLogsReportCopied: "ID do relatório copiado",
+
+  sendLogsFailed: "Não foi possível enviar os registos.",
+
+  sendLogsFailedRateLimited: "Demasiados relatórios. Tente mais tarde.",
+
   saveProfile: "Guardar perfil",
 
   profileSaved: "Perfil guardado.",
