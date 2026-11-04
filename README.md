@@ -145,7 +145,7 @@ If Windows online speech is off, open **Settings → Privacy & security → Spee
 
 - Named file-based profiles (create, save, load, wipe)
 - Multi-monitor detection and positioning
-- Color profiles and optional background image
+- Color profiles
 - In-app update check and prompt
 - About section (version and links)
 - UI languages: English, Greek, German, French, Italian, Spanish, Portuguese

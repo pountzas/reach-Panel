@@ -476,12 +476,6 @@ export const es = {
 
   mousePanelColor: "Panel del ratón",
 
-  chooseBackgroundImage: "Elegir imagen de fondo",
-
-  removeBackgroundImage: "Quitar imagen de fondo",
-
-  backgroundImageOpacity: "Visibilidad de la imagen de fondo",
-
   newProfileFileName: "Nombre del nuevo archivo de perfil",
 
   createProfile: "Crear archivo de perfil",

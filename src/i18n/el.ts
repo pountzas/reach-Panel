@@ -479,12 +479,6 @@ export const el = {
 
   mousePanelColor: "Πάνελ ποντικιού",
 
-  chooseBackgroundImage: "Επιλογή εικόνας φόντου",
-
-  removeBackgroundImage: "Αφαίρεση εικόνας φόντου",
-
-  backgroundImageOpacity: "Ορατότητα εικόνας φόντου",
-
   newProfileFileName: "Όνομα νέου αρχείου προφίλ",
 
   createProfile: "Δημιουργία αρχείου προφίλ",

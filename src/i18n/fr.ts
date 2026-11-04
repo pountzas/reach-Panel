@@ -477,12 +477,6 @@ export const fr = {
 
   mousePanelColor: "Panneau souris",
 
-  chooseBackgroundImage: "Choisir une image de fond",
-
-  removeBackgroundImage: "Supprimer l’image de fond",
-
-  backgroundImageOpacity: "Visibilité de l’image de fond",
-
   newProfileFileName: "Nom du nouveau fichier de profil",
 
   createProfile: "Créer un fichier de profil",

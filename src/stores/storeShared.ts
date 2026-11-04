@@ -408,6 +408,8 @@ export function parseSettings(json: string): AppSettings {
     delete (parsed as Record<string, unknown>).headTrackingEnabled;
     delete (parsed as Record<string, unknown>).emergencyVisible;
     delete (parsed as Record<string, unknown>).precisionMode;
+    delete (parsed as Record<string, unknown>).backgroundImagePath;
+    delete (parsed as Record<string, unknown>).backgroundImageOpacity;
     const colorProfile = resolveColorProfile({ ...parsed, theme });
     const mousePanelSide =
       parsed.mousePanelSide ??

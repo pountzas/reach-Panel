@@ -328,7 +328,6 @@ export type ProfileSlice = {
   wipeActiveProfile: () => Promise<void>;
   loadMonitors: () => Promise<void>;
   saveActiveProfile: () => Promise<void>;
-  pickBackgroundImage: () => Promise<void>;
 };
 
 export type AppStore = ErrorsSlice &

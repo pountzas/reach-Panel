@@ -506,12 +506,6 @@ export const en = {
 
   mousePanelColor: "Mouse panel",
 
-  chooseBackgroundImage: "Choose background image",
-
-  removeBackgroundImage: "Remove background image",
-
-  backgroundImageOpacity: "Background image visibility",
-
   newProfileFileName: "New profile file name",
 
   createProfile: "Create profile file",
