@@ -68,10 +68,7 @@ export function SettingsPanel() {
         />
         <AccessibilityMonitorSection surface={surface} />
         <TaskbarSection surface={surface} />
-        <AppearanceSection
-          surface={surface}
-          secondaryButtonStyle={secondaryButtonStyle}
-        />
+        <AppearanceSection surface={surface} />
         <VisibleSectionsSection surface={surface} />
         <KeyboardSettingsSection
           surface={surface}

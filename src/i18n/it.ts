@@ -514,12 +514,6 @@ export const it = {
 
   mousePanelColor: "Pannello mouse",
 
-  chooseBackgroundImage: "Scegli immagine di sfondo",
-
-  removeBackgroundImage: "Rimuovi immagine di sfondo",
-
-  backgroundImageOpacity: "Visibilità immagine di sfondo",
-
   newProfileFileName: "Nome nuovo file profilo",
 
   createProfile: "Crea file profilo",

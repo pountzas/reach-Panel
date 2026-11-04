@@ -42,8 +42,6 @@ export type AppSettings = {
   headerBgColor?: string;
   headerTextColor?: string;
   mousePanelBgColor?: string;
-  backgroundImagePath?: string;
-  backgroundImageOpacity?: number;
   mouseSpeed: MouseSpeed;
   mouseCustomSpeed?: number;
   predictionEnabled: boolean;
@@ -164,7 +162,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mousePanelMode: "mouse",
   mousePanelSide: "right",
   keyboardFontSize: 18,
-  backgroundImageOpacity: 0.35,
   mouseSpeed: "medium",
   predictionEnabled: false,
   suggestionsVisible: false,

@@ -35,7 +35,6 @@ fn default_settings_json(ui_language: &str) -> serde_json::Value {
         "mousePanelSide": "right",
         "keyboardFontSize": 18,
         "sectionLayouts": {},
-        "backgroundImageOpacity": 0.35,
         "mouseSpeed": "medium",
         "predictionEnabled": false,
         "suggestionsVisible": false,

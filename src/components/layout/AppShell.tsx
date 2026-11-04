@@ -1,5 +1,4 @@
 import { type CSSProperties, type JSX } from "react";
-import { convertFileSrc } from "@tauri-apps/api/core";
 import { IoPencilOutline } from "react-icons/io5";
 import { MdOutlineAbc } from "react-icons/md";
 import { ResizableSplitPane } from "./ResizableSplitPane";
@@ -165,13 +164,6 @@ export function AppShell() {
     backgroundColor: settings.appBgColor ?? "#f1f5f9",
   };
 
-  if (settings.backgroundImagePath) {
-    shellStyle.backgroundImage = `url("${convertFileSrc(settings.backgroundImagePath)}")`;
-    shellStyle.backgroundSize = "cover";
-    shellStyle.backgroundPosition = "center";
-    shellStyle.backgroundRepeat = "no-repeat";
-  }
-
   const teachingContent = teachingVisible
     ? renderTeachingLessonPanel(teachingLesson)
     : null;
@@ -183,16 +175,6 @@ export function AppShell() {
       onContextMenu={(e) => {
         e.preventDefault();
       }}>
-      {settings.backgroundImagePath && (
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundColor: settings.appBgColor ?? "#f1f5f9",
-            opacity: Math.max(0, 1 - (settings.backgroundImageOpacity ?? 0.35)),
-          }}
-        />
-      )}
-
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         <header
           className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center px-3"

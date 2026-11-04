@@ -138,7 +138,6 @@ pub fn run() {
             commands::profiles::cmd_delete_profile_file,
             commands::profiles::cmd_wipe_active_profile,
             commands::keyboard::cmd_get_windows_ui_language,
-            commands::files::cmd_pick_background_image,
             commands::files::cmd_pick_music_song_file,
             commands::files::cmd_pick_teaching_pdf,
             commands::library::cmd_read_music_file,

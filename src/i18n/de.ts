@@ -519,12 +519,6 @@ export const de = {
 
   mousePanelColor: "Mauspanel",
 
-  chooseBackgroundImage: "Hintergrundbild wählen",
-
-  removeBackgroundImage: "Hintergrundbild entfernen",
-
-  backgroundImageOpacity: "Sichtbarkeit des Hintergrundbilds",
-
   newProfileFileName: "Neuer Profildateiname",
 
   createProfile: "Profildatei erstellen",
