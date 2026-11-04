@@ -11,28 +11,37 @@ import {
 
 const ZIP_BYTES = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00, 0x01]);
 
+const INSTALL_HASH = "a".repeat(64);
+
 function deps(overrides: Partial<SubmitDeps> = {}): SubmitDeps & {
   uploads: string[];
   inserts: DiagnosticReportRow[];
+  deleted: string[];
   pingCalls: number;
 } {
   const uploads: string[] = [];
   const inserts: DiagnosticReportRow[] = [];
+  const deleted: string[] = [];
   let pingCalls = 0;
   return {
     uploads,
     inserts,
+    deleted,
     get pingCalls() {
       return pingCalls;
     },
     now: () => new Date("2026-11-04T12:00:00.000Z"),
     randomId: () => "A1B2C3D4",
     countReports: async () => 0,
+    countAllReports: async () => 0,
     uploadZip: async (objectPath) => {
       uploads.push(objectPath);
     },
     insertReport: async (row) => {
       inserts.push(row);
+    },
+    deleteReport: async (reportId) => {
+      deleted.push(reportId);
     },
     pingDb: async () => {
       pingCalls += 1;
@@ -52,7 +61,7 @@ function post(body: Uint8Array, extra: HeadersInit = {}): Request {
     method: "POST",
     headers: {
       "content-type": "application/zip",
-      "x-install-id": "abc",
+      "x-install-id": INSTALL_HASH,
       "x-app-version": "0.17.5",
       "content-length": String(body.byteLength),
       ...extra,
@@ -103,6 +112,43 @@ Deno.test("rejects payloads over 5 MB via bytes read", async () => {
     store,
   );
   assertEquals(response.status, 413);
+  assertEquals(store.uploads.length, 0);
+});
+
+Deno.test("rejects an install id that is not a sha256 hex hash", async () => {
+  const store = deps();
+  const response = await handleSubmitDiagnostics(
+    post(ZIP_BYTES, { "x-install-id": "abc" }),
+    store,
+  );
+  assertEquals(response.status, 400);
+  assertEquals(await response.json(), { error: "invalid_install_id" });
+  assertEquals(store.uploads.length, 0);
+  assertEquals(store.inserts.length, 0);
+});
+
+Deno.test("returns 429 when the global daily cap is exceeded", async () => {
+  const store = deps({
+    countAllReports: async () => 100,
+  });
+  const response = await handleSubmitDiagnostics(post(ZIP_BYTES), store);
+  assertEquals(response.status, 429);
+  assertEquals(await response.json(), { error: "rate_limited" });
+  assertEquals(store.uploads.length, 0);
+  assertEquals(store.inserts.length, 0);
+});
+
+Deno.test("deletes the row when the upload fails", async () => {
+  const store = deps({
+    uploadZip: async () => {
+      throw new Error("storage down");
+    },
+  });
+  const response = await handleSubmitDiagnostics(post(ZIP_BYTES), store);
+  assertEquals(response.status, 500);
+  assertEquals(await response.json(), { error: "server_error" });
+  assertEquals(store.inserts.length, 1);
+  assertEquals(store.deleted, ["A1B2C3D4"]);
   assertEquals(store.uploads.length, 0);
 });
 

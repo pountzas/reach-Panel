@@ -3,6 +3,7 @@ const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04];
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const RATE_PER_MINUTE = 1;
 const RATE_PER_DAY = 5;
+const RATE_GLOBAL_PER_DAY = 100;
 
 export type DiagnosticReportRow = {
   report_id: string;
@@ -16,8 +17,10 @@ export type SubmitDeps = {
   now: () => Date;
   randomId: () => string;
   countReports: (installHash: string, sinceIso: string) => Promise<number>;
+  countAllReports: (sinceIso: string) => Promise<number>;
   uploadZip: (objectPath: string, body: Uint8Array) => Promise<void>;
   insertReport: (row: DiagnosticReportRow) => Promise<void>;
+  deleteReport: (reportId: string) => Promise<void>;
   pingDb: () => Promise<void>;
 };
 
@@ -76,11 +79,11 @@ export async function handleSubmitDiagnostics(
       return jsonError(413, "too_large");
     }
   }
-  const installHash = req.headers.get("x-install-id")?.trim() ?? "";
-  if (!installHash) {
-    return jsonError(400, "missing_install_id");
+  const installHash = req.headers.get("x-install-id")?.trim().toLowerCase() ?? "";
+  if (!/^[0-9a-f]{64}$/.test(installHash)) {
+    return jsonError(400, "invalid_install_id");
   }
-  const appVersion = req.headers.get("x-app-version")?.trim() ?? "";
+  const appVersion = (req.headers.get("x-app-version")?.trim() ?? "").slice(0, 32);
   const now = deps.now();
   const minuteAgo = new Date(now.getTime() - 60_000).toISOString();
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
@@ -88,6 +91,9 @@ export async function handleSubmitDiagnostics(
     return jsonError(429, "rate_limited");
   }
   if ((await deps.countReports(installHash, dayAgo)) >= RATE_PER_DAY) {
+    return jsonError(429, "rate_limited");
+  }
+  if ((await deps.countAllReports(dayAgo)) >= RATE_GLOBAL_PER_DAY) {
     return jsonError(429, "rate_limited");
   }
 
@@ -102,7 +108,6 @@ export async function handleSubmitDiagnostics(
   const reportId = deps.randomId();
   const createdAt = now.toISOString();
   const objectPath = objectPathFor(now, reportId);
-  await deps.uploadZip(objectPath, body);
   await deps.insertReport({
     report_id: reportId,
     install_hash: installHash,
@@ -110,5 +115,11 @@ export async function handleSubmitDiagnostics(
     size_bytes: body.byteLength,
     created_at: createdAt,
   });
+  try {
+    await deps.uploadZip(objectPath, body);
+  } catch {
+    await deps.deleteReport(reportId).catch(() => {});
+    return jsonError(500, "server_error");
+  }
   return Response.json({ report_id: reportId }, { status: 200 });
 }

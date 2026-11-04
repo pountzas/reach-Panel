@@ -17,9 +17,26 @@ function objectPath(createdAt: string, reportId: string): string {
   return `${year}/${month}/${reportId}.zip`;
 }
 
+function isServiceRole(req: Request): boolean {
+  const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const payload = token.split(".")[1];
+  if (!payload) return false;
+  try {
+    const padded = payload.replace(/-/g, "+").replace(/_/g, "/") +
+      "=".repeat((4 - (payload.length % 4)) % 4);
+    const json = JSON.parse(atob(padded));
+    return json.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
-  if (req.method !== "POST" && req.method !== "GET") {
+  if (req.method !== "POST") {
     return Response.json({ error: "method_not_allowed" }, { status: 405 });
+  }
+  if (!isServiceRole(req)) {
+    return Response.json({ error: "forbidden" }, { status: 403 });
   }
   try {
     const admin = adminClient();
@@ -29,24 +46,25 @@ Deno.serve(async (req) => {
     const { data: rows, error: selectError } = await admin
       .from("diagnostic_reports")
       .select("report_id, created_at")
-      .lt("created_at", cutoff);
+      .lt("created_at", cutoff)
+      .order("created_at", { ascending: true })
+      .limit(500);
     if (selectError) throw selectError;
 
-    const paths = (rows ?? []).map((row) =>
-      objectPath(row.created_at, row.report_id),
-    );
+    const batch = rows ?? [];
+    const paths = batch.map((row) => objectPath(row.created_at, row.report_id));
     if (paths.length > 0) {
       const { error: removeError } = await admin.storage
         .from("diagnostics")
         .remove(paths);
       if (removeError) throw removeError;
-    }
 
-    const { error: deleteError } = await admin
-      .from("diagnostic_reports")
-      .delete()
-      .lt("created_at", cutoff);
-    if (deleteError) throw deleteError;
+      const { error: deleteError } = await admin
+        .from("diagnostic_reports")
+        .delete()
+        .in("report_id", batch.map((row) => row.report_id));
+      if (deleteError) throw deleteError;
+    }
 
     return Response.json({
       ok: true,

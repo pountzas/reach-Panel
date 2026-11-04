@@ -65,6 +65,7 @@ describe("ToolsMaintenanceSection diagnostics", () => {
       if (cmd === "cmd_get_log_dir") return LOG_DIR;
       if (cmd === "cmd_open_log_dir") return undefined;
       if (cmd === "cmd_collect_diagnostics") return REPORT;
+      if (cmd === "cmd_diagnostics_upload_available") return true;
       if (cmd === "cmd_send_diagnostics") {
         const send =
           args !== null &&
@@ -99,6 +100,9 @@ describe("ToolsMaintenanceSection diagnostics", () => {
       screen.getByRole("button", { name: "copyDiagnostics" }),
     ).toBeTruthy();
     expect(await screen.findByText(LOG_DIR)).toBeTruthy();
+    expect(mocks.invoke).not.toHaveBeenCalledWith("cmd_send_diagnostics", {
+      send: false,
+    });
   });
 
   it("opens the logs folder through cmd_open_log_dir", async () => {
@@ -150,9 +154,7 @@ describe("ToolsMaintenanceSection diagnostics", () => {
   it("hides Send logs when upload is not configured", async () => {
     mocks.invoke.mockImplementation(async (cmd: unknown) => {
       if (cmd === "cmd_get_log_dir") return LOG_DIR;
-      if (cmd === "cmd_send_diagnostics") {
-        return { configured: false, files: [] };
-      }
+      if (cmd === "cmd_diagnostics_upload_available") return false;
       return undefined;
     });
     render(
@@ -164,10 +166,14 @@ describe("ToolsMaintenanceSection diagnostics", () => {
 
     expect(screen.getByRole("button", { name: "openLogsFolder" })).toBeTruthy();
     await waitFor(() => {
-      expect(mocks.invoke).toHaveBeenCalledWith("cmd_send_diagnostics", {
-        send: false,
-      });
+      expect(mocks.invoke).toHaveBeenCalledWith(
+        "cmd_diagnostics_upload_available",
+      );
     });
+    expect(mocks.invoke).not.toHaveBeenCalledWith(
+      "cmd_send_diagnostics",
+      expect.anything(),
+    );
     expect(screen.queryByRole("button", { name: "sendLogs" })).toBeNull();
   });
 
@@ -181,7 +187,7 @@ describe("ToolsMaintenanceSection diagnostics", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "sendLogs" }));
     expect(await screen.findByRole("dialog")).toBeTruthy();
-    expect(screen.getByText("diagnostics.txt")).toBeTruthy();
+    expect(await screen.findByText("diagnostics.txt")).toBeTruthy();
     expect(screen.getByText("reach-panel.log")).toBeTruthy();
     expect(screen.getByText("breadcrumbs.log")).toBeTruthy();
     expect(screen.getByText("sendLogsPrivacyTyped")).toBeTruthy();
@@ -215,6 +221,7 @@ describe("ToolsMaintenanceSection diagnostics", () => {
     mocks.invoke.mockImplementation(async (cmd: unknown, args?: unknown) => {
       if (cmd === "cmd_get_log_dir") return LOG_DIR;
       if (cmd === "cmd_open_log_dir") return undefined;
+      if (cmd === "cmd_diagnostics_upload_available") return true;
       if (cmd === "cmd_send_diagnostics") {
         const send =
           args !== null &&
@@ -238,6 +245,7 @@ describe("ToolsMaintenanceSection diagnostics", () => {
       await screen.findByRole("button", { name: "sendLogsSend" }),
     );
     expect(await screen.findByText("sendLogsFailedRateLimited")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "sendLogsSend" })).toBeTruthy();
     const fallback = screen.getAllByRole("button", { name: "openLogsFolder" });
     expect(fallback.length).toBeGreaterThan(0);
     fireEvent.click(fallback[fallback.length - 1]);

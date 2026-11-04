@@ -64,7 +64,7 @@ Retention is 30 days.
 In the GitHub repo: Settings → Secrets and variables → Actions. Add:
 
 - `REACH_SUPABASE_URL` — `https://<project-ref>.supabase.co`
-- `REACH_SUPABASE_ANON_KEY` — the project’s anon/publishable key
+- `REACH_SUPABASE_ANON_KEY` — the project’s legacy anon JWT (starts with `eyJ`). Do not use the `sb_publishable_…` key while `verify_jwt = true`. Those keys are not JWTs. Current Supabase docs say the gateway may accept them on `Authorization` without authenticating the caller, so the JWT check would not be doing its job. Ship the legacy anon JWT until the function authorizes publishable keys itself.
 
 These are passed into `npm run build:tauri:release`. A missing secret must **not** fail the release; the Send logs button stays hidden. Never add the service role key here.
 

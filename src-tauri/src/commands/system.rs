@@ -69,8 +69,23 @@ pub struct SendDiagnosticsResponse {
 }
 
 #[tauri::command]
+pub fn cmd_diagnostics_upload_available() -> bool {
+    diagnostics_upload_configured()
+}
+
+#[tauri::command]
 pub async fn cmd_send_diagnostics(
     app: AppHandle,
+    send: Option<bool>,
+    note: Option<String>,
+) -> Result<SendDiagnosticsResponse, String> {
+    tauri::async_runtime::spawn_blocking(move || send_diagnostics_blocking(&app, send, note))
+        .await
+        .map_err(|e| format!("send diagnostics task: {e}"))?
+}
+
+fn send_diagnostics_blocking(
+    app: &AppHandle,
     send: Option<bool>,
     note: Option<String>,
 ) -> Result<SendDiagnosticsResponse, String> {

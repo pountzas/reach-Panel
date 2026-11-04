@@ -234,16 +234,15 @@ export function SendLogsDialog({
                     onClick={onOpenLogs}>
                     {openLogsLabel}
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="min-h-11 min-w-22 rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50"
-                    disabled={sending}
-                    style={confirmButtonStyle}
-                    onClick={onSend}>
-                    {sending ? sendingLabel : sendLabel}
-                  </button>
-                )}
+                ) : null}
+                <button
+                  type="button"
+                  className="min-h-11 min-w-22 rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50"
+                  disabled={sending}
+                  style={confirmButtonStyle}
+                  onClick={onSend}>
+                  {sending ? sendingLabel : sendLabel}
+                </button>
               </div>
             </>
           )}

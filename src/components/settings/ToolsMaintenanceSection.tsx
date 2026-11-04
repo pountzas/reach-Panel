@@ -51,14 +51,9 @@ export function ToolsMaintenanceSection({
     void invoke<string>("cmd_get_log_dir")
       .then(setLogDir)
       .catch(logIpc("cmd_get_log_dir"));
-    void invoke<SendDiagnosticsResponse>("cmd_send_diagnostics", {
-      send: false,
-    })
-      .then((result) => {
-        setUploadConfigured(result.configured);
-        setBundleFiles(result.files);
-      })
-      .catch(logIpc("cmd_send_diagnostics"));
+    void invoke<boolean>("cmd_diagnostics_upload_available")
+      .then(setUploadConfigured)
+      .catch(logIpc("cmd_diagnostics_upload_available"));
   }, []);
 
   function closeSendDialog() {

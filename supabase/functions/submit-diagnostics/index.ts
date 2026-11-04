@@ -31,6 +31,14 @@ Deno.serve(async (req) => {
         if (error) throw error;
         return count ?? 0;
       },
+      countAllReports: async (sinceIso) => {
+        const { count, error } = await admin
+          .from("diagnostic_reports")
+          .select("report_id", { count: "exact", head: true })
+          .gte("created_at", sinceIso);
+        if (error) throw error;
+        return count ?? 0;
+      },
       uploadZip: async (objectPath, body) => {
         const { error } = await admin.storage
           .from("diagnostics")
@@ -42,6 +50,13 @@ Deno.serve(async (req) => {
       },
       insertReport: async (row) => {
         const { error } = await admin.from("diagnostic_reports").insert(row);
+        if (error) throw error;
+      },
+      deleteReport: async (reportId) => {
+        const { error } = await admin
+          .from("diagnostic_reports")
+          .delete()
+          .eq("report_id", reportId);
         if (error) throw error;
       },
       pingDb: async () => {
