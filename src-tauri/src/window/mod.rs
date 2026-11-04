@@ -804,6 +804,8 @@ pub fn configure_main_window<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>
     let _ = window.set_shadow(false);
     let _ = window.set_always_on_top(true);
     let _ = window.set_focusable(false);
+    let _ = window.set_minimizable(false);
+    let _ = window.set_skip_taskbar(true);
     icon_sync::register_main_window_icon_sync(window.clone());
     if let Ok(hwnd) = window.hwnd() {
         if let Err(e) =
@@ -816,6 +818,7 @@ pub fn configure_main_window<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>
 
 pub(crate) mod icon_sync;
 pub(crate) mod events;
+pub(crate) mod stay_visible;
 mod taskbar;
 pub(crate) mod taskbar_icon;
 mod windows;
