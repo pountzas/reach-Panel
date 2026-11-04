@@ -51,14 +51,31 @@ const secondaryButtonStyle = {
 };
 const LOG_DIR = "C:\\Users\\nik\\AppData\\Local\\com.nik.reach-panel\\logs";
 const REPORT = "version: 0.17.5\nwindows_build: 22000\n";
+const BUNDLE_FILES = [
+  { name: "diagnostics.txt", size: 120 },
+  { name: "reach-panel.log", size: 2048 },
+  { name: "breadcrumbs.log", size: 80 },
+];
+const REPORT_ID = "A1B2C3D4";
 
 describe("ToolsMaintenanceSection diagnostics", () => {
   beforeEach(() => {
     mocks.invoke.mockReset();
-    mocks.invoke.mockImplementation(async (cmd: unknown) => {
+    mocks.invoke.mockImplementation(async (cmd: unknown, args?: unknown) => {
       if (cmd === "cmd_get_log_dir") return LOG_DIR;
       if (cmd === "cmd_open_log_dir") return undefined;
       if (cmd === "cmd_collect_diagnostics") return REPORT;
+      if (cmd === "cmd_send_diagnostics") {
+        const send =
+          args !== null &&
+          typeof args === "object" &&
+          "send" in args &&
+          (args as { send?: boolean }).send === true;
+        if (send) {
+          return { configured: true, files: BUNDLE_FILES, reportId: REPORT_ID };
+        }
+        return { configured: true, files: BUNDLE_FILES };
+      }
       return undefined;
     });
     mocks.notify.success.mockReset();
@@ -128,5 +145,104 @@ describe("ToolsMaintenanceSection diagnostics", () => {
       expect(mocks.notify.error).toHaveBeenCalledWith("copyDiagnosticsFailed");
     });
     expect(mocks.notify.success).not.toHaveBeenCalled();
+  });
+
+  it("hides Send logs when upload is not configured", async () => {
+    mocks.invoke.mockImplementation(async (cmd: unknown) => {
+      if (cmd === "cmd_get_log_dir") return LOG_DIR;
+      if (cmd === "cmd_send_diagnostics") {
+        return { configured: false, files: [] };
+      }
+      return undefined;
+    });
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "openLogsFolder" })).toBeTruthy();
+    await waitFor(() => {
+      expect(mocks.invoke).toHaveBeenCalledWith("cmd_send_diagnostics", {
+        send: false,
+      });
+    });
+    expect(screen.queryByRole("button", { name: "sendLogs" })).toBeNull();
+  });
+
+  it("opens a consent dialog that lists bundle contents", async () => {
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "sendLogs" }));
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(screen.getByText("diagnostics.txt")).toBeTruthy();
+    expect(screen.getByText("reach-panel.log")).toBeTruthy();
+    expect(screen.getByText("breadcrumbs.log")).toBeTruthy();
+    expect(screen.getByText("sendLogsPrivacyTyped")).toBeTruthy();
+    expect(screen.getByText("sendLogsPrivacyUsername")).toBeTruthy();
+    expect(screen.getByText("sendLogsDestination")).toBeTruthy();
+  });
+
+  it("sends logs through cmd_send_diagnostics and shows the report id", async () => {
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "sendLogs" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "sendLogsSend" }),
+    );
+    await waitFor(() => {
+      expect(mocks.invoke).toHaveBeenCalledWith("cmd_send_diagnostics", {
+        send: true,
+        note: null,
+      });
+    });
+    expect(await screen.findByText(REPORT_ID)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "sendLogsCopyId" })).toBeTruthy();
+  });
+
+  it("shows the open-logs fallback when sending fails", async () => {
+    mocks.invoke.mockImplementation(async (cmd: unknown, args?: unknown) => {
+      if (cmd === "cmd_get_log_dir") return LOG_DIR;
+      if (cmd === "cmd_open_log_dir") return undefined;
+      if (cmd === "cmd_send_diagnostics") {
+        const send =
+          args !== null &&
+          typeof args === "object" &&
+          "send" in args &&
+          (args as { send?: boolean }).send === true;
+        if (send) throw new Error("http_429");
+        return { configured: true, files: BUNDLE_FILES };
+      }
+      return undefined;
+    });
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "sendLogs" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "sendLogsSend" }),
+    );
+    expect(await screen.findByText("sendLogsFailedRateLimited")).toBeTruthy();
+    const fallback = screen.getAllByRole("button", { name: "openLogsFolder" });
+    expect(fallback.length).toBeGreaterThan(0);
+    fireEvent.click(fallback[fallback.length - 1]);
+    await waitFor(() => {
+      expect(mocks.invoke).toHaveBeenCalledWith("cmd_open_log_dir");
+    });
   });
 });

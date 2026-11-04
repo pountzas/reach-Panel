@@ -322,6 +322,37 @@ export const fr = {
 
   copyDiagnosticsFailed: "Impossible de copier le diagnostic",
 
+  sendLogs: "Envoyer les journaux",
+
+  sendLogsConsentTitle: "Envoyer ce diagnostic ?",
+
+  sendLogsPrivacyTyped: "Le texte saisi ou dicté n’est jamais consigné.",
+
+  sendLogsPrivacyUsername:
+    "Votre nom d’utilisateur Windows est retiré des chemins.",
+
+  sendLogsDestination:
+    "Envoyé vers l’hébergement de diagnostic ReachPanel dans l’UE (Supabase) et conservé 30 jours.",
+
+  sendLogsNoteLabel: "Note facultative",
+
+  sendLogsNoteHint:
+    "N’incluez pas de noms, d’adresses ni d’autres informations personnelles.",
+
+  sendLogsSend: "Envoyer",
+
+  sendLogsSending: "Envoi…",
+
+  sendLogsSuccessTitle: "Journaux envoyés",
+
+  sendLogsCopyId: "Copier",
+
+  sendLogsReportCopied: "Identifiant de rapport copié",
+
+  sendLogsFailed: "Impossible d’envoyer les journaux.",
+
+  sendLogsFailedRateLimited: "Trop de rapports. Réessayez plus tard.",
+
   saveProfile: "Enregistrer le profil",
 
   profileSaved: "Profil enregistré.",

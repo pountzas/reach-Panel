@@ -165,6 +165,7 @@ pub fn run() {
             commands::system::cmd_get_log_dir,
             commands::system::cmd_open_log_dir,
             commands::system::cmd_collect_diagnostics,
+            commands::system::cmd_send_diagnostics,
             commands::window::cmd_set_taskbar_position,
             commands::window::cmd_get_taskbar_position,
             commands::prediction::cmd_get_suggestions,

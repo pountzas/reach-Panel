@@ -177,7 +177,7 @@ For Rust builds on Windows, ensure the MSVC environment is active. If `link.exe`
 
 Companion app: [companion/README.md](companion/README.md).
 
-Logs, crash sidecars, and the privacy rule: [docs/logging.md](docs/logging.md). Settings → Tools & maintenance can open the logs folder or copy a diagnostics report.
+Logs, crash sidecars, and the privacy rule: [docs/logging.md](docs/logging.md). Settings → Tools & maintenance can open the logs folder or copy a diagnostics report. Release builds with `REACH_SUPABASE_URL` and `REACH_SUPABASE_ANON_KEY` also show **Send logs**.
 
 ### Branding / app icons
 

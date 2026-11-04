@@ -321,6 +321,37 @@ export const es = {
 
   copyDiagnosticsFailed: "No se pudo copiar el diagnóstico",
 
+  sendLogs: "Enviar registros",
+
+  sendLogsConsentTitle: "¿Enviar este diagnóstico?",
+
+  sendLogsPrivacyTyped: "El texto escrito o dictado nunca se registra.",
+
+  sendLogsPrivacyUsername:
+    "Tu nombre de usuario de Windows se quita de las rutas.",
+
+  sendLogsDestination:
+    "Se envía al alojamiento de diagnóstico de ReachPanel en la UE (Supabase) y se guarda 30 días.",
+
+  sendLogsNoteLabel: "Nota opcional",
+
+  sendLogsNoteHint:
+    "No incluyas nombres, direcciones ni otros datos personales.",
+
+  sendLogsSend: "Enviar",
+
+  sendLogsSending: "Enviando…",
+
+  sendLogsSuccessTitle: "Registros enviados",
+
+  sendLogsCopyId: "Copiar",
+
+  sendLogsReportCopied: "Id. de informe copiado",
+
+  sendLogsFailed: "No se pudieron enviar los registros.",
+
+  sendLogsFailedRateLimited: "Demasiados informes. Inténtalo más tarde.",
+
   saveProfile: "Guardar perfil",
 
   profileSaved: "Perfil guardado.",

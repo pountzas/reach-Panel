@@ -77,6 +77,9 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Optional. Empty when unset; unlike the signing key, missing values must not fail the release.
+          REACH_SUPABASE_URL: ${{ secrets.REACH_SUPABASE_URL }}
+          REACH_SUPABASE_ANON_KEY: ${{ secrets.REACH_SUPABASE_ANON_KEY }}
         run: npm run build:tauri:release
 
       - name: Resolve Windows updater artifacts
