@@ -324,6 +324,38 @@ export const el = {
 
   copyDiagnosticsFailed: "Δεν ήταν δυνατή η αντιγραφή των διαγνωστικών",
 
+  sendLogs: "Αποστολή αρχείων καταγραφής",
+
+  sendLogsConsentTitle: "Αποστολή αυτών των διαγνωστικών;",
+
+  sendLogsPrivacyTyped:
+    "Το πληκτρολογημένο και υπαγορευμένο κείμενο δεν καταγράφεται ποτέ.",
+
+  sendLogsPrivacyUsername:
+    "Το όνομα χρήστη των Windows αφαιρείται από τις διαδρομές.",
+
+  sendLogsDestination:
+    "Στέλνεται στο hosting διαγνωστικών του ReachPanel στην ΕΕ (Supabase) και φυλάσσεται 30 ημέρες.",
+
+  sendLogsNoteLabel: "Προαιρετική σημείωση",
+
+  sendLogsNoteHint:
+    "Μην συμπεριλάβετε ονόματα, διευθύνσεις ή άλλα προσωπικά στοιχεία.",
+
+  sendLogsSend: "Αποστολή",
+
+  sendLogsSending: "Αποστολή…",
+
+  sendLogsSuccessTitle: "Τα αρχεία καταγραφής στάλθηκαν",
+
+  sendLogsCopyId: "Αντιγραφή",
+
+  sendLogsReportCopied: "Το αναγνωριστικό αναφοράς αντιγράφηκε",
+
+  sendLogsFailed: "Δεν ήταν δυνατή η αποστολή των αρχείων καταγραφής.",
+
+  sendLogsFailedRateLimited: "Πάρα πολλές αναφορές. Δοκιμάστε ξανά αργότερα.",
+
   saveProfile: "Αποθήκευση προφίλ",
 
   profileSaved: "Το προφίλ αποθηκεύτηκε.",

@@ -56,3 +56,6 @@ companion/.expo/
 # Cargo target dir when builds land at repo root
 target/
 
+# Local build-time secrets (see .env.example). Never commit real keys.
+.env
+

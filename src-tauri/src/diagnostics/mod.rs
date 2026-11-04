@@ -2,6 +2,7 @@
 //! Breadcrumbs from #356 live in the sibling module.
 
 pub(crate) mod breadcrumbs;
+mod bundle;
 mod crash;
 mod report;
 pub(crate) mod session;
@@ -11,6 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use tauri::{App, AppHandle, Manager, RunEvent, Runtime, WindowEvent};
 
+pub use bundle::{build_diagnostics_bundle, BundleFile, BundleOptions, MAX_NOTE_CHARS};
 pub use crash::install_panic_hook;
 pub use report::{collect_diagnostics_report, DiagnosticsInfo};
 pub use session::{begin_session, logs_dir, mark_clean_exit};

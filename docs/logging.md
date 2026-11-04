@@ -10,7 +10,37 @@ ReachPanel writes rotating logs, a session marker, breadcrumbs, and panic sideca
 
 Typical expansion: `C:\Users\<you>\AppData\Local\com.nik.reach-panel\logs\`.
 
-Settings → Tools & maintenance has **Open logs folder** and **Copy diagnostics**. Copy diagnostics puts a report on the clipboard (version, Windows build, WebView2, log path, previous-session status, last 200 redacted log lines). It does not upload anything.
+Settings → Tools & maintenance has **Open logs folder**, **Copy diagnostics**, and (release builds with Supabase env) **Send logs**. Copy diagnostics puts a report on the clipboard (version, Windows build, WebView2, log path, previous-session status, last 200 redacted log lines). It does not upload anything.
+
+## Send logs
+
+The Send logs button is hidden unless the binary was built with both `REACH_SUPABASE_URL` and `REACH_SUPABASE_ANON_KEY`. Local and unsigned dev builds omit them. The webview never calls Supabase; Rust uploads the zip with `ureq`.
+
+Consent lists the files and sizes, then an optional note (max 1000 characters). Success shows an 8-character report id (Crockford base32). Failure (offline, 4xx/5xx, 429, timeout) leaves **Open logs folder** as the fallback.
+
+### Bundle
+
+The zip is capped at **5 MB** (oldest rotated `reach-panel.log.*` dropped first, then remaining logs truncated from the start). `diagnostics.txt` records anything dropped. Every text file is run through `redact()` again, and Windows user names are stripped from paths (`C:\Users\<name>\`, forward slashes, `%USERPROFILE%` forms, and the bare user name).
+
+| Zip entry | Source |
+| --- | --- |
+| `diagnostics.txt` | The copy-diagnostics report plus size-cap notes |
+| `reach-panel.log*` | Current and rotated logs that still fit |
+| `breadcrumbs.log` | Layout/window ring |
+| `crash-*.txt` | Newest 10 panic sidecars |
+| `session.json` | Current-session marker |
+| `note.txt` | Only if the user typed a note |
+
+Typed/dictated text is never logged. Keys are redacted. The install id is stored in app data and sent only as SHA-256 hex (`x-install-id`).
+
+### Fetch a report by id
+
+Nikos only, on a machine that has the service role in the project (never in this repo or GitHub):
+
+1. Supabase dashboard → Storage → `diagnostics` → `yyyy/mm/<report_id>.zip`
+2. Or CLI: `supabase storage download diagnostics/<yyyy>/<mm>/<report_id>.zip --experimental` (exact flags follow current CLI help) using the **service role on that machine**, never a committed key
+
+Reports are kept 30 days. See `supabase/README.md` and `docs/privacy-diagnostics.md`. The public privacy policy / Store text is published later via #297 and #176.
 
 ## Files
 

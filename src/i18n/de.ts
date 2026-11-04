@@ -322,6 +322,37 @@ export const de = {
 
   copyDiagnosticsFailed: "Diagnose konnte nicht kopiert werden",
 
+  sendLogs: "Protokolle senden",
+
+  sendLogsConsentTitle: "Diese Diagnose senden?",
+
+  sendLogsPrivacyTyped: "Getippter und diktierter Text wird nie protokolliert.",
+
+  sendLogsPrivacyUsername:
+    "Dein Windows-Benutzername wird aus Pfaden entfernt.",
+
+  sendLogsDestination:
+    "Wird an das ReachPanel-Diagnosehosting in der EU (Supabase) gesendet und 30 Tage aufbewahrt.",
+
+  sendLogsNoteLabel: "Optionale Notiz",
+
+  sendLogsNoteHint:
+    "Keine Namen, Adressen oder andere persönliche Angaben einfügen.",
+
+  sendLogsSend: "Senden",
+
+  sendLogsSending: "Senden…",
+
+  sendLogsSuccessTitle: "Protokolle gesendet",
+
+  sendLogsCopyId: "Kopieren",
+
+  sendLogsReportCopied: "Berichts-ID kopiert",
+
+  sendLogsFailed: "Protokolle konnten nicht gesendet werden.",
+
+  sendLogsFailedRateLimited: "Zu viele Berichte. Später erneut versuchen.",
+
   saveProfile: "Profil speichern",
 
   profileSaved: "Profil gespeichert.",
