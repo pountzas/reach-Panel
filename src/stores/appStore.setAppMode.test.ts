@@ -206,6 +206,23 @@ describe("setAppMode", () => {
     expect(windowFns.minimize).not.toHaveBeenCalled();
     expect(windowFns.unminimize).not.toHaveBeenCalled();
   });
+
+  it("setAppMode('normal') after expanded companion session restores expanded layout", async () => {
+    useAppStore.setState({
+      settings: { ...DEFAULT_SETTINGS, collapsed: false },
+      settingsEpoch: 1,
+      profileHydrated: true,
+      isAnimatingWindow: false,
+    });
+    await useAppStore.getState().applyCompanionSessionPhase("active");
+    await useAppStore.getState().setAppMode("normal");
+    const state = useAppStore.getState();
+    expect(state.settings.collapsed).toBe(false);
+    expect(state.companionSessionLive).toBe(false);
+    expect(state.companionModeActive).toBe(false);
+    expect(windowFns.minimize).not.toHaveBeenCalled();
+    expect(windowFns.unminimize).not.toHaveBeenCalled();
+  });
 });
 
 describe("input preview clear paths", () => {

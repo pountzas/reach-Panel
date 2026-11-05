@@ -15,7 +15,10 @@ import {
   resolveSectionStack,
   ensureSectionExpanded,
 } from "../../lib/sectionStack";
-import { shouldStopCompanionBridgeOnHostMode } from "../../lib/companionSession";
+import {
+  shouldRestoreCompanionExpanded,
+  shouldStopCompanionBridgeOnHostMode,
+} from "../../lib/companionSession";
 import {
   captureWindowHeightRatioBeforeTeaching,
   heightRatioAfterLeavingTeaching,
@@ -23,7 +26,11 @@ import {
   APP_MODE_REQUEST_EVENT,
 } from "../../lib/appModeLayout";
 import type { AppModeRequest } from "../../lib/appModeLayout";
-import { popRestoreEntry, pushRestoreEntry } from "../lib/restoreStack";
+import {
+  popRestoreEntry,
+  pushRestoreEntry,
+  type RestorePatch,
+} from "../lib/restoreStack";
 import { clear as clearInputPreviewFrames } from "../../lib/inputPreviewFrames";
 import { logInfo } from "../../lib/log";
 
@@ -146,6 +153,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
       return;
     }
 
+    let companionRestore: RestorePatch | null = null;
     if (mode !== "companion" && !skipCompanionBridgeStop) {
       const { companionBridgeArmed, companionModeActive } = get();
       if (
@@ -154,7 +162,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
           companionModeActive,
         )
       ) {
-        get().popRestore("companion");
+        companionRestore = get().popRestore("companion");
         set({
           companionBridgeArmed: false,
           companionModeActive: false,
@@ -209,7 +217,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
           await syncInputPreviewEnabled(get);
         }
         await emitTeachingSession(get);
-        return;
+        break;
       }
       case "mic": {
         set({
@@ -242,7 +250,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
           await syncInputPreviewEnabled(get);
         }
         await emitTeachingSession(get);
-        return;
+        break;
       }
       case "focus": {
         set({ companionModeActive: false });
@@ -271,12 +279,12 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
           await syncInputPreviewEnabled(get);
         }
         await emitTeachingSession(get);
-        return;
+        break;
       }
       case "teaching": {
         set({ companionModeActive: false });
         if (inTeaching) {
-          return;
+          break;
         }
         const previousMode: "normal" | "focus" | "mic" =
           settings.focusModeOverride === true
@@ -310,12 +318,16 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
         });
         await syncInputPreviewEnabled(get);
         await emitTeachingSession(get);
-        return;
+        break;
       }
       default: {
         const _exhaustive: never = mode;
         return _exhaustive;
       }
+    }
+
+    if (shouldRestoreCompanionExpanded(companionRestore)) {
+      await get().setCollapsed(false);
     }
   },
 });

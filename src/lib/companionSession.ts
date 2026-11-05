@@ -89,6 +89,13 @@ export function shouldIgnoreCompanionIdle(
   return !companionModeActive;
 }
 
+/** Expand only when the restore frame recorded an expanded layout. */
+export function shouldRestoreCompanionExpanded(patch: {
+  collapsed?: boolean;
+} | null): boolean {
+  return patch?.collapsed === false;
+}
+
 export function shouldStopCompanionBridgeOnHostMode(
   companionBridgeArmed: boolean,
   companionModeActive: boolean,

@@ -3,6 +3,7 @@ import type { AppStore, CompanionSlice } from "../types";
 import {
   mapCompanionSessionPhase,
   shouldIgnoreCompanionIdle,
+  shouldRestoreCompanionExpanded,
 } from "../../lib/companionSession";
 import {
   captureModeBeforeCompanion,
@@ -68,7 +69,7 @@ export const createCompanionSlice: StateCreator<
       companionBridgeArmed: true,
     });
     await get().setAppMode(mapped.restore, { skipCompanionBridgeStop: true });
-    if (patch?.collapsed === false) {
+    if (shouldRestoreCompanionExpanded(patch)) {
       await get().setCollapsed(false);
     }
   },

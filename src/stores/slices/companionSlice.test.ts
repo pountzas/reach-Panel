@@ -107,4 +107,38 @@ describe("applyCompanionSessionPhase FAB", () => {
     expect(useAppStore.getState().settings.collapsed).toBe(true);
     expect(windowFns.minimize).not.toHaveBeenCalled();
   });
+
+  it("setAppMode('normal') after expanded session restores expanded layout", async () => {
+    await useAppStore.getState().applyCompanionSessionPhase("active");
+    await useAppStore.getState().setAppMode("normal");
+    const state = useAppStore.getState();
+    expect(state.settings.collapsed).toBe(false);
+    expect(state.companionSessionLive).toBe(false);
+    expect(state.companionModeActive).toBe(false);
+    expect(state.companionBridgeArmed).toBe(false);
+    expect(windowFns.minimize).not.toHaveBeenCalled();
+    expect(windowFns.unminimize).not.toHaveBeenCalled();
+  });
+
+  it("stopCompanionByCaregiver restores expanded after an expanded session", async () => {
+    await useAppStore.getState().applyCompanionSessionPhase("active");
+    await useAppStore.getState().stopCompanionByCaregiver();
+    const state = useAppStore.getState();
+    expect(state.settings.collapsed).toBe(false);
+    expect(state.companionSessionLive).toBe(false);
+    expect(state.companionModeActive).toBe(false);
+    expect(windowFns.minimize).not.toHaveBeenCalled();
+    expect(windowFns.unminimize).not.toHaveBeenCalled();
+  });
+
+  it("setAppMode('normal') after already-collapsed session stays collapsed", async () => {
+    useAppStore.setState({
+      settings: { ...useAppStore.getState().settings, collapsed: true },
+    });
+    await useAppStore.getState().applyCompanionSessionPhase("active");
+    await useAppStore.getState().setAppMode("normal");
+    expect(useAppStore.getState().settings.collapsed).toBe(true);
+    expect(windowFns.minimize).not.toHaveBeenCalled();
+    expect(windowFns.unminimize).not.toHaveBeenCalled();
+  });
 });
