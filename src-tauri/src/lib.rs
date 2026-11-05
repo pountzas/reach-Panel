@@ -34,7 +34,7 @@ pub fn run() {
     crate::diagnostics::install_panic_hook();
     tauri::Builder::default()
         .on_page_load(|webview, payload| {
-            window::icon_sync::on_app_page_load(&webview, &payload);
+            window::icon_sync::on_app_page_load(webview, payload);
             if let Some(window) = webview.app_handle().get_webview_window(webview.label()) {
                 crate::diagnostics::register_process_failed(&window);
             }

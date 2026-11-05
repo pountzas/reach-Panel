@@ -186,11 +186,9 @@ pub fn push_input_preview_cleared(bridge: &CompanionBridge) {
 
 /// Best-effort LAN IPv4 for QR payload (UDP connect trick; no packets sent).
 fn detect_lan_ipv4() -> Option<String> {
-    if let Ok(ip) = local_ip_address::local_ip() {
-        if let std::net::IpAddr::V4(v4) = ip {
-            if !v4.is_loopback() {
-                return Some(v4.to_string());
-            }
+    if let Ok(std::net::IpAddr::V4(v4)) = local_ip_address::local_ip() {
+        if !v4.is_loopback() {
+            return Some(v4.to_string());
         }
     }
     let socket = UdpSocket::bind("0.0.0.0:0").ok()?;

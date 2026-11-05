@@ -30,6 +30,7 @@ fn layout_rect(layout: WindowLayout) -> String {
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn apply_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,
@@ -111,6 +112,7 @@ pub(crate) async fn set_window_layout(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn animate_window_layout(
     app: &tauri::AppHandle,
     monitor_id: u32,

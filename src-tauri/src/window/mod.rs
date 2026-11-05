@@ -193,6 +193,7 @@ pub fn interpolate_layout(from: WindowLayout, to: WindowLayout, progress: f32) -
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn compute_window_layout(
     monitors: &[MonitorInfo],
     monitor_id: u32,

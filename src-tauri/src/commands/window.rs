@@ -34,6 +34,7 @@ pub async fn cmd_get_main_window_monitor(app: tauri::AppHandle) -> Result<u32, S
     ))
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn cmd_apply_window_layout(
     app: tauri::AppHandle,
@@ -62,6 +63,7 @@ pub async fn cmd_apply_window_layout(
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn cmd_animate_window_layout(
     app: tauri::AppHandle,

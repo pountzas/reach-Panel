@@ -210,8 +210,8 @@ pub(super) fn build_mm_key_map(
     for key in unassigned_keys.clone() {
         if key.starts_with("Default_Monitor") {
             if let Some(primary) = monitors.iter().find(|m| m.is_primary) {
-                if !map.contains_key(&primary.id) {
-                    map.insert(primary.id, key.clone());
+                if let std::collections::hash_map::Entry::Vacant(entry) = map.entry(primary.id) {
+                    entry.insert(key.clone());
                     unassigned_keys.retain(|k| k != &key);
                 }
             }
@@ -257,7 +257,7 @@ fn resolve_monitor_id(monitor_id: Option<u32>) -> u32 {
         .unwrap_or(0)
 }
 
-fn monitor_frame<'a>(frames: &'a [MonitorFrame], id: u32) -> Option<&'a MonitorFrame> {
+fn monitor_frame(frames: &[MonitorFrame], id: u32) -> Option<&MonitorFrame> {
     frames.iter().find(|m| m.id == id)
 }
 
