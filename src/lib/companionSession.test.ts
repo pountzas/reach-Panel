@@ -3,6 +3,8 @@ import {
   mapCompanionSessionPhase,
   planCompanionLeave,
   shouldIgnoreCompanionIdle,
+  shouldRestoreCompanionExpanded,
+  shouldRestoreCompanionNonFocusLayout,
   shouldStopCompanionBridgeOnHostMode,
   isCompanionTabletEnabled,
 } from "./companionSession";
@@ -68,6 +70,54 @@ describe("planCompanionLeave", () => {
       keepArmed: false,
       restoreHostMode: false,
     });
+  });
+});
+
+describe("shouldRestoreCompanionNonFocusLayout", () => {
+  it("restores expanded Normal/Teaching when not in focus mode", () => {
+    expect(
+      shouldRestoreCompanionNonFocusLayout(
+        { mode: "normal", collapsed: false },
+        false,
+      ),
+    ).toBe(true);
+    expect(
+      shouldRestoreCompanionNonFocusLayout(
+        { mode: "teaching", collapsed: false },
+        false,
+      ),
+    ).toBe(true);
+  });
+
+  it("does not restore via setCollapsed for Focus or Mic", () => {
+    expect(
+      shouldRestoreCompanionNonFocusLayout(
+        { mode: "focus", collapsed: false },
+        false,
+      ),
+    ).toBe(false);
+    expect(
+      shouldRestoreCompanionNonFocusLayout(
+        { mode: "mic", collapsed: false },
+        false,
+      ),
+    ).toBe(false);
+    expect(
+      shouldRestoreCompanionNonFocusLayout(
+        { mode: "normal", collapsed: false },
+        true,
+      ),
+    ).toBe(false);
+  });
+
+  it("still no-ops when the session started already collapsed", () => {
+    expect(shouldRestoreCompanionExpanded({ collapsed: true })).toBe(false);
+    expect(
+      shouldRestoreCompanionNonFocusLayout(
+        { mode: "normal", collapsed: true },
+        false,
+      ),
+    ).toBe(false);
   });
 });
 

@@ -16,7 +16,7 @@ import {
   ensureSectionExpanded,
 } from "../../lib/sectionStack";
 import {
-  shouldRestoreCompanionExpanded,
+  shouldRestoreCompanionNonFocusLayout,
   shouldStopCompanionBridgeOnHostMode,
 } from "../../lib/companionSession";
 import {
@@ -183,7 +183,11 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
         set({ companionBridgeArmed: true });
         const afterStart = get();
         if (afterStart.companionModeActive || afterStart.companionSessionLive) {
-          await get().setCollapsed(true);
+          if (get().focusModeActive) {
+            await get().collapseFocusModeKeyboard();
+          } else {
+            await get().setCollapsed(true);
+          }
         }
         return;
       }
@@ -326,7 +330,12 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
       }
     }
 
-    if (shouldRestoreCompanionExpanded(companionRestore)) {
+    if (
+      shouldRestoreCompanionNonFocusLayout(
+        companionRestore,
+        get().focusModeActive,
+      )
+    ) {
       await get().setCollapsed(false);
     }
   },

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
-import { DEFAULT_SETTINGS } from "../../lib/types";
+import { DEFAULT_SETTINGS, type MonitorInfo } from "../../lib/types";
 
 const windowFns = vi.hoisted(() => ({
   minimize: vi.fn(async () => {}),
@@ -47,6 +47,25 @@ import { useAppStore } from "../appStore";
 import { peekRestore } from "../lib/restoreStack";
 
 const invokeMock = vi.mocked(invoke);
+
+const primaryMonitor: MonitorInfo = {
+  id: 0,
+  name: "A",
+  x: 0,
+  y: 0,
+  width: 1920,
+  height: 1080,
+  is_primary: true,
+};
+
+function lastLayoutArgs(): Record<string, unknown> | undefined {
+  const calls = invokeMock.mock.calls.filter(
+    ([cmd]) =>
+      cmd === "cmd_apply_window_layout" || cmd === "cmd_animate_window_layout",
+  );
+  const last = calls[calls.length - 1];
+  return last?.[1] as Record<string, unknown> | undefined;
+}
 
 describe("applyCompanionSessionPhase FAB", () => {
   beforeEach(() => {
@@ -140,5 +159,70 @@ describe("applyCompanionSessionPhase FAB", () => {
     expect(useAppStore.getState().settings.collapsed).toBe(true);
     expect(windowFns.minimize).not.toHaveBeenCalled();
     expect(windowFns.unminimize).not.toHaveBeenCalled();
+  });
+
+  it("Focus → Companion active → idle keeps Focus FAB flags", async () => {
+    useAppStore.setState({
+      monitors: [primaryMonitor],
+      settings: {
+        ...useAppStore.getState().settings,
+        collapsed: false,
+        focusModeOverride: true,
+        micMode: false,
+      },
+      focusModeActive: true,
+      focusModeKeyboardVisible: true,
+    });
+    await useAppStore.getState().applyCompanionSessionPhase("active");
+    let state = useAppStore.getState();
+    expect(state.settings.collapsed).toBe(false);
+    expect(state.focusModeActive).toBe(true);
+    expect(state.focusModeKeyboardVisible).toBe(false);
+    expect(peekRestore(state.restoreStack, "companion")).toEqual({
+      mode: "focus",
+      collapsed: false,
+    });
+    expect(lastLayoutArgs()).toEqual(
+      expect.objectContaining({ focusMode: true, collapsed: true }),
+    );
+
+    await useAppStore.getState().applyCompanionSessionPhase("idle");
+    state = useAppStore.getState();
+    expect(state.settings.collapsed).toBe(false);
+    expect(state.focusModeActive).toBe(true);
+    expect(state.settings.focusModeOverride).toBe(true);
+    expect(state.settings.micMode).toBe(false);
+    expect(lastLayoutArgs()).toEqual(
+      expect.objectContaining({ focusMode: true }),
+    );
+    expect(windowFns.minimize).not.toHaveBeenCalled();
+  });
+
+  it("Mic → Companion → setAppMode('mic') does not expand over Focus FAB", async () => {
+    useAppStore.setState({
+      monitors: [primaryMonitor],
+      settings: {
+        ...useAppStore.getState().settings,
+        collapsed: false,
+        focusModeOverride: true,
+        micMode: true,
+      },
+      focusModeActive: true,
+      focusModeKeyboardVisible: true,
+    });
+    await useAppStore.getState().applyCompanionSessionPhase("active");
+    expect(useAppStore.getState().settings.collapsed).toBe(false);
+    expect(useAppStore.getState().focusModeKeyboardVisible).toBe(false);
+
+    await useAppStore.getState().setAppMode("mic");
+    const state = useAppStore.getState();
+    expect(state.settings.collapsed).toBe(false);
+    expect(state.focusModeActive).toBe(true);
+    expect(state.settings.micMode).toBe(true);
+    expect(state.settings.focusModeOverride).toBe(true);
+    expect(lastLayoutArgs()).toEqual(
+      expect.objectContaining({ focusMode: true }),
+    );
+    expect(windowFns.minimize).not.toHaveBeenCalled();
   });
 });

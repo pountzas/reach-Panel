@@ -3,7 +3,7 @@ import type { AppStore, CompanionSlice } from "../types";
 import {
   mapCompanionSessionPhase,
   shouldIgnoreCompanionIdle,
-  shouldRestoreCompanionExpanded,
+  shouldRestoreCompanionNonFocusLayout,
 } from "../../lib/companionSession";
 import {
   captureModeBeforeCompanion,
@@ -56,7 +56,11 @@ export const createCompanionSlice: StateCreator<
         companionModeActive: true,
         companionBridgeArmed: true,
       });
-      await get().setCollapsed(true);
+      if (get().focusModeActive) {
+        await get().collapseFocusModeKeyboard();
+      } else {
+        await get().setCollapsed(true);
+      }
       return;
     }
     if (shouldIgnoreCompanionIdle(get().companionModeActive)) {
@@ -69,7 +73,7 @@ export const createCompanionSlice: StateCreator<
       companionBridgeArmed: true,
     });
     await get().setAppMode(mapped.restore, { skipCompanionBridgeStop: true });
-    if (shouldRestoreCompanionExpanded(patch)) {
+    if (shouldRestoreCompanionNonFocusLayout(patch, get().focusModeActive)) {
       await get().setCollapsed(false);
     }
   },
