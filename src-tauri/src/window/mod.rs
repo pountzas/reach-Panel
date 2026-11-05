@@ -814,6 +814,7 @@ pub fn configure_main_window<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>
             log::error!("Failed to exclude main window from capture: {e}");
         }
     }
+    stay_visible::install(window);
 }
 
 pub(crate) mod icon_sync;
