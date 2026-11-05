@@ -175,7 +175,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
         set({ companionBridgeArmed: true });
         const afterStart = get();
         if (afterStart.companionModeActive || afterStart.companionSessionLive) {
-          await WebviewWindow.getCurrent().minimize();
+          await get().setCollapsed(true);
         }
         return;
       }

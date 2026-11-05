@@ -10,6 +10,7 @@ export type RestorePatch = {
   mode?: HostAppMode;
   windowHeightRatio?: WindowHeightRatioBeforeTeaching;
   mouseVisible?: boolean;
+  collapsed?: boolean;
 };
 
 export type RestoreStackEntry = {

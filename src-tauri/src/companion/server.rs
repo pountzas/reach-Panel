@@ -360,25 +360,16 @@ where
         .map_err(|e| format!("ws send: {e}"))
 }
 
+pub(crate) fn session_event_payload(phase: &'static str) -> serde_json::Value {
+    serde_json::json!({ "phase": phase })
+}
+
 pub fn on_session_active(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.minimize();
-    }
-    let _ = app.emit(
-        "companion-session",
-        serde_json::json!({ "phase": "active", "minimize": true }),
-    );
+    let _ = app.emit("companion-session", session_event_payload("active"));
 }
 
 pub fn on_session_inactive(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.unminimize();
-        let _ = window.show();
-    }
-    let _ = app.emit(
-        "companion-session",
-        serde_json::json!({ "phase": "idle", "minimize": false }),
-    );
+    let _ = app.emit("companion-session", session_event_payload("idle"));
 }
 
 pub fn emit_ui_state(
@@ -399,4 +390,33 @@ pub fn emit_ui_state(
         paired_device_count: auth.paired_count(),
     };
     let _ = app.emit("companion-state", &state);
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn session_payload_is_phase_only() {
+        assert_eq!(
+            super::session_event_payload("active"),
+            serde_json::json!({ "phase": "active" })
+        );
+        assert_eq!(
+            super::session_event_payload("idle"),
+            serde_json::json!({ "phase": "idle" })
+        );
+    }
+
+    #[test]
+    fn server_source_does_not_minimize_the_window() {
+        let src = include_str!("server.rs");
+        let production = src.split("#[cfg(test)]").next().unwrap();
+        assert!(
+            !production.contains(".minimize("),
+            "companion server must not call window.minimize"
+        );
+        assert!(
+            !production.contains(".unminimize("),
+            "companion server must not call window.unminimize"
+        );
+    }
 }

@@ -42,26 +42,35 @@ export const createCompanionSlice: StateCreator<
           micMode: current.settings.micMode === true,
         }),
       );
-      if (captured != null) {
-        get().pushRestore("companion", { mode: captured }, { replace: true });
-      }
+      get().pushRestore(
+        "companion",
+        {
+          ...(captured != null ? { mode: captured } : {}),
+          collapsed: current.settings.collapsed,
+        },
+        { replace: true },
+      );
       set({
         companionSessionLive: true,
         companionModeActive: true,
         companionBridgeArmed: true,
       });
+      await get().setCollapsed(true);
       return;
     }
     if (shouldIgnoreCompanionIdle(get().companionModeActive)) {
       return;
     }
-    get().popRestore("companion");
+    const patch = get().popRestore("companion");
     set({
       companionSessionLive: false,
       companionModeActive: false,
       companionBridgeArmed: true,
     });
     await get().setAppMode(mapped.restore, { skipCompanionBridgeStop: true });
+    if (patch?.collapsed === false) {
+      await get().setCollapsed(false);
+    }
   },
   stopCompanionByCaregiver: async () => {
     const current = get();
