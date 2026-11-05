@@ -21,13 +21,24 @@ struct ActiveSession {
     language: String,
 }
 
-#[derive(Default)]
 struct DictationRuntime {
     session: Option<ActiveSession>,
     app_handle: Option<AppHandle>,
     starting: bool,
     stopping: bool,
     generation: u64,
+}
+
+impl Default for DictationRuntime {
+    fn default() -> Self {
+        Self {
+            session: None,
+            app_handle: None,
+            starting: false,
+            stopping: false,
+            generation: 0,
+        }
+    }
 }
 
 static RUNTIME: OnceLock<Mutex<DictationRuntime>> = OnceLock::new();

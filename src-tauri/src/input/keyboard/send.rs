@@ -371,7 +371,7 @@ mod tests {
         let calls = sender.calls();
         assert_eq!(calls.len(), 3);
         assert_eq!(calls[0], (VK_CONTROL.0, false));
-        assert!(!calls[1].1); // main key down
+        assert_eq!(calls[1].1, false); // main key down
         assert_eq!(calls[2], (VK_CONTROL.0, true)); // always released
     }
 
@@ -385,7 +385,7 @@ mod tests {
         let calls = sender.calls();
         assert_eq!(calls.len(), 3);
         assert_eq!(calls[0], (VK_SHIFT.0, false));
-        assert!(!calls[1].1);
+        assert_eq!(calls[1].1, false);
         assert_eq!(calls[2], (VK_SHIFT.0, true));
     }
 }

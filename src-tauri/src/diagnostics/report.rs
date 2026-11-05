@@ -1,6 +1,6 @@
 //! Text diagnostics report assembled from the logs directory.
 
-use super::session::{last_breadcrumb, MarkerRead, LOG_FILE};
+use super::session::{self, last_breadcrumb, MarkerRead, LOG_FILE};
 use crate::logging::redact;
 use std::fs;
 use std::path::Path;
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn reports_previous_session_from_info_not_current_marker() {
         let dir = temp_logs();
-        crate::diagnostics::session::begin_session(&dir, "0.17.5", 1);
+        session::begin_session(&dir, "0.17.5", 1);
         let report = collect_diagnostics_report(&dir, &sample_info());
         assert!(
             report.contains("previous_session: clean"),

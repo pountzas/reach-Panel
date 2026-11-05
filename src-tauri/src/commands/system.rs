@@ -24,7 +24,10 @@ const ALLOWED_MS_SETTINGS_PAGES: &[&str] = &[
 #[tauri::command]
 pub fn cmd_open_windows_settings(app: AppHandle, uri: String) -> Result<(), String> {
     let trimmed = uri.trim();
-    if !ALLOWED_MS_SETTINGS_PAGES.contains(&trimmed) {
+    if !ALLOWED_MS_SETTINGS_PAGES
+        .iter()
+        .any(|allowed| *allowed == trimmed)
+    {
         return Err("Windows Settings page is not allowed".to_string());
     }
     app.opener()

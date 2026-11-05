@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use chrono::Utc;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 pub struct Database {
@@ -72,7 +72,7 @@ impl Database {
         Ok(db)
     }
 
-    fn resolve_db_path(app_data_dir: &Path) -> Result<PathBuf> {
+    fn resolve_db_path(app_data_dir: &PathBuf) -> Result<PathBuf> {
         const DB_FILE: &str = "reach-panel.db";
         const LEGACY_DB_FILE: &str = "accessibility-keyboard.db";
 

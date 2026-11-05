@@ -45,7 +45,6 @@ impl BreadcrumbRing {
         text
     }
 
-    #[allow(dead_code)]
     pub fn flush_to(&self, path: &Path) -> std::io::Result<()> {
         write_atomic(path, &self.render())
     }
