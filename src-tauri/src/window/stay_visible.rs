@@ -157,13 +157,24 @@ pub(crate) fn install_hooks_for_hwnd(hwnd: HWND) -> bool {
     true
 }
 
+/// Tauri Resized/`is_minimized` backstop is independent of WinEvent hooks.
+pub(crate) fn should_register_tauri_backstop(
+    hwnd_available: bool,
+    _hooks_installed: bool,
+) -> bool {
+    hwnd_available
+}
+
 pub fn install<R: tauri::Runtime>(window: &WebviewWindow<R>) {
-    let Ok(raw) = window.hwnd() else {
-        log::error!("stay_visible: main hwnd unavailable");
-        return;
+    let hwnd = match window.hwnd() {
+        Ok(raw) => Some(HWND(raw.0)),
+        Err(_) => {
+            log::error!("stay_visible: main hwnd unavailable");
+            None
+        }
     };
-    let hwnd = HWND(raw.0);
-    if !install_hooks_for_hwnd(hwnd) {
+    let hooks_installed = hwnd.map(install_hooks_for_hwnd).unwrap_or(false);
+    if !should_register_tauri_backstop(hwnd.is_some(), hooks_installed) {
         return;
     }
 
@@ -183,7 +194,19 @@ pub fn install<R: tauri::Runtime>(window: &WebviewWindow<R>) {
 
 #[cfg(test)]
 mod tests {
-    use super::{should_restore, VisibilityEvent};
+    use super::{should_register_tauri_backstop, should_restore, VisibilityEvent};
+
+    #[test]
+    fn registers_tauri_backstop_when_hwnd_available_even_if_hooks_failed() {
+        assert!(should_register_tauri_backstop(true, true));
+        assert!(should_register_tauri_backstop(true, false));
+    }
+
+    #[test]
+    fn skips_tauri_backstop_when_hwnd_unavailable() {
+        assert!(!should_register_tauri_backstop(false, true));
+        assert!(!should_register_tauri_backstop(false, false));
+    }
 
     #[test]
     fn main_window_config_disables_minimize_and_taskbar() {
