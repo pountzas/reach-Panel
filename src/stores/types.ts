@@ -268,6 +268,7 @@ export type WindowSlice = {
   setShowSettings: (show: boolean) => void;
   syncWindowFocusable: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
+  setCollapsed: (collapsed: boolean) => Promise<void>;
   setPendingUpdate: (update: Update | null) => void;
   checkForUpdates: () => Promise<void>;
 };
