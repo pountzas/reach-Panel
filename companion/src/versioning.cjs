@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "0.5.2";
+const VERSION = "0.5.3";
 
 function androidVersionCode(version) {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
