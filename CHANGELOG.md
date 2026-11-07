@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.18.0 (2026-11-07)
+
+## What's Changed
+* feat: persistent rotating logs by @pountzas in https://github.com/pountzas/reach-Panel/pull/360
+* feat: layout and mode breadcrumbs by @pountzas in https://github.com/pountzas/reach-Panel/pull/363
+* feat: panic hook and unclean-exit capture by @pountzas in https://github.com/pountzas/reach-Panel/pull/362
+* feat: log frontend errors and unhandled rejections by @pountzas in https://github.com/pountzas/reach-Panel/pull/361
+* feat: open logs folder and copy diagnostics by @pountzas in https://github.com/pountzas/reach-Panel/pull/364
+* feat: send scrubbed diagnostics to Supabase by @pountzas in https://github.com/pountzas/reach-Panel/pull/365
+* feat: persistent logs and crash diagnostics by @pountzas in https://github.com/pountzas/reach-Panel/pull/366
+* chore: remove the unused background image setting by @pountzas in https://github.com/pountzas/reach-Panel/pull/369
+* chore(deps): bump the cargo-minor-and-patch group across 1 directory with 6 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/368
+* fix: keep the panel window from being minimized by @pountzas in https://github.com/pountzas/reach-Panel/pull/371
+* Release dev to main by @pountzas in https://github.com/pountzas/reach-Panel/pull/373
+* fix(deps): resolve Dependabot security alerts by @pountzas in https://github.com/pountzas/reach-Panel/pull/372
+* fix: read capped zip body after rate limits in submit-diagnostics by @pountzas in https://github.com/pountzas/reach-Panel/pull/378
+* ci: run Supabase Edge Function Deno tests in CI by @pountzas in https://github.com/pountzas/reach-Panel/pull/379
+* fix: ship Send Logs body read and Deno CI by @pountzas in https://github.com/pountzas/reach-Panel/pull/380
+* chore: sync leftover dev merge onto main by @pountzas in https://github.com/pountzas/reach-Panel/pull/382
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.17.5...v0.18.0
+
 ## 0.17.5 (2026-10-24)
 
 ## What's Changed
