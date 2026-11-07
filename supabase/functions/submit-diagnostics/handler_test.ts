@@ -167,7 +167,7 @@ Deno.test("does not read the body before the install-id check", async () => {
         controller.enqueue(ZIP_BYTES);
       },
     },
-    new CountQueuingStrategy({ highWaterMark: 0 }),
+    { highWaterMark: 0 },
   );
   const response = await handleSubmitDiagnostics(
     new Request("https://example.test/functions/v1/submit-diagnostics", {
@@ -199,7 +199,7 @@ Deno.test("does not read the body when rate limited", async () => {
         controller.enqueue(ZIP_BYTES);
       },
     },
-    new CountQueuingStrategy({ highWaterMark: 0 }),
+    { highWaterMark: 0 },
   );
   const response = await handleSubmitDiagnostics(
     new Request("https://example.test/functions/v1/submit-diagnostics", {
