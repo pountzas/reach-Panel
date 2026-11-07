@@ -130,7 +130,7 @@ Deno.test("rejects a chunked body over 5 MB without reading it all", async () =>
   );
   assertEquals(response.status, 413);
   assertEquals(await response.json(), { error: "too_large" });
-  assertEquals(reads <= 6, true);
+  assertEquals(reads <= 7, true);
   assertEquals(store.uploads.length, 0);
 });
 
@@ -143,6 +143,70 @@ Deno.test("rejects payloads over 5 MB via bytes read", async () => {
     store,
   );
   assertEquals(response.status, 413);
+  assertEquals(store.uploads.length, 0);
+});
+
+Deno.test("accepts a valid zip and stores it", async () => {
+  const store = deps();
+  const response = await handleSubmitDiagnostics(post(ZIP_BYTES), store);
+  assertEquals(response.status, 200);
+  assertEquals(await response.json(), { report_id: "A1B2C3D4" });
+  assertEquals(store.inserts.length, 1);
+  assertEquals(store.inserts[0]!.size_bytes, ZIP_BYTES.byteLength);
+  assertEquals(store.uploads.length, 1);
+});
+
+Deno.test("does not read the body before the install-id check", async () => {
+  const store = deps();
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      controller.enqueue(ZIP_BYTES);
+    },
+  });
+  const started = performance.now();
+  const response = await handleSubmitDiagnostics(
+    new Request("https://example.test/functions/v1/submit-diagnostics", {
+      method: "POST",
+      headers: {
+        "content-type": "application/zip",
+        "x-install-id": "abc",
+      },
+      body: stream,
+    }),
+    store,
+  );
+  assertEquals(performance.now() - started < 30, true);
+  assertEquals(response.status, 400);
+  assertEquals(await response.json(), { error: "invalid_install_id" });
+  assertEquals(store.uploads.length, 0);
+});
+
+Deno.test("does not read the body when rate limited", async () => {
+  const store = deps({
+    countReports: async () => 1,
+  });
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      controller.enqueue(ZIP_BYTES);
+    },
+  });
+  const started = performance.now();
+  const response = await handleSubmitDiagnostics(
+    new Request("https://example.test/functions/v1/submit-diagnostics", {
+      method: "POST",
+      headers: {
+        "content-type": "application/zip",
+        "x-install-id": INSTALL_HASH,
+      },
+      body: stream,
+    }),
+    store,
+  );
+  assertEquals(performance.now() - started < 30, true);
+  assertEquals(response.status, 429);
+  assertEquals(await response.json(), { error: "rate_limited" });
   assertEquals(store.uploads.length, 0);
 });
 

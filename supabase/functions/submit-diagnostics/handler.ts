@@ -121,6 +121,11 @@ export async function handleSubmitDiagnostics(
     return jsonError(429, "rate_limited");
   }
 
+  const body = await readCapped(req, MAX_ZIP_BYTES);
+  if (body === null) {
+    return jsonError(413, "too_large");
+  }
+
   if (!hasZipMagic(body)) {
     return jsonError(400, "invalid_zip");
   }
