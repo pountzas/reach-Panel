@@ -24,9 +24,18 @@ vi.mock("@tauri-apps/api/event", () => ({
   emit: vi.fn(() => Promise.resolve()),
 }));
 
+const windowFns = vi.hoisted(() => ({
+  minimize: vi.fn(async () => {}),
+  unminimize: vi.fn(async () => {}),
+}));
+
 vi.mock("@tauri-apps/api/webviewWindow", () => ({
   WebviewWindow: {
-    getCurrent: () => ({ label: "main" }),
+    getCurrent: () => ({
+      label: "main",
+      minimize: windowFns.minimize,
+      unminimize: windowFns.unminimize,
+    }),
   },
 }));
 
@@ -75,6 +84,8 @@ function listenHandler(
 describe("setAppMode", () => {
   beforeEach(() => {
     invokeMock.mockClear();
+    windowFns.minimize.mockClear();
+    windowFns.unminimize.mockClear();
     clearInputPreviewFrames();
     useAppStore.setState({
       settings: {
@@ -177,6 +188,40 @@ describe("setAppMode", () => {
       "cmd_set_input_preview_enabled",
       { enabled: true },
     ]);
+  });
+
+  it("setAppMode('companion') with a live session enters FAB and never minimizes", async () => {
+    windowFns.minimize.mockClear();
+    windowFns.unminimize.mockClear();
+    useAppStore.setState({
+      companionSessionLive: true,
+      companionModeActive: true,
+      settings: { ...DEFAULT_SETTINGS, collapsed: false },
+      settingsEpoch: 1,
+      profileHydrated: true,
+      isAnimatingWindow: false,
+    });
+    await useAppStore.getState().setAppMode("companion");
+    expect(useAppStore.getState().settings.collapsed).toBe(true);
+    expect(windowFns.minimize).not.toHaveBeenCalled();
+    expect(windowFns.unminimize).not.toHaveBeenCalled();
+  });
+
+  it("setAppMode('normal') after expanded companion session restores expanded layout", async () => {
+    useAppStore.setState({
+      settings: { ...DEFAULT_SETTINGS, collapsed: false },
+      settingsEpoch: 1,
+      profileHydrated: true,
+      isAnimatingWindow: false,
+    });
+    await useAppStore.getState().applyCompanionSessionPhase("active");
+    await useAppStore.getState().setAppMode("normal");
+    const state = useAppStore.getState();
+    expect(state.settings.collapsed).toBe(false);
+    expect(state.companionSessionLive).toBe(false);
+    expect(state.companionModeActive).toBe(false);
+    expect(windowFns.minimize).not.toHaveBeenCalled();
+    expect(windowFns.unminimize).not.toHaveBeenCalled();
   });
 });
 

@@ -8,6 +8,7 @@ import {
   heightRatioFromSettings,
   setToolWindowVisible,
   persistSettingsIfCurrent,
+  waitForWindowAnimationIdle,
   languageLessonModeFromState,
   freeWriteModeFromState,
 } from "../storeShared";
@@ -145,14 +146,14 @@ export const createWindowSlice: StateCreator<AppStore, [], [], WindowSlice> = (
       isFreeWriteCaptureActive(freeWriteModeFromState(state));
     await invoke("cmd_set_window_focusable", { focusable: needsFocus });
   },
-  toggleCollapsed: async () => {
-    if (get().isAnimatingWindow) {
+  setCollapsed: async (collapsed) => {
+    await waitForWindowAnimationIdle(get);
+    if (get().settings.collapsed === collapsed) {
       return;
     }
     set({ modeMenuOpen: false });
     const epoch = get().settingsEpoch;
     const { settings } = get();
-    const collapsed = !settings.collapsed;
     const next = { ...settings, collapsed };
 
     set({ isAnimatingWindow: true });
@@ -217,6 +218,9 @@ export const createWindowSlice: StateCreator<AppStore, [], [], WindowSlice> = (
         void syncFocusModeWindowLayout(get, set, queued);
       }
     }
+  },
+  toggleCollapsed: async () => {
+    await get().setCollapsed(!get().settings.collapsed);
   },
   setPendingUpdate: (update) => {
     set({ pendingUpdate: update });

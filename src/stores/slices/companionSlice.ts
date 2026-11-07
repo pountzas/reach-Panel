@@ -3,6 +3,7 @@ import type { AppStore, CompanionSlice } from "../types";
 import {
   mapCompanionSessionPhase,
   shouldIgnoreCompanionIdle,
+  shouldRestoreCompanionNonFocusLayout,
 } from "../../lib/companionSession";
 import {
   captureModeBeforeCompanion,
@@ -42,26 +43,39 @@ export const createCompanionSlice: StateCreator<
           micMode: current.settings.micMode === true,
         }),
       );
-      if (captured != null) {
-        get().pushRestore("companion", { mode: captured }, { replace: true });
-      }
+      get().pushRestore(
+        "companion",
+        {
+          ...(captured != null ? { mode: captured } : {}),
+          collapsed: current.settings.collapsed,
+        },
+        { replace: true },
+      );
       set({
         companionSessionLive: true,
         companionModeActive: true,
         companionBridgeArmed: true,
       });
+      if (get().focusModeActive) {
+        await get().collapseFocusModeKeyboard();
+      } else {
+        await get().setCollapsed(true);
+      }
       return;
     }
     if (shouldIgnoreCompanionIdle(get().companionModeActive)) {
       return;
     }
-    get().popRestore("companion");
+    const patch = get().popRestore("companion");
     set({
       companionSessionLive: false,
       companionModeActive: false,
       companionBridgeArmed: true,
     });
     await get().setAppMode(mapped.restore, { skipCompanionBridgeStop: true });
+    if (shouldRestoreCompanionNonFocusLayout(patch, get().focusModeActive)) {
+      await get().setCollapsed(false);
+    }
   },
   stopCompanionByCaregiver: async () => {
     const current = get();

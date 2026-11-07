@@ -89,6 +89,28 @@ export function shouldIgnoreCompanionIdle(
   return !companionModeActive;
 }
 
+/** Expand only when the restore frame recorded an expanded layout. */
+export function shouldRestoreCompanionExpanded(
+  patch: {
+    collapsed?: boolean;
+  } | null,
+): boolean {
+  return patch?.collapsed === false;
+}
+
+/** Focus/Mic visibility is `focusModeKeyboardVisible`, not `settings.collapsed`. */
+export function shouldRestoreCompanionNonFocusLayout(
+  patch: {
+    collapsed?: boolean;
+    mode?: HostAppMode | null;
+  } | null,
+  focusModeActive: boolean,
+): boolean {
+  if (focusModeActive) return false;
+  if (patch?.mode === "focus" || patch?.mode === "mic") return false;
+  return shouldRestoreCompanionExpanded(patch);
+}
+
 export function shouldStopCompanionBridgeOnHostMode(
   companionBridgeArmed: boolean,
   companionModeActive: boolean,
