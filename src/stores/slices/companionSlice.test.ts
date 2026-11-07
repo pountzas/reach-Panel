@@ -63,8 +63,9 @@ function lastLayoutArgs(): Record<string, unknown> | undefined {
     ([cmd]) =>
       cmd === "cmd_apply_window_layout" || cmd === "cmd_animate_window_layout",
   );
+  if (calls.length === 0) return undefined;
   const last = calls[calls.length - 1];
-  return last?.[1] as Record<string, unknown> | undefined;
+  return last[1] as Record<string, unknown> | undefined;
 }
 
 describe("applyCompanionSessionPhase FAB", () => {
