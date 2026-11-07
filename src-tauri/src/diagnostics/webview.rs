@@ -315,8 +315,15 @@ fn reason_name(reason: COREWEBVIEW2_PROCESS_FAILED_REASON) -> &'static str {
 mod tests {
     use super::*;
 
+    /// The recreate set is process-global. Cargo runs these tests in parallel.
+    fn lock_pending_recreate_tests() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: Mutex<()> = Mutex::new(());
+        LOCK.lock().unwrap_or_else(|err| err.into_inner())
+    }
+
     #[test]
     fn pending_recreate_insert_take_and_empty() {
+        let _lock = lock_pending_recreate_tests();
         {
             let mut guard = pending_recreate();
             if let Some(set) = guard.as_mut() {
@@ -336,6 +343,7 @@ mod tests {
 
     #[test]
     fn pending_recreate_stays_set_until_the_recreate_closure_takes_it() {
+        let _lock = lock_pending_recreate_tests();
         let label = "unit-destroy-order";
         {
             let mut guard = pending_recreate();
