@@ -22,7 +22,7 @@ In the app, **Settings → About** and **Settings → Companion** also open this
 
 The companion turns an Android tablet into a control surface (keyboard, trackpad, numpad, dictation, suggestions). The Windows host still injects keystrokes and mouse events into the focused app. Teaching / Music stay on Windows only.
 
-Pairing stays in **Settings → Companion** (Start bridge / QR). The Companion mode tablet stays unavailable until the bridge is running or a tablet is paired. When a tablet connects, Companion becomes the selected mode and the host minimizes. Disconnect restores the previous mode and unminimizes but keeps the bridge running (reconnect without tapping Companion again). Tapping Normal, Focus, Mic, or Teaching — or **Stop** — stops the bridge.
+Pairing stays in **Settings → Companion** (Start bridge / QR). The Companion mode tablet stays unavailable until the bridge is running or a tablet is paired. When a tablet connects, Companion becomes the selected mode and the host switches to FAB mode (the collapsed floating button). Disconnect restores the previous mode and its collapsed or expanded state but keeps the bridge running (reconnect without tapping Companion again). Tapping Normal, Focus, Mic, or Teaching — or **Stop** — stops the bridge.
 
 ### 1. Install ReachPanel on Windows
 
@@ -145,7 +145,7 @@ If Windows online speech is off, open **Settings → Privacy & security → Spee
 
 - Named file-based profiles (create, save, load, wipe)
 - Multi-monitor detection and positioning
-- Color profiles and optional background image
+- Color profiles
 - In-app update check and prompt
 - About section (version and links)
 - UI languages: English, Greek, German, French, Italian, Spanish, Portuguese
@@ -176,6 +176,8 @@ For Rust builds on Windows, ensure the MSVC environment is active. If `link.exe`
 ```
 
 Companion app: [companion/README.md](companion/README.md).
+
+Logs, crash sidecars, and the privacy rule: [docs/logging.md](docs/logging.md). Settings → Tools & maintenance can open the logs folder or copy a diagnostics report. Release builds with `REACH_SUPABASE_URL` and `REACH_SUPABASE_ANON_KEY` also show **Send logs**.
 
 ### Branding / app icons
 
@@ -236,6 +238,7 @@ Windows installers are built in CI and published automatically when a [release-p
 | `src-tauri/resources/wordpacks/`     | Bundled English dictionary                                           |
 | `wordpacks-dist/`                    | Downloadable packs for GitHub `wordpacks-v1` release                 |
 | `docs/accessibility-requirements.md` | Target users and acceptance criteria                                 |
+| `docs/logging.md`                    | Log location, files, unclean-session reading, privacy rule           |
 
 ## Roadmap
 

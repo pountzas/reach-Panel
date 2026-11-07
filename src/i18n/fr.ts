@@ -312,6 +312,47 @@ export const fr = {
   wipeProfileConfirm:
     "Effacer ce profil ? Toutes les actions rapides, macros, phrases, prédictions et paramètres seront réinitialisés.",
 
+  openLogsFolder: "Ouvrir le dossier des journaux",
+
+  copyDiagnostics: "Copier le diagnostic",
+
+  diagnosticsCopied: "Diagnostic copié",
+
+  openLogsFolderFailed: "Impossible d’ouvrir le dossier des journaux",
+
+  copyDiagnosticsFailed: "Impossible de copier le diagnostic",
+
+  sendLogs: "Envoyer les journaux",
+
+  sendLogsConsentTitle: "Envoyer ce diagnostic ?",
+
+  sendLogsPrivacyTyped: "Le texte saisi ou dicté n’est jamais consigné.",
+
+  sendLogsPrivacyUsername:
+    "Votre nom d’utilisateur Windows est retiré des chemins.",
+
+  sendLogsDestination:
+    "Envoyé vers l’hébergement de diagnostic ReachPanel dans l’UE (Supabase) et conservé 30 jours.",
+
+  sendLogsNoteLabel: "Note facultative",
+
+  sendLogsNoteHint:
+    "N’incluez pas de noms, d’adresses ni d’autres informations personnelles.",
+
+  sendLogsSend: "Envoyer",
+
+  sendLogsSending: "Envoi…",
+
+  sendLogsSuccessTitle: "Journaux envoyés",
+
+  sendLogsCopyId: "Copier",
+
+  sendLogsReportCopied: "Identifiant de rapport copié",
+
+  sendLogsFailed: "Impossible d’envoyer les journaux.",
+
+  sendLogsFailedRateLimited: "Trop de rapports. Réessayez plus tard.",
+
   saveProfile: "Enregistrer le profil",
 
   profileSaved: "Profil enregistré.",
@@ -476,12 +517,6 @@ export const fr = {
   keyTextColor: "Couleur du texte des touches",
 
   mousePanelColor: "Panneau souris",
-
-  chooseBackgroundImage: "Choisir une image de fond",
-
-  removeBackgroundImage: "Supprimer l’image de fond",
-
-  backgroundImageOpacity: "Visibilité de l’image de fond",
 
   newProfileFileName: "Nom du nouveau fichier de profil",
 

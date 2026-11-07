@@ -180,7 +180,7 @@ where
     T: cpal::Sample + cpal::SizedSample + Send + 'static,
     F: Fn(T) -> f32 + Send + 'static,
 {
-    let err_fn = |err| eprintln!("[stt/groq] mic stream error: {err}");
+    let err_fn = |err| log::error!("[stt/groq] mic stream error: {err}");
     let stream = device
         .build_input_stream(
             config,
@@ -245,7 +245,7 @@ fn worker_loop(
         if energy >= ENERGY_THRESHOLD {
             if speech_started.is_none() {
                 speech_started = Some(now);
-                eprintln!("[stt/groq] speech start energy={energy:.4}");
+                log::debug!("[stt/groq] speech start energy={energy:.4}");
             }
             last_voice = now;
         }
@@ -287,7 +287,7 @@ fn worker_loop(
             peak_energy = 0.0;
             let chunk_secs = chunk.len() as f32 / TARGET_SAMPLE_RATE as f32;
             if chunk_secs >= MIN_SPEECH_SECS * 0.7 {
-                eprintln!(
+                log::debug!(
                     "[stt/groq] flush {chunk_secs:.2}s peak={flushed_peak:.4} lang={language}"
                 );
                 set_processing(true);
@@ -299,7 +299,7 @@ fn worker_loop(
                             result.quota.remaining_requests,
                             result.quota.limit_requests,
                         );
-                        eprintln!("[stt/groq] transcript len={}", result.text.chars().count());
+                        log::debug!("[stt/groq] transcript len={}", result.text.chars().count());
                         if !stop_flag.load(Ordering::SeqCst) {
                             handle_result(&app, &result.text);
                         }
@@ -310,7 +310,10 @@ fn worker_loop(
                             err.quota.remaining_requests,
                             err.quota.limit_requests,
                         );
-                        eprintln!("[stt/groq] transcribe error: {err}");
+                        log::error!(
+                            "[stt/groq] transcribe error: {}",
+                            crate::logging::redact(&err.to_string())
+                        );
                         if !stop_flag.load(Ordering::SeqCst) {
                             emit_error(&app, err.to_string());
                         }

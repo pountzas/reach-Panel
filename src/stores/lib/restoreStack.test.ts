@@ -102,4 +102,15 @@ describe("restoreStack", () => {
     expect(result.patch).toBeNull();
     expect(result.stack).toBe(stack);
   });
+
+  it("companion restore frames can record collapsed", () => {
+    const next = pushRestoreEntry([], "companion", {
+      mode: "normal",
+      collapsed: false,
+    });
+    expect(peekRestore(next, "companion")).toEqual({
+      mode: "normal",
+      collapsed: false,
+    });
+  });
 });

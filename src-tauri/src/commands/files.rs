@@ -43,15 +43,6 @@ fn pick_file(
     Ok(file)
 }
 
-fn pick_background_image(app: &tauri::AppHandle) -> Result<Option<String>, String> {
-    let file = pick_file(
-        app,
-        &[("Images", &["png", "jpg", "jpeg", "gif", "webp", "bmp"])],
-        PickMode::Open,
-    )?;
-    Ok(file.map(|p| p.to_string_lossy().into_owned()))
-}
-
 fn pick_music_song_file(app: &tauri::AppHandle) -> Result<Option<String>, String> {
     let file = pick_file(
         app,
@@ -95,13 +86,6 @@ fn pick_teaching_reach_export_path(
         },
     )?;
     Ok(file.map(|p| p.to_string_lossy().into_owned()))
-}
-
-#[tauri::command]
-pub async fn cmd_pick_background_image(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    tokio::task::spawn_blocking(move || pick_background_image(&app))
-        .await
-        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

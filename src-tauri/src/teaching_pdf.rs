@@ -95,7 +95,7 @@ fn load_allowlist_from_disk(teaching_dir: &Path) -> Result<HashSet<PathBuf>, Str
 fn load_or_migrate_allowlist(teaching_dir: &Path) -> Result<HashSet<PathBuf>, String> {
     if allowlist_file(teaching_dir).exists() {
         return Ok(load_allowlist_from_disk(teaching_dir).unwrap_or_else(|e| {
-            eprintln!("[teaching_pdf] ignoring unreadable allowlist: {e}");
+            log::warn!("[teaching_pdf] ignoring unreadable allowlist: {e}");
             HashSet::new()
         }));
     }

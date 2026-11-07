@@ -308,6 +308,47 @@ export const it = {
   wipeProfileConfirm:
     "Cancellare questo profilo? Tutte le azioni rapide, macro, frasi, previsioni e impostazioni verranno reimpostate.",
 
+  openLogsFolder: "Apri cartella dei log",
+
+  copyDiagnostics: "Copia diagnostica",
+
+  diagnosticsCopied: "Diagnostica copiata",
+
+  openLogsFolderFailed: "Impossibile aprire la cartella dei log",
+
+  copyDiagnosticsFailed: "Impossibile copiare la diagnostica",
+
+  sendLogs: "Invia i log",
+
+  sendLogsConsentTitle: "Inviare questa diagnostica?",
+
+  sendLogsPrivacyTyped: "Il testo digitato o dettato non viene mai registrato.",
+
+  sendLogsPrivacyUsername:
+    "Il nome utente di Windows viene rimosso dai percorsi.",
+
+  sendLogsDestination:
+    "Inviata all’hosting diagnostico di ReachPanel nell’UE (Supabase) e conservata 30 giorni.",
+
+  sendLogsNoteLabel: "Nota facoltativa",
+
+  sendLogsNoteHint:
+    "Non includere nomi, indirizzi o altre informazioni personali.",
+
+  sendLogsSend: "Invia",
+
+  sendLogsSending: "Invio…",
+
+  sendLogsSuccessTitle: "Log inviati",
+
+  sendLogsCopyId: "Copia",
+
+  sendLogsReportCopied: "ID report copiato",
+
+  sendLogsFailed: "Impossibile inviare i log.",
+
+  sendLogsFailedRateLimited: "Troppi report. Riprova più tardi.",
+
   saveProfile: "Salva profilo",
 
   profileSaved: "Profilo salvato.",
@@ -472,12 +513,6 @@ export const it = {
   keyTextColor: "Colore testo tasti",
 
   mousePanelColor: "Pannello mouse",
-
-  chooseBackgroundImage: "Scegli immagine di sfondo",
-
-  removeBackgroundImage: "Rimuovi immagine di sfondo",
-
-  backgroundImageOpacity: "Visibilità immagine di sfondo",
 
   newProfileFileName: "Nome nuovo file profilo",
 

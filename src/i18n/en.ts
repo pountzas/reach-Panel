@@ -342,6 +342,46 @@ export const en = {
   wipeProfileConfirm:
     "Wipe this profile? All predictions and settings will be reset.",
 
+  openLogsFolder: "Open logs folder",
+
+  copyDiagnostics: "Copy diagnostics",
+
+  diagnosticsCopied: "Diagnostics copied",
+
+  openLogsFolderFailed: "Couldn't open the logs folder",
+
+  copyDiagnosticsFailed: "Couldn't copy diagnostics",
+
+  sendLogs: "Send logs",
+
+  sendLogsConsentTitle: "Send these diagnostics?",
+
+  sendLogsPrivacyTyped: "Typed and dictated text is never logged.",
+
+  sendLogsPrivacyUsername: "Your Windows user name is removed from paths.",
+
+  sendLogsDestination:
+    "Sent to ReachPanel diagnostics hosting in the EU (Supabase) and kept for 30 days.",
+
+  sendLogsNoteLabel: "Optional note",
+
+  sendLogsNoteHint:
+    "Don't include names, addresses, or other personal information.",
+
+  sendLogsSend: "Send",
+
+  sendLogsSending: "Sending…",
+
+  sendLogsSuccessTitle: "Logs sent",
+
+  sendLogsCopyId: "Copy",
+
+  sendLogsReportCopied: "Report ID copied",
+
+  sendLogsFailed: "Couldn't send logs.",
+
+  sendLogsFailedRateLimited: "Too many reports. Try again later.",
+
   saveProfile: "Save profile",
 
   profileSaved: "Profile saved.",
@@ -505,12 +545,6 @@ export const en = {
   keyTextColor: "Key text color",
 
   mousePanelColor: "Mouse panel",
-
-  chooseBackgroundImage: "Choose background image",
-
-  removeBackgroundImage: "Remove background image",
-
-  backgroundImageOpacity: "Background image visibility",
 
   newProfileFileName: "New profile file name",
 

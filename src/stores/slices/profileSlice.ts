@@ -495,10 +495,4 @@ export const createProfileSlice: StateCreator<
       source: WebviewWindow.getCurrent().label,
     });
   },
-  pickBackgroundImage: async () => {
-    const path = await invoke<string | null>("cmd_pick_background_image");
-    if (path) {
-      await get().updateSettings({ backgroundImagePath: path });
-    }
-  },
 });

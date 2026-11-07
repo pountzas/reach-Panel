@@ -137,6 +137,7 @@ describe("appStore restoreStack", () => {
         peekRestore(useAppStore.getState().restoreStack, "companion"),
       ).toEqual({
         mode: "normal",
+        collapsed: false,
       });
 
       await useAppStore.getState().applyCompanionSessionPhase("idle");

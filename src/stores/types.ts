@@ -268,6 +268,7 @@ export type WindowSlice = {
   setShowSettings: (show: boolean) => void;
   syncWindowFocusable: () => Promise<void>;
   toggleCollapsed: () => Promise<void>;
+  setCollapsed: (collapsed: boolean) => Promise<void>;
   setPendingUpdate: (update: Update | null) => void;
   checkForUpdates: () => Promise<void>;
 };
@@ -328,7 +329,6 @@ export type ProfileSlice = {
   wipeActiveProfile: () => Promise<void>;
   loadMonitors: () => Promise<void>;
   saveActiveProfile: () => Promise<void>;
-  pickBackgroundImage: () => Promise<void>;
 };
 
 export type AppStore = ErrorsSlice &

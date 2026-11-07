@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { monitorsOverlap } from "./focusMode";
+import { logError } from "./log";
 import type { MonitorInfo } from "./types";
 
 function tauriErrorMessage(payload: unknown, fallback: string): string {
@@ -26,6 +27,7 @@ export type ToolWindowRequest = {
   show: boolean;
 };
 
+/** Keep in sync with the settings branch of `recreate_window` in `src-tauri/src/diagnostics/webview.rs`. */
 export const TOOL_WINDOW_SIZE = { width: 900, height: 700 } as const;
 
 export const TOOL_WINDOW_TITLES: Record<ToolWindowLabel, string> = {
@@ -187,7 +189,7 @@ export async function openToolWindow(
       try {
         await applyToolWindowPlacement(existing, placement);
       } catch (error) {
-        console.error("Failed to reposition tool window", error);
+        logError("toolWindows", "Failed to reposition tool window", { error });
       }
     }
     await existing.setAlwaysOnTop(true);
@@ -232,7 +234,7 @@ export async function openToolWindow(
     try {
       await applyToolWindowPlacement(webview, placement);
     } catch (error) {
-      console.error("Failed to place tool window", error);
+      logError("toolWindows", "Failed to place tool window", { error });
     }
   }
 

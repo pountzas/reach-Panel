@@ -15,6 +15,7 @@ import {
 import { resolveColorProfile } from "../lib/colorProfiles";
 import { afterNextPaint, MOTION, prefersReducedMotion } from "../lib/motion";
 import { logLayoutIpc } from "../lib/logIpc";
+import { logInfo } from "../lib/log";
 import { notify } from "../lib/notify";
 import { resolveSectionStack } from "../lib/sectionStack";
 import {
@@ -408,6 +409,8 @@ export function parseSettings(json: string): AppSettings {
     delete (parsed as Record<string, unknown>).headTrackingEnabled;
     delete (parsed as Record<string, unknown>).emergencyVisible;
     delete (parsed as Record<string, unknown>).precisionMode;
+    delete (parsed as Record<string, unknown>).backgroundImagePath;
+    delete (parsed as Record<string, unknown>).backgroundImageOpacity;
     const colorProfile = resolveColorProfile({ ...parsed, theme });
     const mousePanelSide =
       parsed.mousePanelSide ??
@@ -515,12 +518,14 @@ export async function setToolWindowVisible(
         title: TOOL_WINDOW_TITLES[label],
         monitor: preferred,
         onDestroyed: () => {
+          if (get()[flag]) logInfo("settings", "close");
           set({ [flag]: false });
           void syncMainForToolWindows();
           void get().syncWindowFocusable();
         },
       });
       set({ [flag]: true });
+      logInfo("settings", "open");
     } catch (error) {
       set({ [flag]: false });
       const message = error instanceof Error ? error.message : String(error);
@@ -531,6 +536,7 @@ export async function setToolWindowVisible(
     return;
   }
 
+  if (get()[flag]) logInfo("settings", "close");
   set({ [flag]: false });
   await closeToolWindow(label);
   void syncMainForToolWindows();

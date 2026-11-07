@@ -35,14 +35,14 @@ pub async fn run_bridge(
     let listener = match TcpListener::bind(addr).await {
         Ok(l) => l,
         Err(e) => {
-            eprintln!("[companion] failed to bind {addr}: {e}");
+            log::error!("[companion] failed to bind {addr}: {e}");
             running.store(false, Ordering::SeqCst);
             emit_ui_state(&app, &auth, &session, false, port);
             return;
         }
     };
     running.store(true, Ordering::SeqCst);
-    println!("[companion] listening on {addr}");
+    log::info!("[companion] listening on {addr}");
     emit_ui_state(&app, &auth, &session, true, port);
 
     loop {
@@ -65,12 +65,12 @@ pub async fn run_bridge(
                             )
                             .await
                             {
-                                eprintln!("[companion] connection {peer}: {e}");
+                                log::error!("[companion] connection {peer}: {e}");
                             }
                         });
                     }
                     Err(e) => {
-                        eprintln!("[companion] accept error: {e}");
+                        log::error!("[companion] accept error: {e}");
                     }
                 }
             }
@@ -80,7 +80,7 @@ pub async fn run_bridge(
     running.store(false, Ordering::SeqCst);
     session.clear();
     emit_ui_state(&app, &auth, &session, false, port);
-    println!("[companion] stopped");
+    log::info!("[companion] stopped");
 }
 
 async fn handle_connection(
@@ -273,7 +273,7 @@ async fn handle_connection(
     }
 
     if authenticated && session.epoch_matches(connection_epoch) {
-        eprintln!("[companion] session ended from {peer}");
+        log::info!("[companion] session ended from {peer}");
         session.set_reconnecting();
         session.clear();
         on_session_inactive(&app);
@@ -360,25 +360,16 @@ where
         .map_err(|e| format!("ws send: {e}"))
 }
 
+pub(crate) fn session_event_payload(phase: &'static str) -> serde_json::Value {
+    serde_json::json!({ "phase": phase })
+}
+
 pub fn on_session_active(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.minimize();
-    }
-    let _ = app.emit(
-        "companion-session",
-        serde_json::json!({ "phase": "active", "minimize": true }),
-    );
+    let _ = app.emit("companion-session", session_event_payload("active"));
 }
 
 pub fn on_session_inactive(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.unminimize();
-        let _ = window.show();
-    }
-    let _ = app.emit(
-        "companion-session",
-        serde_json::json!({ "phase": "idle", "minimize": false }),
-    );
+    let _ = app.emit("companion-session", session_event_payload("idle"));
 }
 
 pub fn emit_ui_state(
@@ -399,4 +390,33 @@ pub fn emit_ui_state(
         paired_device_count: auth.paired_count(),
     };
     let _ = app.emit("companion-state", &state);
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn session_payload_is_phase_only() {
+        assert_eq!(
+            super::session_event_payload("active"),
+            serde_json::json!({ "phase": "active" })
+        );
+        assert_eq!(
+            super::session_event_payload("idle"),
+            serde_json::json!({ "phase": "idle" })
+        );
+    }
+
+    #[test]
+    fn server_source_does_not_minimize_the_window() {
+        let src = include_str!("server.rs");
+        let production = src.split("#[cfg(test)]").next().unwrap();
+        assert!(
+            !production.contains(".minimize("),
+            "companion server must not call window.minimize"
+        );
+        assert!(
+            !production.contains(".unminimize("),
+            "companion server must not call window.unminimize"
+        );
+    }
 }

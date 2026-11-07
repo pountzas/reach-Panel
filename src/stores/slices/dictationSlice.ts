@@ -2,6 +2,7 @@ import type { StateCreator } from "zustand";
 import type { AppStore, DictationSlice } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import type { DictationState } from "../types";
+import { logInfo } from "../../lib/log";
 
 export const createDictationSlice: StateCreator<
   AppStore,
@@ -12,7 +13,11 @@ export const createDictationSlice: StateCreator<
   dictationState: "idle",
   sttCapability: null,
   setDictationState: (state) => {
+    const previous = get().dictationState;
     set({ dictationState: state });
+    if (previous !== state) {
+      logInfo("dictation", "state", { state });
+    }
   },
   setSttCapability: (capability) => {
     set({ sttCapability: capability });
@@ -33,8 +38,8 @@ export const createDictationSlice: StateCreator<
         language: get().settings.typingLanguage,
         groqApiKey: settingsKey,
       });
+      get().setDictationState(status.state);
       set({
-        dictationState: status.state,
         sttCapability: {
           engine: status.engine,
           groqConfigured: status.groqConfigured,
@@ -81,10 +86,10 @@ export const createDictationSlice: StateCreator<
         language: settings.typingLanguage,
         groqApiKey,
       });
-      set({ dictationState: "listening" });
+      get().setDictationState("listening");
       await get().refreshSttCapability();
     } catch (error) {
-      set({ dictationState: "idle" });
+      get().setDictationState("idle");
       set({
         lastError: error instanceof Error ? error.message : String(error),
       });
@@ -95,7 +100,7 @@ export const createDictationSlice: StateCreator<
     if (get().dictationState === "idle") return;
     // Optimistic: clear listening UI immediately so the mic toggle feels responsive
     // even when Groq was mid-transcription (common on Greek path).
-    set({ dictationState: "idle" });
+    get().setDictationState("idle");
     try {
       await invoke("cmd_stop_dictation");
     } catch (error) {

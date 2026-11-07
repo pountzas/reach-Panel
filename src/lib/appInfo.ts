@@ -1,4 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { logError } from "./log";
 
 export const GROQ_API_KEYS_URL = "https://console.groq.com/keys";
 
@@ -18,6 +19,6 @@ export const APP_INFO = {
 
 export function openExternalLink(url: string): void {
   void openUrl(url).catch((error: unknown) => {
-    console.error(`Failed to open external link (${url}):`, error);
+    logError("appInfo", `Failed to open external link (${url})`, { error });
   });
 }

@@ -8,6 +8,7 @@ import {
   syncWindowLayoutFromSettings,
 } from "../storeShared";
 import { invoke } from "@tauri-apps/api/core";
+import { logError } from "../../lib/log";
 import { MOTION, prefersReducedMotion } from "../../lib/motion";
 import { MODE_MENU_WIDTH, modeMenuHeight } from "../../lib/focusMode";
 import { APP_MODE_OPTIONS } from "../../lib/appModeLayout";
@@ -35,7 +36,9 @@ export const createFocusModeSlice: StateCreator<
     }).then(
       () => undefined,
       (error: unknown) => {
-        console.error("cmd_expand_window_for_mode_menu failed", error);
+        logError("focusMode", "cmd_expand_window_for_mode_menu failed", {
+          error,
+        });
         set({ modeMenuOpen: false });
       },
     );

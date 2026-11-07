@@ -1,4 +1,3 @@
-import { type CSSProperties } from "react";
 import { useShallow } from "zustand/react/shallow";
 import {
   COLOR_PROFILE_IDS,
@@ -26,19 +25,14 @@ const COLOR_PROFILE_LABEL_KEYS: Record<ColorProfileId, TranslationKey> = {
 
 type AppearanceSectionProps = {
   surface: SurfaceColors;
-  secondaryButtonStyle: CSSProperties;
 };
 
-export function AppearanceSection({
-  surface,
-  secondaryButtonStyle,
-}: AppearanceSectionProps) {
+export function AppearanceSection({ surface }: AppearanceSectionProps) {
   const { t } = useTranslation();
-  const { settings, updateSettings, pickBackgroundImage } = useAppStore(
+  const { settings, updateSettings } = useAppStore(
     useShallow((s) => ({
       settings: s.settings,
       updateSettings: s.updateSettings,
-      pickBackgroundImage: s.pickBackgroundImage,
     })),
   );
   const keyboardFontSizeMax = KEYBOARD_FONT_SIZE_MAX;
@@ -148,47 +142,6 @@ export function AppearanceSection({
           )}
         </div>
       )}
-
-      <div className="mb-4 space-y-2">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded-lg border px-3 py-1.5 text-sm"
-            style={secondaryButtonStyle}
-            onClick={() => void pickBackgroundImage()}>
-            {t("chooseBackgroundImage")}
-          </button>
-          {settings.backgroundImagePath && (
-            <button
-              type="button"
-              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700"
-              style={{ backgroundColor: surface.insetBg }}
-              onClick={() =>
-                updateSettings({ backgroundImagePath: undefined })
-              }>
-              {t("removeBackgroundImage")}
-            </button>
-          )}
-        </div>
-        {settings.backgroundImagePath && (
-          <label className="block text-sm" style={{ color: surface.panelText }}>
-            {t("backgroundImageOpacity")}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={settings.backgroundImageOpacity ?? 0.35}
-              onChange={(e) =>
-                updateSettings({
-                  backgroundImageOpacity: Number(e.target.value),
-                })
-              }
-              className="mt-1 w-full"
-            />
-          </label>
-        )}
-      </div>
 
       <label className="block text-sm" style={{ color: surface.panelText }}>
         {t("opacity")}

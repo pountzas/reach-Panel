@@ -4,6 +4,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { logError } from "../lib/log";
 
 async function beginWindowDrag(): Promise<void> {
   try {
@@ -11,7 +12,7 @@ async function beginWindowDrag(): Promise<void> {
     // calls fail on Windows touch (OS drag requires the active pointer message).
     await getCurrentWindow().startDragging();
   } catch (error) {
-    console.error("startDragging failed", error);
+    logError("windowDrag", "startDragging failed", { error });
   }
 }
 

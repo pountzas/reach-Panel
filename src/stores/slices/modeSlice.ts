@@ -15,7 +15,10 @@ import {
   resolveSectionStack,
   ensureSectionExpanded,
 } from "../../lib/sectionStack";
-import { shouldStopCompanionBridgeOnHostMode } from "../../lib/companionSession";
+import {
+  shouldRestoreCompanionNonFocusLayout,
+  shouldStopCompanionBridgeOnHostMode,
+} from "../../lib/companionSession";
 import {
   captureWindowHeightRatioBeforeTeaching,
   heightRatioAfterLeavingTeaching,
@@ -23,8 +26,13 @@ import {
   APP_MODE_REQUEST_EVENT,
 } from "../../lib/appModeLayout";
 import type { AppModeRequest } from "../../lib/appModeLayout";
-import { popRestoreEntry, pushRestoreEntry } from "../lib/restoreStack";
+import {
+  popRestoreEntry,
+  pushRestoreEntry,
+  type RestorePatch,
+} from "../lib/restoreStack";
 import { clear as clearInputPreviewFrames } from "../../lib/inputPreviewFrames";
+import { logInfo } from "../../lib/log";
 
 export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
   set,
@@ -46,6 +54,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
   },
   setAppMode: async (mode, options) => {
     const skipCompanionBridgeStop = options?.skipCompanionBridgeStop === true;
+    logInfo("mode", "switch", { mode });
 
     if (shouldDelegateAppModeToMain(WebviewWindow.getCurrent().label)) {
       const current = get().settings;
@@ -144,6 +153,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
       return;
     }
 
+    let companionRestore: RestorePatch | null = null;
     if (mode !== "companion" && !skipCompanionBridgeStop) {
       const { companionBridgeArmed, companionModeActive } = get();
       if (
@@ -152,7 +162,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
           companionModeActive,
         )
       ) {
-        get().popRestore("companion");
+        companionRestore = get().popRestore("companion");
         set({
           companionBridgeArmed: false,
           companionModeActive: false,
@@ -173,7 +183,11 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
         set({ companionBridgeArmed: true });
         const afterStart = get();
         if (afterStart.companionModeActive || afterStart.companionSessionLive) {
-          await WebviewWindow.getCurrent().minimize();
+          if (get().focusModeActive) {
+            await get().collapseFocusModeKeyboard();
+          } else {
+            await get().setCollapsed(true);
+          }
         }
         return;
       }
@@ -207,7 +221,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
           await syncInputPreviewEnabled(get);
         }
         await emitTeachingSession(get);
-        return;
+        break;
       }
       case "mic": {
         set({
@@ -240,7 +254,7 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
           await syncInputPreviewEnabled(get);
         }
         await emitTeachingSession(get);
-        return;
+        break;
       }
       case "focus": {
         set({ companionModeActive: false });
@@ -269,12 +283,12 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
           await syncInputPreviewEnabled(get);
         }
         await emitTeachingSession(get);
-        return;
+        break;
       }
       case "teaching": {
         set({ companionModeActive: false });
         if (inTeaching) {
-          return;
+          break;
         }
         const previousMode: "normal" | "focus" | "mic" =
           settings.focusModeOverride === true
@@ -308,12 +322,21 @@ export const createModeSlice: StateCreator<AppStore, [], [], ModeSlice> = (
         });
         await syncInputPreviewEnabled(get);
         await emitTeachingSession(get);
-        return;
+        break;
       }
       default: {
         const _exhaustive: never = mode;
         return _exhaustive;
       }
+    }
+
+    if (
+      shouldRestoreCompanionNonFocusLayout(
+        companionRestore,
+        get().focusModeActive,
+      )
+    ) {
+      await get().setCollapsed(false);
     }
   },
 });
