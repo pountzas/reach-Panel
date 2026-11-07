@@ -42,4 +42,15 @@ describe("build.yml PR checks", () => {
     expect(new Set(buildPins)).toEqual(new Set(releasePins));
     expect(yaml).not.toMatch(/dtolnay\/rust-toolchain@stable/);
   });
+
+  it("pins setup-deno and runs Edge Function check and tests in check", () => {
+    expect(yaml).toMatch(/denoland\/setup-deno@[0-9a-f]{40}/);
+    expect(yaml).toMatch(/deno-version:\s*["']2\./);
+    expect(yaml).toContain(
+      "deno check --config supabase/functions/deno.json supabase/functions/submit-diagnostics/handler.ts",
+    );
+    expect(yaml).toContain(
+      "deno test --config supabase/functions/deno.json supabase/functions/",
+    );
+  });
 });

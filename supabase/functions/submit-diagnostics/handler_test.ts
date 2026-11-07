@@ -159,13 +159,16 @@ Deno.test("accepts a valid zip and stores it", async () => {
 Deno.test("does not read the body before the install-id check", async () => {
   const store = deps();
   let reads = 0;
-  const stream = new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      reads += 1;
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      controller.enqueue(ZIP_BYTES);
+  const stream = new ReadableStream<Uint8Array>(
+    {
+      async pull(controller) {
+        reads += 1;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        controller.enqueue(ZIP_BYTES);
+      },
     },
-  });
+    { highWaterMark: 0 },
+  );
   const response = await handleSubmitDiagnostics(
     new Request("https://example.test/functions/v1/submit-diagnostics", {
       method: "POST",
@@ -188,13 +191,16 @@ Deno.test("does not read the body when rate limited", async () => {
     countReports: async () => 1,
   });
   let reads = 0;
-  const stream = new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      reads += 1;
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      controller.enqueue(ZIP_BYTES);
+  const stream = new ReadableStream<Uint8Array>(
+    {
+      async pull(controller) {
+        reads += 1;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        controller.enqueue(ZIP_BYTES);
+      },
     },
-  });
+    { highWaterMark: 0 },
+  );
   const response = await handleSubmitDiagnostics(
     new Request("https://example.test/functions/v1/submit-diagnostics", {
       method: "POST",
