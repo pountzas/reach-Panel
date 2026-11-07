@@ -387,7 +387,7 @@ mod tests {
         let mut out = Vec::new();
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).expect("entry");
-            let name = file.name().to_string();
+            let name = file.name().expect("entry name").into_owned();
             let mut raw = Vec::new();
             file.read_to_end(&mut raw).expect("read entry");
             out.push((name, String::from_utf8_lossy(&raw).into_owned()));
@@ -481,12 +481,12 @@ mod tests {
         fs::write(dir.join(LOG_FILE), "current-log-tail\n").expect("current log");
         fs::write(
             dir.join("reach-panel_2026-11-02_10-00-00.log"),
-            incompressible(3_200_000),
+            incompressible(4_200_000),
         )
         .expect("newer rotated");
         fs::write(
             dir.join("reach-panel_2026-11-01_10-00-00.log"),
-            incompressible(3_200_000),
+            incompressible(4_200_000),
         )
         .expect("older rotated");
         fs::write(dir.join(BREADCRUMBS_FILE), "layout ratio=0.5\n").expect("breadcrumbs");

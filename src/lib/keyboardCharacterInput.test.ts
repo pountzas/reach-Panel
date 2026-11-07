@@ -28,6 +28,7 @@ describe("greekComposeEnabled", () => {
       greekComposeEnabled({
         typingLanguage: "en",
         keyboardLayout: "QWERTY",
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- test asserts the deprecated override is ignored
         onscreenLayout: "Greek",
       }),
     ).toBe(false);
