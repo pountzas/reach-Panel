@@ -2,6 +2,8 @@
 
 This folder is source only. It is not deployed from CI. Create a **dedicated Free EU** Supabase project for diagnostics — not the future accounts/tier backend.
 
+Function tests run in CI (`check` job in `.github/workflows/build.yml`); run locally with `deno test supabase/functions/`.
+
 The service role stays in Supabase’s secret store. Edge Functions receive it as an environment variable. Do **not** put it in this repo, in GitHub Actions secrets, in docs examples, or in the app binary. GitHub only gets `REACH_SUPABASE_URL` and `REACH_SUPABASE_ANON_KEY`.
 
 ## 1. Create the project
