@@ -158,13 +158,14 @@ Deno.test("accepts a valid zip and stores it", async () => {
 
 Deno.test("does not read the body before the install-id check", async () => {
   const store = deps();
+  let reads = 0;
   const stream = new ReadableStream<Uint8Array>({
     async pull(controller) {
+      reads += 1;
       await new Promise((resolve) => setTimeout(resolve, 100));
       controller.enqueue(ZIP_BYTES);
     },
   });
-  const started = performance.now();
   const response = await handleSubmitDiagnostics(
     new Request("https://example.test/functions/v1/submit-diagnostics", {
       method: "POST",
@@ -176,7 +177,7 @@ Deno.test("does not read the body before the install-id check", async () => {
     }),
     store,
   );
-  assertEquals(performance.now() - started < 30, true);
+  assertEquals(reads, 0);
   assertEquals(response.status, 400);
   assertEquals(await response.json(), { error: "invalid_install_id" });
   assertEquals(store.uploads.length, 0);
@@ -186,13 +187,14 @@ Deno.test("does not read the body when rate limited", async () => {
   const store = deps({
     countReports: async () => 1,
   });
+  let reads = 0;
   const stream = new ReadableStream<Uint8Array>({
     async pull(controller) {
+      reads += 1;
       await new Promise((resolve) => setTimeout(resolve, 100));
       controller.enqueue(ZIP_BYTES);
     },
   });
-  const started = performance.now();
   const response = await handleSubmitDiagnostics(
     new Request("https://example.test/functions/v1/submit-diagnostics", {
       method: "POST",
@@ -204,7 +206,7 @@ Deno.test("does not read the body when rate limited", async () => {
     }),
     store,
   );
-  assertEquals(performance.now() - started < 30, true);
+  assertEquals(reads, 0);
   assertEquals(response.status, 429);
   assertEquals(await response.json(), { error: "rate_limited" });
   assertEquals(store.uploads.length, 0);
