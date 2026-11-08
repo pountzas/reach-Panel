@@ -88,6 +88,7 @@ pub fn handle_result(app: &AppHandle, text: &str) {
     {
         return;
     }
+    log::info!("stt result chars={}", text.chars().count());
     if let Err(error) = type_text(text) {
         emit_error(app, error.to_string());
         return;
