@@ -2,6 +2,7 @@ import type { StateCreator } from "zustand";
 import type { AppStore, DictationSlice } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import type { DictationState } from "../types";
+import { DICTATION_SELECT_INPUT_ERROR } from "../../lib/dictationErrors";
 import { logInfo } from "../../lib/log";
 
 export const createDictationSlice: StateCreator<
@@ -64,6 +65,10 @@ export const createDictationSlice: StateCreator<
     const { dictationState, settings, sttCapability } = get();
     if (dictationState === "listening" || dictationState === "processing") {
       await get().stopDictation();
+      return;
+    }
+    if (!get().externalInputFocused) {
+      get().setLastError(DICTATION_SELECT_INPUT_ERROR);
       return;
     }
     if (sttCapability && !sttCapability.canDictate) {
