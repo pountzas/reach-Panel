@@ -162,6 +162,12 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     }
 
     let session = recognizer.ContinuousRecognitionSession()?;
+    let timeouts = recognizer.Timeouts()?;
+    let configured = super::timeouts::winrt_silence_timeouts();
+    timeouts.SetInitialSilenceTimeout(configured.initial)?;
+    timeouts.SetEndSilenceTimeout(configured.end)?;
+    session.SetAutoStopSilenceTimeout(configured.auto_stop)?;
+
     let app_for_results = app.clone();
     let result_token = session.ResultGenerated(&TypedEventHandler::new(
         move |_sender, args: &Option<SpeechContinuousRecognitionResultGeneratedEventArgs>| {
@@ -171,10 +177,13 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
             let Ok(result) = args.Result() else {
                 return Ok(());
             };
-            if result.Status()? != SpeechRecognitionResultStatus::Success {
+            let status = result.Status()?;
+            if status != SpeechRecognitionResultStatus::Success {
+                log::warn!("winrt ResultGenerated status={status:?}");
                 return Ok(());
             }
             let text = result.Text()?.to_string();
+            log::info!("winrt ResultGenerated chars={}", text.chars().count());
             handle_result(&app_for_results, &text);
             Ok(())
         },
@@ -210,6 +219,7 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
             super::clear_active_backend(super::ActiveBackend::WinRt);
             if let Some(args) = args {
                 if let Ok(status) = args.Status() {
+                    log::info!("winrt Completed status={status:?}");
                     if status != SpeechRecognitionResultStatus::Success && !is_quiet_end(status) {
                         emit_error(
                             &app_for_completed,

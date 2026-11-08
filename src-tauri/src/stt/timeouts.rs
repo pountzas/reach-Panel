@@ -15,6 +15,20 @@ pub fn duration_to_winrt(duration: Duration) -> TimeSpan {
     }
 }
 
+pub struct WinrtSilenceTimeouts {
+    pub initial: TimeSpan,
+    pub end: TimeSpan,
+    pub auto_stop: TimeSpan,
+}
+
+pub fn winrt_silence_timeouts() -> WinrtSilenceTimeouts {
+    WinrtSilenceTimeouts {
+        initial: duration_to_winrt(INITIAL_SILENCE),
+        end: duration_to_winrt(END_SILENCE),
+        auto_stop: duration_to_winrt(AUTO_STOP_SILENCE),
+    }
+}
+
 pub fn refuse_start_without_focus(input_focused: bool) -> Result<(), &'static str> {
     if input_focused {
         Ok(())
@@ -50,5 +64,13 @@ mod tests {
         assert_eq!(duration_to_winrt(Duration::from_secs(5)).Duration, 50_000_000);
         assert_eq!(duration_to_winrt(Duration::from_secs(10)).Duration, 100_000_000);
         assert_eq!(duration_to_winrt(Duration::from_secs(3)).Duration, 30_000_000);
+    }
+
+    #[test]
+    fn winrt_silence_timeouts_match_spec_ticks() {
+        let t = winrt_silence_timeouts();
+        assert_eq!(t.initial.Duration, 50_000_000);
+        assert_eq!(t.end.Duration, 100_000_000);
+        assert_eq!(t.auto_stop.Duration, 100_000_000);
     }
 }
