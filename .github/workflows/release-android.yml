@@ -131,7 +131,6 @@ jobs:
             exit 1
           fi
           STABLE_URL=$(node companion/scripts/upload-apk-to-blob.mjs ReachPanel-Companion.apk ReachPanel-Companion.apk)
-          node companion/scripts/upload-apk-to-blob.mjs "ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk" "ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk" >/dev/null
           echo "apk_url=$STABLE_URL" >> "$GITHUB_OUTPUT"
           echo "Public APK URL (stable pathname): $STABLE_URL"
 
@@ -152,6 +151,7 @@ jobs:
 
       - name: Deploy install site
         if: steps.bump.outputs.should_release == 'true'
+        id: deploy_install
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -169,6 +169,7 @@ jobs:
 
       - name: Create GitHub pre-release
         if: steps.bump.outputs.should_release == 'true'
+        id: github_release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: companion-v${{ steps.bump.outputs.new_version }}
@@ -179,3 +180,17 @@ jobs:
           files: |
             ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk
             ReachPanel-Companion.apk
+
+      - name: Remove old versioned APKs from Vercel Blob
+        if: >
+          steps.bump.outputs.should_release == 'true' &&
+          steps.blob.outcome == 'success' &&
+          steps.merge_downloads.outcome == 'success' &&
+          steps.deploy_install.outcome == 'success' &&
+          steps.github_release.outcome == 'success'
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          node scripts/cleanup-old-apk-blobs.mjs \
+            --previous-version "${{ steps.bump.outputs.previous_version }}" \
+            --sweep
