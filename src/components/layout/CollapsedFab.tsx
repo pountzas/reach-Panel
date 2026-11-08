@@ -16,6 +16,7 @@ import {
   MIC_FAB_ARMED_ICON_COLOR,
   collapsedFabContentMinSize,
   isMicFabEnabled,
+  micDictateAriaKey,
   type CollapsedFabCount,
 } from "../../lib/focusMode";
 import { MOTION, prefersReducedMotion } from "../../lib/motion";
@@ -189,19 +190,15 @@ export function CollapsedFab({
     }
   };
 
-  let micAriaLabel: string;
-  if (listening) {
-    micAriaLabel = t("dictationStop");
-  } else if (micEnabled) {
-    micAriaLabel = t("dictationStart");
-  } else if (!canDictate) {
-    micAriaLabel =
-      sttCapability?.online && !sttCapability.winrtSupported
-        ? t("dictationUnavailableUnsupported")
-        : t("dictationUnavailableOffline");
-  } else {
-    micAriaLabel = t("micModeSelectInput");
-  }
+  const micAriaLabel = t(
+    micDictateAriaKey({
+      dictationState,
+      canDictate,
+      externalInputFocused,
+      online: sttCapability?.online,
+      winrtSupported: sttCapability?.winrtSupported,
+    }),
+  );
 
   return (
     <div

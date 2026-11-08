@@ -89,20 +89,23 @@ export const KeyButton = memo(function KeyButton({
   const inGrid = gridColumn !== undefined && gridRow !== undefined;
   const alignBottom = labelAlign === "bottom";
 
-  const sharedStyle = transparent
-    ? {
-        ...transparentOutlineStyle({
-          active,
-          outlineColor,
+  const sharedStyle = {
+    ...(transparent
+      ? {
+          ...transparentOutlineStyle({
+            active,
+            outlineColor,
+            color: textColor,
+          }),
+          fontSize,
+        }
+      : {
+          fontSize,
           color: textColor,
+          backgroundColor: bgColor,
         }),
-        fontSize,
-      }
-    : {
-        fontSize,
-        color: textColor,
-        backgroundColor: bgColor,
-      };
+    ...(transparent && disabled ? { opacity: 0.45 } : {}),
+  };
 
   const buttonClass = transparent
     ? `ak-action-btn inline-flex ${alignBottom ? "items-end pb-1" : "items-center"} justify-center rounded-lg font-semibold transition active:scale-95 ${pressedClass}`

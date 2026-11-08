@@ -31,7 +31,9 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
 import { effectiveKeyboardFontSize } from "../../lib/keyboardFontSize";
 import {
+  isMicFabEnabled,
   isTransparentUiActive,
+  micDictateAriaKey,
   transparentKeyPalette,
 } from "../../lib/focusMode";
 import type { AppSettings } from "../../lib/types";
@@ -105,6 +107,7 @@ export function Keyboard() {
   const selectTypingInputMethod = useAppStore((s) => s.selectTypingInputMethod);
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
   const dictationState = useAppStore((s) => s.dictationState);
+  const externalInputFocused = useAppStore((s) => s.externalInputFocused);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
   const sttCapability = useAppStore((s) => s.sttCapability);
   const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
@@ -214,24 +217,27 @@ export function Keyboard() {
   const listening =
     dictationState === "listening" || dictationState === "processing";
   const canDictate = sttCapability?.canDictate ?? false;
-  // Never disable while a session is active — stop must always be clickable.
-  const dictateDisabled = !listening && !canDictate;
+  const dictateDisabled = !isMicFabEnabled({
+    dictationState,
+    canDictate,
+    externalInputFocused,
+  });
   const groqRemainingPercent = useGroqDailyQuota(sttCapability?.engine);
 
   useEffect((): void => {
     void refreshSttCapability();
   }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
 
-  let dictateAriaLabel = listening ? t("dictationStop") : t("dictationStart");
-  if (dictateDisabled) {
-    if (!sttCapability?.online) {
-      dictateAriaLabel = t("dictationUnavailableOffline");
-    } else if (!sttCapability.winrtSupported) {
-      dictateAriaLabel = t("dictationUnavailableUnsupported");
-    } else {
-      dictateAriaLabel = t("dictationUnavailableOffline");
-    }
-  } else if (groqRemainingPercent !== null) {
+  let dictateAriaLabel = t(
+    micDictateAriaKey({
+      dictationState,
+      canDictate,
+      externalInputFocused,
+      online: sttCapability?.online,
+      winrtSupported: sttCapability?.winrtSupported,
+    }),
+  );
+  if (!dictateDisabled && groqRemainingPercent !== null) {
     dictateAriaLabel = `${dictateAriaLabel}. ${t("dictationGroqRemainingToday")} ${groqRemainingPercent}%`;
   }
 
