@@ -73,6 +73,7 @@ function main() {
   console.log(`Bump ${bumpType}: ${version} → ${newVersion} (versionCode ${newVersionCode})`);
   setOutput('should_release', 'true');
   setOutput('new_version', newVersion);
+  setOutput('previous_version', version);
 
   if (checkOnly) {
     process.exit(0);

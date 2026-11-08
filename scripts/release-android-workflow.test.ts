@@ -24,7 +24,7 @@ describe("release-android.yml downloads landing contract", () => {
     const blobRelated = yaml
       .split(/\n(?= {2}- )/)
       .filter((step) =>
-        /upload-apk-to-blob|merge-downloads-latest|BLOB_READ_WRITE_TOKEN|Deploy install site/i.test(
+        /upload-apk-to-blob|merge-downloads-latest|BLOB_READ_WRITE_TOKEN|Deploy install site|cleanup-old-apk-blobs/i.test(
           step,
         ),
       );
@@ -66,5 +66,68 @@ describe("release-android.yml downloads landing contract", () => {
   it("deploys install site without sed inject of INSTALL_APK placeholder", () => {
     expect(yaml).not.toContain("__INSTALL_APK_PUBLIC_URL__");
     expect(yaml).not.toMatch(/\bsed\s+-i\b/);
+  });
+
+  it("uploads only the stable APK to Blob, not a versioned pathname", () => {
+    expect(yaml).toMatch(
+      /upload-apk-to-blob\.mjs\s+ReachPanel-Companion\.apk\s+ReachPanel-Companion\.apk/,
+    );
+    expect(yaml).not.toMatch(
+      /upload-apk-to-blob\.mjs\s+"ReachPanel-Companion-\$\{\{ steps\.bump\.outputs\.new_version \}\}\.apk"/,
+    );
+  });
+
+  it("attaches versioned and stable APKs to the GitHub pre-release", () => {
+    const releaseStart = yaml.indexOf("Create GitHub pre-release");
+    expect(releaseStart).toBeGreaterThan(-1);
+    const nextStep = yaml.indexOf("\n      - name:", releaseStart);
+    const releaseStep = yaml.slice(
+      releaseStart,
+      nextStep === -1 ? undefined : nextStep,
+    );
+    expect(releaseStep).toContain(
+      "ReachPanel-Companion-${{ steps.bump.outputs.new_version }}.apk",
+    );
+    expect(releaseStep).toContain("ReachPanel-Companion.apk");
+  });
+
+  it("cleans leftover versioned APK blobs after the GitHub pre-release", () => {
+    const releaseIdx = yaml.indexOf("Create GitHub pre-release");
+    const cleanupIdx = yaml.indexOf("cleanup-old-apk-blobs.mjs");
+    expect(releaseIdx).toBeGreaterThan(-1);
+    expect(cleanupIdx).toBeGreaterThan(releaseIdx);
+    expect(yaml).toContain(
+      '--previous-version "${{ steps.bump.outputs.previous_version }}"',
+    );
+    const cleanupRun = yaml.slice(cleanupIdx, cleanupIdx + 250);
+    expect(cleanupRun).toContain("cleanup-old-apk-blobs.mjs");
+    expect(cleanupRun).toMatch(/--sweep\b/);
+  });
+
+  it("gates blob cleanup on release, blob, merge, deploy, and github release success", () => {
+    expect(yaml).toMatch(/id:\s*deploy_install/);
+    expect(yaml).toMatch(/id:\s*github_release/);
+    const cleanupStart = yaml.indexOf("Remove old versioned APKs from Vercel Blob");
+    expect(cleanupStart).toBeGreaterThan(-1);
+    const cleanupStep = yaml.slice(cleanupStart, cleanupStart + 800);
+    expect(cleanupStep).toContain("steps.bump.outputs.should_release == 'true'");
+    expect(cleanupStep).toContain("steps.blob.outcome == 'success'");
+    expect(cleanupStep).toContain("steps.merge_downloads.outcome == 'success'");
+    expect(cleanupStep).toContain("steps.deploy_install.outcome == 'success'");
+    expect(cleanupStep).toContain("steps.github_release.outcome == 'success'");
+    expect(cleanupStep).not.toMatch(/continue-on-error:\s*true/);
+  });
+
+  it("does not run blob cleanup from other release workflows", () => {
+    const workflowsDir = join(
+      dirname(fileURLToPath(import.meta.url)),
+      "..",
+      ".github",
+      "workflows",
+    );
+    for (const name of ["build.yml", "deploy-install-site.yml", "release.yml"]) {
+      const other = readFileSync(join(workflowsDir, name), "utf8");
+      expect(other).not.toContain("cleanup-old-apk-blobs");
+    }
   });
 });

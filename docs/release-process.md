@@ -21,3 +21,9 @@
   - `.github/workflows/deploy-install-site.yml`
 - Version bumps use conventional commits under `companion/` since the last `companion-v*` tag.
 - Companion bump logic is covered by `companion/scripts/bump-version.test.mjs` via `npm run test:blob` in CI.
+- Blob serves only the stable `ReachPanel-Companion.apk`; versioned APKs belong on GitHub Releases.
+- After publish, `release-android.yml` deletes leftover `ReachPanel-Companion-<semver>.apk` blobs (`--previous-version` + `--sweep`).
+- One-time/manual sweep (dry-run first; needs `BLOB_READ_WRITE_TOKEN`):
+  `node scripts/cleanup-old-apk-blobs.mjs --sweep --dry-run`
+  then the same command without `--dry-run`.
+- The first Companion release after this lands also runs that sweep automatically.
