@@ -2,6 +2,7 @@ pub(crate) mod events;
 pub(crate) mod groq;
 mod network;
 mod route;
+pub(crate) mod timeouts;
 mod winrt;
 
 use route::{can_dictate, prefer_cloud_stt, select_engine, RouteDecision, SttEngine};
@@ -106,6 +107,11 @@ pub fn start_dictation(
             if let Ok(mut guard) = router().lock() {
                 guard.active = Some(ActiveBackend::WinRt);
             }
+            log::info!(
+                "stt start engine={} language={}",
+                engine_name(SttEngine::WinRt),
+                language
+            );
             if let Err(e) = winrt::start_dictation(language, app) {
                 clear_active_backend(ActiveBackend::WinRt);
                 return Err(e);
@@ -121,6 +127,11 @@ pub fn start_dictation(
             if let Ok(mut guard) = router().lock() {
                 guard.active = Some(ActiveBackend::Groq);
             }
+            log::info!(
+                "stt start engine={} language={}",
+                engine_name(SttEngine::Groq),
+                language
+            );
             if let Err(e) = groq::start_dictation(language, &key, app) {
                 clear_active_backend(ActiveBackend::Groq);
                 return Err(e);
@@ -142,22 +153,28 @@ pub fn start_dictation(
 }
 
 pub fn stop_dictation() -> anyhow::Result<()> {
+    log::info!("stt stop requested");
     let active = router().lock().ok().and_then(|g| g.active);
-    match active {
-        Some(ActiveBackend::WinRt) => {
-            winrt::stop_dictation()?;
-        }
-        Some(ActiveBackend::Groq) => {
-            groq::stop_dictation()?;
-        }
+    let result = match active {
+        Some(ActiveBackend::WinRt) => winrt::stop_dictation(),
+        Some(ActiveBackend::Groq) => groq::stop_dictation(),
         None => {
             let _ = winrt::stop_dictation();
             let _ = groq::stop_dictation();
+            Ok(())
         }
+    };
+    if let Err(e) = &result {
+        log::error!(
+            "stt stop failed: {}",
+            crate::logging::redact(&e.to_string())
+        );
+        return result;
     }
     if let Ok(mut guard) = router().lock() {
         guard.active = None;
     }
+    log::info!("stt stop completed");
     Ok(())
 }
 

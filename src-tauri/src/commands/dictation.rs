@@ -19,6 +19,11 @@ pub async fn cmd_start_dictation(
                 .to_string(),
         );
     }
+    if let Err(msg) = crate::stt::timeouts::refuse_start_without_focus(
+        crate::input::focus_target::is_input_focused(),
+    ) {
+        return Err(msg.to_string());
+    }
     tokio::task::spawn_blocking(move || {
         start_dictation(&language, groq_api_key.as_deref(), app).map_err(|e| e.to_string())
     })
