@@ -186,6 +186,11 @@ export function ToolsMaintenanceSection({
             style={{ color: surface.panelMutedText }}>
             {t("autoSendLogsWeeklyDescription")}
           </p>
+          <p
+            className="mt-1 px-1 text-xs"
+            style={{ color: surface.panelMutedText }}>
+            {t("sendLogsDestination")}
+          </p>
           {lastSentLabel ? (
             <p
               className="mt-1 px-1 text-xs"

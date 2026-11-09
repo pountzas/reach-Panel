@@ -130,6 +130,9 @@ fn send_unicode(ch: char) -> Result<()> {
     let expected = 2u32;
     let sent = unsafe { SendInput(&[down, up], std::mem::size_of::<INPUT>() as i32) };
     if send_input_incomplete(sent, expected) {
+        if sent == 1 {
+            let _ = unsafe { SendInput(&[up], std::mem::size_of::<INPUT>() as i32) };
+        }
         log::warn!("SendInput short count sent={sent} expected={expected}");
         let err = anyhow!("SendInput failed for unicode");
         log::error!("{err}");

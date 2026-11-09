@@ -71,6 +71,16 @@ test("deletePrevious('0.3.0') deletes only that APK's url", async () => {
   assert.deepEqual(del.calls[0].opts, { token: 'tok' });
 });
 
+test('deletePrevious rejects an invalid previous version', async () => {
+  const list = fakeList([{ blobs: ALL_BLOBS, hasMore: false }]);
+  const del = fakeDel();
+  await assert.rejects(
+    () => deletePrevious({ list, del, token: 'tok', dryRun: false }, ''),
+    /Invalid previous version/,
+  );
+  assert.deepEqual(del.calls, []);
+});
+
 test('deletePrevious is a no-op when the previous version blob is missing', async () => {
   const list = fakeList([{ blobs: ALL_BLOBS, hasMore: false }]);
   const del = fakeDel();

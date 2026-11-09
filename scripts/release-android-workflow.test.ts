@@ -24,13 +24,16 @@ describe("release-android.yml downloads landing contract", () => {
     const blobRelated = yaml
       .split(/\n(?= {2}- )/)
       .filter((step) =>
-        /upload-apk-to-blob|merge-downloads-latest|BLOB_READ_WRITE_TOKEN|Deploy install site|cleanup-old-apk-blobs/i.test(
+        /upload-apk-to-blob|merge-downloads-latest|BLOB_READ_WRITE_TOKEN|Deploy install site/i.test(
           step,
         ),
       );
 
     expect(blobRelated.length).toBeGreaterThan(0);
     for (const step of blobRelated) {
+      if (/cleanup-old-apk-blobs/i.test(step)) {
+        continue;
+      }
       expect(step).not.toMatch(/continue-on-error:\s*true/);
     }
   });
@@ -96,9 +99,8 @@ describe("release-android.yml downloads landing contract", () => {
     const cleanupIdx = yaml.indexOf("cleanup-old-apk-blobs.mjs");
     expect(releaseIdx).toBeGreaterThan(-1);
     expect(cleanupIdx).toBeGreaterThan(releaseIdx);
-    expect(yaml).toContain(
-      '--previous-version "${{ steps.bump.outputs.previous_version }}"',
-    );
+    expect(yaml).toContain('PREVIOUS_VERSION: ${{ steps.bump.outputs.previous_version }}');
+    expect(yaml).toContain('--previous-version "$PREVIOUS_VERSION"');
     const cleanupRun = yaml.slice(cleanupIdx, cleanupIdx + 250);
     expect(cleanupRun).toContain("cleanup-old-apk-blobs.mjs");
     expect(cleanupRun).toMatch(/--sweep\b/);
@@ -115,7 +117,7 @@ describe("release-android.yml downloads landing contract", () => {
     expect(cleanupStep).toContain("steps.merge_downloads.outcome == 'success'");
     expect(cleanupStep).toContain("steps.deploy_install.outcome == 'success'");
     expect(cleanupStep).toContain("steps.github_release.outcome == 'success'");
-    expect(cleanupStep).not.toMatch(/continue-on-error:\s*true/);
+    expect(cleanupStep).toMatch(/continue-on-error:\s*true/);
   });
 
   it("does not run blob cleanup from other release workflows", () => {

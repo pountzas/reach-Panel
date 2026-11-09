@@ -1,5 +1,3 @@
-use crate::stt::timeouts::NO_INPUT_TARGET;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RestoreFocusPlan {
     LeaveForeground,
@@ -8,6 +6,7 @@ pub enum RestoreFocusPlan {
 }
 
 pub const FOREGROUND_RESTORE_FAILED: &str = "Could not return focus to the text field";
+pub const NO_TYPING_TARGET: &str = "Select a text field to type into";
 
 pub fn restore_focus_plan(
     ours_is_foreground: bool,
@@ -18,7 +17,7 @@ pub fn restore_focus_plan(
         return RestoreFocusPlan::LeaveForeground;
     }
     if !has_target || !target_valid {
-        return RestoreFocusPlan::Error(NO_INPUT_TARGET);
+        return RestoreFocusPlan::Error(NO_TYPING_TARGET);
     }
     RestoreFocusPlan::Restore
 }
@@ -43,7 +42,7 @@ mod tests {
     fn error_when_ours_and_no_target() {
         assert_eq!(
             restore_focus_plan(true, false, false),
-            RestoreFocusPlan::Error(NO_INPUT_TARGET)
+            RestoreFocusPlan::Error(NO_TYPING_TARGET)
         );
     }
 
@@ -51,7 +50,7 @@ mod tests {
     fn error_when_ours_and_invalid_target() {
         assert_eq!(
             restore_focus_plan(true, true, false),
-            RestoreFocusPlan::Error(NO_INPUT_TARGET)
+            RestoreFocusPlan::Error(NO_TYPING_TARGET)
         );
     }
 

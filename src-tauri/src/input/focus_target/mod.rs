@@ -663,7 +663,7 @@ pub fn restore_target_focus() -> Result<()> {
         let valid = hwnd.is_some_and(is_valid_typing_target);
         match restore_plan::restore_focus_plan(ours, target.is_some(), valid) {
             restore_plan::RestoreFocusPlan::LeaveForeground => {
-                log::warn!("restore_target_focus skipped: panel not foreground");
+                log::debug!("restore_target_focus skipped: panel not foreground");
                 return Ok(());
             }
             restore_plan::RestoreFocusPlan::Error(msg) => {

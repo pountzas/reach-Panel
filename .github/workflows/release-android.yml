@@ -188,9 +188,11 @@ jobs:
           steps.merge_downloads.outcome == 'success' &&
           steps.deploy_install.outcome == 'success' &&
           steps.github_release.outcome == 'success'
+        continue-on-error: true
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          PREVIOUS_VERSION: ${{ steps.bump.outputs.previous_version }}
         run: |
           node scripts/cleanup-old-apk-blobs.mjs \
-            --previous-version "${{ steps.bump.outputs.previous_version }}" \
+            --previous-version "$PREVIOUS_VERSION" \
             --sweep

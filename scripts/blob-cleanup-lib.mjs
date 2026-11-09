@@ -44,6 +44,9 @@ async function deleteBlobs({ del, token, dryRun }, blobs) {
 }
 
 export async function deletePrevious({ list, del, token, dryRun }, previousVersion) {
+  if (!/^\d+\.\d+\.\d+$/.test(String(previousVersion))) {
+    throw new Error(`Invalid previous version: ${previousVersion}`);
+  }
   const pathname = `ReachPanel-Companion-${previousVersion}.apk`;
   const blobs = await listCompanionBlobs(list, token);
   const target = blobs.find((blob) => blob.pathname === pathname);

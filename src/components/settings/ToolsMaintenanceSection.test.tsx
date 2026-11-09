@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { getSurfaceColors } from "../../lib/colorProfiles";
 
 const mocks = vi.hoisted(() => {
@@ -201,13 +207,13 @@ describe("ToolsMaintenanceSection diagnostics", () => {
     );
 
     fireEvent.click(await screen.findByRole("button", { name: "sendLogs" }));
-    expect(await screen.findByRole("dialog")).toBeTruthy();
-    expect(await screen.findByText("diagnostics.txt")).toBeTruthy();
-    expect(screen.getByText("reach-panel.log")).toBeTruthy();
-    expect(screen.getByText("breadcrumbs.log")).toBeTruthy();
-    expect(screen.getByText("sendLogsPrivacyTyped")).toBeTruthy();
-    expect(screen.getByText("sendLogsPrivacyUsername")).toBeTruthy();
-    expect(screen.getByText("sendLogsDestination")).toBeTruthy();
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText("diagnostics.txt")).toBeTruthy();
+    expect(within(dialog).getByText("reach-panel.log")).toBeTruthy();
+    expect(within(dialog).getByText("breadcrumbs.log")).toBeTruthy();
+    expect(within(dialog).getByText("sendLogsPrivacyTyped")).toBeTruthy();
+    expect(within(dialog).getByText("sendLogsPrivacyUsername")).toBeTruthy();
+    expect(within(dialog).getByText("sendLogsDestination")).toBeTruthy();
   });
 
   it("sends logs through cmd_send_diagnostics and shows the report id", async () => {
@@ -281,6 +287,9 @@ describe("ToolsMaintenanceSection diagnostics", () => {
       name: "autoSendLogsWeekly",
     });
     expect(toggle.getAttribute("aria-checked")).toBe("false");
+    expect(screen.getAllByText("sendLogsDestination").length).toBeGreaterThanOrEqual(
+      1,
+    );
   });
 
   it("hides the weekly auto-send switch when upload is not configured", async () => {
