@@ -63,12 +63,12 @@ fn is_quiet_end(status: SpeechRecognitionResultStatus) -> bool {
         || status == SpeechRecognitionResultStatus::UserCanceled
 }
 
-/// Session present, start in flight, or CancelAsync still running all block a new start.
+/// Session present, start in flight, or StopAsync still running all block a new start.
 fn runtime_is_busy(has_session: bool, starting: bool, stopping: bool) -> bool {
     has_session || starting || stopping
 }
 
-/// What stop_dictation must do after attempting ContinuousRecognitionSession / CancelAsync.
+/// What stop_dictation must do after attempting ContinuousRecognitionSession / StopAsync.
 struct StopCleanupActions {
     remove_event_tokens: bool,
     close_recognizer: bool,
@@ -345,7 +345,7 @@ pub fn stop_dictation() -> Result<()> {
     };
     let _stopping_guard = StoppingFlagGuard;
 
-    // Await CancelAsync without holding the global mutex (bounded; always Close + Idle).
+    // Await StopAsync without holding the global mutex. Cancel only if that wait times out.
     let session = match active.recognizer.ContinuousRecognitionSession() {
         Ok(session) => Some(session),
         Err(e) => {
@@ -358,39 +358,35 @@ pub fn stop_dictation() -> Result<()> {
     };
 
     if let Some(ref session) = session {
-        match session.CancelAsync() {
-            Ok(stop) => {
-                let started = std::time::Instant::now();
-                let (tx, rx) = std::sync::mpsc::channel();
-                std::thread::spawn(move || {
-                    let _ = tx.send(stop.get());
-                });
-                match rx.recv_timeout(super::timeouts::STOP_ASYNC) {
-                    Ok(Ok(())) => {
-                        log::info!(
-                            "stt stop completed engine=winrt duration_ms={}",
-                            started.elapsed().as_millis()
-                        );
-                    }
-                    Ok(Err(e)) => {
-                        log::error!(
-                            "stt stop failed engine=winrt err={}",
-                            crate::logging::redact(&e.to_string())
-                        );
-                    }
-                    Err(_) => {
-                        log::error!(
-                            "stt stop timed out engine=winrt duration_ms={}",
-                            started.elapsed().as_millis()
-                        );
-                    }
-                }
+        let started = std::time::Instant::now();
+        let finished = match session.StopAsync() {
+            Ok(op) => super::timeouts::wait_bounded(move || op.get(), super::timeouts::STOP_ASYNC),
+            Err(e) => Ok(Err(e)),
+        };
+        match finished {
+            Ok(Ok(())) => {
+                log::info!(
+                    "stt stop completed engine=winrt duration_ms={}",
+                    started.elapsed().as_millis()
+                );
             }
-            Err(e) => {
+            Ok(Err(e)) => {
                 log::error!(
-                    "stt stop CancelAsync failed engine=winrt err={}",
+                    "stt stop failed engine=winrt err={}",
                     crate::logging::redact(&e.to_string())
                 );
+            }
+            Err(()) => {
+                log::error!(
+                    "stt stop timed out engine=winrt duration_ms={}",
+                    started.elapsed().as_millis()
+                );
+                if let Ok(cancel) = session.CancelAsync() {
+                    let _ = super::timeouts::wait_bounded(
+                        move || cancel.get(),
+                        std::time::Duration::from_millis(200),
+                    );
+                }
             }
         }
     }

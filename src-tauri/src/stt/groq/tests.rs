@@ -1,5 +1,5 @@
 use super::audio::{encode_wav_pcm16, resample_linear};
-use super::{groq_remaining_percent, resolve_api_key, transcribe_file_bytes};
+use super::{groq_no_speech_message, groq_remaining_percent, resolve_api_key, transcribe_file_bytes};
 
 #[test]
 fn resample_identity() {
@@ -31,6 +31,15 @@ fn resolve_key_prefers_settings() {
     );
     assert_eq!(resolve_api_key(Some("")).as_deref(), None);
     assert_eq!(resolve_api_key(Some("   ")).as_deref(), None);
+}
+
+#[test]
+fn no_speech_message_only_when_energy_never_crossed() {
+    assert_eq!(
+        groq_no_speech_message(false),
+        Some("No speech captured. Check the microphone.")
+    );
+    assert_eq!(groq_no_speech_message(true), None);
 }
 
 #[test]

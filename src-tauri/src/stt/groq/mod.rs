@@ -238,6 +238,14 @@ where
     Ok(stream)
 }
 
+pub(super) fn groq_no_speech_message(any_speech: bool) -> Option<&'static str> {
+    if any_speech {
+        None
+    } else {
+        Some("No speech captured. Check the microphone.")
+    }
+}
+
 fn worker_loop(
     api_key: String,
     language: String,
@@ -246,6 +254,7 @@ fn worker_loop(
     app: AppHandle,
 ) {
     let mut speech_started: Option<Instant> = None;
+    let mut any_speech = false;
     let mut last_voice = Instant::now();
     let mut cursor = 0usize;
     let mut peak_energy = 0.0f32;
@@ -271,6 +280,7 @@ fn worker_loop(
         if energy >= ENERGY_THRESHOLD {
             if speech_started.is_none() {
                 speech_started = Some(now);
+                any_speech = true;
                 log::debug!("[stt/groq] speech start energy={energy:.4}");
             }
             last_voice = now;
@@ -313,7 +323,7 @@ fn worker_loop(
             peak_energy = 0.0;
             let chunk_secs = chunk.len() as f32 / TARGET_SAMPLE_RATE as f32;
             if chunk_secs >= MIN_SPEECH_SECS * 0.7 {
-                log::debug!(
+                log::info!(
                     "[stt/groq] flush {chunk_secs:.2}s peak={flushed_peak:.4} lang={language}"
                 );
                 set_processing(true);
@@ -325,7 +335,14 @@ fn worker_loop(
                             result.quota.remaining_requests,
                             result.quota.limit_requests,
                         );
-                        log::debug!("[stt/groq] transcript len={}", result.text.chars().count());
+                        log::info!(
+                            "{}",
+                            super::log_lines::result_log_line(
+                                "groq",
+                                "ok",
+                                result.text.chars().count()
+                            )
+                        );
                         // Type even if Stop arrived mid-transcription; Idle was already emitted.
                         handle_desktop_result(&app, &result.text);
                     }
@@ -410,6 +427,12 @@ fn worker_loop(
     }
     if lingering_should_touch_shared_state(true, newer_session_active()) {
         set_processing(false);
+    }
+    if let Some(message) = groq_no_speech_message(any_speech) {
+        log::info!("stt result engine=groq status=no_speech peak={peak_energy:.4} chars=0");
+        if lingering_should_touch_shared_state(true, newer_session_active()) {
+            emit_error(&app, message);
+        }
     }
 }
 

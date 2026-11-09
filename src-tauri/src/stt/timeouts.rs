@@ -6,7 +6,7 @@ use windows::Foundation::TimeSpan;
 pub const NO_INPUT_TARGET: &str = "Select a text field to dictate";
 
 pub const INITIAL_SILENCE: Duration = Duration::from_secs(5);
-pub const END_SILENCE: Duration = Duration::from_secs(10);
+pub const END_SILENCE: Duration = Duration::from_millis(150);
 pub const AUTO_STOP_SILENCE: Duration = Duration::from_secs(10);
 pub const STOP_ASYNC: Duration = Duration::from_millis(800);
 pub const MAX_SESSION: Duration = Duration::from_secs(60);
@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn timeout_values_match_spec() {
         assert_eq!(INITIAL_SILENCE, Duration::from_secs(5));
-        assert_eq!(END_SILENCE, Duration::from_secs(10));
+        assert_eq!(END_SILENCE, Duration::from_millis(150));
         assert_eq!(AUTO_STOP_SILENCE, Duration::from_secs(10));
         assert_eq!(STOP_ASYNC, Duration::from_millis(800));
         assert_eq!(MAX_SESSION, Duration::from_secs(60));
@@ -91,8 +91,13 @@ mod tests {
     fn winrt_silence_timeouts_match_spec_ticks() {
         let t = winrt_silence_timeouts();
         assert_eq!(t.initial.Duration, 50_000_000);
-        assert_eq!(t.end.Duration, 100_000_000);
+        assert_eq!(t.end.Duration, 1_500_000);
         assert_eq!(t.auto_stop.Duration, 100_000_000);
+    }
+
+    #[test]
+    fn end_silence_finalizes_phrases_well_before_auto_stop() {
+        assert!(END_SILENCE * 10 <= AUTO_STOP_SILENCE);
     }
 
     #[test]
