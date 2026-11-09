@@ -43,3 +43,10 @@ fn remaining_percent_from_headers() {
     assert_eq!(groq_remaining_percent(0, 0), 0);
     assert_eq!(groq_remaining_percent(200, 100), 100);
 }
+
+#[test]
+fn flush_remainder_when_speech_was_captured() {
+    assert!(super::should_flush_remainder_on_stop(true, 0.9, 0.8));
+    assert!(!super::should_flush_remainder_on_stop(true, 0.2, 0.8));
+    assert!(!super::should_flush_remainder_on_stop(false, 2.0, 0.8));
+}

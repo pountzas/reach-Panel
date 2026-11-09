@@ -31,6 +31,14 @@ const MAX_UTTERANCE_SECS: f32 = 28.0;
 /// Low enough for quiet mics / shared WASAPI capture levels.
 const ENERGY_THRESHOLD: f32 = 0.004;
 
+pub(super) fn should_flush_remainder_on_stop(
+    speech_started: bool,
+    chunk_secs: f32,
+    min_secs: f32,
+) -> bool {
+    speech_started && chunk_secs >= min_secs * 0.7
+}
+
 struct GroqRuntime {
     session: Option<GroqSession>,
     lingering_worker: Option<JoinHandle<()>>,
@@ -326,8 +334,55 @@ fn worker_loop(
             }
         }
     }
+    // Flush any unflushed speech captured before stop. Idle already emitted from
+    // stop_dictation; this lingering worker may still type when transcription returns.
+    let remainder = match samples.lock() {
+        Ok(mut buf) => {
+            if buf.len() <= cursor {
+                None
+            } else {
+                let chunk = buf[cursor..].to_vec();
+                buf.clear();
+                Some(chunk)
+            }
+        }
+        Err(_) => None,
+    };
+    if let Some(chunk) = remainder {
+        let chunk_secs = chunk.len() as f32 / TARGET_SAMPLE_RATE as f32;
+        if should_flush_remainder_on_stop(speech_started.is_some(), chunk_secs, MIN_SPEECH_SECS) {
+            log::debug!(
+                "[stt/groq] flush remainder {chunk_secs:.2}s peak={peak_energy:.4} lang={language}"
+            );
+            set_processing(true);
+            match transcribe(&api_key, &chunk, &language) {
+                Ok(result) => {
+                    emit_groq_quota_optional(
+                        &app,
+                        result.quota.remaining_requests,
+                        result.quota.limit_requests,
+                    );
+                    let chars = result.text.chars().count();
+                    log::info!("[stt/groq] flush remainder chars={chars}");
+                    // handle_result even when stop_flag is true — stop already emitted Idle.
+                    handle_result(&app, &result.text);
+                }
+                Err(err) => {
+                    emit_groq_quota_optional(
+                        &app,
+                        err.quota.remaining_requests,
+                        err.quota.limit_requests,
+                    );
+                    log::error!(
+                        "[stt/groq] flush remainder error: {}",
+                        crate::logging::redact(&err.to_string())
+                    );
+                    emit_error(&app, err.to_string());
+                }
+            }
+        }
+    }
     set_processing(false);
-    // Do not flush remainder on stop — keep the mic toggle responsive.
 }
 
 pub fn stop_dictation() -> Result<()> {
