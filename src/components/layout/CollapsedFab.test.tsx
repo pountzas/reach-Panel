@@ -19,7 +19,7 @@ const openModeMenu = vi.fn(async () => {
   storeState.modeMenuOpen = true;
   await invoke("cmd_expand_window_for_mode_menu", {
     menuWidth: MODE_MENU_WIDTH,
-    menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+    menuHeight: modeMenuHeight(2 + APP_MODE_OPTIONS.length),
   });
 });
 const toggleCollapsed = vi.fn(async () => undefined);
@@ -51,6 +51,14 @@ const storeState = {
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke,
+}));
+
+vi.mock("@tauri-apps/plugin-process", () => ({
+  exit: vi.fn(),
+}));
+
+vi.mock("../../lib/toolWindows", () => ({
+  closeAllToolWindows: vi.fn(async () => undefined),
 }));
 
 vi.mock("../../stores/appStore", () => {

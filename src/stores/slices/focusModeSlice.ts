@@ -32,7 +32,7 @@ export const createFocusModeSlice: StateCreator<
     set({ modeMenuOpen: true });
     const pending = invoke("cmd_expand_window_for_mode_menu", {
       menuWidth: MODE_MENU_WIDTH,
-      menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+      menuHeight: modeMenuHeight(2 + APP_MODE_OPTIONS.length),
     }).then(
       () => undefined,
       (error: unknown) => {

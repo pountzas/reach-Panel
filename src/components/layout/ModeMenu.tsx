@@ -15,6 +15,7 @@ import { MOTION, prefersReducedMotion } from "../../lib/motion";
 import { useCompanionTabletEnabled } from "../../hooks/useCompanionTabletEnabled";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
+import { handleCloseApp } from "./appShellUtils";
 
 export type ModeMenuProps = {
   onShowKeyboard: () => void;
@@ -92,6 +93,11 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
   const onShowKeyboardClick = async () => {
     await closeModeMenu();
     onShowKeyboard();
+  };
+
+  const onCloseAppClick = async () => {
+    await closeModeMenu();
+    handleCloseApp();
   };
 
   const onPick = async (id: AppModeTablet) => {
@@ -205,6 +211,20 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
           </button>
         );
       })}
+      <div
+        role="separator"
+        className="mx-2 h-px shrink-0 opacity-40"
+        style={{ backgroundColor: textColor }}
+      />
+      <button
+        type="button"
+        role="menuitem"
+        className={itemClass}
+        style={{ minHeight: MODE_MENU_ITEM_HEIGHT }}
+        disabled={isAnimatingWindow}
+        onClick={() => void onCloseAppClick()}>
+        {t("modeMenuCloseApp")}
+      </button>
     </div>
   );
 }
