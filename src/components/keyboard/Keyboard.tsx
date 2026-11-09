@@ -94,6 +94,9 @@ export function Keyboard() {
     clearSticky,
     clearStickyExceptFn,
   } = useStickyModifiers();
+  const toggleCaptureCapsLock = useAppStore((s) => s.toggleCaptureCapsLock);
+  const captureCapsLock = useAppStore((s) => s.captureCapsLock);
+  const resetCaptureCapsLock = useAppStore((s) => s.resetCaptureCapsLock);
   const pollKeyboardState = useAppStore((s) => s.pollKeyboardState);
   const typeCharacter = useAppStore((s) => s.typeCharacter);
   const backspaceTyped = useAppStore((s) => s.backspaceTyped);
@@ -189,6 +192,16 @@ export function Keyboard() {
     freeWriteFocus,
   };
   const freeWriteCaptureActive = isFreeWriteCaptureActive(freeWriteMode);
+  const teachingCaptureActive =
+    isLanguageLessonCaptureActive(languageLessonMode) || freeWriteCaptureActive;
+  const effectiveKeyState = teachingCaptureActive
+    ? { ...physicalKeyState, capsLock: captureCapsLock }
+    : physicalKeyState;
+
+  useEffect(() => {
+    if (!teachingCaptureActive) resetCaptureCapsLock();
+  }, [teachingCaptureActive, resetCaptureCapsLock]);
+
   const freeWritePdfFocus =
     musicTeachingEnabled &&
     settings.keyboardSectionMode === "synthesizer" &&
@@ -247,7 +260,7 @@ export function Keyboard() {
     invoke<LayoutKeyTranslation>("cmd_translate_layout_key", {
       physicalKey,
       shift: shiftActive,
-      capsLock: physicalKeyState.capsLock,
+      capsLock: effectiveKeyState.capsLock,
       hkl: physicalKeyState.systemHkl || null,
     });
 
@@ -263,7 +276,7 @@ export function Keyboard() {
     languageListAuthoringActive,
     languageBackspace,
     greekKeyboardActive,
-    physicalKeyState,
+    physicalKeyState: effectiveKeyState,
     fnActive,
     translateLayoutKey,
     applyLanguageLayoutTranslation,
@@ -279,6 +292,7 @@ export function Keyboard() {
     applyFreeWriteLayoutTranslation,
     freeWritePdfFocus,
     toggleSticky,
+    toggleCaptureCapsLock,
     backspaceTyped,
     loadSuggestions,
     recordTypedWord,
@@ -444,7 +458,7 @@ export function Keyboard() {
                       ? specialLabels.get(k.key)
                       : displayLabel(
                           k,
-                          physicalKeyState.capsLock,
+                          effectiveKeyState.capsLock,
                           shiftActive,
                           fnActive,
                           typingLocale,
@@ -466,7 +480,7 @@ export function Keyboard() {
                     k,
                     ri,
                     ci,
-                    physicalKeyState,
+                    effectiveKeyState,
                     stickyModifiers,
                   )}
                   repeatOnHold={isBackspace}

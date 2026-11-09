@@ -38,6 +38,7 @@ export const createTypingSlice: StateCreator<AppStore, [], [], TypingSlice> = (
   greekPendingAccent: null,
   stickyModifiers: [],
   physicalKeyState: DEFAULT_PHYSICAL_KEY_STATE,
+  captureCapsLock: false,
   keyboardLayout: "QWERTY",
   inputMethods: [],
   layoutKeyLabels: [],
@@ -154,6 +155,12 @@ export const createTypingSlice: StateCreator<AppStore, [], [], TypingSlice> = (
         ? s.stickyModifiers.filter((m) => m !== modifier)
         : [...s.stickyModifiers, modifier],
     }));
+  },
+  toggleCaptureCapsLock: () => {
+    set((s) => ({ captureCapsLock: !s.captureCapsLock }));
+  },
+  resetCaptureCapsLock: () => {
+    set({ captureCapsLock: false });
   },
   pollKeyboardState: async () => {
     const epoch = get().settingsEpoch;

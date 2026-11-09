@@ -248,6 +248,10 @@ export type TypingSlice = {
   ) => void;
   backspaceTyped: () => void;
   toggleSticky: (modifier: string) => void;
+  /** Caps for Teaching capture. The keyboard poll never writes this. */
+  captureCapsLock: boolean;
+  toggleCaptureCapsLock: () => void;
+  resetCaptureCapsLock: () => void;
   pollKeyboardState: () => Promise<void>;
   loadInputMethods: () => Promise<void>;
   setLanguagePickerOpen: (open: boolean) => void;
