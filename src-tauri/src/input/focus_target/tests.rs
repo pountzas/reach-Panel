@@ -753,3 +753,11 @@ fn capture_root_falls_back_to_hwnd_when_ancestor_lookup_fails() {
         })
     );
 }
+
+#[test]
+fn dictation_target_ok_all_combinations() {
+    assert!(super::dictation_target_ok(true, true));
+    assert!(super::dictation_target_ok(true, false));
+    assert!(super::dictation_target_ok(false, true));
+    assert!(!super::dictation_target_ok(false, false));
+}

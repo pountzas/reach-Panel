@@ -91,4 +91,16 @@ describe("dictation overlay visibility", () => {
 
     expect(overlayWindow.visible).toBe(false);
   });
+
+  it("retries hide once when the first attempt fails", async () => {
+    overlayWindow.setVisible(true);
+    overlayWindow.hide.mockClear();
+    overlayWindow.hide
+      .mockRejectedValueOnce(new Error("hide failed"))
+      .mockResolvedValueOnce(undefined);
+
+    await hideDictationOverlay();
+
+    expect(overlayWindow.hide).toHaveBeenCalledTimes(2);
+  });
 });

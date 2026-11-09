@@ -1,6 +1,8 @@
 //! Cloud Groq Whisper STT for languages Windows SpeechRecognition does not support.
 
-use super::events::{emit_error, emit_groq_quota_optional, emit_state, handle_result};
+use super::events::{
+    emit_error, emit_groq_quota_optional, emit_state, handle_desktop_result,
+};
 use super::route::groq_language_hint;
 use super::SttState;
 use anyhow::{anyhow, Result};
@@ -30,6 +32,23 @@ const SILENCE_SECS: f32 = 1.0;
 const MAX_UTTERANCE_SECS: f32 = 28.0;
 /// Low enough for quiet mics / shared WASAPI capture levels.
 const ENERGY_THRESHOLD: f32 = 0.004;
+
+pub(super) fn should_flush_remainder_on_stop(
+    speech_started: bool,
+    chunk_secs: f32,
+    min_secs: f32,
+) -> bool {
+    speech_started && chunk_secs >= min_secs * 0.7
+}
+
+/// Live flushes may always mutate processing/error state. After Stop, skip if a
+/// newer session already owns the runtime.
+pub(super) fn lingering_should_touch_shared_state(
+    stop_requested: bool,
+    newer_session: bool,
+) -> bool {
+    !stop_requested || !newer_session
+}
 
 struct GroqRuntime {
     session: Option<GroqSession>,
@@ -69,6 +88,10 @@ fn set_processing(active: bool) {
     }
 }
 
+fn newer_session_active() -> bool {
+    runtime().lock().map(|g| g.session.is_some()).unwrap_or(false)
+}
+
 pub fn is_processing() -> bool {
     runtime().lock().map(|g| g.processing).unwrap_or(false)
 }
@@ -99,7 +122,10 @@ pub fn start_dictation(language: &str, api_key: &str, app: AppHandle) -> Result<
         let lingering = guard.lingering_worker.take();
         drop(guard);
         if let Some(worker) = lingering {
-            let _ = worker.join();
+            // Start must not wait on remainder transcription; park join like stop_dictation.
+            thread::spawn(move || {
+                let _ = worker.join();
+            });
         }
     }
 
@@ -300,9 +326,8 @@ fn worker_loop(
                             result.quota.limit_requests,
                         );
                         log::debug!("[stt/groq] transcript len={}", result.text.chars().count());
-                        if !stop_flag.load(Ordering::SeqCst) {
-                            handle_result(&app, &result.text);
-                        }
+                        // Type even if Stop arrived mid-transcription; Idle was already emitted.
+                        handle_desktop_result(&app, &result.text);
                     }
                     Err(err) => {
                         emit_groq_quota_optional(
@@ -319,15 +344,73 @@ fn worker_loop(
                         }
                     }
                 }
-                set_processing(false);
+                if lingering_should_touch_shared_state(
+                    stop_flag.load(Ordering::SeqCst),
+                    newer_session_active(),
+                ) {
+                    set_processing(false);
+                }
                 if !stop_flag.load(Ordering::SeqCst) {
                     emit_state(&app, SttState::Listening, Some(language.clone()));
                 }
             }
         }
     }
-    set_processing(false);
-    // Do not flush remainder on stop — keep the mic toggle responsive.
+    // Flush any unflushed speech captured before stop. Idle already emitted from
+    // stop_dictation; this lingering worker may still type when transcription returns.
+    let remainder = match samples.lock() {
+        Ok(mut buf) => {
+            if buf.len() <= cursor {
+                None
+            } else {
+                let chunk = buf[cursor..].to_vec();
+                buf.clear();
+                Some(chunk)
+            }
+        }
+        Err(_) => None,
+    };
+    if let Some(chunk) = remainder {
+        let chunk_secs = chunk.len() as f32 / TARGET_SAMPLE_RATE as f32;
+        if should_flush_remainder_on_stop(speech_started.is_some(), chunk_secs, MIN_SPEECH_SECS) {
+            log::debug!(
+                "[stt/groq] flush remainder {chunk_secs:.2}s peak={peak_energy:.4} lang={language}"
+            );
+            if lingering_should_touch_shared_state(true, newer_session_active()) {
+                set_processing(true);
+            }
+            match transcribe(&api_key, &chunk, &language) {
+                Ok(result) => {
+                    emit_groq_quota_optional(
+                        &app,
+                        result.quota.remaining_requests,
+                        result.quota.limit_requests,
+                    );
+                    let chars = result.text.chars().count();
+                    log::info!("[stt/groq] flush remainder chars={chars}");
+                    // Type even when stop_flag is true — stop already emitted Idle.
+                    handle_desktop_result(&app, &result.text);
+                }
+                Err(err) => {
+                    emit_groq_quota_optional(
+                        &app,
+                        err.quota.remaining_requests,
+                        err.quota.limit_requests,
+                    );
+                    log::error!(
+                        "[stt/groq] flush remainder error: {}",
+                        crate::logging::redact(&err.to_string())
+                    );
+                    if lingering_should_touch_shared_state(true, newer_session_active()) {
+                        emit_error(&app, err.to_string());
+                    }
+                }
+            }
+        }
+    }
+    if lingering_should_touch_shared_state(true, newer_session_active()) {
+        set_processing(false);
+    }
 }
 
 pub fn stop_dictation() -> Result<()> {

@@ -1,5 +1,6 @@
 //! Focus target tracking: which external window/control accepts typed input.
 
+mod restore_plan;
 mod uia;
 mod win32;
 
@@ -327,6 +328,19 @@ pub fn is_input_focused() -> bool {
         .unwrap_or(false)
 }
 
+/// Dictation may type when ReachPanel is foreground (restore validates TARGET_HWND)
+/// or an external editable field is focused.
+pub fn dictation_target_ok(ours: bool, input_focused: bool) -> bool {
+    ours || input_focused
+}
+
+/// Dictation-only gate: ReachPanel foreground (restore path validates TARGET_HWND)
+/// or an external editable field currently focused.
+pub fn dictation_can_type() -> bool {
+    let ours = unsafe { is_our_window(GetForegroundWindow()) };
+    dictation_target_ok(ours, is_input_focused())
+}
+
 fn reevaluate_input_focus() {
     let focused = is_editable_input_focused();
     publish_input_focus(focused);
@@ -643,18 +657,22 @@ pub fn remember_current_if_external() {
 pub fn restore_target_focus() -> Result<()> {
     unsafe {
         let fg = GetForegroundWindow();
-        if !is_our_window(fg) {
-            return Ok(());
-        }
-
+        let ours = is_our_window(fg);
         let target = TARGET_HWND.lock().ok().and_then(|g| *g);
-        let Some(target_hwnd) = target else {
-            return Ok(());
-        };
-        let hwnd = usize_to_hwnd(target_hwnd);
-        if !is_valid_typing_target(hwnd) {
-            return Ok(());
+        let hwnd = target.map(usize_to_hwnd);
+        let valid = hwnd.is_some_and(is_valid_typing_target);
+        match restore_plan::restore_focus_plan(ours, target.is_some(), valid) {
+            restore_plan::RestoreFocusPlan::LeaveForeground => {
+                log::warn!("restore_target_focus skipped: panel not foreground");
+                return Ok(());
+            }
+            restore_plan::RestoreFocusPlan::Error(msg) => {
+                log::warn!("restore_target_focus failed: no valid target");
+                anyhow::bail!("{msg}");
+            }
+            restore_plan::RestoreFocusPlan::Restore => {}
         }
+        let hwnd = hwnd.expect("valid target");
         bring_to_foreground(hwnd)?;
     }
     Ok(())

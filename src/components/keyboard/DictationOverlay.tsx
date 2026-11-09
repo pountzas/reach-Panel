@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { useTranslation } from "../../hooks/useTranslation";
 import { overlayShouldCaptureMic } from "../../lib/dictationOverlayWindow";
+import { logError } from "../../lib/log";
 import { StopIcon } from "../common/SectionIcons";
 import { DictationVisualizer } from "./DictationVisualizer";
 
@@ -82,7 +83,14 @@ export function DictationOverlay() {
           type="button"
           aria-label={t("dictationStop")}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
-          onClick={() => void invoke("cmd_stop_dictation")}>
+          onClick={() => {
+            setState("idle");
+            void emit("dictation-overlay-stop").catch((error: unknown) => {
+              logError("dictationOverlay", "Failed to emit overlay stop", {
+                error,
+              });
+            });
+          }}>
           <StopIcon className="h-4 w-4" />
         </button>
       </div>

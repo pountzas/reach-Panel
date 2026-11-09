@@ -1,0 +1,91 @@
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_SETTINGS } from "../../lib/types";
+
+const { invokeMock, notifyError } = vi.hoisted(() => ({
+  invokeMock: vi.fn(),
+  notifyError: vi.fn(),
+}));
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: (cmd: string, ...rest: unknown[]) => {
+    if (cmd === "cmd_get_input_focused") {
+      return Promise.resolve(false);
+    }
+    return invokeMock(cmd, ...rest);
+  },
+}));
+
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn(() => Promise.resolve(() => {})),
+  emit: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@tauri-apps/api/webviewWindow", () => ({
+  WebviewWindow: {
+    getCurrent: () => ({ label: "main" }),
+  },
+}));
+
+vi.mock("@tauri-apps/plugin-updater", () => ({
+  check: vi.fn(),
+}));
+
+vi.mock("../../lib/motion", () => ({
+  MOTION: { fast: 120, base: 200, slow: 300, focusKeyboard: 250 },
+  prefersReducedMotion: () => true,
+  afterNextPaint: () => Promise.resolve(),
+}));
+
+vi.mock("../../lib/notify", () => ({
+  notify: { error: (...args: unknown[]) => notifyError(...args) },
+}));
+
+import { useAppStore } from "../appStore";
+import { storeFlags } from "../storeFlags";
+import { DICTATION_SELECT_INPUT_ERROR } from "../../lib/dictationErrors";
+
+describe("toggleDictation no-target (#349)", () => {
+  beforeEach(() => {
+    invokeMock.mockReset();
+    notifyError.mockReset();
+    storeFlags.lastAnnouncedError = null;
+    useAppStore.setState({
+      settings: { ...DEFAULT_SETTINGS },
+      dictationState: "idle",
+      externalInputFocused: false,
+      lastError: null,
+      sttCapability: {
+        engine: "winrt",
+        groqConfigured: false,
+        winrtSupported: true,
+        online: true,
+        canDictate: true,
+      },
+    });
+  });
+
+  it("does not start and toasts when no external field is focused", async () => {
+    await useAppStore.getState().toggleDictation();
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "cmd_start_dictation",
+      expect.anything(),
+    );
+    expect(notifyError).toHaveBeenCalledWith(DICTATION_SELECT_INPUT_ERROR);
+    expect(useAppStore.getState().dictationState).toBe("idle");
+  });
+
+  it("still stops while listening even if focus was lost", async () => {
+    invokeMock.mockResolvedValue(undefined);
+    useAppStore.setState({
+      dictationState: "listening",
+      externalInputFocused: false,
+    });
+    await useAppStore.getState().toggleDictation();
+    expect(invokeMock).toHaveBeenCalledWith("cmd_stop_dictation");
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "cmd_start_dictation",
+      expect.anything(),
+    );
+  });
+});

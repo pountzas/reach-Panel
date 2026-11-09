@@ -51,6 +51,10 @@ fn special_vk(key: &str) -> Option<VIRTUAL_KEY> {
     }
 }
 
+pub(super) fn send_input_incomplete(sent: u32, expected: u32) -> bool {
+    sent != expected
+}
+
 trait KeySender {
     fn send_vk(&mut self, vk: VIRTUAL_KEY, key_up: bool) -> Result<()>;
     fn send_unicode(&mut self, ch: char) -> Result<()>;
@@ -86,8 +90,10 @@ fn send_vk(vk: VIRTUAL_KEY, key_up: bool) -> Result<()> {
             },
         },
     };
+    let expected = 1u32;
     let sent = unsafe { SendInput(&[input], std::mem::size_of::<INPUT>() as i32) };
-    if sent == 0 {
+    if send_input_incomplete(sent, expected) {
+        log::warn!("SendInput short count sent={sent} expected={expected}");
         let err = anyhow!("SendInput failed for virtual key");
         log::error!("{err}");
         return Err(err);
@@ -121,8 +127,10 @@ fn send_unicode(ch: char) -> Result<()> {
             },
         },
     };
+    let expected = 2u32;
     let sent = unsafe { SendInput(&[down, up], std::mem::size_of::<INPUT>() as i32) };
-    if sent == 0 {
+    if send_input_incomplete(sent, expected) {
+        log::warn!("SendInput short count sent={sent} expected={expected}");
         let err = anyhow!("SendInput failed for unicode");
         log::error!("{err}");
         return Err(err);

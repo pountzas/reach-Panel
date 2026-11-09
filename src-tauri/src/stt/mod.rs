@@ -2,11 +2,13 @@ pub(crate) mod events;
 pub(crate) mod groq;
 mod network;
 mod route;
+pub(crate) mod timeouts;
 mod winrt;
 
 use route::{can_dictate, prefer_cloud_stt, select_engine, RouteDecision, SttEngine};
 use serde::Serialize;
 use std::sync::{Mutex, OnceLock};
+use std::thread;
 use tauri::AppHandle;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -38,12 +40,42 @@ enum ActiveBackend {
 
 struct RouterState {
     active: Option<ActiveBackend>,
+    session_generation: u64,
 }
 
 static ROUTER: OnceLock<Mutex<RouterState>> = OnceLock::new();
 
 fn router() -> &'static Mutex<RouterState> {
-    ROUTER.get_or_init(|| Mutex::new(RouterState { active: None }))
+    ROUTER.get_or_init(|| {
+        Mutex::new(RouterState {
+            active: None,
+            session_generation: 0,
+        })
+    })
+}
+
+/// Whether a max-session sleeper armed with `guard_gen` should stop the router.
+fn max_session_guard_should_stop(
+    active: Option<ActiveBackend>,
+    session_generation: u64,
+    guard_gen: u64,
+) -> bool {
+    active.is_some() && session_generation == guard_gen
+}
+
+/// Quiet end after MAX_SESSION; keyed by generation so a stale guard cannot stop a newer session.
+fn arm_max_session_guard(gen: u64) {
+    let limit = timeouts::MAX_SESSION;
+    thread::spawn(move || {
+        thread::sleep(limit);
+        let still = router().lock().ok().is_some_and(|g| {
+            max_session_guard_should_stop(g.active, g.session_generation, gen)
+        });
+        if still {
+            log::info!("stt max session reached");
+            let _ = stop_dictation();
+        }
+    });
 }
 
 /// Called by a backend when its session ended on its own (timeout / error).
@@ -103,13 +135,24 @@ pub fn start_dictation(
     let prefer_cloud = prefer_cloud_stt(language);
     match select_engine(online, winrt_supported, groq_configured, prefer_cloud) {
         RouteDecision::Use(SttEngine::WinRt) => {
-            if let Ok(mut guard) = router().lock() {
+            let gen = {
+                let mut guard = router()
+                    .lock()
+                    .map_err(|_| anyhow::anyhow!("Dictation router lock poisoned"))?;
                 guard.active = Some(ActiveBackend::WinRt);
-            }
+                guard.session_generation = guard.session_generation.wrapping_add(1);
+                guard.session_generation
+            };
+            log::info!(
+                "stt start engine={} language={}",
+                engine_name(SttEngine::WinRt),
+                language
+            );
             if let Err(e) = winrt::start_dictation(language, app) {
                 clear_active_backend(ActiveBackend::WinRt);
                 return Err(e);
             }
+            arm_max_session_guard(gen);
             Ok(())
         }
         RouteDecision::Use(SttEngine::Groq) => {
@@ -118,13 +161,24 @@ pub fn start_dictation(
                     "GROQ_KEY: Add a free Groq API key in Settings to dictate in this language."
                 )
             })?;
-            if let Ok(mut guard) = router().lock() {
+            let gen = {
+                let mut guard = router()
+                    .lock()
+                    .map_err(|_| anyhow::anyhow!("Dictation router lock poisoned"))?;
                 guard.active = Some(ActiveBackend::Groq);
-            }
+                guard.session_generation = guard.session_generation.wrapping_add(1);
+                guard.session_generation
+            };
+            log::info!(
+                "stt start engine={} language={}",
+                engine_name(SttEngine::Groq),
+                language
+            );
             if let Err(e) = groq::start_dictation(language, &key, app) {
                 clear_active_backend(ActiveBackend::Groq);
                 return Err(e);
             }
+            arm_max_session_guard(gen);
             Ok(())
         }
         RouteDecision::Unavailable => {
@@ -142,22 +196,28 @@ pub fn start_dictation(
 }
 
 pub fn stop_dictation() -> anyhow::Result<()> {
+    log::info!("stt stop requested");
     let active = router().lock().ok().and_then(|g| g.active);
-    match active {
-        Some(ActiveBackend::WinRt) => {
-            winrt::stop_dictation()?;
-        }
-        Some(ActiveBackend::Groq) => {
-            groq::stop_dictation()?;
-        }
+    let result = match active {
+        Some(ActiveBackend::WinRt) => winrt::stop_dictation(),
+        Some(ActiveBackend::Groq) => groq::stop_dictation(),
         None => {
             let _ = winrt::stop_dictation();
             let _ = groq::stop_dictation();
+            Ok(())
         }
+    };
+    if let Err(e) = &result {
+        log::error!(
+            "stt stop failed: {}",
+            crate::logging::redact(&e.to_string())
+        );
+        return result;
     }
     if let Ok(mut guard) = router().lock() {
         guard.active = None;
     }
+    log::info!("stt stop completed");
     Ok(())
 }
 
@@ -251,5 +311,28 @@ mod tests {
         claim(ActiveBackend::Groq);
         clear_active_backend(ActiveBackend::WinRt);
         assert_eq!(active(), Some(ActiveBackend::Groq));
+    }
+
+    #[test]
+    fn max_session_guard_stops_same_generation_while_active() {
+        assert!(max_session_guard_should_stop(
+            Some(ActiveBackend::WinRt),
+            3,
+            3
+        ));
+    }
+
+    #[test]
+    fn max_session_guard_skips_when_generation_advanced() {
+        assert!(!max_session_guard_should_stop(
+            Some(ActiveBackend::WinRt),
+            4,
+            3
+        ));
+    }
+
+    #[test]
+    fn max_session_guard_skips_when_inactive() {
+        assert!(!max_session_guard_should_stop(None, 3, 3));
     }
 }

@@ -74,6 +74,15 @@ pub fn map_stt_error(error: impl std::fmt::Display) -> anyhow::Error {
     anyhow!("{message}")
 }
 
+pub fn handle_desktop_result(app: &AppHandle, text: &str) {
+    if !crate::input::focus_target::dictation_can_type() {
+        log::warn!("stt result dropped: no focused text field");
+        emit_error(app, crate::stt::timeouts::NO_INPUT_TARGET.to_string());
+        return;
+    }
+    handle_result(app, text);
+}
+
 pub fn handle_result(app: &AppHandle, text: &str) {
     let text = text.trim();
     if text.is_empty() {
@@ -88,6 +97,7 @@ pub fn handle_result(app: &AppHandle, text: &str) {
     {
         return;
     }
+    log::info!("stt result chars={}", text.chars().count());
     if let Err(error) = type_text(text) {
         emit_error(app, error.to_string());
         return;

@@ -34,6 +34,32 @@ export function isMicFabEnabled(input: {
   return listening || (input.canDictate && input.externalInputFocused);
 }
 
+export type MicDictateAriaKey =
+  | "dictationStop"
+  | "dictationStart"
+  | "dictationUnavailableOffline"
+  | "dictationUnavailableUnsupported"
+  | "micModeSelectInput";
+
+export function micDictateAriaKey(input: {
+  dictationState: string;
+  canDictate: boolean;
+  externalInputFocused: boolean;
+  online?: boolean;
+  winrtSupported?: boolean;
+}): MicDictateAriaKey {
+  const listening =
+    input.dictationState === "listening" ||
+    input.dictationState === "processing";
+  if (listening) return "dictationStop";
+  if (isMicFabEnabled(input)) return "dictationStart";
+  if (input.canDictate) return "micModeSelectInput";
+  if (input.online && input.winrtSupported === false) {
+    return "dictationUnavailableUnsupported";
+  }
+  return "dictationUnavailableOffline";
+}
+
 /**
  * Focus mode keyboard toolbar chrome. `pl-3` matches AppShell header `px-3`
  * so the height grip is not flush to the window edge.

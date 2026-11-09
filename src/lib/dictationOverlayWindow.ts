@@ -235,10 +235,20 @@ export async function showDictationOverlay(): Promise<void> {
 
 export async function hideDictationOverlay(): Promise<void> {
   overlayWanted = false;
-  try {
+  const attempt = async (): Promise<void> => {
     const existing = await WebviewWindow.getByLabel(DICTATION_OVERLAY_LABEL);
     await existing?.hide();
+  };
+  try {
+    await attempt();
   } catch (error) {
     logError("dictationOverlay", "Failed to hide dictation overlay", { error });
+    try {
+      await attempt();
+    } catch (retryError) {
+      logError("dictationOverlay", "Failed to hide dictation overlay retry", {
+        error: retryError,
+      });
+    }
   }
 }

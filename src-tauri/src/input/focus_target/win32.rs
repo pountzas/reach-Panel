@@ -291,6 +291,11 @@ pub(super) unsafe fn bring_to_foreground(hwnd: HWND) -> Result<()> {
     if attached_fore {
         let _ = AttachThreadInput(fore_thread, target_thread, false);
     }
+
+    if GetForegroundWindow() != hwnd {
+        log::warn!("SetForegroundWindow failed");
+        anyhow::bail!("{}", super::restore_plan::FOREGROUND_RESTORE_FAILED);
+    }
     Ok(())
 }
 

@@ -7,6 +7,7 @@ import {
   isFocusModeEligible,
   isTransparentUiActive,
   focusModeToolbarClassName,
+  micDictateAriaKey,
   monitorsOverlap,
   nextTransparentKeyColor,
   resolveFocusModeEnabled,
@@ -264,5 +265,63 @@ describe("focusMode", () => {
         externalInputFocused: true,
       }),
     ).toBe(false);
+  });
+
+  it("micDictateAriaKey is Stop while listening", () => {
+    expect(
+      micDictateAriaKey({
+        dictationState: "listening",
+        canDictate: false,
+        externalInputFocused: false,
+      }),
+    ).toBe("dictationStop");
+  });
+
+  it("micDictateAriaKey is Start when idle, focused, canDictate", () => {
+    expect(
+      micDictateAriaKey({
+        dictationState: "idle",
+        canDictate: true,
+        externalInputFocused: true,
+        online: true,
+        winrtSupported: true,
+      }),
+    ).toBe("dictationStart");
+  });
+
+  it("micDictateAriaKey is micModeSelectInput when idle without focus", () => {
+    expect(
+      micDictateAriaKey({
+        dictationState: "idle",
+        canDictate: true,
+        externalInputFocused: false,
+        online: true,
+        winrtSupported: true,
+      }),
+    ).toBe("micModeSelectInput");
+  });
+
+  it("micDictateAriaKey is unsupported when idle, focused, cannot dictate, winrt unsupported", () => {
+    expect(
+      micDictateAriaKey({
+        dictationState: "idle",
+        canDictate: false,
+        externalInputFocused: true,
+        online: true,
+        winrtSupported: false,
+      }),
+    ).toBe("dictationUnavailableUnsupported");
+  });
+
+  it("micDictateAriaKey is offline when idle, focused, cannot dictate, online false", () => {
+    expect(
+      micDictateAriaKey({
+        dictationState: "idle",
+        canDictate: false,
+        externalInputFocused: true,
+        online: false,
+        winrtSupported: true,
+      }),
+    ).toBe("dictationUnavailableOffline");
   });
 });

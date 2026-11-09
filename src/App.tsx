@@ -242,6 +242,12 @@ function MainApp() {
     );
 
     unlisteners.push(
+      listen("dictation-overlay-stop", () => {
+        void useAppStore.getState().stopDictation();
+      }),
+    );
+
+    unlisteners.push(
       listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
         if (event.payload.source === WebviewWindow.getCurrent().label) return;
         void useAppStore.getState().loadProfileFiles();

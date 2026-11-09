@@ -1,4 +1,4 @@
-use super::events::{emit_error, emit_state, handle_result, map_stt_error};
+use super::events::{emit_error, emit_state, handle_desktop_result, map_stt_error};
 use super::route::winrt_language_tag;
 use super::{SttState, SttStatus};
 use anyhow::{anyhow, Result};
@@ -64,6 +64,22 @@ fn is_quiet_end(status: SpeechRecognitionResultStatus) -> bool {
 /// Session present, start in flight, or StopAsync still running all block a new start.
 fn runtime_is_busy(has_session: bool, starting: bool, stopping: bool) -> bool {
     has_session || starting || stopping
+}
+
+/// What stop_dictation must do after attempting ContinuousRecognitionSession / StopAsync.
+struct StopCleanupActions {
+    remove_event_tokens: bool,
+    close_recognizer: bool,
+    emit_idle: bool,
+}
+
+/// Token removal needs a session; Close + Idle always run even when session lookup fails.
+fn stop_cleanup_actions(got_recognition_session: bool) -> StopCleanupActions {
+    StopCleanupActions {
+        remove_event_tokens: got_recognition_session,
+        close_recognizer: true,
+        emit_idle: true,
+    }
 }
 
 /// Completed handlers must ignore events from a previous recognizer session.
@@ -162,6 +178,12 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     }
 
     let session = recognizer.ContinuousRecognitionSession()?;
+    let timeouts = recognizer.Timeouts()?;
+    let configured = super::timeouts::winrt_silence_timeouts();
+    timeouts.SetInitialSilenceTimeout(configured.initial)?;
+    timeouts.SetEndSilenceTimeout(configured.end)?;
+    session.SetAutoStopSilenceTimeout(configured.auto_stop)?;
+
     let app_for_results = app.clone();
     let result_token = session.ResultGenerated(&TypedEventHandler::new(
         move |_sender, args: &Option<SpeechContinuousRecognitionResultGeneratedEventArgs>| {
@@ -171,11 +193,14 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
             let Ok(result) = args.Result() else {
                 return Ok(());
             };
-            if result.Status()? != SpeechRecognitionResultStatus::Success {
+            let status = result.Status()?;
+            if status != SpeechRecognitionResultStatus::Success {
+                log::warn!("winrt ResultGenerated status={status:?}");
                 return Ok(());
             }
             let text = result.Text()?.to_string();
-            handle_result(&app_for_results, &text);
+            log::info!("winrt ResultGenerated chars={}", text.chars().count());
+            handle_desktop_result(&app_for_results, &text);
             Ok(())
         },
     ))?;
@@ -210,6 +235,7 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
             super::clear_active_backend(super::ActiveBackend::WinRt);
             if let Some(args) = args {
                 if let Ok(status) = args.Status() {
+                    log::info!("winrt Completed status={status:?}");
                     if status != SpeechRecognitionResultStatus::Success && !is_quiet_end(status) {
                         emit_error(
                             &app_for_completed,
@@ -270,17 +296,67 @@ pub fn stop_dictation() -> Result<()> {
     };
     let _stopping_guard = StoppingFlagGuard;
 
-    // Await StopAsync without holding the global mutex.
-    let session = active.recognizer.ContinuousRecognitionSession()?;
-    let stop = session.StopAsync()?;
-    let _ = stop.get();
+    // Await StopAsync without holding the global mutex (bounded; always Close + Idle).
+    let session = match active.recognizer.ContinuousRecognitionSession() {
+        Ok(session) => Some(session),
+        Err(e) => {
+            log::error!(
+                "stt stop session lookup failed engine=winrt err={}",
+                crate::logging::redact(&e.to_string())
+            );
+            None
+        }
+    };
 
-    let _ = session.RemoveResultGenerated(active.result_token);
-    let _ = session.RemoveCompleted(active.completed_token);
-    let _ = active.recognizer.Close();
+    if let Some(ref session) = session {
+        match session.StopAsync() {
+            Ok(stop) => {
+                let started = std::time::Instant::now();
+                let (tx, rx) = std::sync::mpsc::channel();
+                std::thread::spawn(move || {
+                    let _ = tx.send(stop.get());
+                });
+                match rx.recv_timeout(super::timeouts::STOP_ASYNC) {
+                    Ok(Ok(())) => {
+                        log::info!(
+                            "stt stop completed engine=winrt duration_ms={}",
+                            started.elapsed().as_millis()
+                        );
+                    }
+                    Ok(Err(e)) => {
+                        log::error!(
+                            "stt stop failed engine=winrt err={}",
+                            crate::logging::redact(&e.to_string())
+                        );
+                    }
+                    Err(_) => {
+                        log::error!("stt stop timed out engine=winrt");
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!(
+                    "stt stop StopAsync failed engine=winrt err={}",
+                    crate::logging::redact(&e.to_string())
+                );
+            }
+        }
+    }
 
-    if let Some(app) = app {
-        emit_state(&app, SttState::Idle, None);
+    let cleanup = stop_cleanup_actions(session.is_some());
+    if cleanup.remove_event_tokens {
+        if let Some(session) = session {
+            let _ = session.RemoveResultGenerated(active.result_token);
+            let _ = session.RemoveCompleted(active.completed_token);
+        }
+    }
+    if cleanup.close_recognizer {
+        let _ = active.recognizer.Close();
+    }
+    if cleanup.emit_idle {
+        if let Some(app) = app {
+            emit_state(&app, SttState::Idle, None);
+        }
     }
 
     Ok(())
@@ -356,6 +432,19 @@ mod tests {
         assert!(runtime_is_busy(true, false, false));
         assert!(runtime_is_busy(false, true, false));
         assert!(!runtime_is_busy(false, false, false));
+    }
+
+    #[test]
+    fn stop_cleanup_always_closes_and_emits_idle() {
+        let with_session = stop_cleanup_actions(true);
+        assert!(with_session.remove_event_tokens);
+        assert!(with_session.close_recognizer);
+        assert!(with_session.emit_idle);
+
+        let without_session = stop_cleanup_actions(false);
+        assert!(!without_session.remove_event_tokens);
+        assert!(without_session.close_recognizer);
+        assert!(without_session.emit_idle);
     }
 
     #[test]
