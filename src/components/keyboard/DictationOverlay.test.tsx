@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { DictationOverlay } from "./DictationOverlay";
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -9,6 +9,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn(async () => () => {}),
+  emit: vi.fn(async () => {}),
 }));
 
 vi.mock("../../hooks/useTranslation", () => ({
@@ -35,5 +36,18 @@ describe("DictationOverlay", () => {
     expect((pill as HTMLElement).style.transitionTimingFunction).toBe(
       "var(--rp-ease-out)",
     );
+  });
+
+  it("Stop hides the pill and emits dictation-overlay-stop without waiting on invoke", async () => {
+    const { emit } = await import("@tauri-apps/api/event");
+    const { invoke } = await import("@tauri-apps/api/core");
+    const { getByRole, container } = render(<DictationOverlay />);
+    const stop = getByRole("button", { name: "dictationStop" });
+    fireEvent.click(stop);
+    const pill = container.querySelector("div.rounded-full");
+    expect(pill?.parentElement?.className).toContain("items-end");
+    expect(pill?.className).toContain("opacity-0");
+    expect(emit).toHaveBeenCalledWith("dictation-overlay-stop");
+    expect(invoke).not.toHaveBeenCalledWith("cmd_stop_dictation");
   });
 });
