@@ -8,7 +8,7 @@ pub const NO_INPUT_TARGET: &str = "Select a text field to dictate";
 pub const INITIAL_SILENCE: Duration = Duration::from_secs(5);
 pub const END_SILENCE: Duration = Duration::from_secs(10);
 pub const AUTO_STOP_SILENCE: Duration = Duration::from_secs(10);
-pub const STOP_ASYNC: Duration = Duration::from_secs(3);
+pub const STOP_ASYNC: Duration = Duration::from_millis(800);
 pub const MAX_SESSION: Duration = Duration::from_secs(60);
 
 pub fn max_session_expired(elapsed: Duration, limit: Duration) -> bool {
@@ -76,7 +76,7 @@ mod tests {
         assert_eq!(INITIAL_SILENCE, Duration::from_secs(5));
         assert_eq!(END_SILENCE, Duration::from_secs(10));
         assert_eq!(AUTO_STOP_SILENCE, Duration::from_secs(10));
-        assert_eq!(STOP_ASYNC, Duration::from_secs(3));
+        assert_eq!(STOP_ASYNC, Duration::from_millis(800));
         assert_eq!(MAX_SESSION, Duration::from_secs(60));
     }
 
@@ -84,7 +84,7 @@ mod tests {
     fn duration_to_winrt_uses_100ns_ticks() {
         assert_eq!(duration_to_winrt(Duration::from_secs(5)).Duration, 50_000_000);
         assert_eq!(duration_to_winrt(Duration::from_secs(10)).Duration, 100_000_000);
-        assert_eq!(duration_to_winrt(Duration::from_secs(3)).Duration, 30_000_000);
+        assert_eq!(duration_to_winrt(STOP_ASYNC).Duration, 8_000_000);
     }
 
     #[test]
@@ -102,9 +102,9 @@ mod tests {
     }
 
     #[test]
-    fn stop_async_timeout_at_three_seconds() {
-        assert!(!wait_bounded_timed_out(Duration::from_secs(2), STOP_ASYNC));
-        assert!(wait_bounded_timed_out(Duration::from_secs(3), STOP_ASYNC));
+    fn stop_async_timeout_at_800_milliseconds() {
+        assert!(!wait_bounded_timed_out(Duration::from_millis(799), STOP_ASYNC));
+        assert!(wait_bounded_timed_out(Duration::from_millis(800), STOP_ASYNC));
     }
 
     #[test]
