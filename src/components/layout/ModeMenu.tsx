@@ -96,8 +96,13 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
   };
 
   const onCloseAppClick = async () => {
-    await closeModeMenu();
-    handleCloseApp();
+    try {
+      await closeModeMenu();
+    } catch {
+      // Restoring the window can reject. Quit still has to run.
+    } finally {
+      handleCloseApp();
+    }
   };
 
   const onPick = async (id: AppModeTablet) => {

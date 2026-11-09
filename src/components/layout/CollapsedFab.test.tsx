@@ -19,7 +19,7 @@ const openModeMenu = vi.fn(async () => {
   storeState.modeMenuOpen = true;
   await invoke("cmd_expand_window_for_mode_menu", {
     menuWidth: MODE_MENU_WIDTH,
-    menuHeight: modeMenuHeight(2 + APP_MODE_OPTIONS.length),
+    menuHeight: modeMenuHeight(2 + APP_MODE_OPTIONS.length, 2),
   });
 });
 const toggleCollapsed = vi.fn(async () => undefined);

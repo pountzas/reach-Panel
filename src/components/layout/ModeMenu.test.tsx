@@ -118,4 +118,15 @@ describe("ModeMenu Close app row", () => {
       expect(handleCloseApp).toHaveBeenCalledTimes(1);
     });
   });
+
+  it("still quits when closing the menu fails", async () => {
+    closeModeMenu.mockImplementationOnce(async () => {
+      throw new Error("layout");
+    });
+    render(<ModeMenu onShowKeyboard={() => {}} />);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Close app" }));
+    await waitFor(() => {
+      expect(handleCloseApp).toHaveBeenCalledTimes(1);
+    });
+  });
 });

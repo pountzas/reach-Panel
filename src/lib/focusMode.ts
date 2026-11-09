@@ -15,9 +15,9 @@ export const MODE_MENU_WIDTH = 220;
 export const MODE_MENU_ITEM_HEIGHT = 48;
 export const MODE_MENU_PAD = 8;
 
-/** Height for Show keyboard + mode rows + divider + vertical padding. */
-export function modeMenuHeight(itemCount: number): number {
-  return itemCount * MODE_MENU_ITEM_HEIGHT + 2 * MODE_MENU_PAD + 1;
+/** Height for menu rows + 1px dividers + vertical padding. */
+export function modeMenuHeight(itemCount: number, separatorCount = 1): number {
+  return itemCount * MODE_MENU_ITEM_HEIGHT + 2 * MODE_MENU_PAD + separatorCount;
 }
 /** Mic FAB icon when armed (text field focused + can dictate). sky-300 on default header. */
 export const MIC_FAB_ARMED_ICON_COLOR = "#7dd3fc";
