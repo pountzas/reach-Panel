@@ -10,7 +10,7 @@ use windows::Globalization::Language;
 use windows::Media::SpeechRecognition::{
     SpeechContinuousRecognitionCompletedEventArgs,
     SpeechContinuousRecognitionResultGeneratedEventArgs, SpeechRecognitionResultStatus,
-    SpeechRecognizer,
+    SpeechRecognitionScenario, SpeechRecognitionTopicConstraint, SpeechRecognizer,
 };
 use windows::Win32::System::WinRT::{RoInitialize, RO_INIT_MULTITHREADED};
 
@@ -123,6 +123,10 @@ fn require_language_supported(tag: &str) -> Result<()> {
     ))
 }
 
+pub(crate) fn dictation_topic_name() -> &'static str {
+    "Dictation"
+}
+
 struct StartingFlagGuard;
 
 impl Drop for StartingFlagGuard {
@@ -165,6 +169,12 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     // Build recognizer and await WinRT ops without holding the global mutex.
     let win_lang = Language::CreateLanguage(&HSTRING::from(tag))?;
     let recognizer = SpeechRecognizer::Create(&win_lang)?;
+
+    let constraint = SpeechRecognitionTopicConstraint::Create(
+        SpeechRecognitionScenario::Dictation,
+        &HSTRING::from(dictation_topic_name()),
+    )?;
+    recognizer.Constraints()?.Append(&constraint)?;
 
     let compile = recognizer.CompileConstraintsAsync()?;
     let compilation = compile
@@ -452,5 +462,10 @@ mod tests {
         assert!(is_current_session(5, 5));
         assert!(!is_current_session(6, 5));
         assert!(!is_current_session(0, 1));
+    }
+
+    #[test]
+    fn dictation_topic_name_is_dictation() {
+        assert_eq!(dictation_topic_name(), "Dictation");
     }
 }
