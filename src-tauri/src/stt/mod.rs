@@ -8,6 +8,7 @@ mod winrt;
 use route::{can_dictate, prefer_cloud_stt, select_engine, RouteDecision, SttEngine};
 use serde::Serialize;
 use std::sync::{Mutex, OnceLock};
+use std::thread;
 use tauri::AppHandle;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -39,12 +40,41 @@ enum ActiveBackend {
 
 struct RouterState {
     active: Option<ActiveBackend>,
+    session_generation: u64,
 }
 
 static ROUTER: OnceLock<Mutex<RouterState>> = OnceLock::new();
 
 fn router() -> &'static Mutex<RouterState> {
-    ROUTER.get_or_init(|| Mutex::new(RouterState { active: None }))
+    ROUTER.get_or_init(|| {
+        Mutex::new(RouterState {
+            active: None,
+            session_generation: 0,
+        })
+    })
+}
+
+/// Quiet end after MAX_SESSION; keyed by generation so a stale guard cannot stop a newer session.
+fn arm_max_session_guard() {
+    let gen = {
+        let mut guard = match router().lock() {
+            Ok(g) => g,
+            Err(_) => return,
+        };
+        guard.session_generation = guard.session_generation.wrapping_add(1);
+        guard.session_generation
+    };
+    let limit = timeouts::MAX_SESSION;
+    thread::spawn(move || {
+        thread::sleep(limit);
+        let still = router().lock().ok().is_some_and(|g| {
+            g.active.is_some() && g.session_generation == gen
+        });
+        if still {
+            log::info!("stt max session reached");
+            let _ = stop_dictation();
+        }
+    });
 }
 
 /// Called by a backend when its session ended on its own (timeout / error).
@@ -116,6 +146,7 @@ pub fn start_dictation(
                 clear_active_backend(ActiveBackend::WinRt);
                 return Err(e);
             }
+            arm_max_session_guard();
             Ok(())
         }
         RouteDecision::Use(SttEngine::Groq) => {
@@ -136,6 +167,7 @@ pub fn start_dictation(
                 clear_active_backend(ActiveBackend::Groq);
                 return Err(e);
             }
+            arm_max_session_guard();
             Ok(())
         }
         RouteDecision::Unavailable => {

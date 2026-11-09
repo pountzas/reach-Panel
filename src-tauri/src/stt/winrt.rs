@@ -280,10 +280,31 @@ pub fn stop_dictation() -> Result<()> {
     };
     let _stopping_guard = StoppingFlagGuard;
 
-    // Await StopAsync without holding the global mutex.
+    // Await StopAsync without holding the global mutex (bounded; always Close + Idle).
     let session = active.recognizer.ContinuousRecognitionSession()?;
     let stop = session.StopAsync()?;
-    let _ = stop.get();
+    let started = std::time::Instant::now();
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(stop.get());
+    });
+    match rx.recv_timeout(super::timeouts::STOP_ASYNC) {
+        Ok(Ok(())) => {
+            log::info!(
+                "stt stop completed engine=winrt duration_ms={}",
+                started.elapsed().as_millis()
+            );
+        }
+        Ok(Err(e)) => {
+            log::error!(
+                "stt stop failed engine=winrt err={}",
+                crate::logging::redact(&e.to_string())
+            );
+        }
+        Err(_) => {
+            log::error!("stt stop timed out engine=winrt");
+        }
+    }
 
     let _ = session.RemoveResultGenerated(active.result_token);
     let _ = session.RemoveCompleted(active.completed_token);

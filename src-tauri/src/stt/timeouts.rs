@@ -1,3 +1,5 @@
+use std::sync::mpsc;
+use std::thread;
 use std::time::Duration;
 use windows::Foundation::TimeSpan;
 
@@ -8,6 +10,25 @@ pub const END_SILENCE: Duration = Duration::from_secs(10);
 pub const AUTO_STOP_SILENCE: Duration = Duration::from_secs(10);
 pub const STOP_ASYNC: Duration = Duration::from_secs(3);
 pub const MAX_SESSION: Duration = Duration::from_secs(60);
+
+pub fn max_session_expired(elapsed: Duration, limit: Duration) -> bool {
+    elapsed >= limit
+}
+
+pub fn wait_bounded_timed_out(elapsed: Duration, limit: Duration) -> bool {
+    elapsed >= limit
+}
+
+pub fn wait_bounded<T: Send + 'static>(
+    work: impl FnOnce() -> T + Send + 'static,
+    limit: Duration,
+) -> Result<T, ()> {
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        let _ = tx.send(work());
+    });
+    rx.recv_timeout(limit).map_err(|_| ())
+}
 
 pub fn duration_to_winrt(duration: Duration) -> TimeSpan {
     TimeSpan {
@@ -72,5 +93,36 @@ mod tests {
         assert_eq!(t.initial.Duration, 50_000_000);
         assert_eq!(t.end.Duration, 100_000_000);
         assert_eq!(t.auto_stop.Duration, 100_000_000);
+    }
+
+    #[test]
+    fn max_session_expires_at_limit() {
+        assert!(!max_session_expired(Duration::from_secs(59), MAX_SESSION));
+        assert!(max_session_expired(Duration::from_secs(60), MAX_SESSION));
+    }
+
+    #[test]
+    fn stop_async_timeout_at_three_seconds() {
+        assert!(!wait_bounded_timed_out(Duration::from_secs(2), STOP_ASYNC));
+        assert!(wait_bounded_timed_out(Duration::from_secs(3), STOP_ASYNC));
+    }
+
+    #[test]
+    fn wait_bounded_ok_before_limit() {
+        assert_eq!(wait_bounded(|| 7_u8, Duration::from_secs(1)), Ok(7));
+    }
+
+    #[test]
+    fn wait_bounded_err_on_timeout() {
+        assert_eq!(
+            wait_bounded(
+                || {
+                    thread::sleep(Duration::from_millis(200));
+                    1_u8
+                },
+                Duration::from_millis(20)
+            ),
+            Err(())
+        );
     }
 }
