@@ -11,6 +11,7 @@ describe("shouldAutoSend", () => {
         enabled: false,
         configured: true,
         lastSuccessAt: null,
+        lastAttemptAt: null,
         now: NOW,
       }),
     ).toBe(false);
@@ -22,6 +23,7 @@ describe("shouldAutoSend", () => {
         enabled: true,
         configured: false,
         lastSuccessAt: null,
+        lastAttemptAt: null,
         now: NOW,
       }),
     ).toBe(false);
@@ -33,6 +35,7 @@ describe("shouldAutoSend", () => {
         enabled: true,
         configured: true,
         lastSuccessAt: null,
+        lastAttemptAt: null,
         now: NOW,
       }),
     ).toBe(true);
@@ -41,6 +44,7 @@ describe("shouldAutoSend", () => {
         enabled: true,
         configured: true,
         lastSuccessAt: undefined,
+        lastAttemptAt: null,
         now: NOW,
       }),
     ).toBe(true);
@@ -54,6 +58,7 @@ describe("shouldAutoSend", () => {
         enabled: true,
         configured: true,
         lastSuccessAt: new Date(NOW - sixDaysTwentyThreeHoursMs).toISOString(),
+        lastAttemptAt: null,
         now: NOW,
       }),
     ).toBe(false);
@@ -65,6 +70,7 @@ describe("shouldAutoSend", () => {
         enabled: true,
         configured: true,
         lastSuccessAt: new Date(NOW - WEEK_MS).toISOString(),
+        lastAttemptAt: null,
         now: NOW,
       }),
     ).toBe(true);
@@ -76,19 +82,57 @@ describe("shouldAutoSend", () => {
         enabled: true,
         configured: true,
         lastSuccessAt: new Date(NOW - (WEEK_MS - 1)).toISOString(),
+        lastAttemptAt: null,
         now: NOW,
       }),
     ).toBe(false);
   });
 
-  it("does not send when lastSuccessAt is a non-empty unparseable string", () => {
+  it("sends when lastSuccessAt is a non-empty unparseable string", () => {
     expect(
       shouldAutoSend({
         enabled: true,
         configured: true,
         lastSuccessAt: "not-a-date",
+        lastAttemptAt: null,
+        now: NOW,
+      }),
+    ).toBe(true);
+  });
+
+  it("sends when lastSuccessAt is in the future", () => {
+    expect(
+      shouldAutoSend({
+        enabled: true,
+        configured: true,
+        lastSuccessAt: new Date(NOW + 60_000).toISOString(),
+        lastAttemptAt: null,
+        now: NOW,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not send when the last attempt was 1 h ago even with no success", () => {
+    expect(
+      shouldAutoSend({
+        enabled: true,
+        configured: true,
+        lastSuccessAt: null,
+        lastAttemptAt: new Date(NOW - 60 * 60 * 1000).toISOString(),
         now: NOW,
       }),
     ).toBe(false);
+  });
+
+  it("sends when the last attempt was 6 h ago", () => {
+    expect(
+      shouldAutoSend({
+        enabled: true,
+        configured: true,
+        lastSuccessAt: null,
+        lastAttemptAt: new Date(NOW - 6 * 60 * 60 * 1000).toISOString(),
+        now: NOW,
+      }),
+    ).toBe(true);
   });
 });

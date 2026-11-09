@@ -6,8 +6,12 @@ export type AutoSendLogsMountDeps = {
   getSettings: () => {
     autoSendLogsWeekly?: boolean;
     lastAutoSendLogsAt?: string;
+    lastAutoSendLogsAttemptAt?: string;
   };
-  updateSettings: (partial: { lastAutoSendLogsAt: string }) => void;
+  updateSettings: (partial: {
+    lastAutoSendLogsAt?: string;
+    lastAutoSendLogsAttemptAt?: string;
+  }) => void;
   now: () => Date;
   log: { warn: (message: string) => void };
 };
@@ -23,8 +27,12 @@ export async function mountAutoSendLogs(
     isEnabled: () => deps.getSettings().autoSendLogsWeekly === true,
     isConfigured: () => true,
     getLastSuccessAt: () => deps.getSettings().lastAutoSendLogsAt,
+    getLastAttemptAt: () => deps.getSettings().lastAutoSendLogsAttemptAt,
     now: () => deps.now().getTime(),
     invoke: deps.invoke,
+    onAttempt: (iso) => {
+      deps.updateSettings({ lastAutoSendLogsAttemptAt: iso });
+    },
     onSuccess: (iso) => {
       deps.updateSettings({ lastAutoSendLogsAt: iso });
     },

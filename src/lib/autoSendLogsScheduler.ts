@@ -10,8 +10,10 @@ export type AutoSendLogsSchedulerDeps = {
   isEnabled: () => boolean;
   isConfigured: () => boolean;
   getLastSuccessAt: () => string | null | undefined;
+  getLastAttemptAt: () => string | null | undefined;
   now: () => number;
   invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
+  onAttempt: (iso: string) => void;
   onSuccess: (iso: string) => void;
   log: { warn: (message: string) => void };
 };
@@ -23,8 +25,10 @@ export function startAutoSendLogsScheduler(
     isEnabled,
     isConfigured,
     getLastSuccessAt,
+    getLastAttemptAt,
     now,
     invoke,
+    onAttempt,
     onSuccess,
     log,
   } = deps;
@@ -41,6 +45,7 @@ export function startAutoSendLogsScheduler(
         enabled: isEnabled(),
         configured: isConfigured(),
         lastSuccessAt: getLastSuccessAt(),
+        lastAttemptAt: getLastAttemptAt(),
         now: now(),
       })
     ) {
@@ -48,13 +53,16 @@ export function startAutoSendLogsScheduler(
     }
     inFlight = true;
     try {
+      onAttempt(new Date(now()).toISOString());
       await invoke("cmd_send_diagnostics", {
         send: true,
         note: AUTO_SEND_LOGS_NOTE,
       });
       onSuccess(new Date(now()).toISOString());
     } catch (error) {
-      log.warn(sendDiagnosticsErrorKey(error));
+      const key = sendDiagnosticsErrorKey(error);
+      const detail = error instanceof Error ? error.message : String(error);
+      log.warn(`${key}: ${detail}`);
     } finally {
       inFlight = false;
     }

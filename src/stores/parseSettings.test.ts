@@ -25,6 +25,7 @@ describe("parseSettings", () => {
     const empty = parseSettings("{}");
     expect(empty.autoSendLogsWeekly).toBe(false);
     expect(empty).not.toHaveProperty("lastAutoSendLogsAt");
+    expect(empty).not.toHaveProperty("lastAutoSendLogsAttemptAt");
 
     const omitted = parseSettings(JSON.stringify({ uiLanguage: "el" }));
     expect(omitted.autoSendLogsWeekly).toBe(false);
@@ -44,10 +45,12 @@ describe("parseSettings", () => {
       JSON.stringify({
         autoSendLogsWeekly: 1,
         lastAutoSendLogsAt: "",
+        lastAutoSendLogsAttemptAt: "",
       }),
     );
     expect(settings.autoSendLogsWeekly).toBe(false);
     expect(settings).not.toHaveProperty("lastAutoSendLogsAt");
+    expect(settings).not.toHaveProperty("lastAutoSendLogsAttemptAt");
   });
 
   it("strips background image keys from old profiles and otherwise matches", () => {

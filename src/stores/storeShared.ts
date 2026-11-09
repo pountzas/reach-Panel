@@ -451,6 +451,12 @@ export function parseSettings(json: string): AppSettings {
     ) {
       delete parsed.lastAutoSendLogsAt;
     }
+    if (
+      typeof parsed.lastAutoSendLogsAttemptAt !== "string" ||
+      parsed.lastAutoSendLogsAttemptAt.length === 0
+    ) {
+      delete parsed.lastAutoSendLogsAttemptAt;
+    }
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,

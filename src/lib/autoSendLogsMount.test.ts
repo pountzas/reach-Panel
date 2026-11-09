@@ -38,7 +38,11 @@ describe("mountAutoSendLogs", () => {
     );
     expect(invoke).toHaveBeenCalledWith("cmd_diagnostics_upload_available");
     expect(startScheduler).toHaveBeenCalledTimes(1);
+    schedulerDeps?.onAttempt("2026-11-09T00:00:00.000Z");
     schedulerDeps?.onSuccess("2026-11-09T00:00:00.000Z");
+    expect(updateSettings).toHaveBeenCalledWith({
+      lastAutoSendLogsAttemptAt: "2026-11-09T00:00:00.000Z",
+    });
     expect(updateSettings).toHaveBeenCalledWith({
       lastAutoSendLogsAt: "2026-11-09T00:00:00.000Z",
     });
@@ -62,6 +66,7 @@ describe("mountAutoSendLogs", () => {
     const settings = {
       autoSendLogsWeekly: false as boolean | undefined,
       lastAutoSendLogsAt: undefined as string | undefined,
+      lastAutoSendLogsAttemptAt: undefined as string | undefined,
     };
     let schedulerDeps: SchedulerDeps | undefined;
     await mountAutoSendLogs(
@@ -75,7 +80,9 @@ describe("mountAutoSendLogs", () => {
     );
     settings.autoSendLogsWeekly = true;
     settings.lastAutoSendLogsAt = "2026-01-01T00:00:00.000Z";
+    settings.lastAutoSendLogsAttemptAt = "2026-11-08T00:00:00.000Z";
     expect(schedulerDeps?.isEnabled()).toBe(true);
     expect(schedulerDeps?.getLastSuccessAt()).toBe("2026-01-01T00:00:00.000Z");
+    expect(schedulerDeps?.getLastAttemptAt()).toBe("2026-11-08T00:00:00.000Z");
   });
 });

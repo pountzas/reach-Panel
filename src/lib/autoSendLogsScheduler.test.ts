@@ -21,8 +21,10 @@ function dueDeps(
     isEnabled: () => true,
     isConfigured: () => true,
     getLastSuccessAt: () => null,
+    getLastAttemptAt: () => null,
     now: () => NOW,
     invoke: async () => undefined,
+    onAttempt: () => {},
     onSuccess: () => {},
     log: { warn: () => {} },
     ...overrides,
@@ -87,6 +89,24 @@ describe("startAutoSendLogsScheduler", () => {
 
     await vi.advanceTimersByTimeAsync(START_DELAY_MS);
     expect(invokes).toEqual([]);
+  });
+
+  it("calls onAttempt before invoke, including when invoke rejects", async () => {
+    const order: string[] = [];
+    stop = startAutoSendLogsScheduler(
+      dueDeps({
+        invoke: async () => {
+          order.push("invoke");
+          throw new Error("offline");
+        },
+        onAttempt: (iso) => {
+          order.push(`attempt:${iso}`);
+        },
+      }),
+    );
+
+    await vi.advanceTimersByTimeAsync(START_DELAY_MS);
+    expect(order).toEqual([`attempt:${new Date(NOW).toISOString()}`, "invoke"]);
   });
 
   it("calls onSuccess with now() as ISO only after invoke resolves", async () => {
@@ -180,7 +200,7 @@ describe("startAutoSendLogsScheduler", () => {
     await vi.advanceTimersByTimeAsync(START_DELAY_MS);
     expect(invokes).toEqual([SEND_ARGS]);
     expect(successes).toEqual([]);
-    expect(warnings).toEqual(["sendLogsFailed"]);
+    expect(warnings).toEqual(["sendLogsFailed: cmd_send_diagnostics failed"]);
 
     await vi.advanceTimersByTimeAsync(CHECK_INTERVAL_MS - 1);
     expect(invokes).toEqual([SEND_ARGS]);
@@ -188,7 +208,10 @@ describe("startAutoSendLogsScheduler", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(invokes).toEqual([SEND_ARGS, SEND_ARGS]);
     expect(successes).toEqual([]);
-    expect(warnings).toEqual(["sendLogsFailed", "sendLogsFailed"]);
+    expect(warnings).toEqual([
+      "sendLogsFailed: cmd_send_diagnostics failed",
+      "sendLogsFailed: cmd_send_diagnostics failed",
+    ]);
   });
 
   it("logs sendLogsFailedRateLimited on http_429 and waits for the next 6h check", async () => {
@@ -215,7 +238,9 @@ describe("startAutoSendLogsScheduler", () => {
     await vi.advanceTimersByTimeAsync(START_DELAY_MS);
     expect(invokes).toEqual([SEND_ARGS]);
     expect(successes).toEqual([]);
-    expect(warnings).toEqual(["sendLogsFailedRateLimited"]);
+    expect(warnings).toEqual([
+      "sendLogsFailedRateLimited: upload rejected http_429",
+    ]);
 
     await vi.advanceTimersByTimeAsync(CHECK_INTERVAL_MS - 1);
     expect(invokes).toEqual([SEND_ARGS]);

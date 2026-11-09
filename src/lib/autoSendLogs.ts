@@ -7,6 +7,7 @@ export type ShouldAutoSendInput = {
   enabled: boolean;
   configured: boolean;
   lastSuccessAt: string | null | undefined;
+  lastAttemptAt: string | null | undefined;
   now: number;
 };
 
@@ -14,17 +15,26 @@ export function shouldAutoSend({
   enabled,
   configured,
   lastSuccessAt,
+  lastAttemptAt,
   now,
 }: ShouldAutoSendInput): boolean {
   if (!enabled || !configured) {
+    return false;
+  }
+  const lastAttemptMs = lastAttemptAt ? Date.parse(lastAttemptAt) : NaN;
+  if (
+    Number.isFinite(lastAttemptMs) &&
+    lastAttemptMs <= now &&
+    now - lastAttemptMs < AUTO_SEND_LOGS_CHECK_INTERVAL_MS
+  ) {
     return false;
   }
   if (lastSuccessAt == null) {
     return true;
   }
   const lastSuccessMs = Date.parse(lastSuccessAt);
-  if (Number.isNaN(lastSuccessMs)) {
-    return false;
+  if (Number.isNaN(lastSuccessMs) || lastSuccessMs > now) {
+    return true;
   }
   return now - lastSuccessMs >= AUTO_SEND_LOGS_WEEK_MS;
 }

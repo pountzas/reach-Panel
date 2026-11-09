@@ -146,7 +146,15 @@ function MainApp() {
       startScheduler: startAutoSendLogsScheduler,
       getSettings: () => useAppStore.getState().settings,
       updateSettings: (partial) => {
-        void useAppStore.getState().updateSettings(partial);
+        void useAppStore
+          .getState()
+          .updateSettings(partial)
+          .catch((error: unknown) => {
+            logWarn(
+              "autoSendLogs",
+              `persist ${Object.keys(partial).join(",")} failed: ${String(error)}`,
+            );
+          });
       },
       now: () => new Date(),
       log: {

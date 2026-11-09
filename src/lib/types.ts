@@ -121,6 +121,8 @@ export type AppSettings = {
   autoSendLogsWeekly?: boolean;
   /** ISO timestamp of the last successful weekly auto-send. */
   lastAutoSendLogsAt?: string;
+  /** ISO timestamp of the last weekly auto-send attempt (success or failure). */
+  lastAutoSendLogsAttemptAt?: string;
 };
 
 export type ProfileFileInfo = {
