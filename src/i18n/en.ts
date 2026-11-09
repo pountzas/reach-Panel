@@ -382,6 +382,13 @@ export const en = {
 
   sendLogsFailedRateLimited: "Too many reports. Try again later.",
 
+  autoSendLogsWeekly: "Send logs automatically every week",
+
+  autoSendLogsWeeklyDescription:
+    "Sends the same scrubbed diagnostic report as Send logs, once a week. Off until you turn this on.",
+
+  autoSendLogsLastSent: "Last sent: {date}",
+
   saveProfile: "Save profile",
 
   profileSaved: "Profile saved.",

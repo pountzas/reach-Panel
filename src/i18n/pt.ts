@@ -352,6 +352,13 @@ export const pt = {
 
   sendLogsFailedRateLimited: "Demasiados relatórios. Tente mais tarde.",
 
+  autoSendLogsWeekly: "Enviar registos automaticamente todas as semanas",
+
+  autoSendLogsWeeklyDescription:
+    "Envia o mesmo relatório de diagnóstico limpo que Enviar registos, uma vez por semana. Desligado até o ativar.",
+
+  autoSendLogsLastSent: "Último envio: {date}",
+
   saveProfile: "Guardar perfil",
 
   profileSaved: "Perfil guardado.",

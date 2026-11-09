@@ -13,6 +13,7 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
 import { SendLogsDialog } from "./SendLogsDialog";
 import { SettingsSection } from "./SettingsSection";
+import { ToggleRow } from "./settingsControls";
 import { handleWipeProfile } from "./settingsPanelUtils";
 
 type ToolsMaintenanceSectionProps = {
@@ -24,7 +25,7 @@ export function ToolsMaintenanceSection({
   surface,
   secondaryButtonStyle,
 }: ToolsMaintenanceSectionProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [logDir, setLogDir] = useState("");
   const [uploadConfigured, setUploadConfigured] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -34,12 +35,16 @@ export function ToolsMaintenanceSection({
   const [reportId, setReportId] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const {
+    settings,
+    updateSettings,
     resetSettingsToDefaults,
     wipeActiveProfile,
     checkForUpdates,
     updateCheckStatus,
   } = useAppStore(
     useShallow((s) => ({
+      settings: s.settings,
+      updateSettings: s.updateSettings,
       resetSettingsToDefaults: s.resetSettingsToDefaults,
       wipeActiveProfile: s.wipeActiveProfile,
       checkForUpdates: s.checkForUpdates,
@@ -55,6 +60,14 @@ export function ToolsMaintenanceSection({
       .then(setUploadConfigured)
       .catch(logIpc("cmd_diagnostics_upload_available"));
   }, []);
+
+  const lastSentMs = Date.parse(settings.lastAutoSendLogsAt ?? "");
+  const lastSentLabel = Number.isFinite(lastSentMs)
+    ? t("autoSendLogsLastSent").replace(
+        "{date}",
+        new Date(lastSentMs).toLocaleDateString(language),
+      )
+    : null;
 
   function closeSendDialog() {
     setDialogOpen(false);
@@ -156,6 +169,31 @@ export function ToolsMaintenanceSection({
         <p className="mb-4 text-xs" style={{ color: surface.panelMutedText }}>
           {logDir}
         </p>
+      ) : null}
+
+      {uploadConfigured ? (
+        <div className="mb-4">
+          <ToggleRow
+            label={t("autoSendLogsWeekly")}
+            checked={settings.autoSendLogsWeekly === true}
+            onChange={(checked) => {
+              void updateSettings({ autoSendLogsWeekly: checked });
+            }}
+            surface={surface}
+          />
+          <p
+            className="mt-1 px-1 text-xs"
+            style={{ color: surface.panelMutedText }}>
+            {t("autoSendLogsWeeklyDescription")}
+          </p>
+          {lastSentLabel ? (
+            <p
+              className="mt-1 px-1 text-xs"
+              style={{ color: surface.panelMutedText }}>
+              {lastSentLabel}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <button

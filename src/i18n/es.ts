@@ -352,6 +352,13 @@ export const es = {
 
   sendLogsFailedRateLimited: "Demasiados informes. Inténtalo más tarde.",
 
+  autoSendLogsWeekly: "Enviar registros automáticamente cada semana",
+
+  autoSendLogsWeeklyDescription:
+    "Envía el mismo informe de diagnóstico depurado que Enviar registros, una vez por semana. Desactivado hasta que lo actives.",
+
+  autoSendLogsLastSent: "Último envío: {date}",
+
   saveProfile: "Guardar perfil",
 
   profileSaved: "Perfil guardado.",

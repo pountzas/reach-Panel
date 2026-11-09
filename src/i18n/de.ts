@@ -353,6 +353,13 @@ export const de = {
 
   sendLogsFailedRateLimited: "Zu viele Berichte. Später erneut versuchen.",
 
+  autoSendLogsWeekly: "Protokolle jede Woche automatisch senden",
+
+  autoSendLogsWeeklyDescription:
+    "Sendet denselben bereinigten Diagnosebericht wie „Protokolle senden“, einmal pro Woche. Aus, bis Sie das einschalten.",
+
+  autoSendLogsLastSent: "Zuletzt gesendet: {date}",
+
   saveProfile: "Profil speichern",
 
   profileSaved: "Profil gespeichert.",

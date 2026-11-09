@@ -353,6 +353,13 @@ export const fr = {
 
   sendLogsFailedRateLimited: "Trop de rapports. Réessayez plus tard.",
 
+  autoSendLogsWeekly: "Envoyer les journaux automatiquement chaque semaine",
+
+  autoSendLogsWeeklyDescription:
+    "Envoie le même rapport de diagnostic nettoyé que « Envoyer les journaux », une fois par semaine. Désactivé jusqu’à ce que vous l’activiez.",
+
+  autoSendLogsLastSent: "Dernier envoi : {date}",
+
   saveProfile: "Enregistrer le profil",
 
   profileSaved: "Profil enregistré.",

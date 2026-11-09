@@ -349,6 +349,13 @@ export const it = {
 
   sendLogsFailedRateLimited: "Troppi report. Riprova più tardi.",
 
+  autoSendLogsWeekly: "Invia i log automaticamente ogni settimana",
+
+  autoSendLogsWeeklyDescription:
+    "Invia lo stesso report diagnostico depurato di «Invia i log», una volta a settimana. Disattivato finché non lo attivi.",
+
+  autoSendLogsLastSent: "Ultimo invio: {date}",
+
   saveProfile: "Salva profilo",
 
   profileSaved: "Profilo salvato.",
