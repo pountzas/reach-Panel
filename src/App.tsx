@@ -34,6 +34,8 @@ import {
   type CompanionUiState,
 } from "./lib/companionSession";
 import { reconcileAutostartOnLoad } from "./lib/autostart";
+import { mountAutoSendLogs } from "./lib/autoSendLogsMount";
+import { startAutoSendLogsScheduler } from "./lib/autoSendLogsScheduler";
 import { logWarn } from "./lib/log";
 import { logIpc, logLayoutIpc } from "./lib/logIpc";
 import { isTeachingFullWorkArea } from "./lib/v1HiddenFeatures";
@@ -42,6 +44,7 @@ import { useAppStore } from "./stores/appStore";
 const KEYBOARD_POLL_MS = 100;
 
 function MainApp() {
+  const profileHydrated = useAppStore((s) => s.profileHydrated);
   const loadProfileFiles = useAppStore((s) => s.loadProfileFiles);
   const loadMonitors = useAppStore((s) => s.loadMonitors);
   const loadKeyboardLayout = useAppStore((s) => s.loadKeyboardLayout);
@@ -133,6 +136,46 @@ function MainApp() {
     refreshSttCapability,
     setLastError,
   ]);
+
+  useEffect(() => {
+    if (!profileHydrated) return;
+    let cancelled = false;
+    let stop: (() => void) | undefined;
+    void mountAutoSendLogs({
+      invoke: (cmd, args) => invoke(cmd, args),
+      startScheduler: startAutoSendLogsScheduler,
+      getSettings: () => useAppStore.getState().settings,
+      updateSettings: (partial) => {
+        void useAppStore
+          .getState()
+          .updateSettings(partial)
+          .catch((error: unknown) => {
+            logWarn(
+              "autoSendLogs",
+              `persist ${Object.keys(partial).join(",")} failed: ${String(error)}`,
+            );
+          });
+      },
+      now: () => new Date(),
+      log: {
+        warn: (message) => {
+          logWarn("autoSendLogs", message);
+        },
+      },
+    })
+      .then((unmount) => {
+        if (cancelled) {
+          unmount();
+          return;
+        }
+        stop = unmount;
+      })
+      .catch(logIpc("cmd_diagnostics_upload_available"));
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [profileHydrated]);
 
   useEffect(() => {
     // Touch↔mouse layout switch (store debounces rapid alternating pointerdowns).

@@ -10,6 +10,12 @@ const mocks = vi.hoisted(() => {
     checkForUpdates: vi.fn(async () => undefined),
     updateCheckStatus: "idle" as const,
     updateCheckError: null as string | null,
+    settings: {
+      autoSendLogsWeekly: undefined as boolean | undefined,
+      lastAutoSendLogsAt: undefined as string | undefined,
+      uiLanguage: "en",
+    },
+    updateSettings: vi.fn(async () => undefined),
   };
   return {
     invoke: vi.fn(),
@@ -31,7 +37,11 @@ vi.mock("../../lib/notify", () => ({
 }));
 
 vi.mock("../../hooks/useTranslation", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string) =>
+      key === "autoSendLogsLastSent" ? "Last sent: {date}" : key,
+    language: "en",
+  }),
 }));
 
 vi.mock("../../stores/appStore", () => {
@@ -82,6 +92,11 @@ describe("ToolsMaintenanceSection diagnostics", () => {
     mocks.notify.success.mockReset();
     mocks.notify.error.mockReset();
     mocks.writeText.mockReset();
+    mocks.storeState.settings.autoSendLogsWeekly = undefined;
+    mocks.storeState.settings.lastAutoSendLogsAt = undefined;
+    mocks.storeState.settings.uiLanguage = "en";
+    mocks.storeState.updateSettings.mockReset();
+    mocks.storeState.updateSettings.mockImplementation(async () => undefined);
     Object.assign(navigator, {
       clipboard: { writeText: mocks.writeText },
     });
@@ -252,5 +267,88 @@ describe("ToolsMaintenanceSection diagnostics", () => {
     await waitFor(() => {
       expect(mocks.invoke).toHaveBeenCalledWith("cmd_open_log_dir");
     });
+  });
+
+  it("shows the weekly auto-send switch off when upload is configured and the setting is unset", async () => {
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    const toggle = await screen.findByRole("switch", {
+      name: "autoSendLogsWeekly",
+    });
+    expect(toggle.getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("hides the weekly auto-send switch when upload is not configured", async () => {
+    mocks.invoke.mockImplementation(async (cmd: unknown) => {
+      if (cmd === "cmd_get_log_dir") return LOG_DIR;
+      if (cmd === "cmd_diagnostics_upload_available") return false;
+      return undefined;
+    });
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mocks.invoke).toHaveBeenCalledWith(
+        "cmd_diagnostics_upload_available",
+      );
+    });
+    expect(
+      screen.queryByRole("switch", { name: "autoSendLogsWeekly" }),
+    ).toBeNull();
+  });
+
+  it("persists the weekly auto-send switch through updateSettings", async () => {
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("switch", { name: "autoSendLogsWeekly" }),
+    );
+    expect(mocks.storeState.updateSettings).toHaveBeenCalledWith({
+      autoSendLogsWeekly: true,
+    });
+  });
+
+  it("shows last sent when lastAutoSendLogsAt is a parseable date", async () => {
+    mocks.storeState.settings.lastAutoSendLogsAt = "2026-01-15T12:00:00.000Z";
+    const formatted = new Date("2026-01-15T12:00:00.000Z").toLocaleDateString(
+      "en",
+    );
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    expect(await screen.findByText(`Last sent: ${formatted}`)).toBeTruthy();
+  });
+
+  it("does not show last sent when lastAutoSendLogsAt is not a parseable date", async () => {
+    mocks.storeState.settings.lastAutoSendLogsAt = "not-a-date";
+    render(
+      <ToolsMaintenanceSection
+        surface={surface}
+        secondaryButtonStyle={secondaryButtonStyle}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("switch", { name: "autoSendLogsWeekly" }),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Last sent:/)).toBeNull();
   });
 });
