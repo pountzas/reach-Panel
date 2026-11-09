@@ -1,11 +1,15 @@
 pub(crate) mod events;
 pub(crate) mod groq;
+pub(crate) mod log_lines;
 mod network;
 mod route;
 pub(crate) mod timeouts;
 mod winrt;
 
-use route::{can_dictate, prefer_cloud_stt, select_engine, RouteDecision, SttEngine};
+use route::{
+    can_dictate, groq_language_hint, prefer_cloud_stt, select_engine, winrt_language_tag,
+    RouteDecision, SttEngine,
+};
 use serde::Serialize;
 use std::sync::{Mutex, OnceLock};
 use std::thread;
@@ -68,9 +72,10 @@ fn arm_max_session_guard(gen: u64) {
     let limit = timeouts::MAX_SESSION;
     thread::spawn(move || {
         thread::sleep(limit);
-        let still = router().lock().ok().is_some_and(|g| {
-            max_session_guard_should_stop(g.active, g.session_generation, gen)
-        });
+        let still = router()
+            .lock()
+            .ok()
+            .is_some_and(|g| max_session_guard_should_stop(g.active, g.session_generation, gen));
         if still {
             log::info!("stt max session reached");
             let _ = stop_dictation();
@@ -144,9 +149,8 @@ pub fn start_dictation(
                 guard.session_generation
             };
             log::info!(
-                "stt start engine={} language={}",
-                engine_name(SttEngine::WinRt),
-                language
+                "{}",
+                log_lines::start_log_line("winrt", winrt_language_tag(language))
             );
             if let Err(e) = winrt::start_dictation(language, app) {
                 clear_active_backend(ActiveBackend::WinRt);
@@ -170,9 +174,8 @@ pub fn start_dictation(
                 guard.session_generation
             };
             log::info!(
-                "stt start engine={} language={}",
-                engine_name(SttEngine::Groq),
-                language
+                "{}",
+                log_lines::start_log_line("groq", groq_language_hint(language))
             );
             if let Err(e) = groq::start_dictation(language, &key, app) {
                 clear_active_backend(ActiveBackend::Groq);

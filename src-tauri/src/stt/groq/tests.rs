@@ -1,5 +1,5 @@
 use super::audio::{encode_wav_pcm16, resample_linear};
-use super::{groq_remaining_percent, resolve_api_key};
+use super::{groq_remaining_percent, resolve_api_key, transcribe_file_bytes};
 
 #[test]
 fn resample_identity() {
@@ -57,4 +57,14 @@ fn lingering_touches_shared_state_unless_stopped_with_a_newer_session() {
     assert!(super::lingering_should_touch_shared_state(false, true));
     assert!(super::lingering_should_touch_shared_state(true, false));
     assert!(!super::lingering_should_touch_shared_state(true, true));
+}
+
+#[test]
+fn transcribe_file_bytes_empty_wav_is_no_speech_error() {
+    let result = transcribe_file_bytes("key", &[], "audio.wav", "audio/wav", "en");
+    assert!(result.is_err());
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        "No speech captured. Check the microphone."
+    );
 }

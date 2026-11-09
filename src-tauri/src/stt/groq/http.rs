@@ -1,12 +1,13 @@
 //! Groq transcriptions HTTP client (multipart upload + quota headers).
 
-use super::audio::{encode_wav_pcm16, pcm16le_to_f32};
+use super::super::log_lines::{groq_empty_audio_message, groq_post_log_line};
 use super::super::route::groq_language_hint;
+use super::audio::{encode_wav_pcm16, pcm16le_to_f32};
 use super::{GROQ_MODEL, GROQ_TRANSCRIPTIONS_URL, TARGET_SAMPLE_RATE};
 use anyhow::{anyhow, Result};
 use serde::Deserialize;
 use std::io::Write;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Deserialize)]
 struct GroqTranscriptionResponse {
@@ -88,10 +89,7 @@ pub(super) fn transcribe(
     language: &str,
 ) -> Result<GroqTranscription, GroqTranscribeError> {
     if audio.is_empty() {
-        return Ok(GroqTranscription {
-            text: String::new(),
-            quota: GroqRequestQuota::default(),
-        });
+        return transcribe_file_bytes(api_key, &[], "audio.wav", "audio/wav", language);
     }
     let wav = encode_wav_pcm16(audio, TARGET_SAMPLE_RATE);
     transcribe_file_bytes(api_key, &wav, "audio.wav", "audio/wav", language)
@@ -105,10 +103,7 @@ pub(crate) fn transcribe_pcm16_le(
     language: &str,
 ) -> Result<GroqTranscription, GroqTranscribeError> {
     if pcm16le.is_empty() {
-        return Ok(GroqTranscription {
-            text: String::new(),
-            quota: GroqRequestQuota::default(),
-        });
+        return transcribe_file_bytes(api_key, &[], "audio.wav", "audio/wav", language);
     }
     let samples = pcm16le_to_f32(pcm16le);
     let wav = encode_wav_pcm16(
@@ -130,11 +125,11 @@ pub(crate) fn transcribe_file_bytes(
     mime: &str,
     language: &str,
 ) -> Result<GroqTranscription, GroqTranscribeError> {
-    if data.is_empty() {
-        return Ok(GroqTranscription {
-            text: String::new(),
-            quota: GroqRequestQuota::default(),
-        });
+    if let Some(message) = groq_empty_audio_message(data.len()) {
+        return Err(GroqTranscribeError::new(
+            message,
+            GroqRequestQuota::default(),
+        ));
     }
     let lang = groq_language_hint(language);
     let boundary = format!("----ReachPanel{}", std::process::id());
@@ -149,6 +144,7 @@ pub(crate) fn transcribe_file_bytes(
         .map_err(GroqTranscribeError::from)?;
     write!(body, "--{boundary}--\r\n").map_err(|e| GroqTranscribeError::from(anyhow!("{e}")))?;
 
+    let started = Instant::now();
     let response = ureq::post(GROQ_TRANSCRIPTIONS_URL)
         .set("Authorization", &format!("Bearer {api_key}"))
         .set(
@@ -157,6 +153,16 @@ pub(crate) fn transcribe_file_bytes(
         )
         .timeout(Duration::from_secs(60))
         .send_bytes(&body);
+    let duration_ms = started.elapsed().as_millis();
+    let http_status = match &response {
+        Ok(resp) => resp.status(),
+        Err(ureq::Error::Status(code, _)) => *code,
+        Err(_) => 0,
+    };
+    log::info!(
+        "{}",
+        groq_post_log_line(data.len(), duration_ms, http_status)
+    );
 
     match response {
         Ok(resp) => {
@@ -244,4 +250,3 @@ pub(super) fn write_multipart_file(
     write!(body, "\r\n")?;
     Ok(())
 }
-

@@ -271,7 +271,14 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
             super::clear_active_backend(super::ActiveBackend::WinRt);
             if let Some(args) = args {
                 if let Ok(status) = args.Status() {
-                    log::info!("winrt Completed status={status:?}");
+                    if success_result_count == 0 {
+                        log::info!(
+                            "{}",
+                            super::log_lines::result_log_line("winrt", &format!("{status:?}"), 0,)
+                        );
+                    } else {
+                        log::info!("winrt Completed status={status:?}");
+                    }
                     if status != SpeechRecognitionResultStatus::Success && !is_quiet_end(status) {
                         emit_error(
                             &app_for_completed,
