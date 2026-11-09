@@ -248,6 +248,7 @@ export type TypingSlice = {
   ) => void;
   backspaceTyped: () => void;
   toggleSticky: (modifier: string) => void;
+  toggleCaptureCapsLock: () => void;
   pollKeyboardState: () => Promise<void>;
   loadInputMethods: () => Promise<void>;
   setLanguagePickerOpen: (open: boolean) => void;

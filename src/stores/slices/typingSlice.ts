@@ -155,6 +155,14 @@ export const createTypingSlice: StateCreator<AppStore, [], [], TypingSlice> = (
         : [...s.stickyModifiers, modifier],
     }));
   },
+  toggleCaptureCapsLock: () => {
+    set((s) => ({
+      physicalKeyState: {
+        ...s.physicalKeyState,
+        capsLock: !s.physicalKeyState.capsLock,
+      },
+    }));
+  },
   pollKeyboardState: async () => {
     const epoch = get().settingsEpoch;
     const next = await invoke<PhysicalKeyState>("cmd_get_keyboard_state");

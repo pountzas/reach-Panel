@@ -94,6 +94,7 @@ export function Keyboard() {
     clearSticky,
     clearStickyExceptFn,
   } = useStickyModifiers();
+  const toggleCaptureCapsLock = useAppStore((s) => s.toggleCaptureCapsLock);
   const pollKeyboardState = useAppStore((s) => s.pollKeyboardState);
   const typeCharacter = useAppStore((s) => s.typeCharacter);
   const backspaceTyped = useAppStore((s) => s.backspaceTyped);
@@ -279,6 +280,7 @@ export function Keyboard() {
     applyFreeWriteLayoutTranslation,
     freeWritePdfFocus,
     toggleSticky,
+    toggleCaptureCapsLock,
     backspaceTyped,
     loadSuggestions,
     recordTypedWord,
