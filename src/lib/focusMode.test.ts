@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS, type MonitorInfo } from "./types";
 import {
   isInputPreviewActiveForMode,
   isMicFabEnabled,
+  modeMenuHeight,
   isMirroredSetup,
   isFocusModeEligible,
   isTransparentUiActive,
@@ -36,6 +37,10 @@ const b: MonitorInfo = {
 };
 
 describe("focusMode", () => {
+  it("counts each menu separator as one pixel of height", () => {
+    expect(modeMenuHeight(7, 2)).toBe(7 * 48 + 16 + 2);
+  });
+
   it("detects mirrored monitors by overlapping work areas", () => {
     expect(isMirroredSetup([a, b])).toBe(true);
     expect(monitorsOverlap(a, b)).toBe(true);

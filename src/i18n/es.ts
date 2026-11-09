@@ -45,6 +45,8 @@ export const es = {
 
   modeMenuShowKeyboard: "Mostrar teclado",
 
+  modeMenuCloseApp: "Cerrar aplicación",
+
   modeCompanionUnavailable:
     "No disponible hasta que inicies el puente companion o emparejes una tablet (Ajustes → Compañero).",
 

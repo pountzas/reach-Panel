@@ -93,7 +93,7 @@ describe("mode menu store actions", () => {
     expect(useAppStore.getState().modeMenuOpen).toBe(true);
     expect(invoke).toHaveBeenCalledWith("cmd_expand_window_for_mode_menu", {
       menuWidth: MODE_MENU_WIDTH,
-      menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+      menuHeight: modeMenuHeight(2 + APP_MODE_OPTIONS.length, 2),
     });
     mockState.resolveExpand?.();
     await open;

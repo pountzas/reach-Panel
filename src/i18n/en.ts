@@ -43,6 +43,8 @@ export const en = {
 
   modeMenuShowKeyboard: "Show keyboard",
 
+  modeMenuCloseApp: "Close app",
+
   modeCompanionUnavailable:
     "Unavailable until you start the companion bridge or pair a tablet (Settings → Companion).",
 

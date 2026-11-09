@@ -45,6 +45,8 @@ export const it = {
 
   modeMenuShowKeyboard: "Mostra tastiera",
 
+  modeMenuCloseApp: "Chiudi app",
+
   modeCompanionUnavailable:
     "Non disponibile finché non avvii il bridge companion o associ un tablet (Impostazioni → Compagno).",
 

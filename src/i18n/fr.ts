@@ -45,6 +45,8 @@ export const fr = {
 
   modeMenuShowKeyboard: "Afficher le clavier",
 
+  modeMenuCloseApp: "Fermer l’application",
+
   modeCompanionUnavailable:
     "Indisponible tant que le pont companion n’est pas démarré ou qu’aucune tablette n’est appariée (Réglages → Compagnon).",
 
