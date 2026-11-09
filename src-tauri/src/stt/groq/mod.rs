@@ -107,7 +107,10 @@ pub fn start_dictation(language: &str, api_key: &str, app: AppHandle) -> Result<
         let lingering = guard.lingering_worker.take();
         drop(guard);
         if let Some(worker) = lingering {
-            let _ = worker.join();
+            // Start must not wait on remainder transcription; park join like stop_dictation.
+            thread::spawn(move || {
+                let _ = worker.join();
+            });
         }
     }
 
