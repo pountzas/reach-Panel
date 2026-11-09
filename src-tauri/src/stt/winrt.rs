@@ -27,6 +27,7 @@ struct DictationRuntime {
     starting: bool,
     stopping: bool,
     generation: u64,
+    success_results: u32,
 }
 
 impl Default for DictationRuntime {
@@ -37,6 +38,7 @@ impl Default for DictationRuntime {
             starting: false,
             stopping: false,
             generation: 0,
+            success_results: 0,
         }
     }
 }
@@ -127,6 +129,20 @@ pub(crate) fn dictation_topic_name() -> &'static str {
     "Dictation"
 }
 
+pub const NO_SPEECH_RECOGNIZED: &str =
+    "No speech recognized. Check the microphone and speak after dictation starts.";
+
+pub(crate) fn silence_without_results_message(
+    status_is_timeout_or_pause: bool,
+    success_result_count: u32,
+) -> Option<&'static str> {
+    if status_is_timeout_or_pause && success_result_count == 0 {
+        Some(NO_SPEECH_RECOGNIZED)
+    } else {
+        None
+    }
+}
+
 struct StartingFlagGuard;
 
 impl Drop for StartingFlagGuard {
@@ -162,6 +178,7 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
         }
         guard.starting = true;
         guard.generation = guard.generation.wrapping_add(1);
+        guard.success_results = 0;
         guard.generation
     };
     let _starting_guard = StartingFlagGuard;
@@ -208,6 +225,11 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
                 log::warn!("winrt ResultGenerated status={status:?}");
                 return Ok(());
             }
+            if let Ok(mut g) = runtime().lock() {
+                if is_current_session(g.generation, my_gen) {
+                    g.success_results = g.success_results.saturating_add(1);
+                }
+            }
             let text = result.Text()?.to_string();
             log::info!("winrt ResultGenerated chars={}", text.chars().count());
             handle_desktop_result(&app_for_results, &text);
@@ -218,10 +240,14 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
     let app_for_completed = app.clone();
     let completed_token = session.Completed(&TypedEventHandler::new(
         move |_sender, args: &Option<SpeechContinuousRecognitionCompletedEventArgs>| {
-            let ended = match runtime().lock() {
-                Ok(mut g) if is_current_session(g.generation, my_gen) => g.session.take(),
+            let (ended, success_result_count) = match runtime().lock() {
+                Ok(mut g) if is_current_session(g.generation, my_gen) => {
+                    let count = g.success_results;
+                    g.success_results = 0;
+                    (g.session.take(), count)
+                }
                 Ok(_) => return Ok(()),
-                Err(_) => None,
+                Err(_) => (None, 0),
             };
             if let Some(active) = ended {
                 // Close outside this callback to avoid deadlocking WinRT.
@@ -251,6 +277,12 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
                             &app_for_completed,
                             format!("Dictation ended with status: {status:?}"),
                         );
+                    } else if let Some(message) = silence_without_results_message(
+                        status == SpeechRecognitionResultStatus::TimeoutExceeded
+                            || status == SpeechRecognitionResultStatus::PauseLimitExceeded,
+                        success_result_count,
+                    ) {
+                        emit_error(&app_for_completed, message);
                     }
                 }
             }
@@ -467,5 +499,23 @@ mod tests {
     #[test]
     fn dictation_topic_name_is_dictation() {
         assert_eq!(dictation_topic_name(), "Dictation");
+    }
+
+    #[test]
+    fn silence_without_results_message_on_timeout_with_zero_results() {
+        assert_eq!(
+            silence_without_results_message(true, 0),
+            Some("No speech recognized. Check the microphone and speak after dictation starts.")
+        );
+    }
+
+    #[test]
+    fn silence_without_results_message_none_when_timeout_has_a_result() {
+        assert_eq!(silence_without_results_message(true, 1), None);
+    }
+
+    #[test]
+    fn silence_without_results_message_none_on_cancel_with_zero_results() {
+        assert_eq!(silence_without_results_message(false, 0), None);
     }
 }
