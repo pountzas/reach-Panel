@@ -45,6 +45,8 @@ export const de = {
 
   modeMenuShowKeyboard: "Tastatur anzeigen",
 
+  modeMenuCloseApp: "App schließen",
+
   modeCompanionUnavailable:
     "Nicht verfügbar, bis die Companion-Brücke gestartet oder ein Tablet gekoppelt ist (Einstellungen → Begleiter).",
 

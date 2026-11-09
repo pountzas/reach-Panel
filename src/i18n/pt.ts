@@ -45,6 +45,8 @@ export const pt = {
 
   modeMenuShowKeyboard: "Mostrar teclado",
 
+  modeMenuCloseApp: "Fechar aplicação",
+
   modeCompanionUnavailable:
     "Indisponível até iniciar a bridge companion ou emparelhar um tablet (Definições → Companheiro).",
 

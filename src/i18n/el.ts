@@ -45,6 +45,8 @@ export const el = {
 
   modeMenuShowKeyboard: "Εμφάνιση πληκτρολογίου",
 
+  modeMenuCloseApp: "Κλείσιμο εφαρμογής",
+
   modeCompanionUnavailable:
     "Μη διαθέσιμο μέχρι να ξεκινήσει η γέφυρα companion ή να συνδεθεί tablet (Ρυθμίσεις → Συνοδός).",
 
