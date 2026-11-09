@@ -124,8 +124,8 @@ describe("liftPlacementAboveWindow", () => {
 });
 
 describe("overlayShouldCaptureMic", () => {
-  it("captures only when the active engine is WinRT", () => {
-    expect(overlayShouldCaptureMic("winrt")).toBe(true);
+  it("never opens a second mic capture for any dictation engine", () => {
+    expect(overlayShouldCaptureMic("winrt")).toBe(false);
     expect(overlayShouldCaptureMic("groq")).toBe(false);
     expect(overlayShouldCaptureMic(undefined)).toBe(false);
     expect(overlayShouldCaptureMic(null)).toBe(false);

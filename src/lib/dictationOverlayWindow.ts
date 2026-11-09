@@ -20,11 +20,11 @@ function tauriErrorMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
-/** Groq/cpal owns the mic; a second getUserMedia stream can silence capture. */
+/** Native recognizer owns the mic; a second getUserMedia stream can silence capture. */
 export function overlayShouldCaptureMic(
-  engine: string | null | undefined,
+  _engine: string | null | undefined,
 ): boolean {
-  return engine === "winrt";
+  return false;
 }
 
 export type OverlayPlacement = {
