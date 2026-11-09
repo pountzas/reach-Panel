@@ -1,4 +1,4 @@
-use super::events::{emit_error, emit_state, handle_result, map_stt_error};
+use super::events::{emit_error, emit_state, handle_desktop_result, map_stt_error};
 use super::route::winrt_language_tag;
 use super::{SttState, SttStatus};
 use anyhow::{anyhow, Result};
@@ -200,7 +200,7 @@ pub fn start_dictation(language: &str, app: AppHandle) -> Result<()> {
             }
             let text = result.Text()?.to_string();
             log::info!("winrt ResultGenerated chars={}", text.chars().count());
-            handle_result(&app_for_results, &text);
+            handle_desktop_result(&app_for_results, &text);
             Ok(())
         },
     ))?;

@@ -94,9 +94,9 @@ describe("Keyboard Mic key focus gating (#349)", () => {
         <Keyboard />
       </div>,
     );
-    const btn = screen.getByRole("button", {
+    const btn = screen.getByRole<HTMLButtonElement>("button", {
       name: "Start dictation",
-    }) as HTMLButtonElement;
+    });
     expect(btn.disabled).toBe(false);
   });
 
@@ -110,9 +110,9 @@ describe("Keyboard Mic key focus gating (#349)", () => {
         <Keyboard />
       </div>,
     );
-    const btn = screen.getByRole("button", {
+    const btn = screen.getByRole<HTMLButtonElement>("button", {
       name: "Stop dictation",
-    }) as HTMLButtonElement;
+    });
     expect(btn.disabled).toBe(false);
   });
 

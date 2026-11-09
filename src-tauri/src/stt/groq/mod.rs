@@ -1,6 +1,8 @@
 //! Cloud Groq Whisper STT for languages Windows SpeechRecognition does not support.
 
-use super::events::{emit_error, emit_groq_quota_optional, emit_state, handle_result};
+use super::events::{
+    emit_error, emit_groq_quota_optional, emit_state, handle_desktop_result,
+};
 use super::route::groq_language_hint;
 use super::SttState;
 use anyhow::{anyhow, Result};
@@ -39,6 +41,15 @@ pub(super) fn should_flush_remainder_on_stop(
     speech_started && chunk_secs >= min_secs * 0.7
 }
 
+/// Live flushes may always mutate processing/error state. After Stop, skip if a
+/// newer session already owns the runtime.
+pub(super) fn lingering_should_touch_shared_state(
+    stop_requested: bool,
+    newer_session: bool,
+) -> bool {
+    !stop_requested || !newer_session
+}
+
 struct GroqRuntime {
     session: Option<GroqSession>,
     lingering_worker: Option<JoinHandle<()>>,
@@ -75,6 +86,10 @@ fn set_processing(active: bool) {
     if let Ok(mut guard) = runtime().lock() {
         guard.processing = active;
     }
+}
+
+fn newer_session_active() -> bool {
+    runtime().lock().map(|g| g.session.is_some()).unwrap_or(false)
 }
 
 pub fn is_processing() -> bool {
@@ -311,9 +326,8 @@ fn worker_loop(
                             result.quota.limit_requests,
                         );
                         log::debug!("[stt/groq] transcript len={}", result.text.chars().count());
-                        if !stop_flag.load(Ordering::SeqCst) {
-                            handle_result(&app, &result.text);
-                        }
+                        // Type even if Stop arrived mid-transcription; Idle was already emitted.
+                        handle_desktop_result(&app, &result.text);
                     }
                     Err(err) => {
                         emit_groq_quota_optional(
@@ -330,7 +344,12 @@ fn worker_loop(
                         }
                     }
                 }
-                set_processing(false);
+                if lingering_should_touch_shared_state(
+                    stop_flag.load(Ordering::SeqCst),
+                    newer_session_active(),
+                ) {
+                    set_processing(false);
+                }
                 if !stop_flag.load(Ordering::SeqCst) {
                     emit_state(&app, SttState::Listening, Some(language.clone()));
                 }
@@ -357,7 +376,9 @@ fn worker_loop(
             log::debug!(
                 "[stt/groq] flush remainder {chunk_secs:.2}s peak={peak_energy:.4} lang={language}"
             );
-            set_processing(true);
+            if lingering_should_touch_shared_state(true, newer_session_active()) {
+                set_processing(true);
+            }
             match transcribe(&api_key, &chunk, &language) {
                 Ok(result) => {
                     emit_groq_quota_optional(
@@ -367,8 +388,8 @@ fn worker_loop(
                     );
                     let chars = result.text.chars().count();
                     log::info!("[stt/groq] flush remainder chars={chars}");
-                    // handle_result even when stop_flag is true — stop already emitted Idle.
-                    handle_result(&app, &result.text);
+                    // Type even when stop_flag is true — stop already emitted Idle.
+                    handle_desktop_result(&app, &result.text);
                 }
                 Err(err) => {
                     emit_groq_quota_optional(
@@ -380,12 +401,16 @@ fn worker_loop(
                         "[stt/groq] flush remainder error: {}",
                         crate::logging::redact(&err.to_string())
                     );
-                    emit_error(&app, err.to_string());
+                    if lingering_should_touch_shared_state(true, newer_session_active()) {
+                        emit_error(&app, err.to_string());
+                    }
                 }
             }
         }
     }
-    set_processing(false);
+    if lingering_should_touch_shared_state(true, newer_session_active()) {
+        set_processing(false);
+    }
 }
 
 pub fn stop_dictation() -> Result<()> {
