@@ -14,9 +14,42 @@ vi.mock("@tauri-apps/api/webviewWindow", () => ({
   },
 }));
 
+import { DEFAULT_SETTINGS } from "../lib/types";
 import { parseSettings } from "./storeShared";
 
 describe("parseSettings", () => {
+  it("defaults autoSendLogsWeekly to false and omits lastAutoSendLogsAt", () => {
+    expect(DEFAULT_SETTINGS.autoSendLogsWeekly).toBe(false);
+    expect(DEFAULT_SETTINGS).not.toHaveProperty("lastAutoSendLogsAt");
+
+    const empty = parseSettings("{}");
+    expect(empty.autoSendLogsWeekly).toBe(false);
+    expect(empty).not.toHaveProperty("lastAutoSendLogsAt");
+
+    const omitted = parseSettings(JSON.stringify({ uiLanguage: "el" }));
+    expect(omitted.autoSendLogsWeekly).toBe(false);
+    expect(omitted).not.toHaveProperty("lastAutoSendLogsAt");
+  });
+
+  it("round-trips autoSendLogsWeekly and lastAutoSendLogsAt from JSON", () => {
+    const settings = parseSettings(
+      '{"autoSendLogsWeekly":true,"lastAutoSendLogsAt":"2026-01-01T00:00:00.000Z"}',
+    );
+    expect(settings.autoSendLogsWeekly).toBe(true);
+    expect(settings.lastAutoSendLogsAt).toBe("2026-01-01T00:00:00.000Z");
+  });
+
+  it("does not enable auto-send or set a timestamp from non-boolean or empty values", () => {
+    const settings = parseSettings(
+      JSON.stringify({
+        autoSendLogsWeekly: 1,
+        lastAutoSendLogsAt: "",
+      }),
+    );
+    expect(settings.autoSendLogsWeekly).toBe(false);
+    expect(settings).not.toHaveProperty("lastAutoSendLogsAt");
+  });
+
   it("strips background image keys from old profiles and otherwise matches", () => {
     const leftover = {
       uiLanguage: "el",

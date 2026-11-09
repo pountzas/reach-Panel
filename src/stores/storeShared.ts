@@ -444,6 +444,13 @@ export function parseSettings(json: string): AppSettings {
     );
     const taskbarPositionPreference =
       parsed.taskbarPositionPreference === "top" ? "top" : "bottom";
+    const autoSendLogsWeekly = parsed.autoSendLogsWeekly === true;
+    if (
+      typeof parsed.lastAutoSendLogsAt !== "string" ||
+      parsed.lastAutoSendLogsAt.length === 0
+    ) {
+      delete parsed.lastAutoSendLogsAt;
+    }
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
@@ -456,6 +463,7 @@ export function parseSettings(json: string): AppSettings {
       micMode,
       keyboardSectionMode,
       taskbarPositionPreference,
+      autoSendLogsWeekly,
       sectionStack: resolveSectionStack(parsed.sectionStack),
       synthesizerOctaveCount: resolveSynthOctaveCount(
         parsed.synthesizerOctaveCount,
