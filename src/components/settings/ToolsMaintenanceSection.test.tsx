@@ -288,8 +288,10 @@ describe("ToolsMaintenanceSection diagnostics", () => {
     });
     expect(toggle.getAttribute("aria-checked")).toBe("false");
     const weekly = toggle.closest("div.mb-4");
-    expect(weekly).toBeTruthy();
-    const notice = within(weekly!).getByText("sendLogsDestination");
+    if (!(weekly instanceof HTMLElement)) {
+      throw new Error("weekly setting container missing");
+    }
+    const notice = within(weekly).getByText("sendLogsDestination");
     expect(notice.closest("[hidden]")).toBeNull();
   });
 

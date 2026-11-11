@@ -9,7 +9,7 @@ export const createDictationSlice: StateCreator<
   [],
   [],
   DictationSlice
-> = (set, get) => ({
+> = (_set, get) => ({
   toggleDictation: async () => {
     if (!get().externalInputFocused) {
       get().setLastError(DICTATION_SELECT_INPUT_ERROR);
