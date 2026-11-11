@@ -5,6 +5,7 @@ import { useObjectUrl } from "../../hooks/useObjectUrl";
 import { useTranslation } from "../../hooks/useTranslation";
 import {
   getLatest as getLatestInputPreviewFrame,
+  getPanelOccluded,
   subscribe as subscribeInputPreviewFrames,
 } from "../../lib/inputPreviewFrames";
 import {
@@ -21,6 +22,11 @@ export function InputPreview() {
     subscribeInputPreviewFrames,
     getLatestInputPreviewFrame,
     () => null,
+  );
+  const panelOccluded = useSyncExternalStore(
+    subscribeInputPreviewFrames,
+    getPanelOccluded,
+    () => false,
   );
   const focused = useAppStore((s) => s.externalInputFocused);
   const focusModeActive = useAppStore((s) => s.focusModeActive);
@@ -64,7 +70,17 @@ export function InputPreview() {
         aria-label={
           focused ? t("inputPreviewLabel") : t("inputPreviewNoInput")
         }>
-        {focused && frameSrc ? (
+        {focused && panelOccluded ? (
+          <span
+            className={`px-3 text-center text-xs ${transparent ? "" : "text-slate-400"}`}
+            style={
+              transparent
+                ? { color: transparentPalette.text, opacity: 0.85 }
+                : undefined
+            }>
+            {t("inputPreviewPanelOccluded")}
+          </span>
+        ) : focused && frameSrc ? (
           <img
             src={frameSrc}
             alt={t("inputPreviewLabel")}

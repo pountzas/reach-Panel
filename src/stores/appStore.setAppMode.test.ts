@@ -6,7 +6,9 @@ import { listen } from "@tauri-apps/api/event";
 import {
   clear as clearInputPreviewFrames,
   getLatest as getLatestInputPreviewFrame,
+  getPanelOccluded,
   publish as publishInputPreviewFrame,
+  setPanelOccluded,
 } from "../lib/inputPreviewFrames";
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -237,6 +239,12 @@ describe("input preview clear paths", () => {
 
   afterEach(() => {
     clearInputPreviewFrames();
+  });
+
+  it("input-preview-panel-occluded marks the preview unavailable", () => {
+    setPanelOccluded(false);
+    listenHandler("input-preview-panel-occluded")({ payload: undefined });
+    expect(getPanelOccluded()).toBe(true);
   });
 
   it("input-preview-cleared clears the module frame store", () => {
