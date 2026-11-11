@@ -45,6 +45,8 @@ export const el = {
 
   modeMenuShowKeyboard: "Εμφάνιση πληκτρολογίου",
 
+  modeMenuCloseApp: "Κλείσιμο εφαρμογής",
+
   modeCompanionUnavailable:
     "Μη διαθέσιμο μέχρι να ξεκινήσει η γέφυρα companion ή να συνδεθεί tablet (Ρυθμίσεις → Συνοδός).",
 
@@ -356,6 +358,13 @@ export const el = {
 
   sendLogsFailedRateLimited: "Πάρα πολλές αναφορές. Δοκιμάστε ξανά αργότερα.",
 
+  autoSendLogsWeekly: "Αυτόματη αποστολή αρχείων καταγραφής κάθε εβδομάδα",
+
+  autoSendLogsWeeklyDescription:
+    "Στέλνει την ίδια καθαρισμένη διαγνωστική αναφορά με την Αποστολή αρχείων καταγραφής, μία φορά την εβδομάδα. Ανενεργό μέχρι να το ενεργοποιήσετε.",
+
+  autoSendLogsLastSent: "Τελευταία αποστολή: {date}",
+
   saveProfile: "Αποθήκευση προφίλ",
 
   profileSaved: "Το προφίλ αποθηκεύτηκε.",
@@ -403,17 +412,20 @@ export const el = {
 
   fnKeyModeLatched: "Κλειδωμένο (το Fn μένει ενεργό μέχρι να το πατήσετε ξανά)",
 
+  groqApiKeyLabel: "Κλειδί Groq API (υπαγόρευση companion)",
+
+  groqApiKeyHint:
+    "Για την υπαγόρευση του tablet companion. Μπορείτε επίσης να ορίσετε τη μεταβλητή περιβάλλοντος GROQ_API_KEY. Το κλειδί μένει σε αυτόν τον υπολογιστή.",
+
+  groqApiKeyLink: "Λήψη δωρεάν κλειδιού Groq API",
+
   synthesizer: "Συνθετητής",
 
   synthesizerVolume: "Ένταση",
 
-  dictationStart: "Έναρξη υπαγόρευσης",
-
-  dictationStop: "Διακοπή υπαγόρευσης",
+  dictationStart: "Φωνητική πληκτρολόγηση",
 
   micModeSelectInput: "Επιλέξτε ένα πεδίο κειμένου για υπαγόρευση",
-
-  dictationListening: "Ακούει…",
 
   dictationErrorNoLanguage:
     "Η αναγνώριση ομιλίας για αυτή τη γλώσσα πληκτρολόγησης δεν είναι εγκατεστημένη. Προσθέστε το πακέτο ομιλίας στις Ρυθμίσεις Windows → Ώρα και γλώσσα → Ομιλία (ή Γλώσσα και περιοχή) και δοκιμάστε ξανά.",
@@ -427,26 +439,11 @@ export const el = {
   dictationErrorGroqApi:
     "Η υπαγόρευση cloud απέτυχε. Ελέγξτε τη σύνδεση στο διαδίκτυο και το κλειδί Groq και δοκιμάστε ξανά.",
 
-  dictationUnavailableUnsupported:
-    "Η υπαγόρευση δεν είναι διαθέσιμη — προσθέστε ένα δωρεάν κλειδί Groq στις Ρυθμίσεις για αυτή τη γλώσσα",
-
-  dictationUnavailableOffline:
-    "Η υπαγόρευση δεν είναι διαθέσιμη — απαιτείται σύνδεση στο διαδίκτυο",
-
-  dictationGroqRemainingToday: "Υπολειπόμενα αιτήματα Groq σήμερα",
-
   dictationOpenSpeechSettings: "Άνοιγμα ρυθμίσεων ομιλίας",
 
   dictationOpenSpeechLanguageSettings: "Εγκατάσταση γλώσσας ομιλίας",
 
   dictationOpenAppSettings: "Άνοιγμα ρυθμίσεων",
-
-  groqApiKeyLabel: "Κλειδί Groq API (υπαγόρευση cloud)",
-
-  groqApiKeyHint:
-    "Απαιτείται για γλώσσες που δεν υποστηρίζουν τα Windows (π.χ. ελληνικά). Μπορείτε επίσης να ορίσετε τη μεταβλητή περιβάλλοντος GROQ_API_KEY.",
-
-  groqApiKeyLink: "Λήψη δωρεάν κλειδιού Groq API",
 
   mute: "Σίγαση",
 

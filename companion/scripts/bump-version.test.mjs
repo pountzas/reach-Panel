@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import {
@@ -89,4 +90,14 @@ test('writeVersion updates package.json and both lockfile root versions', () => 
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('release path sets previous_version next to should_release and new_version', () => {
+  const cliPath = join(dirname(fileURLToPath(import.meta.url)), 'bump-version.mjs');
+  const source = readFileSync(cliPath, 'utf8');
+  const releaseStart = source.indexOf("setOutput('should_release', 'true')");
+  assert.notEqual(releaseStart, -1, 'expected should_release true on the release path');
+  const releaseBlock = source.slice(releaseStart, releaseStart + 250);
+  assert.match(releaseBlock, /setOutput\('new_version',\s*newVersion\)/);
+  assert.match(releaseBlock, /setOutput\('previous_version',\s*version\)/);
 });

@@ -1,5 +1,6 @@
 //! Focus target tracking: which external window/control accepts typed input.
 
+mod restore_plan;
 mod uia;
 mod win32;
 
@@ -643,18 +644,22 @@ pub fn remember_current_if_external() {
 pub fn restore_target_focus() -> Result<()> {
     unsafe {
         let fg = GetForegroundWindow();
-        if !is_our_window(fg) {
-            return Ok(());
-        }
-
+        let ours = is_our_window(fg);
         let target = TARGET_HWND.lock().ok().and_then(|g| *g);
-        let Some(target_hwnd) = target else {
-            return Ok(());
-        };
-        let hwnd = usize_to_hwnd(target_hwnd);
-        if !is_valid_typing_target(hwnd) {
-            return Ok(());
+        let hwnd = target.map(usize_to_hwnd);
+        let valid = hwnd.is_some_and(is_valid_typing_target);
+        match restore_plan::restore_focus_plan(ours, target.is_some(), valid) {
+            restore_plan::RestoreFocusPlan::LeaveForeground => {
+                log::debug!("restore_target_focus skipped: panel not foreground");
+                return Ok(());
+            }
+            restore_plan::RestoreFocusPlan::Error(msg) => {
+                log::warn!("restore_target_focus failed: no valid target");
+                anyhow::bail!("{msg}");
+            }
+            restore_plan::RestoreFocusPlan::Restore => {}
         }
+        let hwnd = hwnd.expect("valid target");
         bring_to_foreground(hwnd)?;
     }
     Ok(())

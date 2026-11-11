@@ -38,6 +38,7 @@ export const createTypingSlice: StateCreator<AppStore, [], [], TypingSlice> = (
   greekPendingAccent: null,
   stickyModifiers: [],
   physicalKeyState: DEFAULT_PHYSICAL_KEY_STATE,
+  captureCapsLock: false,
   keyboardLayout: "QWERTY",
   inputMethods: [],
   layoutKeyLabels: [],
@@ -155,6 +156,12 @@ export const createTypingSlice: StateCreator<AppStore, [], [], TypingSlice> = (
         : [...s.stickyModifiers, modifier],
     }));
   },
+  toggleCaptureCapsLock: () => {
+    set((s) => ({ captureCapsLock: !s.captureCapsLock }));
+  },
+  resetCaptureCapsLock: () => {
+    set({ captureCapsLock: false });
+  },
   pollKeyboardState: async () => {
     const epoch = get().settingsEpoch;
     const next = await invoke<PhysicalKeyState>("cmd_get_keyboard_state");
@@ -253,10 +260,8 @@ export const createTypingSlice: StateCreator<AppStore, [], [], TypingSlice> = (
         source: WebviewWindow.getCurrent().label,
       });
       if (previousTypingLanguage !== method.langTag) {
-        await get().stopDictation();
         set({ typedBuffer: "", ...clearGreekPendingAccent() });
         commitSuggestionList(set, []);
-        await get().refreshSttCapability();
       }
       await get().refreshLayoutKeyLabels(method.hkl);
       await get().pollKeyboardState();

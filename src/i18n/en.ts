@@ -43,6 +43,8 @@ export const en = {
 
   modeMenuShowKeyboard: "Show keyboard",
 
+  modeMenuCloseApp: "Close app",
+
   modeCompanionUnavailable:
     "Unavailable until you start the companion bridge or pair a tablet (Settings → Companion).",
 
@@ -382,6 +384,13 @@ export const en = {
 
   sendLogsFailedRateLimited: "Too many reports. Try again later.",
 
+  autoSendLogsWeekly: "Send logs automatically every week",
+
+  autoSendLogsWeeklyDescription:
+    "Sends the same scrubbed diagnostic report as Send logs, once a week. Off until you turn this on.",
+
+  autoSendLogsLastSent: "Last sent: {date}",
+
   saveProfile: "Save profile",
 
   profileSaved: "Profile saved.",
@@ -429,17 +438,20 @@ export const en = {
 
   fnKeyModeLatched: "Latched (Fn stays on until tapped again)",
 
+  groqApiKeyLabel: "Groq API key (companion dictation)",
+
+  groqApiKeyHint:
+    "Used for companion tablet dictation. You can also set the GROQ_API_KEY environment variable. The key stays on this PC.",
+
+  groqApiKeyLink: "Get a free Groq API key",
+
   synthesizer: "Synthesizer",
 
   synthesizerVolume: "Volume",
 
-  dictationStart: "Start dictation",
-
-  dictationStop: "Stop dictation",
+  dictationStart: "Voice typing",
 
   micModeSelectInput: "Select a text field to dictate",
-
-  dictationListening: "Listening…",
 
   dictationErrorNoLanguage:
     "Speech recognition for this typing language is not installed. Add the speech pack in Windows Settings → Time & language → Speech (or Language & region), then try again.",
@@ -453,25 +465,10 @@ export const en = {
   dictationErrorGroqApi:
     "Cloud dictation failed. Check your internet connection and Groq API key, then try again.",
 
-  dictationUnavailableUnsupported:
-    "Dictation unavailable — add a free Groq API key in Settings for this language",
-
-  dictationUnavailableOffline:
-    "Dictation unavailable — an internet connection is required",
-
-  dictationGroqRemainingToday: "Groq requests remaining today",
-
   dictationOpenSpeechSettings: "Open Speech settings",
   dictationOpenSpeechLanguageSettings: "Install speech language",
 
   dictationOpenAppSettings: "Open Settings",
-
-  groqApiKeyLabel: "Groq API key (cloud dictation)",
-
-  groqApiKeyHint:
-    "Needed for languages Windows doesn’t support (e.g. Greek). You can also set the GROQ_API_KEY environment variable.",
-
-  groqApiKeyLink: "Get a free Groq API key",
 
   mute: "Mute",
 

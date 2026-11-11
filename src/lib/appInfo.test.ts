@@ -10,7 +10,7 @@ describe("APP_INFO.links", () => {
 });
 
 describe("GROQ_API_KEYS_URL", () => {
-  it("points to the Groq console keys page", () => {
+  it("points at the Groq console keys page", () => {
     expect(GROQ_API_KEYS_URL).toBe("https://console.groq.com/keys");
   });
 });

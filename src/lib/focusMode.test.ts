@@ -3,10 +3,12 @@ import { DEFAULT_SETTINGS, type MonitorInfo } from "./types";
 import {
   isInputPreviewActiveForMode,
   isMicFabEnabled,
+  modeMenuHeight,
   isMirroredSetup,
   isFocusModeEligible,
   isTransparentUiActive,
   focusModeToolbarClassName,
+  micDictateAriaKey,
   monitorsOverlap,
   nextTransparentKeyColor,
   resolveFocusModeEnabled,
@@ -35,6 +37,10 @@ const b: MonitorInfo = {
 };
 
 describe("focusMode", () => {
+  it("counts each menu separator as one pixel of height", () => {
+    expect(modeMenuHeight(7, 2)).toBe(7 * 48 + 16 + 2);
+  });
+
   it("detects mirrored monitors by overlapping work areas", () => {
     expect(isMirroredSetup([a, b])).toBe(true);
     expect(monitorsOverlap(a, b)).toBe(true);
@@ -216,53 +222,23 @@ describe("focusMode", () => {
     expect(focusModeToolbarClassName(true).split(/\s+/)).not.toContain("gap-1");
   });
 
-  it("keeps the mic FAB enabled while listening even without focus or canDictate", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "listening",
-        canDictate: false,
-        externalInputFocused: false,
-      }),
-    ).toBe(true);
+  it("enables the mic control when a text field is focused", () => {
+    expect(isMicFabEnabled({ externalInputFocused: true })).toBe(true);
   });
 
-  it("keeps the mic FAB enabled while processing", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "processing",
-        canDictate: false,
-        externalInputFocused: false,
-      }),
-    ).toBe(true);
+  it("disables the mic control when no text field is focused", () => {
+    expect(isMicFabEnabled({ externalInputFocused: false })).toBe(false);
   });
 
-  it("enables the mic FAB when idle with focus and canDictate", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "idle",
-        canDictate: true,
-        externalInputFocused: true,
-      }),
-    ).toBe(true);
+  it("micDictateAriaKey is Voice typing when a field is focused", () => {
+    expect(micDictateAriaKey({ externalInputFocused: true })).toBe(
+      "dictationStart",
+    );
   });
 
-  it("disables the mic FAB when idle without a focused text field", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "idle",
-        canDictate: true,
-        externalInputFocused: false,
-      }),
-    ).toBe(false);
-  });
-
-  it("disables the mic FAB when idle with focus but without canDictate", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "idle",
-        canDictate: false,
-        externalInputFocused: true,
-      }),
-    ).toBe(false);
+  it("micDictateAriaKey asks to select a field when nothing is focused", () => {
+    expect(micDictateAriaKey({ externalInputFocused: false })).toBe(
+      "micModeSelectInput",
+    );
   });
 });

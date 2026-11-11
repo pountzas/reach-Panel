@@ -15,23 +15,26 @@ export const MODE_MENU_WIDTH = 220;
 export const MODE_MENU_ITEM_HEIGHT = 48;
 export const MODE_MENU_PAD = 8;
 
-/** Height for Show keyboard + mode rows + divider + vertical padding. */
-export function modeMenuHeight(itemCount: number): number {
-  return itemCount * MODE_MENU_ITEM_HEIGHT + 2 * MODE_MENU_PAD + 1;
+/** Height for menu rows + 1px dividers + vertical padding. */
+export function modeMenuHeight(itemCount: number, separatorCount = 1): number {
+  return itemCount * MODE_MENU_ITEM_HEIGHT + 2 * MODE_MENU_PAD + separatorCount;
 }
-/** Mic FAB icon when armed (text field focused + can dictate). sky-300 on default header. */
+/** Mic FAB icon when a text field is focused. sky-300 on default header. */
 export const MIC_FAB_ARMED_ICON_COLOR = "#7dd3fc";
 
-/** Mic mode FAB: never disabled while listening/processing so Stop stays reachable. */
+/** Mic control launches Windows Voice typing only when a text field is focused. */
 export function isMicFabEnabled(input: {
-  dictationState: string;
-  canDictate: boolean;
   externalInputFocused: boolean;
 }): boolean {
-  const listening =
-    input.dictationState === "listening" ||
-    input.dictationState === "processing";
-  return listening || (input.canDictate && input.externalInputFocused);
+  return input.externalInputFocused;
+}
+
+export type MicDictateAriaKey = "dictationStart" | "micModeSelectInput";
+
+export function micDictateAriaKey(input: {
+  externalInputFocused: boolean;
+}): MicDictateAriaKey {
+  return input.externalInputFocused ? "dictationStart" : "micModeSelectInput";
 }
 
 /**

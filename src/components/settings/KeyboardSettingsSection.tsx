@@ -1,4 +1,3 @@
-import { type CSSProperties } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type { SurfaceColors } from "../../lib/colorProfiles";
 import type { FnKeyMode } from "../../lib/types";
@@ -10,12 +9,10 @@ import { ThemedSelect } from "./settingsControls";
 
 type KeyboardSettingsSectionProps = {
   surface: SurfaceColors;
-  secondaryButtonStyle: CSSProperties;
 };
 
 export function KeyboardSettingsSection({
   surface,
-  secondaryButtonStyle,
 }: KeyboardSettingsSectionProps) {
   const { t } = useTranslation();
   const { settings, updateSettings } = useAppStore(
@@ -66,7 +63,11 @@ export function KeyboardSettingsSection({
         <button
           type="button"
           className="mt-2 rounded-lg border px-3 py-2 text-sm"
-          style={secondaryButtonStyle}
+          style={{
+            backgroundColor: surface.panelButtonBg,
+            borderColor: surface.panelBorder,
+            color: surface.panelText,
+          }}
           onClick={() => {
             openExternalLink(GROQ_API_KEYS_URL);
           }}>

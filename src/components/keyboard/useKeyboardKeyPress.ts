@@ -57,6 +57,8 @@ export type KeyPressContext = {
   ) => void;
   freeWritePdfFocus: boolean;
   toggleSticky: (key: string) => void;
+  /** Flip Caps for in-app Teaching capture. Does not inject into the OS. */
+  toggleCaptureCapsLock: () => void;
   backspaceTyped: () => void;
   loadSuggestions: () => Promise<void> | void;
   recordTypedWord: () => Promise<void> | void;
@@ -88,8 +90,17 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
   ) => {
     const key = keyDef.key;
     const deferSuggestions = options?.deferSuggestions === true;
+    const languageCaptureActive = isLanguageLessonCaptureActive(
+      ctx.languageLessonMode,
+    );
+    const teachingCaptureActive =
+      languageCaptureActive || ctx.freeWriteCaptureActive;
 
     if (key === "capslock") {
+      if (teachingCaptureActive) {
+        ctx.toggleCaptureCapsLock();
+        return;
+      }
       const result = await invoke<CommandResult>("cmd_press_key", {
         request: { key: "capslock", modifiers: [] },
       });
@@ -118,10 +129,6 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
       ctx.setLanguagePickerOpen(false);
     }
 
-    const languageCaptureActive = isLanguageLessonCaptureActive(
-      ctx.languageLessonMode,
-    );
-
     if (languageCaptureActive) {
       const authoringHandlers = ctx.languageListAuthoringHandlers;
       if (ctx.languageListAuthoringActive && !authoringHandlers) {
@@ -132,6 +139,7 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
           ? authoringHandlers
           : null;
       if (keyDef.modifier) {
+        ctx.toggleSticky(key);
         return;
       }
       if (key === "backspace") {
@@ -210,7 +218,10 @@ export function useKeyboardKeyPress(ctx: KeyPressContext) {
     }
 
     if (ctx.freeWriteCaptureActive) {
-      if (keyDef.modifier) return;
+      if (keyDef.modifier) {
+        ctx.toggleSticky(key);
+        return;
+      }
       if (key === "backspace") {
         ctx.freeWriteNotepadBackspace();
         if (ctx.greekFreeWriteActive) {

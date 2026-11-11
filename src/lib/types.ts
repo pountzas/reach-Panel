@@ -117,6 +117,12 @@ export type AppSettings = {
   languageLessonIgnoreCase?: boolean;
   /** Teaching → Language: ignore accent marks / tones when checking (default true). */
   languageLessonIgnoreTones?: boolean;
+  /** When true, auto-send scrubbed diagnostics once a week. Default false. */
+  autoSendLogsWeekly?: boolean;
+  /** ISO timestamp of the last successful weekly auto-send. */
+  lastAutoSendLogsAt?: string;
+  /** ISO timestamp of the last weekly auto-send attempt (success or failure). */
+  lastAutoSendLogsAttemptAt?: string;
 };
 
 export type ProfileFileInfo = {
@@ -199,4 +205,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   freeWriteLastPdfId: null,
   languageLessonIgnoreCase: true,
   languageLessonIgnoreTones: true,
+  autoSendLogsWeekly: false,
 };

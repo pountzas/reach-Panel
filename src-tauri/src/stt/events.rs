@@ -1,16 +1,9 @@
-//! Shared STT event emitters used by WinRT and Groq backends.
+//! Shared STT event emitters for companion Groq transcription results.
 
-use super::SttState;
 use crate::input::type_text;
 use anyhow::anyhow;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
-
-#[derive(Debug, Clone, Serialize)]
-struct SttStateEvent {
-    state: SttState,
-    language: Option<String>,
-}
 
 #[derive(Debug, Clone, Serialize)]
 struct SttResultEvent {
@@ -33,10 +26,6 @@ struct SttGroqQuotaEvent {
 pub fn emit_error(app: &AppHandle, message: impl Into<String>) {
     let message = map_stt_error(message.into()).to_string();
     let _ = app.emit("stt-error", SttErrorEvent { message });
-}
-
-pub fn emit_state(app: &AppHandle, state: SttState, language: Option<String>) {
-    let _ = app.emit("stt-state", SttStateEvent { state, language });
 }
 
 /// Emit Groq RPD remaining/limit when both headers were parsed.
@@ -88,6 +77,7 @@ pub fn handle_result(app: &AppHandle, text: &str) {
     {
         return;
     }
+    log::info!("stt result chars={}", text.chars().count());
     if let Err(error) = type_text(text) {
         emit_error(app, error.to_string());
         return;

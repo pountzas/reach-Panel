@@ -101,6 +101,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::keyboard::cmd_press_key,
+            commands::keyboard::cmd_launch_windows_voice_typing,
             commands::keyboard::cmd_type_text,
             commands::keyboard::cmd_get_keyboard_layout,
             commands::keyboard::cmd_get_keyboard_state,
@@ -157,9 +158,6 @@ pub fn run() {
             commands::library::cmd_upsert_custom_language_pack,
             commands::library::cmd_delete_custom_language_pack,
             commands::profiles::cmd_update_profile_settings,
-            commands::dictation::cmd_start_dictation,
-            commands::dictation::cmd_stop_dictation,
-            commands::dictation::cmd_get_stt_status,
             commands::system::cmd_open_windows_settings,
             commands::system::cmd_get_log_dir,
             commands::system::cmd_open_log_dir,

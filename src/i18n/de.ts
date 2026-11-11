@@ -45,6 +45,8 @@ export const de = {
 
   modeMenuShowKeyboard: "Tastatur anzeigen",
 
+  modeMenuCloseApp: "App schließen",
+
   modeCompanionUnavailable:
     "Nicht verfügbar, bis die Companion-Brücke gestartet oder ein Tablet gekoppelt ist (Einstellungen → Begleiter).",
 
@@ -353,6 +355,13 @@ export const de = {
 
   sendLogsFailedRateLimited: "Zu viele Berichte. Später erneut versuchen.",
 
+  autoSendLogsWeekly: "Protokolle jede Woche automatisch senden",
+
+  autoSendLogsWeeklyDescription:
+    "Sendet denselben bereinigten Diagnosebericht wie „Protokolle senden“, einmal pro Woche. Aus, bis Sie das einschalten.",
+
+  autoSendLogsLastSent: "Zuletzt gesendet: {date}",
+
   saveProfile: "Profil speichern",
 
   profileSaved: "Profil gespeichert.",
@@ -400,17 +409,20 @@ export const de = {
 
   fnKeyModeLatched: "Verriegelt (Fn bleibt an, bis erneut getippt)",
 
+  groqApiKeyLabel: "Groq-API-Schlüssel (Companion-Diktat)",
+
+  groqApiKeyHint:
+    "Für die Diktierfunktion des Companion-Tablets. Sie können auch die Umgebungsvariable GROQ_API_KEY setzen. Der Schlüssel bleibt auf diesem PC.",
+
+  groqApiKeyLink: "Kostenlosen Groq-API-Schlüssel holen",
+
   synthesizer: "Synthesizer",
 
   synthesizerVolume: "Lautstärke",
 
-  dictationStart: "Diktat starten",
-
-  dictationStop: "Diktat stoppen",
+  dictationStart: "Spracheingabe",
 
   micModeSelectInput: "Wählen Sie ein Textfeld zum Diktieren",
-
-  dictationListening: "Hört zu…",
 
   dictationErrorNoLanguage:
     "Spracherkennung für diese Eingabesprache ist nicht installiert. Fügen Sie das Sprachpaket unter Windows-Einstellungen → Zeit und Sprache → Sprache hinzu und versuchen Sie es erneut.",
@@ -424,26 +436,11 @@ export const de = {
   dictationErrorGroqApi:
     "Cloud-Diktat fehlgeschlagen. Prüfen Sie Internetverbindung und Groq-API-Schlüssel und versuchen Sie es erneut.",
 
-  dictationUnavailableUnsupported:
-    "Diktat nicht verfügbar — fügen Sie in den Einstellungen einen kostenlosen Groq-API-Schlüssel für diese Sprache hinzu",
-
-  dictationUnavailableOffline:
-    "Diktat nicht verfügbar — eine Internetverbindung ist erforderlich",
-
-  dictationGroqRemainingToday: "Verbleibende Groq-Anfragen heute",
-
   dictationOpenSpeechSettings: "Spracheinstellungen öffnen",
 
   dictationOpenSpeechLanguageSettings: "Sprachsprache installieren",
 
   dictationOpenAppSettings: "Einstellungen öffnen",
-
-  groqApiKeyLabel: "Groq-API-Schlüssel (Cloud-Diktat)",
-
-  groqApiKeyHint:
-    "Erforderlich für Sprachen, die Windows nicht unterstützt (z. B. Griechisch). Sie können auch die Umgebungsvariable GROQ_API_KEY setzen.",
-
-  groqApiKeyLink: "Kostenlosen Groq-API-Schlüssel holen",
 
   mute: "Stumm",
 

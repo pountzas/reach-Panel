@@ -1,8 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { logError } from "./log";
 
-export const GROQ_API_KEYS_URL = "https://console.groq.com/keys";
-
 export const APP_INFO = {
   creator: "pountzas",
   description: "Assistive virtual keyboard and mouse for Windows.",
@@ -16,6 +14,8 @@ export const APP_INFO = {
     downloads: "https://reachpanel-companion.vercel.app/",
   },
 } as const;
+
+export const GROQ_API_KEYS_URL = "https://console.groq.com/keys";
 
 export function openExternalLink(url: string): void {
   void openUrl(url).catch((error: unknown) => {

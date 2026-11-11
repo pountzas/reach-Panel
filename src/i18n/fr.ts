@@ -45,6 +45,8 @@ export const fr = {
 
   modeMenuShowKeyboard: "Afficher le clavier",
 
+  modeMenuCloseApp: "Fermer l’application",
+
   modeCompanionUnavailable:
     "Indisponible tant que le pont companion n’est pas démarré ou qu’aucune tablette n’est appariée (Réglages → Compagnon).",
 
@@ -353,6 +355,13 @@ export const fr = {
 
   sendLogsFailedRateLimited: "Trop de rapports. Réessayez plus tard.",
 
+  autoSendLogsWeekly: "Envoyer les journaux automatiquement chaque semaine",
+
+  autoSendLogsWeeklyDescription:
+    "Envoie le même rapport de diagnostic nettoyé que « Envoyer les journaux », une fois par semaine. Désactivé jusqu’à ce que vous l’activiez.",
+
+  autoSendLogsLastSent: "Dernier envoi : {date}",
+
   saveProfile: "Enregistrer le profil",
 
   profileSaved: "Profil enregistré.",
@@ -400,17 +409,20 @@ export const fr = {
 
   fnKeyModeLatched: "Verrouillé (Fn reste actif jusqu’à un nouvel appui)",
 
+  groqApiKeyLabel: "Clé API Groq (dictée du companion)",
+
+  groqApiKeyHint:
+    "Utilisée pour la dictée de la tablette companion. Vous pouvez aussi définir la variable d’environnement GROQ_API_KEY. La clé reste sur ce PC.",
+
+  groqApiKeyLink: "Obtenir une clé API Groq gratuite",
+
   synthesizer: "Synthétiseur",
 
   synthesizerVolume: "Volume",
 
-  dictationStart: "Démarrer la dictée",
-
-  dictationStop: "Arrêter la dictée",
+  dictationStart: "Saisie vocale",
 
   micModeSelectInput: "Sélectionnez un champ de texte pour dicter",
-
-  dictationListening: "Écoute…",
 
   dictationErrorNoLanguage:
     "La reconnaissance vocale pour cette langue de saisie n’est pas installée. Ajoutez le pack vocal dans Paramètres Windows → Heure et langue → Parole, puis réessayez.",
@@ -424,26 +436,11 @@ export const fr = {
   dictationErrorGroqApi:
     "Échec de la dictée cloud. Vérifiez votre connexion Internet et votre clé API Groq, puis réessayez.",
 
-  dictationUnavailableUnsupported:
-    "Dictée indisponible — ajoutez une clé API Groq gratuite dans les Paramètres pour cette langue",
-
-  dictationUnavailableOffline:
-    "Dictée indisponible — une connexion Internet est requise",
-
-  dictationGroqRemainingToday: "Requêtes Groq restantes aujourd'hui",
-
   dictationOpenSpeechSettings: "Ouvrir les paramètres de parole",
 
   dictationOpenSpeechLanguageSettings: "Installer la langue de parole",
 
   dictationOpenAppSettings: "Ouvrir les Paramètres",
-
-  groqApiKeyLabel: "Clé API Groq (dictée cloud)",
-
-  groqApiKeyHint:
-    "Nécessaire pour les langues non prises en charge par Windows (ex. grec). Vous pouvez aussi définir la variable d’environnement GROQ_API_KEY.",
-
-  groqApiKeyLink: "Obtenir une clé API Groq gratuite",
 
   mute: "Muet",
 

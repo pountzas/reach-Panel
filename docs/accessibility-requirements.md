@@ -59,7 +59,7 @@ Tablet tabs while connected: keyboard, trackpad, numpad, dictation, profile, USB
 | Keyboard injection | Types into Notepad, Chrome, Word, Teams, Explorer |
 | Sticky keys | Ctrl stays active until next key or toggle off |
 | Prediction | Offline word packs (English bundled; other languages downloadable); learn on typed words; disable toggle |
-| Dictation | Dictate key beside Right Ctrl; WinRT for EN/DE/FR/IT/ES/PT; Groq for Greek and unsupported packs |
+| Voice typing | Mic key beside Right Ctrl and Mic mode button; refocuses the last field and sends Win+H (Windows speech language) |
 | Multi-monitor | List displays; position app on accessibility screen |
 | Profiles | Named saved profiles with separate settings |
 | Focus mode | Focus-driven keyboard; collapse to FAB; optional transparent outlined keys; Teaching never hosts Focus |

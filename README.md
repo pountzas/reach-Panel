@@ -66,7 +66,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 ### 5. After you are connected
 
 - Use the tablet for pointer (trackpad / numpad) and typing; the PC injects into the focused window.
-- Tablet dictation uses the **tablet mic**. Groq API key (for languages without a Windows speech pack) stays in host Settings.
+- Tablet dictation still uses the tablet mic and the host Groq path. The PC Mic button does not. A saved `groqApiKey` in the profile is still read by the companion; there is no Settings field for it.
 - Revoke tablets under Settings → Companion → paired devices.
 
 ### Companion troubleshooting
@@ -90,8 +90,8 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 ### Modes
 
 - **Normal** — full typing keyboard and predictive suggestions
-- **Focus** — focus-driven keyboard (shows when a text field is focused); collapses to a branded FAB when idle; optional transparent outlined keys (white / dark gray / silver). Collapsed **R** opens a mode menu (Show keyboard + modes) without opening Settings
-- **Mic** — Focus layout that stays collapsed; mic FAB above Settings arms when a text field is focused (no keyboard auto-show); **R** opens the same mode menu (Show keyboard restores the keyboard); shared recording overlay while dictating
+- **Focus** — focus-driven keyboard (shows when a text field is focused); collapses to a branded FAB when idle; optional transparent outlined keys (white / dark gray / silver). Collapsed **R** opens a mode menu (Show keyboard, modes, Close app) without opening Settings
+- **Mic** — Focus layout that stays collapsed; mic FAB above Settings arms when a text field is focused (no keyboard auto-show); **R** opens the same mode menu (Show keyboard restores the keyboard; Close app quits). The PC Mic button has no recording overlay; only the companion tablet shows one while its mic is active.
 - **Teaching** — fullscreen work area; switch Language / Music / Math from the lesson section header. Music: piano/synth (2–5 octaves), partiture, built-in songs and file import, resizable lesson split. Language: left Spelling / Free write tab rail; Spelling (Play to spell from built-in or custom lists, optional Greek tone checking) and Free write (notepad + PDF library/viewer); Math is a placeholder for now. In Language/Math, the keyboard header can Minimize/Restore keys or use Focus auto-minimize (not saved across restart). **Settings → Visible sections → Show input helpers in Teaching mode** shows or hides the suggestions bar and mic while Teaching is active (live input preview stays off in Teaching).
 
 ### Keyboard
@@ -120,26 +120,14 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - Keyboard tab shows the live host input-preview strip between suggestions and keys, and a language control that lists/switches installed Windows keyboards (same system language switch as the host Lang key)
 - Host-only injection; Teaching / Music remain on Windows
 
-### Voice dictation (Windows)
+### Voice typing (Windows)
 
-- Dictate key on the keyboard (right of Right Ctrl)
-- While listening, a shared recording overlay appears at the bottom-center of the screen (separate always-on-top window; does not steal focus from the target app)
-- Uses the **typing language**, not the UI language
-- **English and Western European languages (DE, FR, IT, ES, PT):** Windows Speech Recognition (WinRT) when the speech language pack is installed and online speech is allowed
-- **Greek and other languages without a Windows speech pack:** [Groq](https://groq.com) cloud Whisper (`whisper-large-v3-turbo`) over the internet
-- After the first Groq use that local day, the key can show remaining daily request % (RPD)
+- Mic key on the keyboard (right of Right Ctrl), and the Mic button in Mic mode
+- Refocuses the last text field, then sends **Win+H** (Windows Voice typing)
+- Language follows the Windows speech language pack, not an in-app recognizer
+- If no text field is remembered, the control stays disabled and its label asks you to select a text field
 
-#### Set up Groq for Greek dictation
-
-1. Create a free account at [console.groq.com](https://console.groq.com).
-2. Open **API Keys** and create a key (starts with `gsk_…`).
-3. In ReachPanel, open **Settings**.
-4. Under the keyboard / dictation options, paste the key into **Groq API key (cloud dictation)**.
-5. Set **typing language** to Greek (EL), then use the dictate key on the keyboard.
-
-You can also set the `GROQ_API_KEY` environment variable instead of (or as a fallback for) the Settings field. An internet connection is required for cloud dictation. WinRT dictation for English and Western European languages does not need a Groq key.
-
-If Windows online speech is off, open **Settings → Privacy & security → Speech** and turn on **Online speech recognition**. For speech packs, use **Settings → Time & language → Speech**.
+Install a speech language under **Settings → Time & language → Speech**, and turn on online speech recognition if Windows asks for it.
 
 ### Profiles & accessibility
 
@@ -229,7 +217,7 @@ Windows installers are built in CI and published automatically when a [release-p
 | `src-tauri/src/input/`               | Keyboard/mouse injection (Windows `SendInput`)                       |
 | `src-tauri/src/window/`              | Monitor enumeration and taskbar-aware layout (Windows APIs)          |
 | `src-tauri/src/tts/`                 | Text-to-speech (Windows SAPI / WinRT)                                |
-| `src-tauri/src/stt/`                 | Voice dictation (WinRT speech recognition; Groq cloud fallback)      |
+| `src-tauri/src/stt/`                 | Companion tablet speech (not the PC Mic button)                      |
 | `src-tauri/src/db/`                  | SQLite persistence (profiles and settings)                           |
 | `src-tauri/src/prediction/`          | Predictive text + word-pack install/download                         |
 | `src-tauri/src/companion/`           | Android tablet WebSocket bridge (pairing, session, dispatch)         |
@@ -247,8 +235,8 @@ Windows installers are built in CI and published automatically when a [release-p
 ## Known limitations
 
 - Input injection does not work into elevated (admin) applications or UAC prompts
-- Voice dictation is Windows-only on the host; Greek (and other WinRT-unsupported languages) need a Groq API key and internet
-- Cloud dictation is utterance-based (speak, pause) rather than fully continuous streaming
+- PC Voice typing follows the Windows speech language pack (Win+H). Greek needs that pack installed in Windows
+- The tablet companion still has its own Groq dictation path
 - Companion needs the same LAN or USB tether; Teaching / Music are not available on the tablet
 
 ## Contributing

@@ -34,14 +34,7 @@ pub(super) fn encode_wav_pcm16(samples: &[f32], sample_rate: u32) -> Vec<u8> {
     out
 }
 
-pub(super) fn rms(samples: &[f32]) -> f32 {
-    if samples.is_empty() {
-        return 0.0;
-    }
-    let sum: f32 = samples.iter().map(|s| s * s).sum();
-    (sum / samples.len() as f32).sqrt()
-}
-
+#[cfg(test)]
 pub(super) fn resample_linear(input: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {
     if input.is_empty() || from_rate == 0 {
         return Vec::new();

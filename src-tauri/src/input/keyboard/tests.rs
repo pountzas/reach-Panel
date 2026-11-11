@@ -3,6 +3,13 @@ use super::layout::{
 };
 
 #[test]
+fn send_input_incomplete_when_short_count() {
+    assert!(super::send::send_input_incomplete(0, 1));
+    assert!(super::send::send_input_incomplete(1, 2));
+    assert!(!super::send::send_input_incomplete(2, 2));
+}
+
+#[test]
 fn greek_tonos_then_o_produces_omicron_with_accent() {
     reset_layout_compose_state(None);
     let tonos = translate_layout_key_press(";", false, false, None);

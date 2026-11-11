@@ -1,5 +1,6 @@
 use super::audio::{encode_wav_pcm16, resample_linear};
-use super::{groq_remaining_percent, resolve_api_key};
+use super::http::groq_remaining_percent;
+use super::resolve_api_key;
 
 #[test]
 fn resample_identity() {

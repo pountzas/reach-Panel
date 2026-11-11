@@ -23,7 +23,6 @@ import {
   resolveFocusModeEnabled,
 } from "../lib/focusMode";
 import { migrateLegacyFocusModeSettingsKeys } from "../lib/focusModeSettingsMigration";
-import { showDictationOverlay } from "../lib/dictationOverlayWindow";
 import {
   closeToolWindow,
   openToolWindow,
@@ -249,9 +248,6 @@ export async function syncFocusModeWindowLayout(
       logLayoutIpc("cmd_apply_window_layout", args);
       await invoke("cmd_apply_window_layout", args);
     }
-    if (get().dictationState !== "idle") {
-      void showDictationOverlay();
-    }
   } finally {
     storeFlags.focusLayoutSyncInFlight = false;
     set({ isAnimatingWindow: false, focusContentAnim: "idle" });
@@ -444,6 +440,19 @@ export function parseSettings(json: string): AppSettings {
     );
     const taskbarPositionPreference =
       parsed.taskbarPositionPreference === "top" ? "top" : "bottom";
+    const autoSendLogsWeekly = parsed.autoSendLogsWeekly === true;
+    if (
+      typeof parsed.lastAutoSendLogsAt !== "string" ||
+      parsed.lastAutoSendLogsAt.length === 0
+    ) {
+      delete parsed.lastAutoSendLogsAt;
+    }
+    if (
+      typeof parsed.lastAutoSendLogsAttemptAt !== "string" ||
+      parsed.lastAutoSendLogsAttemptAt.length === 0
+    ) {
+      delete parsed.lastAutoSendLogsAttemptAt;
+    }
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
@@ -456,6 +465,7 @@ export function parseSettings(json: string): AppSettings {
       micMode,
       keyboardSectionMode,
       taskbarPositionPreference,
+      autoSendLogsWeekly,
       sectionStack: resolveSectionStack(parsed.sectionStack),
       synthesizerOctaveCount: resolveSynthOctaveCount(
         parsed.synthesizerOctaveCount,

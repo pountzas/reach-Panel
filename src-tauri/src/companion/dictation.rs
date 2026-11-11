@@ -37,7 +37,7 @@ static SESSION: Mutex<Session> = Mutex::new(Session {
 });
 
 pub fn is_active() -> bool {
-    SESSION.lock().map(|g| g.active).unwrap_or(false)
+    SESSION.lock().map(|guard| guard.active).unwrap_or(false)
 }
 
 pub fn abort() {

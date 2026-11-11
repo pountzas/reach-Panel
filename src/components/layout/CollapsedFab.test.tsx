@@ -19,7 +19,7 @@ const openModeMenu = vi.fn(async () => {
   storeState.modeMenuOpen = true;
   await invoke("cmd_expand_window_for_mode_menu", {
     menuWidth: MODE_MENU_WIDTH,
-    menuHeight: modeMenuHeight(1 + APP_MODE_OPTIONS.length),
+    menuHeight: modeMenuHeight(2 + APP_MODE_OPTIONS.length, 2),
   });
 });
 const toggleCollapsed = vi.fn(async () => undefined);
@@ -38,8 +38,6 @@ const storeState = {
   companionModeActive: false,
   musicTeachingEnabled: false,
   isAnimatingWindow: false,
-  dictationState: "idle" as const,
-  sttCapability: null,
   externalInputFocused: false,
   modeMenuOpen: false,
   openModeMenu,
@@ -51,6 +49,14 @@ const storeState = {
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke,
+}));
+
+vi.mock("@tauri-apps/plugin-process", () => ({
+  exit: vi.fn(),
+}));
+
+vi.mock("../../lib/toolWindows", () => ({
+  closeAllToolWindows: vi.fn(async () => undefined),
 }));
 
 vi.mock("../../stores/appStore", () => {
@@ -99,7 +105,6 @@ describe("CollapsedFab mode menu", () => {
     storeState.companionModeActive = false;
     storeState.musicTeachingEnabled = false;
     storeState.isAnimatingWindow = false;
-    storeState.sttCapability = null;
     storeState.externalInputFocused = false;
     motionMocks.prefersReducedMotion.mockReturnValue(true);
   });
