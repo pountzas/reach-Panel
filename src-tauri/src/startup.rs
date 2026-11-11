@@ -52,7 +52,45 @@ pub fn hresult_from_webview_error(message: &str) -> Option<i32> {
 }
 
 pub const WEBVIEW_BUSY_MESSAGE: &str = "ReachPanel is already running or WebView2 is busy; close other ReachPanel windows and try again.";
+pub const WEBVIEW_FAILED_MESSAGE: &str = "ReachPanel couldn't open its window. Restart Windows or reinstall the Microsoft Edge WebView2 Runtime, then try again.";
 pub const WEBVIEW_BUSY_EXIT_CODE: i32 = 2;
+
+pub fn startup_user_message(failure: WebviewCreateFailure, hresult: Option<i32>) -> String {
+    if failure == WebviewCreateFailure::Retry {
+        return WEBVIEW_BUSY_MESSAGE.to_string();
+    }
+    match hresult {
+        Some(code) => format!("{WEBVIEW_FAILED_MESSAGE} (HRESULT 0x{code:08X})"),
+        None => WEBVIEW_FAILED_MESSAGE.to_string(),
+    }
+}
+
+pub fn create_with_retry<T>(
+    mut build: impl FnMut() -> Result<T, String>,
+    mut sleep_ms: impl FnMut(u64),
+    mut on_failure: impl FnMut(u32, Option<i32>, &str),
+) -> Result<T, (WebviewCreateFailure, String)> {
+    let mut attempt = 0u32;
+    loop {
+        match build() {
+            Ok(value) => return Ok(value),
+            Err(raw) => {
+                let code = hresult_from_webview_error(&raw);
+                let failure = code
+                    .map(classify_webview_create_error)
+                    .unwrap_or(WebviewCreateFailure::Fatal);
+                on_failure(attempt + 1, code, &raw);
+                match after_create_failure(attempt, failure) {
+                    CreateRetry::WaitMs(delay_ms) => {
+                        sleep_ms(delay_ms);
+                        attempt += 1;
+                    }
+                    CreateRetry::Stop => return Err((failure, raw)),
+                }
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SecondInstanceAction {
@@ -108,7 +146,7 @@ pub fn open_main_window(app: &tauri::AppHandle) {
         .find(|window| window.label == "main")
         .cloned()
     else {
-        give_up("main window config missing");
+        give_up("main window config missing", WEBVIEW_FAILED_MESSAGE);
     };
 
     let username = std::env::var("USERNAME").unwrap_or_default();
@@ -120,52 +158,51 @@ pub fn open_main_window(app: &tauri::AppHandle) {
         .unwrap_or_else(|_| "unknown".to_string());
     let redacted_dir = redact_user_data_dir(&user_data, &username, &profile);
 
-    let mut attempt = 0u32;
-    loop {
-        let built = tauri::WebviewWindowBuilder::from_config(app, &conf)
-            .and_then(|builder| builder.build());
-        match built {
-            Ok(window) => {
-                crate::window::configure_main_window(&window);
-                crate::window::events::register_main_window_event_logs(window.clone());
-                crate::input::focus_target::init(app.clone());
-                crate::input::input_preview::init(app.clone());
-                crate::diagnostics::register_process_failed(&window);
-                return;
-            }
-            Err(err) => {
-                let raw = err.to_string();
-                let code = hresult_from_webview_error(&raw);
-                let failure = code
-                    .map(classify_webview_create_error)
-                    .unwrap_or(WebviewCreateFailure::Fatal);
-                let scrubbed = redact_user_data_dir(&raw, &username, &profile);
-                log::error!(
-                    "{}",
-                    webview_create_failure_log(attempt + 1, code, &redacted_dir, &scrubbed)
-                );
-                match after_create_failure(attempt, failure) {
-                    CreateRetry::WaitMs(delay_ms) => {
-                        std::thread::sleep(std::time::Duration::from_millis(delay_ms));
-                        attempt += 1;
-                    }
-                    CreateRetry::Stop => give_up(&scrubbed),
-                }
-            }
+    let created = create_with_retry(
+        || {
+            tauri::WebviewWindowBuilder::from_config(app, &conf)
+                .and_then(|builder| builder.build())
+                .map_err(|err| err.to_string())
+        },
+        |delay_ms| std::thread::sleep(std::time::Duration::from_millis(delay_ms)),
+        |attempt, code, raw| {
+            let scrubbed = redact_user_data_dir(raw, &username, &profile);
+            log::error!(
+                "{}",
+                webview_create_failure_log(attempt, code, &redacted_dir, &scrubbed)
+            );
+        },
+    );
+    match created {
+        Ok(window) => {
+            crate::window::configure_main_window(&window);
+            crate::window::events::register_main_window_event_logs(window.clone());
+            crate::input::focus_target::init(app.clone());
+            crate::input::input_preview::init(app.clone());
+            crate::diagnostics::register_process_failed(&window);
+        }
+        Err((failure, raw)) => {
+            let scrubbed = redact_user_data_dir(&raw, &username, &profile);
+            let message = startup_user_message(failure, hresult_from_webview_error(&raw));
+            give_up(&scrubbed, &message);
         }
     }
 }
 
-fn give_up(scrubbed_error: &str) -> ! {
+fn give_up(scrubbed_error: &str, user_message: &str) -> ! {
     log::error!("webview create failed: {scrubbed_error}");
-    show_webview_busy_dialog();
+    let _ = crate::diagnostics::session::mark_exit_reason(
+        &crate::diagnostics::session::logs_dir(),
+        "webview_create_failed",
+    );
+    show_error_dialog(user_message);
     std::process::exit(WEBVIEW_BUSY_EXIT_CODE);
 }
 
-fn show_webview_busy_dialog() {
+fn show_error_dialog(user_message: &str) {
     use windows::core::PCWSTR;
     use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
-    let text = utf16(WEBVIEW_BUSY_MESSAGE);
+    let text = utf16(user_message);
     let title = utf16("ReachPanel");
     unsafe {
         let _ = MessageBoxW(
@@ -289,6 +326,85 @@ mod tests {
             .find(|window| window["label"] == "main")
             .expect("main window");
         assert_eq!(main["create"], false);
+    }
+
+    #[test]
+    fn fatal_dialog_names_the_hresult_and_not_a_busy_panel() {
+        let message =
+            startup_user_message(WebviewCreateFailure::Fatal, Some(0x8000_4005_u32 as i32));
+        assert!(message.contains("0x80004005"));
+        assert!(!message.contains("already running"));
+        assert_eq!(
+            startup_user_message(WebviewCreateFailure::Retry, Some(WEBVIEW2_RESOURCE_IN_USE)),
+            WEBVIEW_BUSY_MESSAGE
+        );
+    }
+
+    #[test]
+    fn retry_then_success_builds_three_times_and_sleeps_twice() {
+        let mut builds = 0u32;
+        let mut sleeps = Vec::new();
+        let result = create_with_retry(
+            || {
+                builds += 1;
+                if builds < 3 {
+                    Err("HRESULT 0x800700AA".into())
+                } else {
+                    Ok("window")
+                }
+            },
+            |ms| sleeps.push(ms),
+            |_attempt, _code, _raw| {},
+        );
+        assert_eq!(result, Ok("window"));
+        assert_eq!(builds, 3);
+        assert_eq!(sleeps, vec![1_000, 1_000]);
+    }
+
+    #[test]
+    fn always_busy_tries_five_times() {
+        let mut builds = 0u32;
+        let mut sleeps = Vec::new();
+        let result: Result<&str, _> = create_with_retry(
+            || {
+                builds += 1;
+                Err("HRESULT 0x800700AA".into())
+            },
+            |ms| sleeps.push(ms),
+            |_attempt, _code, _raw| {},
+        );
+        assert_eq!(result.unwrap_err().0, WebviewCreateFailure::Retry);
+        assert_eq!(builds, 5);
+        assert_eq!(sleeps, vec![1_000, 1_000, 1_000, 2_000]);
+    }
+
+    #[test]
+    fn fatal_hresult_does_not_retry_the_create() {
+        let mut builds = 0u32;
+        let mut sleeps = Vec::new();
+        let result: Result<&str, _> = create_with_retry(
+            || {
+                builds += 1;
+                Err("HRESULT 0x80004005".into())
+            },
+            |ms| sleeps.push(ms),
+            |_attempt, _code, _raw| {},
+        );
+        assert_eq!(result.unwrap_err().0, WebviewCreateFailure::Fatal);
+        assert_eq!(builds, 1);
+        assert!(sleeps.is_empty());
+    }
+
+    #[test]
+    fn error_without_hresult_is_fatal() {
+        let mut sleeps = Vec::new();
+        let result: Result<&str, _> = create_with_retry(
+            || Err("webview create failed".into()),
+            |ms| sleeps.push(ms),
+            |_attempt, _code, _raw| {},
+        );
+        assert_eq!(result.unwrap_err().0, WebviewCreateFailure::Fatal);
+        assert!(sleeps.is_empty());
     }
 
     #[test]
