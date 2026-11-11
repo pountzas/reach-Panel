@@ -12,6 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use tauri::{App, AppHandle, Manager, RunEvent, Runtime, WindowEvent};
 
+pub(crate) use bundle::scrub_user_paths;
 pub use bundle::{build_diagnostics_bundle, BundleFile, BundleOptions, MAX_NOTE_CHARS};
 pub use crash::install_panic_hook;
 pub use report::{collect_diagnostics_report, DiagnosticsInfo};

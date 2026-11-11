@@ -1,5 +1,5 @@
-mod companion;
 mod commands;
+mod companion;
 mod db;
 mod diagnostics;
 mod input;
@@ -9,6 +9,7 @@ mod music;
 mod prediction;
 mod profiles;
 mod services;
+mod startup;
 mod stt;
 mod teaching_pdf;
 mod teaching_pdf_appearances;
@@ -19,7 +20,6 @@ mod window;
 compile_error!("ReachPanel is Windows-only. macOS is not supported.");
 
 use db::Database;
-use input::focus_target;
 use prediction::ensure_english_pack;
 use profiles::ProfileStore;
 use tauri::Manager;
@@ -33,6 +33,9 @@ pub(crate) struct AppState {
 pub fn run() {
     crate::diagnostics::install_panic_hook();
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            startup::on_second_instance(app);
+        }))
         .on_page_load(|webview, payload| {
             window::icon_sync::on_app_page_load(&webview, &payload);
             if let Some(window) = webview.app_handle().get_webview_window(webview.label()) {
@@ -86,13 +89,7 @@ pub fn run() {
 
             stt::init(&app_data_dir, app.handle().clone());
 
-            if let Some(window) = app.get_webview_window("main") {
-                window::configure_main_window(&window);
-                window::events::register_main_window_event_logs(window.clone());
-                focus_target::init(app.handle().clone());
-                input::input_preview::init(app.handle().clone());
-                crate::diagnostics::register_process_failed(&window);
-            }
+            startup::open_main_window(app.handle());
             crate::logging::log_session_start(app);
             if let Ok(log_dir) = app.path().app_log_dir() {
                 crate::diagnostics::breadcrumbs::start(log_dir);
