@@ -104,6 +104,17 @@ pub fn mark_clean_exit(logs_dir: &Path) -> std::io::Result<()> {
     }
 }
 
+pub fn mark_exit_reason(logs_dir: &Path, reason: &str) -> std::io::Result<()> {
+    match read_marker(logs_dir) {
+        MarkerRead::Present(mut marker) => {
+            marker.reason = Some(reason.into());
+            marker.clean_exit = false;
+            write_marker(logs_dir, &marker)
+        }
+        MarkerRead::Missing | MarkerRead::Corrupt => Ok(()),
+    }
+}
+
 pub fn mark_panic(logs_dir: &Path) -> std::io::Result<()> {
     match read_marker(logs_dir) {
         MarkerRead::Present(mut marker) => {
@@ -261,6 +272,15 @@ mod tests {
             }
             other => panic!("expected marker, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn mark_exit_reason_is_reported_on_the_next_session() {
+        let dir = temp_logs();
+        write_marker(&dir, &sample_marker()).expect("write");
+        mark_exit_reason(&dir, "webview_create_failed").expect("mark reason");
+        let previous = begin_session(&dir, "0.18.0", 1).expect("unclean previous");
+        assert_eq!(previous.reason, "webview_create_failed");
     }
 
     #[test]
