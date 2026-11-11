@@ -1,4 +1,5 @@
 use crate::commands::{err, ok, CommandResult};
+use tauri::Manager;
 use crate::input::focus_target;
 use crate::input::{
     get_input_methods, get_keyboard_layout, get_keyboard_state, get_layout_key_labels,
@@ -17,7 +18,13 @@ pub fn cmd_press_key(request: KeyPressRequest) -> CommandResult {
 }
 
 #[tauri::command]
-pub fn cmd_launch_windows_voice_typing() -> CommandResult {
+pub fn cmd_launch_windows_voice_typing(app: tauri::AppHandle) -> CommandResult {
+    let tablet_audio = app
+        .try_state::<crate::companion::CompanionBridge>()
+        .is_some_and(|bridge| bridge.session().tablet_audio_active());
+    if tablet_audio || crate::companion::dictation_is_active() {
+        return err("Companion tablet is connected. Use the tablet mic for dictation.");
+    }
     match launch_windows_voice_typing() {
         Ok(()) => ok(),
         Err(e) => err(e),

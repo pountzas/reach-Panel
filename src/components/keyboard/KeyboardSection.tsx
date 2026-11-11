@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import {
   CollapseIcon,
   HeightGripIcon,
@@ -34,10 +33,7 @@ import {
   isTeachingSessionActive,
 } from "../../lib/appModeLayout";
 import { isLanguageLessonActive } from "../../lib/language";
-import {
-  computeTeachingChromeVisibility,
-  shouldStopDictationForVisibility,
-} from "../../lib/teachingInputHelpers";
+import { computeTeachingChromeVisibility } from "../../lib/teachingInputHelpers";
 
 const INPUT_PREVIEW_STRIP_HEIGHT_PX = 48;
 const SUGGESTION_CHIP_HEIGHT_PX = 32;
@@ -59,8 +55,6 @@ export function KeyboardSection() {
   const importedSongs = useAppStore((s) => s.importedSongs);
   const companionSessionLive = useAppStore((s) => s.companionSessionLive);
   const languageSubjectTab = useAppStore((s) => s.languageSubjectTab);
-  const dictationState = useAppStore((s) => s.dictationState);
-  const stopDictation = useAppStore((s) => s.stopDictation);
   const { t } = useTranslation();
   const heightDrag = useWindowHeightDrag();
   const showSynth =
@@ -80,8 +74,8 @@ export function KeyboardSection() {
     settings,
     languageSubjectTab,
   });
-  const { showInputPreview, showSuggestions, dictationKeyVisible } =
-    computeTeachingChromeVisibility({
+  const { showInputPreview, showSuggestions } = computeTeachingChromeVisibility(
+    {
       teachingSessionActive,
       settings,
       showSynth,
@@ -89,13 +83,8 @@ export function KeyboardSection() {
       companionSessionLive,
       languageLessonActive,
       focusModeActive,
-    });
-  // KeyboardSection stays mounted when Music swaps <Keyboard /> for <Synthesizer />.
-  useEffect((): void => {
-    if (shouldStopDictationForVisibility(dictationKeyVisible, dictationState)) {
-      void stopDictation();
-    }
-  }, [dictationKeyVisible, dictationState, stopDictation]);
+    },
+  );
   /** Suggestions strip stays mounted whenever suggestions are on, so chips never resize keys. */
   const showSuggestionsRow = showSuggestions;
   const transparentUi = isTransparentUiActive(settings, focusModeActive);

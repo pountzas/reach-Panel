@@ -10,22 +10,15 @@ export const createDictationSlice: StateCreator<
   [],
   DictationSlice
 > = (set, get) => ({
-  dictationState: "idle",
-  sttCapability: null,
-  setDictationState: (state) => {
-    set({ dictationState: state });
-  },
-  setSttCapability: (capability) => {
-    set({ sttCapability: capability });
-  },
-  refreshSttCapability: async () => {},
   toggleDictation: async () => {
     if (!get().externalInputFocused) {
       get().setLastError(DICTATION_SELECT_INPUT_ERROR);
       return;
     }
     try {
-      const result = await invoke<CommandResult>("cmd_launch_windows_voice_typing");
+      const result = await invoke<CommandResult>(
+        "cmd_launch_windows_voice_typing",
+      );
       if (!result.success) {
         set({
           lastError: result.error ?? "Could not start Windows Voice typing",
@@ -37,5 +30,4 @@ export const createDictationSlice: StateCreator<
       });
     }
   },
-  stopDictation: async () => {},
 });

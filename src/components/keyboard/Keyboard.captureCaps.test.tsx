@@ -50,7 +50,6 @@ describe("Teaching capture Caps", () => {
       physicalKeyState: { ...DEFAULT_PHYSICAL_KEY_STATE, capsLock: false },
       captureCapsLock: true,
       languagePickerOpen: false,
-      dictationState: "idle",
       musicTeachingEnabled: true,
       teachingLesson: "language",
       languageSubjectTab: "freeWrite",

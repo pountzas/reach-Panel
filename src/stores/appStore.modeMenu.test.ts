@@ -188,5 +188,4 @@ describe("mode menu store actions", () => {
       expect(mockState.calls).toContain("cmd_apply_window_layout");
     });
   });
-
 });

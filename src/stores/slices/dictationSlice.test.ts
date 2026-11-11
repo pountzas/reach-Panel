@@ -52,10 +52,8 @@ describe("toggleDictation launches Windows Voice typing", () => {
     storeFlags.lastAnnouncedError = null;
     useAppStore.setState({
       settings: { ...DEFAULT_SETTINGS },
-      dictationState: "idle",
       externalInputFocused: false,
       lastError: null,
-      sttCapability: null,
     });
   });
 
@@ -73,5 +71,17 @@ describe("toggleDictation launches Windows Voice typing", () => {
     await useAppStore.getState().toggleDictation();
     expect(invokeMock).toHaveBeenCalledWith("cmd_launch_windows_voice_typing");
     expect(notifyError).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a host error and does not treat it as success", async () => {
+    invokeMock.mockResolvedValue({
+      success: false,
+      error: "Companion tablet is connected. Use the tablet mic for dictation.",
+    });
+    useAppStore.setState({ externalInputFocused: true });
+    await useAppStore.getState().toggleDictation();
+    expect(useAppStore.getState().lastError).toBe(
+      "Companion tablet is connected. Use the tablet mic for dictation.",
+    );
   });
 });

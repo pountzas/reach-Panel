@@ -234,9 +234,6 @@ export const createProfileSlice: StateCreator<
       return;
     }
     set({ settings: next });
-    if (partial.keyboardSectionMode === "synthesizer") {
-      await get().stopDictation();
-    }
     if (syncToSystem && typingLanguageChanged) {
       const typingLanguage = partial.typingLanguage;
       if (typingLanguage === undefined) {
@@ -308,16 +305,11 @@ export const createProfileSlice: StateCreator<
       source: WebviewWindow.getCurrent().label,
     });
     if (typingLanguageChanged) {
-      await get().stopDictation();
       void invoke("cmd_reset_layout_compose_state", {
         hkl: get().physicalKeyState.systemHkl || null,
       });
       set({ typedBuffer: "", ...clearGreekPendingAccent() });
       commitSuggestionList(set, []);
-      await get().refreshSttCapability();
-    }
-    if (partial.groqApiKey !== undefined) {
-      await get().refreshSttCapability();
     }
     if (uiLanguageChanged) {
       set({ typedBuffer: "", ...clearGreekPendingAccent() });

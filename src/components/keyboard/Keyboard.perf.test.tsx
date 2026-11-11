@@ -81,7 +81,6 @@ describe("Keyboard sticky-typing profiler (#281)", () => {
       stickyModifiers: [],
       physicalKeyState: { ...DEFAULT_PHYSICAL_KEY_STATE },
       languagePickerOpen: false,
-      dictationState: "idle",
       musicTeachingEnabled: false,
       languageLessonPlaying: false,
       languageListAuthoringActive: false,

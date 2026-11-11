@@ -414,11 +414,7 @@ export const pt = {
 
   dictationStart: "Digitação por voz",
 
-  dictationStop: "Parar ditado",
-
   micModeSelectInput: "Selecione um campo de texto para ditar",
-
-  dictationListening: "A ouvir…",
 
   dictationErrorNoLanguage:
     "O reconhecimento de voz para este idioma de escrita não está instalado. Adicione o pacote de voz em Definições do Windows → Hora e idioma → Voz e tente novamente.",
@@ -432,26 +428,11 @@ export const pt = {
   dictationErrorGroqApi:
     "Falha no ditado na cloud. Verifique a ligação à Internet e a chave API Groq e tente novamente.",
 
-  dictationUnavailableUnsupported:
-    "Ditado indisponível — adicione uma chave API Groq gratuita nas Definições para este idioma",
-
-  dictationUnavailableOffline:
-    "Ditado indisponível — é necessária uma ligação à Internet",
-
-  dictationGroqRemainingToday: "Pedidos Groq restantes hoje",
-
   dictationOpenSpeechSettings: "Abrir definições de voz",
 
   dictationOpenSpeechLanguageSettings: "Instalar idioma de voz",
 
   dictationOpenAppSettings: "Abrir Definições",
-
-  groqApiKeyLabel: "Chave API Groq (ditado na cloud)",
-
-  groqApiKeyHint:
-    "Necessária para idiomas que o Windows não suporta (p. ex. grego). Também pode definir a variável de ambiente GROQ_API_KEY.",
-
-  groqApiKeyLink: "Obter chave API Groq gratuita",
 
   mute: "Silenciar",
 

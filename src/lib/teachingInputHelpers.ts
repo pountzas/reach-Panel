@@ -76,10 +76,3 @@ export function computeTeachingChromeVisibility(
     ),
   };
 }
-
-export function shouldStopDictationForVisibility(
-  dictationKeyVisible: boolean,
-  dictationState: "idle" | "listening" | "processing",
-): boolean {
-  return !dictationKeyVisible && dictationState !== "idle";
-}

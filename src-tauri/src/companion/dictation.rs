@@ -36,6 +36,10 @@ static SESSION: Mutex<Session> = Mutex::new(Session {
     active: false,
 });
 
+pub fn is_active() -> bool {
+    SESSION.lock().map(|guard| guard.active).unwrap_or(false)
+}
+
 pub fn abort() {
     if let Ok(mut guard) = SESSION.lock() {
         *guard = Session::default();

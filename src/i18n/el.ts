@@ -418,11 +418,7 @@ export const el = {
 
   dictationStart: "Φωνητική πληκτρολόγηση",
 
-  dictationStop: "Διακοπή υπαγόρευσης",
-
   micModeSelectInput: "Επιλέξτε ένα πεδίο κειμένου για υπαγόρευση",
-
-  dictationListening: "Ακούει…",
 
   dictationErrorNoLanguage:
     "Η αναγνώριση ομιλίας για αυτή τη γλώσσα πληκτρολόγησης δεν είναι εγκατεστημένη. Προσθέστε το πακέτο ομιλίας στις Ρυθμίσεις Windows → Ώρα και γλώσσα → Ομιλία (ή Γλώσσα και περιοχή) και δοκιμάστε ξανά.",
@@ -436,26 +432,11 @@ export const el = {
   dictationErrorGroqApi:
     "Η υπαγόρευση cloud απέτυχε. Ελέγξτε τη σύνδεση στο διαδίκτυο και το κλειδί Groq και δοκιμάστε ξανά.",
 
-  dictationUnavailableUnsupported:
-    "Η υπαγόρευση δεν είναι διαθέσιμη — προσθέστε ένα δωρεάν κλειδί Groq στις Ρυθμίσεις για αυτή τη γλώσσα",
-
-  dictationUnavailableOffline:
-    "Η υπαγόρευση δεν είναι διαθέσιμη — απαιτείται σύνδεση στο διαδίκτυο",
-
-  dictationGroqRemainingToday: "Υπολειπόμενα αιτήματα Groq σήμερα",
-
   dictationOpenSpeechSettings: "Άνοιγμα ρυθμίσεων ομιλίας",
 
   dictationOpenSpeechLanguageSettings: "Εγκατάσταση γλώσσας ομιλίας",
 
   dictationOpenAppSettings: "Άνοιγμα ρυθμίσεων",
-
-  groqApiKeyLabel: "Κλειδί Groq API (υπαγόρευση cloud)",
-
-  groqApiKeyHint:
-    "Απαιτείται για γλώσσες που δεν υποστηρίζουν τα Windows (π.χ. ελληνικά). Μπορείτε επίσης να ορίσετε τη μεταβλητή περιβάλλοντος GROQ_API_KEY.",
-
-  groqApiKeyLink: "Λήψη δωρεάν κλειδιού Groq API",
 
   mute: "Σίγαση",
 

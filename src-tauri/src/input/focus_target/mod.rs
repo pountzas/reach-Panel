@@ -328,13 +328,6 @@ pub fn is_input_focused() -> bool {
         .unwrap_or(false)
 }
 
-/// Dictation may type when ReachPanel is foreground (restore validates TARGET_HWND)
-/// or an external editable field is focused.
-#[cfg(test)]
-pub fn dictation_target_ok(ours: bool, input_focused: bool) -> bool {
-    ours || input_focused
-}
-
 fn reevaluate_input_focus() {
     let focused = is_editable_input_focused();
     publish_input_focus(focused);
