@@ -79,3 +79,10 @@ windows = { version = "0.58", features = [
     "Globalization",
     "implement",
 ] }
+
+# softbuffer 0.4.8 asserts when CreateDIBSection returns null (tauri#11525).
+# tauri-runtime-wry 2.12.3 unwraps that resize, so the error still kills the process.
+# Drop both patches once an upstream Tauri 2 line returns the error without unwrapping it.
+[patch.crates-io]
+softbuffer = { path = "vendor/softbuffer" }
+tauri-runtime-wry = { path = "vendor/tauri-runtime-wry" }
