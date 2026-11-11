@@ -66,11 +66,12 @@ impl Buffer {
     ) -> Result<Self, SoftBufferError> {
         let dc = Allocator::get().allocate(window_dc);
         if dc.is_null() {
-            let err = io::Error::last_os_error();
-            let code = err.raw_os_error().unwrap_or(0);
             return Err(SoftBufferError::PlatformError(
-                Some(format!("CreateCompatibleDC failed (os error {code})")),
-                Some(Box::new(err)),
+                Some(
+                    "CreateCompatibleDC failed (on softbuffer's allocator thread; no last-error available)"
+                        .into(),
+                ),
+                None,
             ));
         }
 
@@ -296,6 +297,8 @@ impl<D: HasDisplayHandle, W: HasWindowHandle> SurfaceInterface<D, W> for Win32Im
             }
         }
 
+        // Free the old DIB first so a failed allocation can't leave a stale-size buffer.
+        self.buffer = None;
         self.buffer = Some(Buffer::new(self.dc.0, width, height)?);
 
         Ok(())

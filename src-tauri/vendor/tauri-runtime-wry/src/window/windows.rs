@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-License-Identifier: MIT
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use windows::Win32::{
   Foundation::{HWND, RECT},
   Graphics::Dwm::{DWMWA_EXTENDED_FRAME_BOUNDS, DwmGetWindowAttribute},
@@ -56,18 +58,26 @@ impl super::WindowExt for tao::window::Window {
       std::num::NonZeroU32::new(size.width),
       std::num::NonZeroU32::new(size.height),
     ) {
+      static FAILED: AtomicBool = AtomicBool::new(false);
       // ReachPanel: a failed DIB must not panic the assistive keyboard.
       if let Err(err) = surface.resize(width, height) {
-        log::error!("softbuffer resize failed: {err}");
+        if !FAILED.swap(true, Ordering::Relaxed) {
+          log::error!("softbuffer resize failed ({width}x{height}): {err}");
+        }
         return;
       }
       let mut buffer = match surface.buffer_mut() {
         Ok(buffer) => buffer,
         Err(err) => {
-          log::error!("softbuffer buffer failed: {err}");
+          if !FAILED.swap(true, Ordering::Relaxed) {
+            log::error!("softbuffer buffer failed: {err}");
+          }
           return;
         }
       };
+      if FAILED.swap(false, Ordering::Relaxed) {
+        log::info!("softbuffer draw recovered ({width}x{height})");
+      }
       let color = background_color
         .map(|(r, g, b, _)| (b as u32) | ((g as u32) << 8) | ((r as u32) << 16))
         .unwrap_or(0);
