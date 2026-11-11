@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset", "tray-icon"] }
+tauri = { version = "~2.12.5", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-opener = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
@@ -79,3 +79,11 @@ windows = { version = "0.58", features = [
     "Globalization",
     "implement",
 ] }
+
+# softbuffer 0.4.8 asserts when CreateDIBSection returns null (tauri#11525).
+# tauri-runtime-wry 2.12.3 unwraps that resize, so the error still kills the process.
+# tauri is pinned to ~2.12.5 above so this patch keeps applying; bump both together.
+# Drop both patches once an upstream Tauri 2 line returns the error without unwrapping it.
+[patch.crates-io]
+softbuffer = { path = "vendor/softbuffer" }
+tauri-runtime-wry = { path = "vendor/tauri-runtime-wry" }
