@@ -20,10 +20,6 @@ vi.mock("@tauri-apps/api/webviewWindow", () => ({
   WebviewWindow: { getCurrent: () => ({ label: "main" }) },
 }));
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: vi.fn() }));
-vi.mock("../../lib/dictationOverlayWindow", () => ({
-  showDictationOverlay: vi.fn(() => Promise.resolve()),
-  hideDictationOverlay: vi.fn(() => Promise.resolve()),
-}));
 vi.mock("../../lib/motion", () => ({
   MOTION: { fast: 120, base: 200, slow: 300 },
   prefersReducedMotion: vi.fn(() => true),
@@ -36,10 +32,6 @@ vi.mock("../../hooks/useContainerSize", () => ({
     height: 280,
   }),
 }));
-vi.mock("../../hooks/useGroqDailyQuota", () => ({
-  useGroqDailyQuota: () => null,
-}));
-
 import { useAppStore } from "../../stores/appStore";
 import { Keyboard } from "./Keyboard";
 

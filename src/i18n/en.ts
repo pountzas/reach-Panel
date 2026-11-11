@@ -442,7 +442,7 @@ export const en = {
 
   synthesizerVolume: "Volume",
 
-  dictationStart: "Start dictation",
+  dictationStart: "Voice typing",
 
   dictationStop: "Stop dictation",
 

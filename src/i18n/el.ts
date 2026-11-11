@@ -416,7 +416,7 @@ export const el = {
 
   synthesizerVolume: "Ένταση",
 
-  dictationStart: "Έναρξη υπαγόρευσης",
+  dictationStart: "Φωνητική πληκτρολόγηση",
 
   dictationStop: "Διακοπή υπαγόρευσης",
 

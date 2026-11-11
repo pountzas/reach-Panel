@@ -1,6 +1,5 @@
 use serde::Serialize;
 
-pub mod dictation;
 pub mod files;
 pub mod input_preview;
 pub mod keyboard;

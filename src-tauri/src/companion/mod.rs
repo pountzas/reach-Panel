@@ -14,8 +14,6 @@ pub use protocol::{
     AudioRouting, CompanionUiState, PairingPayload, DEFAULT_PORT, PROTOCOL_VERSION,
 };
 
-pub use dictation::is_active as dictation_is_active;
-
 use auth::{AuthStore, PairedDevice};
 use server::{emit_ui_state, BridgeRuntime};
 use session::SessionState;

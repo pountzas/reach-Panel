@@ -413,7 +413,7 @@ export const fr = {
 
   synthesizerVolume: "Volume",
 
-  dictationStart: "Démarrer la dictée",
+  dictationStart: "Saisie vocale",
 
   dictationStop: "Arrêter la dictée",
 

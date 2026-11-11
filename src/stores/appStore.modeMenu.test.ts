@@ -8,7 +8,6 @@ const mockState = vi.hoisted(() => ({
   calls: [] as string[],
   resolveExpand: null as (() => void) | null,
   focusHandlers: new Map<string, (event: { payload: unknown }) => void>(),
-  showDictationOverlay: vi.fn(() => Promise.resolve()),
 }));
 
 const motionMocks = vi.hoisted(() => ({
@@ -42,11 +41,6 @@ vi.mock("@tauri-apps/api/event", () => ({
     },
   ),
   emit: vi.fn(() => Promise.resolve()),
-}));
-
-vi.mock("../lib/dictationOverlayWindow", () => ({
-  showDictationOverlay: () => mockState.showDictationOverlay(),
-  hideDictationOverlay: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("@tauri-apps/api/webviewWindow", () => ({
@@ -195,19 +189,4 @@ describe("mode menu store actions", () => {
     });
   });
 
-  it("repositions the dictation overlay after a focus-mode layout sync", async () => {
-    useAppStore.setState({
-      settings: { ...DEFAULT_SETTINGS },
-      focusModeActive: true,
-      focusModeKeyboardVisible: true,
-      dictationState: "listening",
-      isAnimatingWindow: false,
-    });
-    mockState.focusHandlers.get("input-focus-changed")?.({
-      payload: { focused: false },
-    });
-    await vi.waitFor(() => {
-      expect(mockState.showDictationOverlay).toHaveBeenCalled();
-    });
-  });
 });

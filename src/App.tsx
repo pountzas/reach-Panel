@@ -7,12 +7,6 @@ import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { AppToaster } from "./components/common/AppToaster";
 import { UpdatePrompt } from "./components/common/UpdatePrompt";
 import { resolveWindowHeightRatio } from "./lib/sectionLayouts";
-import { DictationOverlay } from "./components/keyboard/DictationOverlay";
-import {
-  hideDictationOverlay,
-  showDictationOverlay,
-  DICTATION_OVERLAY_LABEL,
-} from "./lib/dictationOverlayWindow";
 import {
   isToolWindowLabel,
   PROFILE_UPDATED_EVENT,
@@ -52,10 +46,6 @@ function MainApp() {
   const refreshLayoutKeyLabels = useAppStore((s) => s.refreshLayoutKeyLabels);
   const pollKeyboardState = useAppStore((s) => s.pollKeyboardState);
   const checkForUpdates = useAppStore((s) => s.checkForUpdates);
-  const setDictationState = useAppStore((s) => s.setDictationState);
-  const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
-  const appendTyped = useAppStore((s) => s.appendTyped);
-  const loadSuggestions = useAppStore((s) => s.loadSuggestions);
   const setLastError = useAppStore((s) => s.setLastError);
   const loadImportedSongs = useAppStore((s) => s.loadImportedSongs);
   const loadCustomLanguagePacks = useAppStore((s) => s.loadCustomLanguagePacks);
@@ -102,7 +92,6 @@ function MainApp() {
         void reconcileAutostartOnLoad().catch((error: unknown) => {
           logWarn("autostart", "autostart reconcile failed", { error });
         });
-        await refreshSttCapability();
       } catch (error) {
         if (!isCancelled()) {
           setLastError(error instanceof Error ? error.message : String(error));
@@ -133,7 +122,6 @@ function MainApp() {
     refreshLayoutKeyLabels,
     pollKeyboardState,
     checkForUpdates,
-    refreshSttCapability,
     setLastError,
   ]);
 
@@ -208,46 +196,6 @@ function MainApp() {
     const unlisteners: Promise<() => void>[] = [];
 
     unlisteners.push(
-      listen<{ state: "idle" | "listening" | "processing" }>(
-        "stt-state",
-        (event) => {
-          // Ignore late listening/processing events after the user already stopped
-          // (Groq worker could still emit while winding down).
-          if (
-            event.payload.state !== "idle" &&
-            useAppStore.getState().dictationState === "idle"
-          ) {
-            return;
-          }
-          setDictationState(event.payload.state);
-        },
-      ),
-    );
-
-    unlisteners.push(
-      listen<{ text: string; isFinal: boolean }>("stt-result", (event) => {
-        if (!event.payload.isFinal || !event.payload.text) return;
-        appendTyped(event.payload.text);
-        void loadSuggestions();
-      }),
-    );
-
-    unlisteners.push(
-      listen<{ message: string }>("stt-error", (event) => {
-        setDictationState("idle");
-        setLastError(event.payload.message);
-        void invoke("cmd_stop_dictation").catch(logIpc("cmd_stop_dictation"));
-        void refreshSttCapability();
-      }),
-    );
-
-    unlisteners.push(
-      listen("dictation-overlay-stop", () => {
-        void useAppStore.getState().stopDictation();
-      }),
-    );
-
-    unlisteners.push(
       listen<{ source?: string }>(PROFILE_UPDATED_EVENT, (event) => {
         if (event.payload.source === WebviewWindow.getCurrent().label) return;
         void useAppStore.getState().loadProfileFiles();
@@ -307,24 +255,6 @@ function MainApp() {
       void Promise.all(unlisteners).then((stops) => {
         for (const stop of stops) stop();
       });
-    };
-  }, [
-    appendTyped,
-    loadSuggestions,
-    refreshSttCapability,
-    setDictationState,
-    setLastError,
-  ]);
-
-  useEffect(() => {
-    const unsubscribe = useAppStore.subscribe((s, prev) => {
-      if (s.dictationState === prev.dictationState) return;
-      if (s.dictationState === "idle") void hideDictationOverlay();
-      else if (prev.dictationState === "idle") void showDictationOverlay();
-    });
-    return () => {
-      unsubscribe();
-      void hideDictationOverlay();
     };
   }, []);
 
@@ -394,9 +324,6 @@ function ToolApp({ label }: { label: ToolWindowLabel }) {
 
 function App() {
   const label = WebviewWindow.getCurrent().label;
-  if (label === DICTATION_OVERLAY_LABEL) {
-    return <DictationOverlay />;
-  }
   if (isToolWindowLabel(label)) {
     return <ToolApp label={label} />;
   }

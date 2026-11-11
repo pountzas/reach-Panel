@@ -1,7 +1,8 @@
 use crate::commands::{err, ok, CommandResult};
 use crate::input::focus_target;
 use crate::input::{
-    get_input_methods, get_keyboard_layout, get_keyboard_state, get_layout_key_labels, press_key,
+    get_input_methods, get_keyboard_layout, get_keyboard_state, get_layout_key_labels,
+    launch_windows_voice_typing, press_key,
     reset_layout_compose_state, set_input_method_by_hkl, set_input_method_by_language,
     set_system_language, translate_layout_key_press, type_text, windows_ui_language, InputMethod,
     KeyPressRequest, KeyboardState, LayoutKeyLabel, LayoutKeyTranslation,
@@ -10,6 +11,14 @@ use crate::input::{
 #[tauri::command]
 pub fn cmd_press_key(request: KeyPressRequest) -> CommandResult {
     match press_key(request) {
+        Ok(()) => ok(),
+        Err(e) => err(e),
+    }
+}
+
+#[tauri::command]
+pub fn cmd_launch_windows_voice_typing() -> CommandResult {
+    match launch_windows_voice_typing() {
         Ok(()) => ok(),
         Err(e) => err(e),
     }

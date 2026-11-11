@@ -409,7 +409,7 @@ export const it = {
 
   synthesizerVolume: "Volume",
 
-  dictationStart: "Avvia dettatura",
+  dictationStart: "Digitazione vocale",
 
   dictationStop: "Interrompi dettatura",
 
