@@ -45,6 +45,7 @@ impl BreadcrumbRing {
         text
     }
 
+    #[cfg(test)]
     pub fn flush_to(&self, path: &Path) -> std::io::Result<()> {
         write_atomic(path, &self.render())
     }

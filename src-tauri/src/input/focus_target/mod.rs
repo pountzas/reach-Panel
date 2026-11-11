@@ -330,15 +330,9 @@ pub fn is_input_focused() -> bool {
 
 /// Dictation may type when ReachPanel is foreground (restore validates TARGET_HWND)
 /// or an external editable field is focused.
+#[cfg(test)]
 pub fn dictation_target_ok(ours: bool, input_focused: bool) -> bool {
     ours || input_focused
-}
-
-/// Dictation-only gate: ReachPanel foreground (restore path validates TARGET_HWND)
-/// or an external editable field currently focused.
-pub fn dictation_can_type() -> bool {
-    let ours = unsafe { is_our_window(GetForegroundWindow()) };
-    dictation_target_ok(ours, is_input_focused())
 }
 
 fn reevaluate_input_focus() {

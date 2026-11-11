@@ -22,6 +22,7 @@ pub fn restore_focus_plan(
     RestoreFocusPlan::Restore
 }
 
+#[cfg(test)]
 pub fn foreground_restore_failed(wanted: isize, actual: isize) -> bool {
     wanted != actual
 }
