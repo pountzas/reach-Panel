@@ -361,11 +361,11 @@ fn capture_gdi_bgra(
     root: CaptureRoot,
     rect: &CaptureRect,
     wgc_reason: &str,
-) -> Result<Vec<u8>, String> {
+) -> Result<(Vec<u8>, bool), String> {
     match capture_window_region_bgra(root.hwnd, rect) {
         Ok(pixels) => {
             log_capture_path("printwindow", Some(root));
-            Ok(pixels)
+            Ok((pixels, false))
         }
         Err(pw_err) => {
             log::warn!(
@@ -373,9 +373,39 @@ fn capture_gdi_bgra(
             );
             let pixels = capture_screen_bgra(rect.left, rect.top, rect.width, rect.height)?;
             log_capture_path("bitblt", Some(root));
-            Ok(pixels)
+            Ok((pixels, true))
         }
     }
+}
+
+fn main_panel_rect() -> Option<crate::window::capture_exclude::PxRect> {
+    let app = APP_HANDLE.get()?;
+    let window = app.get_webview_window("main")?;
+    let hwnd = window.hwnd().ok()?;
+    let mut rect = RECT::default();
+    unsafe {
+        windows::Win32::UI::WindowsAndMessaging::GetWindowRect(
+            HWND(hwnd.0),
+            &mut rect,
+        )
+        .ok()?;
+    }
+    Some(crate::window::capture_exclude::PxRect {
+        left: rect.left,
+        top: rect.top,
+        width: rect.right.saturating_sub(rect.left),
+        height: rect.bottom.saturating_sub(rect.top),
+    })
+}
+
+fn log_panel_occlusion_once() {
+    static LOGGED: AtomicBool = AtomicBool::new(false);
+    if LOGGED.swap(true, Ordering::AcqRel) {
+        return;
+    }
+    log::warn!(
+        "live preview dropped a desktop BitBlt frame that overlaps the panel because capture exclusion is not active"
+    );
 }
 
 /// Capture BGRA, skip JPEG/base64 when unchanged; otherwise encode.
@@ -396,6 +426,7 @@ fn capture_and_maybe_encode(
         .map(|hwnd| hwnd.0 as isize)
         .unwrap_or(0);
 
+    let mut desktop_bitblt = false;
     let bgra = match get_effective_capture_root() {
         Some(root) => match wgc_capture::try_capture_strip(root.hwnd, &rect) {
             Ok(StripCapture::Ready(pixels)) => {
@@ -405,17 +436,45 @@ fn capture_and_maybe_encode(
             Ok(StripCapture::NotReady) => match not_ready_action(frame_on_screen) {
                 NotReadyAction::KeepLastFrame => return Ok(CaptureOutcome::Skipped),
                 NotReadyAction::FallBackToGdi => {
-                    capture_gdi_bgra(root, &rect, "first frame not ready")?
+                    let (pixels, bitblt) = capture_gdi_bgra(root, &rect, "first frame not ready")?;
+                    desktop_bitblt = bitblt;
+                    pixels
                 }
             },
-            Err(wgc_err) => capture_gdi_bgra(root, &rect, &wgc_err)?,
+            Err(wgc_err) => {
+                let (pixels, bitblt) = capture_gdi_bgra(root, &rect, &wgc_err)?;
+                desktop_bitblt = bitblt;
+                pixels
+            }
         },
         None => {
             let pixels = capture_screen_bgra(rect.left, rect.top, src_w, src_h)?;
             log_capture_path("bitblt", None);
+            desktop_bitblt = true;
             pixels
         }
     };
+
+    if desktop_bitblt {
+        if let Some(panel) = main_panel_rect() {
+            let strip = crate::window::capture_exclude::PxRect {
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+            };
+            if crate::window::capture_exclude::bitblt_panel_occlusion(
+                crate::window::capture_exclude::exclusion_active(),
+                true,
+                strip,
+                panel,
+            ) == crate::window::capture_exclude::BitbltOcclusion::DropFrame
+            {
+                log_panel_occlusion_once();
+                return Ok(CaptureOutcome::Skipped);
+            }
+        }
+    }
 
     let key = frame_skip_key(
         target_hwnd,

@@ -1,7 +1,9 @@
 //! Throttled `main` window event breadcrumbs. Registered beside icon_sync.
 
 use crate::diagnostics::breadcrumbs;
-use std::sync::Mutex;
+use super::capture_exclude::{self, exclusion_active};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{WebviewWindow, WindowEvent};
 
@@ -22,8 +24,15 @@ fn allow_geometry_event() -> bool {
 }
 
 pub(crate) fn register_main_window_event_logs(window: WebviewWindow) {
+    let hwnd = window.hwnd().ok().map(|handle| handle.0 as isize);
+    let retried = Arc::new(AtomicBool::new(false));
     window.on_window_event(move |event| match event {
         WindowEvent::Resized(size) => {
+            if let Some(hwnd) = hwnd {
+                if !exclusion_active() && !retried.swap(true, Ordering::AcqRel) {
+                    let _ = capture_exclude::apply_main_window_exclusion(hwnd);
+                }
+            }
             if !allow_geometry_event() {
                 return;
             }
