@@ -23,7 +23,7 @@
     "test:blob": "node --test scripts/upload-to-blob.test.mjs scripts/merge-downloads-latest.test.mjs scripts/blob-cleanup-lib.test.mjs companion/scripts/upload-apk-to-blob.test.mjs companion/scripts/bump-version.test.mjs"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.3.4",
+    "@tailwindcss/vite": "^4.3.5",
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-autostart": "^2.7.0",
     "@tauri-apps/plugin-log": "^2.10.1",
@@ -41,7 +41,7 @@
     "react-rnd": "^10.5.3",
     "svg-flags": "^1.1.1",
     "tailwindcss": "^4.3.0",
-    "zustand": "^5.0.16"
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
