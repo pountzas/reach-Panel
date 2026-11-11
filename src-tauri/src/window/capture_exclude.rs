@@ -3,9 +3,8 @@
 //! `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` fails on this app's
 //! transparent main window with `0x80070008` (`E_OUTOFMEMORY`) at every
 //! startup on Windows 11 build 22000. That HRESULT is not memory exhaustion.
-//! The plan retries a bounded number of times (the retry clears `WS_EX_LAYERED`
-//! around the call, which is what makes the affinity stick on a transparent
-//! window), then falls back to `WDA_MONITOR` and stops.
+//! The retry clears `WS_EX_LAYERED` around the call when the window is layered
+//! (unverified as the cause); otherwise it falls back to `WDA_MONITOR` immediately.
 //!
 //! Live preview fallback: when exclusion is not active, desktop BitBlt frames
 //! whose strip intersects the panel are dropped. Windows.Graphics.Capture and
@@ -113,6 +112,11 @@ pub fn apply_main_window_exclusion(hwnd: isize) -> Result<(), String> {
                 warn_once(handle, current, code);
                 return Err(format!("capture exclusion stopped ({code:#010x})"));
             }
+            CaptureExclusionAction::RetryExclude if !window_is_layered(handle) => {
+                // Same window state, same call: it will fail the same way.
+                attempt = EXCLUDE_RETRY_LIMIT;
+                continue;
+            }
             CaptureExclusionAction::ApplyExclude | CaptureExclusionAction::RetryExclude => {
                 let layered_retry =
                     action == CaptureExclusionAction::RetryExclude && window_is_layered(handle);
@@ -127,6 +131,15 @@ pub fn apply_main_window_exclusion(hwnd: isize) -> Result<(), String> {
                 }
                 match result {
                     Ok(()) => {
+                        let after = read_affinity(handle);
+                        if after != CaptureAffinity::ExcludeFromCapture {
+                            log::warn!(
+                                "SetWindowDisplayAffinity succeeded but affinity reads {after:?} (layered_retry={layered_retry})"
+                            );
+                            last_error = Some(HRESULT_NOT_ENOUGH_MEMORY);
+                            attempt = attempt.saturating_add(1);
+                            continue;
+                        }
                         EXCLUSION_ACTIVE.store(true, Ordering::Release);
                         if layered_retry {
                             log::info!(
@@ -154,14 +167,17 @@ pub fn apply_main_window_exclusion(hwnd: isize) -> Result<(), String> {
                             current,
                             last_error.unwrap_or(HRESULT_NOT_ENOUGH_MEMORY),
                         );
-                        log::warn!(
-                            "main window capture exclusion downgraded to WDA_MONITOR; desktop BitBlt preview drops strips that overlap the panel"
-                        );
+                        static DOWNGRADE_LOGGED: AtomicBool = AtomicBool::new(false);
+                        if !DOWNGRADE_LOGGED.swap(true, Ordering::AcqRel) {
+                            log::warn!(
+                                "main window capture exclusion downgraded to WDA_MONITOR; desktop BitBlt preview drops strips that overlap the panel"
+                            );
+                        }
                         return Ok(());
                     }
                     Err(err) => {
                         last_error = Some(err.code().0 as u32);
-                        attempt = attempt.saturating_add(1);
+                        attempt = EXCLUDE_RETRY_LIMIT + 1;
                     }
                 }
             }
@@ -176,9 +192,18 @@ fn warn_once(hwnd: HWND, current: CaptureAffinity, hresult: u32) {
     }
     let exstyle = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32 };
     let visible = unsafe { IsWindowVisible(hwnd).as_bool() };
+    let dpi = unsafe { windows::Win32::UI::HiDpi::GetDpiForWindow(hwnd) };
+    let monitor = unsafe {
+        windows::Win32::Graphics::Gdi::MonitorFromWindow(
+            hwnd,
+            windows::Win32::Graphics::Gdi::MONITOR_DEFAULTTONEAREST,
+        )
+    };
+    let build = crate::logging::windows_build_number();
     log::warn!(
-        "main window capture exclusion failed hresult={hresult:#010x} affinity={current:?} exstyle={exstyle:#x} layered={} visible={visible}",
-        exstyle & WS_EX_LAYERED.0 != 0
+        "main window capture exclusion failed hresult={hresult:#010x} affinity={current:?} exstyle={exstyle:#x} layered={} visible={visible} dpi={dpi} monitor={:?} build={build}",
+        exstyle & WS_EX_LAYERED.0 != 0,
+        monitor.0
     );
 }
 

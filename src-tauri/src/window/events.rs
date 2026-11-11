@@ -26,10 +26,14 @@ fn allow_geometry_event() -> bool {
 pub(crate) fn register_main_window_event_logs(window: WebviewWindow) {
     let hwnd = window.hwnd().ok().map(|handle| handle.0 as isize);
     let retried = Arc::new(AtomicBool::new(false));
+    let probe = window.clone();
     window.on_window_event(move |event| match event {
         WindowEvent::Resized(size) => {
             if let Some(hwnd) = hwnd {
-                if !exclusion_active() && !retried.swap(true, Ordering::AcqRel) {
+                if !exclusion_active()
+                    && probe.is_visible().unwrap_or(false)
+                    && !retried.swap(true, Ordering::AcqRel)
+                {
                     let _ = capture_exclude::apply_main_window_exclusion(hwnd);
                 }
             }

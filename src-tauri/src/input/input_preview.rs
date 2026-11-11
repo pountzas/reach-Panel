@@ -406,6 +406,9 @@ fn log_panel_occlusion_once() {
     log::warn!(
         "live preview dropped a desktop BitBlt frame that overlaps the panel because capture exclusion is not active"
     );
+    if let Some(app) = APP_HANDLE.get() {
+        let _ = app.emit("input-preview-panel-occluded", ());
+    }
 }
 
 /// Capture BGRA, skip JPEG/base64 when unchanged; otherwise encode.

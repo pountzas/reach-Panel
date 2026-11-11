@@ -6,6 +6,7 @@ import { subscribeInputPreview } from "../lib/inputPreviewChannel";
 import {
   clear as clearInputPreviewFrames,
   publish as publishInputPreviewFrame,
+  setPanelOccluded,
 } from "../lib/inputPreviewFrames";
 import { prefersReducedMotion } from "../lib/motion";
 import type { AppStore } from "./types";
@@ -78,6 +79,10 @@ try {
 
 void listen("input-preview-cleared", () => {
   clearInputPreviewFrames();
+});
+
+void listen("input-preview-panel-occluded", () => {
+  setPanelOccluded(true);
 });
 
 /**

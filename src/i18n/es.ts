@@ -176,6 +176,8 @@ export const es = {
   inputPreviewLabel: "Campo de destino",
 
   inputPreviewWaiting: "Esperando vista previa…",
+
+  inputPreviewPanelOccluded: "Vista previa no disponible",
   inputPreviewNoInput: "Ningún campo de texto seleccionado",
 
   focusModeTransparentDescription:

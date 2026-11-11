@@ -177,6 +177,8 @@ export const el = {
   inputPreviewLabel: "Πεδίο προορισμού",
 
   inputPreviewWaiting: "Αναμονή προεπισκόπησης…",
+
+  inputPreviewPanelOccluded: "Η προεπισκόπηση δεν είναι διαθέσιμη",
   inputPreviewNoInput: "Δεν έχει επιλεγεί πεδίο κειμένου",
 
   focusModeTransparentDescription:
