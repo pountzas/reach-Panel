@@ -63,7 +63,7 @@ jobs:
             exit 1
           fi
 
-      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # 9.0.0
+      - uses: expo/expo-github-action@5273c2136bd09c2a341fe3340d3e767ce5a13015 # 9.0.2
         if: steps.bump.outputs.should_release == 'true'
         with:
           eas-version: 25.2.0
@@ -170,7 +170,7 @@ jobs:
       - name: Create GitHub pre-release
         if: steps.bump.outputs.should_release == 'true'
         id: github_release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
           tag_name: companion-v${{ steps.bump.outputs.new_version }}
           name: ReachPanel Companion v${{ steps.bump.outputs.new_version }}
