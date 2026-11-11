@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.19.0 (2026-11-11)
+
+## What's Changed
+* ci: keep only the latest Companion APK on Vercel Blob by @pountzas in https://github.com/pountzas/reach-Panel/pull/387
+* feat: auto-send diagnostic logs once a week by @pountzas in https://github.com/pountzas/reach-Panel/pull/389
+* fix: type dictation into the focused field by @pountzas in https://github.com/pountzas/reach-Panel/pull/390
+* chore(deps): bump the npm-minor-and-patch group across 1 directory with 9 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/381
+* fix: latch Teaching-mode modifiers during in-app capture by @pountzas in https://github.com/pountzas/reach-Panel/pull/392
+* feat: add Close app to the FAB mode menu by @pountzas in https://github.com/pountzas/reach-Panel/pull/398
+* feat: launch Windows Voice typing with Win+H by @pountzas in https://github.com/pountzas/reach-Panel/pull/406
+* chore(deps): bump the actions-minor-and-patch group across 1 directory with 3 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/400
+* chore(deps): bump the npm-minor-and-patch group with 3 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/401
+* chore(deps): bump the cargo-minor-and-patch group across 1 directory with 2 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/402
+* chore: promote dev to main by @pountzas in https://github.com/pountzas/reach-Panel/pull/393
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.18.0...v0.19.0
+
 ## 0.18.0 (2026-11-07)
 
 ## What's Changed
