@@ -1,16 +1,9 @@
-//! Shared STT event emitters used by WinRT and Groq backends.
+//! Shared STT event emitters for companion Groq transcription results.
 
-use super::SttState;
 use crate::input::type_text;
 use anyhow::anyhow;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
-
-#[derive(Debug, Clone, Serialize)]
-struct SttStateEvent {
-    state: SttState,
-    language: Option<String>,
-}
 
 #[derive(Debug, Clone, Serialize)]
 struct SttResultEvent {
@@ -33,10 +26,6 @@ struct SttGroqQuotaEvent {
 pub fn emit_error(app: &AppHandle, message: impl Into<String>) {
     let message = map_stt_error(message.into()).to_string();
     let _ = app.emit("stt-error", SttErrorEvent { message });
-}
-
-pub fn emit_state(app: &AppHandle, state: SttState, language: Option<String>) {
-    let _ = app.emit("stt-state", SttStateEvent { state, language });
 }
 
 /// Emit Groq RPD remaining/limit when both headers were parsed.
@@ -72,15 +61,6 @@ pub fn map_stt_error(error: impl std::fmt::Display) -> anyhow::Error {
         );
     }
     anyhow!("{message}")
-}
-
-pub fn handle_desktop_result(app: &AppHandle, text: &str) {
-    if !crate::input::focus_target::dictation_can_type() {
-        log::warn!("stt result dropped: no focused text field");
-        emit_error(app, crate::stt::timeouts::NO_INPUT_TARGET.to_string());
-        return;
-    }
-    handle_result(app, text);
 }
 
 pub fn handle_result(app: &AppHandle, text: &str) {

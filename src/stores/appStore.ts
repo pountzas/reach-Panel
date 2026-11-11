@@ -33,8 +33,6 @@ import { createModeSlice } from "./slices/modeSlice";
 
 export type {
   AppStore,
-  DictationState,
-  SttCapability,
   TeachingLesson,
   LanguageListAuthoringField,
   LanguageListAuthoringHandlers,

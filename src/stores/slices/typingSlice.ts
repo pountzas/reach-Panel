@@ -260,10 +260,8 @@ export const createTypingSlice: StateCreator<AppStore, [], [], TypingSlice> = (
         source: WebviewWindow.getCurrent().label,
       });
       if (previousTypingLanguage !== method.langTag) {
-        await get().stopDictation();
         set({ typedBuffer: "", ...clearGreekPendingAccent() });
         commitSuggestionList(set, []);
-        await get().refreshSttCapability();
       }
       await get().refreshLayoutKeyLabels(method.hkl);
       await get().pollKeyboardState();

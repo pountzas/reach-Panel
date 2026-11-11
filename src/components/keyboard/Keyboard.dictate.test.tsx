@@ -18,10 +18,6 @@ vi.mock("@tauri-apps/api/webviewWindow", () => ({
   WebviewWindow: { getCurrent: () => ({ label: "main" }) },
 }));
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: vi.fn() }));
-vi.mock("../../lib/dictationOverlayWindow", () => ({
-  showDictationOverlay: vi.fn(() => Promise.resolve()),
-  hideDictationOverlay: vi.fn(() => Promise.resolve()),
-}));
 vi.mock("../../lib/motion", () => ({
   MOTION: { fast: 120, base: 200, slow: 300 },
   prefersReducedMotion: vi.fn(() => true),
@@ -34,16 +30,12 @@ vi.mock("../../hooks/useContainerSize", () => ({
     height: 280,
   }),
 }));
-vi.mock("../../hooks/useGroqDailyQuota", () => ({
-  useGroqDailyQuota: () => null,
-}));
-
 import { useAppStore } from "../../stores/appStore";
 import { Keyboard } from "./Keyboard";
 
 function micButton() {
   return screen.getByRole("button", {
-    name: /select a text field to dictate|start dictation|stop dictation/i,
+    name: /select a text field to dictate|voice typing/i,
   });
 }
 
@@ -56,14 +48,6 @@ describe("Keyboard Mic key focus gating (#349)", () => {
       stickyModifiers: [],
       physicalKeyState: { ...DEFAULT_PHYSICAL_KEY_STATE },
       languagePickerOpen: false,
-      dictationState: "idle",
-      sttCapability: {
-        engine: "winrt",
-        groqConfigured: false,
-        winrtSupported: true,
-        online: true,
-        canDictate: true,
-      },
       externalInputFocused: false,
       musicTeachingEnabled: false,
       languageLessonPlaying: false,
@@ -95,25 +79,20 @@ describe("Keyboard Mic key focus gating (#349)", () => {
       </div>,
     );
     const btn = screen.getByRole<HTMLButtonElement>("button", {
-      name: "Start dictation",
+      name: "Voice typing",
     });
     expect(btn.disabled).toBe(false);
   });
 
-  it("keeps the Mic key enabled while listening even if focus is lost", () => {
-    useAppStore.setState({
-      dictationState: "listening",
-      externalInputFocused: false,
-    });
+  it("disables the Mic key when focus is lost", () => {
+    useAppStore.setState({ externalInputFocused: false });
     render(
       <div style={{ width: 800, height: 280 }}>
         <Keyboard />
       </div>,
     );
-    const btn = screen.getByRole<HTMLButtonElement>("button", {
-      name: "Stop dictation",
-    });
-    expect(btn.disabled).toBe(false);
+    const btn = micButton() as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
   });
 
   it("grays the Mic key in transparent mode when disabled", () => {

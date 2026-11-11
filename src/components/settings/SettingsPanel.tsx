@@ -70,10 +70,7 @@ export function SettingsPanel() {
         <TaskbarSection surface={surface} />
         <AppearanceSection surface={surface} />
         <VisibleSectionsSection surface={surface} />
-        <KeyboardSettingsSection
-          surface={surface}
-          secondaryButtonStyle={secondaryButtonStyle}
-        />
+        <KeyboardSettingsSection surface={surface} />
         {!isV1FeatureHidden("mouse") && (
           <MouseSettingsSection surface={surface} />
         )}

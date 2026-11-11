@@ -1,8 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { logError } from "./log";
 
-export const GROQ_API_KEYS_URL = "https://console.groq.com/keys";
-
 export const APP_INFO = {
   creator: "pountzas",
   description: "Assistive virtual keyboard and mouse for Windows.",

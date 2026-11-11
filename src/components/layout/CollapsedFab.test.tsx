@@ -38,8 +38,6 @@ const storeState = {
   companionModeActive: false,
   musicTeachingEnabled: false,
   isAnimatingWindow: false,
-  dictationState: "idle" as const,
-  sttCapability: null,
   externalInputFocused: false,
   modeMenuOpen: false,
   openModeMenu,
@@ -107,7 +105,6 @@ describe("CollapsedFab mode menu", () => {
     storeState.companionModeActive = false;
     storeState.musicTeachingEnabled = false;
     storeState.isAnimatingWindow = false;
-    storeState.sttCapability = null;
     storeState.externalInputFocused = false;
     motionMocks.prefersReducedMotion.mockReturnValue(true);
   });

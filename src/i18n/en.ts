@@ -442,13 +442,9 @@ export const en = {
 
   synthesizerVolume: "Volume",
 
-  dictationStart: "Start dictation",
-
-  dictationStop: "Stop dictation",
+  dictationStart: "Voice typing",
 
   micModeSelectInput: "Select a text field to dictate",
-
-  dictationListening: "Listening…",
 
   dictationErrorNoLanguage:
     "Speech recognition for this typing language is not installed. Add the speech pack in Windows Settings → Time & language → Speech (or Language & region), then try again.",
@@ -462,25 +458,10 @@ export const en = {
   dictationErrorGroqApi:
     "Cloud dictation failed. Check your internet connection and Groq API key, then try again.",
 
-  dictationUnavailableUnsupported:
-    "Dictation unavailable — add a free Groq API key in Settings for this language",
-
-  dictationUnavailableOffline:
-    "Dictation unavailable — an internet connection is required",
-
-  dictationGroqRemainingToday: "Groq requests remaining today",
-
   dictationOpenSpeechSettings: "Open Speech settings",
   dictationOpenSpeechLanguageSettings: "Install speech language",
 
   dictationOpenAppSettings: "Open Settings",
-
-  groqApiKeyLabel: "Groq API key (cloud dictation)",
-
-  groqApiKeyHint:
-    "Needed for languages Windows doesn’t support (e.g. Greek). You can also set the GROQ_API_KEY environment variable.",
-
-  groqApiKeyLink: "Get a free Groq API key",
 
   mute: "Mute",
 

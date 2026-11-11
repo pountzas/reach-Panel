@@ -25,7 +25,7 @@ use webview2_com::Microsoft::Web::WebView2::Win32::{
 use webview2_com::ProcessFailedEventHandler;
 use windows_core::Interface;
 
-const WATCHED_LABELS: [&str; 3] = ["main", "settings", "dictation-overlay"];
+const WATCHED_LABELS: [&str; 2] = ["main", "settings"];
 
 static REGISTERED: Mutex<Option<HashSet<String>>> = Mutex::new(None);
 static PENDING_RECREATE: Mutex<Option<HashSet<String>>> = Mutex::new(None);
@@ -245,18 +245,6 @@ fn recreate_window<R: Runtime>(app: &AppHandle<R>, label: &str) -> Result<(), St
                 builder = builder.parent(&main).map_err(|e| e.to_string())?;
             }
         }
-    } else if label == "dictation-overlay" {
-        // DICTATION_OVERLAY_SIZE in src/lib/dictationOverlayWindow.ts
-        builder = builder
-            .title("Dictation")
-            .inner_size(300.0, 76.0)
-            .center()
-            .resizable(false)
-            .skip_taskbar(true)
-            .focused(false)
-            .focusable(false)
-            .shadow(false)
-            .visible(false);
     }
     builder.build().map(|_| ()).map_err(|e| e.to_string())?;
     if let Some(window) = app.get_webview_window(label) {

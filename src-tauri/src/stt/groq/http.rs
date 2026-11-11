@@ -73,28 +73,13 @@ pub(super) fn parse_quota_headers(resp: &ureq::Response) -> GroqRequestQuota {
 }
 
 /// Remaining RPD percent from Groq request headers (0–100).
-#[allow(dead_code)] // used by unit tests; percent display lives on the frontend
+#[cfg(test)]
 pub fn groq_remaining_percent(remaining: u64, limit: u64) -> u32 {
     if limit == 0 {
         return 0;
     }
     let pct = ((100.0 * remaining as f64) / limit as f64).round() as i64;
     pct.clamp(0, 100) as u32
-}
-
-pub(super) fn transcribe(
-    api_key: &str,
-    audio: &[f32],
-    language: &str,
-) -> Result<GroqTranscription, GroqTranscribeError> {
-    if audio.is_empty() {
-        return Ok(GroqTranscription {
-            text: String::new(),
-            quota: GroqRequestQuota::default(),
-        });
-    }
-    let wav = encode_wav_pcm16(audio, TARGET_SAMPLE_RATE);
-    transcribe_file_bytes(api_key, &wav, "audio.wav", "audio/wav", language)
 }
 
 /// Transcribe companion-provided PCM16 LE mono audio (any sample rate; resampled lightly by length).

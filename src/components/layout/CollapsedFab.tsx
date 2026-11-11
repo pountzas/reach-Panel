@@ -75,8 +75,6 @@ export function CollapsedFab({
   );
   const toggleCollapsed = useAppStore((s) => s.toggleCollapsed);
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
-  const dictationState = useAppStore((s) => s.dictationState);
-  const sttCapability = useAppStore((s) => s.sttCapability);
   const externalInputFocused = useAppStore((s) => s.externalInputFocused);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
   const modeMenuOpen = useAppStore((s) => s.modeMenuOpen);
@@ -153,14 +151,7 @@ export function CollapsedFab({
   const bgColor = headerBgColor ?? "#1e293b";
   const textColor = headerTextColor ?? "#ffffff";
 
-  const listening =
-    dictationState === "listening" || dictationState === "processing";
-  const canDictate = sttCapability?.canDictate ?? false;
-  const micEnabled = isMicFabEnabled({
-    dictationState,
-    canDictate,
-    externalInputFocused,
-  });
+  const micEnabled = isMicFabEnabled({ externalInputFocused });
 
   const fabCount = ((): CollapsedFabCount => {
     const n = (showSettings ? 1 : 0) + (showDictation ? 1 : 0) + 1;
@@ -192,11 +183,7 @@ export function CollapsedFab({
 
   const micAriaLabel = t(
     micDictateAriaKey({
-      dictationState,
-      canDictate,
       externalInputFocused,
-      online: sttCapability?.online,
-      winrtSupported: sttCapability?.winrtSupported,
     }),
   );
 
@@ -228,12 +215,8 @@ export function CollapsedFab({
             style={{
               width: COLLAPSED_FAB_SIZE,
               height: COLLAPSED_FAB_SIZE,
-              backgroundColor: listening ? "#dc2626" : bgColor,
-              color: listening
-                ? "#ffffff"
-                : micEnabled
-                  ? MIC_FAB_ARMED_ICON_COLOR
-                  : textColor,
+              backgroundColor: bgColor,
+              color: micEnabled ? MIC_FAB_ARMED_ICON_COLOR : textColor,
               ...fabAppearStyle(0, stackEntered, promoteFabLayer),
             }}
             disabled={!micEnabled}

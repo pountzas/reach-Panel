@@ -4,7 +4,6 @@ import { DEFAULT_SETTINGS } from "./types";
 import {
   computeTeachingChromeVisibility,
   isDictationKeyVisible,
-  shouldStopDictationForVisibility,
   shouldSuppressLanguageSuggestions,
   teachingHidesInputHelpers,
   teachingInputHelpersEnabled,
@@ -220,26 +219,6 @@ describe("teachingInputHelpers", () => {
         showSuggestions: true,
         dictationKeyVisible: true,
       });
-    });
-  });
-
-  describe("shouldStopDictationForVisibility", () => {
-    it("stops when the mic key is hidden and dictation is listening", () => {
-      expect(shouldStopDictationForVisibility(false, "listening")).toBe(true);
-    });
-
-    it("stops when the mic key is hidden and dictation is processing", () => {
-      expect(shouldStopDictationForVisibility(false, "processing")).toBe(true);
-    });
-
-    it("does not stop when the mic key is visible", () => {
-      expect(shouldStopDictationForVisibility(true, "listening")).toBe(false);
-      expect(shouldStopDictationForVisibility(true, "processing")).toBe(false);
-      expect(shouldStopDictationForVisibility(true, "idle")).toBe(false);
-    });
-
-    it("does not stop when dictation is already idle", () => {
-      expect(shouldStopDictationForVisibility(false, "idle")).toBe(false);
     });
   });
 

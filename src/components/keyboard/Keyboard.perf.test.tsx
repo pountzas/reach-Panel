@@ -39,11 +39,6 @@ vi.mock("@tauri-apps/plugin-updater", () => ({
   check: vi.fn(),
 }));
 
-vi.mock("../../lib/dictationOverlayWindow", () => ({
-  showDictationOverlay: vi.fn(() => Promise.resolve()),
-  hideDictationOverlay: vi.fn(() => Promise.resolve()),
-}));
-
 vi.mock("../../lib/motion", () => ({
   MOTION: { fast: 120, base: 200, slow: 300 },
   prefersReducedMotion: vi.fn(() => true),
@@ -56,10 +51,6 @@ vi.mock("../../hooks/useContainerSize", () => ({
     width: 800,
     height: 280,
   }),
-}));
-
-vi.mock("../../hooks/useGroqDailyQuota", () => ({
-  useGroqDailyQuota: () => null,
 }));
 
 vi.mock("./KeyButton", async () => {
@@ -90,7 +81,6 @@ describe("Keyboard sticky-typing profiler (#281)", () => {
       stickyModifiers: [],
       physicalKeyState: { ...DEFAULT_PHYSICAL_KEY_STATE },
       languagePickerOpen: false,
-      dictationState: "idle",
       musicTeachingEnabled: false,
       languageLessonPlaying: false,
       languageListAuthoringActive: false,

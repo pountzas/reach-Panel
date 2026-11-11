@@ -26,7 +26,6 @@ import { LanguagePicker } from "./LanguagePicker";
 import { LanguageSwitchLabel } from "./LanguageSwitchLabel";
 import { MicrophoneIcon } from "../common/SectionIcons";
 import { useContainerSize } from "../../hooks/useContainerSize";
-import { useGroqDailyQuota } from "../../hooks/useGroqDailyQuota";
 import { useTranslation } from "../../hooks/useTranslation";
 import { computeKeyMetrics } from "../../lib/keyMetrics";
 import { effectiveKeyboardFontSize } from "../../lib/keyboardFontSize";
@@ -53,7 +52,6 @@ type KeyboardSettingsSlice = Pick<
   | "transparentKeyColor"
   | "keyboardBgColor"
   | "opacity"
-  | "groqApiKey"
   | "languageLessonLanguage"
   | "dictationVisible"
   | "showTeachingInputHelpers"
@@ -72,7 +70,6 @@ export function Keyboard() {
       transparentKeyColor: s.settings.transparentKeyColor,
       keyboardBgColor: s.settings.keyboardBgColor,
       opacity: s.settings.opacity,
-      groqApiKey: s.settings.groqApiKey,
       languageLessonLanguage: s.settings.languageLessonLanguage,
       dictationVisible: s.settings.dictationVisible,
       showTeachingInputHelpers: s.settings.showTeachingInputHelpers,
@@ -109,11 +106,8 @@ export function Keyboard() {
   const setLanguagePickerOpen = useAppStore((s) => s.setLanguagePickerOpen);
   const selectTypingInputMethod = useAppStore((s) => s.selectTypingInputMethod);
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
-  const dictationState = useAppStore((s) => s.dictationState);
   const externalInputFocused = useAppStore((s) => s.externalInputFocused);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
-  const sttCapability = useAppStore((s) => s.sttCapability);
-  const refreshSttCapability = useAppStore((s) => s.refreshSttCapability);
   const applyTypedLayoutTranslation = useAppStore(
     (s) => s.applyTypedLayoutTranslation,
   );
@@ -227,32 +221,8 @@ export function Keyboard() {
     ? transparentPalette.text
     : (settings.keyTextColor ?? "#1e293b");
 
-  const listening =
-    dictationState === "listening" || dictationState === "processing";
-  const canDictate = sttCapability?.canDictate ?? false;
-  const dictateDisabled = !isMicFabEnabled({
-    dictationState,
-    canDictate,
-    externalInputFocused,
-  });
-  const groqRemainingPercent = useGroqDailyQuota(sttCapability?.engine);
-
-  useEffect((): void => {
-    void refreshSttCapability();
-  }, [refreshSttCapability, settings.typingLanguage, settings.groqApiKey]);
-
-  let dictateAriaLabel = t(
-    micDictateAriaKey({
-      dictationState,
-      canDictate,
-      externalInputFocused,
-      online: sttCapability?.online,
-      winrtSupported: sttCapability?.winrtSupported,
-    }),
-  );
-  if (!dictateDisabled && groqRemainingPercent !== null) {
-    dictateAriaLabel = `${dictateAriaLabel}. ${t("dictationGroqRemainingToday")} ${groqRemainingPercent}%`;
-  }
+  const dictateDisabled = !isMicFabEnabled({ externalInputFocused });
+  const dictateAriaLabel = t(micDictateAriaKey({ externalInputFocused }));
 
   const translateLayoutKey = async (
     physicalKey: string,
@@ -353,16 +323,10 @@ export function Keyboard() {
 
   const dictateBgColor = transparent
     ? (settings.keyboardKeyColor ?? "#ffffff")
-    : listening
-      ? "#dc2626"
-      : dictateDisabled
-        ? "#f1f5f9"
-        : (settings.keyboardKeyColor ?? "#ffffff");
-  const dictateTextColor = listening
-    ? "#ffffff"
     : dictateDisabled
-      ? "#94a3b8"
-      : "#2563eb";
+      ? "#f1f5f9"
+      : (settings.keyboardKeyColor ?? "#ffffff");
+  const dictateTextColor = dictateDisabled ? "#94a3b8" : "#2563eb";
   const keyBgColor = settings.keyboardKeyColor ?? "#ffffff";
 
   // Stable label elements so memo(KeyboardKey)/memo(KeyButton) can skip keys
@@ -385,16 +349,9 @@ export function Keyboard() {
     () => (
       <span className="relative flex h-full w-full items-center justify-center">
         <MicrophoneIcon className="absolute h-5 w-5" />
-        {groqRemainingPercent !== null ? (
-          <span
-            className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] font-semibold leading-none tabular-nums"
-            aria-hidden>
-            {groqRemainingPercent}%
-          </span>
-        ) : null}
       </span>
     ),
-    [groqRemainingPercent],
+    [],
   );
 
   const langSwitchLabel = useMemo(
@@ -439,7 +396,7 @@ export function Keyboard() {
                   stretch
                   transparent={transparent}
                   outlineColor={settings.transparentKeyColor}
-                  active={transparent ? listening : false}
+                  active={false}
                   disabled={dictateDisabled}
                   ariaLabel={dictateAriaLabel}
                   onPressKey={onPressKey}

@@ -45,47 +45,43 @@ import { useAppStore } from "../appStore";
 import { storeFlags } from "../storeFlags";
 import { DICTATION_SELECT_INPUT_ERROR } from "../../lib/dictationErrors";
 
-describe("toggleDictation no-target (#349)", () => {
+describe("toggleDictation launches Windows Voice typing", () => {
   beforeEach(() => {
     invokeMock.mockReset();
     notifyError.mockReset();
     storeFlags.lastAnnouncedError = null;
     useAppStore.setState({
       settings: { ...DEFAULT_SETTINGS },
-      dictationState: "idle",
       externalInputFocused: false,
       lastError: null,
-      sttCapability: {
-        engine: "winrt",
-        groqConfigured: false,
-        winrtSupported: true,
-        online: true,
-        canDictate: true,
-      },
     });
   });
 
-  it("does not start and toasts when no external field is focused", async () => {
+  it("does not send Win+H and toasts when no external field is focused", async () => {
     await useAppStore.getState().toggleDictation();
     expect(invokeMock).not.toHaveBeenCalledWith(
-      "cmd_start_dictation",
-      expect.anything(),
+      "cmd_launch_windows_voice_typing",
     );
     expect(notifyError).toHaveBeenCalledWith(DICTATION_SELECT_INPUT_ERROR);
-    expect(useAppStore.getState().dictationState).toBe("idle");
   });
 
-  it("still stops while listening even if focus was lost", async () => {
-    invokeMock.mockResolvedValue(undefined);
-    useAppStore.setState({
-      dictationState: "listening",
-      externalInputFocused: false,
-    });
+  it("asks the host to refocus and send Win+H when a field is focused", async () => {
+    invokeMock.mockResolvedValue({ success: true, error: null });
+    useAppStore.setState({ externalInputFocused: true });
     await useAppStore.getState().toggleDictation();
-    expect(invokeMock).toHaveBeenCalledWith("cmd_stop_dictation");
-    expect(invokeMock).not.toHaveBeenCalledWith(
-      "cmd_start_dictation",
-      expect.anything(),
+    expect(invokeMock).toHaveBeenCalledWith("cmd_launch_windows_voice_typing");
+    expect(notifyError).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a host error and does not treat it as success", async () => {
+    invokeMock.mockResolvedValue({
+      success: false,
+      error: "Companion tablet is connected. Use the tablet mic for dictation.",
+    });
+    useAppStore.setState({ externalInputFocused: true });
+    await useAppStore.getState().toggleDictation();
+    expect(useAppStore.getState().lastError).toBe(
+      "Companion tablet is connected. Use the tablet mic for dictation.",
     );
   });
 });

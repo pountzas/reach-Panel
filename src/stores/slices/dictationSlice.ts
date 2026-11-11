@@ -1,9 +1,8 @@
 import type { StateCreator } from "zustand";
 import type { AppStore, DictationSlice } from "../types";
 import { invoke } from "@tauri-apps/api/core";
-import type { DictationState } from "../types";
+import type { CommandResult } from "../../lib/types";
 import { DICTATION_SELECT_INPUT_ERROR } from "../../lib/dictationErrors";
-import { logInfo } from "../../lib/log";
 
 export const createDictationSlice: StateCreator<
   AppStore,
@@ -11,103 +10,20 @@ export const createDictationSlice: StateCreator<
   [],
   DictationSlice
 > = (set, get) => ({
-  dictationState: "idle",
-  sttCapability: null,
-  setDictationState: (state) => {
-    const previous = get().dictationState;
-    set({ dictationState: state });
-    if (previous !== state) {
-      logInfo("dictation", "state", { state });
-    }
-  },
-  setSttCapability: (capability) => {
-    set({ sttCapability: capability });
-  },
-  refreshSttCapability: async () => {
-    try {
-      const trimmedKey = get().settings.groqApiKey?.trim();
-      const settingsKey =
-        trimmedKey !== undefined && trimmedKey.length > 0 ? trimmedKey : null;
-      const status = await invoke<{
-        state: DictationState;
-        engine: "winrt" | "groq" | null;
-        groqConfigured: boolean;
-        winrtSupported: boolean;
-        online: boolean;
-        canDictate: boolean;
-      }>("cmd_get_stt_status", {
-        language: get().settings.typingLanguage,
-        groqApiKey: settingsKey,
-      });
-      get().setDictationState(status.state);
-      set({
-        sttCapability: {
-          engine: status.engine,
-          groqConfigured: status.groqConfigured,
-          winrtSupported: status.winrtSupported,
-          online: status.online,
-          canDictate: status.canDictate,
-        },
-      });
-    } catch {
-      set({
-        sttCapability: {
-          engine: null,
-          groqConfigured: false,
-          winrtSupported: false,
-          online: false,
-          canDictate: false,
-        },
-      });
-    }
-  },
   toggleDictation: async () => {
-    const { dictationState, settings, sttCapability } = get();
-    if (dictationState === "listening" || dictationState === "processing") {
-      await get().stopDictation();
-      return;
-    }
     if (!get().externalInputFocused) {
       get().setLastError(DICTATION_SELECT_INPUT_ERROR);
       return;
     }
-    if (sttCapability && !sttCapability.canDictate) {
-      set({
-        lastError: !sttCapability.online
-          ? "GROQ_API: Dictation requires an internet connection."
-          : sttCapability.winrtSupported
-            ? "GROQ_API: Dictation is unavailable right now."
-            : "GROQ_KEY: Windows speech recognition does not support this language. Add a free Groq API key in Settings to dictate.",
-      });
-      return;
-    }
     try {
-      const trimmedGroqKey = settings.groqApiKey?.trim();
-      const groqApiKey =
-        trimmedGroqKey !== undefined && trimmedGroqKey.length > 0
-          ? trimmedGroqKey
-          : null;
-      await invoke("cmd_start_dictation", {
-        language: settings.typingLanguage,
-        groqApiKey,
-      });
-      get().setDictationState("listening");
-      await get().refreshSttCapability();
-    } catch (error) {
-      get().setDictationState("idle");
-      set({
-        lastError: error instanceof Error ? error.message : String(error),
-      });
-      await get().refreshSttCapability();
-    }
-  },
-  stopDictation: async () => {
-    if (get().dictationState === "idle") return;
-    // Optimistic: clear listening UI immediately so the mic toggle feels responsive
-    // even when Groq was mid-transcription (common on Greek path).
-    get().setDictationState("idle");
-    try {
-      await invoke("cmd_stop_dictation");
+      const result = await invoke<CommandResult>(
+        "cmd_launch_windows_voice_typing",
+      );
+      if (!result.success) {
+        set({
+          lastError: result.error ?? "Could not start Windows Voice typing",
+        });
+      }
     } catch (error) {
       set({
         lastError: error instanceof Error ? error.message : String(error),

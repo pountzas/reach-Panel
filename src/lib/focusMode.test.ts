@@ -222,111 +222,23 @@ describe("focusMode", () => {
     expect(focusModeToolbarClassName(true).split(/\s+/)).not.toContain("gap-1");
   });
 
-  it("keeps the mic FAB enabled while listening even without focus or canDictate", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "listening",
-        canDictate: false,
-        externalInputFocused: false,
-      }),
-    ).toBe(true);
+  it("enables the mic control when a text field is focused", () => {
+    expect(isMicFabEnabled({ externalInputFocused: true })).toBe(true);
   });
 
-  it("keeps the mic FAB enabled while processing", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "processing",
-        canDictate: false,
-        externalInputFocused: false,
-      }),
-    ).toBe(true);
+  it("disables the mic control when no text field is focused", () => {
+    expect(isMicFabEnabled({ externalInputFocused: false })).toBe(false);
   });
 
-  it("enables the mic FAB when idle with focus and canDictate", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "idle",
-        canDictate: true,
-        externalInputFocused: true,
-      }),
-    ).toBe(true);
+  it("micDictateAriaKey is Voice typing when a field is focused", () => {
+    expect(micDictateAriaKey({ externalInputFocused: true })).toBe(
+      "dictationStart",
+    );
   });
 
-  it("disables the mic FAB when idle without a focused text field", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "idle",
-        canDictate: true,
-        externalInputFocused: false,
-      }),
-    ).toBe(false);
-  });
-
-  it("disables the mic FAB when idle with focus but without canDictate", () => {
-    expect(
-      isMicFabEnabled({
-        dictationState: "idle",
-        canDictate: false,
-        externalInputFocused: true,
-      }),
-    ).toBe(false);
-  });
-
-  it("micDictateAriaKey is Stop while listening", () => {
-    expect(
-      micDictateAriaKey({
-        dictationState: "listening",
-        canDictate: false,
-        externalInputFocused: false,
-      }),
-    ).toBe("dictationStop");
-  });
-
-  it("micDictateAriaKey is Start when idle, focused, canDictate", () => {
-    expect(
-      micDictateAriaKey({
-        dictationState: "idle",
-        canDictate: true,
-        externalInputFocused: true,
-        online: true,
-        winrtSupported: true,
-      }),
-    ).toBe("dictationStart");
-  });
-
-  it("micDictateAriaKey is micModeSelectInput when idle without focus", () => {
-    expect(
-      micDictateAriaKey({
-        dictationState: "idle",
-        canDictate: true,
-        externalInputFocused: false,
-        online: true,
-        winrtSupported: true,
-      }),
-    ).toBe("micModeSelectInput");
-  });
-
-  it("micDictateAriaKey is unsupported when idle, focused, cannot dictate, winrt unsupported", () => {
-    expect(
-      micDictateAriaKey({
-        dictationState: "idle",
-        canDictate: false,
-        externalInputFocused: true,
-        online: true,
-        winrtSupported: false,
-      }),
-    ).toBe("dictationUnavailableUnsupported");
-  });
-
-  it("micDictateAriaKey is offline when idle, focused, cannot dictate, online false", () => {
-    expect(
-      micDictateAriaKey({
-        dictationState: "idle",
-        canDictate: false,
-        externalInputFocused: true,
-        online: false,
-        winrtSupported: true,
-      }),
-    ).toBe("dictationUnavailableOffline");
+  it("micDictateAriaKey asks to select a field when nothing is focused", () => {
+    expect(micDictateAriaKey({ externalInputFocused: false })).toBe(
+      "micModeSelectInput",
+    );
   });
 });

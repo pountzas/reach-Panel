@@ -413,13 +413,9 @@ export const de = {
 
   synthesizerVolume: "Lautstärke",
 
-  dictationStart: "Diktat starten",
-
-  dictationStop: "Diktat stoppen",
+  dictationStart: "Spracheingabe",
 
   micModeSelectInput: "Wählen Sie ein Textfeld zum Diktieren",
-
-  dictationListening: "Hört zu…",
 
   dictationErrorNoLanguage:
     "Spracherkennung für diese Eingabesprache ist nicht installiert. Fügen Sie das Sprachpaket unter Windows-Einstellungen → Zeit und Sprache → Sprache hinzu und versuchen Sie es erneut.",
@@ -433,26 +429,11 @@ export const de = {
   dictationErrorGroqApi:
     "Cloud-Diktat fehlgeschlagen. Prüfen Sie Internetverbindung und Groq-API-Schlüssel und versuchen Sie es erneut.",
 
-  dictationUnavailableUnsupported:
-    "Diktat nicht verfügbar — fügen Sie in den Einstellungen einen kostenlosen Groq-API-Schlüssel für diese Sprache hinzu",
-
-  dictationUnavailableOffline:
-    "Diktat nicht verfügbar — eine Internetverbindung ist erforderlich",
-
-  dictationGroqRemainingToday: "Verbleibende Groq-Anfragen heute",
-
   dictationOpenSpeechSettings: "Spracheinstellungen öffnen",
 
   dictationOpenSpeechLanguageSettings: "Sprachsprache installieren",
 
   dictationOpenAppSettings: "Einstellungen öffnen",
-
-  groqApiKeyLabel: "Groq-API-Schlüssel (Cloud-Diktat)",
-
-  groqApiKeyHint:
-    "Erforderlich für Sprachen, die Windows nicht unterstützt (z. B. Griechisch). Sie können auch die Umgebungsvariable GROQ_API_KEY setzen.",
-
-  groqApiKeyLink: "Kostenlosen Groq-API-Schlüssel holen",
 
   mute: "Stumm",
 

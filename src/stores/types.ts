@@ -48,16 +48,6 @@ export type LanguageListAuthoringHandlers = {
 
 export type TeachingLesson = "music" | "math" | "language";
 
-export type DictationState = "idle" | "listening" | "processing";
-
-export type SttCapability = {
-  engine: "winrt" | "groq" | null;
-  groqConfigured: boolean;
-  winrtSupported: boolean;
-  online: boolean;
-  canDictate: boolean;
-};
-
 export type ErrorsSlice = {
   lastError: string | null;
   setLastError: (error: string | null) => void;
@@ -71,13 +61,7 @@ export type SuggestionsSlice = {
 };
 
 export type DictationSlice = {
-  dictationState: DictationState;
-  sttCapability: SttCapability | null;
-  setDictationState: (state: DictationState) => void;
-  setSttCapability: (capability: SttCapability | null) => void;
-  refreshSttCapability: () => Promise<void>;
   toggleDictation: () => Promise<void>;
-  stopDictation: () => Promise<void>;
 };
 
 export type CompanionSlice = {

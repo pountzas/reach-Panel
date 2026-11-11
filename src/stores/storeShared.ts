@@ -23,7 +23,6 @@ import {
   resolveFocusModeEnabled,
 } from "../lib/focusMode";
 import { migrateLegacyFocusModeSettingsKeys } from "../lib/focusModeSettingsMigration";
-import { showDictationOverlay } from "../lib/dictationOverlayWindow";
 import {
   closeToolWindow,
   openToolWindow,
@@ -248,9 +247,6 @@ export async function syncFocusModeWindowLayout(
       }
       logLayoutIpc("cmd_apply_window_layout", args);
       await invoke("cmd_apply_window_layout", args);
-    }
-    if (get().dictationState !== "idle") {
-      void showDictationOverlay();
     }
   } finally {
     storeFlags.focusLayoutSyncInFlight = false;
