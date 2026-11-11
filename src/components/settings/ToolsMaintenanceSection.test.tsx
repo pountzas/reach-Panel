@@ -287,9 +287,10 @@ describe("ToolsMaintenanceSection diagnostics", () => {
       name: "autoSendLogsWeekly",
     });
     expect(toggle.getAttribute("aria-checked")).toBe("false");
-    expect(
-      screen.getAllByText("sendLogsDestination").length,
-    ).toBeGreaterThanOrEqual(1);
+    const weekly = toggle.closest("div.mb-4");
+    expect(weekly).toBeTruthy();
+    const notice = within(weekly!).getByText("sendLogsDestination");
+    expect(notice.closest("[hidden]")).toBeNull();
   });
 
   it("hides the weekly auto-send switch when upload is not configured", async () => {

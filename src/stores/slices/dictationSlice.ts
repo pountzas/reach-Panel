@@ -20,14 +20,14 @@ export const createDictationSlice: StateCreator<
         "cmd_launch_windows_voice_typing",
       );
       if (!result.success) {
-        set({
-          lastError: result.error ?? "Could not start Windows Voice typing",
-        });
+        get().setLastError(
+          result.error ?? "Could not start Windows Voice typing",
+        );
       }
     } catch (error) {
-      set({
-        lastError: error instanceof Error ? error.message : String(error),
-      });
+      get().setLastError(
+        error instanceof Error ? error.message : String(error),
+      );
     }
   },
 });

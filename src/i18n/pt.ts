@@ -408,6 +408,13 @@ export const pt = {
 
   fnKeyModeLatched: "Bloqueado (Fn permanece ativo até tocar novamente)",
 
+  groqApiKeyLabel: "Chave API Groq (ditado do companion)",
+
+  groqApiKeyHint:
+    "Usada no ditado do tablet companion. Também pode definir a variável de ambiente GROQ_API_KEY. A chave fica neste PC.",
+
+  groqApiKeyLink: "Obter chave API Groq gratuita",
+
   synthesizer: "Sintetizador",
 
   synthesizerVolume: "Volume",

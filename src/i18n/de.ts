@@ -409,6 +409,13 @@ export const de = {
 
   fnKeyModeLatched: "Verriegelt (Fn bleibt an, bis erneut getippt)",
 
+  groqApiKeyLabel: "Groq-API-Schlüssel (Companion-Diktat)",
+
+  groqApiKeyHint:
+    "Für die Diktierfunktion des Companion-Tablets. Sie können auch die Umgebungsvariable GROQ_API_KEY setzen. Der Schlüssel bleibt auf diesem PC.",
+
+  groqApiKeyLink: "Kostenlosen Groq-API-Schlüssel holen",
+
   synthesizer: "Synthesizer",
 
   synthesizerVolume: "Lautstärke",

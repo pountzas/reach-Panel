@@ -221,6 +221,7 @@ export function CollapsedFab({
             }}
             disabled={!micEnabled}
             aria-disabled={!micEnabled}
+            title={micEnabled ? undefined : micAriaLabel}
             onClick={() => void toggleDictation()}
             aria-label={micAriaLabel}>
             <span className="flex h-full w-full items-center justify-center transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-95">

@@ -412,6 +412,13 @@ export const el = {
 
   fnKeyModeLatched: "Κλειδωμένο (το Fn μένει ενεργό μέχρι να το πατήσετε ξανά)",
 
+  groqApiKeyLabel: "Κλειδί Groq API (υπαγόρευση companion)",
+
+  groqApiKeyHint:
+    "Για την υπαγόρευση του tablet companion. Μπορείτε επίσης να ορίσετε τη μεταβλητή περιβάλλοντος GROQ_API_KEY. Το κλειδί μένει σε αυτόν τον υπολογιστή.",
+
+  groqApiKeyLink: "Λήψη δωρεάν κλειδιού Groq API",
+
   synthesizer: "Συνθετητής",
 
   synthesizerVolume: "Ένταση",

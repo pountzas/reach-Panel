@@ -80,8 +80,17 @@ describe("toggleDictation launches Windows Voice typing", () => {
     });
     useAppStore.setState({ externalInputFocused: true });
     await useAppStore.getState().toggleDictation();
-    expect(useAppStore.getState().lastError).toBe(
+    expect(notifyError).toHaveBeenCalledWith(
       "Companion tablet is connected. Use the tablet mic for dictation.",
     );
+    expect(useAppStore.getState().lastError).toBeNull();
+  });
+
+  it("toasts when the launch command throws", async () => {
+    invokeMock.mockRejectedValue(new Error("voice typing unavailable"));
+    useAppStore.setState({ externalInputFocused: true });
+    await useAppStore.getState().toggleDictation();
+    expect(notifyError).toHaveBeenCalledWith("voice typing unavailable");
+    expect(useAppStore.getState().lastError).toBeNull();
   });
 });

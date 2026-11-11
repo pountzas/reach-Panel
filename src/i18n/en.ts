@@ -438,6 +438,13 @@ export const en = {
 
   fnKeyModeLatched: "Latched (Fn stays on until tapped again)",
 
+  groqApiKeyLabel: "Groq API key (companion dictation)",
+
+  groqApiKeyHint:
+    "Used for companion tablet dictation. You can also set the GROQ_API_KEY environment variable. The key stays on this PC.",
+
+  groqApiKeyLink: "Get a free Groq API key",
+
   synthesizer: "Synthesizer",
 
   synthesizerVolume: "Volume",

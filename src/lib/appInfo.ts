@@ -15,6 +15,8 @@ export const APP_INFO = {
   },
 } as const;
 
+export const GROQ_API_KEYS_URL = "https://console.groq.com/keys";
+
 export function openExternalLink(url: string): void {
   void openUrl(url).catch((error: unknown) => {
     logError("appInfo", `Failed to open external link (${url})`, { error });
