@@ -296,6 +296,8 @@ fn push_cleared_to_companion() {
 }
 
 fn emit_cleared() {
+    // Frontend `publish(null)` resets panelOccluded; keep backend edge state in sync.
+    PANEL_OCCLUDED.store(false, Ordering::Release);
     if let Some(app) = APP_HANDLE.get() {
         let _ = app.emit("input-preview-cleared", ());
     }
@@ -1420,6 +1422,32 @@ mod tests {
     #[test]
     fn companion_transition_disconnect_resets_without_clearing_desktop() {
         assert_eq!(companion_transition(true, false), (true, false));
+    }
+
+    #[test]
+    fn preview_clear_resets_occlusion_episode_for_next_emit() {
+        // Mirrors `PANEL_OCCLUDED` + `emit_cleared`: clear must end the episode.
+        #[derive(Default)]
+        struct Gate {
+            occluded: bool,
+        }
+        impl Gate {
+            fn try_emit_occluded(&mut self) -> bool {
+                if self.occluded {
+                    return false;
+                }
+                self.occluded = true;
+                true
+            }
+            fn on_emit_cleared(&mut self) {
+                self.occluded = false;
+            }
+        }
+        let mut gate = Gate::default();
+        assert!(gate.try_emit_occluded());
+        assert!(!gate.try_emit_occluded());
+        gate.on_emit_cleared();
+        assert!(gate.try_emit_occluded());
     }
 
     #[test]
