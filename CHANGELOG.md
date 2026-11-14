@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.19.1 (2026-11-14)
+
+## What's Changed
+* fix: recover main-window capture exclusion after 0x80070008 by @pountzas in https://github.com/pountzas/reach-Panel/pull/409
+* fix: keep the panel up when CreateDIBSection fails by @pountzas in https://github.com/pountzas/reach-Panel/pull/410
+* fix: retry WebView2 startup when the user-data folder is busy by @pountzas in https://github.com/pountzas/reach-Panel/pull/411
+* fix: address PR 412 release review findings by @pountzas in https://github.com/pountzas/reach-Panel/pull/413
+* Release: Windows stability fixes (dev → main) by @pountzas in https://github.com/pountzas/reach-Panel/pull/412
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.19.0...v0.19.1
+
 ## 0.19.0 (2026-11-11)
 
 ## What's Changed
