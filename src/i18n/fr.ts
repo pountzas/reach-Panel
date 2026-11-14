@@ -176,6 +176,8 @@ export const fr = {
   inputPreviewLabel: "Champ cible",
 
   inputPreviewWaiting: "Aperçu en attente…",
+
+  inputPreviewPanelOccluded: "Aperçu indisponible",
   inputPreviewNoInput: "Aucun champ de texte sélectionné",
 
   focusModeTransparentDescription:

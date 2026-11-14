@@ -208,6 +208,8 @@ export const en = {
 
   inputPreviewWaiting: "Waiting for preview…",
 
+  inputPreviewPanelOccluded: "Preview unavailable",
+
   inputPreviewNoInput: "No text field selected",
 
   focusModeTransparentDescription:

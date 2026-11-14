@@ -177,6 +177,8 @@ export const de = {
   inputPreviewLabel: "Zieleingabe",
 
   inputPreviewWaiting: "Vorschau wird geladen…",
+
+  inputPreviewPanelOccluded: "Vorschau nicht verfügbar",
   inputPreviewNoInput: "Kein Textfeld ausgewählt",
 
   focusModeTransparentDescription:

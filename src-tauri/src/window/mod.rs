@@ -808,10 +808,8 @@ pub fn configure_main_window<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>
     let _ = window.set_skip_taskbar(true);
     icon_sync::register_main_window_icon_sync(window.clone());
     if let Ok(hwnd) = window.hwnd() {
-        if let Err(e) =
-            crate::input::input_preview::exclude_window_from_capture(hwnd.0 as isize)
-        {
-            log::error!("Failed to exclude main window from capture: {e}");
+        if let Err(e) = capture_exclude::apply_main_window_exclusion(hwnd.0 as isize) {
+            log::debug!("main window capture exclusion gave up: {e}");
         }
     }
     stay_visible::install(window);
@@ -819,6 +817,7 @@ pub fn configure_main_window<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>
 
 pub(crate) mod icon_sync;
 pub(crate) mod events;
+pub(crate) mod capture_exclude;
 pub(crate) mod stay_visible;
 mod taskbar;
 pub(crate) mod taskbar_icon;

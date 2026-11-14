@@ -1,6 +1,7 @@
 import type { InputPreviewFrame } from "./inputPreviewChannel";
 
 let latest: InputPreviewFrame | null = null;
+let panelOccluded = false;
 const listeners = new Set<() => void>();
 
 function notify(): void {
@@ -20,8 +21,19 @@ export function subscribe(cb: () => void): () => void {
   };
 }
 
+export function getPanelOccluded(): boolean {
+  return panelOccluded;
+}
+
+export function setPanelOccluded(value: boolean): void {
+  if (panelOccluded === value) return;
+  panelOccluded = value;
+  notify();
+}
+
 export function publish(frame: InputPreviewFrame | null): void {
   latest = frame;
+  panelOccluded = false;
   notify();
 }
 

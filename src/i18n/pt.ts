@@ -175,6 +175,8 @@ export const pt = {
   inputPreviewLabel: "Campo de destino",
 
   inputPreviewWaiting: "A aguardar pré-visualização…",
+
+  inputPreviewPanelOccluded: "Pré-visualização indisponível",
   inputPreviewNoInput: "Nenhum campo de texto selecionado",
 
   focusModeTransparentDescription:

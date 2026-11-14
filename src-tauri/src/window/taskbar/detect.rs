@@ -222,6 +222,7 @@ fn remember_placement(hwnd: isize, layout: WindowLayout) {
 }
 
 fn apply_bounds(hwnd: isize, layout: WindowLayout) -> Result<(), String> {
+    super::super::windows::layout_fits_gdi(&layout)?;
     unsafe {
         SetWindowPos(
             HWND(hwnd as *mut core::ffi::c_void),

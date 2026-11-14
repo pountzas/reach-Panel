@@ -18,8 +18,9 @@ use windows::Win32::Graphics::Gdi::{
 };
 use windows::Win32::Storage::Xps::{PrintWindow, PRINT_WINDOW_FLAGS};
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetSystemMetrics, GetWindowRect, SetWindowDisplayAffinity, SM_CXVIRTUALSCREEN,
-    SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, WDA_EXCLUDEFROMCAPTURE,
+    GetSystemMetrics, GetWindowRect, IsIconic, IsWindowVisible, SetWindowDisplayAffinity,
+    SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN,
+    WDA_EXCLUDEFROMCAPTURE,
 };
 
 use super::focus_target::{
@@ -295,6 +296,8 @@ fn push_cleared_to_companion() {
 }
 
 fn emit_cleared() {
+    // Frontend `publish(null)` resets panelOccluded; keep backend edge state in sync.
+    PANEL_OCCLUDED.store(false, Ordering::Release);
     if let Some(app) = APP_HANDLE.get() {
         let _ = app.emit("input-preview-cleared", ());
     }
@@ -361,11 +364,11 @@ fn capture_gdi_bgra(
     root: CaptureRoot,
     rect: &CaptureRect,
     wgc_reason: &str,
-) -> Result<Vec<u8>, String> {
+) -> Result<(Vec<u8>, bool), String> {
     match capture_window_region_bgra(root.hwnd, rect) {
         Ok(pixels) => {
             log_capture_path("printwindow", Some(root));
-            Ok(pixels)
+            Ok((pixels, false))
         }
         Err(pw_err) => {
             log::warn!(
@@ -373,8 +376,59 @@ fn capture_gdi_bgra(
             );
             let pixels = capture_screen_bgra(rect.left, rect.top, rect.width, rect.height)?;
             log_capture_path("bitblt", Some(root));
-            Ok(pixels)
+            Ok((pixels, true))
         }
+    }
+}
+
+fn main_panel_rect() -> Option<crate::window::capture_exclude::PxRect> {
+    let app = APP_HANDLE.get()?;
+    let window = app.get_webview_window("main")?;
+    let hwnd = window.hwnd().ok()?;
+    let handle = HWND(hwnd.0);
+    unsafe {
+        if !IsWindowVisible(handle).as_bool() || IsIconic(handle).as_bool() {
+            return None;
+        }
+    }
+    let mut rect = RECT::default();
+    unsafe {
+        GetWindowRect(handle, &mut rect).ok()?;
+    }
+    Some(crate::window::capture_exclude::PxRect {
+        left: rect.left,
+        top: rect.top,
+        width: rect.right.saturating_sub(rect.left),
+        height: rect.bottom.saturating_sub(rect.top),
+    })
+}
+
+static PANEL_OCCLUDED: AtomicBool = AtomicBool::new(false);
+
+fn report_panel_occluded() {
+    if PANEL_OCCLUDED
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_err()
+    {
+        return;
+    }
+    log::warn!(
+        "live preview dropped a desktop BitBlt frame that overlaps the panel because capture exclusion is not active"
+    );
+    if let Some(app) = APP_HANDLE.get() {
+        let _ = app.emit("input-preview-panel-occluded", ());
+    }
+}
+
+fn report_panel_unoccluded() {
+    if PANEL_OCCLUDED
+        .compare_exchange(true, false, Ordering::AcqRel, Ordering::Acquire)
+        .is_err()
+    {
+        return;
+    }
+    if let Some(app) = APP_HANDLE.get() {
+        let _ = app.emit("input-preview-panel-unoccluded", ());
     }
 }
 
@@ -396,6 +450,7 @@ fn capture_and_maybe_encode(
         .map(|hwnd| hwnd.0 as isize)
         .unwrap_or(0);
 
+    let mut desktop_bitblt = false;
     let bgra = match get_effective_capture_root() {
         Some(root) => match wgc_capture::try_capture_strip(root.hwnd, &rect) {
             Ok(StripCapture::Ready(pixels)) => {
@@ -405,17 +460,46 @@ fn capture_and_maybe_encode(
             Ok(StripCapture::NotReady) => match not_ready_action(frame_on_screen) {
                 NotReadyAction::KeepLastFrame => return Ok(CaptureOutcome::Skipped),
                 NotReadyAction::FallBackToGdi => {
-                    capture_gdi_bgra(root, &rect, "first frame not ready")?
+                    let (pixels, bitblt) = capture_gdi_bgra(root, &rect, "first frame not ready")?;
+                    desktop_bitblt = bitblt;
+                    pixels
                 }
             },
-            Err(wgc_err) => capture_gdi_bgra(root, &rect, &wgc_err)?,
+            Err(wgc_err) => {
+                let (pixels, bitblt) = capture_gdi_bgra(root, &rect, &wgc_err)?;
+                desktop_bitblt = bitblt;
+                pixels
+            }
         },
         None => {
             let pixels = capture_screen_bgra(rect.left, rect.top, src_w, src_h)?;
             log_capture_path("bitblt", None);
+            desktop_bitblt = true;
             pixels
         }
     };
+
+    if desktop_bitblt {
+        if let Some(panel) = main_panel_rect() {
+            let strip = crate::window::capture_exclude::PxRect {
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+            };
+            if crate::window::capture_exclude::bitblt_panel_occlusion(
+                crate::window::capture_exclude::exclusion_active(),
+                true,
+                strip,
+                panel,
+            ) == crate::window::capture_exclude::BitbltOcclusion::DropFrame
+            {
+                report_panel_occluded();
+                return Ok(CaptureOutcome::Skipped);
+            }
+        }
+    }
+    report_panel_unoccluded();
 
     let key = frame_skip_key(
         target_hwnd,
@@ -1338,6 +1422,32 @@ mod tests {
     #[test]
     fn companion_transition_disconnect_resets_without_clearing_desktop() {
         assert_eq!(companion_transition(true, false), (true, false));
+    }
+
+    #[test]
+    fn preview_clear_resets_occlusion_episode_for_next_emit() {
+        // Mirrors `PANEL_OCCLUDED` + `emit_cleared`: clear must end the episode.
+        #[derive(Default)]
+        struct Gate {
+            occluded: bool,
+        }
+        impl Gate {
+            fn try_emit_occluded(&mut self) -> bool {
+                if self.occluded {
+                    return false;
+                }
+                self.occluded = true;
+                true
+            }
+            fn on_emit_cleared(&mut self) {
+                self.occluded = false;
+            }
+        }
+        let mut gate = Gate::default();
+        assert!(gate.try_emit_occluded());
+        assert!(!gate.try_emit_occluded());
+        gate.on_emit_cleared();
+        assert!(gate.try_emit_occluded());
     }
 
     #[test]

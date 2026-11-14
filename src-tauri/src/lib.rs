@@ -1,5 +1,5 @@
-mod companion;
 mod commands;
+mod companion;
 mod db;
 mod diagnostics;
 mod input;
@@ -9,6 +9,7 @@ mod music;
 mod prediction;
 mod profiles;
 mod services;
+mod startup;
 mod stt;
 mod teaching_pdf;
 mod teaching_pdf_appearances;
@@ -19,7 +20,6 @@ mod window;
 compile_error!("ReachPanel is Windows-only. macOS is not supported.");
 
 use db::Database;
-use input::focus_target;
 use prediction::ensure_english_pack;
 use profiles::ProfileStore;
 use tauri::Manager;
@@ -33,6 +33,9 @@ pub(crate) struct AppState {
 pub fn run() {
     crate::diagnostics::install_panic_hook();
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            startup::on_second_instance(app);
+        }))
         .on_page_load(|webview, payload| {
             window::icon_sync::on_app_page_load(&webview, &payload);
             if let Some(window) = webview.app_handle().get_webview_window(webview.label()) {
@@ -86,13 +89,7 @@ pub fn run() {
 
             stt::init(&app_data_dir, app.handle().clone());
 
-            if let Some(window) = app.get_webview_window("main") {
-                window::configure_main_window(&window);
-                window::events::register_main_window_event_logs(window.clone());
-                focus_target::init(app.handle().clone());
-                input::input_preview::init(app.handle().clone());
-                crate::diagnostics::register_process_failed(&window);
-            }
+            startup::open_main_window(app.handle());
             crate::logging::log_session_start(app);
             if let Ok(log_dir) = app.path().app_log_dir() {
                 crate::diagnostics::breadcrumbs::start(log_dir);
@@ -197,4 +194,34 @@ pub fn run() {
             }
             crate::diagnostics::on_run_event(app, &event);
         });
+}
+
+#[cfg(test)]
+mod vendored_deps {
+    use std::fs;
+    use std::path::PathBuf;
+
+    fn package_block<'a>(lock: &'a str, name: &str) -> Option<&'a str> {
+        let needle = format!("[[package]]\nname = \"{name}\"");
+        let start = lock.find(&needle)?;
+        let rest = &lock[start..];
+        let end = rest[1..]
+            .find("\n\n[[package]]")
+            .map(|i| i + 1)
+            .unwrap_or(rest.len());
+        Some(&rest[..end])
+    }
+
+    #[test]
+    fn cargo_lock_keeps_vendored_softbuffer_and_tauri_runtime_wry() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.lock");
+        let lock = fs::read_to_string(path).expect("Cargo.lock");
+        for pkg in ["softbuffer", "tauri-runtime-wry"] {
+            let block = package_block(&lock, pkg).unwrap_or_else(|| panic!("missing {pkg}"));
+            assert!(
+                !block.contains("source ="),
+                "{pkg} must resolve from vendor/ (no crates.io source line)"
+            );
+        }
+    }
 }

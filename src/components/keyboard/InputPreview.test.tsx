@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from "../../lib/types";
 import {
   clear as clearInputPreviewFrames,
   publish as publishInputPreviewFrame,
+  setPanelOccluded,
 } from "../../lib/inputPreviewFrames";
 
 const sampleFrame = {
@@ -42,6 +43,7 @@ describe("InputPreview blank placeholder", () => {
 
   afterEach(() => {
     clearInputPreviewFrames();
+    setPanelOccluded(false);
   });
 
   it("renders an empty frame when no text field is focused, even if a stale frame exists", () => {
@@ -77,6 +79,15 @@ describe("InputPreview blank placeholder", () => {
 
     expect(screen.queryByRole("img")).toBeNull();
     expect(screen.getByText("Waiting for preview…")).toBeTruthy();
+  });
+
+  it("shows a notice instead of a frozen frame when the panel occludes capture", () => {
+    storeState.externalInputFocused = true;
+    setPanelOccluded(true);
+    render(<InputPreview />);
+
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByText("Preview unavailable")).toBeTruthy();
   });
 });
 
