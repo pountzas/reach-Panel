@@ -18,8 +18,9 @@ use windows::Win32::Graphics::Gdi::{
 };
 use windows::Win32::Storage::Xps::{PrintWindow, PRINT_WINDOW_FLAGS};
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetSystemMetrics, GetWindowRect, SetWindowDisplayAffinity, SM_CXVIRTUALSCREEN,
-    SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, WDA_EXCLUDEFROMCAPTURE,
+    GetSystemMetrics, GetWindowRect, IsIconic, IsWindowVisible, SetWindowDisplayAffinity,
+    SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN,
+    WDA_EXCLUDEFROMCAPTURE,
 };
 
 use super::focus_target::{
@@ -382,13 +383,15 @@ fn main_panel_rect() -> Option<crate::window::capture_exclude::PxRect> {
     let app = APP_HANDLE.get()?;
     let window = app.get_webview_window("main")?;
     let hwnd = window.hwnd().ok()?;
+    let handle = HWND(hwnd.0);
+    unsafe {
+        if !IsWindowVisible(handle).as_bool() || IsIconic(handle).as_bool() {
+            return None;
+        }
+    }
     let mut rect = RECT::default();
     unsafe {
-        windows::Win32::UI::WindowsAndMessaging::GetWindowRect(
-            HWND(hwnd.0),
-            &mut rect,
-        )
-        .ok()?;
+        GetWindowRect(handle, &mut rect).ok()?;
     }
     Some(crate::window::capture_exclude::PxRect {
         left: rect.left,
@@ -398,9 +401,13 @@ fn main_panel_rect() -> Option<crate::window::capture_exclude::PxRect> {
     })
 }
 
-fn log_panel_occlusion_once() {
-    static LOGGED: AtomicBool = AtomicBool::new(false);
-    if LOGGED.swap(true, Ordering::AcqRel) {
+static PANEL_OCCLUDED: AtomicBool = AtomicBool::new(false);
+
+fn report_panel_occluded() {
+    if PANEL_OCCLUDED
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_err()
+    {
         return;
     }
     log::warn!(
@@ -408,6 +415,18 @@ fn log_panel_occlusion_once() {
     );
     if let Some(app) = APP_HANDLE.get() {
         let _ = app.emit("input-preview-panel-occluded", ());
+    }
+}
+
+fn report_panel_unoccluded() {
+    if PANEL_OCCLUDED
+        .compare_exchange(true, false, Ordering::AcqRel, Ordering::Acquire)
+        .is_err()
+    {
+        return;
+    }
+    if let Some(app) = APP_HANDLE.get() {
+        let _ = app.emit("input-preview-panel-unoccluded", ());
     }
 }
 
@@ -473,11 +492,12 @@ fn capture_and_maybe_encode(
                 panel,
             ) == crate::window::capture_exclude::BitbltOcclusion::DropFrame
             {
-                log_panel_occlusion_once();
+                report_panel_occluded();
                 return Ok(CaptureOutcome::Skipped);
             }
         }
     }
+    report_panel_unoccluded();
 
     let key = frame_skip_key(
         target_hwnd,
