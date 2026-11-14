@@ -247,6 +247,12 @@ describe("input preview clear paths", () => {
     expect(getPanelOccluded()).toBe(true);
   });
 
+  it("input-preview-panel-unoccluded clears the preview unavailable flag", () => {
+    setPanelOccluded(true);
+    listenHandler("input-preview-panel-unoccluded")({ payload: undefined });
+    expect(getPanelOccluded()).toBe(false);
+  });
+
   it("input-preview-cleared clears the module frame store", () => {
     listenHandler("input-preview-cleared")({ payload: undefined });
     expect(getLatestInputPreviewFrame()).toBeNull();

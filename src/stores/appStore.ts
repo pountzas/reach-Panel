@@ -85,6 +85,10 @@ void listen("input-preview-panel-occluded", () => {
   setPanelOccluded(true);
 });
 
+void listen("input-preview-panel-unoccluded", () => {
+  setPanelOccluded(false);
+});
+
 /**
  * Focus mode: show keyboard on external editable focus; hide when focus is lost.
  * Manual Expand keeps the keyboard until focus is lost (does not exit Focus mode).

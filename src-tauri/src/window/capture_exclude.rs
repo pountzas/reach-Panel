@@ -45,23 +45,40 @@ pub enum CaptureExclusionAction {
 
 /// `attempt` is how many exclude calls have already failed.
 /// `last_error` is the HRESULT from the latest failure (`None` before the first call).
+/// `current` is `None` when affinity readback failed (non-layered windows).
 pub fn capture_exclusion_plan(
-    current: CaptureAffinity,
+    current: Option<CaptureAffinity>,
     attempt: u32,
     last_error: Option<u32>,
 ) -> CaptureExclusionAction {
-    if current == CaptureAffinity::ExcludeFromCapture {
+    if current == Some(CaptureAffinity::ExcludeFromCapture) {
         return CaptureExclusionAction::Skip;
     }
+    let on_monitor = current == Some(CaptureAffinity::Monitor);
     match last_error {
         None => CaptureExclusionAction::ApplyExclude,
         Some(HRESULT_NOT_ENOUGH_MEMORY) if attempt < EXCLUDE_RETRY_LIMIT => {
             CaptureExclusionAction::RetryExclude
         }
-        Some(_) if current != CaptureAffinity::Monitor && attempt <= EXCLUDE_RETRY_LIMIT => {
+        Some(_) if !on_monitor && attempt <= EXCLUDE_RETRY_LIMIT => {
             CaptureExclusionAction::ApplyMonitorFallback
         }
         _ => CaptureExclusionAction::Stop,
+    }
+}
+
+/// After `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` returns `Ok`, decide
+/// whether to trust the setter, or retry because readback proved a mismatch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExcludeSetReadbackAction {
+    TrustSetter,
+    RetryMismatch,
+}
+
+pub fn exclude_set_readback_action(readback: Option<CaptureAffinity>) -> ExcludeSetReadbackAction {
+    match readback {
+        None | Some(CaptureAffinity::ExcludeFromCapture) => ExcludeSetReadbackAction::TrustSetter,
+        Some(_) => ExcludeSetReadbackAction::RetryMismatch,
     }
 }
 
@@ -130,9 +147,18 @@ pub fn apply_main_window_exclusion(hwnd: isize) -> Result<(), String> {
                     restore_exstyle(handle, previous);
                 }
                 match result {
-                    Ok(()) => {
-                        let after = read_affinity(handle);
-                        if after != CaptureAffinity::ExcludeFromCapture {
+                    Ok(()) => match exclude_set_readback_action(read_affinity(handle)) {
+                        ExcludeSetReadbackAction::TrustSetter => {
+                            EXCLUSION_ACTIVE.store(true, Ordering::Release);
+                            if layered_retry {
+                                log::info!(
+                                    "main window capture exclusion applied after clearing WS_EX_LAYERED"
+                                );
+                            }
+                            return Ok(());
+                        }
+                        ExcludeSetReadbackAction::RetryMismatch => {
+                            let after = read_affinity(handle);
                             log::warn!(
                                 "SetWindowDisplayAffinity succeeded but affinity reads {after:?} (layered_retry={layered_retry})"
                             );
@@ -140,14 +166,7 @@ pub fn apply_main_window_exclusion(hwnd: isize) -> Result<(), String> {
                             attempt = attempt.saturating_add(1);
                             continue;
                         }
-                        EXCLUSION_ACTIVE.store(true, Ordering::Release);
-                        if layered_retry {
-                            log::info!(
-                                "main window capture exclusion applied after clearing WS_EX_LAYERED"
-                            );
-                        }
-                        return Ok(());
-                    }
+                    },
                     Err(err) => {
                         let code = err.code().0 as u32;
                         if attempt == 0 {
@@ -185,7 +204,7 @@ pub fn apply_main_window_exclusion(hwnd: isize) -> Result<(), String> {
     }
 }
 
-fn warn_once(hwnd: HWND, current: CaptureAffinity, hresult: u32) {
+fn warn_once(hwnd: HWND, current: Option<CaptureAffinity>, hresult: u32) {
     let mut gate = LOG_GATE.lock().unwrap_or_else(|e| e.into_inner());
     if !gate.should_warn() {
         return;
@@ -207,19 +226,19 @@ fn warn_once(hwnd: HWND, current: CaptureAffinity, hresult: u32) {
     );
 }
 
-fn read_affinity(hwnd: HWND) -> CaptureAffinity {
+fn read_affinity(hwnd: HWND) -> Option<CaptureAffinity> {
     let mut value = 0u32;
     if unsafe { GetWindowDisplayAffinity(hwnd, &mut value) }.is_err() {
-        return CaptureAffinity::None;
+        return None;
     }
     if value == WDA_EXCLUDEFROMCAPTURE.0 {
-        CaptureAffinity::ExcludeFromCapture
+        Some(CaptureAffinity::ExcludeFromCapture)
     } else if value == WDA_MONITOR.0 {
-        CaptureAffinity::Monitor
+        Some(CaptureAffinity::Monitor)
     } else if value == 0 {
-        CaptureAffinity::None
+        Some(CaptureAffinity::None)
     } else {
-        CaptureAffinity::Other(value)
+        Some(CaptureAffinity::Other(value))
     }
 }
 
@@ -307,12 +326,16 @@ mod tests {
     #[test]
     fn skips_when_already_excluded() {
         assert_eq!(
-            capture_exclusion_plan(CaptureAffinity::ExcludeFromCapture, 0, None),
+            capture_exclusion_plan(
+                Some(CaptureAffinity::ExcludeFromCapture),
+                0,
+                None,
+            ),
             CaptureExclusionAction::Skip
         );
         assert_eq!(
             capture_exclusion_plan(
-                CaptureAffinity::ExcludeFromCapture,
+                Some(CaptureAffinity::ExcludeFromCapture),
                 5,
                 Some(HRESULT_NOT_ENOUGH_MEMORY)
             ),
@@ -323,7 +346,11 @@ mod tests {
     #[test]
     fn first_attempt_applies_exclude() {
         assert_eq!(
-            capture_exclusion_plan(CaptureAffinity::None, 0, None),
+            capture_exclusion_plan(Some(CaptureAffinity::None), 0, None),
+            CaptureExclusionAction::ApplyExclude
+        );
+        assert_eq!(
+            capture_exclusion_plan(None, 0, None),
             CaptureExclusionAction::ApplyExclude
         );
     }
@@ -333,7 +360,7 @@ mod tests {
         for attempt in 1..EXCLUDE_RETRY_LIMIT {
             assert_eq!(
                 capture_exclusion_plan(
-                    CaptureAffinity::None,
+                    Some(CaptureAffinity::None),
                     attempt,
                     Some(HRESULT_NOT_ENOUGH_MEMORY)
                 ),
@@ -343,7 +370,7 @@ mod tests {
         }
         assert_eq!(
             capture_exclusion_plan(
-                CaptureAffinity::None,
+                Some(CaptureAffinity::None),
                 EXCLUDE_RETRY_LIMIT,
                 Some(HRESULT_NOT_ENOUGH_MEMORY)
             ),
@@ -355,7 +382,7 @@ mod tests {
     fn stops_after_fallback_so_it_cannot_loop() {
         assert_eq!(
             capture_exclusion_plan(
-                CaptureAffinity::Monitor,
+                Some(CaptureAffinity::Monitor),
                 EXCLUDE_RETRY_LIMIT,
                 Some(HRESULT_NOT_ENOUGH_MEMORY)
             ),
@@ -363,7 +390,7 @@ mod tests {
         );
         assert_eq!(
             capture_exclusion_plan(
-                CaptureAffinity::None,
+                Some(CaptureAffinity::None),
                 EXCLUDE_RETRY_LIMIT + 1,
                 Some(HRESULT_NOT_ENOUGH_MEMORY)
             ),
@@ -374,12 +401,40 @@ mod tests {
     #[test]
     fn non_retryable_error_falls_back_once_then_stops() {
         assert_eq!(
-            capture_exclusion_plan(CaptureAffinity::None, 1, Some(0x8007_0057)),
+            capture_exclusion_plan(Some(CaptureAffinity::None), 1, Some(0x8007_0057)),
             CaptureExclusionAction::ApplyMonitorFallback
         );
         assert_eq!(
-            capture_exclusion_plan(CaptureAffinity::Monitor, 2, Some(0x8007_0057)),
+            capture_exclusion_plan(Some(CaptureAffinity::Monitor), 2, Some(0x8007_0057)),
             CaptureExclusionAction::Stop
+        );
+    }
+
+    #[test]
+    fn trusts_setter_when_readback_fails() {
+        assert_eq!(
+            exclude_set_readback_action(None),
+            ExcludeSetReadbackAction::TrustSetter
+        );
+    }
+
+    #[test]
+    fn trusts_setter_when_readback_confirms_exclude() {
+        assert_eq!(
+            exclude_set_readback_action(Some(CaptureAffinity::ExcludeFromCapture)),
+            ExcludeSetReadbackAction::TrustSetter
+        );
+    }
+
+    #[test]
+    fn retries_when_readback_succeeds_but_is_not_exclude() {
+        assert_eq!(
+            exclude_set_readback_action(Some(CaptureAffinity::None)),
+            ExcludeSetReadbackAction::RetryMismatch
+        );
+        assert_eq!(
+            exclude_set_readback_action(Some(CaptureAffinity::Monitor)),
+            ExcludeSetReadbackAction::RetryMismatch
         );
     }
 

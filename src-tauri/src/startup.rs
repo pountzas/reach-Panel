@@ -153,8 +153,8 @@ pub fn open_main_window(app: &tauri::AppHandle) {
     let profile = std::env::var("USERPROFILE").unwrap_or_default();
     let user_data = app
         .path()
-        .app_data_dir()
-        .map(|dir| dir.display().to_string())
+        .app_local_data_dir()
+        .map(|dir| dir.join("EBWebView").display().to_string())
         .unwrap_or_else(|_| "unknown".to_string());
     let redacted_dir = redact_user_data_dir(&user_data, &username, &profile);
 

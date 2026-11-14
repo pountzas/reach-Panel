@@ -195,3 +195,33 @@ pub fn run() {
             crate::diagnostics::on_run_event(app, &event);
         });
 }
+
+#[cfg(test)]
+mod vendored_deps {
+    use std::fs;
+    use std::path::PathBuf;
+
+    fn package_block<'a>(lock: &'a str, name: &str) -> Option<&'a str> {
+        let needle = format!("[[package]]\nname = \"{name}\"");
+        let start = lock.find(&needle)?;
+        let rest = &lock[start..];
+        let end = rest[1..]
+            .find("\n\n[[package]]")
+            .map(|i| i + 1)
+            .unwrap_or(rest.len());
+        Some(&rest[..end])
+    }
+
+    #[test]
+    fn cargo_lock_keeps_vendored_softbuffer_and_tauri_runtime_wry() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.lock");
+        let lock = fs::read_to_string(path).expect("Cargo.lock");
+        for pkg in ["softbuffer", "tauri-runtime-wry"] {
+            let block = package_block(&lock, pkg).unwrap_or_else(|| panic!("missing {pkg}"));
+            assert!(
+                !block.contains("source ="),
+                "{pkg} must resolve from vendor/ (no crates.io source line)"
+            );
+        }
+    }
+}
