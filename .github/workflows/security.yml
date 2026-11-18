@@ -46,6 +46,7 @@ jobs:
               - src-tauri/Cargo.toml
               - src-tauri/Cargo.lock
               - .github/workflows/security.yml
+              - osv-scanner.toml
 
   osv-scanner:
     name: osv-scanner
@@ -60,6 +61,7 @@ jobs:
         uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
         with:
           scan-args: |-
+            --config=osv-scanner.toml
             --lockfile=package-lock.json
             --lockfile=companion/package-lock.json
             --lockfile=src-tauri/Cargo.lock

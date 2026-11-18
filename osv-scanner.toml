@@ -1,0 +1,31 @@
+# OSV-Scanner config for repo-root lockfile scans (see .github/workflows/security.yml).
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0543"
+effectiveUntil = 2027-02-17
+reason = "unmaintained, no fixed version; transitive"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0370"
+effectiveUntil = 2027-02-17
+reason = "unmaintained, no fixed version; transitive"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0371"
+effectiveUntil = 2027-02-17
+reason = "unmaintained, no fixed version; transitive"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0370"
+effectiveUntil = 2027-02-17
+reason = "unmaintained, no fixed version; transitive"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0372"
+effectiveUntil = 2027-02-17
+reason = "unmaintained, no fixed version; transitive"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0429"
+effectiveUntil = 2027-02-17
+reason = "glib 0.20 requires gtk-rs 0.20; Tauri 2.12.5 tray-icon still pulls gtk 0.18 / glib 0.18 (Linux-only transitive; Windows shipping path)"
