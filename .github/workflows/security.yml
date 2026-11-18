@@ -45,6 +45,7 @@ jobs:
               - companion/package-lock.json
               - src-tauri/Cargo.toml
               - src-tauri/Cargo.lock
+              - .github/workflows/security.yml
 
   osv-scanner:
     name: osv-scanner
