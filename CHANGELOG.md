@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.19.2 (2026-11-18)
+
+## What's Changed
+* chore(deps): bump the npm-minor-and-patch group with 7 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/415
+* chore(deps): bump the cargo-minor-and-patch group in /src-tauri with 4 updates by @dependabot[bot] in https://github.com/pountzas/reach-Panel/pull/417
+* Release: dependency bumps #415 and #417 (dev → main) by @pountzas in https://github.com/pountzas/reach-Panel/pull/418
+
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.19.1...v0.19.2
+
 ## 0.19.1 (2026-11-14)
 
 ## What's Changed
