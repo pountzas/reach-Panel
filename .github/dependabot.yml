@@ -7,7 +7,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       npm-minor-and-patch:
         patterns: ["*"]
@@ -21,7 +21,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       cargo-minor-and-patch:
         patterns: ["*"]
@@ -48,7 +48,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       actions-minor-and-patch:
         patterns: ["*"]
