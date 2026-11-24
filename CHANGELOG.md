@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.19.3 (2026-11-19)
+
+**Full Changelog**: https://github.com/pountzas/reach-Panel/compare/v0.19.2...v0.19.3
+
 ## 0.19.2 (2026-11-18)
 
 ## What's Changed
