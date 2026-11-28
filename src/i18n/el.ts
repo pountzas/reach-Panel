@@ -414,15 +414,15 @@ export const el = {
 
   fnKeyModeLatched: "Κλειδωμένο (το Fn μένει ενεργό μέχρι να το πατήσετε ξανά)",
 
-  pcMicSendMode: "Mic button sends",
-  pcMicSendWinH: "Win+H (Windows Voice typing)",
-  pcMicSendRightAltHold: "Right Alt, hold to talk (FU Flow)",
-  pcMicSendCustom: "Custom key…",
+  pcMicSendMode: "Το κουμπί μικροφώνου στέλνει",
+  pcMicSendWinH: "Win+H (φωνητική πληκτρολόγηση Windows)",
+  pcMicSendRightAltHold: "Δεξί Alt, κράτημα για ομιλία (FU Flow)",
+  pcMicSendCustom: "Προσαρμοσμένο πλήκτρο…",
   pcMicSendHint:
-    "The keyboard Mic key and collapsed mic button send this shortcut to the focused field. Hold presets release when you let go, cancel, or lose focus.",
-  pcMicCustomShortcut: "Custom shortcut",
-  pcMicCustomRecord: "Record shortcut…",
-  pcMicCustomRecording: "Press keys… (click to cancel)",
+    "Το πλήκτρο Mic του πληκτρολογίου και το συμπτυγμένο κουμπί μικροφώνου στέλνουν αυτή τη συντόμευση στο πεδίο με εστίαση. Οι προεπιλογές κράτησης απελευθερώνονται όταν αφήσετε, ακυρώσετε ή χάσετε την εστίαση. Η προεπιλογή Δεξί Alt μπορεί να ζητήσει επιβεβαίωση κωδικού από τα Windows (FU Flow).",
+  pcMicCustomShortcut: "Προσαρμοσμένη συντόμευση",
+  pcMicCustomRecord: "Καταγραφή συντόμευσης…",
+  pcMicCustomRecording: "Πατήστε πλήκτρα… (κλικ για ακύρωση)",
 
   groqApiKeyLabel: "Κλειδί Groq API (υπαγόρευση companion)",
 

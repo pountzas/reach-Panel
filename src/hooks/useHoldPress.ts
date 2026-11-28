@@ -43,6 +43,8 @@ export const useHoldPress = ({
     }
   }, [enabled, stop]);
 
+  useEffect(() => () => stop(), [stop]);
+
   const start = useCallback(() => {
     if (!enabledRef.current || holdingRef.current) return;
     holdingRef.current = true;

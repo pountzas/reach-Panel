@@ -407,15 +407,15 @@ export const it = {
 
   fnKeyModeLatched: "Bloccato (Fn resta attivo finché non lo tocchi di nuovo)",
 
-  pcMicSendMode: "Mic button sends",
-  pcMicSendWinH: "Win+H (Windows Voice typing)",
-  pcMicSendRightAltHold: "Right Alt, hold to talk (FU Flow)",
-  pcMicSendCustom: "Custom key…",
+  pcMicSendMode: "Il pulsante micro invia",
+  pcMicSendWinH: "Win+H (digitazione vocale Windows)",
+  pcMicSendRightAltHold: "Alt destro, tieni premuto per parlare (FU Flow)",
+  pcMicSendCustom: "Tasto personalizzato…",
   pcMicSendHint:
-    "The keyboard Mic key and collapsed mic button send this shortcut to the focused field. Hold presets release when you let go, cancel, or lose focus.",
-  pcMicCustomShortcut: "Custom shortcut",
-  pcMicCustomRecord: "Record shortcut…",
-  pcMicCustomRecording: "Press keys… (click to cancel)",
+    "Il tasto Mic della tastiera e il pulsante micro compresso inviano questa scorciatoia al campo con focus. Le preimpostazioni « tieni premuto » si rilasciano quando lasci, annulli o perdi il focus. L’impostazione Alt destro può richiedere la conferma password di Windows (FU Flow).",
+  pcMicCustomShortcut: "Scorciatoia personalizzata",
+  pcMicCustomRecord: "Registra scorciatoia…",
+  pcMicCustomRecording: "Premi i tasti… (clic per annullare)",
 
   groqApiKeyLabel: "Chiave API Groq (dettatura companion)",
 

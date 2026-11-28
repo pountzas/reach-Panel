@@ -332,9 +332,7 @@ export function Keyboard() {
     (keyId: string) => {
       const keyDef = keyDefsByIdRef.current.get(keyId);
       if (keyDef?.key === "dictate") {
-        if (pcMicHoldEnabled(useAppStore.getState().settings)) {
-          void stopPcMicHold();
-        }
+        void stopPcMicHold();
         return;
       }
       if (keyDef?.key !== "backspace") return;

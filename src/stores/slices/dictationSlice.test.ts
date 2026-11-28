@@ -127,4 +127,29 @@ describe("PC Mic hold-to-talk", () => {
     await useAppStore.getState().toggleDictation();
     expect(invokeMock).not.toHaveBeenCalled();
   });
+
+  it("stop before hold down completes still releases and clears holding", async () => {
+    let resolveHoldDown: (value: { success: boolean }) => void = () => {};
+    invokeMock.mockImplementation((cmd: string) => {
+      if (cmd === "cmd_pc_mic_hold_down") {
+        return new Promise<{ success: boolean }>((resolve) => {
+          resolveHoldDown = resolve;
+        });
+      }
+      return Promise.resolve({ success: true });
+    });
+    const holdDownPromise = useAppStore.getState().startPcMicHold();
+    await useAppStore.getState().stopPcMicHold();
+    expect(useAppStore.getState().pcMicHolding).toBe(false);
+    resolveHoldDown({ success: true });
+    await holdDownPromise;
+    expect(invokeMock).toHaveBeenCalledWith("cmd_pc_mic_hold_up");
+    expect(useAppStore.getState().pcMicHolding).toBe(false);
+  });
+
+  it("stopPcMicHold when not holding uses invokeCommand for stuck keys", async () => {
+    invokeMock.mockResolvedValue({ success: true });
+    await useAppStore.getState().stopPcMicHold();
+    expect(invokeMock).toHaveBeenCalledWith("cmd_pc_mic_release_stuck_keys");
+  });
 });

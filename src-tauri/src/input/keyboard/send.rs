@@ -53,11 +53,11 @@ pub(crate) fn combo_keys_to_vks(keys: &[String]) -> Result<Vec<VIRTUAL_KEY>> {
         } else if let Some(vk) = special_vk(key) {
             vks.push(vk);
         } else if key.len() == 1 {
-            if let Some(ch) = key.chars().next() {
-                if let Some(vk) = char_to_vk(ch) {
-                    vks.push(vk);
-                }
-            }
+            let ch = key.chars().next().expect("len checked");
+            let vk = char_to_vk(ch).ok_or_else(|| anyhow!("Unknown key token: {key}"))?;
+            vks.push(vk);
+        } else {
+            return Err(anyhow!("Unknown key token: {key}"));
         }
     }
     if vks.is_empty() {
@@ -83,9 +83,17 @@ fn special_vk(key: &str) -> Option<VIRTUAL_KEY> {
         "left" => Some(VK_LEFT),
         "right" => Some(VK_RIGHT),
         "capslock" => Some(VK_CAPITAL),
-        "f1" => Some(VK_F1),
-        _ => None,
+        _ => f_key_vk(key),
     }
+}
+
+fn f_key_vk(key: &str) -> Option<VIRTUAL_KEY> {
+    let lower = key.to_lowercase();
+    let num = lower.strip_prefix('f')?.parse::<u16>().ok()?;
+    if !(1..=24).contains(&num) {
+        return None;
+    }
+    Some(VIRTUAL_KEY(VK_F1.0 + num - 1))
 }
 
 pub(super) fn send_input_incomplete(sent: u32, expected: u32) -> bool {
@@ -365,9 +373,25 @@ fn release_held_combo_keys_with_sender(sender: &mut dyn KeySender) -> Result<()>
     if held.is_empty() {
         return Ok(());
     }
-    let snapshot = held.clone();
-    held.clear();
-    release_vks(sender, &snapshot)
+    let mut first_err: Option<anyhow::Error> = None;
+    let mut still_held: Vec<VIRTUAL_KEY> = Vec::new();
+    for vk in held.iter().rev() {
+        match sender.send_vk(*vk, true) {
+            Ok(()) => {}
+            Err(err) => {
+                still_held.push(*vk);
+                if first_err.is_none() {
+                    first_err = Some(err);
+                }
+            }
+        }
+    }
+    still_held.reverse();
+    *held = still_held;
+    match first_err {
+        Some(err) => Err(err),
+        None => Ok(()),
+    }
 }
 
 /// Release any keys left down by hold-to-talk (pointer up, cancel, blur, or exit).
@@ -452,6 +476,20 @@ mod tests {
     fn right_alt_preset_maps_to_vk_rmenu() {
         let vks = combo_keys_to_vks(&["ralt".into()]).expect("ralt vk");
         assert_eq!(vks, vec![VK_RMENU]);
+    }
+
+    #[test]
+    fn f_keys_f1_through_f24_map_to_vks() {
+        let vks = combo_keys_to_vks(&["f12".into()]).expect("f12");
+        assert_eq!(vks, vec![VIRTUAL_KEY(VK_F1.0 + 11)]);
+        let vks = combo_keys_to_vks(&["f24".into()]).expect("f24");
+        assert_eq!(vks, vec![VIRTUAL_KEY(VK_F1.0 + 23)]);
+    }
+
+    #[test]
+    fn unknown_combo_token_errors() {
+        let err = combo_keys_to_vks(&["fn".into()]).expect_err("unknown");
+        assert!(err.to_string().contains("Unknown key token"));
     }
 
     #[test]

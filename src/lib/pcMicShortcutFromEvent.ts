@@ -1,12 +1,31 @@
+import { physicalKeyFromKeyboardCode } from "./layoutKeyTranslation";
+
 const MODIFIER_KEYS = new Set(["Control", "Shift", "Alt", "Meta", "OS"]);
 
-function normalizeKey(key: string): string | null {
-  const lower = key.toLowerCase();
-  if (lower === " ") return "space";
-  if (lower === "escape") return "escape";
-  if (lower === "enter") return "enter";
-  if (lower.length === 1) return lower;
-  if (lower.startsWith("f") && /^f\d{1,2}$/i.test(key)) return lower;
+const CODE_TO_TOKEN: Record<string, string> = {
+  Space: "space",
+  Enter: "enter",
+  Escape: "escape",
+  Backspace: "backspace",
+  Tab: "tab",
+  Delete: "delete",
+  Home: "home",
+  End: "end",
+  PageUp: "pageup",
+  PageDown: "pagedown",
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  CapsLock: "capslock",
+};
+
+function tokenFromCode(code: string): string | null {
+  const mapped = CODE_TO_TOKEN[code];
+  if (mapped) return mapped;
+  const physical = physicalKeyFromKeyboardCode(code);
+  if (physical) return physical;
+  if (/^F\d{1,2}$/i.test(code)) return code.toLowerCase();
   return null;
 }
 
@@ -26,7 +45,7 @@ export function pcMicShortcutFromKeyboardEvent(event: KeyboardEvent): string[] {
   if (MODIFIER_KEYS.has(event.key)) {
     return mods;
   }
-  const key = normalizeKey(event.key);
+  const key = tokenFromCode(event.code);
   if (!key) return mods;
   return [...mods, key];
 }

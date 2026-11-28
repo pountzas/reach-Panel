@@ -411,15 +411,15 @@ export const fr = {
 
   fnKeyModeLatched: "Verrouillé (Fn reste actif jusqu’à un nouvel appui)",
 
-  pcMicSendMode: "Mic button sends",
-  pcMicSendWinH: "Win+H (Windows Voice typing)",
-  pcMicSendRightAltHold: "Right Alt, hold to talk (FU Flow)",
-  pcMicSendCustom: "Custom key…",
+  pcMicSendMode: "Le bouton micro envoie",
+  pcMicSendWinH: "Win+H (dictée vocale Windows)",
+  pcMicSendRightAltHold: "Alt droit, maintenir pour parler (FU Flow)",
+  pcMicSendCustom: "Touche personnalisée…",
   pcMicSendHint:
-    "The keyboard Mic key and collapsed mic button send this shortcut to the focused field. Hold presets release when you let go, cancel, or lose focus.",
-  pcMicCustomShortcut: "Custom shortcut",
-  pcMicCustomRecord: "Record shortcut…",
-  pcMicCustomRecording: "Press keys… (click to cancel)",
+    "La touche Mic du clavier et le bouton micro réduit envoient ce raccourci au champ actif. Les préréglages « maintenir » se relâchent quand vous lâchez, annulez ou perdez le focus. Le préréglage Alt droit peut déclencher la confirmation de mot de passe Windows (FU Flow).",
+  pcMicCustomShortcut: "Raccourci personnalisé",
+  pcMicCustomRecord: "Enregistrer un raccourci…",
+  pcMicCustomRecording: "Appuyez sur des touches… (clic pour annuler)",
 
   groqApiKeyLabel: "Clé API Groq (dictée du companion)",
 

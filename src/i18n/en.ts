@@ -449,7 +449,7 @@ export const en = {
   pcMicSendCustom: "Custom key…",
 
   pcMicSendHint:
-    "The keyboard Mic key and collapsed mic button send this shortcut to the focused field. Hold presets release when you let go, cancel, or lose focus.",
+    "The keyboard Mic key and collapsed mic button send this shortcut to the focused field. Hold presets release when you let go, cancel, or lose focus. The Right Alt hold preset may trigger Windows password confirmation (FU Flow).",
 
   pcMicCustomShortcut: "Custom shortcut",
 

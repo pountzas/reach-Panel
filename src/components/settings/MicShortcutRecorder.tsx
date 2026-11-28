@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SurfaceColors } from "../../lib/colorProfiles";
 import {
   DEFAULT_PC_MIC_CUSTOM_KEYS,
@@ -13,6 +13,8 @@ type MicShortcutRecorderProps = {
   surface: SurfaceColors;
 };
 
+const MODIFIER_KEYS = new Set(["Control", "Shift", "Alt", "Meta", "OS"]);
+
 export function MicShortcutRecorder({
   value,
   onChange,
@@ -20,9 +22,11 @@ export function MicShortcutRecorder({
 }: MicShortcutRecorderProps) {
   const { t } = useTranslation();
   const [recording, setRecording] = useState(false);
+  const pendingModifierComboRef = useRef<string[]>([]);
   const keys = value.length > 0 ? value : [...DEFAULT_PC_MIC_CUSTOM_KEYS];
 
   const stopRecording = useCallback(() => {
+    pendingModifierComboRef.current = [];
     setRecording(false);
   }, []);
 
@@ -33,12 +37,31 @@ export function MicShortcutRecorder({
       event.stopPropagation();
       const combo = pcMicShortcutFromKeyboardEvent(event);
       if (combo.length === 0) return;
+      if (MODIFIER_KEYS.has(event.key)) {
+        pendingModifierComboRef.current = combo;
+        return;
+      }
       onChange(combo);
+      pendingModifierComboRef.current = [];
       setRecording(false);
     };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (pendingModifierComboRef.current.length === 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const modsStillHeld =
+        event.ctrlKey || event.shiftKey || event.altKey || event.metaKey;
+      if (!modsStillHeld) {
+        onChange(pendingModifierComboRef.current);
+        pendingModifierComboRef.current = [];
+        setRecording(false);
+      }
+    };
     window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
     return () => {
       window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
     };
   }, [recording, onChange]);
 
@@ -59,6 +82,7 @@ export function MicShortcutRecorder({
           if (recording) {
             stopRecording();
           } else {
+            pendingModifierComboRef.current = [];
             setRecording(true);
           }
         }}>

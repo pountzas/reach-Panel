@@ -5,6 +5,9 @@ import type { CommandResult } from "../../lib/types";
 import { DICTATION_SELECT_INPUT_ERROR } from "../../lib/dictationErrors";
 import { pcMicHoldEnabled } from "../../lib/pcMicSend";
 
+let pcMicHoldDownInFlight = false;
+let pcMicStopWhileHoldDownPending = false;
+
 async function invokeCommand(
   cmd: string,
   get: () => AppStore,
@@ -51,20 +54,50 @@ export const createDictationSlice: StateCreator<
       get().setLastError(DICTATION_SELECT_INPUT_ERROR);
       return;
     }
-    if (get().pcMicHolding) return;
+    if (get().pcMicHolding || pcMicHoldDownInFlight) return;
+    pcMicHoldDownInFlight = true;
+    pcMicStopWhileHoldDownPending = false;
     const ok = await invokeCommand(
       "cmd_pc_mic_hold_down",
       get,
       "Could not start hold-to-talk",
     );
+    pcMicHoldDownInFlight = false;
+    if (pcMicStopWhileHoldDownPending) {
+      pcMicStopWhileHoldDownPending = false;
+      if (ok) {
+        await invokeCommand(
+          "cmd_pc_mic_hold_up",
+          get,
+          "Could not release hold-to-talk key",
+        );
+      } else {
+        await invokeCommand(
+          "cmd_pc_mic_release_stuck_keys",
+          get,
+          "Could not release stuck keys",
+        );
+      }
+      set({ pcMicHolding: false });
+      return;
+    }
     if (ok) {
       set({ pcMicHolding: true });
     }
   },
 
   stopPcMicHold: async () => {
+    if (pcMicHoldDownInFlight) {
+      pcMicStopWhileHoldDownPending = true;
+      set({ pcMicHolding: false });
+      return;
+    }
     if (!get().pcMicHolding) {
-      await invoke("cmd_pc_mic_release_stuck_keys");
+      await invokeCommand(
+        "cmd_pc_mic_release_stuck_keys",
+        get,
+        "Could not release stuck keys",
+      );
       return;
     }
     set({ pcMicHolding: false });
