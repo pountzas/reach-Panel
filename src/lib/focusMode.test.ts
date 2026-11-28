@@ -38,7 +38,11 @@ const b: MonitorInfo = {
 
 describe("focusMode", () => {
   it("counts each menu separator as one pixel of height", () => {
-    expect(modeMenuHeight(7, 2)).toBe(7 * 48 + 16 + 2);
+    expect(modeMenuHeight(7, 2)).toBe(7 * 48 + 20 + 16 + 2);
+  });
+
+  it("adds extra height for the two-line Focus row", () => {
+    expect(modeMenuHeight(1, 0)).toBe(48 + 20 + 16);
   });
 
   it("detects mirrored monitors by overlapping work areas", () => {

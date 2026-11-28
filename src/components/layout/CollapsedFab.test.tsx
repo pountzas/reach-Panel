@@ -131,7 +131,11 @@ describe("CollapsedFab mode menu", () => {
     expect(
       screen.getByRole("menuitemradio", { name: "Standard" }),
     ).toBeTruthy();
-    expect(screen.getByRole("menuitemradio", { name: "Focus" })).toBeTruthy();
+    const focusRow = screen.getByRole("menuitemradio", { name: "Focus" });
+    expect(focusRow).toBeTruthy();
+    expect(focusRow).toHaveTextContent(
+      "Keyboard appears when you tap a text field",
+    );
     expect(screen.getByRole("menuitemradio", { name: "Mic" })).toBeTruthy();
     expect(
       screen.getByRole("menuitemradio", { name: "Teaching" }),
