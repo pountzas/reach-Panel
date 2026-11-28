@@ -23,6 +23,7 @@ import {
   resolveFocusModeEnabled,
 } from "../lib/focusMode";
 import { migrateLegacyFocusModeSettingsKeys } from "../lib/focusModeSettingsMigration";
+import { normalizePcMicSendMode } from "../lib/pcMicSend";
 import {
   closeToolWindow,
   openToolWindow,
@@ -453,6 +454,8 @@ export function parseSettings(json: string): AppSettings {
     ) {
       delete parsed.lastAutoSendLogsAttemptAt;
     }
+    const pcMicSendMode =
+      normalizePcMicSendMode(parsed.pcMicSendMode) ?? parsed.pcMicSendMode;
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
@@ -466,6 +469,7 @@ export function parseSettings(json: string): AppSettings {
       keyboardSectionMode,
       taskbarPositionPreference,
       autoSendLogsWeekly,
+      ...(pcMicSendMode !== undefined ? { pcMicSendMode } : {}),
       sectionStack: resolveSectionStack(parsed.sectionStack),
       synthesizerOctaveCount: resolveSynthOctaveCount(
         parsed.synthesizerOctaveCount,
@@ -583,12 +587,14 @@ export async function loadProfileData(
     (profiles.length > 0 ? profiles[0] : undefined);
   let migratedFocusAuto = false;
   let migratedKeyboardSectionMode = false;
+  let migratedPcMicSendMode = false;
   if (active) {
     try {
       const raw = JSON.parse(active.settings_json) as {
         focusModeOverride?: unknown;
         miniModeOverride?: unknown;
         keyboardSectionMode?: unknown;
+        pcMicSendMode?: string;
       };
       const override =
         raw.focusModeOverride !== undefined
@@ -599,9 +605,11 @@ export async function loadProfileData(
         raw.keyboardSectionMode,
         get().musicTeachingEnabled,
       );
+      migratedPcMicSendMode = raw.pcMicSendMode === "rightAltHold";
     } catch {
       migratedFocusAuto = false;
       migratedKeyboardSectionMode = false;
+      migratedPcMicSendMode = false;
     }
   }
   const parsed = active
@@ -630,6 +638,7 @@ export async function loadProfileData(
   if (
     migratedFocusAuto ||
     migratedKeyboardSectionMode ||
+    migratedPcMicSendMode ||
     repairStaleFlatHeight
   ) {
     const epoch = get().settingsEpoch;

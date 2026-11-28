@@ -409,10 +409,10 @@ export const it = {
 
   pcMicSendMode: "Il pulsante micro invia",
   pcMicSendWinH: "Win+H (digitazione vocale Windows)",
-  pcMicSendRightAltHold: "Alt destro, tieni premuto per parlare (FU Flow)",
+  pcMicSendRightAlt: "Alt destro (FU Flow)",
   pcMicSendCustom: "Tasto personalizzato…",
   pcMicSendHint:
-    "Il tasto Mic della tastiera e il pulsante micro compresso inviano questa scorciatoia al campo con focus. Le preimpostazioni « tieni premuto » si rilasciano quando lasci, annulli o perdi il focus. L’impostazione Alt destro può richiedere la conferma password di Windows (FU Flow).",
+    "Il tasto Mic della tastiera e il pulsante micro compresso inviano questa scorciatoia al campo con focus. L’impostazione Alt destro può richiedere la conferma password di Windows (FU Flow).",
   pcMicCustomShortcut: "Scorciatoia personalizzata",
   pcMicCustomRecord: "Registra scorciatoia…",
   pcMicCustomRecording: "Premi i tasti… (clic per annullare)",

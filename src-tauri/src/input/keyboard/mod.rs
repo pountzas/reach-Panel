@@ -14,6 +14,6 @@ pub use layout::{
     LayoutKeyTranslation,
 };
 pub use send::{
-    hold_combo_down, press_combo, press_key, release_held_combo_keys, type_text, KeyPressRequest,
+    press_combo, press_key, release_held_combo_keys, type_text, KeyPressRequest,
 };
 pub use state::{get_keyboard_state, KeyboardState};

@@ -2,8 +2,8 @@ use crate::commands::{err, ok, CommandResult};
 use crate::input::focus_target;
 use crate::input::{
     get_input_methods, get_keyboard_layout, get_keyboard_state, get_layout_key_labels,
-    launch_pc_mic_tap, pc_mic_config_from_settings, pc_mic_hold_down, pc_mic_hold_up, press_key,
-    release_held_combo_keys, reset_layout_compose_state, set_input_method_by_hkl,
+    launch_pc_mic_tap, pc_mic_config_from_settings, press_key, reset_layout_compose_state,
+    set_input_method_by_hkl,
     set_input_method_by_language, set_system_language, translate_layout_key_press, type_text,
     windows_ui_language, InputMethod, KeyPressRequest, KeyboardState, LayoutKeyLabel,
     LayoutKeyTranslation, PcMicConfig,
@@ -48,44 +48,7 @@ pub fn cmd_launch_windows_voice_typing(app: tauri::AppHandle) -> CommandResult {
         Ok(c) => c,
         Err(e) => return err(e),
     };
-    if config.hold {
-        return err("This mic shortcut uses hold-to-talk. Press and hold the Mic button.");
-    }
     match launch_pc_mic_tap(&config) {
-        Ok(()) => ok(),
-        Err(e) => err(e),
-    }
-}
-
-#[tauri::command]
-pub fn cmd_pc_mic_hold_down(app: tauri::AppHandle) -> CommandResult {
-    if companion_blocks_pc_mic(&app) {
-        return err("Companion tablet is connected. Use the tablet mic for dictation.");
-    }
-    let config = match active_pc_mic_config(&app) {
-        Ok(c) => c,
-        Err(e) => return err(e),
-    };
-    if !config.hold {
-        return err("Mic shortcut is not in hold mode");
-    }
-    match pc_mic_hold_down(&config) {
-        Ok(()) => ok(),
-        Err(e) => err(e),
-    }
-}
-
-#[tauri::command]
-pub fn cmd_pc_mic_hold_up(_app: tauri::AppHandle) -> CommandResult {
-    match pc_mic_hold_up() {
-        Ok(()) => ok(),
-        Err(e) => err(e),
-    }
-}
-
-#[tauri::command]
-pub fn cmd_pc_mic_release_stuck_keys() -> CommandResult {
-    match release_held_combo_keys() {
         Ok(()) => ok(),
         Err(e) => err(e),
     }

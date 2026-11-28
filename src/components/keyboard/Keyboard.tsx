@@ -35,7 +35,6 @@ import {
   micDictateAriaKey,
   transparentKeyPalette,
 } from "../../lib/focusMode";
-import { pcMicHoldEnabled } from "../../lib/pcMicSend";
 import type { AppSettings } from "../../lib/types";
 import { inject } from "./keyboardUtils";
 import { useStickyModifiers } from "../../hooks/useStickyModifiers";
@@ -110,13 +109,7 @@ export function Keyboard() {
   const setLanguagePickerOpen = useAppStore((s) => s.setLanguagePickerOpen);
   const selectTypingInputMethod = useAppStore((s) => s.selectTypingInputMethod);
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
-  const {
-    externalInputFocused,
-    toggleDictation,
-    startPcMicHold,
-    stopPcMicHold,
-  } = usePcMicDictationControls();
-  const micHoldMode = pcMicHoldEnabled(settings);
+  const { externalInputFocused, toggleDictation } = usePcMicDictationControls();
   const applyTypedLayoutTranslation = useAppStore(
     (s) => s.applyTypedLayoutTranslation,
   );
@@ -304,13 +297,6 @@ export function Keyboard() {
     (keyId: string, meta?: KeyRepeatFireMeta) => {
       const keyDef = keyDefsByIdRef.current.get(keyId);
       if (!keyDef) return;
-      if (
-        keyDef.key === "dictate" &&
-        pcMicHoldEnabled(useAppStore.getState().settings)
-      ) {
-        void startPcMicHold();
-        return;
-      }
       if (keyDef.key === "backspace") {
         const runInject = inject(
           (kd, opts) => handleKeyRef.current(kd, opts),
@@ -325,20 +311,16 @@ export function Keyboard() {
       }
       void handleKeyRef.current(keyDef);
     },
-    [backspaceInjectGate, startPcMicHold],
+    [backspaceInjectGate],
   );
 
   const onHoldEndKey = useCallback(
     (keyId: string) => {
       const keyDef = keyDefsByIdRef.current.get(keyId);
-      if (keyDef?.key === "dictate") {
-        void stopPcMicHold();
-        return;
-      }
       if (keyDef?.key !== "backspace") return;
       void backspaceInjectGate.whenIdle().then(() => loadSuggestions());
     },
-    [backspaceInjectGate, loadSuggestions, stopPcMicHold],
+    [backspaceInjectGate, loadSuggestions],
   );
 
   const dictateBgColor = transparent
@@ -419,7 +401,6 @@ export function Keyboard() {
                   active={false}
                   disabled={dictateDisabled}
                   ariaLabel={dictateAriaLabel}
-                  holdPress={micHoldMode}
                   onHoldEndKey={onHoldEndKey}
                   onPressKey={onPressKey}
                 />

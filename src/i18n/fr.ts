@@ -413,10 +413,10 @@ export const fr = {
 
   pcMicSendMode: "Le bouton micro envoie",
   pcMicSendWinH: "Win+H (dictée vocale Windows)",
-  pcMicSendRightAltHold: "Alt droit, maintenir pour parler (FU Flow)",
+  pcMicSendRightAlt: "Alt droit (FU Flow)",
   pcMicSendCustom: "Touche personnalisée…",
   pcMicSendHint:
-    "La touche Mic du clavier et le bouton micro réduit envoient ce raccourci au champ actif. Les préréglages « maintenir » se relâchent quand vous lâchez, annulez ou perdez le focus. Le préréglage Alt droit peut déclencher la confirmation de mot de passe Windows (FU Flow).",
+    "La touche Mic du clavier et le bouton micro réduit envoient ce raccourci au champ actif. Le préréglage Alt droit peut déclencher la confirmation de mot de passe Windows (FU Flow).",
   pcMicCustomShortcut: "Raccourci personnalisé",
   pcMicCustomRecord: "Enregistrer un raccourci…",
   pcMicCustomRecording: "Appuyez sur des touches… (clic pour annuler)",

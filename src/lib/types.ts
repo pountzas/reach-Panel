@@ -11,7 +11,7 @@ export type MousePanelMode = "mouse" | "numpad";
 export type MousePanelSide = "left" | "right";
 export type FnKeyMode = "one-shot" | "latched";
 /** PC Mic button shortcut preset (Settings → Keyboard). */
-export type PcMicSendMode = "winH" | "rightAltHold" | "custom";
+export type PcMicSendMode = "winH" | "rightAlt" | "custom";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
 /** Outline/label palette for transparent focus-mode keyboard. */
 export type TransparentKeyColor = "white" | "dark-gray" | "silver";

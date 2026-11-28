@@ -20,9 +20,7 @@ import {
   type CollapsedFabCount,
 } from "../../lib/focusMode";
 import { MOTION, prefersReducedMotion } from "../../lib/motion";
-import { useHoldPress } from "../../hooks/useHoldPress";
 import { usePcMicDictationControls } from "../../hooks/usePcMicDictationControls";
-import { pcMicHoldEnabled } from "../../lib/pcMicSend";
 import { ModeMenu } from "./ModeMenu";
 import reachPanelLogo from "../../../design/reachpanel-logo.svg";
 
@@ -78,19 +76,7 @@ export function CollapsedFab({
   );
   const toggleCollapsed = useAppStore((s) => s.toggleCollapsed);
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
-  const {
-    externalInputFocused,
-    toggleDictation,
-    startPcMicHold,
-    stopPcMicHold,
-  } = usePcMicDictationControls();
-  const pcMicSendMode = useAppStore((s) => s.settings.pcMicSendMode);
-  const micHoldMode = pcMicHoldEnabled({ pcMicSendMode });
-  const { pointerHandlers: micHoldHandlers } = useHoldPress({
-    enabled: micHoldMode && showDictation,
-    onPress: () => void startPcMicHold(),
-    onRelease: () => void stopPcMicHold(),
-  });
+  const { externalInputFocused, toggleDictation } = usePcMicDictationControls();
   const modeMenuOpen = useAppStore((s) => s.modeMenuOpen);
   const openModeMenu = useAppStore((s) => s.openModeMenu);
   const closeModeMenu = useAppStore((s) => s.closeModeMenu);
@@ -237,14 +223,8 @@ export function CollapsedFab({
             aria-disabled={!micEnabled}
             title={micEnabled ? undefined : micAriaLabel}
             onClick={() => {
-              if (!micHoldMode) void toggleDictation();
+              void toggleDictation();
             }}
-            onPointerDown={(event) => micHoldHandlers.onPointerDown?.(event)}
-            onPointerUp={(event) => micHoldHandlers.onPointerUp?.(event)}
-            onPointerLeave={(event) => micHoldHandlers.onPointerLeave?.(event)}
-            onPointerCancel={(event) =>
-              micHoldHandlers.onPointerCancel?.(event)
-            }
             aria-label={micAriaLabel}>
             <span className="flex h-full w-full items-center justify-center transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-95">
               <MicrophoneIcon className="h-6 w-6 transition-colors duration-200" />

@@ -413,11 +413,10 @@ export const de = {
 
   pcMicSendMode: "Mikrofon-Taste sendet",
   pcMicSendWinH: "Win+H (Windows-Spracheingabe)",
-  pcMicSendRightAltHold:
-    "Rechte Alt-Taste, gedrückt halten zum Sprechen (FU Flow)",
+  pcMicSendRightAlt: "Rechte Alt-Taste (FU Flow)",
   pcMicSendCustom: "Eigene Taste…",
   pcMicSendHint:
-    "Die Mikrofon-Taste der Tastatur und die eingeklappte Mikrofon-Schaltfläche senden diese Tastenkombination an das fokussierte Feld. Halte-Voreinstellungen werden losgelassen, wenn Sie loslassen, abbrechen oder den Fokus verlieren. Bei Rechte Alt kann Windows die Passwortbestätigung anfordern (FU Flow).",
+    "Die Mikrofon-Taste der Tastatur und die eingeklappte Mikrofon-Schaltfläche senden diese Tastenkombination an das fokussierte Feld. Bei Rechte Alt kann Windows die Passwortbestätigung anfordern (FU Flow).",
   pcMicCustomShortcut: "Eigene Tastenkombination",
   pcMicCustomRecord: "Tastenkombination aufnehmen…",
   pcMicCustomRecording: "Tasten drücken… (Klick zum Abbrechen)",

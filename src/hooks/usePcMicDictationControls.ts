@@ -4,12 +4,8 @@ import { useAppStore } from "../stores/appStore";
 export function usePcMicDictationControls() {
   const externalInputFocused = useAppStore((s) => s.externalInputFocused);
   const toggleDictation = useAppStore((s) => s.toggleDictation);
-  const startPcMicHold = useAppStore((s) => s.startPcMicHold);
-  const stopPcMicHold = useAppStore((s) => s.stopPcMicHold);
   return {
     externalInputFocused,
     toggleDictation,
-    startPcMicHold,
-    stopPcMicHold,
   };
 }

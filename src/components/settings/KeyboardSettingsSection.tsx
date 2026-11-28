@@ -59,7 +59,7 @@ export function KeyboardSettingsSection({
           }}
           surface={surface}>
           <option value="winH">{t("pcMicSendWinH")}</option>
-          <option value="rightAltHold">{t("pcMicSendRightAltHold")}</option>
+          <option value="rightAlt">{t("pcMicSendRightAlt")}</option>
           <option value="custom">{t("pcMicSendCustom")}</option>
         </ThemedSelect>
         <span className="mt-1 block text-xs opacity-80">

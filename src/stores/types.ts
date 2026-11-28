@@ -61,10 +61,7 @@ export type SuggestionsSlice = {
 };
 
 export type DictationSlice = {
-  pcMicHolding: boolean;
   toggleDictation: () => Promise<void>;
-  startPcMicHold: () => Promise<void>;
-  stopPcMicHold: () => Promise<void>;
 };
 
 export type CompanionSlice = {

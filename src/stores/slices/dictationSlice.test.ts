@@ -45,7 +45,7 @@ import { useAppStore } from "../appStore";
 import { storeFlags } from "../storeFlags";
 import { DICTATION_SELECT_INPUT_ERROR } from "../../lib/dictationErrors";
 
-describe("toggleDictation launches Windows Voice typing", () => {
+describe("toggleDictation launches configured mic shortcut", () => {
   beforeEach(() => {
     invokeMock.mockReset();
     notifyError.mockReset();
@@ -73,6 +73,16 @@ describe("toggleDictation launches Windows Voice typing", () => {
     expect(notifyError).not.toHaveBeenCalled();
   });
 
+  it("uses the same one-shot path for Right Alt preset", async () => {
+    invokeMock.mockResolvedValue({ success: true, error: null });
+    useAppStore.setState({
+      externalInputFocused: true,
+      settings: { ...DEFAULT_SETTINGS, pcMicSendMode: "rightAlt" },
+    });
+    await useAppStore.getState().toggleDictation();
+    expect(invokeMock).toHaveBeenCalledWith("cmd_launch_windows_voice_typing");
+  });
+
   it("surfaces a host error and does not treat it as success", async () => {
     invokeMock.mockResolvedValue({
       success: false,
@@ -92,83 +102,5 @@ describe("toggleDictation launches Windows Voice typing", () => {
     await useAppStore.getState().toggleDictation();
     expect(notifyError).toHaveBeenCalledWith("voice typing unavailable");
     expect(useAppStore.getState().lastError).toBeNull();
-  });
-});
-
-describe("PC Mic hold-to-talk", () => {
-  beforeEach(() => {
-    invokeMock.mockReset();
-    notifyError.mockReset();
-    storeFlags.lastAnnouncedError = null;
-    useAppStore.setState({
-      settings: { ...DEFAULT_SETTINGS, pcMicSendMode: "rightAltHold" },
-      externalInputFocused: true,
-      pcMicHolding: false,
-      lastError: null,
-    });
-  });
-
-  it("startPcMicHold invokes hold down and sets holding", async () => {
-    invokeMock.mockResolvedValue({ success: true });
-    await useAppStore.getState().startPcMicHold();
-    expect(invokeMock).toHaveBeenCalledWith("cmd_pc_mic_hold_down");
-    expect(useAppStore.getState().pcMicHolding).toBe(true);
-  });
-
-  it("stopPcMicHold invokes hold up and clears holding", async () => {
-    invokeMock.mockResolvedValue({ success: true });
-    useAppStore.setState({ pcMicHolding: true });
-    await useAppStore.getState().stopPcMicHold();
-    expect(invokeMock).toHaveBeenCalledWith("cmd_pc_mic_hold_up");
-    expect(useAppStore.getState().pcMicHolding).toBe(false);
-  });
-
-  it("toggleDictation is a no-op in hold mode", async () => {
-    await useAppStore.getState().toggleDictation();
-    expect(invokeMock).not.toHaveBeenCalled();
-  });
-
-  it("stop before hold down completes still releases and clears holding", async () => {
-    let resolveHoldDown: (value: { success: boolean }) => void = () => {};
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === "cmd_pc_mic_hold_down") {
-        return new Promise<{ success: boolean }>((resolve) => {
-          resolveHoldDown = resolve;
-        });
-      }
-      return Promise.resolve({ success: true });
-    });
-    const holdDownPromise = useAppStore.getState().startPcMicHold();
-    await useAppStore.getState().stopPcMicHold();
-    expect(useAppStore.getState().pcMicHolding).toBe(false);
-    resolveHoldDown({ success: true });
-    await holdDownPromise;
-    expect(invokeMock).toHaveBeenCalledWith("cmd_pc_mic_hold_up");
-    expect(useAppStore.getState().pcMicHolding).toBe(false);
-  });
-
-  it("stop while hold down pending uses stuck keys when hold down fails", async () => {
-    let resolveHoldDown: (value: { success: boolean }) => void = () => {};
-    invokeMock.mockImplementation((cmd: string) => {
-      if (cmd === "cmd_pc_mic_hold_down") {
-        return new Promise<{ success: boolean }>((resolve) => {
-          resolveHoldDown = resolve;
-        });
-      }
-      return Promise.resolve({ success: true });
-    });
-    const holdDownPromise = useAppStore.getState().startPcMicHold();
-    await useAppStore.getState().stopPcMicHold();
-    resolveHoldDown({ success: false });
-    await holdDownPromise;
-    expect(invokeMock).toHaveBeenCalledWith("cmd_pc_mic_release_stuck_keys");
-    expect(invokeMock).not.toHaveBeenCalledWith("cmd_pc_mic_hold_up");
-    expect(useAppStore.getState().pcMicHolding).toBe(false);
-  });
-
-  it("stopPcMicHold when not holding uses invokeCommand for stuck keys", async () => {
-    invokeMock.mockResolvedValue({ success: true });
-    await useAppStore.getState().stopPcMicHold();
-    expect(invokeMock).toHaveBeenCalledWith("cmd_pc_mic_release_stuck_keys");
   });
 });

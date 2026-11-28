@@ -341,31 +341,6 @@ pub fn press_combo(keys: Vec<String>) -> Result<()> {
     with_target_focus(|| press_combo_impl(keys))
 }
 
-fn hold_combo_down_with_sender(keys: Vec<String>, sender: &mut dyn KeySender) -> Result<()> {
-    let vks = combo_keys_to_vks(&keys)?;
-    let mut held = HELD_COMBO_KEYS
-        .lock()
-        .map_err(|_| anyhow!("Held key state poisoned"))?;
-    if !held.is_empty() {
-        release_vks(sender, &held)?;
-        held.clear();
-    }
-    for vk in &vks {
-        sender.send_vk(*vk, false)?;
-        held.push(*vk);
-    }
-    Ok(())
-}
-
-/// Press a combo down for hold-to-talk without releasing (after refocus elsewhere).
-pub fn hold_combo_down(keys: Vec<String>) -> Result<()> {
-    hold_combo_down_with_sender(keys, &mut OsKeySender)
-}
-
-fn release_vks(sender: &mut dyn KeySender, vks: &[VIRTUAL_KEY]) -> Result<()> {
-    release_modifiers(sender, vks)
-}
-
 fn release_held_combo_keys_with_sender(sender: &mut dyn KeySender) -> Result<()> {
     let mut held = HELD_COMBO_KEYS
         .lock()
@@ -394,7 +369,7 @@ fn release_held_combo_keys_with_sender(sender: &mut dyn KeySender) -> Result<()>
     }
 }
 
-/// Release any keys left down by hold-to-talk (pointer up, cancel, blur, or exit).
+/// Release any combo keys left held in process-global state (e.g. on app exit).
 pub fn release_held_combo_keys() -> Result<()> {
     release_held_combo_keys_with_sender(&mut OsKeySender)
 }
@@ -506,37 +481,6 @@ mod tests {
     fn greek_eta_combo_token_errors() {
         let err = combo_keys_to_vks(&["η".into()]).expect_err("non-ascii combo token");
         assert!(err.to_string().contains("Unknown key token"));
-    }
-
-    #[test]
-    fn held_combo_cleared_only_after_successful_key_up() {
-        let _ = release_held_combo_keys();
-        let mut hold_sender = MockSender::new(None);
-        hold_combo_down_with_sender(vec!["ctrl".into(), "shift".into()], &mut hold_sender)
-            .expect("hold down");
-        let mut partial_release = MockSender::new(Some(1));
-        let err = release_held_combo_keys_with_sender(&mut partial_release)
-            .expect_err("first key up fails");
-        assert!(err.to_string().contains("SendInput failed"));
-        let mut finish_release = MockSender::new(None);
-        release_held_combo_keys_with_sender(&mut finish_release)
-            .expect("remaining held key releases");
-        assert!(finish_release.calls().iter().any(|c| c == &(VK_SHIFT.0, true)));
-    }
-
-    #[test]
-    fn hold_down_sends_key_down_and_release_sends_key_up() {
-        let _ = release_held_combo_keys();
-        let mut sender = MockSender::new(None);
-        hold_combo_down_with_sender(vec!["ralt".into()], &mut sender).expect("hold down");
-        let down_calls = sender.calls();
-        assert_eq!(down_calls.len(), 1);
-        assert_eq!(down_calls[0], (VK_RMENU.0, false));
-
-        release_held_combo_keys_with_sender(&mut sender).expect("release");
-        let all_calls = sender.calls();
-        assert_eq!(all_calls.len(), 2);
-        assert_eq!(all_calls[1], (VK_RMENU.0, true));
     }
 
     #[test]

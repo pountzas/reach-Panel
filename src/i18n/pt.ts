@@ -412,10 +412,10 @@ export const pt = {
 
   pcMicSendMode: "O botão do microfone envia",
   pcMicSendWinH: "Win+H (ditado por voz do Windows)",
-  pcMicSendRightAltHold: "Alt direito, manter para falar (FU Flow)",
+  pcMicSendRightAlt: "Alt direito (FU Flow)",
   pcMicSendCustom: "Tecla personalizada…",
   pcMicSendHint:
-    "A tecla Mic do teclado e o botão de microfone recolhido enviam este atalho para o campo com foco. As predefinições de manter libertam ao soltar, cancelar ou perder o foco. A predefinição Alt direito pode pedir confirmação de palavra-passe do Windows (FU Flow).",
+    "A tecla Mic do teclado e o botão de microfone recolhido enviam este atalho para o campo com foco. A predefinição Alt direito pode pedir confirmação de palavra-passe do Windows (FU Flow).",
   pcMicCustomShortcut: "Atalho personalizado",
   pcMicCustomRecord: "Gravar atalho…",
   pcMicCustomRecording: "Pressione teclas… (clique para cancelar)",

@@ -3,22 +3,19 @@ import { DEFAULT_SETTINGS } from "./types";
 import {
   DEFAULT_PC_MIC_SEND_MODE,
   formatPcMicCombo,
-  pcMicHoldEnabled,
+  normalizePcMicSendMode,
 } from "./pcMicSend";
 
 describe("pcMicSend", () => {
   it("defaults to Win+H tap mode", () => {
     expect(DEFAULT_PC_MIC_SEND_MODE).toBe("winH");
-    expect(pcMicHoldEnabled(DEFAULT_SETTINGS)).toBe(false);
+    expect(
+      normalizePcMicSendMode(DEFAULT_SETTINGS.pcMicSendMode),
+    ).toBeUndefined();
   });
 
-  it("enables hold for the Right Alt preset", () => {
-    expect(
-      pcMicHoldEnabled({
-        ...DEFAULT_SETTINGS,
-        pcMicSendMode: "rightAltHold",
-      }),
-    ).toBe(true);
+  it("migrates legacy rightAltHold to rightAlt", () => {
+    expect(normalizePcMicSendMode("rightAltHold")).toBe("rightAlt");
   });
 
   it("formats combos for display", () => {

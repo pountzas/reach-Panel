@@ -8,9 +8,7 @@ mod mouse;
 mod pc_mic;
 mod voice_typing;
 
-pub use pc_mic::{
-    launch_pc_mic_tap, pc_mic_config_from_settings, pc_mic_hold_down, pc_mic_hold_up, PcMicConfig,
-};
+pub use pc_mic::{launch_pc_mic_tap, pc_mic_config_from_settings, PcMicConfig};
 mod wgc_capture;
 
 pub use keyboard::*;

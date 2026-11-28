@@ -99,9 +99,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::keyboard::cmd_press_key,
             commands::keyboard::cmd_launch_windows_voice_typing,
-            commands::keyboard::cmd_pc_mic_hold_down,
-            commands::keyboard::cmd_pc_mic_hold_up,
-            commands::keyboard::cmd_pc_mic_release_stuck_keys,
             commands::keyboard::cmd_type_text,
             commands::keyboard::cmd_get_keyboard_layout,
             commands::keyboard::cmd_get_keyboard_state,
