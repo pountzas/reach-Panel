@@ -6,7 +6,7 @@ ReachPanel is for people who cannot use a physical keyboard and need touch-first
 
 Typical needs:
 
-- Large keys, simple navigation, and clear mode switching (Normal / Focus / Mic / Teaching)
+- Large keys, simple navigation, and clear mode switching (Standard / Focus / Mic / Teaching)
 - Good use of pointing-finger movement on a touchscreen (host keyboard or Android companion trackpad)
 - Single touch laptop at school, or a secondary touch display at distance when available
 - Optional Android tablet companion for remote keyboard, trackpad, numpad, and dictation
@@ -15,7 +15,7 @@ Caregivers can manage named profiles, monitor selection, companion pairing, and 
 
 ## Layout Wireframes
 
-### Normal mode (default)
+### Standard mode (default)
 
 ```text
 +---------------------------------------------------+
@@ -63,7 +63,7 @@ Tablet tabs while connected: keyboard, trackpad, numpad, dictation, profile, USB
 | Multi-monitor | List displays; position app on accessibility screen |
 | Profiles | Named saved profiles with separate settings |
 | Focus mode | Focus-driven keyboard; collapse to FAB; optional transparent outlined keys; Teaching never hosts Focus |
-| Teaching | Full work area; Music lesson + synth; Language Spelling/Free write (vertical tabs); Math placeholder; keyboard Minimize/Focus in Language/Math; helpers toggle in Visible sections; leave Teaching restores prior Normal/Focus size |
+| Teaching | Full work area; Music lesson + synth; Language Spelling/Free write (vertical tabs); Math placeholder; keyboard Minimize/Focus in Language/Math; helpers toggle in Visible sections; leave Teaching restores prior Standard/Focus size |
 | Companion | Pair Android tablet via Settings QR or USB tether; tablet keyboard/trackpad/numpad/dictation/suggestions; host-only SendInput |
 | Updates | In-app update check surfaces failures and can install from Releases |
 

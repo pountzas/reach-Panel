@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Rename Normal mode user-facing label to Standard (#426).
+
 ## 0.18.0 (2026-11-07)
 
 ## What's Changed
