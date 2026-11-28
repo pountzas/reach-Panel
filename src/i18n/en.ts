@@ -27,7 +27,7 @@ export const en = {
 
   modesSection: "Mode",
 
-  modeNormal: "Normal",
+  modeNormal: "Standard",
 
   modeFocus: "Focus",
 
@@ -193,7 +193,7 @@ export const en = {
   confirmDeleteLanguagePack: "Delete “{title}”?",
 
   modeTabletsHint:
-    "Normal and Focus are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion stays unavailable until the bridge is started or a tablet is paired; it becomes the selected mode while a tablet is connected.",
+    "Standard and Focus are typing keyboard. Teaching opens lessons; Music shows the synthesizer. Companion stays unavailable until the bridge is started or a tablet is paired; it becomes the selected mode while a tablet is connected.",
 
   showTeachingInputHelpers: "Show input helpers in Teaching mode",
 

@@ -29,7 +29,7 @@ export const de = {
 
   modesSection: "Modus",
 
-  modeNormal: "Normal",
+  modeNormal: "Standard",
 
   modeFocus: "Fokus",
 
@@ -163,7 +163,7 @@ export const de = {
   confirmDeleteLanguagePack: "„{title}“ löschen?",
 
   modeTabletsHint:
-    "Normal und Fokus sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer. Begleiter ist erst verfügbar, wenn die Brücke läuft oder ein Tablet gekoppelt ist; ausgewählt während ein Tablet verbunden ist.",
+    "Standard und Fokus sind Tastatur. Unterricht öffnet Lektionen; Musik zeigt den Synthesizer. Begleiter ist erst verfügbar, wenn die Brücke läuft oder ein Tablet gekoppelt ist; ausgewählt während ein Tablet verbunden ist.",
 
   showTeachingInputHelpers: "Eingabe-Hilfen im Unterrichtsmodus anzeigen",
 
