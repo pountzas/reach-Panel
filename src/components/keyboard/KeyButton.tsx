@@ -5,6 +5,7 @@ import {
 } from "react";
 import { PRESSABLE_BUTTON_CLASS } from "../../lib/buttonClasses";
 import { transparentOutlineStyle } from "../../lib/focusMode";
+import { useHoldPress } from "../../hooks/useHoldPress";
 import { useKeyRepeat, type KeyRepeatFireMeta } from "../../hooks/useKeyRepeat";
 import { usePressableButton } from "../../hooks/usePressableButton";
 import { handleClick as handleKeyButtonClick } from "./keyButtonUtils";
@@ -33,6 +34,8 @@ type KeyButtonProps = {
    * instead of relying on click (which would double-fire after pointerup).
    */
   repeatOnHold?: boolean;
+  /** Single action on pointer down; release on up / cancel (hold-to-talk). */
+  holdPress?: boolean;
   /** Called when a press-and-hold repeat ends (pointer up / leave / cancel). */
   onHoldEnd?: () => void;
   onPress: (meta?: KeyRepeatFireMeta) => void;
@@ -56,33 +59,57 @@ export const KeyButton = memo(function KeyButton({
   outlineColor,
   labelAlign = "center",
   repeatOnHold = false,
+  holdPress = false,
   onHoldEnd,
   onPress,
 }: KeyButtonProps) {
   const { pressedClass, pointerHandlers: pressableHandlers } =
     usePressableButton(active ?? false);
   const { pointerHandlers: repeatHandlers } = useKeyRepeat({
-    enabled: repeatOnHold && !disabled,
+    enabled: repeatOnHold && !holdPress && !disabled,
     onFire: onPress,
     onStop: onHoldEnd,
+  });
+  const { pointerHandlers: holdPressHandlers } = useHoldPress({
+    enabled: holdPress && !repeatOnHold && !disabled,
+    onPress: () => {
+      onPress();
+    },
+    onRelease: onHoldEnd,
   });
 
   const pointerHandlers = {
     onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
       pressableHandlers.onPointerDown();
-      repeatHandlers.onPointerDown?.(event);
+      if (holdPress) {
+        holdPressHandlers.onPointerDown?.(event);
+      } else {
+        repeatHandlers.onPointerDown?.(event);
+      }
     },
     onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
       pressableHandlers.onPointerUp();
-      repeatHandlers.onPointerUp?.(event);
+      if (holdPress) {
+        holdPressHandlers.onPointerUp?.(event);
+      } else {
+        repeatHandlers.onPointerUp?.(event);
+      }
     },
     onPointerLeave: (event: ReactPointerEvent<HTMLButtonElement>) => {
       pressableHandlers.onPointerLeave();
-      repeatHandlers.onPointerLeave?.(event);
+      if (holdPress) {
+        holdPressHandlers.onPointerLeave?.(event);
+      } else {
+        repeatHandlers.onPointerLeave?.(event);
+      }
     },
     onPointerCancel: (event: ReactPointerEvent<HTMLButtonElement>) => {
       pressableHandlers.onPointerLeave();
-      repeatHandlers.onPointerCancel?.(event);
+      if (holdPress) {
+        holdPressHandlers.onPointerCancel?.(event);
+      } else {
+        repeatHandlers.onPointerCancel?.(event);
+      }
     },
   };
 
@@ -146,7 +173,12 @@ export const KeyButton = memo(function KeyButton({
       disabled={disabled}
       aria-label={ariaLabel}
       onClick={(event) => {
-        handleKeyButtonClick(event, repeatOnHold, onPress, onHoldEnd);
+        handleKeyButtonClick(
+          event,
+          repeatOnHold || holdPress,
+          onPress,
+          onHoldEnd,
+        );
       }}
       onContextMenu={(e) => {
         e.preventDefault();

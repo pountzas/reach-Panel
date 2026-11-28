@@ -407,6 +407,16 @@ export const it = {
 
   fnKeyModeLatched: "Bloccato (Fn resta attivo finché non lo tocchi di nuovo)",
 
+  pcMicSendMode: "Mic button sends",
+  pcMicSendWinH: "Win+H (Windows Voice typing)",
+  pcMicSendRightAltHold: "Right Alt, hold to talk (FU Flow)",
+  pcMicSendCustom: "Custom key…",
+  pcMicSendHint:
+    "The keyboard Mic key and collapsed mic button send this shortcut to the focused field. Hold presets release when you let go, cancel, or lose focus.",
+  pcMicCustomShortcut: "Custom shortcut",
+  pcMicCustomRecord: "Record shortcut…",
+  pcMicCustomRecording: "Press keys… (click to cancel)",
+
   groqApiKeyLabel: "Chiave API Groq (dettatura companion)",
 
   groqApiKeyHint:

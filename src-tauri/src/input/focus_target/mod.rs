@@ -10,19 +10,21 @@ mod tests;
 pub use win32::{host_is_chromium, is_editable_class, is_valid_typing_target, CaptureRoot};
 
 use uia::{
-    clear_last_real_text_focus, note_text_focus, previously_text_focused,
-    should_retain_text_focus, uia_ancestor_is_autocomplete_satellite, uia_caret_point,
-    uia_control_is_text_input, uia_element_belongs_to_remembered_text_focus,
-    uia_element_aria_role, uia_element_bounds, uia_element_framework_id,
-    uia_element_has_text_pattern, uia_element_is_our_process, uia_element_native_class,
-    uia_element_text_pattern_editable, uia_element_value_writable,
-    uia_signals_are_autocomplete_satellite, with_uia, UiaTextInputSignals,
+    clear_last_real_text_focus, note_text_focus, previously_text_focused, should_retain_text_focus,
+    uia_ancestor_is_autocomplete_satellite, uia_caret_point, uia_control_is_text_input,
+    uia_element_aria_role, uia_element_belongs_to_remembered_text_focus, uia_element_bounds,
+    uia_element_framework_id, uia_element_has_text_pattern, uia_element_is_our_process,
+    uia_element_is_password, uia_element_native_class, uia_element_text_pattern_editable,
+    uia_element_value_writable, uia_signals_are_autocomplete_satellite, with_uia,
+    UiaTextInputSignals,
 };
 use win32::{
-    bring_to_foreground, capture_root_for_hwnd, gui_thread_info, hwnd_or_ancestor_is_editable, hwnd_or_ancestor_is_shell,
-    hwnd_to_usize, is_chromium_class, is_null, is_our_window, is_readonly_edit, usize_to_hwnd,
-    win32_caret_point, window_class_name,
+    bring_to_foreground, capture_root_for_hwnd, gui_thread_info, hwnd_or_ancestor_is_editable,
+    hwnd_or_ancestor_is_password, hwnd_or_ancestor_is_shell, hwnd_to_usize, is_chromium_class,
+    is_null, is_our_window, is_readonly_edit, usize_to_hwnd, win32_caret_point, window_class_name,
 };
+
+const PC_MIC_PASSWORD_FIELD_MSG: &str = "Mic shortcuts are not sent to password fields.";
 
 use anyhow::Result;
 use serde::Serialize;
@@ -32,9 +34,7 @@ use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use windows::Win32::Foundation::{HWND, RECT};
-use windows::Win32::UI::Accessibility::{
-    IUIAutomationElement, SetWinEventHook, HWINEVENTHOOK,
-};
+use windows::Win32::UI::Accessibility::{IUIAutomationElement, SetWinEventHook, HWINEVENTHOOK};
 use windows::Win32::UI::WindowsAndMessaging::{
     GetForegroundWindow, GetParent, GetWindowRect, EVENT_OBJECT_FOCUS, EVENT_SYSTEM_FOREGROUND,
     WINEVENT_OUTOFCONTEXT,
@@ -631,6 +631,33 @@ pub fn has_input_target() -> bool {
     get_effective_input_hwnd().is_some()
 }
 
+/// True when the remembered or foreground typing target is a password field.
+pub fn effective_input_is_password() -> bool {
+    if let Some(hwnd) = get_effective_input_hwnd() {
+        if hwnd_or_ancestor_is_password(hwnd) {
+            return true;
+        }
+    }
+    with_uia(|automation| {
+        unsafe {
+            if let Ok(element) = automation.GetFocusedElement() {
+                return uia_element_is_password(&element);
+            }
+        }
+        false
+    })
+    .unwrap_or(false)
+}
+
+/// Refocus the external field unless it is a password box (no keys are sent).
+pub fn restore_target_for_pc_mic() -> Result<()> {
+    restore_target_focus()?;
+    if effective_input_is_password() {
+        anyhow::bail!(PC_MIC_PASSWORD_FIELD_MSG);
+    }
+    Ok(())
+}
+
 pub fn remember_current_if_external() {
     unsafe {
         let fg = GetForegroundWindow();
@@ -672,4 +699,3 @@ where
     restore_target_focus()?;
     f()
 }
-

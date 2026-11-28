@@ -21,6 +21,7 @@ type KeyboardKeyProps = {
   transparent: boolean;
   outlineColor?: string | null;
   repeatOnHold?: boolean;
+  holdPress?: boolean;
   /** Stable callback; receives keyId so the parent can look up KeyDef. */
   onPressKey: (keyId: string, meta?: KeyboardKeyPressMeta) => void;
   onHoldEndKey?: (keyId: string) => void;
@@ -46,6 +47,7 @@ export const KeyboardKey = memo(function KeyboardKey({
   transparent,
   outlineColor,
   repeatOnHold,
+  holdPress,
   onPressKey,
   onHoldEndKey,
 }: KeyboardKeyProps) {
@@ -79,6 +81,7 @@ export const KeyboardKey = memo(function KeyboardKey({
       disabled={disabled}
       ariaLabel={ariaLabel}
       repeatOnHold={repeatOnHold}
+      holdPress={holdPress}
       onHoldEnd={onHoldEndKey ? onHoldEnd : undefined}
       onPress={onPress}
     />

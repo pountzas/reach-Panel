@@ -99,6 +99,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::keyboard::cmd_press_key,
             commands::keyboard::cmd_launch_windows_voice_typing,
+            commands::keyboard::cmd_pc_mic_hold_down,
+            commands::keyboard::cmd_pc_mic_hold_up,
+            commands::keyboard::cmd_pc_mic_release_stuck_keys,
             commands::keyboard::cmd_type_text,
             commands::keyboard::cmd_get_keyboard_layout,
             commands::keyboard::cmd_get_keyboard_state,
@@ -190,6 +193,7 @@ pub fn run() {
                 event,
                 tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
             ) {
+                let _ = crate::input::release_held_combo_keys();
                 crate::diagnostics::breadcrumbs::flush();
             }
             crate::diagnostics::on_run_event(app, &event);

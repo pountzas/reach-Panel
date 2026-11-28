@@ -19,6 +19,7 @@
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "ci": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run test:blob",
     "test": "vitest run",
     "test:blob": "node --test scripts/upload-to-blob.test.mjs scripts/merge-downloads-latest.test.mjs scripts/blob-cleanup-lib.test.mjs companion/scripts/upload-apk-to-blob.test.mjs companion/scripts/bump-version.test.mjs"
   },

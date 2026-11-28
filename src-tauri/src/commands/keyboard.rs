@@ -1,13 +1,35 @@
 use crate::commands::{err, ok, CommandResult};
-use tauri::Manager;
 use crate::input::focus_target;
 use crate::input::{
     get_input_methods, get_keyboard_layout, get_keyboard_state, get_layout_key_labels,
-    launch_windows_voice_typing, press_key,
-    reset_layout_compose_state, set_input_method_by_hkl, set_input_method_by_language,
-    set_system_language, translate_layout_key_press, type_text, windows_ui_language, InputMethod,
-    KeyPressRequest, KeyboardState, LayoutKeyLabel, LayoutKeyTranslation,
+    launch_pc_mic_tap, pc_mic_config_from_settings, pc_mic_hold_down, pc_mic_hold_up, press_key,
+    release_held_combo_keys, reset_layout_compose_state, set_input_method_by_hkl,
+    set_input_method_by_language, set_system_language, translate_layout_key_press, type_text,
+    windows_ui_language, InputMethod, KeyPressRequest, KeyboardState, LayoutKeyLabel,
+    LayoutKeyTranslation, PcMicConfig,
 };
+use crate::profiles::INTERNAL_PROFILE_ID;
+use crate::AppState;
+use tauri::Manager;
+
+fn active_pc_mic_config(app: &tauri::AppHandle) -> Result<PcMicConfig, String> {
+    let state = app.state::<AppState>();
+    let profile = state
+        .db
+        .get_profile_by_id(INTERNAL_PROFILE_ID)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Active profile missing".to_string())?;
+    let settings: serde_json::Value =
+        serde_json::from_str(&profile.settings_json).map_err(|e| e.to_string())?;
+    Ok(pc_mic_config_from_settings(&settings))
+}
+
+fn companion_blocks_pc_mic(app: &tauri::AppHandle) -> bool {
+    let tablet_audio = app
+        .try_state::<crate::companion::CompanionBridge>()
+        .is_some_and(|bridge| bridge.session().tablet_audio_active());
+    tablet_audio || crate::companion::dictation_is_active()
+}
 
 #[tauri::command]
 pub fn cmd_press_key(request: KeyPressRequest) -> CommandResult {
@@ -19,13 +41,51 @@ pub fn cmd_press_key(request: KeyPressRequest) -> CommandResult {
 
 #[tauri::command]
 pub fn cmd_launch_windows_voice_typing(app: tauri::AppHandle) -> CommandResult {
-    let tablet_audio = app
-        .try_state::<crate::companion::CompanionBridge>()
-        .is_some_and(|bridge| bridge.session().tablet_audio_active());
-    if tablet_audio || crate::companion::dictation_is_active() {
+    if companion_blocks_pc_mic(&app) {
         return err("Companion tablet is connected. Use the tablet mic for dictation.");
     }
-    match launch_windows_voice_typing() {
+    let config = match active_pc_mic_config(&app) {
+        Ok(c) => c,
+        Err(e) => return err(e),
+    };
+    if config.hold {
+        return err("This mic shortcut uses hold-to-talk. Press and hold the Mic button.");
+    }
+    match launch_pc_mic_tap(&config) {
+        Ok(()) => ok(),
+        Err(e) => err(e),
+    }
+}
+
+#[tauri::command]
+pub fn cmd_pc_mic_hold_down(app: tauri::AppHandle) -> CommandResult {
+    if companion_blocks_pc_mic(&app) {
+        return err("Companion tablet is connected. Use the tablet mic for dictation.");
+    }
+    let config = match active_pc_mic_config(&app) {
+        Ok(c) => c,
+        Err(e) => return err(e),
+    };
+    if !config.hold {
+        return err("Mic shortcut is not in hold mode");
+    }
+    match pc_mic_hold_down(&config) {
+        Ok(()) => ok(),
+        Err(e) => err(e),
+    }
+}
+
+#[tauri::command]
+pub fn cmd_pc_mic_hold_up(_app: tauri::AppHandle) -> CommandResult {
+    match pc_mic_hold_up() {
+        Ok(()) => ok(),
+        Err(e) => err(e),
+    }
+}
+
+#[tauri::command]
+pub fn cmd_pc_mic_release_stuck_keys() -> CommandResult {
+    match release_held_combo_keys() {
         Ok(()) => ok(),
         Err(e) => err(e),
     }

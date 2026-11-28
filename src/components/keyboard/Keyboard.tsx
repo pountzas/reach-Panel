@@ -35,11 +35,13 @@ import {
   micDictateAriaKey,
   transparentKeyPalette,
 } from "../../lib/focusMode";
+import { pcMicHoldEnabled } from "../../lib/pcMicSend";
 import type { AppSettings } from "../../lib/types";
 import { inject } from "./keyboardUtils";
 import { useStickyModifiers } from "../../hooks/useStickyModifiers";
 import { useKeyboardKeyPress } from "./useKeyboardKeyPress";
 import type { KeyRepeatFireMeta } from "../../hooks/useKeyRepeat";
+import { usePcMicDictationControls } from "../../hooks/usePcMicDictationControls";
 
 /** Settings fields Keyboard (and its key-press helpers) actually read. */
 type KeyboardSettingsSlice = Pick<
@@ -57,6 +59,7 @@ type KeyboardSettingsSlice = Pick<
   | "showTeachingInputHelpers"
   | "focusModeTransparent"
   | "fnKeyMode"
+  | "pcMicSendMode"
 >;
 
 export function Keyboard() {
@@ -75,6 +78,7 @@ export function Keyboard() {
       showTeachingInputHelpers: s.settings.showTeachingInputHelpers,
       focusModeTransparent: s.settings.focusModeTransparent,
       fnKeyMode: s.settings.fnKeyMode,
+      pcMicSendMode: s.settings.pcMicSendMode,
     })),
   );
   // Helpers take Pick<AppSettings, ...>; a missing field is a type error.
@@ -106,8 +110,13 @@ export function Keyboard() {
   const setLanguagePickerOpen = useAppStore((s) => s.setLanguagePickerOpen);
   const selectTypingInputMethod = useAppStore((s) => s.selectTypingInputMethod);
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
-  const externalInputFocused = useAppStore((s) => s.externalInputFocused);
-  const toggleDictation = useAppStore((s) => s.toggleDictation);
+  const {
+    externalInputFocused,
+    toggleDictation,
+    startPcMicHold,
+    stopPcMicHold,
+  } = usePcMicDictationControls();
+  const micHoldMode = pcMicHoldEnabled(settings);
   const applyTypedLayoutTranslation = useAppStore(
     (s) => s.applyTypedLayoutTranslation,
   );
@@ -295,6 +304,13 @@ export function Keyboard() {
     (keyId: string, meta?: KeyRepeatFireMeta) => {
       const keyDef = keyDefsByIdRef.current.get(keyId);
       if (!keyDef) return;
+      if (
+        keyDef.key === "dictate" &&
+        pcMicHoldEnabled(useAppStore.getState().settings)
+      ) {
+        void startPcMicHold();
+        return;
+      }
       if (keyDef.key === "backspace") {
         const runInject = inject(
           (kd, opts) => handleKeyRef.current(kd, opts),
@@ -309,16 +325,22 @@ export function Keyboard() {
       }
       void handleKeyRef.current(keyDef);
     },
-    [backspaceInjectGate],
+    [backspaceInjectGate, startPcMicHold],
   );
 
   const onHoldEndKey = useCallback(
     (keyId: string) => {
       const keyDef = keyDefsByIdRef.current.get(keyId);
+      if (keyDef?.key === "dictate") {
+        if (pcMicHoldEnabled(useAppStore.getState().settings)) {
+          void stopPcMicHold();
+        }
+        return;
+      }
       if (keyDef?.key !== "backspace") return;
       void backspaceInjectGate.whenIdle().then(() => loadSuggestions());
     },
-    [backspaceInjectGate, loadSuggestions],
+    [backspaceInjectGate, loadSuggestions, stopPcMicHold],
   );
 
   const dictateBgColor = transparent
@@ -399,6 +421,8 @@ export function Keyboard() {
                   active={false}
                   disabled={dictateDisabled}
                   ariaLabel={dictateAriaLabel}
+                  holdPress={micHoldMode}
+                  onHoldEndKey={onHoldEndKey}
                   onPressKey={onPressKey}
                 />
               );

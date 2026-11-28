@@ -33,11 +33,13 @@ import { startAutoSendLogsScheduler } from "./lib/autoSendLogsScheduler";
 import { logWarn } from "./lib/log";
 import { logIpc, logLayoutIpc } from "./lib/logIpc";
 import { isTeachingFullWorkArea } from "./lib/v1HiddenFeatures";
+import { usePcMicHoldRelease } from "./hooks/usePcMicHoldRelease";
 import { useAppStore } from "./stores/appStore";
 
 const KEYBOARD_POLL_MS = 100;
 
 function MainApp() {
+  usePcMicHoldRelease();
   const profileHydrated = useAppStore((s) => s.profileHydrated);
   const loadProfileFiles = useAppStore((s) => s.loadProfileFiles);
   const loadMonitors = useAppStore((s) => s.loadMonitors);
