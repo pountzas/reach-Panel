@@ -85,6 +85,12 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 
 *Replace with captures from your release build when ready — see [docs/images/README.md](docs/images/README.md).*
 
+## Designs
+
+- [**reach-Panel**](https://app.paper.design/file/01M8BVDKBNP62R9FWZBSCHANNJ) on Paper — capture of the current Windows host UI (**v0.19.3**) as a design baseline, not a redesign. The Android companion screens are on their own page in the same Paper file.
+- Paper files are **private**; you need access to Nikos's Paper account to open them.
+- Repo references (screen list and tokens from the codebase): [design/baseline/inventory.md](design/baseline/inventory.md), [design/baseline/tokens.md](design/baseline/tokens.md).
+
 ## Features
 
 ### Modes
@@ -103,7 +109,7 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - Language switch key with country flag icons (follows installed Windows keyboards)
 - On-screen layout override (auto / QWERTY / QWERTZ / AZERTY / Greek)
 - Predictive text with offline word packs (English bundled; other languages downloadable), learns from typing, disable toggle; in Teaching, suggestions also work for Spelling and Free write when helpers and suggestions are on
-- Dictation key beside Right Ctrl (see Voice dictation below); show/hide the mic key under **Settings → Visible sections**
+- Dictation key beside Right Ctrl (see Voice typing below); show/hide the mic key under **Settings → Visible sections**
 - **Input preview** — when an external text field is targeted, a live ~320×48 strip follows the writing caret (clamped inside the field so a tall textarea is not shrunk to a postage stamp) on the keyboard toolbar. Toggle under **Settings → Visible sections → Live input preview** (on by default). Disabled entirely while a Teaching session is active (no capture). While a companion tablet session is active, the same strip is streamed to the tablet keyboard instead of the minimized host UI. Protected or DRM content may appear black; some custom controls may not expose a usable screen region. If Windows cannot exclude the panel from capture, a desktop fallback frame that would include the panel is dropped and the strip shows "Preview unavailable".
 - Special keys use symbols (Enter ↵, Shift ⇧, Backspace ⌫, Space ␣)
 - Backspace press-and-hold repeats like a Windows keyboard (~500ms delay, then ~33ms)
@@ -128,6 +134,14 @@ Tablets are required. Phone-sized devices can install the APK but are blocked wh
 - If no text field is remembered, the control stays disabled and its label asks you to select a text field
 
 Install a speech language under **Settings → Time & language → Speech**, and turn on online speech recognition if Windows asks for it.
+
+The Mic button starts Windows Voice typing. ReachPanel does not ship its own PC speech recognizer.
+
+For languages Windows Voice typing may not support, including Greek, [FU Flow](https://github.com/Breakzoras/fuck-you-flow) is a free, open-source dictation app for Windows 10 and 11. It transcribes on your PC by default and needs no account for local dictation.
+
+Install FU Flow separately. Click the text field you want, press Right Alt, speak, then press Right Alt again. The text is inserted at the cursor. Escape cancels. Hold-to-talk uses Ctrl+Win by default. You can change these shortcuts in FU Flow's Settings.
+
+The ReachPanel Mic button still sends Win+H. It does not start FU Flow. Use FU Flow's own shortcut alongside the on-screen keyboard. If the two shortcuts clash, change the key in FU Flow's Settings.
 
 ### Profiles & accessibility
 
@@ -236,6 +250,7 @@ Windows installers are built in CI and published automatically when a [release-p
 
 - Input injection does not work into elevated (admin) applications or UAC prompts
 - PC Voice typing follows the Windows speech language pack (Win+H). Greek needs that pack installed in Windows
+- For Greek and other languages Windows Voice typing may not support, [FU Flow](https://github.com/Breakzoras/fuck-you-flow) is documented under [Voice typing](#voice-typing-windows).
 - The tablet companion still has its own Groq dictation path
 - Companion needs the same LAN or USB tether; Teaching / Music are not available on the tablet
 
