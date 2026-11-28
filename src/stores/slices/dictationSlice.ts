@@ -5,8 +5,17 @@ import type { CommandResult } from "../../lib/types";
 import { DICTATION_SELECT_INPUT_ERROR } from "../../lib/dictationErrors";
 import { pcMicHoldEnabled } from "../../lib/pcMicSend";
 
-let pcMicHoldDownInFlight = false;
-let pcMicStopWhileHoldDownPending = false;
+const pcMicHoldGate = {
+  downInFlight: false,
+  stopWhilePending: false,
+};
+
+/** Read/clear stop-while-pending; helper keeps the cross-await race out of CF narrowing. */
+function consumePcMicStopWhilePending(): boolean {
+  const pending = pcMicHoldGate.stopWhilePending;
+  pcMicHoldGate.stopWhilePending = false;
+  return pending;
+}
 
 async function invokeCommand(
   cmd: string,
@@ -54,17 +63,16 @@ export const createDictationSlice: StateCreator<
       get().setLastError(DICTATION_SELECT_INPUT_ERROR);
       return;
     }
-    if (get().pcMicHolding || pcMicHoldDownInFlight) return;
-    pcMicHoldDownInFlight = true;
-    pcMicStopWhileHoldDownPending = false;
+    if (get().pcMicHolding || pcMicHoldGate.downInFlight) return;
+    pcMicHoldGate.downInFlight = true;
+    pcMicHoldGate.stopWhilePending = false;
     const ok = await invokeCommand(
       "cmd_pc_mic_hold_down",
       get,
       "Could not start hold-to-talk",
     );
-    pcMicHoldDownInFlight = false;
-    if (pcMicStopWhileHoldDownPending) {
-      pcMicStopWhileHoldDownPending = false;
+    pcMicHoldGate.downInFlight = false;
+    if (consumePcMicStopWhilePending()) {
       if (ok) {
         await invokeCommand(
           "cmd_pc_mic_hold_up",
@@ -87,8 +95,8 @@ export const createDictationSlice: StateCreator<
   },
 
   stopPcMicHold: async () => {
-    if (pcMicHoldDownInFlight) {
-      pcMicStopWhileHoldDownPending = true;
+    if (pcMicHoldGate.downInFlight) {
+      pcMicHoldGate.stopWhilePending = true;
       set({ pcMicHolding: false });
       return;
     }

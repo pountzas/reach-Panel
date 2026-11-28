@@ -37,7 +37,9 @@ describe("usePcMicHoldRelease", () => {
 
   it("calls stopPcMicHold on window blur while holding", () => {
     storeMock.pcMicHolding = true;
-    renderHook(() => usePcMicHoldRelease());
+    renderHook(() => {
+      usePcMicHoldRelease();
+    });
     window.dispatchEvent(new Event("blur"));
     expect(stopPcMicHold).toHaveBeenCalledTimes(1);
   });
@@ -45,7 +47,9 @@ describe("usePcMicHoldRelease", () => {
   it("calls stopPcMicHold when externalInputFocused becomes false while holding", () => {
     storeMock.pcMicHolding = true;
     storeMock.externalInputFocused = true;
-    const { rerender } = renderHook(() => usePcMicHoldRelease());
+    const { rerender } = renderHook(() => {
+      usePcMicHoldRelease();
+    });
     storeMock.externalInputFocused = false;
     rerender();
     expect(stopPcMicHold).toHaveBeenCalledTimes(1);
