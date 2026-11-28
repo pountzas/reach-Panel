@@ -128,7 +128,9 @@ describe("CollapsedFab mode menu", () => {
     expect(
       screen.getByRole("menuitem", { name: "Show keyboard" }),
     ).toBeTruthy();
-    expect(screen.getByRole("menuitemradio", { name: "Standard" })).toBeTruthy();
+    expect(
+      screen.getByRole("menuitemradio", { name: "Standard" }),
+    ).toBeTruthy();
     expect(screen.getByRole("menuitemradio", { name: "Focus" })).toBeTruthy();
     expect(screen.getByRole("menuitemradio", { name: "Mic" })).toBeTruthy();
     expect(
