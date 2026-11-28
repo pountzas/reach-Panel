@@ -128,7 +128,7 @@ describe("CollapsedFab mode menu", () => {
     expect(
       screen.getByRole("menuitem", { name: "Show keyboard" }),
     ).toBeTruthy();
-    expect(screen.getByRole("menuitemradio", { name: "Normal" })).toBeTruthy();
+    expect(screen.getByRole("menuitemradio", { name: "Standard" })).toBeTruthy();
     expect(screen.getByRole("menuitemradio", { name: "Focus" })).toBeTruthy();
     expect(screen.getByRole("menuitemradio", { name: "Mic" })).toBeTruthy();
     expect(
@@ -149,7 +149,7 @@ describe("CollapsedFab mode menu", () => {
     ).toBe("true");
     expect(
       screen
-        .getByRole("menuitemradio", { name: "Normal" })
+        .getByRole("menuitemradio", { name: "Standard" })
         .getAttribute("aria-checked"),
     ).toBe("false");
   });
@@ -157,7 +157,7 @@ describe("CollapsedFab mode menu", () => {
   it("picking a different mode calls setAppMode and closes the menu", async () => {
     storeState.modeMenuOpen = true;
     const { rerender } = render(<CollapsedFab />);
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "Normal" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Standard" }));
     await waitFor(() => {
       expect(closeModeMenu).toHaveBeenCalled();
       expect(setAppMode).toHaveBeenCalledWith("normal");
