@@ -15,7 +15,11 @@ describe("MicShortcutRecorder", () => {
   it("does not save on modifier-only keydown; saves on non-modifier keydown", () => {
     const onChange = vi.fn();
     render(
-      <MicShortcutRecorder value={["ctrl", "h"]} onChange={onChange} surface={surface} />,
+      <MicShortcutRecorder
+        value={["ctrl", "h"]}
+        onChange={onChange}
+        surface={surface}
+      />,
     );
     fireEvent.click(screen.getByRole("button", { name: "pcMicCustomRecord" }));
 
@@ -39,7 +43,11 @@ describe("MicShortcutRecorder", () => {
   it("saves modifier-only combo on keyup when all modifiers released", () => {
     const onChange = vi.fn();
     render(
-      <MicShortcutRecorder value={["ralt"]} onChange={onChange} surface={surface} />,
+      <MicShortcutRecorder
+        value={["ralt"]}
+        onChange={onChange}
+        surface={surface}
+      />,
     );
     fireEvent.click(screen.getByRole("button", { name: "pcMicCustomRecord" }));
 

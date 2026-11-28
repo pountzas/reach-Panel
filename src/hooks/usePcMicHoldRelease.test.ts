@@ -12,12 +12,14 @@ const { stopPcMicHold, storeMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("../stores/appStore", () => ({
-  useAppStore: (selector: (s: {
-    pcMicHolding: boolean;
-    externalInputFocused: boolean;
-    stopPcMicHold: () => void;
-    settings: typeof DEFAULT_SETTINGS;
-  }) => unknown) =>
+  useAppStore: (
+    selector: (s: {
+      pcMicHolding: boolean;
+      externalInputFocused: boolean;
+      stopPcMicHold: () => void;
+      settings: typeof DEFAULT_SETTINGS;
+    }) => unknown,
+  ) =>
     selector({
       pcMicHolding: storeMock.pcMicHolding,
       externalInputFocused: storeMock.externalInputFocused,
