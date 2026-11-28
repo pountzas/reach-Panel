@@ -493,6 +493,38 @@ mod tests {
     }
 
     #[test]
+    fn ctrl_shift_f9_combo_maps_to_vks() {
+        let vks =
+            combo_keys_to_vks(&["ctrl".into(), "shift".into(), "f9".into()]).expect("ctrl+shift+f9");
+        assert_eq!(
+            vks,
+            vec![VK_CONTROL, VK_SHIFT, VIRTUAL_KEY(VK_F1.0 + 8)]
+        );
+    }
+
+    #[test]
+    fn greek_eta_combo_token_errors() {
+        let err = combo_keys_to_vks(&["η".into()]).expect_err("non-ascii combo token");
+        assert!(err.to_string().contains("Unknown key token"));
+    }
+
+    #[test]
+    fn held_combo_cleared_only_after_successful_key_up() {
+        let _ = release_held_combo_keys();
+        let mut hold_sender = MockSender::new(None);
+        hold_combo_down_with_sender(vec!["ctrl".into(), "shift".into()], &mut hold_sender)
+            .expect("hold down");
+        let mut partial_release = MockSender::new(Some(1));
+        let err = release_held_combo_keys_with_sender(&mut partial_release)
+            .expect_err("first key up fails");
+        assert!(err.to_string().contains("SendInput failed"));
+        let mut finish_release = MockSender::new(None);
+        release_held_combo_keys_with_sender(&mut finish_release)
+            .expect("remaining held key releases");
+        assert!(finish_release.calls().iter().any(|c| c == &(VK_SHIFT.0, true)));
+    }
+
+    #[test]
     fn hold_down_sends_key_down_and_release_sends_key_up() {
         let _ = release_held_combo_keys();
         let mut sender = MockSender::new(None);
