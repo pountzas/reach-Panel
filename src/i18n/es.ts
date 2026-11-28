@@ -410,6 +410,16 @@ export const es = {
 
   fnKeyModeLatched: "Bloqueado (Fn permanece activo hasta pulsar de nuevo)",
 
+  pcMicSendMode: "El botón del micrófono envía",
+  pcMicSendWinH: "Win+H (dictado por voz de Windows)",
+  pcMicSendRightAlt: "Alt derecho (FU Flow)",
+  pcMicSendCustom: "Tecla personalizada…",
+  pcMicSendHint:
+    "La tecla Mic del teclado y el botón de micrófono contraído envían este atajo al campo con foco. El ajuste Alt derecho puede pedir confirmación de contraseña de Windows (FU Flow).",
+  pcMicCustomShortcut: "Atajo personalizado",
+  pcMicCustomRecord: "Grabar atajo…",
+  pcMicCustomRecording: "Pulse teclas… (clic para cancelar)",
+
   groqApiKeyLabel: "Clave API Groq (dictado del companion)",
 
   groqApiKeyHint:

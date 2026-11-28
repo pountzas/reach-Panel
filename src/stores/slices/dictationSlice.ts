@@ -4,6 +4,24 @@ import { invoke } from "@tauri-apps/api/core";
 import type { CommandResult } from "../../lib/types";
 import { DICTATION_SELECT_INPUT_ERROR } from "../../lib/dictationErrors";
 
+async function invokeCommand(
+  cmd: string,
+  get: () => AppStore,
+  errorFallback: string,
+): Promise<boolean> {
+  try {
+    const result = await invoke<CommandResult>(cmd);
+    if (!result.success) {
+      get().setLastError(result.error ?? errorFallback);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    get().setLastError(error instanceof Error ? error.message : String(error));
+    return false;
+  }
+}
+
 export const createDictationSlice: StateCreator<
   AppStore,
   [],
@@ -15,19 +33,10 @@ export const createDictationSlice: StateCreator<
       get().setLastError(DICTATION_SELECT_INPUT_ERROR);
       return;
     }
-    try {
-      const result = await invoke<CommandResult>(
-        "cmd_launch_windows_voice_typing",
-      );
-      if (!result.success) {
-        get().setLastError(
-          result.error ?? "Could not start Windows Voice typing",
-        );
-      }
-    } catch (error) {
-      get().setLastError(
-        error instanceof Error ? error.message : String(error),
-      );
-    }
+    await invokeCommand(
+      "cmd_launch_windows_voice_typing",
+      get,
+      "Could not start Windows Voice typing",
+    );
   },
 });

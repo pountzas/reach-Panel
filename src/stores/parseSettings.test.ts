@@ -53,6 +53,13 @@ describe("parseSettings", () => {
     expect(settings).not.toHaveProperty("lastAutoSendLogsAttemptAt");
   });
 
+  it("migrates legacy pcMicSendMode rightAltHold to rightAlt", () => {
+    const settings = parseSettings(
+      JSON.stringify({ pcMicSendMode: "rightAltHold" }),
+    );
+    expect(settings.pcMicSendMode).toBe("rightAlt");
+  });
+
   it("strips background image keys from old profiles and otherwise matches", () => {
     const leftover = {
       uiLanguage: "el",

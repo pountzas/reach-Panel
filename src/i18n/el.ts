@@ -414,6 +414,16 @@ export const el = {
 
   fnKeyModeLatched: "Κλειδωμένο (το Fn μένει ενεργό μέχρι να το πατήσετε ξανά)",
 
+  pcMicSendMode: "Το κουμπί μικροφώνου στέλνει",
+  pcMicSendWinH: "Win+H (φωνητική πληκτρολόγηση Windows)",
+  pcMicSendRightAlt: "Δεξί Alt (FU Flow)",
+  pcMicSendCustom: "Προσαρμοσμένο πλήκτρο…",
+  pcMicSendHint:
+    "Το πλήκτρο Mic του πληκτρολογίου και το συμπτυγμένο κουμπί μικροφώνου στέλνουν αυτή τη συντόμευση στο πεδίο με εστίαση. Η προεπιλογή Δεξί Alt μπορεί να ζητήσει επιβεβαίωση κωδικού από τα Windows (FU Flow).",
+  pcMicCustomShortcut: "Προσαρμοσμένη συντόμευση",
+  pcMicCustomRecord: "Καταγραφή συντόμευσης…",
+  pcMicCustomRecording: "Πατήστε πλήκτρα… (κλικ για ακύρωση)",
+
   groqApiKeyLabel: "Κλειδί Groq API (υπαγόρευση companion)",
 
   groqApiKeyHint:

@@ -21,11 +21,13 @@ use windows::Win32::UI::Accessibility::{
     UIA_DocumentControlTypeId, UIA_EditControlTypeId, UIA_GroupControlTypeId,
     UIA_IsReadOnlyAttributeId, UIA_ListControlTypeId, UIA_ListItemControlTypeId,
     UIA_SpinnerControlTypeId, UIA_TextPattern2Id, UIA_TextPatternId, UIA_ValuePatternId,
-    UIA_CONTROLTYPE_ID,
+    UIA_CONTROLTYPE_ID, UIA_PROPERTY_ID,
 };
 
 /// How long a real text field can "lend" focus to an autocomplete popup.
 pub const LAST_REAL_TEXT_FOCUS_TTL: Duration = Duration::from_secs(30);
+/// Win32 UIA property: `IsPassword` (HTML `input[type=password]`, etc.).
+const UIA_IS_PASSWORD_PROPERTY: UIA_PROPERTY_ID = UIA_PROPERTY_ID(30019);
 const AUTOCOMPLETE_ANCESTOR_WALK_DEPTH: usize = 6;
 
 struct LastRealTextFocus {
@@ -343,6 +345,15 @@ pub(super) fn uia_element_aria_role(element: &IUIAutomationElement) -> AriaRoleK
     }
 }
 
+pub(super) fn uia_element_is_password(element: &IUIAutomationElement) -> bool {
+    unsafe {
+        match element.GetCurrentPropertyValue(UIA_IS_PASSWORD_PROPERTY) {
+            Ok(value) => bool::try_from(&value).unwrap_or(false),
+            Err(_) => false,
+        }
+    }
+}
+
 pub(super) fn uia_element_value_writable(element: &IUIAutomationElement) -> bool {
     unsafe {
         let pattern = element
@@ -488,4 +499,3 @@ fn first_rect_center(psa: *mut SAFEARRAY) -> Option<(i32, i32)> {
         result
     }
 }
-

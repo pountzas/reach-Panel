@@ -190,6 +190,7 @@ pub fn run() {
                 event,
                 tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
             ) {
+                let _ = crate::input::release_held_combo_keys();
                 crate::diagnostics::breadcrumbs::flush();
             }
             crate::diagnostics::on_run_event(app, &event);

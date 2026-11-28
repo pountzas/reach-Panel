@@ -20,6 +20,7 @@ import {
   type CollapsedFabCount,
 } from "../../lib/focusMode";
 import { MOTION, prefersReducedMotion } from "../../lib/motion";
+import { usePcMicDictationControls } from "../../hooks/usePcMicDictationControls";
 import { ModeMenu } from "./ModeMenu";
 import reachPanelLogo from "../../../design/reachpanel-logo.svg";
 
@@ -75,8 +76,7 @@ export function CollapsedFab({
   );
   const toggleCollapsed = useAppStore((s) => s.toggleCollapsed);
   const isAnimatingWindow = useAppStore((s) => s.isAnimatingWindow);
-  const externalInputFocused = useAppStore((s) => s.externalInputFocused);
-  const toggleDictation = useAppStore((s) => s.toggleDictation);
+  const { externalInputFocused, toggleDictation } = usePcMicDictationControls();
   const modeMenuOpen = useAppStore((s) => s.modeMenuOpen);
   const openModeMenu = useAppStore((s) => s.openModeMenu);
   const closeModeMenu = useAppStore((s) => s.closeModeMenu);
@@ -222,7 +222,9 @@ export function CollapsedFab({
             disabled={!micEnabled}
             aria-disabled={!micEnabled}
             title={micEnabled ? undefined : micAriaLabel}
-            onClick={() => void toggleDictation()}
+            onClick={() => {
+              void toggleDictation();
+            }}
             aria-label={micAriaLabel}>
             <span className="flex h-full w-full items-center justify-center transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-95">
               <MicrophoneIcon className="h-6 w-6 transition-colors duration-200" />

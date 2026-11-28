@@ -45,7 +45,7 @@ import { useAppStore } from "../appStore";
 import { storeFlags } from "../storeFlags";
 import { DICTATION_SELECT_INPUT_ERROR } from "../../lib/dictationErrors";
 
-describe("toggleDictation launches Windows Voice typing", () => {
+describe("toggleDictation launches configured mic shortcut", () => {
   beforeEach(() => {
     invokeMock.mockReset();
     notifyError.mockReset();
@@ -71,6 +71,16 @@ describe("toggleDictation launches Windows Voice typing", () => {
     await useAppStore.getState().toggleDictation();
     expect(invokeMock).toHaveBeenCalledWith("cmd_launch_windows_voice_typing");
     expect(notifyError).not.toHaveBeenCalled();
+  });
+
+  it("uses the same one-shot path for Right Alt preset", async () => {
+    invokeMock.mockResolvedValue({ success: true, error: null });
+    useAppStore.setState({
+      externalInputFocused: true,
+      settings: { ...DEFAULT_SETTINGS, pcMicSendMode: "rightAlt" },
+    });
+    await useAppStore.getState().toggleDictation();
+    expect(invokeMock).toHaveBeenCalledWith("cmd_launch_windows_voice_typing");
   });
 
   it("surfaces a host error and does not treat it as success", async () => {

@@ -440,6 +440,23 @@ export const en = {
 
   fnKeyModeLatched: "Latched (Fn stays on until tapped again)",
 
+  pcMicSendMode: "Mic button sends",
+
+  pcMicSendWinH: "Win+H (Windows Voice typing)",
+
+  pcMicSendRightAlt: "Right Alt (FU Flow)",
+
+  pcMicSendCustom: "Custom key…",
+
+  pcMicSendHint:
+    "The keyboard Mic key and collapsed mic button send this shortcut to the focused field. The Right Alt preset may trigger Windows password confirmation (FU Flow).",
+
+  pcMicCustomShortcut: "Custom shortcut",
+
+  pcMicCustomRecord: "Record shortcut…",
+
+  pcMicCustomRecording: "Press keys… (click to cancel)",
+
   groqApiKeyLabel: "Groq API key (companion dictation)",
 
   groqApiKeyHint:

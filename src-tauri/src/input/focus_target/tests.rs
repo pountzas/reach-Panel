@@ -471,6 +471,13 @@ fn last_real_text_focus_expires_after_ttl() {
 }
 
 #[test]
+fn es_password_style_flag_is_detected() {
+    use super::win32::style_has_es_password;
+    assert!(style_has_es_password(0x20));
+    assert!(!style_has_es_password(0));
+}
+
+#[test]
 fn autocomplete_satellite_requires_remembered_owner() {
     assert!(satellite_matches_remembered_owner(42, 0, Some((42, 100))));
     assert!(satellite_matches_remembered_owner(0, 100, Some((42, 100))));

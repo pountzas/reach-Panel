@@ -411,6 +411,16 @@ export const de = {
 
   fnKeyModeLatched: "Verriegelt (Fn bleibt an, bis erneut getippt)",
 
+  pcMicSendMode: "Mikrofon-Taste sendet",
+  pcMicSendWinH: "Win+H (Windows-Spracheingabe)",
+  pcMicSendRightAlt: "Rechte Alt-Taste (FU Flow)",
+  pcMicSendCustom: "Eigene Taste…",
+  pcMicSendHint:
+    "Die Mikrofon-Taste der Tastatur und die eingeklappte Mikrofon-Schaltfläche senden diese Tastenkombination an das fokussierte Feld. Bei Rechte Alt kann Windows die Passwortbestätigung anfordern (FU Flow).",
+  pcMicCustomShortcut: "Eigene Tastenkombination",
+  pcMicCustomRecord: "Tastenkombination aufnehmen…",
+  pcMicCustomRecording: "Tasten drücken… (Klick zum Abbrechen)",
+
   groqApiKeyLabel: "Groq-API-Schlüssel (Companion-Diktat)",
 
   groqApiKeyHint:

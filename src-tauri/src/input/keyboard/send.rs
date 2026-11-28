@@ -2,12 +2,27 @@ use super::super::focus_target::with_target_focus;
 use super::layout::qwerty_key_to_vk;
 use anyhow::{anyhow, Result};
 use serde::Deserialize;
+use std::sync::Mutex;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE,
-    VIRTUAL_KEY, VK_BACK, VK_CAPITAL, VK_CONTROL, VK_DELETE, VK_DOWN, VK_END, VK_ESCAPE, VK_F1,
-    VK_HOME, VK_LEFT, VK_LMENU, VK_LWIN, VK_NEXT, VK_PRIOR, VK_RETURN, VK_RIGHT, VK_SHIFT, VK_SPACE,
-    VK_TAB, VK_UP,
+    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP,
+    KEYEVENTF_UNICODE, VIRTUAL_KEY, VK_BACK, VK_CAPITAL, VK_CONTROL, VK_DELETE, VK_DOWN, VK_END,
+    VK_ESCAPE, VK_F1, VK_HOME, VK_LEFT, VK_LMENU, VK_LWIN, VK_NEXT, VK_PRIOR, VK_RETURN, VK_RIGHT,
+    VK_RMENU, VK_SHIFT, VK_SPACE, VK_TAB, VK_UP,
 };
+
+fn vk_uses_extended_key(vk: VIRTUAL_KEY) -> bool {
+    vk == VK_RMENU
+}
+
+fn vk_key_event_flags(vk: VIRTUAL_KEY, key_up: bool) -> u32 {
+    let mut flags = if key_up { KEYEVENTF_KEYUP.0 } else { 0 };
+    if vk_uses_extended_key(vk) {
+        flags |= KEYEVENTF_EXTENDEDKEY.0;
+    }
+    flags
+}
+
+static HELD_COMBO_KEYS: Mutex<Vec<VIRTUAL_KEY>> = Mutex::new(Vec::new());
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -24,9 +39,31 @@ fn modifier_vk(name: &str) -> Option<VIRTUAL_KEY> {
         "shift" => Some(VK_SHIFT),
         "ctrl" | "control" => Some(VK_CONTROL),
         "alt" => Some(VK_LMENU),
+        "ralt" | "rightalt" | "rmenu" => Some(VK_RMENU),
         "win" | "meta" => Some(VK_LWIN),
         _ => None,
     }
+}
+
+pub(crate) fn combo_keys_to_vks(keys: &[String]) -> Result<Vec<VIRTUAL_KEY>> {
+    let mut vks: Vec<VIRTUAL_KEY> = Vec::new();
+    for key in keys {
+        if let Some(vk) = modifier_vk(key) {
+            vks.push(vk);
+        } else if let Some(vk) = special_vk(key) {
+            vks.push(vk);
+        } else if key.len() == 1 {
+            let ch = key.chars().next().expect("len checked");
+            let vk = char_to_vk(ch).ok_or_else(|| anyhow!("Unknown key token: {key}"))?;
+            vks.push(vk);
+        } else {
+            return Err(anyhow!("Unknown key token: {key}"));
+        }
+    }
+    if vks.is_empty() {
+        return Err(anyhow!("No keys in combo"));
+    }
+    Ok(vks)
 }
 
 fn special_vk(key: &str) -> Option<VIRTUAL_KEY> {
@@ -46,9 +83,17 @@ fn special_vk(key: &str) -> Option<VIRTUAL_KEY> {
         "left" => Some(VK_LEFT),
         "right" => Some(VK_RIGHT),
         "capslock" => Some(VK_CAPITAL),
-        "f1" => Some(VK_F1),
-        _ => None,
+        _ => f_key_vk(key),
     }
+}
+
+fn f_key_vk(key: &str) -> Option<VIRTUAL_KEY> {
+    let lower = key.to_lowercase();
+    let num = lower.strip_prefix('f')?.parse::<u16>().ok()?;
+    if !(1..=24).contains(&num) {
+        return None;
+    }
+    Some(VIRTUAL_KEY(VK_F1.0 + num - 1))
 }
 
 pub(super) fn send_input_incomplete(sent: u32, expected: u32) -> bool {
@@ -73,18 +118,14 @@ impl KeySender for OsKeySender {
 }
 
 fn send_vk(vk: VIRTUAL_KEY, key_up: bool) -> Result<()> {
-    let flags = if key_up {
-        KEYEVENTF_KEYUP
-    } else {
-        Default::default()
-    };
+    let flags = vk_key_event_flags(vk, key_up);
     let input = INPUT {
         r#type: INPUT_KEYBOARD,
         Anonymous: INPUT_0 {
             ki: KEYBDINPUT {
                 wVk: vk,
                 wScan: 0,
-                dwFlags: flags,
+                dwFlags: windows::Win32::UI::Input::KeyboardAndMouse::KEYBD_EVENT_FLAGS(flags),
                 time: 0,
                 dwExtraInfo: 0,
             },
@@ -300,21 +341,41 @@ pub fn press_combo(keys: Vec<String>) -> Result<()> {
     with_target_focus(|| press_combo_impl(keys))
 }
 
-fn press_combo_impl(keys: Vec<String>) -> Result<()> {
-    let mut vks: Vec<VIRTUAL_KEY> = Vec::new();
-    for key in &keys {
-        if let Some(vk) = modifier_vk(key) {
-            vks.push(vk);
-        } else if let Some(vk) = special_vk(key) {
-            vks.push(vk);
-        } else if key.len() == 1 {
-            if let Some(ch) = key.chars().next() {
-                if let Some(vk) = char_to_vk(ch) {
-                    vks.push(vk);
+fn release_held_combo_keys_with_sender(sender: &mut dyn KeySender) -> Result<()> {
+    let mut held = HELD_COMBO_KEYS
+        .lock()
+        .map_err(|_| anyhow!("Held key state poisoned"))?;
+    if held.is_empty() {
+        return Ok(());
+    }
+    let mut first_err: Option<anyhow::Error> = None;
+    let mut still_held: Vec<VIRTUAL_KEY> = Vec::new();
+    for vk in held.iter().rev() {
+        match sender.send_vk(*vk, true) {
+            Ok(()) => {}
+            Err(err) => {
+                still_held.push(*vk);
+                if first_err.is_none() {
+                    first_err = Some(err);
                 }
             }
         }
     }
+    still_held.reverse();
+    *held = still_held;
+    match first_err {
+        Some(err) => Err(err),
+        None => Ok(()),
+    }
+}
+
+/// Release any combo keys left held in process-global state (e.g. on app exit).
+pub fn release_held_combo_keys() -> Result<()> {
+    release_held_combo_keys_with_sender(&mut OsKeySender)
+}
+
+fn press_combo_impl(keys: Vec<String>) -> Result<()> {
+    let vks = combo_keys_to_vks(&keys)?;
     let mut pressed: Vec<VIRTUAL_KEY> = Vec::new();
     let result = (|| -> Result<()> {
         for vk in &vks {
@@ -384,6 +445,51 @@ mod tests {
         assert_eq!(calls[0], (VK_CONTROL.0, false));
         assert_eq!(calls[1].1, false); // main key down
         assert_eq!(calls[2], (VK_CONTROL.0, true)); // always released
+    }
+
+    #[test]
+    fn right_alt_preset_maps_to_vk_rmenu() {
+        let vks = combo_keys_to_vks(&["ralt".into()]).expect("ralt vk");
+        assert_eq!(vks, vec![VK_RMENU]);
+    }
+
+    #[test]
+    fn f_keys_f1_through_f24_map_to_vks() {
+        let vks = combo_keys_to_vks(&["f12".into()]).expect("f12");
+        assert_eq!(vks, vec![VIRTUAL_KEY(VK_F1.0 + 11)]);
+        let vks = combo_keys_to_vks(&["f24".into()]).expect("f24");
+        assert_eq!(vks, vec![VIRTUAL_KEY(VK_F1.0 + 23)]);
+    }
+
+    #[test]
+    fn unknown_combo_token_errors() {
+        let err = combo_keys_to_vks(&["fn".into()]).expect_err("unknown");
+        assert!(err.to_string().contains("Unknown key token"));
+    }
+
+    #[test]
+    fn ctrl_shift_f9_combo_maps_to_vks() {
+        let vks =
+            combo_keys_to_vks(&["ctrl".into(), "shift".into(), "f9".into()]).expect("ctrl+shift+f9");
+        assert_eq!(
+            vks,
+            vec![VK_CONTROL, VK_SHIFT, VIRTUAL_KEY(VK_F1.0 + 8)]
+        );
+    }
+
+    #[test]
+    fn greek_eta_combo_token_errors() {
+        let err = combo_keys_to_vks(&["η".into()]).expect_err("non-ascii combo token");
+        assert!(err.to_string().contains("Unknown key token"));
+    }
+
+    #[test]
+    fn right_alt_down_uses_extended_key_flag() {
+        let flags = vk_key_event_flags(VK_RMENU, false);
+        assert_ne!(flags & KEYEVENTF_EXTENDEDKEY.0, 0);
+        let up = vk_key_event_flags(VK_RMENU, true);
+        assert_ne!(up & KEYEVENTF_EXTENDEDKEY.0, 0);
+        assert_ne!(up & KEYEVENTF_KEYUP.0, 0);
     }
 
     #[test]

@@ -1,5 +1,6 @@
 //! Win32 HWND / class / caret helpers for focus targeting.
 
+use anyhow::Result;
 use windows::Win32::Foundation::{HWND, POINT};
 use windows::Win32::Graphics::Gdi::ClientToScreen;
 use windows::Win32::System::Threading::{
@@ -8,10 +9,9 @@ use windows::Win32::System::Threading::{
 use windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, GetAncestor, GetCaretPos, GetClassNameW, GetForegroundWindow,
     GetGUIThreadInfo, GetParent, GetWindowLongW, GetWindowThreadProcessId, IsWindow,
-    IsWindowVisible, SetForegroundWindow, ShowWindow, ES_READONLY, GA_ROOT, GUITHREADINFO,
-    GWL_STYLE, SW_RESTORE,
+    IsWindowVisible, SetForegroundWindow, ShowWindow, ES_PASSWORD, ES_READONLY, GA_ROOT,
+    GUITHREADINFO, GWL_STYLE, SW_RESTORE,
 };
-use anyhow::Result;
 
 pub(super) fn is_null(hwnd: HWND) -> bool {
     hwnd.0.is_null()
@@ -174,6 +174,35 @@ pub(super) fn is_readonly_edit(hwnd: HWND, class: &str) -> bool {
     }
 }
 
+pub(crate) fn style_has_es_password(style: i32) -> bool {
+    (style & ES_PASSWORD) != 0
+}
+
+pub(super) fn is_password_edit(hwnd: HWND, class: &str) -> bool {
+    let lower = class.to_ascii_lowercase();
+    if lower != "edit" && !lower.starts_with("richedit") {
+        return false;
+    }
+    unsafe { style_has_es_password(GetWindowLongW(hwnd, GWL_STYLE)) }
+}
+
+pub(super) fn hwnd_or_ancestor_is_password(hwnd: HWND) -> bool {
+    let mut current = hwnd;
+    for _ in 0..8 {
+        if is_null(current) || is_our_window(current) {
+            break;
+        }
+        let class = window_class_name(current);
+        if is_password_edit(current, &class) {
+            return true;
+        }
+        unsafe {
+            current = GetParent(current).unwrap_or_default();
+        }
+    }
+    false
+}
+
 pub(super) fn gui_thread_info() -> Option<GUITHREADINFO> {
     unsafe {
         let mut info = GUITHREADINFO {
@@ -298,4 +327,3 @@ pub(super) unsafe fn bring_to_foreground(hwnd: HWND) -> Result<()> {
     }
     Ok(())
 }
-

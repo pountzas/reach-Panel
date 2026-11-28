@@ -407,6 +407,16 @@ export const it = {
 
   fnKeyModeLatched: "Bloccato (Fn resta attivo finché non lo tocchi di nuovo)",
 
+  pcMicSendMode: "Il pulsante micro invia",
+  pcMicSendWinH: "Win+H (digitazione vocale Windows)",
+  pcMicSendRightAlt: "Alt destro (FU Flow)",
+  pcMicSendCustom: "Tasto personalizzato…",
+  pcMicSendHint:
+    "Il tasto Mic della tastiera e il pulsante micro compresso inviano questa scorciatoia al campo con focus. L’impostazione Alt destro può richiedere la conferma password di Windows (FU Flow).",
+  pcMicCustomShortcut: "Scorciatoia personalizzata",
+  pcMicCustomRecord: "Registra scorciatoia…",
+  pcMicCustomRecording: "Premi i tasti… (clic per annullare)",
+
   groqApiKeyLabel: "Chiave API Groq (dettatura companion)",
 
   groqApiKeyHint:

@@ -1,6 +1,11 @@
 import { useShallow } from "zustand/react/shallow";
 import type { SurfaceColors } from "../../lib/colorProfiles";
-import type { FnKeyMode } from "../../lib/types";
+import type { FnKeyMode, PcMicSendMode } from "../../lib/types";
+import {
+  DEFAULT_PC_MIC_CUSTOM_KEYS,
+  DEFAULT_PC_MIC_SEND_MODE,
+} from "../../lib/pcMicSend";
+import { MicShortcutRecorder } from "./MicShortcutRecorder";
 import { GROQ_API_KEYS_URL, openExternalLink } from "../../lib/appInfo";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAppStore } from "../../stores/appStore";
@@ -33,6 +38,41 @@ export function KeyboardSettingsSection({
           <option value="latched">{t("fnKeyModeLatched")}</option>
         </ThemedSelect>
       </label>
+      <label
+        className="mt-3 block text-sm"
+        style={{ color: surface.panelText }}>
+        {t("pcMicSendMode")}
+        <ThemedSelect
+          value={settings.pcMicSendMode ?? DEFAULT_PC_MIC_SEND_MODE}
+          onChange={(v) => {
+            const mode = v as PcMicSendMode;
+            if (mode === "custom") {
+              void updateSettings({
+                pcMicSendMode: mode,
+                pcMicCustomKeys: settings.pcMicCustomKeys ?? [
+                  ...DEFAULT_PC_MIC_CUSTOM_KEYS,
+                ],
+              });
+              return;
+            }
+            void updateSettings({ pcMicSendMode: mode });
+          }}
+          surface={surface}>
+          <option value="winH">{t("pcMicSendWinH")}</option>
+          <option value="rightAlt">{t("pcMicSendRightAlt")}</option>
+          <option value="custom">{t("pcMicSendCustom")}</option>
+        </ThemedSelect>
+        <span className="mt-1 block text-xs opacity-80">
+          {t("pcMicSendHint")}
+        </span>
+      </label>
+      {(settings.pcMicSendMode ?? DEFAULT_PC_MIC_SEND_MODE) === "custom" ? (
+        <MicShortcutRecorder
+          value={settings.pcMicCustomKeys ?? [...DEFAULT_PC_MIC_CUSTOM_KEYS]}
+          onChange={(keys) => void updateSettings({ pcMicCustomKeys: keys })}
+          surface={surface}
+        />
+      ) : null}
       <div className="mt-3">
         <label
           className="block text-sm"

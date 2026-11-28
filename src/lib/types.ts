@@ -10,6 +10,8 @@ export type { SynthOctaveCount };
 export type MousePanelMode = "mouse" | "numpad";
 export type MousePanelSide = "left" | "right";
 export type FnKeyMode = "one-shot" | "latched";
+/** PC Mic button shortcut preset (Settings → Keyboard). */
+export type PcMicSendMode = "winH" | "rightAlt" | "custom";
 export type KeyboardSectionMode = "keyboard" | "synthesizer";
 /** Outline/label palette for transparent focus-mode keyboard. */
 export type TransparentKeyColor = "white" | "dark-gray" | "silver";
@@ -65,6 +67,10 @@ export type AppSettings = {
   collapsed: boolean;
   mouseAutoHide?: boolean;
   fnKeyMode: FnKeyMode;
+  /** What the PC Mic button injects into the focused field (default Win+H). */
+  pcMicSendMode?: PcMicSendMode;
+  /** Combo tokens when `pcMicSendMode` is `custom` (e.g. `["win","h"]`). */
+  pcMicCustomKeys?: string[];
   keyboardSectionMode: KeyboardSectionMode;
   keyboardModeToggleVisible: boolean;
   synthesizerVolume?: number;

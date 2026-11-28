@@ -13,5 +13,7 @@ pub use layout::{
     translate_layout_key_press, windows_ui_language, InputMethod, LayoutKeyLabel,
     LayoutKeyTranslation,
 };
-pub use send::{press_combo, press_key, type_text, KeyPressRequest};
+pub use send::{
+    press_combo, press_key, release_held_combo_keys, type_text, KeyPressRequest,
+};
 pub use state::{get_keyboard_state, KeyboardState};

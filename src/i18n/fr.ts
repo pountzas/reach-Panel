@@ -411,6 +411,16 @@ export const fr = {
 
   fnKeyModeLatched: "Verrouillé (Fn reste actif jusqu’à un nouvel appui)",
 
+  pcMicSendMode: "Le bouton micro envoie",
+  pcMicSendWinH: "Win+H (dictée vocale Windows)",
+  pcMicSendRightAlt: "Alt droit (FU Flow)",
+  pcMicSendCustom: "Touche personnalisée…",
+  pcMicSendHint:
+    "La touche Mic du clavier et le bouton micro réduit envoient ce raccourci au champ actif. Le préréglage Alt droit peut déclencher la confirmation de mot de passe Windows (FU Flow).",
+  pcMicCustomShortcut: "Raccourci personnalisé",
+  pcMicCustomRecord: "Enregistrer un raccourci…",
+  pcMicCustomRecording: "Appuyez sur des touches… (clic pour annuler)",
+
   groqApiKeyLabel: "Clé API Groq (dictée du companion)",
 
   groqApiKeyHint:

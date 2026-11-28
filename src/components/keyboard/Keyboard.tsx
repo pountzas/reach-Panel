@@ -40,6 +40,7 @@ import { inject } from "./keyboardUtils";
 import { useStickyModifiers } from "../../hooks/useStickyModifiers";
 import { useKeyboardKeyPress } from "./useKeyboardKeyPress";
 import type { KeyRepeatFireMeta } from "../../hooks/useKeyRepeat";
+import { usePcMicDictationControls } from "../../hooks/usePcMicDictationControls";
 
 /** Settings fields Keyboard (and its key-press helpers) actually read. */
 type KeyboardSettingsSlice = Pick<
@@ -57,6 +58,7 @@ type KeyboardSettingsSlice = Pick<
   | "showTeachingInputHelpers"
   | "focusModeTransparent"
   | "fnKeyMode"
+  | "pcMicSendMode"
 >;
 
 export function Keyboard() {
@@ -75,6 +77,7 @@ export function Keyboard() {
       showTeachingInputHelpers: s.settings.showTeachingInputHelpers,
       focusModeTransparent: s.settings.focusModeTransparent,
       fnKeyMode: s.settings.fnKeyMode,
+      pcMicSendMode: s.settings.pcMicSendMode,
     })),
   );
   // Helpers take Pick<AppSettings, ...>; a missing field is a type error.
@@ -106,8 +109,7 @@ export function Keyboard() {
   const setLanguagePickerOpen = useAppStore((s) => s.setLanguagePickerOpen);
   const selectTypingInputMethod = useAppStore((s) => s.selectTypingInputMethod);
   const loadInputMethods = useAppStore((s) => s.loadInputMethods);
-  const externalInputFocused = useAppStore((s) => s.externalInputFocused);
-  const toggleDictation = useAppStore((s) => s.toggleDictation);
+  const { externalInputFocused, toggleDictation } = usePcMicDictationControls();
   const applyTypedLayoutTranslation = useAppStore(
     (s) => s.applyTypedLayoutTranslation,
   );
@@ -399,6 +401,7 @@ export function Keyboard() {
                   active={false}
                   disabled={dictateDisabled}
                   ariaLabel={dictateAriaLabel}
+                  onHoldEndKey={onHoldEndKey}
                   onPressKey={onPressKey}
                 />
               );
