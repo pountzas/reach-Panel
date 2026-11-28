@@ -20,6 +20,7 @@ import {
   type CollapsedFabCount,
 } from "../../lib/focusMode";
 import { MOTION, prefersReducedMotion } from "../../lib/motion";
+import { FocusModeHintBubble } from "./FocusModeHintBubble";
 import { ModeMenu } from "./ModeMenu";
 import reachPanelLogo from "../../../design/reachpanel-logo.svg";
 
@@ -80,6 +81,12 @@ export function CollapsedFab({
   const modeMenuOpen = useAppStore((s) => s.modeMenuOpen);
   const openModeMenu = useAppStore((s) => s.openModeMenu);
   const closeModeMenu = useAppStore((s) => s.closeModeMenu);
+  const focusModeHiddenTipVisible = useAppStore(
+    (s) => s.focusModeHiddenTipVisible,
+  );
+  const dismissFocusModeHiddenTip = useAppStore(
+    (s) => s.dismissFocusModeHiddenTip,
+  );
   const { t } = useTranslation();
   const [menuMounted, setMenuMounted] = useState(false);
   const [menuEntered, setMenuEntered] = useState(false);
@@ -197,6 +204,11 @@ export function CollapsedFab({
       style={{ background: "transparent" }}
       onClick={handleRootClick}
       onKeyDown={handleRootKeyDown}>
+      {focusModeHiddenTipVisible && !modeMenuOpen ? (
+        <FocusModeHintBubble
+          onDismiss={() => void dismissFocusModeHiddenTip({ persist: true })}
+        />
+      ) : null}
       {menuMounted ? (
         <ModeMenu onShowKeyboard={handleExpand} entered={menuEntered} />
       ) : null}

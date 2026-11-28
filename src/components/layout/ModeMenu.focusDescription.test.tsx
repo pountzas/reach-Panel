@@ -46,15 +46,12 @@ describe("ModeMenu Focus description", () => {
   it("shows modeFocusDescription under Focus only", () => {
     render(<ModeMenu onShowKeyboard={() => undefined} />);
     const focus = screen.getByRole("menuitemradio", { name: "Focus" });
-    expect(focus).toHaveTextContent(
+    expect(focus.textContent).toContain(
       "Keyboard appears when you tap a text field",
     );
     expect(
-      screen.getByRole("menuitemradio", { name: "Standard" }),
-    ).not.toHaveTextContent("Keyboard appears when you tap a text field");
-    expect(focus).toHaveAttribute(
-      "aria-describedby",
-      expect.stringContaining("focus-mode-menu-desc"),
-    );
+      screen.getByRole("menuitemradio", { name: "Standard" }).textContent,
+    ).not.toContain("Keyboard appears when you tap a text field");
+    expect(focus.getAttribute("aria-describedby")).toBe("focus-mode-menu-desc");
   });
 });

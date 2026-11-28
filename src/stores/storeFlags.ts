@@ -23,6 +23,7 @@ export const storeFlags = {
   focusLayoutSyncInFlight: false,
   /** focusMode slice — in-flight mode-menu window expand. */
   modeMenuExpandPending: null as Promise<void> | null,
+  focusModeHiddenTipAutoHideTimer: null as ReturnType<typeof setTimeout> | null,
   /** profile slice — coalesce rapid touch↔mouse pointerdowns. */
   pendingPointerInputKind: null as PointerInputKind | null,
   pointerInputKindDebounceTimer: null as ReturnType<typeof setTimeout> | null,

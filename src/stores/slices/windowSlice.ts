@@ -136,6 +136,9 @@ export const createWindowSlice: StateCreator<AppStore, [], [], WindowSlice> = (
     }
   },
   setShowSettings: (show) => {
+    if (show && get().focusModeHiddenTipVisible) {
+      void get().dismissFocusModeHiddenTip({ persist: false });
+    }
     void setToolWindowVisible(get, set, "settings", show);
   },
   syncWindowFocusable: async () => {

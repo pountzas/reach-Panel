@@ -29,6 +29,9 @@ export const createFocusModeSlice: StateCreator<
     if (get().isAnimatingWindow || get().modeMenuOpen) {
       return;
     }
+    if (get().focusModeHiddenTipVisible) {
+      await get().dismissFocusModeHiddenTip({ persist: false });
+    }
     set({ modeMenuOpen: true });
     const pending = invoke("cmd_expand_window_for_mode_menu", {
       menuWidth: MODE_MENU_WIDTH,

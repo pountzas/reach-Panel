@@ -275,6 +275,15 @@ export type FocusModeSlice = {
   collapseFocusModeKeyboard: () => Promise<void>;
 };
 
+export type FocusModeHiddenTipSlice = {
+  focusModeHiddenTipDismissed: boolean;
+  focusModeHiddenTipVisible: boolean;
+  focusModeHiddenTipArmed: boolean;
+  hydrateFocusModeHiddenTipDismissed: () => Promise<void>;
+  presentFocusModeHiddenTip: () => Promise<void>;
+  dismissFocusModeHiddenTip: (input: { persist: boolean }) => Promise<void>;
+};
+
 export type ModeSlice = {
   /** LIFO session snapshots for nested mode/mouse restores. */
   restoreStack: RestoreStackEntry[];
@@ -334,6 +343,7 @@ export type AppStore = ErrorsSlice &
   TypingSlice &
   WindowSlice &
   FocusModeSlice &
+  FocusModeHiddenTipSlice &
   ModeSlice &
   ProfileSlice;
 

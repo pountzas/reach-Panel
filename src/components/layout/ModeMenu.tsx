@@ -7,6 +7,7 @@ import {
   type AppModeTablet,
 } from "../../lib/appModeLayout";
 import {
+  MODE_MENU_FOCUS_ROW_HEIGHT,
   MODE_MENU_ITEM_HEIGHT,
   MODE_MENU_PAD,
   MODE_MENU_WIDTH,
@@ -146,6 +147,7 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
 
   const itemClass =
     "flex w-full items-center gap-2 px-3 text-left text-sm disabled:opacity-50";
+  const focusDescriptionId = "focus-mode-menu-desc";
 
   return (
     <div
@@ -196,23 +198,39 @@ export function ModeMenu({ onShowKeyboard, entered = true }: ModeMenuProps) {
         const companionDisabled =
           m.id === "companion" && !companionTabletEnabled;
         const checked = selected === m.id;
+        const isFocus = m.id === "focus";
         return (
           <button
             key={m.id}
             type="button"
             role="menuitemradio"
             aria-checked={checked}
+            aria-label={t(m.labelKey)}
+            aria-describedby={isFocus ? focusDescriptionId : undefined}
             className={itemClass}
-            style={{ minHeight: MODE_MENU_ITEM_HEIGHT }}
+            style={{
+              minHeight: isFocus
+                ? MODE_MENU_FOCUS_ROW_HEIGHT
+                : MODE_MENU_ITEM_HEIGHT,
+            }}
             disabled={isAnimatingWindow || companionDisabled}
             title={
               companionDisabled ? t("modeCompanionUnavailable") : undefined
             }
             onClick={() => void onPick(m.id)}>
-            <span className="inline-flex w-4 shrink-0 justify-center">
+            <span className="inline-flex w-4 shrink-0 justify-center self-start pt-3">
               {checked ? <CheckMark /> : null}
             </span>
-            <span className="flex-1">{t(m.labelKey)}</span>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5 py-2">
+              <span>{t(m.labelKey)}</span>
+              {isFocus ? (
+                <span
+                  id={focusDescriptionId}
+                  className="text-xs leading-snug opacity-70">
+                  {t("modeFocusDescription")}
+                </span>
+              ) : null}
+            </span>
           </button>
         );
       })}

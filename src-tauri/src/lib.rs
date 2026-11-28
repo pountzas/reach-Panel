@@ -1,4 +1,5 @@
 mod commands;
+mod install_prefs;
 mod companion;
 mod db;
 mod diagnostics;
@@ -127,6 +128,8 @@ pub fn run() {
             commands::input_preview::cmd_exclude_window_from_capture,
             commands::window::cmd_set_window_focusable,
             commands::window::cmd_expand_window_for_mode_menu,
+            commands::install_prefs::cmd_get_focus_mode_hidden_tip_dismissed,
+            commands::install_prefs::cmd_set_focus_mode_hidden_tip_dismissed,
             commands::profiles::cmd_get_profiles,
             commands::profiles::cmd_list_profile_files,
             commands::profiles::cmd_get_active_profile_file,

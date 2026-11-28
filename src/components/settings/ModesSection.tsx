@@ -173,6 +173,11 @@ export function ModesSection({ surface }: { surface: SurfaceColors }) {
           );
         })}
       </div>
+      <p
+        className="mt-2 px-1 text-xs"
+        style={{ color: surface.panelMutedText }}>
+        {t("modeFocusDescription")}
+      </p>
       {selectedMode === "teaching" && (
         <div className="mt-3 flex flex-wrap gap-2">
           {(

@@ -6,8 +6,7 @@ const mockState = vi.hoisted(() => ({
   calls: [] as { cmd: string; args?: Record<string, unknown> }[],
   dismissed: false,
   inputFocusHandler: null as
-    | ((event: { payload: { focused: boolean } }) => void)
-    | null,
+    ((event: { payload: { focused: boolean } }) => void) | null,
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -69,9 +68,13 @@ describe("focus mode hidden tip", () => {
   });
 
   it("arms the tip after focus-lost collapse when the keyboard was visible", async () => {
-    await vi.waitFor(() => expect(mockState.inputFocusHandler).toBeTruthy());
+    await vi.waitFor(() => {
+      expect(mockState.inputFocusHandler).toBeTruthy();
+    });
     useAppStore.setState({ focusModeKeyboardVisible: true });
-    mockState.inputFocusHandler!({ payload: { focused: false } });
+    const handler = mockState.inputFocusHandler;
+    if (handler == null) throw new Error("expected input-focus handler");
+    handler({ payload: { focused: false } });
     await vi.waitFor(() => {
       expect(useAppStore.getState().focusModeHiddenTipArmed).toBe(true);
     });
@@ -86,12 +89,16 @@ describe("focus mode hidden tip", () => {
   });
 
   it("does not arm the tip in Mic mode", async () => {
-    await vi.waitFor(() => expect(mockState.inputFocusHandler).toBeTruthy());
+    await vi.waitFor(() => {
+      expect(mockState.inputFocusHandler).toBeTruthy();
+    });
     useAppStore.setState({
       focusModeKeyboardVisible: true,
       settings: { ...DEFAULT_SETTINGS, micMode: true },
     });
-    mockState.inputFocusHandler!({ payload: { focused: false } });
+    const handler = mockState.inputFocusHandler;
+    if (handler == null) throw new Error("expected input-focus handler");
+    handler({ payload: { focused: false } });
     expect(useAppStore.getState().focusModeHiddenTipArmed).toBe(false);
   });
 

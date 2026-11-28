@@ -33,6 +33,13 @@ export const pt = {
 
   modeFocus: "Foco",
 
+  modeFocusDescription: "Keyboard appears when you tap a text field",
+
+  focusModeHiddenTip:
+    "Keyboard hidden: no text field selected. Tap a text field to bring it back.",
+
+  dontShowAgain: "Don't show again",
+
   modeMic: "Microfone",
 
   modeTeaching: "Ensino",
