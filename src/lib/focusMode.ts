@@ -13,11 +13,35 @@ export const FAB_HOVER_SLACK = 6;
 /** Collapsed FAB mode menu panel width (logical px; Rust scales by DPI). */
 export const MODE_MENU_WIDTH = 220;
 export const MODE_MENU_ITEM_HEIGHT = 48;
+/** Taller Focus row (label + wrapped description). */
+export const MODE_MENU_FOCUS_ROW_HEIGHT = 88;
 export const MODE_MENU_PAD = 8;
+/** Auto-hide one-time tip bubble (logical px). */
+const FOCUS_MODE_HIDDEN_TIP_WIDTH = 268;
+const FOCUS_MODE_HIDDEN_TIP_MIN_HEIGHT = 100;
+const FOCUS_MODE_HIDDEN_TIP_GAP = 8;
 
 /** Height for menu rows + 1px dividers + vertical padding. */
 export function modeMenuHeight(itemCount: number, separatorCount = 1): number {
-  return itemCount * MODE_MENU_ITEM_HEIGHT + 2 * MODE_MENU_PAD + separatorCount;
+  const focusRowExtra = MODE_MENU_FOCUS_ROW_HEIGHT - MODE_MENU_ITEM_HEIGHT;
+  return (
+    itemCount * MODE_MENU_ITEM_HEIGHT +
+    focusRowExtra +
+    2 * MODE_MENU_PAD +
+    separatorCount
+  );
+}
+
+/** Overlay size to show the hidden-keyboard tip left of the FAB stack. */
+export function focusModeHiddenTipOverlaySize(count: CollapsedFabCount): {
+  menuWidth: number;
+  menuHeight: number;
+} {
+  const fab = collapsedFabContentMinSize(count);
+  return {
+    menuWidth: FOCUS_MODE_HIDDEN_TIP_GAP + FOCUS_MODE_HIDDEN_TIP_WIDTH,
+    menuHeight: Math.max(fab.minHeight, FOCUS_MODE_HIDDEN_TIP_MIN_HEIGHT),
+  };
 }
 /** Mic FAB icon when a text field is focused. sky-300 on default header. */
 export const MIC_FAB_ARMED_ICON_COLOR = "#7dd3fc";

@@ -30,6 +30,7 @@ import { createPianoRangeSlice } from "./slices/pianoRangeSlice";
 import { createTypingSlice } from "./slices/typingSlice";
 import { createWindowSlice } from "./slices/windowSlice";
 import { createFocusModeSlice } from "./slices/focusModeSlice";
+import { createFocusModeHiddenTipSlice } from "./slices/focusModeHiddenTipSlice";
 import { createModeSlice } from "./slices/modeSlice";
 
 export type {
@@ -60,8 +61,11 @@ export const useAppStore = create<AppStore>()((...a) => ({
   ...createTypingSlice(...a),
   ...createWindowSlice(...a),
   ...createFocusModeSlice(...a),
+  ...createFocusModeHiddenTipSlice(...a),
   ...createModeSlice(...a),
 }));
+
+void useAppStore.getState().hydrateFocusModeHiddenTipDismissed();
 
 // Only main renders InputPreview; tool windows share this bundle and must not
 // replace main's preview Channel (see cmd_subscribe_input_preview).
@@ -104,6 +108,7 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   if (!state.focusModeActive) return;
   const focused = event.payload.focused;
   if (focused) {
+    useAppStore.getState().clearFocusModeHiddenTipArming();
     if (state.modeMenuOpen) {
       useAppStore.setState({ modeMenuOpen: false });
     }
@@ -144,11 +149,16 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
     state.focusModeSuppressAutoShow ||
     state.modeMenuOpen
   ) {
+    const keyboardWasVisible = state.focusModeKeyboardVisible;
     const animateContent =
       state.focusModeKeyboardVisible && !prefersReducedMotion();
     if (animateContent) {
       void beginFocusContentAnimWait();
     }
+    const armHiddenTip =
+      keyboardWasVisible &&
+      state.settings.micMode !== true &&
+      !useAppStore.getState().focusModeHiddenTipDismissed;
     useAppStore.setState({
       modeMenuOpen: false,
       focusModeKeyboardVisible: false,
@@ -156,13 +166,23 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
       focusModeSuppressAutoShow: false,
       isAnimatingWindow: true,
       focusContentAnim: animateContent ? "exit" : "idle",
+      ...(armHiddenTip ? { focusModeHiddenTipArmed: true } : {}),
     });
     void syncFocusModeWindowLayout(
       useAppStore.getState,
       useAppStore.setState,
       true,
       { continueHeld: true },
-    );
+    ).then(() => {
+      const latest = useAppStore.getState();
+      if (
+        latest.focusModeHiddenTipArmed &&
+        !latest.focusModeKeyboardVisible &&
+        !latest.isAnimatingWindow
+      ) {
+        void latest.presentFocusModeHiddenTip();
+      }
+    });
   }
 });
 

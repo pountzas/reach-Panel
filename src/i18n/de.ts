@@ -33,6 +33,13 @@ export const de = {
 
   modeFocus: "Fokus",
 
+  modeFocusDescription: "Tastatur erscheint, wenn ein Textfeld angetippt wird",
+
+  focusModeHiddenTip:
+    "Tastatur ausgeblendet: kein Textfeld ausgewählt. Ein Textfeld antippen, um sie wieder einzublenden.",
+
+  dontShowAgain: "Nicht mehr anzeigen",
+
   modeMic: "Mikro",
 
   modeTeaching: "Unterricht",

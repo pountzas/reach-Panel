@@ -16,6 +16,12 @@ const focusNameKeys = [
   "modeTabletsHint",
 ] as const;
 
+const focusHintKeys = [
+  "modeFocusDescription",
+  "focusModeHiddenTip",
+  "dontShowAgain",
+] as const;
+
 const locales = { en, el, de, fr, it: itLocale, es, pt } as const;
 
 describe("Focus mode user-facing copy", () => {
@@ -28,6 +34,25 @@ describe("Focus mode user-facing copy", () => {
     );
     expect(en.modeTabletsHint).toContain("Focus");
     expect(en.modeTabletsHint).not.toMatch(/\bMini\b/i);
+  });
+
+  it("locks Focus hint English strings", () => {
+    expect(en.modeFocusDescription).toBe(
+      "Keyboard appears when you tap a text field",
+    );
+    expect(en.focusModeHiddenTip).toBe(
+      "Keyboard hidden: no text field selected. Tap a text field to bring it back.",
+    );
+    expect(en.dontShowAgain).toBe("Don't show again");
+  });
+
+  it("uses non-empty de/el Focus hints that differ from English", () => {
+    for (const key of focusHintKeys) {
+      expect(de[key].length).toBeGreaterThan(0);
+      expect(el[key].length).toBeGreaterThan(0);
+      expect(de[key]).not.toBe(en[key]);
+      expect(el[key]).not.toBe(en[key]);
+    }
   });
 
   it("does not keep Mini / Mini Mode wording in any locale for Focus labels", () => {

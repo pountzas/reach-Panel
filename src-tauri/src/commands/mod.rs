@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 pub mod files;
+pub mod install_prefs;
 pub mod input_preview;
 pub mod keyboard;
 pub mod library;

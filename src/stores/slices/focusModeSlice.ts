@@ -29,6 +29,9 @@ export const createFocusModeSlice: StateCreator<
     if (get().isAnimatingWindow || get().modeMenuOpen) {
       return;
     }
+    if (get().focusModeHiddenTipVisible) {
+      await get().dismissFocusModeHiddenTip({ persist: false });
+    }
     set({ modeMenuOpen: true });
     const pending = invoke("cmd_expand_window_for_mode_menu", {
       menuWidth: MODE_MENU_WIDTH,
@@ -80,6 +83,7 @@ export const createFocusModeSlice: StateCreator<
     await refreshFocusModeStateHelper(get, set, options);
   },
   expandFocusModeKeyboard: async () => {
+    get().clearFocusModeHiddenTipArming();
     if (!get().focusModeActive || get().isAnimatingWindow) {
       return;
     }
@@ -97,6 +101,7 @@ export const createFocusModeSlice: StateCreator<
     await syncFocusModeWindowLayout(get, set, true, { continueHeld: true });
   },
   collapseFocusModeKeyboard: async () => {
+    get().clearFocusModeHiddenTipArming();
     if (!get().focusModeActive || get().isAnimatingWindow) {
       return;
     }

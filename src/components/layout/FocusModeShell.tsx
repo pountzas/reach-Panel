@@ -21,6 +21,10 @@ export function FocusModeShell() {
   const settings = useAppStore((s) => s.settings);
   const setShowSettings = useAppStore((s) => s.setShowSettings);
   const expandFocusModeKeyboard = useAppStore((s) => s.expandFocusModeKeyboard);
+  const focusModeHiddenTipArmed = useAppStore((s) => s.focusModeHiddenTipArmed);
+  const presentFocusModeHiddenTip = useAppStore(
+    (s) => s.presentFocusModeHiddenTip,
+  );
 
   const showApplying =
     isAnimatingWindow &&
@@ -67,6 +71,12 @@ export function FocusModeShell() {
     }
     setKeyboardSlideIn(focusModeKeyboardVisible);
   }, [focusContentAnim, focusModeKeyboardVisible, showApplying]);
+
+  useEffect(() => {
+    if (fabInteractive && focusModeHiddenTipArmed) {
+      void presentFocusModeHiddenTip();
+    }
+  }, [fabInteractive, focusModeHiddenTipArmed, presentFocusModeHiddenTip]);
 
   useEffect(() => {
     if (focusContentAnim !== "enter" && focusContentAnim !== "exit") return;
