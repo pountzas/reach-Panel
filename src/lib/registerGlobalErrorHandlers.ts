@@ -13,8 +13,7 @@ export function isAbortedViewTransition(reason: unknown): boolean {
     return false;
   }
   const lower = reason.message.toLowerCase();
-  const mentionsAbort =
-    lower.includes("transition") && lower.includes("abort");
+  const mentionsAbort = lower.includes("transition") && lower.includes("abort");
   const mentionsViewport = lower.includes("viewport size changed");
   return mentionsAbort || mentionsViewport;
 }

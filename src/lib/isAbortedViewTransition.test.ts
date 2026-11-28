@@ -20,12 +20,17 @@ describe("isAbortedViewTransition", () => {
   });
 
   it("does not match a generic InvalidStateError with another message", () => {
-    const reason = new DOMException("The object is in an invalid state.", "InvalidStateError");
+    const reason = new DOMException(
+      "The object is in an invalid state.",
+      "InvalidStateError",
+    );
     expect(isAbortedViewTransition(reason)).toBe(false);
   });
 
   it("does not match a plain Error", () => {
-    expect(isAbortedViewTransition(new Error("Transition was aborted"))).toBe(false);
+    expect(isAbortedViewTransition(new Error("Transition was aborted"))).toBe(
+      false,
+    );
   });
 
   it("does not match a non-Error reason", () => {
