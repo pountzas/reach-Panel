@@ -94,3 +94,37 @@ describe("toggleDictation launches Windows Voice typing", () => {
     expect(useAppStore.getState().lastError).toBeNull();
   });
 });
+
+describe("PC Mic hold-to-talk", () => {
+  beforeEach(() => {
+    invokeMock.mockReset();
+    notifyError.mockReset();
+    storeFlags.lastAnnouncedError = null;
+    useAppStore.setState({
+      settings: { ...DEFAULT_SETTINGS, pcMicSendMode: "rightAltHold" },
+      externalInputFocused: true,
+      pcMicHolding: false,
+      lastError: null,
+    });
+  });
+
+  it("startPcMicHold invokes hold down and sets holding", async () => {
+    invokeMock.mockResolvedValue({ success: true });
+    await useAppStore.getState().startPcMicHold();
+    expect(invokeMock).toHaveBeenCalledWith("cmd_pc_mic_hold_down");
+    expect(useAppStore.getState().pcMicHolding).toBe(true);
+  });
+
+  it("stopPcMicHold invokes hold up and clears holding", async () => {
+    invokeMock.mockResolvedValue({ success: true });
+    useAppStore.setState({ pcMicHolding: true });
+    await useAppStore.getState().stopPcMicHold();
+    expect(invokeMock).toHaveBeenCalledWith("cmd_pc_mic_hold_up");
+    expect(useAppStore.getState().pcMicHolding).toBe(false);
+  });
+
+  it("toggleDictation is a no-op in hold mode", async () => {
+    await useAppStore.getState().toggleDictation();
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
+});
