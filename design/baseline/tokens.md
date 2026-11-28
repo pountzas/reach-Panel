@@ -110,7 +110,7 @@ Key press: `scale(.95)` + `brightness(.9)`.
 View transition `rp-vt-fade-slide`: fade plus 8px slide.
 Window animations (Rust): collapse 400ms, Focus 300ms, ~60fps.
 The music note chip pulses `scale 1.55↔1.7` over 1.1s.
-All durations drop to 1ms under `prefers-reduced-motion`.
+Under `prefers-reduced-motion`, the four `--rp-dur-*` values drop to 1ms. Music chip pulses, partiture ring pulses and view-transition animations stop entirely. Fixed-duration transitions, including the music strip (320ms) and chips (280ms), keep their durations.
 
 ## 7. Window sizes (for artboards)
 Reference monitor: 1920×1080 with a 40px taskbar, so the work area is **1920×1040** at 100% DPI. The accessibility monitor is a second display.
