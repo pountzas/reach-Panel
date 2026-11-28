@@ -108,6 +108,7 @@ void listen<{ focused: boolean }>("input-focus-changed", (event) => {
   if (!state.focusModeActive) return;
   const focused = event.payload.focused;
   if (focused) {
+    useAppStore.getState().clearFocusModeHiddenTipArming();
     if (state.modeMenuOpen) {
       useAppStore.setState({ modeMenuOpen: false });
     }

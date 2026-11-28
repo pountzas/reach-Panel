@@ -83,6 +83,7 @@ export const createFocusModeSlice: StateCreator<
     await refreshFocusModeStateHelper(get, set, options);
   },
   expandFocusModeKeyboard: async () => {
+    get().clearFocusModeHiddenTipArming();
     if (!get().focusModeActive || get().isAnimatingWindow) {
       return;
     }
@@ -100,6 +101,7 @@ export const createFocusModeSlice: StateCreator<
     await syncFocusModeWindowLayout(get, set, true, { continueHeld: true });
   },
   collapseFocusModeKeyboard: async () => {
+    get().clearFocusModeHiddenTipArming();
     if (!get().focusModeActive || get().isAnimatingWindow) {
       return;
     }

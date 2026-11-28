@@ -280,6 +280,7 @@ export type FocusModeHiddenTipSlice = {
   focusModeHiddenTipVisible: boolean;
   focusModeHiddenTipArmed: boolean;
   hydrateFocusModeHiddenTipDismissed: () => Promise<void>;
+  clearFocusModeHiddenTipArming: () => void;
   presentFocusModeHiddenTip: () => Promise<void>;
   dismissFocusModeHiddenTip: (input: { persist: boolean }) => Promise<void>;
 };

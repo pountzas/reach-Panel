@@ -14,7 +14,7 @@ export const FAB_HOVER_SLACK = 6;
 export const MODE_MENU_WIDTH = 220;
 export const MODE_MENU_ITEM_HEIGHT = 48;
 /** Taller Focus row (label + wrapped description). */
-export const MODE_MENU_FOCUS_ROW_HEIGHT = 68;
+export const MODE_MENU_FOCUS_ROW_HEIGHT = 88;
 export const MODE_MENU_PAD = 8;
 /** Auto-hide one-time tip bubble (logical px). */
 const FOCUS_MODE_HIDDEN_TIP_WIDTH = 268;
@@ -39,8 +39,7 @@ export function focusModeHiddenTipOverlaySize(count: CollapsedFabCount): {
 } {
   const fab = collapsedFabContentMinSize(count);
   return {
-    menuWidth:
-      fab.minWidth + FOCUS_MODE_HIDDEN_TIP_GAP + FOCUS_MODE_HIDDEN_TIP_WIDTH,
+    menuWidth: FOCUS_MODE_HIDDEN_TIP_GAP + FOCUS_MODE_HIDDEN_TIP_WIDTH,
     menuHeight: Math.max(fab.minHeight, FOCUS_MODE_HIDDEN_TIP_MIN_HEIGHT),
   };
 }

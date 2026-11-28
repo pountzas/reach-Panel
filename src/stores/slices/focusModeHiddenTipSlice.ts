@@ -32,19 +32,37 @@ export const createFocusModeHiddenTipSlice: StateCreator<
       /* unavailable in tests */
     }
   },
+  clearFocusModeHiddenTipArming: () => {
+    if (storeFlags.focusModeHiddenTipAutoHideTimer !== null) {
+      window.clearTimeout(storeFlags.focusModeHiddenTipAutoHideTimer);
+      storeFlags.focusModeHiddenTipAutoHideTimer = null;
+    }
+    const hideVisible = get().focusModeHiddenTipVisible;
+    set({
+      focusModeHiddenTipArmed: false,
+      ...(hideVisible ? { focusModeHiddenTipVisible: false } : {}),
+    });
+  },
   presentFocusModeHiddenTip: async () => {
     const state = get();
-    if (
-      !state.focusModeHiddenTipArmed ||
-      state.focusModeHiddenTipDismissed ||
-      state.focusModeHiddenTipVisible ||
-      state.settings.micMode === true ||
-      state.showSettings ||
-      state.modeMenuOpen ||
-      !state.focusModeActive ||
-      state.focusModeKeyboardVisible ||
-      state.isAnimatingWindow
-    ) {
+    if (state.focusModeHiddenTipVisible) {
+      return;
+    }
+    if (!state.focusModeHiddenTipArmed) {
+      return;
+    }
+    const eligibleExceptAnim =
+      !state.focusModeHiddenTipDismissed &&
+      state.settings.micMode !== true &&
+      !state.showSettings &&
+      !state.modeMenuOpen &&
+      state.focusModeActive &&
+      !state.focusModeKeyboardVisible;
+    if (!eligibleExceptAnim) {
+      get().clearFocusModeHiddenTipArming();
+      return;
+    }
+    if (state.isAnimatingWindow) {
       return;
     }
     const { menuWidth, menuHeight } = focusModeHiddenTipOverlaySize(

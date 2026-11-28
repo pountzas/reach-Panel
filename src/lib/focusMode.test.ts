@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS, type MonitorInfo } from "./types";
 import {
+  focusModeHiddenTipOverlaySize,
   isInputPreviewActiveForMode,
   isMicFabEnabled,
   modeMenuHeight,
@@ -38,11 +39,15 @@ const b: MonitorInfo = {
 
 describe("focusMode", () => {
   it("counts each menu separator as one pixel of height", () => {
-    expect(modeMenuHeight(7, 2)).toBe(7 * 48 + 20 + 16 + 2);
+    expect(modeMenuHeight(7, 2)).toBe(7 * 48 + 40 + 16 + 2);
   });
 
   it("adds extra height for the two-line Focus row", () => {
-    expect(modeMenuHeight(1, 0)).toBe(48 + 20 + 16);
+    expect(modeMenuHeight(1, 0)).toBe(48 + 40 + 16);
+  });
+
+  it("hidden tip overlay width is extra beyond collapsed FAB only", () => {
+    expect(focusModeHiddenTipOverlaySize(2).menuWidth).toBe(276);
   });
 
   it("detects mirrored monitors by overlapping work areas", () => {

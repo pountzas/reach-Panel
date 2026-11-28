@@ -88,6 +88,26 @@ describe("focus mode hidden tip", () => {
     notifyFocusContentAnimDone();
   });
 
+  it("clears armed tip when focus returns before settle, then manual collapse", async () => {
+    await vi.waitFor(() => {
+      expect(mockState.inputFocusHandler).toBeTruthy();
+    });
+    useAppStore.setState({ focusModeKeyboardVisible: true });
+    const handler = mockState.inputFocusHandler;
+    if (handler == null) throw new Error("expected input-focus handler");
+    handler({ payload: { focused: false } });
+    await vi.waitFor(() => {
+      expect(useAppStore.getState().focusModeHiddenTipArmed).toBe(true);
+    });
+    handler({ payload: { focused: true } });
+    expect(useAppStore.getState().focusModeHiddenTipArmed).toBe(false);
+    useAppStore.setState({ focusModeKeyboardVisible: true });
+    await useAppStore.getState().collapseFocusModeKeyboard();
+    await useAppStore.getState().presentFocusModeHiddenTip();
+    expect(useAppStore.getState().focusModeHiddenTipVisible).toBe(false);
+    notifyFocusContentAnimDone();
+  });
+
   it("does not arm the tip in Mic mode", async () => {
     await vi.waitFor(() => {
       expect(mockState.inputFocusHandler).toBeTruthy();
@@ -100,6 +120,26 @@ describe("focus mode hidden tip", () => {
     if (handler == null) throw new Error("expected input-focus handler");
     handler({ payload: { focused: false } });
     expect(useAppStore.getState().focusModeHiddenTipArmed).toBe(false);
+  });
+
+  it("keeps armed while animating so FocusModeShell can retry after settle", async () => {
+    useAppStore.setState({
+      focusModeHiddenTipArmed: true,
+      focusModeKeyboardVisible: false,
+      isAnimatingWindow: true,
+    });
+    await useAppStore.getState().presentFocusModeHiddenTip();
+    expect(useAppStore.getState().focusModeHiddenTipArmed).toBe(true);
+    expect(useAppStore.getState().focusModeHiddenTipVisible).toBe(false);
+  });
+
+  it("does not hide a tip that is already visible when present is called again", async () => {
+    useAppStore.setState({
+      focusModeHiddenTipArmed: false,
+      focusModeHiddenTipVisible: true,
+    });
+    await useAppStore.getState().presentFocusModeHiddenTip();
+    expect(useAppStore.getState().focusModeHiddenTipVisible).toBe(true);
   });
 
   it("presents the tip once settled and expands the window overlay", async () => {

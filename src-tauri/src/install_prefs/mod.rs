@@ -23,7 +23,7 @@ pub fn read_install_prefs(app: &AppHandle) -> Result<InstallPrefs, String> {
         return Ok(InstallPrefs::default());
     }
     let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    serde_json::from_str(&data).map_err(|e| e.to_string())
+    Ok(serde_json::from_str(&data).unwrap_or_default())
 }
 
 pub fn write_install_prefs(app: &AppHandle, prefs: &InstallPrefs) -> Result<(), String> {
@@ -38,6 +38,12 @@ pub fn write_install_prefs(app: &AppHandle, prefs: &InstallPrefs) -> Result<(), 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn invalid_json_deserializes_to_default_prefs() {
+        let read: InstallPrefs = serde_json::from_str("{not json").unwrap_or_default();
+        assert!(!read.focus_mode_hidden_tip_dismissed);
+    }
 
     #[test]
     fn serializes_focus_mode_hidden_tip_dismissed() {
